@@ -194,10 +194,6 @@ iwindow_init( myIWindow *instance )
 	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_properties_clicked ), instance );
 	priv->properties_btn = button;
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), button );
-
 	setup_treeview( OFA_PLUGIN_MANAGER( instance ));
 	load_in_treeview( OFA_PLUGIN_MANAGER( instance ));
 }

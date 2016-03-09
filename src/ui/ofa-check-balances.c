@@ -176,10 +176,9 @@ iwindow_init( myIWindow *instance )
 
 	priv = ofa_check_balances_get_instance_private( OFA_CHECK_BALANCES( instance ));
 
-	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-close" );
 	g_return_if_fail( priv->close_btn && GTK_IS_BUTTON( priv->close_btn ));
 	gtk_widget_set_sensitive( priv->close_btn, FALSE );
-	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), priv->close_btn );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));

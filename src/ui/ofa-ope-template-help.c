@@ -55,7 +55,6 @@ struct _ofaOpeTemplateHelpPrivate {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-template-help.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
-static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent );
 static void     on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent );
@@ -169,18 +168,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_ope_template_help_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->init = iwindow_init;
-}
-
-static void
-iwindow_init( myIWindow *instance )
-{
-	GtkWidget *button;
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), button );
 }
 
 /*

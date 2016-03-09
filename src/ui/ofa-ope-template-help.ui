@@ -19,7 +19,7 @@
               <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="close-btn">
+              <object class="GtkButton" id="btn-close">
                 <property name="label">gtk-close</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -133,7 +133,7 @@ Other keywords are searched as rate mnemonics (as a convenient shortcut to RATE(
       </object>
     </child>
     <action-widgets>
-      <action-widget response="-7">close-btn</action-widget>
+      <action-widget response="-7">btn-close</action-widget>
     </action-widgets>
   </template>
 </interface>

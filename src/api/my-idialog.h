@@ -34,6 +34,14 @@
  * This interface manages for the application:
  * - the dialog buttons
  * - the modal dialogs.
+ *
+ * Response codes are taken from /usr/include/gtk-3.0/gtk/gtkdialog.h.
+ * Most often used are:
+ *   GTK_RESPONSE_DELETE_EVENT = -4,
+ *   GTK_RESPONSE_OK           = -5,
+ *   GTK_RESPONSE_CANCEL       = -6,
+ *   GTK_RESPONSE_CLOSE        = -7,
+ *
  */
 
 #include <gtk/gtk.h>
@@ -119,9 +127,6 @@ guint      my_idialog_get_interface_last_version( void );
 guint      my_idialog_get_interface_version     ( const myIDialog *instance );
 
 void       my_idialog_init                      ( myIDialog *instance );
-
-void       my_idialog_widget_click_to_close     ( myIDialog *instance,
-														GtkWidget *button );
 
 GtkWidget *my_idialog_set_close_button          ( myIDialog *instance );
 

@@ -183,12 +183,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	iface->init = iwindow_init;
 }
 
-/*
- * this dialog is subject to 'is_current' property
- * so first setup the UI fields, then fills them up with the data
- * when entering, only initialization data are set: main_window and
- * account
- */
 static void
 iwindow_init( myIWindow *instance )
 {
@@ -196,10 +190,6 @@ iwindow_init( myIWindow *instance )
 	GtkWidget *button;
 
 	priv = ofa_dossier_manager_get_instance_private( OFA_DOSSIER_MANAGER( instance ));
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	my_idialog_widget_click_to_close( MY_IDIALOG( instance ), button );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "new-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
