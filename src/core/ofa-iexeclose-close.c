@@ -30,7 +30,6 @@
 #include <stdlib.h>
 
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iexeclose-close.h"
 #include "api/ofa-plugin.h"

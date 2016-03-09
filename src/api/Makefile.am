@@ -58,7 +58,6 @@ api_include_HEADERS = \
 	ofa-settings.h										\
 	\
 	my-date.h											\
-	my-dialog.h											\
 	my-double.h											\
 	my-editable-amount.h								\
 	my-editable-date.h									\
@@ -66,8 +65,6 @@ api_include_HEADERS = \
 	my-progress-bar.h									\
 	my-timeout.h										\
 	my-utils.h											\
-	my-window.h											\
-	my-window-prot.h									\
 	ofa-box.h											\
 	ofa-buttons-box.h									\
 	ofa-date-filter-hv-bin.h							\

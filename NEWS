@@ -39,6 +39,7 @@
 
    - Fails when dispose_has_run is True (todo #995).
    - myIDialog: new interface.
+   - myDialog, myWindow: removed classes (todo #992).
 
 -----------------------------------------------------------------------
  Version 0.49

@@ -35,7 +35,7 @@
  * standardized printing system of Openbook.
  */
 
-#include "api/my-dialog.h"
+#include <glib.h>
 
 G_BEGIN_DECLS
 

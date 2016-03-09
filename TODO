@@ -481,9 +481,6 @@
      2016- 2-23 current behavior is not so bad - but operation date is
                 checked invalid even if it appears as valid
 
- 992 2016- 2-14 dialogs are non-modal when possible
-                depreciate myDialog, replacing it with myIDialog
-
  999 2016- 2-24 FEAT add a Close button to detached nomodal pages
 
 1001 2016- 2-24 FEAT ReconciliationRender: slightly decrease the font
@@ -832,6 +829,10 @@
                      would be conciliated (date is normal black) but 
                      without conciliation id - see trash/bug991
      2016- 2-13 fixed
+
+ 992 2016- 2-14 dialogs are non-modal when possible
+                depreciate myDialog, replacing it with myIDialog
+     2016- 3- 9 done
 
  993 2016- 2-14 ofaBatPage: set selection on newly imported BAT file
      2016- 2-14 done

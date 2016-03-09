@@ -69,7 +69,6 @@ libofa_core_la_SOURCES = \
 	my-date-combo.h										\
 	my-decimal-combo.c									\
 	my-decimal-combo.h									\
-	my-dialog.c											\
 	my-double.c											\
 	my-editable-amount.c								\
 	my-editable-date.c									\
@@ -85,7 +84,6 @@ libofa_core_la_SOURCES = \
 	my-settings.h										\
 	my-timeout.c										\
 	my-utils.c											\
-	my-window.c											\
 	\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
