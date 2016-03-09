@@ -28,8 +28,9 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-idbmeta.h"
@@ -48,6 +49,7 @@
 /* private instance data
  */
 struct _ofaDossierOpenPrivate {
+	gboolean            dispose_has_run;
 
 	/* data
 	 */
@@ -66,21 +68,25 @@ struct _ofaDossierOpenPrivate {
 	GtkWidget          *ok_btn;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-open.ui";
-static const gchar *st_ui_id            = "DossierOpenDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-open.ui";
 
-G_DEFINE_TYPE( ofaDossierOpen, ofa_dossier_open, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierOpen *self );
 static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIDBPeriod *period, ofaDossierOpen *self );
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  are_data_set( ofaDossierOpen *self, gchar **msg );
-static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  idialog_quit_on_ok( myIDialog *instance );
 static gboolean  is_connection_valid( ofaDossierOpen *self, gchar **msg );
 static gboolean  do_open_dossier( ofaDossierOpen *self );
 static void      set_message( ofaDossierOpen *self, const gchar *msg );
+
+G_DEFINE_TYPE_EXTENDED( ofaDossierOpen, ofa_dossier_open, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaDossierOpen )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 dossier_open_finalize( GObject *instance )
@@ -94,7 +100,7 @@ dossier_open_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DOSSIER_OPEN( instance ));
 
 	/* free data members here */
-	priv = OFA_DOSSIER_OPEN( instance )->priv;
+	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
 
 	g_free( priv->account );
 	g_free( priv->password );
@@ -110,9 +116,11 @@ dossier_open_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_OPEN( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
 
-		priv = OFA_DOSSIER_OPEN( instance )->priv;
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 		g_clear_object( &priv->meta );
@@ -128,13 +136,19 @@ static void
 ofa_dossier_open_init( ofaDossierOpen *self )
 {
 	static const gchar *thisfn = "ofa_dossier_open_init";
+	ofaDossierOpenPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_OPEN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_OPEN, ofaDossierOpenPrivate );
+	priv = ofa_dossier_open_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+	priv->opened = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -147,10 +161,7 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_open_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_open_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierOpenPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -172,7 +183,7 @@ ofa_dossier_open_run( ofaMainWindow *main_window,
 							const gchar *account, const gchar *password )
 {
 	return( ofa_dossier_open_run_with_parent(
-					main_window, GTK_WINDOW( main_window ), meta, period, account, password ));
+				main_window, GTK_WINDOW( main_window ), meta, period, account, password ));
 }
 
 /**
@@ -207,46 +218,70 @@ ofa_dossier_open_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent,
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 	g_return_val_if_fail( parent && GTK_IS_WINDOW( parent ), FALSE );
 
-	msg = NULL;
+	self = g_object_new( OFA_TYPE_DOSSIER_OPEN, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 
-	self = g_object_new(
-				OFA_TYPE_DOSSIER_OPEN,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_PARENT,      parent,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	priv = ofa_dossier_open_get_instance_private( self );
 
-	priv = self->priv;
 	if( meta ){
 		priv->meta = g_object_ref( meta );
 		if( period ){
 			priv->period = g_object_ref( period );
 		}
 	}
+
 	priv->account = g_strdup( account );
 	priv->password = g_strdup( password );
 
+	opened = FALSE;
+	msg = NULL;
+
 	if( are_data_set( self, &msg ) && is_connection_valid( self, &msg )){
-		opened = do_open_dossier( self );
+		do_open_dossier( self );
 
 	} else {
 		g_debug( "%s: %s", thisfn, msg );
 		g_free( msg );
-		my_dialog_run_dialog( MY_DIALOG( self ));
-		opened = priv->opened;
+		if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
+			opened = priv->opened;
+			my_iwindow_close( MY_IWINDOW( self ));
+		}
 	}
-
-	g_object_unref( self );
 
 	return( opened );
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
 {
+	static const gchar *thisfn = "ofa_dossier_open_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_open_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+	iface->quit_on_ok = idialog_quit_on_ok;
+}
+
+static void
+idialog_init( myIDialog *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_open_idialog_init";
 	ofaDossierOpenPrivate *priv;
-	GtkWindow *toplevel;
 	GtkWidget *container, *button, *focus, *label;
 	ofaUserCredentialsBin *user_credentials;
 	GtkSizeGroup *group;
@@ -256,32 +291,32 @@ v_init_dialog( myDialog *dialog )
 			DOSSIER_DISP_DOSNAME,
 			0 };
 
-	priv = OFA_DOSSIER_OPEN( dialog )->priv;
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
+
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	/* do this first to be available as soon as the first signal
 	 * triggers */
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-open" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-open" );
 	priv->ok_btn = button;
 
 	/* setup exercice combobox (before dossier) */
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-exercice-parent" );
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-exercice-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 	priv->exercice_combo = ofa_exercice_combo_new();
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->exercice_combo ));
 	g_signal_connect(
-			G_OBJECT( priv->exercice_combo ), "ofa-changed", G_CALLBACK( on_exercice_changed ), dialog );
+			G_OBJECT( priv->exercice_combo ), "ofa-changed", G_CALLBACK( on_exercice_changed ), instance );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-exercice-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-exercice-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->exercice_combo ));
 	gtk_size_group_add_widget( group, label );
 
 	/* setup dossier treeview */
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-dossier-parent" );
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-dossier-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	priv->dossier_tview = ofa_dossier_treeview_new();
@@ -289,10 +324,10 @@ v_init_dialog( myDialog *dialog )
 	ofa_dossier_treeview_set_columns( priv->dossier_tview, st_columns );
 	ofa_dossier_treeview_set_show( priv->dossier_tview, DOSSIER_SHOW_UNIQUE );
 	g_signal_connect(
-			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), dialog );
+			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), instance );
 	focus = GTK_WIDGET( priv->dossier_tview );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-dossier-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-dossier-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget(
 			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
@@ -317,11 +352,11 @@ v_init_dialog( myDialog *dialog )
 	}
 
 	/* setup account and password */
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "do-user-parent" );
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-user-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 	user_credentials = ofa_user_credentials_bin_new();
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( user_credentials ));
-	g_signal_connect( user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), dialog );
+	g_signal_connect( user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), instance );
 	my_utils_size_group_add_size_group(
 			group, ofa_user_credentials_bin_get_size_group( user_credentials, 0 ));
 	if( priv->account ){
@@ -343,7 +378,9 @@ v_init_dialog( myDialog *dialog )
 
 	g_object_unref( group );
 
-	check_for_enable_dlg( OFA_DOSSIER_OPEN( dialog ));
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
+	check_for_enable_dlg( OFA_DOSSIER_OPEN( instance ));
 }
 
 static void
@@ -351,7 +388,8 @@ on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *p
 {
 	ofaDossierOpenPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
+
 	g_clear_object( &priv->meta );
 	if( meta ){
 		priv->meta = g_object_ref( meta );
@@ -366,7 +404,8 @@ on_exercice_changed( ofaExerciceCombo *combo, ofaIDBPeriod *period, ofaDossierOp
 {
 	ofaDossierOpenPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
+
 	g_clear_object( &priv->period );
 	if( period ){
 		priv->period = g_object_ref( period );
@@ -380,7 +419,7 @@ on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *ac
 {
 	ofaDossierOpenPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
 
 	g_free( priv->account );
 	priv->account = g_strdup( account );
@@ -403,9 +442,9 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	gboolean ok_enable;
 	gchar *msg;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
+
 	msg = NULL;
-	set_message( self, "" );
 
 	ok_enable = are_data_set( self, &msg );
 	set_message( self, msg );
@@ -420,7 +459,8 @@ are_data_set( ofaDossierOpen *self, gchar **msg )
 	ofaDossierOpenPrivate *priv;
 	gboolean valid;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
+
 	valid = FALSE;
 
 	if( !priv->meta ){
@@ -451,20 +491,19 @@ are_data_set( ofaDossierOpen *self, gchar **msg )
  * but we have yet to check the DB connection
  */
 static gboolean
-v_quit_on_ok( myDialog *dialog )
+idialog_quit_on_ok( myIDialog *instance )
 {
-	ofaDossierOpen *self;
 	ofaDossierOpenPrivate *priv;
 	gchar *msg;
 
+	g_return_val_if_fail( are_data_set( OFA_DOSSIER_OPEN( instance ), NULL ), FALSE );
+
+	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
+
 	msg = NULL;
-	self = OFA_DOSSIER_OPEN( dialog );
-	priv = self->priv;
 
-	g_return_val_if_fail( are_data_set( self, NULL ), FALSE );
-
-	if( is_connection_valid( self, &msg )){
-		priv->opened = do_open_dossier( self );
+	if( is_connection_valid( OFA_DOSSIER_OPEN( instance ), &msg )){
+		priv->opened = do_open_dossier( OFA_DOSSIER_OPEN( instance ));
 		return( priv->opened );
 	}
 
@@ -481,7 +520,8 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 	ofaIDBProvider *provider;
 	gboolean valid;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
+
 	g_clear_object( &priv->connect );
 	valid = FALSE;
 
@@ -510,14 +550,19 @@ static gboolean
 do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
+	GtkApplicationWindow *main_window;
 	GtkApplication *application;
 	ofaHub *hub;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
+
 	ok = FALSE;
 
-	application = my_window_get_application( MY_WINDOW( self ));
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+
+	application = gtk_window_get_application( GTK_WINDOW( main_window ));
 	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), FALSE );
 
 	hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), priv->connect );
@@ -533,15 +578,11 @@ static void
 set_message( ofaDossierOpen *self, const gchar *msg )
 {
 	ofaDossierOpenPrivate *priv;
-	GtkWindow *toplevel;
 
-	priv = self->priv;
+	priv = ofa_dossier_open_get_instance_private( self );
 
 	if( !priv->message_label ){
-		toplevel = my_window_get_toplevel( MY_WINDOW( self ));
-		g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
-
-		priv->message_label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "message" );
+		priv->message_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "message" );
 		g_return_if_fail( priv->message_label && GTK_IS_LABEL( priv->message_label ));
 
 		my_utils_widget_set_style( priv->message_label, "labelerror" );

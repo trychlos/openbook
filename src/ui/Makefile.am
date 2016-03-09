@@ -245,7 +245,6 @@ rc_files = \
 	$(NULL)
 
 ui_files = \
-	ofa-dossier-open.ui									\
 	ofa-ope-template-select.ui							\
 	$(NULL)
 
@@ -271,6 +270,7 @@ resources_ui = \
 	ofa-dossier-new.ui									\
 	ofa-dossier-new-bin.ui								\
 	ofa-dossier-new-mini.ui								\
+	ofa-dossier-open.ui									\
 	ofa-dossier-properties.ui							\
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.19.0 -->
 <interface>
-  <requires lib="gtk+" version="3.6"/>
-  <object class="GtkDialog" id="DossierOpenDlg">
+  <requires lib="gtk+" version="3.10"/>
+  <template class="ofaDossierOpen" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Open an defined dossier</property>
+    <property name="title" translatable="yes">Open a defined dossier</property>
     <property name="modal">True</property>
     <property name="destroy_with_parent">True</property>
     <property name="type_hint">dialog</property>
@@ -185,7 +185,7 @@
       <action-widget response="-6">btn-cancel</action-widget>
       <action-widget response="-5">btn-open</action-widget>
     </action-widgets>
-  </object>
+  </template>
   <object class="GtkSizeGroup" id="do-col0-hsize">
     <widgets>
       <widget name="do-dossier-label"/>

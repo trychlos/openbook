@@ -33,12 +33,11 @@
  * Open an existing dossier.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       modal dialog
  * - settings:   no
  * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-main-window-def.h"
@@ -56,16 +55,13 @@ typedef struct _ofaDossierOpenPrivate        ofaDossierOpenPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog               parent;
-
-	/*< private members >*/
-	ofaDossierOpenPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaDossierOpen;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass          parent;
+	GtkDialogClass parent;
 }
 	ofaDossierOpenClass;
 
