@@ -43,12 +43,11 @@
  * the #ofaIDBEditor piece of dialog.
  *
  * Development rules:
- * - type:       dialog
+ * - type:       modal dialog
  * - settings:   no
  * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-main-window-def.h"
 
@@ -65,16 +64,13 @@ typedef struct _ofaDossierNewMiniPrivate         ofaDossierNewMiniPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                  parent;
-
-	/*< private members >*/
-	ofaDossierNewMiniPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaDossierNewMini;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass             parent;
+	GtkDialogClass parent;
 }
 	ofaDossierNewMiniClass;
 

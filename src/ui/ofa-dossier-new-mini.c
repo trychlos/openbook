@@ -30,8 +30,9 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofo-dossier.h"
 
@@ -44,6 +45,7 @@
 /* private instance data
  */
 struct _ofaDossierNewMiniPrivate {
+	gboolean          dispose_has_run;
 
 	/* UI
 	 */
@@ -56,17 +58,21 @@ struct _ofaDossierNewMiniPrivate {
 	ofaIDBMeta       *meta;
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-new-mini.ui";
-static const gchar *st_ui_id            = "DossierNewMiniDialog";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-new-mini.ui";
 
-G_DEFINE_TYPE( ofaDossierNewMini, ofa_dossier_new_mini, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNewMini *self );
 static void      check_for_enable_dlg( ofaDossierNewMini *self );
 static gboolean  is_validable( ofaDossierNewMini *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  idialog_quit_on_ok( myIDialog *instance );
 static void      set_message( ofaDossierNewMini *self, const gchar *message );
+
+G_DEFINE_TYPE_EXTENDED( ofaDossierNewMini, ofa_dossier_new_mini, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaDossierNewMini )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 dossier_new_mini_finalize( GObject *instance )
@@ -91,10 +97,13 @@ dossier_new_mini_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_MINI( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_dossier_new_mini_get_instance_private( OFA_DOSSIER_NEW_MINI( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		priv = OFA_DOSSIER_NEW_MINI( instance )->priv;
 
 		g_clear_object( &priv->meta );
 	}
@@ -107,13 +116,18 @@ static void
 ofa_dossier_new_mini_init( ofaDossierNewMini *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_mini_init";
+	ofaDossierNewMiniPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_NEW_MINI( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_NEW_MINI, ofaDossierNewMiniPrivate );
+	priv = ofa_dossier_new_mini_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -126,10 +140,7 @@ ofa_dossier_new_mini_class_init( ofaDossierNewMiniClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_new_mini_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_new_mini_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierNewMiniPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -156,62 +167,85 @@ ofa_dossier_new_mini_run( ofaMainWindow *main_window, GtkWindow *parent, ofaIDBM
 	g_debug( "%s: main_window=%p, parent=%p, meta=%p",
 			thisfn, ( void * ) main_window, ( void * ) parent, ( void * ) meta );
 
-	self = g_object_new( OFA_TYPE_DOSSIER_NEW_MINI,
-							MY_PROP_MAIN_WINDOW, main_window,
-							MY_PROP_PARENT,      parent,
-							MY_PROP_WINDOW_XML,  st_ui_xml,
-							MY_PROP_WINDOW_NAME, st_ui_id,
-							NULL );
+	self = g_object_new( OFA_TYPE_DOSSIER_NEW_MINI, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
-
-	priv = self->priv;
 	dossier_defined = FALSE;
 
-	if( priv->meta ){
-		dossier_defined = TRUE;
-		*meta = g_object_ref( priv->meta );
+	if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
+		priv = ofa_dossier_new_mini_get_instance_private( self );
+		if( priv->meta ){
+			dossier_defined = TRUE;
+			*meta = g_object_ref( priv->meta );
+		}
+		my_iwindow_close( MY_IWINDOW( self ));
 	}
-
-	g_object_unref( self );
 
 	return( dossier_defined );
 }
 
+/*
+ * myIWindow interface management
+ */
 static void
-v_init_dialog( myDialog *dialog )
+iwindow_iface_init( myIWindowInterface *iface )
 {
+	static const gchar *thisfn = "ofa_dossier_new_mini_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_new_mini_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+	iface->quit_on_ok = idialog_quit_on_ok;
+}
+
+static void
+idialog_init( myIDialog *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_new_mini_idialog_init";
 	ofaDossierNewMiniPrivate *priv;
-	GtkWindow *toplevel;
+	GtkApplicationWindow *main_window;
 	GtkWidget *parent, *label;
 	GtkSizeGroup *group;
 
-	priv = OFA_DOSSIER_NEW_MINI( dialog )->priv;
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+	priv = ofa_dossier_new_mini_get_instance_private( OFA_DOSSIER_NEW_MINI( instance ));
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "new-bin-parent" );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "new-bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->new_bin = ofa_dossier_new_bin_new(
-							OFA_MAIN_WINDOW( my_window_get_main_window( MY_WINDOW( dialog ))));
+	priv->new_bin = ofa_dossier_new_bin_new( OFA_MAIN_WINDOW( main_window ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	my_utils_size_group_add_size_group(
 			group, ofa_dossier_new_bin_get_size_group( priv->new_bin, 0 ));
 	g_object_unref( group );
 
-	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), dialog );
+	g_signal_connect( priv->new_bin, "ofa-changed", G_CALLBACK( on_new_bin_changed ), instance );
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "btn-ok" );
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "err-message" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "err-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_utils_widget_set_style( label, "labelerror" );
 	priv->msg_label = label;
 
-	check_for_enable_dlg( OFA_DOSSIER_NEW_MINI( dialog ));
+	check_for_enable_dlg( OFA_DOSSIER_NEW_MINI( instance ));
 }
 
 static void
@@ -230,7 +264,8 @@ check_for_enable_dlg( ofaDossierNewMini *self )
 	ofaDossierNewMiniPrivate *priv;
 	gboolean ok;
 
-	priv = self->priv;
+	priv = ofa_dossier_new_mini_get_instance_private( self );
+
 	ok = is_validable( self );
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok );
@@ -243,7 +278,8 @@ is_validable( ofaDossierNewMini *self )
 	gboolean ok;
 	gchar *str;
 
-	priv = self->priv;
+	priv = ofa_dossier_new_mini_get_instance_private( self );
+
 	ok = ofa_dossier_new_bin_get_valid( priv->new_bin, &str );
 	set_message( self, str );
 
@@ -251,11 +287,12 @@ is_validable( ofaDossierNewMini *self )
 }
 
 static gboolean
-v_quit_on_ok( myDialog *dialog )
+idialog_quit_on_ok( myIDialog *instance )
 {
 	ofaDossierNewMiniPrivate *priv;
 
-	priv = OFA_DOSSIER_NEW_MINI( dialog )->priv;
+	priv = ofa_dossier_new_mini_get_instance_private( OFA_DOSSIER_NEW_MINI( instance ));
+
 	priv->meta = ofa_dossier_new_bin_apply( priv->new_bin );
 
 	return( TRUE );
@@ -266,7 +303,7 @@ set_message( ofaDossierNewMini *self, const gchar *message )
 {
 	ofaDossierNewMiniPrivate *priv;
 
-	priv = self->priv;
+	priv = ofa_dossier_new_mini_get_instance_private( self );
 
 	if( priv->msg_label ){
 		gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
