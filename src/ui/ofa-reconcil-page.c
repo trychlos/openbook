@@ -1556,7 +1556,10 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 	for( it=priv->bats ; it ; it=it->next ){
 		bat = ( ofoBat * ) it->data;
 		if( ofo_bat_get_id( bat ) == bat_id ){
-			my_utils_dialog_warning( _( "The selected BAT file is already loaded" ));
+			my_utils_msg_dialog(
+					GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
+					GTK_MESSAGE_WARNING,
+					_( "The selected BAT file is already loaded" ));
 			return;
 		}
 	}
@@ -2741,10 +2744,10 @@ do_reconciliate( ofaReconcilPage *self )
 	/* compute effect date of a new concil group */
 	if( !concil ){
 		if( !my_date_is_valid( get_date_for_new_concil( self, &dval ))){
-			my_utils_dialog_warning(
-					_( "Conciliation is cancelled because "
-						"unable to get a valid conciliation "
-						"effect date" ));
+			my_utils_msg_dialog(
+					GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
+					GTK_MESSAGE_WARNING,
+					_( "Conciliation is cancelled because unable to get a valid conciliation effect date" ));
 			return;
 		}
 	} else {

@@ -1111,7 +1111,7 @@ warning_archived_dossier( const ofaMainWindow *window )
 				_( "Warning: this exercice has been archived.\n\n"
 					"No new entry is allowed on an archived exercice." ));
 
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( GTK_WINDOW( window ), GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }

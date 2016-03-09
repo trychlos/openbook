@@ -603,7 +603,7 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
 					str = g_strdup_printf(
 							_( "Expected headers count=%u greater than count of lines read from '%s' file" ),
 							headers_count, uri );
-					my_utils_dialog_warning( str );
+					my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 					g_free( str );
 				}
 
@@ -641,7 +641,7 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 	/* UTF-8 validation */
 	if( !g_utf8_validate( content, -1, NULL )){
 		str = g_strdup_printf( _( "The provided string is not UTF8-valide: '%s'" ), content );
-		my_utils_dialog_warning( str );
+		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 		g_free( str );
 		*errors += 1;
 		return( NULL );

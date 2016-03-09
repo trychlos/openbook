@@ -190,6 +190,10 @@ myIWindow            *my_iwindow_present                   ( myIWindow *instance
 
 void                  my_iwindow_close                     ( myIWindow *instance );
 
+void                  my_iwindow_msg_dialog                ( myIWindow *instance,
+																	GtkMessageType type,
+																	const gchar *msg );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_MY_IWINDOW_H__ */

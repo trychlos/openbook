@@ -970,7 +970,8 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p5_base = ( ofaIExportable * ) g_object_new( st_types[priv->p1_idx].get_type(), NULL );
 	if( !OFA_IS_IEXPORTABLE( priv->p5_base )){
-		my_utils_dialog_warning( _( "The requested type does not implement the IExportable interface" ));
+		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING,
+				_( "The requested type does not implement the IExportable interface" ));
 		return;
 	}
 

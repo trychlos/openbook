@@ -510,8 +510,7 @@ idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean dis
 		}
 
 	} else if( display_error ){
-		my_utils_dialog_warning(
-				_( "ofaIDBConnect instance does not provide 'query()' method" ));
+		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, _( "ofaIDBConnect instance does not provide 'query()' method" ));
 	}
 
 	return( ok );
@@ -556,8 +555,7 @@ ofa_idbconnect_query_ex( const ofaIDBConnect *connect, const gchar *query, GSLis
 		}
 
 	} else if( display_error ){
-		my_utils_dialog_warning(
-				_( "ofaIDBConnect instance does not provide 'query_ex()' method" ));
+		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, _( "ofaIDBConnect instance does not provide 'query_ex()' method" ));
 	}
 
 	return( ok );

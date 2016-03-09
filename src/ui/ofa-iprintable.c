@@ -292,6 +292,7 @@ do_print( ofaIPrintable *instance, sIPrintable *sdata )
 	GError *error;
 	GtkPageSetup *page_setup;
 	gchar *str;
+	GtkMessageType type;
 
 	printed = FALSE;
 	error = NULL;
@@ -320,15 +321,18 @@ do_print( ofaIPrintable *instance, sIPrintable *sdata )
 
 	if( res == GTK_PRINT_OPERATION_RESULT_ERROR ){
 		str = g_strdup_printf( _( "Error while printing the document:\n%s" ), error->message );
-		my_utils_dialog_warning( str );
-		g_free( str );
+		type = GTK_MESSAGE_WARNING;
 		g_error_free( error );
 
 	} else {
 		printed = TRUE;
-		my_utils_dialog_info( _( "The document has been successfully printed" ));
+		str = g_strdup( _( "The document has been successfully printed" ));
+		type = GTK_MESSAGE_INFO;
 		save_settings( instance, sdata );
 	}
+
+	my_utils_msg_dialog( NULL, type, str );
+	g_free( str );
 
 	g_debug( "%s: printed=%s", thisfn, printed ? "True":"False" );
 
@@ -362,7 +366,7 @@ load_settings( ofaIPrintable *instance, sIPrintable *sdata )
 		error = NULL;
 		if( !gtk_print_settings_load_key_file( settings, sdata->keyfile, sdata->group_name, &error )){
 			if( error->code != G_KEY_FILE_ERROR_GROUP_NOT_FOUND ){
-				my_utils_dialog_warning( error->message );
+				my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, error->message );
 			}
 			g_error_free( error );
 		} else {

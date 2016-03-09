@@ -50,20 +50,21 @@ typedef struct {
 }
 	sIWindow;
 
-static GType     register_type( void );
-static void      interface_base_init( myIWindowInterface *klass );
-static void      interface_base_finalize( myIWindowInterface *klass );
-static void      iwindow_init_application( myIWindow *instance );
-static void      iwindow_init_window( myIWindow *instance, sIWindow *sdata );
-static gboolean  iwindow_quit_on_escape( const myIWindow *instance );
-static gboolean  on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
-static void      do_close( myIWindow *instance );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static gchar    *iwindow_get_settings_name( myIWindow *instance );
-static void      iwindow_set_default_size( myIWindow *instance );
-static void      iwindow_set_transient_for( myIWindow *instance );
-static sIWindow *get_iwindow_data( const myIWindow *instance );
-static void      on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow );
+static GType      register_type( void );
+static void       interface_base_init( myIWindowInterface *klass );
+static void       interface_base_finalize( myIWindowInterface *klass );
+static void       iwindow_init_application( myIWindow *instance );
+static void       iwindow_init_window( myIWindow *instance, sIWindow *sdata );
+static gboolean   iwindow_quit_on_escape( const myIWindow *instance );
+static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
+static void       do_close( myIWindow *instance );
+static gchar     *iwindow_get_identifier( const myIWindow *instance );
+static GtkWindow *iwindow_get_parent( myIWindow *instance, sIWindow *sdata );
+static gchar     *iwindow_get_settings_name( myIWindow *instance );
+static void       iwindow_set_default_size( myIWindow *instance );
+static void       iwindow_set_transient_for( myIWindow *instance );
+static sIWindow  *get_iwindow_data( const myIWindow *instance );
+static void       on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow );
 
 /**
  * my_iwindow_get_type:
@@ -491,6 +492,16 @@ iwindow_get_identifier( const myIWindow *instance )
 	return( identifier );
 }
 
+static GtkWindow *
+iwindow_get_parent( myIWindow *instance, sIWindow *sdata )
+{
+	if( !sdata->parent ){
+		sdata->parent = GTK_WINDOW( sdata->main_window );
+	}
+
+	return( sdata->parent );
+}
+
 /*
  * Returns: the settings key as a newly allocated string which should
  * be g_free() by the caller.
@@ -544,15 +555,34 @@ static void
 iwindow_set_transient_for( myIWindow *instance )
 {
 	sIWindow *sdata;
+	GtkWindow *parent;
 
 	sdata = get_iwindow_data( instance );
+	parent = iwindow_get_parent( instance, sdata );
 
-	if( !sdata->parent ){
-		sdata->parent = GTK_WINDOW( sdata->main_window );
+	if( parent ){
+		gtk_window_set_transient_for( GTK_WINDOW( instance ), parent );
 	}
-	if( sdata->parent ){
-		gtk_window_set_transient_for( GTK_WINDOW( instance ), sdata->parent );
-	}
+}
+
+/**
+ * my_iwindow_msg_dialog:
+ * @instance: this #myIWindow instance.
+ * @type: the type of the displayed #GtkMessageDialog.
+ * @msg: the message to be displayed.
+ *
+ * Display a message dialog.
+ */
+void
+my_iwindow_msg_dialog( myIWindow *instance, GtkMessageType type, const gchar *msg )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IWINDOW( instance ));
+	g_return_if_fail( my_strlen( msg ));
+
+	sdata = get_iwindow_data( instance );
+	my_utils_msg_dialog( iwindow_get_parent( instance, sdata ), type, msg );
 }
 
 static sIWindow *

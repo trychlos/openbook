@@ -542,38 +542,24 @@ my_utils_builder_load_from_resource( const gchar *resource, const gchar *widget_
 }
 
 /**
- * my_utils_dialog_info:
+ * my_utils_msg_dialog:
+ * @parent: [allow-none]: the #GtkWindow parent.
+ * @type: the type of the displayed #GtkMessageDialog.
+ * @msg: the message to be displayed.
+ *
+ * Display a message dialog.
  */
 void
-my_utils_dialog_info( const gchar *msg )
+my_utils_msg_dialog( GtkWindow *parent, GtkMessageType type, const gchar *msg )
 {
 	GtkWidget *dialog;
 
 	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_INFO,
-			GTK_BUTTONS_OK,
-			"%s", msg );
-
-	gtk_dialog_run( GTK_DIALOG( dialog ));
-	gtk_widget_destroy( dialog );
-}
-
-/**
- * my_utils_dialog_warning:
- */
-void
-my_utils_dialog_warning( const gchar *msg )
-{
-	GtkWidget *dialog;
-
-	dialog = gtk_message_dialog_new(
-			NULL,
-			GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-			GTK_MESSAGE_WARNING,
-			GTK_BUTTONS_CLOSE,
-			"%s", msg );
+					parent,
+					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+					type,
+					GTK_BUTTONS_CLOSE,
+					"%s", msg );
 
 	gtk_dialog_run( GTK_DIALOG( dialog ));
 	gtk_widget_destroy( dialog );
@@ -1695,7 +1681,7 @@ my_utils_filename_from_utf8( const gchar *filename )
 		str = g_strdup_printf(
 					_( "Unable to convert '%s' filename to filesystem encoding: %s" ),
 					filename, error->message );
-		my_utils_dialog_warning( str );
+		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 		g_free( str );
 		g_error_free( error );
 	}
@@ -1757,7 +1743,7 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 	sysfname = my_utils_filename_from_utf8( uri );
 	if( !sysfname ){
 		str = g_strdup_printf( _( "Unable to get a system filename for '%s' URI" ), uri );
-		my_utils_dialog_warning( str );
+		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 		g_free( str );
 		*errors += 1;
 		return( NULL );
@@ -1770,7 +1756,7 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 	content = NULL;
 	if( !g_file_load_contents( gfile, NULL, &content, NULL, NULL, &error )){
 		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ), uri, error->message );
-		my_utils_dialog_warning( str );
+		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 		g_free( str );
 		g_error_free( error );
 		g_free( content );
@@ -1788,7 +1774,7 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 		if( !content ){
 			str = g_strdup_printf( _( "Unable to convert to UTF-8 the '%s' file content: %s"),
 					uri, error->message );
-			my_utils_dialog_warning( str );
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 			g_free( str );
 			*errors += 1;
 		}

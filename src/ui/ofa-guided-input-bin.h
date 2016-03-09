@@ -77,7 +77,7 @@ GType              ofa_guided_input_bin_get_type        ( void ) G_GNUC_CONST;
 ofaGuidedInputBin *ofa_guided_input_bin_new             ( const ofaMainWindow *main_window );
 
 void               ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin,
-																	const ofoOpeTemplate *template );
+																const ofoOpeTemplate *template );
 
 gboolean           ofa_guided_input_bin_is_valid        ( ofaGuidedInputBin *bin );
 

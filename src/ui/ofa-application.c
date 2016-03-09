@@ -885,13 +885,13 @@ application_activate( GApplication *application )
 					str = g_strdup_printf(
 							_( "Unable to find a financial period with specified dates (begin=%s, end=%s)" ),
 							st_dossier_begin_opt, st_dossier_end_opt );
-					my_utils_dialog_warning( str );
+					my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 					g_free( str );
 				}
 			}
 		} else {
 			str = g_strdup_printf( _( "Unable to find the '%s' dossier"), st_dossier_name_opt );
-			my_utils_dialog_warning( str );
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 			g_free( str );
 		}
 		if( meta && period ){

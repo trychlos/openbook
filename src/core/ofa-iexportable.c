@@ -295,7 +295,7 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 		g_free( str );
 		if( !converted ){
 			msg = g_strdup_printf( _( "Charset conversion error: %s" ), error->message );
-			my_utils_dialog_warning( msg );
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, msg );
 			g_free( msg );
 			return( FALSE );
 		}
@@ -306,7 +306,7 @@ ofa_iexportable_export_lines( ofaIExportable *exportable, GSList *lines )
 		g_free( converted );
 		if( ret == -1 ){
 			msg = g_strdup_printf( _( "Write error: %s" ), error->message );
-			my_utils_dialog_warning( msg );
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, msg );
 			g_free( msg );
 			return( FALSE );
 		}

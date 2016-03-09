@@ -577,6 +577,7 @@ do_run( ofaDBModelWindow *self )
 	GList *it;
 	gboolean ok;
 	gchar *str;
+	GtkMessageType type;
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
@@ -590,10 +591,13 @@ do_run( ofaDBModelWindow *self )
 
 	if( ok ){
 		str = g_strdup( _( "The database has been successfully updated" ));
+		type = GTK_MESSAGE_INFO;
 	} else {
 		str = g_strdup( _( "An error has occured while upgrading the database model" ));
+		type = GTK_MESSAGE_WARNING;
 	}
-	my_utils_dialog_info( str );
+
+	my_iwindow_msg_dialog( MY_IWINDOW( self ), type, str );
 	g_free( str );
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );

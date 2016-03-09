@@ -1117,13 +1117,14 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
 
 	if( do_update( self, &msgerr )){
-		my_utils_dialog_info( _( "The VAT declaration has been successfully validated." ));
+		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO,
+				_( "The VAT declaration has been successfully validated." ));
 		/* close the Properties dialog box
 		 * with Cancel for not trigger another update */
 		my_iwindow_close( MY_IWINDOW( self ));
 
 	} else {
-		my_utils_dialog_warning( msgerr );
+		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
 		g_free( msgerr );
 	}
 }

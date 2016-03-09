@@ -447,7 +447,7 @@ on_update_button_clicked( GtkButton *button, myIDialog *instance )
 			my_iwindow_close( MY_IWINDOW( instance ));
 
 		} else if( my_strlen( msgerr )){
-			my_utils_dialog_warning( msgerr );
+			my_iwindow_msg_dialog( MY_IWINDOW( instance ), GTK_MESSAGE_WARNING, msgerr );
 			g_free( msgerr );
 		}
 	}

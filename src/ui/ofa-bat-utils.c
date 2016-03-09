@@ -103,7 +103,7 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 			str = g_strdup_printf(
 					_( "Unable to find a module willing to import '%s' URI.\n\n"
 						"The operation will be cancelled." ), uri );
-			my_utils_dialog_warning( str );
+			my_utils_msg_dialog( GTK_WINDOW( main_window ), GTK_MESSAGE_WARNING, str );
 			g_free( str );
 		}
 

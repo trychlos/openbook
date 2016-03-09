@@ -646,7 +646,7 @@ do_end_close( ofaLedgerClose *self )
 		str = g_strdup_printf( _( "%u ledgers have been successfully closed" ), priv->count );
 	}
 
-	my_utils_dialog_info( str );
+	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
 
 	g_free( str );
 }

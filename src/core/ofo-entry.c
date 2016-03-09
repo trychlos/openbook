@@ -2264,7 +2264,7 @@ error_ledger( const gchar *ledger )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid ledger identifier: %s" ), ledger );
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }
@@ -2275,7 +2275,7 @@ error_ope_template( const gchar *model )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid operation template identifier: %s" ), model );
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }
@@ -2286,7 +2286,7 @@ error_currency( const gchar *currency )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid currency ISO 3A code: %s" ), currency );
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }
@@ -2297,7 +2297,7 @@ error_acc_number( void )
 	gchar *str;
 
 	str = g_strdup( _( "Empty account number" ));
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }
@@ -2308,7 +2308,7 @@ error_account( const gchar *number )
 	gchar *str;
 
 	str = g_strdup_printf( _( "Invalid account number: %s" ), number );
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }
@@ -2338,7 +2338,7 @@ error_acc_currency( const gchar *currency, ofoAccount *account )
 					acc_currency,
 					currency );
 	}
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }
@@ -2352,7 +2352,7 @@ error_amounts( ofxAmount debit, ofxAmount credit )
 					"Invalid amounts: debit=%.lf, credit=%.lf: one and only one must be non zero",
 					debit, credit );
 
-	my_utils_dialog_warning( str );
+	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
 }
