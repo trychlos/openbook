@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.19.0 -->
 <interface>
-  <requires lib="gtk+" version="3.12"/>
-  <object class="GtkDialog" id="DBModelDlg">
+  <requires lib="gtk+" version="3.10"/>
+  <template class="ofaDBModelWindow" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Upgrading the database to last DDL version</property>
+    <property name="title" translatable="yes">Upgrading the database to last DDL version...</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
@@ -165,5 +165,5 @@
     <action-widgets>
       <action-widget response="-5">close-btn</action-widget>
     </action-widgets>
-  </object>
+  </template>
 </interface>

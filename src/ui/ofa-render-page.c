@@ -163,8 +163,6 @@ ofa_render_page_class_init( ofaRenderPageClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofa_render_page_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = render_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = render_page_finalize;
 

@@ -29,8 +29,9 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-plugin.h"
@@ -40,33 +41,31 @@
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-#define OFA_TYPE_DBMODEL_DLG                ( ofa_dbmodel_dlg_get_type())
-#define OFA_DBMODEL_DLG( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_DBMODEL_DLG, ofaDBModelDlg ))
-#define OFA_DBMODEL_DLG_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_DBMODEL_DLG, ofaDBModelDlgClass ))
-#define OFA_IS_DBMODEL_DLG( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_DBMODEL_DLG ))
-#define OFA_IS_DBMODEL_DLG_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DBMODEL_DLG ))
-#define OFA_DBMODEL_DLG_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DBMODEL_DLG, ofaDBModelDlgClass ))
+#define OFA_TYPE_DBMODEL_WINDOW                ( ofa_dbmodel_window_get_type())
+#define OFA_DBMODEL_WINDOW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_DBMODEL_WINDOW, ofaDBModelWindow ))
+#define OFA_DBMODEL_WINDOW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_DBMODEL_WINDOW, ofaDBModelWindowClass ))
+#define OFA_IS_DBMODEL_WINDOW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_DBMODEL_WINDOW ))
+#define OFA_IS_DBMODEL_WINDOW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DBMODEL_WINDOW ))
+#define OFA_DBMODEL_WINDOW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DBMODEL_WINDOW, ofaDBModelWindowClass ))
 
-typedef struct _ofaDBModelDlgPrivate        ofaDBModelDlgPrivate;
-
-typedef struct {
-	/*< public members >*/
-	myDialog             parent;
-
-	/*< private members >*/
-	ofaDBModelDlgPrivate *priv;
-}
-	ofaDBModelDlg;
+typedef struct _ofaDBModelWindowPrivate        ofaDBModelWindowPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass        parent;
+	GtkDialog      parent;
 }
-	ofaDBModelDlgClass;
+	ofaDBModelWindow;
+
+typedef struct {
+	/*< public members >*/
+	GtkDialogClass parent;
+}
+	ofaDBModelWindowClass;
 
 /* private instance data
  */
-struct _ofaDBModelDlgPrivate {
+struct _ofaDBModelWindowPrivate {
+		gboolean   dispose_has_run;
 
 	/* runtime
 	 */
@@ -92,26 +91,30 @@ struct _ofaDBModelDlgPrivate {
 	gboolean       updated;
 };
 
-static const gchar      *st_ui_xml      = PKGUIDIR "/ofa-idbmodel.ui";
-static const gchar      *st_ui_id       = "DBModelDlg";
-static const gchar      *st_settings    = "DBModelDlg-settings";
+static const gchar      *st_resource_ui = "/org/trychlos/openbook/core/ofa-idbmodel.ui";
+static const gchar      *st_settings    = "DBModelWindow-settings";
 
 /* interface management */
 static GType    register_type( void );
 static void     interface_base_init( ofaIDBModelInterface *klass );
 static void     interface_base_finalize( ofaIDBModelInterface *klass );
 static gboolean idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog );
+static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *dialog );
 
 /* dialog management */
-static GType    ofa_dbmodel_dlg_get_type( void ) G_GNUC_CONST;
-static void     v_init_dialog( myDialog *dialog );
-static gboolean do_run( ofaDBModelDlg *dialog );
-static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelDlg *dialog );
-static void     load_settings( ofaDBModelDlg *dialog );
-static void     write_settings( ofaDBModelDlg *dialog );
+static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static gboolean do_run( ofaDBModelWindow *dialog );
+static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWindow *dialog );
+static void     load_settings( ofaDBModelWindow *dialog );
+static void     write_settings( ofaDBModelWindow *dialog );
 
-G_DEFINE_TYPE( ofaDBModelDlg, ofa_dbmodel_dlg, MY_TYPE_DIALOG )
+G_DEFINE_TYPE_EXTENDED( ofaDBModelWindow, ofa_dbmodel_window, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaDBModelWindow )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 /**
  * ofa_idbmodel_get_type:
@@ -239,7 +242,8 @@ ofa_idbmodel_update( ofaHub *hub )
 {
 	GList *plugins_list, *it;
 	gboolean need_update, ok;
-	ofaDBModelDlg *dialog;
+	ofaDBModelWindow *window;
+	ofaDBModelWindowPrivate *priv;
 	const ofaIDBConnect *connect;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
@@ -257,21 +261,21 @@ ofa_idbmodel_update( ofaHub *hub )
 	}
 
 	if( need_update ){
-		dialog = g_object_new(
-					OFA_TYPE_DBMODEL_DLG,
-					MY_PROP_WINDOW_XML,    st_ui_xml,
-					MY_PROP_WINDOW_NAME,   st_ui_id,
-					NULL );
+		window = g_object_new( OFA_TYPE_DBMODEL_WINDOW, NULL );
+		my_iwindow_set_main_window( MY_IWINDOW( window ), NULL );
 
-		dialog->priv->plugins_list = plugins_list;
-		dialog->priv->hub = hub;
+		priv = ofa_dbmodel_window_get_instance_private( window );
 
-		load_settings( dialog );
-		my_dialog_run_dialog( MY_DIALOG( dialog ));
-		write_settings( dialog );
+		priv->plugins_list = plugins_list;
+		priv->hub = hub;
 
-		ok = dialog->priv->updated;
-		g_object_unref( dialog );
+		ok = FALSE;
+		load_settings( window );
+		if( my_idialog_run( MY_IDIALOG( window )) == GTK_RESPONSE_OK ){
+			ok = TRUE;
+			my_iwindow_close( MY_IWINDOW( window ));
+		}
+		write_settings( window );
 	}
 
 	ofa_plugin_free_extensions( plugins_list );
@@ -415,7 +419,7 @@ idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *con
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *dialog )
 {
 	static const gchar *thisfn = "ofa_idbmodel_ddl_update";
 
@@ -429,61 +433,94 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog 
 }
 
 static void
-dbmodel_dlg_finalize( GObject *instance )
+dbmodel_window_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_dbmodel_dlg_finalize";
+	static const gchar *thisfn = "ofa_dbmodel_window_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_DBMODEL_DLG( instance ));
+	g_return_if_fail( instance && OFA_IS_DBMODEL_WINDOW( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dbmodel_dlg_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_dbmodel_window_parent_class )->finalize( instance );
 }
 
 static void
-dbmodel_dlg_dispose( GObject *instance )
+dbmodel_window_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFA_IS_DBMODEL_DLG( instance ));
+	ofaDBModelWindowPrivate *priv;
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	g_return_if_fail( instance && OFA_IS_DBMODEL_WINDOW( instance ));
+
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_dbmodel_dlg_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_dbmodel_window_parent_class )->dispose( instance );
 }
 
 static void
-ofa_dbmodel_dlg_init( ofaDBModelDlg *self )
+ofa_dbmodel_window_init( ofaDBModelWindow *self )
 {
-	static const gchar *thisfn = "ofa_dbmodel_dlg_init";
+	static const gchar *thisfn = "ofa_dbmodel_window_init";
+	ofaDBModelWindowPrivate *priv;
 
-	g_return_if_fail( self && OFA_IS_DBMODEL_DLG( self ));
+	g_return_if_fail( self && OFA_IS_DBMODEL_WINDOW( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DBMODEL_DLG, ofaDBModelDlgPrivate );
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
-ofa_dbmodel_dlg_class_init( ofaDBModelDlgClass *klass )
+ofa_dbmodel_window_class_init( ofaDBModelWindowClass *klass )
 {
-	static const gchar *thisfn = "ofa_dbmodel_dlg_class_init";
+	static const gchar *thisfn = "ofa_dbmodel_window_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = dbmodel_dlg_dispose;
-	G_OBJECT_CLASS( klass )->finalize = dbmodel_dlg_finalize;
+	G_OBJECT_CLASS( klass )->dispose = dbmodel_window_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dbmodel_window_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
+}
 
-	g_type_class_add_private( klass, sizeof( ofaDBModelDlgPrivate ));
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_idbmodel_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_idbmodel_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
 }
 
 /*
@@ -499,55 +536,54 @@ ofa_dbmodel_dlg_class_init( ofaDBModelDlgClass *klass )
  * - downside is a textview which displays the DDL commands
  */
 static void
-v_init_dialog( myDialog *dialog )
+idialog_init( myIDialog *instance )
 {
-	ofaDBModelDlgPrivate *priv;
-	GtkWindow *toplevel;
+	static const gchar *thisfn = "ofa_idbmodel_idialog_init";
+	ofaDBModelWindowPrivate *priv;
 
-	priv = OFA_DBMODEL_DLG( dialog )->priv;
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
-	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "close-btn" );
+	priv->close_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "close-btn" );
 	g_return_if_fail( priv->close_btn && GTK_IS_BUTTON( priv->close_btn ));
 	gtk_widget_set_sensitive( priv->close_btn, FALSE );
 
-	priv->paned = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-paned" );
+	priv->paned = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-paned" );
 	g_return_if_fail( priv->paned && GTK_IS_PANED( priv->paned ));
 	gtk_paned_set_position( GTK_PANED( priv->paned ), priv->paned_pos );
 
-	priv->upper_viewport = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-upperviewport" );
+	priv->upper_viewport = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-upperviewport" );
 	g_return_if_fail( priv->upper_viewport && GTK_IS_VIEWPORT( priv->upper_viewport ));
 
-	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-grid" );
+	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-grid" );
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
 	priv->row = 0;
-	g_signal_connect( priv->grid, "size-allocate", G_CALLBACK( on_grid_size_allocate ), dialog );
+	g_signal_connect( priv->grid, "size-allocate", G_CALLBACK( on_grid_size_allocate ), instance );
 
-	priv->textview = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), "dud-textview" );
+	priv->textview = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-textview" );
 	g_return_if_fail( priv->textview && GTK_IS_TEXT_VIEW( priv->textview ));
 	priv->buffer = gtk_text_buffer_new( NULL );
 	gtk_text_buffer_set_text( priv->buffer, "", -1 );
 	gtk_text_view_set_buffer( GTK_TEXT_VIEW( priv->textview ), priv->buffer );
 
-	g_idle_add(( GSourceFunc ) do_run, dialog );
+	g_idle_add(( GSourceFunc ) do_run, instance );
 }
 
 static gboolean
-do_run( ofaDBModelDlg *dialog )
+do_run( ofaDBModelWindow *self )
 {
-	ofaDBModelDlgPrivate *priv;
+	ofaDBModelWindowPrivate *priv;
 	GList *it;
 	gboolean ok;
 	gchar *str;
-	GtkWidget *dlg;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
 
 	ok = TRUE;
-	priv = dialog->priv;
 
 	for( it=priv->plugins_list ; it && ok ; it=it->next ){
-		ok = idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_DIALOG( dialog ));
+		ok = idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_IWINDOW( self ));
 	}
 
 	priv->updated = ok;
@@ -557,15 +593,7 @@ do_run( ofaDBModelDlg *dialog )
 	} else {
 		str = g_strdup( _( "An error has occured while upgrading the database model" ));
 	}
-	dlg = gtk_message_dialog_new(
-				my_window_get_toplevel( MY_WINDOW( dialog )),
-				GTK_DIALOG_MODAL,
-				GTK_MESSAGE_INFO,
-				GTK_BUTTONS_CLOSE,
-				"%s", str );
-
-	gtk_dialog_run( GTK_DIALOG( dlg ));
-	gtk_widget_destroy( dlg );
+	my_utils_dialog_info( str );
 	g_free( str );
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
@@ -577,69 +605,69 @@ do_run( ofaDBModelDlg *dialog )
 /**
  * ofa_idbmodel_add_row_widget:
  * @instance: the #ofaIDBModel implementation instance.
- * @dialog: the #ofaDBModelDlg dialog.
+ * @window: the #ofaDBModelWindow dialog.
  * @widget: a widget to be added to the upper grid.
  *
  * Adds a row to the grid.
  */
 void
-ofa_idbmodel_add_row_widget( const ofaIDBModel *instance, myDialog *dialog, GtkWidget *widget )
+ofa_idbmodel_add_row_widget( const ofaIDBModel *instance, myIWindow *window, GtkWidget *widget )
 {
-	ofaDBModelDlgPrivate *priv;
+	ofaDBModelWindowPrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_IDBMODEL( instance ));
-	g_return_if_fail( dialog && OFA_IS_DBMODEL_DLG( dialog ));
+	g_return_if_fail( window && OFA_IS_DBMODEL_WINDOW( window ));
 	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
 
-	if( !MY_WINDOW( dialog )->prot->dispose_has_run ){
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
 
-		priv = OFA_DBMODEL_DLG( dialog )->priv;
-		gtk_grid_attach( GTK_GRID( priv->grid ), widget, 0, priv->row, 1, 1 );
-		priv->row += 1;
-		gtk_widget_show_all( priv->grid );
-	}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_grid_attach( GTK_GRID( priv->grid ), widget, 0, priv->row, 1, 1 );
+	priv->row += 1;
+	gtk_widget_show_all( priv->grid );
 }
 
 /**
  * ofa_idbmodel_add_text:
  * @instance: the #ofaIDBModel implementation instance.
- * @dialog: the #ofaDBModelDlg dialog.
+ * @window: the #ofaDBModelWindow window.
  * @text: the text to be added.
  *
  * Adds some text to the lower textview.
  */
 void
-ofa_idbmodel_add_text( const ofaIDBModel *instance, myDialog *dialog, const gchar *text )
+ofa_idbmodel_add_text( const ofaIDBModel *instance, myIWindow *window, const gchar *text )
 {
-	ofaDBModelDlgPrivate *priv;
+	ofaDBModelWindowPrivate *priv;
 	GtkTextIter iter;
 	gchar *str;
 
 	g_return_if_fail( instance && OFA_IS_IDBMODEL( instance ));
-	g_return_if_fail( dialog && OFA_IS_DBMODEL_DLG( dialog ));
+	g_return_if_fail( window && OFA_IS_DBMODEL_WINDOW( window ));
 
-	if( !MY_WINDOW( dialog )->prot->dispose_has_run ){
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
 
-		priv = OFA_DBMODEL_DLG( dialog )->priv;
-		gtk_text_buffer_get_end_iter( priv->buffer, &iter );
-		str = g_strdup_printf( "%s\n", text );
-		gtk_text_buffer_insert( priv->buffer, &iter, str, -1 );
-		g_free( str );
-		gtk_text_buffer_get_end_iter( priv->buffer, &iter );
-		gtk_text_view_scroll_to_iter( GTK_TEXT_VIEW( priv->textview ), &iter, 0, FALSE, 0, 0 );
-	}
+	g_return_if_fail( !priv->dispose_has_run );
+
+	gtk_text_buffer_get_end_iter( priv->buffer, &iter );
+	str = g_strdup_printf( "%s\n", text );
+	gtk_text_buffer_insert( priv->buffer, &iter, str, -1 );
+	g_free( str );
+	gtk_text_buffer_get_end_iter( priv->buffer, &iter );
+	gtk_text_view_scroll_to_iter( GTK_TEXT_VIEW( priv->textview ), &iter, 0, FALSE, 0, 0 );
 }
 
 /*
  * thanks to http://stackoverflow.com/questions/2683531/stuck-on-scrolling-gtkviewport-to-end
  */
 static void
-on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelDlg *dialog )
+on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWindow *window )
 {
-	ofaDBModelDlgPrivate *priv;
+	ofaDBModelWindowPrivate *priv;
 	GtkAdjustment* adjustment;
 
-	priv = dialog->priv;
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
 
 	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->upper_viewport ));
 	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
@@ -650,12 +678,12 @@ on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelDlg 
  * - paned pos
  */
 static void
-load_settings( ofaDBModelDlg *dialog )
+load_settings( ofaDBModelWindow *window )
 {
-	ofaDBModelDlgPrivate *priv;
+	ofaDBModelWindowPrivate *priv;
 	GList *slist, *it;
 
-	priv = dialog->priv;
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
 
 	slist = ofa_settings_user_get_string_list( st_settings );
 	it = slist ? slist : NULL;
@@ -665,12 +693,12 @@ load_settings( ofaDBModelDlg *dialog )
 }
 
 static void
-write_settings( ofaDBModelDlg *dialog )
+write_settings( ofaDBModelWindow *window )
 {
-	ofaDBModelDlgPrivate *priv;
+	ofaDBModelWindowPrivate *priv;
 	gchar *str;
 
-	priv = dialog->priv;
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
 
 	str = g_strdup_printf( "%d;",
 			gtk_paned_get_position( GTK_PANED( priv->paned )));

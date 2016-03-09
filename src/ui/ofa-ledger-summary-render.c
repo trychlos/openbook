@@ -178,8 +178,6 @@ ofa_ledger_summary_render_class_init( ofaLedgerSummaryRenderClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	ofa_ledger_summary_render_parent_class = g_type_class_peek_parent( klass );
-
 	G_OBJECT_CLASS( klass )->dispose = ledger_summary_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_summary_render_finalize;
 

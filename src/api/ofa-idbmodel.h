@@ -37,7 +37,7 @@
  * which may want update the DB model through a suitable UI.
  */
 
-#include "my-dialog.h"
+#include "my-iwindow.h"
 #include "ofa-hub-def.h"
 #include "ofa-idbconnect.h"
 
@@ -158,7 +158,7 @@ typedef struct {
 	 * @instance: the #ofaIDBModel provider.
 	 * @hub: the #ofaHub instance which manages the connection
 	 *  (required to be able to import files to collections).
-	 * @dialog: the #myDialog which displays the update.
+	 * @window: the #myIWindow which displays the update.
 	 *
 	 * Returns: %TRUE if the DB model has been successfully updated,
 	 * %FALSE else.
@@ -169,7 +169,7 @@ typedef struct {
 	 */
 	gboolean      ( *ddl_update )           ( const ofaIDBModel *instance,
 													ofaHub *hub,
-													myDialog *dialog );
+													myIWindow *window );
 }
 	ofaIDBModelInterface;
 
@@ -192,11 +192,11 @@ guint        ofa_idbmodel_get_last_version          ( const ofaIDBModel *instanc
 															const ofaIDBConnect *connect );
 
 void         ofa_idbmodel_add_row_widget            ( const ofaIDBModel *instance,
-															myDialog *dialog,
+															myIWindow *window,
 															GtkWidget *widget );
 
 void         ofa_idbmodel_add_text                  ( const ofaIDBModel *instance,
-															myDialog *dialog,
+															myIWindow *window,
 															const gchar *text );
 
 G_END_DECLS

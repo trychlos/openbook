@@ -160,7 +160,6 @@ libofa_core_la_LDFLAGS = \
 	$(NULL)
 
 ui_files = \
-	ofa-idbmodel.ui										\
 	$(NULL)
 
 resources_ui = \
@@ -169,6 +168,7 @@ resources_ui = \
 	ofa-dbms-root-bin.ui								\
 	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-file-format-bin.ui								\
+	ofa-idbmodel.ui										\
 	ofa-preferences.ui									\
 	$(NULL)
 

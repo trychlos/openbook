@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/my-iwindow.h"
 #include "api/my-progress-bar.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
@@ -45,7 +46,7 @@ typedef struct {
 	const ofaIDBModel   *instance;
 	ofaHub              *hub;
 	const ofaIDBConnect *connect;
-	myDialog            *dialog;
+	myIWindow            *window;
 
 	/* progression bar
 	 */
@@ -84,7 +85,7 @@ static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static void       idbmodel_connect_handlers( const ofaIDBModel *instance, const ofaHub *hub );
-static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog );
+static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
 static void       set_bar_progression( sUpdate *update_data );
@@ -155,7 +156,7 @@ idbmodel_connect_handlers( const ofaIDBModel *instance, const ofaHub *hub )
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window )
 {
 	sUpdate *update_data;
 	guint i, cur_version, last_version;
@@ -168,21 +169,21 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog 
 	update_data->instance = instance;
 	update_data->hub = hub;
 	update_data->connect = ofa_hub_get_connect( hub );
-	update_data->dialog = dialog;
+	update_data->window = window;
 
 	cur_version = idbmodel_get_current_version( instance, update_data->connect );
 	last_version = idbmodel_get_last_version( instance, update_data->connect );
 
 	label = gtk_label_new( _( "Updating VAT DB model" ));
 	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-	ofa_idbmodel_add_row_widget( instance, dialog, label );
+	ofa_idbmodel_add_row_widget( instance, window, label );
 
 	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );
 	label = gtk_label_new( str );
 	g_free( str );
 	my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
 	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-	ofa_idbmodel_add_row_widget( instance, dialog, label );
+	ofa_idbmodel_add_row_widget( instance, window, label );
 
 	if( cur_version < last_version ){
 		for( i=0 ; st_migrates[i].ver_target && ok ; ++i ){
@@ -196,7 +197,7 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog 
 					my_utils_widget_set_margins( label, 0, 0, 2*MARGIN_LEFT, 0 );
 					my_utils_widget_set_style( label, "labelerror" );
 					gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-					ofa_idbmodel_add_row_widget( instance, dialog, label );
+					ofa_idbmodel_add_row_widget( instance, window, label );
 					ok = FALSE;
 					break;
 				}
@@ -208,7 +209,7 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myDialog *dialog 
 		g_free( str );
 		my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-		ofa_idbmodel_add_row_widget( instance, dialog, label );
+		ofa_idbmodel_add_row_widget( instance, window, label );
 	}
 
 	return( ok );
@@ -267,7 +268,7 @@ add_row( sUpdate *update_data, const gchar *title, gboolean with_bar )
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 0, 1, 1 );
 	}
 
-	ofa_idbmodel_add_row_widget( update_data->instance, update_data->dialog, grid );
+	ofa_idbmodel_add_row_widget( update_data->instance, update_data->window, grid );
 
 	return( with_bar ? GTK_WIDGET( bar ) : label );
 }
@@ -294,7 +295,7 @@ exec_query( sUpdate *update_data, const gchar *query )
 {
 	gboolean ok;
 
-	ofa_idbmodel_add_text( update_data->instance, update_data->dialog, query );
+	ofa_idbmodel_add_text( update_data->instance, update_data->window, query );
 	ok = ofa_idbconnect_query( update_data->connect, query, TRUE );
 	update_data->current += 1;
 	set_bar_progression( update_data );

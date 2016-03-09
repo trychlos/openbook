@@ -862,7 +862,7 @@ display_progress_init( ofaDossierProperties *self )
 
 	priv->dialog = gtk_dialog_new_with_buttons(
 							_( "Remediating entries" ),
-							my_window_get_toplevel( MY_WINDOW( self )),
+							GTK_WINDOW( self ),
 							GTK_DIALOG_MODAL,
 							_( "_Close" ), GTK_RESPONSE_OK,
 							NULL );

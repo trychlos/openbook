@@ -6,6 +6,7 @@
     <file>ofa-dbms-root-bin.ui</file>
     <file>ofa-dossier-delete-prefs-bin.ui</file>
     <file>ofa-file-format-bin.ui</file>
+    <file>ofa-idbmodel.ui</file>
     <file>ofa-preferences.ui</file>
   </gresource>
 </gresources>
