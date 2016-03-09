@@ -178,19 +178,19 @@ on_hub_finalized( ofaIStore *istore, GObject *finalized_hub )
 	static const gchar *thisfn = "ofa_istore_on_hub_finalized";
 	sIStore *sdata;
 
-	g_debug( "%s: istore=%p (%s), ref_count=%d, finalized_hub=%p",
-			thisfn,
-			( void * ) istore, G_OBJECT_TYPE_NAME( istore ), G_OBJECT( istore )->ref_count,
-			( void * ) finalized_hub );
+	/* at this time, even the IStore implementation is no more an object
+	 * if it takes advantage of ofaISingleKeeper interface */
+	g_debug( "%s: istore=%p, finalized_hub=%p",
+			thisfn, ( void * ) istore, ( void * ) finalized_hub );
 
-	g_return_if_fail( istore && OFA_IS_ISTORE( istore ));
+	if( istore && G_IS_OBJECT( istore )){
+		sdata = ( sIStore * ) g_object_get_data( G_OBJECT( istore ), ISTORE_DATA );
 
-	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( istore ), ISTORE_DATA );
+		g_free( sdata );
+		g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, NULL );
 
-	g_free( sdata );
-	g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, NULL );
-
-	g_object_unref( istore );
+		g_object_unref( istore );
+	}
 }
 
 static void

@@ -511,9 +511,6 @@
 1037 2016- 3- 7 CODE merge ofaOpeTemplateBookBin and ofaOpeTemplateFrameBin
                      (like ofaAccount equiv.)
 
-1038 2016- 3- 7 CODE replace self = ( ofaOpeTemplateStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
-                     by a true function call
-
 1040
 
 -----------------------------------------------------------------------
@@ -954,6 +951,10 @@
                      After restore, after having open the dossier
                      see trash/bug1035
      2016- 3- 5 fixed
+
+1038 2016- 3- 7 CODE replace self = ( ofaOpeTemplateStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
+                     by a true function call
+     2016- 3- 9 introduce ofaISingleKeeper interface - done
 
 1039 2016- 3- 7 CODE replace my_utils_dialog by my_iwindow
      2016- 3- 9 done

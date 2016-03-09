@@ -30,8 +30,9 @@
 
 #include "api/my-date.h"
 #include "api/my-utils.h"
-#include "api/ofa-preferences.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-isingle-keeper.h"
+#include "api/ofa-preferences.h"
 
 #include "tva/ofa-tva-record-store.h"
 #include "tva/ofo-tva-record.h"
@@ -53,11 +54,6 @@ static GType st_col_types[TVA_RECORD_N_COLUMNS] = {
 		G_TYPE_STRING,					/* end */
 		G_TYPE_OBJECT					/* the #ofoTVARecord itself */
 };
-
-/* the key which is attached to the dossier in order to identify this
- * store
- */
-#define STORE_DATA_DOSSIER              "ofa-tva-record-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecordStore *store );
 static void     load_dataset( ofaTVARecordStore *store, ofaHub *hub );
@@ -154,7 +150,7 @@ ofa_tva_record_store_new( ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaTVARecordStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
+	store = ( ofaTVARecordStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_TVA_RECORD_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_TVA_RECORD_STORE( store ), NULL );
@@ -174,7 +170,7 @@ ofa_tva_record_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
+		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
 
 		load_dataset( store, hub );
 

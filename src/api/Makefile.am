@@ -53,6 +53,7 @@ api_include_HEADERS = \
 	ofa-iprefs-page-def.h								\
 	ofa-iprefs-provider.h								\
 	ofa-iprefs-provider-def.h							\
+	ofa-isingle-keeper.h								\
 	ofa-istore.h										\
 	ofa-list-store.h									\
 	ofa-settings.h										\

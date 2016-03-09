@@ -28,6 +28,7 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-isingle-keeper.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -47,11 +48,6 @@ static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
 };
-
-/* the key which is attached to the dossier in order to identify this
- * self
- */
-#define STORE_DATA_DOSSIER                   "ofa-ope-template-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *self );
 static void     list_store_load_dataset( ofaListStore *self );
@@ -152,7 +148,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaOpeTemplateStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
+	store = ( ofaOpeTemplateStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_OPE_TEMPLATE_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_OPE_TEMPLATE_STORE( store ), NULL );
@@ -173,7 +169,8 @@ ofa_ope_template_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
+		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
+
 		connect_to_hub_signaling_system( store, hub );
 
 		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );

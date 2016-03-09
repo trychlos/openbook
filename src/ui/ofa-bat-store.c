@@ -32,6 +32,7 @@
 #include "api/my-double.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-isingle-keeper.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -58,11 +59,6 @@ static GType st_col_types[BAT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoBat itself */
 };
-
-/* the key which is attached to the dossier in order to identify this
- * store
- */
-#define STORE_DATA_DOSSIER                   "ofa-bat-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *store );
 static void     load_dataset( ofaBatStore *store, ofaHub *hub );
@@ -163,7 +159,7 @@ ofa_bat_store_new( ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaBatStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
+	store = ( ofaBatStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_BAT_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_BAT_STORE( store ), NULL );
@@ -183,7 +179,7 @@ ofa_bat_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
+		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
 
 		load_dataset( store, hub );
 		connect_to_hub_signaling_system( store, hub );

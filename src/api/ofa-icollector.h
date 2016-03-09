@@ -33,6 +33,7 @@
  *
  * The #ofaICollector interface lets an object manage collection(s) of
  * other objects.
+ * It works by associating a GList of objects to a GType.
  *
  * It is expected that these other objects (whose collections are
  * managed by this #ofaICollector interface) implement themselves the
@@ -41,6 +42,9 @@
  * For Openbook needs, the #ofaICollector interface is implemented by
  * the #ofaHub class, so that it is able to manage the collections of
  * accounts, classes, currencies, and so on.
+ *
+ * Rather see #ofaISingleKeeper interface to associate a GType with a
+ * single object.
  */
 
 #include "api/ofa-hub-def.h"

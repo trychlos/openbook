@@ -29,6 +29,7 @@
 #include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-isingle-keeper.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -50,11 +51,6 @@ static GType st_col_types[LEDGER_N_COLUMNS] = {
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoLedger itself */
 };
-
-/* the key which is attached to the dossier in order to identify this
- * store
- */
-#define STORE_DATA_DOSSIER                   "ofa-ledger-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerStore *store );
 static void     load_dataset( ofaLedgerStore *store, ofaHub *hub );
@@ -151,7 +147,7 @@ ofa_ledger_store_new( ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaLedgerStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
+	store = ( ofaLedgerStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_LEDGER_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_LEDGER_STORE( store ), NULL );
@@ -171,7 +167,7 @@ ofa_ledger_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_object_set_data( G_OBJECT( hub ), STORE_DATA_DOSSIER, store );
+		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
 
 		load_dataset( store, hub );
 		setup_signaling_connect( store, hub );
