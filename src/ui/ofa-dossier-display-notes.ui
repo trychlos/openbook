@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkDialog" id="DossierDisplayNotesDlg">
+  <template class="ofaDossierDisplayNotes" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
@@ -18,8 +18,8 @@
               <placeholder/>
             </child>
             <child>
-              <object class="GtkButton" id="btn-ok">
-                <property name="label">gtk-ok</property>
+              <object class="GtkButton" id="btn-close">
+                <property name="label">gtk-close</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -119,7 +119,7 @@
       </object>
     </child>
     <action-widgets>
-      <action-widget response="-5">btn-ok</action-widget>
+      <action-widget response="-7">btn-close</action-widget>
     </action-widgets>
-  </object>
+  </template>
 </interface>

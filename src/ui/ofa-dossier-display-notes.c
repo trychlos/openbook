@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-dossier.h"
@@ -39,13 +40,13 @@
 /* private instance data
  */
 struct _ofaDossierDisplayNotesPrivate {
+	gboolean       dispose_has_run;
 
 	/* UI
 	 */
 
 	/* runtime data
 	 */
-	ofaMainWindow *main_window;
 	const gchar   *main_notes;
 	const gchar   *exe_notes;
 
@@ -53,13 +54,17 @@ struct _ofaDossierDisplayNotesPrivate {
 	 */
 };
 
-static const gchar *st_ui_xml           = PKGUIDIR "/ofa-dossier-display-notes.ui";
-static const gchar *st_ui_id            = "DossierDisplayNotesDlg";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-display-notes.ui";
 
-G_DEFINE_TYPE( ofaDossierDisplayNotes, ofa_dossier_display_notes, MY_TYPE_DIALOG )
+static void iwindow_iface_init( myIWindowInterface *iface );
+static void idialog_iface_init( myIDialogInterface *iface );
+static void idialog_init( myIDialog *instance );
+static void set_notes( ofaDossierDisplayNotes *self, const gchar *label_name, const gchar *note_name, const gchar *notes );
 
-static void      v_init_dialog( myDialog *dialog );
-static void      set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *label_name, const gchar *note_name, const gchar *notes );
+G_DEFINE_TYPE_EXTENDED( ofaDossierDisplayNotes, ofa_dossier_display_notes, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaDossierDisplayNotes )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 dossier_display_notes_finalize( GObject *instance )
@@ -80,9 +85,15 @@ dossier_display_notes_finalize( GObject *instance )
 static void
 dossier_display_notes_dispose( GObject *instance )
 {
+	ofaDossierDisplayNotesPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_DOSSIER_DISPLAY_NOTES( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_dossier_display_notes_get_instance_private( OFA_DOSSIER_DISPLAY_NOTES( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -95,13 +106,18 @@ static void
 ofa_dossier_display_notes_init( ofaDossierDisplayNotes *self )
 {
 	static const gchar *thisfn = "ofa_dossier_display_notes_init";
+	ofaDossierDisplayNotesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_DISPLAY_NOTES( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_DOSSIER_DISPLAY_NOTES, ofaDossierDisplayNotesPrivate );
+	priv = ofa_dossier_display_notes_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -114,9 +130,7 @@ ofa_dossier_display_notes_class_init( ofaDossierDisplayNotesClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_display_notes_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_display_notes_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierDisplayNotesPrivate ));
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
@@ -128,63 +142,84 @@ ofa_dossier_display_notes_run( ofaMainWindow *main_window, const gchar *main_not
 {
 	static const gchar *thisfn = "ofa_dossier_display_notes_run";
 	ofaDossierDisplayNotes *self;
-
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	ofaDossierDisplayNotesPrivate *priv;
 
 	g_debug( "%s: main_window=%p", thisfn, main_window );
 
-	self = g_object_new( OFA_TYPE_DOSSIER_DISPLAY_NOTES,
-				MY_PROP_MAIN_WINDOW, main_window,
-				MY_PROP_WINDOW_XML,  st_ui_xml,
-				MY_PROP_WINDOW_NAME, st_ui_id,
-				NULL );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	self->priv->main_window = main_window;
-	self->priv->main_notes = main_notes;
-	self->priv->exe_notes = exe_notes;
+	self = g_object_new( OFA_TYPE_DOSSIER_DISPLAY_NOTES, NULL );
+	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 
-	my_dialog_run_dialog( MY_DIALOG( self ));
+	priv = ofa_dossier_display_notes_get_instance_private( self );
 
-	g_object_unref( self );
+	priv->main_notes = main_notes;
+	priv->exe_notes = exe_notes;
+
+	/* after this call, @self may be invalid */
+	my_iwindow_present( MY_IWINDOW( self ));
+}
+
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_display_notes_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_display_notes_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
 }
 
 static void
-v_init_dialog( myDialog *dialog )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_dossier_display_notes_idialog_init";
 	ofaDossierDisplayNotesPrivate *priv;
-	GtkWindow *toplevel;
-	GtkApplication *application;
+	GtkApplicationWindow *main_window;
 	ofaHub *hub;
 	ofoDossier *dossier;
 
-	priv = OFA_DOSSIER_DISPLAY_NOTES( dialog )->priv;
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	toplevel = my_window_get_toplevel( MY_WINDOW( dialog ));
-	g_return_if_fail( toplevel && GTK_IS_WINDOW( toplevel ));
+	priv = ofa_dossier_display_notes_get_instance_private( OFA_DOSSIER_DISPLAY_NOTES( instance ));
 
-	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "main-label", "main-text", priv->main_notes );
-	set_notes( OFA_DOSSIER_DISPLAY_NOTES( dialog ), toplevel, "exe-label", "exe-text", priv->exe_notes );
+	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "main-label", "main-text", priv->main_notes );
+	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "exe-label", "exe-text", priv->exe_notes );
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-	my_utils_container_set_editable( GTK_CONTAINER( toplevel ), ofo_dossier_is_current( dossier ));
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), ofo_dossier_is_current( dossier ));
 }
 
 static void
-set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *label_name, const gchar *w_name, const gchar *notes )
+set_notes( ofaDossierDisplayNotes *self, const gchar *label_name, const gchar *w_name, const gchar *notes )
 {
 	GtkWidget *textview, *label;
 	GtkTextBuffer *buffer;
 	gchar *str;
 
-	textview = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), w_name );
+	textview = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), w_name );
 	g_return_if_fail( textview && GTK_IS_TEXT_VIEW( textview ));
 
 	str = g_strdup( notes ? notes : "" );
@@ -195,7 +230,7 @@ set_notes( ofaDossierDisplayNotes *self, GtkWindow *toplevel, const gchar *label
 	g_object_unref( buffer );
 	g_free( str );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( toplevel ), label_name );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), label_name );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), textview );
 }

@@ -245,7 +245,6 @@ rc_files = \
 	$(NULL)
 
 ui_files = \
-	ofa-dossier-display-notes.ui						\
 	ofa-dossier-new.ui									\
 	ofa-dossier-new-bin.ui								\
 	ofa-dossier-new-mini.ui								\
@@ -270,6 +269,7 @@ resources_ui = \
 	ofa-closing-parms-bin.ui							\
 	ofa-currency-properties.ui							\
 	ofa-dossier-delete.ui								\
+	ofa-dossier-display-notes.ui						\
 	ofa-dossier-manager.ui								\
 	ofa-dossier-properties.ui							\
 	ofa-entry-page.ui									\
