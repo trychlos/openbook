@@ -47,7 +47,6 @@ typedef struct {
 	gchar                *settings_name;
 	gboolean              initialized;
 	gboolean              hide_on_close;
-	gboolean              restore_position;
 }
 	sIWindow;
 
@@ -243,32 +242,6 @@ my_iwindow_set_hide_on_close( myIWindow *instance, gboolean hide_on_close )
 }
 
 /**
- * my_iwindow_set_restore_position:
- * @instance: this #myIWindow instance.
- * @restore_position: whether restore size and position of the #GtkWindow
- *  at initialization time.
- *
- * Sets the @restore_position indicator.
- *
- * This method is mainly thought for #GtkWindow which are not destroyed
- * on cancel or close, but only hidden. The size and position is so
- * restored on demand only, most often just before re-opening the dialog.
- *
- * This same indicator is used both at initialization time and when
- * closing the window.
- */
-void
-my_iwindow_set_restore_position( myIWindow *instance, gboolean restore_position )
-{
-	sIWindow *sdata;
-
-	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-
-	sdata = get_iwindow_data( instance );
-	sdata->restore_position = restore_position;
-}
-
-/**
  * my_iwindow_init:
  * @instance: this #myIWindow instance.
  *
@@ -318,13 +291,11 @@ iwindow_init_window( myIWindow *instance, sIWindow *sdata )
 
 	iwindow_set_transient_for( instance );
 
-	if( sdata->restore_position ){
-		settings_name = iwindow_get_settings_name( instance );
-		if( !my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name )){
-			iwindow_set_default_size( instance );
-		}
-		g_free( settings_name );
+	settings_name = iwindow_get_settings_name( instance );
+	if( !my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name )){
+		iwindow_set_default_size( instance );
 	}
+	g_free( settings_name );
 
 	if( st_dump_container ){
 		my_utils_container_dump( GTK_CONTAINER( instance ));
@@ -461,11 +432,9 @@ do_close( myIWindow *instance )
 
 	sdata = get_iwindow_data( instance );
 
-	if( sdata->restore_position ){
-		settings_name = iwindow_get_settings_name( instance );
-		my_utils_window_save_position( GTK_WINDOW( instance ), settings_name );
-		g_free( settings_name );
-	}
+	settings_name = iwindow_get_settings_name( instance );
+	my_utils_window_save_position( GTK_WINDOW( instance ), settings_name );
+	g_free( settings_name );
 
 	if( sdata->hide_on_close ){
 		gtk_widget_hide( GTK_WIDGET( instance ));
@@ -584,7 +553,6 @@ get_iwindow_data( const myIWindow *instance )
 		sdata->settings_name = NULL;
 		sdata->initialized = FALSE;
 		sdata->hide_on_close = FALSE;
-		sdata->restore_position = TRUE;
 	}
 
 	return( sdata );

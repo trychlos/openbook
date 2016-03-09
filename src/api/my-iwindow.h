@@ -42,10 +42,18 @@
  * to the class name.
  *
  * Note on size and position.
- * Size and position of the window is saved to/restored from the user
- * settings.
+ * Size and position of the window default to be:
+ * - restored from the user settings at one-time window initialization,
+ * - saved to user settings at close time.
  * The key of the size/position settings defaults to the #myIWindow
  * identifier, plus a '-pos' suffix added by my_utils.
+ *
+ * Note on 'hide_on_close' indicator:
+ * Some windows do not want to be destroyed when user closes them, but
+ * just be hidden (most of time because of a big initialization and a
+ * layout which would gain to be re-used).
+ * When the 'hide_on_close' indicator is set, these windows are hidden
+ * instead of being destroyed at close time.
  *
  * Note on non-modal windows.
  * 1/ They cannot have a return code
@@ -169,9 +177,6 @@ GtkApplicationWindow *my_iwindow_get_main_window           ( const myIWindow *in
 
 void                  my_iwindow_set_main_window           ( myIWindow *instance,
 																	GtkApplicationWindow *main_window );
-
-void                  my_iwindow_set_restore_position      ( myIWindow *instance,
-																	gboolean restore_position );
 
 void                  my_iwindow_set_hide_on_close         ( myIWindow *instance,
 																	gboolean hide_on_close );

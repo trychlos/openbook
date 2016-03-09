@@ -175,6 +175,7 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
+	gchar *selected_id;
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
@@ -191,14 +192,11 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 		g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 		my_iwindow_init( MY_IWINDOW( st_this ));
-		my_iwindow_set_restore_position( MY_IWINDOW( st_this ), FALSE );
 		my_iwindow_set_hide_on_close( MY_IWINDOW( st_this ), TRUE );
 
 		/* setup a weak reference on the hub to auto-unref */
 		g_object_weak_ref( G_OBJECT( priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
 	}
-
-	my_utils_window_restore_position( GTK_WINDOW( st_this ), G_OBJECT_TYPE_NAME( st_this ));
 
 	priv = ofa_account_select_get_instance_private( st_this );
 
@@ -209,12 +207,14 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 	priv->account_number = NULL;
 	priv->allowed = allowed;
 
-	my_idialog_run( MY_IDIALOG( st_this ));
+	selected_id = NULL;
 
-	my_utils_window_save_position( GTK_WINDOW( st_this ), G_OBJECT_TYPE_NAME( st_this ));
-	gtk_widget_hide( GTK_WIDGET( st_this ));
+	if( my_idialog_run( MY_IDIALOG( st_this )) == GTK_RESPONSE_OK ){
+		selected_id = g_strdup( priv->account_number );
+		my_iwindow_close( MY_IWINDOW( st_this ));
+	}
 
-	return( g_strdup( priv->account_number ));
+	return( selected_id );
 }
 
 /*
