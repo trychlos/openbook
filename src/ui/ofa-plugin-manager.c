@@ -65,10 +65,10 @@ enum {
 };
 
 static void iwindow_iface_init( myIWindowInterface *iface );
-static void iwindow_init( myIWindow *instance );
+static void idialog_iface_init( myIDialogInterface *iface );
+static void idialog_init( myIDialog *instance );
 static void setup_treeview( ofaPluginManager *self );
 static void load_in_treeview( ofaPluginManager *self );
-static void idialog_iface_init( myIDialogInterface *iface );
 static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
 static void on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self );
 static void on_properties_clicked( GtkButton *button, ofaPluginManager *self );
@@ -177,15 +177,29 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_plugin_manager_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
 
-	iface->init = iwindow_init;
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_plugin_manager_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
 }
 
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_plugin_manager_idialog_init";
 	ofaPluginManagerPrivate *priv;
 	GtkWidget *button;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
 
@@ -286,17 +300,6 @@ load_in_treeview( ofaPluginManager *self )
 		select = gtk_tree_view_get_selection( priv->tview );
 		gtk_tree_selection_select_iter( select, &iter );
 	}
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_plugin_manager_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static gint

@@ -66,11 +66,10 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-pro
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      iwindow_init( myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      check_for_enable_dlg( ofaBatProperties *self );
 static gboolean  is_dialog_validable( ofaBatProperties *self );
-static void      on_ok_clicked( GtkButton *button, ofaBatProperties *self );
 static gboolean  do_update( ofaBatProperties *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatProperties, ofa_bat_properties, GTK_TYPE_DIALOG, 0,
@@ -187,7 +186,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_identifier = iwindow_get_identifier;
-	iface->init = iwindow_init;
 }
 
 /*
@@ -209,27 +207,43 @@ iwindow_get_identifier( const myIWindow *instance )
 }
 
 /*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_bat_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+/*
  * this dialog is subject to 'is_current' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
- * account
+ * BAT record
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_bat_properties_idialog_init";
 	ofaBatPropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	gchar *title;
 	GtkWidget *parent;
 
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	priv = ofa_bat_properties_get_instance_private( OFA_BAT_PROPERTIES( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -250,24 +264,13 @@ iwindow_init( myIWindow *instance )
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_current ){
-		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
 	check_for_enable_dlg( OFA_BAT_PROPERTIES( instance ));
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_bat_properties_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
@@ -286,24 +289,6 @@ static gboolean
 is_dialog_validable( ofaBatProperties *self )
 {
 	return( TRUE );
-}
-
-static void
-on_ok_clicked( GtkButton *button, ofaBatProperties *self )
-{
-	gboolean ok;
-	gchar *msgerr;
-
-	msgerr = NULL;
-	ok = do_update( self, &msgerr );
-
-	if( ok ){
-		my_iwindow_close( MY_IWINDOW( self ));
-
-	} else {
-		my_utils_dialog_warning( msgerr );
-		g_free( msgerr );
-	}
 }
 
 static gboolean

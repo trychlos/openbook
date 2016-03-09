@@ -181,10 +181,8 @@ ofa_bat_select_run( const ofaMainWindow *main_window, ofxCounter id )
 
 	if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
 		bat_id = priv->bat_id;
+		my_iwindow_close( MY_IWINDOW( self ));
 	}
-
-	my_utils_window_save_position( GTK_WINDOW( self ), G_OBJECT_TYPE_NAME( self ));
-	gtk_widget_destroy( GTK_WIDGET( self ));
 
 	return( bat_id );
 }
@@ -217,7 +215,10 @@ idialog_iface_init( myIDialogInterface *iface )
 static void
 idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_bat_select_idialog_init";
 	get_settings( OFA_BAT_SELECT( instance ));
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	setup_pane( OFA_BAT_SELECT( instance ));
 	setup_properties( OFA_BAT_SELECT( instance ));

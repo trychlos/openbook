@@ -38,7 +38,8 @@
 /* a data structure attached to each instance
  */
 typedef struct {
-	gboolean initialized;
+	gboolean          initialized;
+	myIDialogUpdateCb cb;
 }
 	sIDialog;
 
@@ -56,6 +57,7 @@ static void      do_close( myIDialog *instance );
 static gboolean  ok_to_terminate( myIDialog *instance, gint response_code );
 static gboolean  do_quit_on_ok( myIDialog *instance );
 static gboolean  do_quit_on_code( myIDialog *instance, gint code );
+static void      on_update_button_clicked( GtkButton *button, myIDialog *instance );
 static sIDialog *get_idialog_data( const myIDialog *instance );
 static void      on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog );
 
@@ -404,6 +406,53 @@ do_quit_on_code( myIDialog *instance, gint code )
 	return( FALSE );
 }
 
+/**
+ * my_idialog_click_to_update:
+ * @instance: this #myIDialog instance.
+ * @button:
+ * @cb: [allow-none]:
+ *
+ * Records a validation callback.
+ */
+void
+my_idialog_click_to_update( myIDialog *instance, GtkWidget *button, myIDialogUpdateCb cb )
+{
+	sIDialog *sdata;
+
+	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+	g_return_if_fail( GTK_IS_DIALOG( instance ));
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+
+	sdata = get_idialog_data( instance );
+	sdata->cb = cb;
+
+	if( cb ){
+		g_signal_connect( button, "clicked", G_CALLBACK( on_update_button_clicked ), instance );
+	}
+}
+
+static void
+on_update_button_clicked( GtkButton *button, myIDialog *instance )
+{
+	sIDialog *sdata;
+	gboolean ok;
+	gchar *msgerr;
+
+	sdata = get_idialog_data( instance );
+	if( sdata->cb ){
+		msgerr = NULL;
+		ok = sdata->cb( instance, &msgerr );
+
+		if( ok ){
+			my_iwindow_close( MY_IWINDOW( instance ));
+
+		} else {
+			my_utils_dialog_warning( msgerr );
+			g_free( msgerr );
+		}
+	}
+}
+
 static sIDialog *
 get_idialog_data( const myIDialog *instance )
 {
@@ -417,6 +466,7 @@ get_idialog_data( const myIDialog *instance )
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_idialog_finalized, sdata );
 
 		sdata->initialized = FALSE;
+		sdata->cb = NULL;
 	}
 
 	return( sdata );

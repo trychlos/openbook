@@ -71,13 +71,12 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-class-p
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      iwindow_init( myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      on_number_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaClassProperties *self );
 static void      check_for_enable_dlg( ofaClassProperties *self );
 static gboolean  is_dialog_validable( ofaClassProperties *self );
-static void      on_ok_clicked( GtkButton *button, ofaClassProperties *self );
 static gboolean  do_update( ofaClassProperties *self, gchar **msgerr );
 static void      set_msgerr( ofaClassProperties *self, const gchar *msg );
 
@@ -198,7 +197,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_identifier = iwindow_get_identifier;
-	iface->init = iwindow_init;
 }
 
 /*
@@ -220,14 +218,28 @@ iwindow_get_identifier( const myIWindow *instance )
 }
 
 /*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_class_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+/*
  * this dialog is subject to 'is_current' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
- * account
+ * account class
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_class_properties_idialog_init";
 	ofaClassPropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
@@ -237,13 +249,15 @@ iwindow_init( myIWindow *instance )
 	gchar *str;
 	GtkWidget *label;
 
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	priv = ofa_class_properties_get_instance_private( OFA_CLASS_PROPERTIES( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -297,22 +311,11 @@ iwindow_init( myIWindow *instance )
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_current ){
-		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
 
 	check_for_enable_dlg( OFA_CLASS_PROPERTIES( instance ));
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_class_properties_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
@@ -376,24 +379,6 @@ is_dialog_validable( ofaClassProperties *self )
 	g_free( msgerr );
 
 	return( ok );
-}
-
-static void
-on_ok_clicked( GtkButton *button, ofaClassProperties *self )
-{
-	gboolean ok;
-	gchar *msgerr;
-
-	msgerr = NULL;
-	ok = do_update( self, &msgerr );
-
-	if( ok ){
-		my_iwindow_close( MY_IWINDOW( self ));
-
-	} else {
-		my_utils_dialog_warning( msgerr );
-		g_free( msgerr );
-	}
 }
 
 static gboolean

@@ -80,11 +80,11 @@ static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-ledger-
 static const gchar  *st_settings        = "LedgerClose";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      setup_ledgers_treeview( ofaLedgerClose *self );
 static void      setup_date( ofaLedgerClose *self );
 static void      setup_others( ofaLedgerClose *self );
-static void      idialog_iface_init( myIDialogInterface *iface );
 static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
@@ -208,8 +208,19 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_ledger_close_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
 
-	iface->init = iwindow_init;
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ledger_close_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
 }
 
 /*
@@ -218,15 +229,18 @@ iwindow_iface_init( myIWindowInterface *iface )
  * when entering, only initialization data are set: main_window
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_ledger_close_idialog_init";
 	ofaLedgerClosePrivate *priv;
 	GtkApplicationWindow *main_window;
 	gulong handler;
 
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
 
-	main_window = my_iwindow_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -324,17 +338,6 @@ setup_others( ofaLedgerClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
 	my_utils_widget_set_style( label, "labelerror" );
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_ledger_close_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*

@@ -59,7 +59,7 @@ struct _ofaDossierDeletePrivate {
 	ofaDBMSRootBin           *credentials;
 	ofaDossierDeletePrefsBin *prefs;
 	GtkWidget                *err_msg;
-	GtkWidget                *btn_delete;
+	GtkWidget                *delete_btn;
 
 	/* runtime data
 	 */
@@ -75,8 +75,7 @@ static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
 static void      on_credentials_changed( ofaDBMSRootBin *bin, gchar *account, gchar *password, ofaDossierDelete *dialog );
 static void      check_for_enable_dlg( ofaDossierDelete *self );
-static gboolean  idialog_quit_on_ok( myIDialog *instance );
-static gboolean  do_delete_dossier( ofaDossierDelete *self );
+static gboolean  do_delete_dossier( ofaDossierDelete *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierDelete, ofa_dossier_delete, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierDelete )
@@ -214,17 +213,19 @@ idialog_iface_init( myIDialogInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = idialog_init;
-	iface->quit_on_ok = idialog_quit_on_ok;
 }
 
 static void
 idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_dossier_delete_idialog_init";
 	ofaDossierDeletePrivate *priv;
 	GtkWidget *label, *parent;
 	gchar *msg;
 	GtkSizeGroup *group;
 	gchar *dossier_name;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
 
@@ -275,8 +276,9 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->err_msg && GTK_IS_LABEL( priv->err_msg ));
 	my_utils_widget_set_style( priv->err_msg, "labelerror" );
 
-	priv->btn_delete = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
-	g_return_if_fail( priv->btn_delete && GTK_IS_BUTTON( priv->btn_delete ));
+	priv->delete_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->delete_btn && GTK_IS_BUTTON( priv->delete_btn ));
+	my_idialog_click_to_update( instance, priv->delete_btn, ( myIDialogUpdateCb ) do_delete_dossier );
 
 	g_object_unref( group );
 }
@@ -309,28 +311,11 @@ check_for_enable_dlg( ofaDossierDelete *self )
 	gtk_label_set_text( GTK_LABEL( priv->err_msg ), msg ? msg : "" );
 	g_free( msg );
 
-	gtk_widget_set_sensitive( priv->btn_delete, enabled );
-}
-
-/*
- * pwi 2016-03-09: this is not supposed to work as quit_on_ok() method
- * is only called for modal dialogs.
- */
-static gboolean
-idialog_quit_on_ok( myIDialog *instance )
-{
-	ofaDossierDeletePrivate *priv;
-
-	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
-
-	do_delete_dossier( OFA_DOSSIER_DELETE( instance ));
-	ofa_dossier_delete_prefs_bin_set_settings( priv->prefs );
-
-	return( TRUE );
+	gtk_widget_set_sensitive( priv->delete_btn, enabled );
 }
 
 static gboolean
-do_delete_dossier( ofaDossierDelete *self )
+do_delete_dossier( ofaDossierDelete *self, gchar **msgerr )
 {
 #if 0
 	static const gchar *thisfn = "ofa_dossier_delete_do_delete_dossier";

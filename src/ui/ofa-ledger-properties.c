@@ -83,14 +83,13 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      iwindow_init( myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      init_balances_page( ofaLedgerProperties *self );
 static void      on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
 static void      check_for_enable_dlg( ofaLedgerProperties *self );
 static gboolean  is_dialog_validable( ofaLedgerProperties *self );
-static void      on_ok_clicked( GtkButton *button, ofaLedgerProperties *self );
 static gboolean  do_update( ofaLedgerProperties *self, gchar **msgerr );
 static void      set_msgerr( ofaLedgerProperties *self, const gchar *msg );
 
@@ -214,7 +213,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_identifier = iwindow_get_identifier;
-	iface->init = iwindow_init;
 }
 
 /*
@@ -236,27 +234,43 @@ iwindow_get_identifier( const myIWindow *instance )
 }
 
 /*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ledger_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+/*
  * this dialog is subject to 'is_current' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * ledger
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_ledger_properties_idialog_init";
 	ofaLedgerPropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkWidget *entry, *label, *last_close_entry;
 
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	priv = ofa_ledger_properties_get_instance_private( OFA_LEDGER_PROPERTIES( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -322,7 +336,7 @@ iwindow_init( myIWindow *instance )
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_current ){
-		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
 
@@ -497,16 +511,6 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_grid_attach( GTK_GRID( grid ), label, 5, 5*i+5, 1, 1 );
 	}
 }
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_ledger_properties_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-}
 
 static void
 on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self )
@@ -571,24 +575,6 @@ is_dialog_validable( ofaLedgerProperties *self )
 	g_free( msgerr );
 
 	return( ok );
-}
-
-static void
-on_ok_clicked( GtkButton *button, ofaLedgerProperties *self )
-{
-	gboolean ok;
-	gchar *msgerr;
-
-	msgerr = NULL;
-	ok = do_update( self, &msgerr );
-
-	if( ok ){
-		my_iwindow_close( MY_IWINDOW( self ));
-
-	} else {
-		my_utils_dialog_warning( msgerr );
-		g_free( msgerr );
-	}
 }
 
 /*

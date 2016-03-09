@@ -124,7 +124,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-tem
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      iwindow_init( myIWindow *instance );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      init_dialog_title( ofaOpeTemplateProperties *self );
 static void      init_mnemo( ofaOpeTemplateProperties *self );
 static void      init_label( ofaOpeTemplateProperties *self );
@@ -132,7 +133,6 @@ static void      init_ledger( ofaOpeTemplateProperties *self );
 static void      init_ledger_locked( ofaOpeTemplateProperties *self );
 static void      init_ref( ofaOpeTemplateProperties *self );
 static void      init_detail( ofaOpeTemplateProperties *self );
-static void      idialog_iface_init( myIDialogInterface *iface );
 static void      igridlist_iface_init( myIGridListInterface *iface );
 static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
@@ -147,7 +147,6 @@ static void      on_account_selection( GtkButton *button, ofaOpeTemplateProperti
 static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
-static void      on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self );
 static gboolean  do_update( ofaOpeTemplateProperties *self, gchar **msgerr );
 static void      get_detail_list( ofaOpeTemplateProperties *self, gint row );
 static void      set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
@@ -276,7 +275,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_identifier = iwindow_get_identifier;
-	iface->init = iwindow_init;
 }
 
 /*
@@ -297,23 +295,37 @@ iwindow_get_identifier( const myIWindow *instance )
 	return( id );
 }
 
+/*
+ * myIDialog interface management
+ */
 static void
-iwindow_init( myIWindow *instance )
+idialog_iface_init( myIDialogInterface *iface )
 {
-	ofaOpeTemplateProperties *self;
+	static const gchar *thisfn = "ofa_ope_template_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+static void
+idialog_init( myIDialog *instance )
+{
+	static const gchar *thisfn = "ofa_ope_template_properties_idialog_init";
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	GtkWidget *button;
 
-	self = OFA_OPE_TEMPLATE_PROPERTIES( instance );
-	priv = ofa_ope_template_properties_get_instance_private( self );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_ope_template_properties_get_instance_private( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -324,19 +336,19 @@ iwindow_init( myIWindow *instance )
 	priv->is_current = ofo_dossier_is_current( dossier );
 	//priv->is_current = FALSE;
 
-	init_dialog_title( self );
-	init_mnemo( self );
-	init_label( self );
-	init_ledger( self );
-	init_ledger_locked( self );
-	init_ref( self );
+	init_dialog_title( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
+	init_mnemo( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
+	init_label( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
+	init_ledger( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
+	init_ledger_locked( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
+	init_ref( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 
 	my_utils_container_notes_init( instance, ope_template );
 	my_utils_container_updstamp_init( instance, ope_template );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "help-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), self );
+	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), instance );
 
 	if( priv->is_current ){
 		gtk_widget_grab_focus(
@@ -346,15 +358,15 @@ iwindow_init( myIWindow *instance )
 	/* if not the current exercice, then only have a 'Close' button */
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
 	if( !priv->is_current ){
-		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
 
 	/* init dialog detail rows after having globally set the fields
 	 * sensitivity so that IGridList can individually adjust rows sensitivity */
-	init_detail( self );
+	init_detail( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 
-	check_for_enable_dlg( self );
+	check_for_enable_dlg( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 }
 
 static void
@@ -514,17 +526,6 @@ init_detail( ofaOpeTemplateProperties *self )
 	for( i=1 ; i<=count ; ++i ){
 		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 	}
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_ope_template_properties_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
@@ -827,24 +828,6 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	g_free( msgerr );
 
 	return( ok );
-}
-
-static void
-on_ok_clicked( GtkButton *button, ofaOpeTemplateProperties *self )
-{
-	gboolean ok;
-	gchar *msgerr;
-
-	msgerr = NULL;
-	ok = do_update( self, &msgerr );
-
-	if( ok ){
-		my_iwindow_close( MY_IWINDOW( self ));
-
-	} else {
-		my_utils_dialog_warning( msgerr );
-		g_free( msgerr );
-	}
 }
 
 static gboolean

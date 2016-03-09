@@ -66,12 +66,11 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-re
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
-static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
 static void     init_properties( ofaTVARecordNew *self );
 static void     on_end_changed( GtkEntry *entry, ofaTVARecordNew *self );
 static void     check_for_enable_dlg( ofaTVARecordNew *self );
-static void     on_ok_clicked( GtkButton *button, ofaTVARecordNew *self );
 static gboolean do_update( ofaTVARecordNew *self, gchar **msgerr );
 static void     set_msgerr( ofaTVARecordNew *self, const gchar *msg );
 
@@ -187,7 +186,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_identifier = iwindow_get_identifier;
-	iface->init = iwindow_init;
 }
 
 /*
@@ -209,26 +207,42 @@ iwindow_get_identifier( const myIWindow *instance )
 }
 
 /*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tva_record_new_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+/*
  * this dialog is subject to 'is_current' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
- * VAt record
+ * VAT record
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_tva_record_new_idialog_init";
 	ofaTVARecordNewPrivate *priv;
 	GtkApplicationWindow *main_window;
 	gchar *title;
 	const gchar *mnemo;
 
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	priv = ofa_tva_record_new_get_instance_private( OFA_TVA_RECORD_NEW( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
@@ -293,17 +307,6 @@ init_properties( ofaTVARecordNew *self )
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 }
 
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_tva_record_new_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-}
-
 static void
 on_end_changed( GtkEntry *entry, ofaTVARecordNew *self )
 {
@@ -355,24 +358,28 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 }
 
 /*
+ * Creating a new tva declaration.
+ *
  * When the creation of a new VAT record is confirmeed, then:
  * - activate (or open) the declarations management page
- * - open the declaration for edition
- * - last close this dialog.
+ * - open the declaration for edition.
+ *
+ * The dialog will be closed by the myIWindow interface.
  */
-static void
-on_ok_clicked( GtkButton *button, ofaTVARecordNew *self )
+static gboolean
+do_update( ofaTVARecordNew *self, gchar **msgerr )
 {
 	ofaTVARecordNewPrivate *priv;
 	gboolean ok;
-	gchar *msgerr;
 	guint theme;
 	GtkApplicationWindow *main_window;
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
-	msgerr = NULL;
-	ok = do_update( self, &msgerr );
+	ok = ofo_tva_record_insert( priv->tva_record, priv->hub );
+	if( !ok ){
+		*msgerr = g_strdup( _( "Unable to create this new VAT declaration" ));
+	}
 
 	if( ok ){
 		/* activate the declarations page */
@@ -381,29 +388,6 @@ on_ok_clicked( GtkButton *button, ofaTVARecordNew *self )
 		ofa_main_window_activate_theme( OFA_MAIN_WINDOW( main_window ), theme );
 		/* edit the declaration */
 		ofa_tva_record_properties_run( OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))), priv->tva_record );
-		/* close the dialog */
-		my_iwindow_close( MY_IWINDOW( self ));
-
-	} else {
-		my_utils_dialog_warning( msgerr );
-		g_free( msgerr );
-	}
-}
-
-/*
- * creating a new tva declaration
- */
-static gboolean
-do_update( ofaTVARecordNew *self, gchar **msgerr )
-{
-	ofaTVARecordNewPrivate *priv;
-	gboolean ok;
-
-	priv = ofa_tva_record_new_get_instance_private( self );
-
-	ok = ofo_tva_record_insert( priv->tva_record, priv->hub );
-	if( !ok ){
-		*msgerr = g_strdup( _( "Unable to create this new VAT declaration" ));
 	}
 
 	return( ok );

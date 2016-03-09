@@ -64,8 +64,8 @@ struct _ofaDossierManagerPrivate {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-manager.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      iwindow_init( myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      setup_treeview( ofaDossierManager *self );
 static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
 static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
@@ -179,15 +179,29 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_manager_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
 
-	iface->init = iwindow_init;
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_manager_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
 }
 
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_dossier_manager_idialog_init";
 	ofaDossierManagerPrivate *priv;
 	GtkWidget *button;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_dossier_manager_get_instance_private( OFA_DOSSIER_MANAGER( instance ));
 
@@ -235,17 +249,6 @@ setup_treeview( ofaDossierManager *self )
 
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_tview_changed ), self );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_tview_activated ), self );
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_dossier_manager_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void

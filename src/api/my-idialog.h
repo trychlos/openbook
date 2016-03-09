@@ -120,6 +120,15 @@ typedef struct {
 }
 	myIDialogInterface;
 
+/**
+ * myIDialogUpdateCb:
+ *
+ * A callback called when the user clicks on specified button.
+ * If the callback returns %TRUE, then the #myIWindow is closed.
+ * Else, an error message is displayed.
+ */
+typedef gboolean ( *myIDialogUpdateCb )( myIDialog *instance, gchar **msgerr );
+
 GType      my_idialog_get_type                  ( void );
 
 guint      my_idialog_get_interface_last_version( void );
@@ -129,6 +138,10 @@ guint      my_idialog_get_interface_version     ( const myIDialog *instance );
 void       my_idialog_init                      ( myIDialog *instance );
 
 GtkWidget *my_idialog_set_close_button          ( myIDialog *instance );
+
+void       my_idialog_click_to_update           ( myIDialog *instance,
+														GtkWidget *button,
+														myIDialogUpdateCb cb );
 
 gint       my_idialog_run                       ( myIDialog *instance );
 

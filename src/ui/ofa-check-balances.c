@@ -51,8 +51,8 @@ struct _ofaCheckBalancesPrivate {
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-check-balances.ui";
 
 static void  iwindow_iface_init( myIWindowInterface *iface );
-static void  iwindow_init( myIWindow *instance );
 static void  idialog_iface_init( myIDialogInterface *iface );
+static void  idialog_init( myIDialog *instance );
 static void  on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaCheckBalances, ofa_check_balances, GTK_TYPE_DIALOG, 0,
@@ -156,18 +156,23 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_check_balances_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->init = iwindow_init;
 }
 
 /*
- * this dialog is subject to 'is_current' property
- * so first setup the UI fields, then fills them up with the data
- * when entering, only initialization data are set: main_window and
- * account
+ * myIDialog interface management
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_check_balances_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+static void
+idialog_init( myIDialog *instance )
 {
 	ofaCheckBalancesPrivate *priv;
 	GtkApplicationWindow *main_window;
@@ -189,24 +194,13 @@ iwindow_init( myIWindow *instance )
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
-	main_window = my_iwindow_get_main_window( instance );
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	ofa_check_balances_bin_set_hub( priv->bin, hub );
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_check_balances_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void

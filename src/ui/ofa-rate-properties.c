@@ -92,8 +92,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-rate-pr
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      iwindow_init( myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      igridlist_iface_init( myIGridListInterface *iface );
 static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
@@ -106,7 +106,6 @@ static void      on_rate_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *comment, gint column );
 static void      check_for_enable_dlg( ofaRateProperties *self );
 static gboolean  is_dialog_validable( ofaRateProperties *self );
-static void      on_ok_clicked( GtkButton *button, ofaRateProperties *self );
 static gboolean  do_update( ofaRateProperties *self, gchar **msgerr );
 static void      set_msgerr( ofaRateProperties *self, const gchar *msg );
 
@@ -229,7 +228,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_identifier = iwindow_get_identifier;
-	iface->init = iwindow_init;
 }
 
 /*
@@ -251,14 +249,28 @@ iwindow_get_identifier( const myIWindow *instance )
 }
 
 /*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_rate_properties_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+}
+
+/*
  * this dialog is subject to 'is_current' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * rate
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
+	static const gchar *thisfn = "ofa_rate_properties_get_instance_private";
 	ofaRatePropertiesPrivate *priv;
 	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
@@ -268,11 +280,13 @@ iwindow_init( myIWindow *instance )
 	GtkEntry *entry;
 	GtkWidget *label;
 
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
 	priv = ofa_rate_properties_get_instance_private( OFA_RATE_PROPERTIES( instance ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
@@ -324,7 +338,7 @@ iwindow_init( myIWindow *instance )
 
 	/* if not the current exercice, then only have a 'Close' button */
 	if( !priv->is_current ){
-		my_idialog_set_close_button( MY_IDIALOG( instance ));
+		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
 
@@ -339,17 +353,6 @@ iwindow_init( myIWindow *instance )
 	}
 
 	check_for_enable_dlg( OFA_RATE_PROPERTIES( instance ));
-}
-
-/*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_rate_properties_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
@@ -614,24 +617,6 @@ is_dialog_validable( ofaRateProperties *self )
 	g_free( msgerr );
 
 	return( ok );
-}
-
-static void
-on_ok_clicked( GtkButton *button, ofaRateProperties *self )
-{
-	gboolean ok;
-	gchar *msgerr;
-
-	msgerr = NULL;
-	ok = do_update( self, &msgerr );
-
-	if( ok ){
-		my_iwindow_close( MY_IWINDOW( self ));
-
-	} else {
-		my_utils_dialog_warning( msgerr );
-		g_free( msgerr );
-	}
 }
 
 /*

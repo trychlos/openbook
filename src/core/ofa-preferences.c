@@ -131,7 +131,8 @@ typedef struct {
 typedef gboolean ( *pfnPlugin )( ofaPreferences *, gchar **msgerr, ofaIPrefsProvider * );
 
 static void           iwindow_iface_init( myIWindowInterface *iface );
-static void           iwindow_init( myIWindow *instance );
+static void           idialog_iface_init( myIDialogInterface *iface );
+static void           idialog_init( myIDialog *instance );
 static void           init_quitting_page( ofaPreferences *self );
 static void           init_dossier_page( ofaPreferences *self );
 static void           init_account_page( ofaPreferences *self );
@@ -143,7 +144,6 @@ static void           init_import_page( ofaPreferences *self );
 static gboolean       enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
 static gboolean       init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *plugin );
 //static void           activate_first_page( ofaPreferences *self );
-static void           idialog_iface_init( myIDialogInterface *iface );
 static void           on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void           on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void           on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
@@ -152,7 +152,6 @@ static void           on_date_changed( ofaPreferences *self, GtkComboBox *box, c
 static void           on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void           on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void           check_for_activable_dlg( ofaPreferences *self );
-static void           on_ok_clicked( GtkButton *button, ofaPreferences *self );
 static gboolean       do_update( ofaPreferences *self, gchar **msgerr );
 static gboolean       do_update_quitting_page( ofaPreferences *self, gchar **msgerr );
 static gboolean       is_willing_to_quit( void );
@@ -281,35 +280,47 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_preferences_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
 
-	iface->init = iwindow_init;
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_preferences_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
 }
 
 /*
  */
 static void
-iwindow_init( myIWindow *instance )
+idialog_init( myIDialog *instance )
 {
-	ofaPreferences *self;
+	static const gchar *thisfn = "ofa_preferences_idialog_init";
 	ofaPreferencesPrivate *priv;
 
-	self = OFA_PREFERENCES( instance );
-	priv = ofa_preferences_get_instance_private( self );
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
+	priv = ofa_preferences_get_instance_private( OFA_PREFERENCES( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
-	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( on_ok_clicked ), instance );
+	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "notebook" );
 	g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
 
-	init_quitting_page( self );
-	init_dossier_page( self );
-	init_account_page( self );
-	init_locales_page( self );
-	init_export_page( self );
-	init_import_page( self );
-	enumerate_prefs_plugins( self, NULL, init_plugin_page );
+	init_quitting_page( OFA_PREFERENCES( instance ));
+	init_dossier_page( OFA_PREFERENCES( instance ));
+	init_account_page( OFA_PREFERENCES( instance ));
+	init_locales_page( OFA_PREFERENCES( instance ));
+	init_export_page( OFA_PREFERENCES( instance ));
+	init_import_page( OFA_PREFERENCES( instance ));
+	enumerate_prefs_plugins( OFA_PREFERENCES( instance ), NULL, init_plugin_page );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
@@ -651,17 +662,6 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 }
 
 /*
- * myIDialog interface management
- */
-static void
-idialog_iface_init( myIDialogInterface *iface )
-{
-	static const gchar *thisfn = "ofa_preferences_idialog_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-}
-
-/*
  * activate the first page of the preferences notebook
  */
 #if 0
@@ -775,24 +775,6 @@ check_for_activable_dlg( ofaPreferences *self )
 	}
 
 	gtk_widget_set_sensitive( priv->ok_btn, activable );
-}
-
-static void
-on_ok_clicked( GtkButton *button, ofaPreferences *self )
-{
-	gboolean ok;
-	gchar *msgerr;
-
-	msgerr = NULL;
-	ok = do_update( self, &msgerr );
-
-	if( ok ){
-		my_iwindow_close( MY_IWINDOW( self ));
-
-	} else {
-		my_utils_dialog_warning( msgerr );
-		g_free( msgerr );
-	}
 }
 
 static gboolean

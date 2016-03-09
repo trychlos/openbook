@@ -39,7 +39,7 @@
  * Development rules:
  * - type:       non-modal dialog
  * - settings:   yes
- * - current:    yes
+ * - current:    no
  */
 
 #include "api/ofa-main-window-def.h"
