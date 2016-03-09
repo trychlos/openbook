@@ -587,7 +587,7 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
 	local_errors = 0;
 	headers_count = ofa_file_format_get_headers_count( settings );
 
-	content = my_utils_uri_get_content( uri, &local_errors );
+	content = my_utils_uri_get_content( uri, ofa_file_format_get_charmap( settings ), &local_errors );
 	if( !local_errors ){
 		lines = get_lines_from_content( content, settings, &local_errors );
 		if( !local_errors ){
@@ -636,8 +636,16 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 	gchar **lines, **it_line;
 	gchar **fields, **it_field;
 	gchar *prev, *temp, *str;
-	GError *error;
 	guint numline;
+
+	/* UTF-8 validation */
+	if( !g_utf8_validate( content, -1, NULL )){
+		str = g_strdup_printf( _( "The provided string is not UTF8-valide: '%s'" ), content );
+		my_utils_dialog_warning( str );
+		g_free( str );
+		*errors += 1;
+		return( NULL );
+	}
 
 	/* split on end-of-line
 	 * then re-concatenate segments where end-of-line was backslashed */
@@ -648,6 +656,9 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 	numline = 0;
 	while( *it_line ){
 		if( prev ){
+			if( 1 ){
+				g_debug( "num=%u line='%s'", numline, prev );
+			}
 			temp = g_utf8_substring( prev, 0, my_strlen( prev )-1 );
 			g_free( prev );
 			prev = temp;
@@ -658,33 +669,11 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 			prev = g_strdup( *it_line );
 		}
 		if( my_strlen( prev ) && !g_str_has_suffix( prev, "\\" )){
-			error = NULL;
-			temp = g_convert( prev, -1,
-								ofa_file_format_get_charmap( settings ),
-								"UTF-8", NULL, NULL, &error );
-			if( temp ){
-				if( g_utf8_validate( temp, -1, NULL )){
-					numline += 1;
-					if( 0 ){
-						g_debug( "num=%u line='%s'", numline, temp );
-					}
-					tmp_list = g_slist_prepend( tmp_list, temp );
-				} else {
-					str = g_strdup_printf(
-							_( "The string is not UTF8-valide: '%s'" ), temp );
-					my_utils_dialog_warning( str );
-					g_free( str );
-					*errors += 1;
-					break;
-				}
-			} else {
-				str = g_strdup_printf(
-						_( "Charset conversion error: %s\nline='%s'" ), error->message, prev );
-				my_utils_dialog_warning( str );
-				g_free( str );
-				*errors += 1;
-				break;
-			}
+			numline += 1;
+			tmp_list = g_slist_prepend( tmp_list, g_strdup( prev ));
+			g_free( prev );
+			prev = NULL;
+		} else if( !my_strlen( prev )){
 			g_free( prev );
 			prev = NULL;
 		}

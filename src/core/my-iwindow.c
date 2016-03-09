@@ -223,6 +223,25 @@ my_iwindow_set_main_window( myIWindow *instance, GtkApplicationWindow *main_wind
 }
 
 /**
+ * my_iwindow_set_parent:
+ * @instance: this #myIWindow instance.
+ * @parent: the parent #GtkWindow.
+ *
+ * Sets the parent.
+ */
+void
+my_iwindow_set_parent( myIWindow *instance, GtkWindow *parent )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
+
+	sdata = get_iwindow_data( instance );
+	sdata->parent = parent;
+}
+
+/**
  * my_iwindow_set_hide_on_close:
  * @instance: this #myIWindow instance.
  * @hide_on_close: whether the #GtkwINDOW must be hidden on close, rather

@@ -261,6 +261,7 @@ ofo_currency_new( void )
 	ofoCurrency *currency;
 
 	currency = g_object_new( OFO_TYPE_CURRENCY, NULL );
+	OFO_BASE( currency )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
 	return( currency );
 }

@@ -1457,7 +1457,7 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileF
 	gchar *splitted;
 
 	rate = ofo_rate_new();
-	itf = fields;
+	itf = fields ? fields->next : NULL;
 
 	/* rate mnemo */
 	str = ofa_iimportable_get_string( &itf, settings );
@@ -1506,7 +1506,7 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 	ofxAmount amount;
 
 	detail = ofa_box_init_fields_list( st_validity_defs );
-	itf = fields;
+	itf = fields ? fields->next : NULL;
 
 	/* rate mnemo */
 	str = ofa_iimportable_get_string( &itf, settings );

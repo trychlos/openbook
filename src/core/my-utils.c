@@ -1742,15 +1742,16 @@ my_utils_uri_exists( const gchar *uri )
 /**
  * my_utils_uri_get_content:
  * @uri:
+ * @from_codeset: source codeset.
  * @errors: [out]:
  *
- * Returns the file content as a single buffer of chars (though null-terminated)
+ * Returns the file content as a single, null-terminated, buffer of UTF-8 chars.
  */
 gchar *
-my_utils_uri_get_content( const gchar *uri, guint *errors )
+my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *errors )
 {
 	GFile *gfile;
-	gchar *sysfname, *content, *str;
+	gchar *sysfname, *content, *str, *temp;
 	GError *error;
 
 	sysfname = my_utils_filename_from_utf8( uri );
@@ -1778,6 +1779,20 @@ my_utils_uri_get_content( const gchar *uri, guint *errors )
 	}
 
 	g_object_unref( gfile );
+
+	/* convert to UTF-8 if needed */
+	if( content && my_collate( from_codeset, "UTF-8" )){
+		temp = g_convert( content, -1, from_codeset, "UTF-8", NULL, NULL, &error );
+		g_free( content );
+		content = temp;
+		if( !content ){
+			str = g_strdup_printf( _( "Unable to convert to UTF-8 the '%s' file content: %s"),
+					uri, error->message );
+			my_utils_dialog_warning( str );
+			g_free( str );
+			*errors += 1;
+		}
+	}
 
 	return( content );
 }

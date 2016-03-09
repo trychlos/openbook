@@ -178,6 +178,9 @@ GtkApplicationWindow *my_iwindow_get_main_window           ( const myIWindow *in
 void                  my_iwindow_set_main_window           ( myIWindow *instance,
 																	GtkApplicationWindow *main_window );
 
+void                  my_iwindow_set_parent                ( myIWindow *instance,
+																	GtkWindow *parent );
+
 void                  my_iwindow_set_hide_on_close         ( myIWindow *instance,
 																	gboolean hide_on_close );
 

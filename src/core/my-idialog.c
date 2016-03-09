@@ -446,7 +446,7 @@ on_update_button_clicked( GtkButton *button, myIDialog *instance )
 		if( ok ){
 			my_iwindow_close( MY_IWINDOW( instance ));
 
-		} else {
+		} else if( my_strlen( msgerr )){
 			my_utils_dialog_warning( msgerr );
 			g_free( msgerr );
 		}

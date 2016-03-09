@@ -1654,7 +1654,7 @@ ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
 static void
 icollectionable_iface_init( ofaICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_ledger_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

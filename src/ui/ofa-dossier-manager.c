@@ -277,20 +277,11 @@ static void
 on_new_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	GtkApplicationWindow *main_window;
-	gboolean dossier_opened;
 
 	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	dossier_opened = ofa_dossier_new_run_with_parent(
-							OFA_MAIN_WINDOW( main_window ),
-							my_window_get_toplevel( MY_WINDOW( self )));
-
-	if( dossier_opened ){
-		gtk_dialog_response(
-				GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
-				GTK_RESPONSE_CANCEL );
-	}
+	ofa_dossier_new_run( OFA_MAIN_WINDOW( main_window ));
 }
 
 static void

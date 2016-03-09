@@ -1872,7 +1872,7 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaFil
 	gchar *splitted;
 
 	model = ofo_ope_template_new();
-	itf = fields;
+	itf = fields ? fields->next : NULL;
 
 	/* model mnemo */
 	str = ofa_iimportable_get_string( &itf, settings );
@@ -1950,7 +1950,7 @@ model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaFi
 	GSList *itf;
 
 	detail = ofa_box_init_fields_list( st_detail_defs );
-	itf = fields;
+	itf = fields ? fields->next : NULL;
 
 	/* model mnemo */
 	str = ofa_iimportable_get_string( &itf, settings );

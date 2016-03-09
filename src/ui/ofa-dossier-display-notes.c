@@ -30,7 +30,6 @@
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
