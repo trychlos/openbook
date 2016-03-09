@@ -384,17 +384,6 @@
 
  843 2015- 9-30 DDL  account number should be renamed as account identifier
 
- 853 2015-10- 1 GTK  review v_init_dialog's:
-                     - only store GtkWidget (as GtkWidget *) when needed
-                     - store object data members
-                     - set data before connecting the signal
-                       (or after the end of init ?)
-                       (so is not triggered now)
-                     - set container editable after notes
-                     - have ok_btn instead of btn_ok
-                     - update ok_btn when setting readonly buttons
-                     - call check_enable_dlg at the very end
-
  862 2015-10- 7 DISP fix focus order on GtkBin-derived widgets on the
                      assistants
                      - RestoreAssistant: dossier treeview after created
@@ -618,6 +607,18 @@
                 need a single account selection
      2015-10- 7 see also (closed) #778
      2016- 1-10 class has been removed
+
+ 853 2015-10- 1 GTK  review v_init_dialog's:
+                     - only store GtkWidget (as GtkWidget *) when needed
+                     - store object data members
+                     - set data before connecting the signal
+                       (or after the end of init ?)
+                       (so is not triggered now)
+                     - set container editable after notes
+                     - have ok_btn instead of btn_ok
+                     - update ok_btn when setting readonly buttons
+                     - call check_enable_dlg at the very end
+     2016- 3- 9 done/obsoleted with m yIDialog, myIWindow new interfaces
 
  869 2015-10-30 DISP GuidedInput: after having clicked on Validate,
                      disable fields while recording the entries
