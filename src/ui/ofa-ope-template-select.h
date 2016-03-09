@@ -34,9 +34,13 @@
  * edit or select one.
  *
  * See api/ofo-ope-template.h for a full description of the model language.
+ *
+ * Development rules:
+ * - type:       modal dialog
+ * - settings:   yes
+ * - current:    no
  */
 
-#include "api/my-dialog.h"
 #include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -52,16 +56,13 @@ typedef struct _ofaOpeTemplateSelectPrivate         ofaOpeTemplateSelectPrivate;
 
 typedef struct {
 	/*< public members >*/
-	myDialog                     parent;
-
-	/*< private members >*/
-	ofaOpeTemplateSelectPrivate *priv;
+	GtkDialog      parent;
 }
 	ofaOpeTemplateSelect;
 
 typedef struct {
 	/*< public members >*/
-	myDialogClass                parent;
+	GtkDialogClass parent;
 }
 	ofaOpeTemplateSelectClass;
 

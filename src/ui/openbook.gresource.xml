@@ -36,6 +36,7 @@
     <file>ofa-ledger-summary-bin.ui</file>
     <file>ofa-ope-template-help.ui</file>
     <file>ofa-ope-template-properties.ui</file>
+    <file>ofa-ope-template-select.ui</file>
     <file>ofa-plugin-manager.ui</file>
     <file>ofa-rate-properties.ui</file>
     <file>ofa-reconcil-bin.ui</file>

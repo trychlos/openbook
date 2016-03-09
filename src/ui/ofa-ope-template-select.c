@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
+#include "api/my-idialog.h"
+#include "api/my-iwindow.h"
 #include "api/my-utils.h"
-#include "api/my-window-prot.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
@@ -40,15 +41,14 @@
 /* private instance data
  */
 struct _ofaOpeTemplateSelectPrivate {
+	gboolean                dispose_has_run;
 
 	/* initialization
 	 */
-	ofaMainWindow          *main_window;
 	ofaHub                 *hub;
 
 	/* UI
 	 */
-	GtkWindow              *toplevel;
 	ofaOpeTemplateFrameBin *ope_templates_frame;
 	GtkWidget              *ok_btn;
 
@@ -57,18 +57,23 @@ struct _ofaOpeTemplateSelectPrivate {
 	gchar                  *ope_mnemo;
 };
 
-static const gchar          *st_ui_xml   = PKGUIDIR "/ofa-ope-template-select.ui";
-static const gchar          *st_ui_id    = "OpeTemplateSelectDialog";
-static ofaOpeTemplateSelect *st_this     = NULL;
+static const gchar          *st_resource_ui = "/org/trychlos/openbook/ui/ofa-ope-template-select.ui";
+static ofaOpeTemplateSelect *st_this        = NULL;
 
-G_DEFINE_TYPE( ofaOpeTemplateSelect, ofa_ope_template_select, MY_TYPE_DIALOG )
-
-static void      v_init_dialog( myDialog *dialog );
+static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      idialog_iface_init( myIDialogInterface *iface );
+static void      idialog_init( myIDialog *instance );
 static void      on_ope_template_changed( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
 static void      on_ope_template_activated( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
 static void      check_for_enable_dlg( ofaOpeTemplateSelect *self );
-static gboolean  v_quit_on_ok( myDialog *dialog );
+static gboolean  idialog_quit_on_ok( myIDialog *instance );
 static gboolean  do_select( ofaOpeTemplateSelect *self );
+static void      on_hub_finalized( gpointer is_null, gpointer finalized_hub );
+
+G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateSelect, ofa_ope_template_select, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaOpeTemplateSelect )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 static void
 ope_template_select_finalize( GObject *instance )
@@ -82,7 +87,7 @@ ope_template_select_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_SELECT( instance ));
 
 	/* free data members here */
-	priv = OFA_OPE_TEMPLATE_SELECT( instance )->priv;
+	priv = ofa_ope_template_select_get_instance_private( OFA_OPE_TEMPLATE_SELECT( instance ));
 
 	g_free( priv->ope_mnemo );
 
@@ -93,9 +98,15 @@ ope_template_select_finalize( GObject *instance )
 static void
 ope_template_select_dispose( GObject *instance )
 {
+	ofaOpeTemplateSelectPrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_SELECT( instance ));
 
-	if( !MY_WINDOW( instance )->prot->dispose_has_run ){
+	priv = ofa_ope_template_select_get_instance_private( OFA_OPE_TEMPLATE_SELECT( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
 	}
@@ -108,13 +119,18 @@ static void
 ofa_ope_template_select_init( ofaOpeTemplateSelect *self )
 {
 	static const gchar *thisfn = "ofa_ope_template_select_init";
-
-	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_SELECT( self ));
+	ofaOpeTemplateSelectPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_OPE_TEMPLATE_SELECT, ofaOpeTemplateSelectPrivate );
+	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_SELECT( self ));
+
+	priv = ofa_ope_template_select_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+
+	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
 static void
@@ -127,10 +143,171 @@ ofa_ope_template_select_class_init( ofaOpeTemplateSelectClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ope_template_select_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_select_finalize;
 
-	MY_DIALOG_CLASS( klass )->init_dialog = v_init_dialog;
-	MY_DIALOG_CLASS( klass )->quit_on_ok = v_quit_on_ok;
+	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
+}
 
-	g_type_class_add_private( klass, sizeof( ofaOpeTemplateSelectPrivate ));
+/**
+ * ofa_ope_template_select_run:
+ *
+ * Returns: the selected operation template mnemo, as a newly allocated
+ * string that must be g_free() by the caller
+ */
+gchar *
+ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnemo )
+{
+	static const gchar *thisfn = "ofa_ope_template_select_run";
+	ofaOpeTemplateSelectPrivate *priv;
+	ofaOpeTemplateBookBin *book;
+	gchar *selected_mnemo;
+
+	g_debug( "%s: main_window=%p, asked_mnemo=%s",
+			thisfn, ( void * ) main_window, asked_mnemo );
+
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+
+	if( !st_this ){
+		st_this = g_object_new( OFA_TYPE_OPE_TEMPLATE_SELECT, NULL );
+		my_iwindow_set_main_window( MY_IWINDOW( st_this ), GTK_APPLICATION_WINDOW( main_window ));
+
+		priv = ofa_ope_template_select_get_instance_private( st_this );
+
+		priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+		g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
+		my_iwindow_init( MY_IWINDOW( st_this ));
+		my_iwindow_set_hide_on_close( MY_IWINDOW( st_this ), TRUE );
+
+		/* setup a weak reference on the hub to auto-unref */
+		g_object_weak_ref( G_OBJECT( priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
+	}
+
+	priv = ofa_ope_template_select_get_instance_private( st_this );
+
+	g_free( priv->ope_mnemo );
+	priv->ope_mnemo = NULL;
+
+	selected_mnemo = NULL;
+	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
+	ofa_ope_template_book_bin_set_selected( book, asked_mnemo );
+
+	check_for_enable_dlg( st_this );
+
+	if( my_idialog_run( MY_IDIALOG( st_this )) == GTK_RESPONSE_OK ){
+		selected_mnemo = g_strdup( priv->ope_mnemo );
+		my_iwindow_close( MY_IWINDOW( st_this ));
+	}
+
+	return( selected_mnemo );
+}
+
+/*
+ * myIWindow interface management
+ */
+static void
+iwindow_iface_init( myIWindowInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ope_template_select_iwindow_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * myIDialog interface management
+ */
+static void
+idialog_iface_init( myIDialogInterface *iface )
+{
+	static const gchar *thisfn = "ofa_ope_template_select_idialog_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = idialog_init;
+	iface->quit_on_ok = idialog_quit_on_ok;
+}
+
+static void
+idialog_init( myIDialog *instance )
+{
+	static const gchar *thisfn = "ofa_ope_template_select_idialog_init";
+	ofaOpeTemplateSelectPrivate *priv;
+	GtkApplicationWindow *main_window;
+	GtkWidget *parent;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_ope_template_select_get_instance_private( OFA_OPE_TEMPLATE_SELECT( instance ));
+
+	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ope-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( OFA_MAIN_WINDOW( main_window ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
+	ofa_ope_template_frame_bin_set_buttons( priv->ope_templates_frame, FALSE );
+
+	g_signal_connect( priv->ope_templates_frame, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
+	g_signal_connect( priv->ope_templates_frame, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );
+}
+
+static void
+on_ope_template_changed( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
+on_ope_template_activated( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
+{
+	gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_OK );
+}
+
+static void
+check_for_enable_dlg( ofaOpeTemplateSelect *self )
+{
+	ofaOpeTemplateSelectPrivate *priv;
+	ofaOpeTemplateBookBin *book;
+	gchar *mnemo;
+	gboolean ok;
+
+	priv = ofa_ope_template_select_get_instance_private( self );
+
+	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
+	mnemo = ofa_ope_template_book_bin_get_selected( book );
+	ok = my_strlen( mnemo );
+	g_free( mnemo );
+
+	gtk_widget_set_sensitive( priv->ok_btn, ok );
+}
+
+static gboolean
+idialog_quit_on_ok( myIDialog *instance )
+{
+	return( do_select( OFA_OPE_TEMPLATE_SELECT( instance )));
+}
+
+static gboolean
+do_select( ofaOpeTemplateSelect *self )
+{
+	ofaOpeTemplateSelectPrivate *priv;
+	ofaOpeTemplateBookBin *book;
+	gchar *mnemo;
+
+	priv = ofa_ope_template_select_get_instance_private( self );
+
+	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
+	mnemo = ofa_ope_template_book_bin_get_selected( book );
+	if( my_strlen( mnemo )){
+		g_free( priv->ope_mnemo );
+		priv->ope_mnemo = g_strdup( mnemo );
+	}
+	g_free( mnemo );
+
+	return( TRUE );
 }
 
 static void
@@ -144,148 +321,4 @@ on_hub_finalized( gpointer is_null, gpointer finalized_hub )
 	g_return_if_fail( st_this && OFA_IS_OPE_TEMPLATE_SELECT( st_this ));
 
 	g_clear_object( &st_this );
-}
-
-/**
- * ofa_ope_template_select_run:
- *
- * Returns the selected operation template mnemo, as a newly allocated
- * string that must be g_free() by the caller
- */
-gchar *
-ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnemo )
-{
-	static const gchar *thisfn = "ofa_ope_template_select_run";
-	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplateBookBin *book;
-	GtkApplication *application;
-
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-
-	g_debug( "%s: main_window=%p, asked_mnemo=%s",
-			thisfn, ( void * ) main_window, asked_mnemo );
-
-	if( !st_this ){
-		st_this = g_object_new(
-				OFA_TYPE_OPE_TEMPLATE_SELECT,
-				MY_PROP_MAIN_WINDOW,   main_window,
-				MY_PROP_WINDOW_XML,    st_ui_xml,
-				MY_PROP_WINDOW_NAME,   st_ui_id,
-				MY_PROP_SIZE_POSITION, FALSE,
-				NULL );
-
-		st_this->priv->main_window = main_window;
-		st_this->priv->toplevel = my_window_get_toplevel( MY_WINDOW( st_this ));
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-		my_utils_window_restore_position( st_this->priv->toplevel, st_ui_id );
-		my_dialog_init_dialog( MY_DIALOG( st_this ));
-
-		/* setup a weak reference on the hub to auto-unref */
-		g_object_weak_ref( G_OBJECT( st_this->priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
-	}
-
-	priv = st_this->priv;
-
-	g_free( priv->ope_mnemo );
-	priv->ope_mnemo = NULL;
-
-	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	ofa_ope_template_book_bin_set_selected( book, asked_mnemo );
-
-	check_for_enable_dlg( st_this );
-
-	my_dialog_run_dialog( MY_DIALOG( st_this ));
-
-	my_utils_window_save_position( st_this->priv->toplevel, st_ui_id );
-	gtk_widget_hide( GTK_WIDGET( st_this->priv->toplevel ));
-
-	return( g_strdup( priv->ope_mnemo ));
-}
-
-static void
-v_init_dialog( myDialog *dialog )
-{
-	static const gchar *thisfn = "ofa_ope_template_select_v_init_dialog";
-	ofaOpeTemplateSelectPrivate *priv;
-	GtkContainer *container;
-	GtkWidget *parent;
-
-	g_debug( "%s: dialog=%p", thisfn, ( void * ) dialog );
-
-	priv = OFA_OPE_TEMPLATE_SELECT( dialog )->priv;
-
-	container = GTK_CONTAINER( my_window_get_toplevel( MY_WINDOW( st_this )));
-
-	priv->ok_btn = my_utils_container_get_child_by_name( container, "btn-ok" );
-
-	parent = my_utils_container_get_child_by_name( container, "ope-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( priv->main_window );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
-	ofa_ope_template_frame_bin_set_buttons( priv->ope_templates_frame, FALSE );
-
-	g_signal_connect(
-			G_OBJECT( priv->ope_templates_frame ), "ofa-changed", G_CALLBACK( on_ope_template_changed ), dialog );
-	g_signal_connect(
-			G_OBJECT( priv->ope_templates_frame ), "ofa-activated", G_CALLBACK( on_ope_template_activated ), dialog );
-}
-
-static void
-on_ope_template_changed( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
-{
-	check_for_enable_dlg( self );
-}
-
-static void
-on_ope_template_activated( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self )
-{
-	gtk_dialog_response(
-			GTK_DIALOG( my_window_get_toplevel( MY_WINDOW( self ))),
-			GTK_RESPONSE_OK );
-}
-
-static void
-check_for_enable_dlg( ofaOpeTemplateSelect *self )
-{
-	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplateBookBin *book;
-	gchar *mnemo;
-	gboolean ok;
-
-	priv = self->priv;
-
-	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	mnemo = ofa_ope_template_book_bin_get_selected( book );
-	ok = my_strlen( mnemo );
-	g_free( mnemo );
-
-	gtk_widget_set_sensitive( priv->ok_btn, ok );
-}
-
-static gboolean
-v_quit_on_ok( myDialog *dialog )
-{
-	return( do_select( OFA_OPE_TEMPLATE_SELECT( dialog )));
-}
-
-static gboolean
-do_select( ofaOpeTemplateSelect *self )
-{
-	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplateBookBin *book;
-	gchar *mnemo;
-
-	priv = self->priv;
-
-	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	mnemo = ofa_ope_template_book_bin_get_selected( book );
-	if( my_strlen( mnemo )){
-		g_free( priv->ope_mnemo );
-		priv->ope_mnemo = g_strdup( mnemo );
-	}
-	g_free( mnemo );
-
-	return( TRUE );
 }

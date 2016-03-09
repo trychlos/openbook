@@ -177,10 +177,10 @@ ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_num
 	ofaAccountSelectPrivate *priv;
 	gchar *selected_id;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-
 	g_debug( "%s: main_window=%p, asked_number=%s",
 			thisfn, ( void * ) main_window, asked_number );
+
+	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
 	if( !st_this ){
 		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );

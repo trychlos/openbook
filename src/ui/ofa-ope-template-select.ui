@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkDialog" id="OpeTemplateSelectDialog">
+  <template class="ofaOpeTemplateSelect" parent="GtkDialog">
     <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Select an operation template</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
@@ -71,5 +72,5 @@
       <action-widget response="-6">btn-cancel</action-widget>
       <action-widget response="-5">btn-ok</action-widget>
     </action-widgets>
-  </object>
+  </template>
 </interface>

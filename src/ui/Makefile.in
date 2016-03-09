@@ -675,7 +675,6 @@ rc_files = \
 	$(NULL)
 
 ui_files = \
-	ofa-ope-template-select.ui							\
 	$(NULL)
 
 resources_ui = \
@@ -714,6 +713,7 @@ resources_ui = \
 	ofa-ledger-summary-bin.ui							\
 	ofa-ope-template-help.ui							\
 	ofa-ope-template-properties.ui						\
+	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-rate-properties.ui								\
 	ofa-reconcil-bin.ui									\
