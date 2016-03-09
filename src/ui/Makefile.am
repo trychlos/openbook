@@ -39,11 +39,7 @@ AM_CPPFLAGS += \
 	-I $(top_srcdir)/src								\
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
-	-DPKGUIDIR=\"$(ui_datadir)\"						\
-	-DPKGCOREDIR=\"$(core_datadir)\"					\
 	-DPKGCSSDIR=\"$(css_datadir)\"						\
-	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
-	-DSYSCONFDIR=\"$(sysconfdir)\"						\
 	-DICONFNAME=\"$(icondir)/$(icondata)\"				\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
@@ -246,6 +242,9 @@ rc_files = \
 ui_files = \
 	$(NULL)
 
+images_files = \
+	$(NULL)
+
 resources_ui = \
 	ofa-account-book-bin.ui								\
 	ofa-account-filter-vv-bin.ui						\
@@ -295,16 +294,13 @@ resources_ui = \
 	ofa-app-menubar.ui									\
 	ofa-dos-menubar.ui									\
 	\
+	arrow-down.png										\
 	filler.png											\
 	green-checkmark.png									\
 	light-empty-14.png									\
 	light-green-14.png									\
 	light-yellow-14.png									\
 	notes1.png											\
-	$(NULL)
-
-images_files = \
-	arrow-down.png										\
 	$(NULL)
 
 ui_data_DATA = \

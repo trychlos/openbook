@@ -71,7 +71,7 @@ enum {
 static guint        st_initializations      = 0;	/* interface initialization count */
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 static const gchar *st_prefix               = "itreeview-display";
-static const gchar *st_arrow_fname          = PKGUIDIR "/arrow-down.png";
+static const gchar *st_resource_arrow_down  = "/org/trychlos/openbook/ui/arrow-down.png";
 
 static GType              register_type( void );
 static void               interface_base_init( ofaITreeviewDisplayInterface *klass );
@@ -418,7 +418,7 @@ setup_button( const ofaITreeviewDisplay *instance, sITreeviewDisplay *sdata )
 	label = gtk_label_new_with_mnemonic( _( "_Columns selection" ));
 	gtk_box_pack_start( GTK_BOX( box ), label, FALSE, TRUE, 0 );
 
-	image = gtk_image_new_from_file( st_arrow_fname );
+	image = gtk_image_new_from_resource( st_resource_arrow_down );
 	gtk_box_pack_start( GTK_BOX( box ), image, FALSE, TRUE, 0 );
 
 	/* create the menu */

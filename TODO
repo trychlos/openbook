@@ -380,8 +380,6 @@
 
  825 2015- 9-22 PACK use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
 
- 826 2015- 9-22 PACK use GResource
-
  843 2015- 9-30 DDL  account number should be renamed as account identifier
 
  862 2015-10- 7 DISP fix focus order on GtkBin-derived widgets on the
@@ -601,6 +599,9 @@
                 is the settings key, is rather clean - and actually
                 enough clean
                 -> cancelled
+
+ 826 2015- 9-22 PACK use GResource
+     2016- 3- 9 done
 
  840 2015- 9-29 ofaAccountSelectorBin: is unused
      2015-10- 1 but see ofaReconciliation and ofaSettlement which both

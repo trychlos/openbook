@@ -242,7 +242,6 @@ setup_tab_style( myTab *tab )
 	if( !css_provider ){
 		css_provider = gtk_css_provider_new();
 		error = NULL;
-		/*g_debug( "%s: css=%s", thisfn, PKGUIDIR "/ofa.css" );*/
 		if( !gtk_css_provider_load_from_path( css_provider, PKGCSSDIR "/ofa.css", &error )){
 			g_warning( "%s: %s", thisfn, error->message );
 			g_error_free( error );
