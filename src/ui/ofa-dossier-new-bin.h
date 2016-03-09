@@ -59,16 +59,13 @@ typedef struct _ofaDossierNewBinPrivate         ofaDossierNewBinPrivate;
 
 typedef struct {
 	/*< public members >*/
-	GtkBin                   parent;
-
-	/*< private members >*/
-	ofaDossierNewBinPrivate *priv;
+	GtkBin      parent;
 }
 	ofaDossierNewBin;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass              parent;
+	GtkBinClass parent;
 }
 	ofaDossierNewBinClass;
 

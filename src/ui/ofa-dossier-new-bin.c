@@ -79,17 +79,18 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_bin_xml          = PKGUIDIR "/ofa-dossier-new-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-new-bin.ui";
 
-G_DEFINE_TYPE( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN )
-
-static void     setup_bin( ofaDossierNewBin *bin );
-static void     setup_dbms_provider( ofaDossierNewBin *bin );
-static void     on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierNewBin *bin );
-static void     on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *bin );
+static void     setup_bin( ofaDossierNewBin *self );
+static void     setup_dbms_provider( ofaDossierNewBin *self );
+static void     on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, ofaDossierNewBin *self );
+static void     on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *self );
 static void     on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self );
 static void     on_connect_infos_changed( ofaIDBEditor *widget, ofaDossierNewBin *self );
-static void     changed_composite( ofaDossierNewBin *bin );
+static void     changed_composite( ofaDossierNewBin *self );
+
+G_DEFINE_TYPE_EXTENDED( ofaDossierNewBin, ofa_dossier_new_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaDossierNewBin ))
 
 static void
 dossier_new_bin_finalize( GObject *instance )
@@ -103,7 +104,7 @@ dossier_new_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_BIN( instance ));
 
 	/* free data members here */
-	priv = OFA_DOSSIER_NEW_BIN( instance )->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( OFA_DOSSIER_NEW_BIN( instance ));
 
 	g_free( priv->dossier_name );
 
@@ -118,7 +119,7 @@ dossier_new_bin_dispose( GObject *instance )
 
 	g_return_if_fail( instance && OFA_IS_DOSSIER_NEW_BIN( instance ));
 
-	priv = OFA_DOSSIER_NEW_BIN( instance )->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( OFA_DOSSIER_NEW_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -136,14 +137,16 @@ static void
 ofa_dossier_new_bin_init( ofaDossierNewBin *self )
 {
 	static const gchar *thisfn = "ofa_dossier_new_bin_instance_init";
+	ofaDossierNewBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_DOSSIER_NEW_BIN( self ));
 
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE(
-							self, OFA_TYPE_DOSSIER_NEW_BIN, ofaDossierNewBinPrivate );
+	priv = ofa_dossier_new_bin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
 }
 
 static void
@@ -155,8 +158,6 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = dossier_new_bin_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_new_bin_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaDossierNewBinPrivate ));
 
 	/**
 	 * ofaDossierNewBin::ofa-changed:
@@ -197,15 +198,17 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 ofaDossierNewBin *
 ofa_dossier_new_bin_new( ofaMainWindow *main_window )
 {
-	ofaDossierNewBin *bin;
+	ofaDossierNewBin *self;
+	ofaDossierNewBinPrivate *priv;
 
-	bin = g_object_new( OFA_TYPE_DOSSIER_NEW_BIN, NULL );
+	self = g_object_new( OFA_TYPE_DOSSIER_NEW_BIN, NULL );
 
-	bin->priv->main_window = main_window;
+	priv = ofa_dossier_new_bin_get_instance_private( self );
+	priv->main_window = main_window;
 
-	setup_bin( bin );
+	setup_bin( self );
 
-	return( bin );
+	return( self );
 }
 
 /*
@@ -214,7 +217,7 @@ ofa_dossier_new_bin_new( ofaMainWindow *main_window )
  * provider
  */
 static void
-setup_bin( ofaDossierNewBin *bin )
+setup_bin( ofaDossierNewBin *self )
 {
 	ofaDossierNewBinPrivate *priv;
 	GtkBuilder *builder;
@@ -222,8 +225,9 @@ setup_bin( ofaDossierNewBin *bin )
 	GtkWidget *toplevel, *entry, *label;
 	GtkApplication *application;
 
-	priv = bin->priv;
-	builder = gtk_builder_new_from_file( st_bin_xml );
+	priv = ofa_dossier_new_bin_get_instance_private( self );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
 
 	object = gtk_builder_get_object( builder, "dnb-col0-hsize" );
 	g_return_if_fail( object && GTK_IS_SIZE_GROUP( object ));
@@ -233,18 +237,18 @@ setup_bin( ofaDossierNewBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
 	/* dossier name */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dnb-dossier-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( entry, "insert-text", G_CALLBACK( on_dossier_name_insert_text ), bin );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_dossier_name_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-dossier-label" );
+	g_signal_connect( entry, "insert-text", G_CALLBACK( on_dossier_name_insert_text ), self );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_dossier_name_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dnb-dossier-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	setup_dbms_provider( bin );
+	setup_dbms_provider( self );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -255,11 +259,10 @@ setup_bin( ofaDossierNewBin *bin )
 
 	priv->dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
 	g_return_if_fail( priv->dir && OFA_IS_FILE_DIR( priv->dir ));
-
 }
 
 static void
-setup_dbms_provider( ofaDossierNewBin *bin )
+setup_dbms_provider( ofaDossierNewBin *self )
 {
 	ofaDossierNewBinPrivate *priv;
 	GtkWidget *combo, *label;
@@ -268,9 +271,9 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 	GtkTreeIter iter;
 	GList *prov_list, *ip;
 
-	priv = bin->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( self );
 
-	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-provider-combo" );
+	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dnb-provider-combo" );
 	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
 	priv->dbms_combo = combo;
 
@@ -299,16 +302,16 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 
 	ofa_idbprovider_free_list( prov_list );
 
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), bin );
+	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), self );
 
 	/* setup the mnemonic widget on the label */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-provider-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dnb-provider-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
 
 	/* take a pointer on the parent container of the DBMS widget before
 	 *  selecting the default */
-	priv->connect_infos_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "dnb-connect-infos" );
+	priv->connect_infos_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dnb-connect-infos" );
 	g_return_if_fail( priv->connect_infos_parent && GTK_IS_CONTAINER( priv->connect_infos_parent ));
 
 	gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), 0 );
@@ -324,19 +327,21 @@ setup_dbms_provider( ofaDossierNewBin *bin )
 GtkSizeGroup *
 ofa_dossier_new_bin_get_size_group( const ofaDossierNewBin *bin, guint column )
 {
+	static const gchar *thisfn = "ofa_dossier_new_bin_get_size_group";
 	ofaDossierNewBinPrivate *priv;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
-	priv = bin->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
-		if( column == 0 ){
-			return( priv->group0 );
-		}
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	if( column == 0 ){
+		return( priv->group0 );
 	}
 
-	g_return_val_if_reached( NULL );
+	g_warning( "%s: unmanaged column=%u", thisfn, column );
+	return( NULL );
 }
 
 /*
@@ -359,16 +364,16 @@ on_dossier_name_insert_text( GtkEditable *editable, gchar *new_text, gint new_te
 }
 
 static void
-on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *bin )
+on_dossier_name_changed( GtkEditable *editable, ofaDossierNewBin *self )
 {
 	ofaDossierNewBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( self );
 
 	g_free( priv->dossier_name );
 	priv->dossier_name = g_strdup( gtk_entry_get_text( GTK_ENTRY( editable )));
 
-	changed_composite( bin );
+	changed_composite( self );
 }
 
 static void
@@ -384,7 +389,7 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 
 	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
 
-	priv = self->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( self );
 
 	/* do we have finished with the initialization ? */
 	if( priv->connect_infos_parent ){
@@ -453,13 +458,13 @@ on_connect_infos_changed( ofaIDBEditor *widget, ofaDossierNewBin *self )
 }
 
 static void
-changed_composite( ofaDossierNewBin *bin )
+changed_composite( ofaDossierNewBin *self )
 {
 	ofaDossierNewBinPrivate *priv;
 
-	priv = bin->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( self );
 
-	g_signal_emit_by_name( bin, "ofa-changed", priv->dossier_name, priv->connect_infos );
+	g_signal_emit_by_name( self, "ofa-changed", priv->dossier_name, priv->connect_infos );
 }
 
 /**
@@ -481,31 +486,31 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
 
-	priv = bin->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
 	ok = FALSE;
 	str = NULL;
 
-	if( !priv->dispose_has_run ){
+	/* check for dossier name */
+	if( !my_strlen( priv->dossier_name )){
+		str = g_strdup( _( "Dossier name is not set" ));
 
-		/* check for dossier name */
-		if( !my_strlen( priv->dossier_name )){
-			str = g_strdup( _( "Dossier name is not set" ));
+	} else {
+		meta = ofa_file_dir_get_meta( priv->dir, priv->dossier_name );
+		if( meta ){
+			str = g_strdup_printf( _( "%s: dossier is already defined" ), priv->dossier_name );
+			g_clear_object( &meta );
 
 		} else {
-			meta = ofa_file_dir_get_meta( priv->dir, priv->dossier_name );
-			if( meta ){
-				str = g_strdup_printf( _( "%s: dossier is already defined" ), priv->dossier_name );
-				g_clear_object( &meta );
-
-			} else {
-				ok = TRUE;
-			}
+			ok = TRUE;
 		}
+	}
 
-		/* check for connection informations */
-		if( ok ){
-			ok = ofa_idbeditor_get_valid( priv->connect_infos, &str );
-		}
+	/* check for connection informations */
+	if( ok ){
+		ok = ofa_idbeditor_get_valid( priv->connect_infos, &str );
 	}
 
 	if( error_message ){
@@ -534,20 +539,17 @@ ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
-	priv = bin->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		provider = ofa_idbeditor_get_provider( priv->connect_infos );
-		meta = ofa_idbprovider_new_meta( provider );
-		ofa_idbmeta_set_dossier_name( meta, priv->dossier_name );
-		ofa_file_dir_set_meta_from_editor( priv->dir, meta, priv->connect_infos );
-		g_object_unref( provider );
+	provider = ofa_idbeditor_get_provider( priv->connect_infos );
+	meta = ofa_idbprovider_new_meta( provider );
+	ofa_idbmeta_set_dossier_name( meta, priv->dossier_name );
+	ofa_file_dir_set_meta_from_editor( priv->dir, meta, priv->connect_infos );
+	g_object_unref( provider );
 
-		return( meta );
-	}
-
-	return( NULL );
+	return( meta );
 }
 
 /**
@@ -563,12 +565,9 @@ ofa_dossier_new_bin_get_editor( const ofaDossierNewBin *bin )
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
-	priv = bin->priv;
+	priv = ofa_dossier_new_bin_get_instance_private( bin );
 
-	if( !priv->dispose_has_run ){
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-		return( priv->connect_infos );
-	}
-
-	g_return_val_if_reached( NULL );
+	return( priv->connect_infos );
 }
