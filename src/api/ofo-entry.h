@@ -172,12 +172,13 @@ void            ofo_entry_set_debit              ( ofoEntry *entry, ofxAmount am
 void            ofo_entry_set_credit             ( ofoEntry *entry, ofxAmount amount );
 void            ofo_entry_set_settlement_number  ( ofoEntry *entry, ofxCounter counter );
 
-gboolean        ofo_entry_is_valid               ( ofaHub *hub,
+gboolean        ofo_entry_is_valid_data          ( ofaHub *hub,
 														const GDate *deffect, const GDate *dope,
 														const gchar *label,
 														const gchar *account, const gchar *currency,
 														const gchar *ledger, const gchar *model,
-														ofxAmount debit, ofxAmount credit );
+														ofxAmount debit, ofxAmount credit,
+														gchar **msgerr );
 
 ofoEntry       *ofo_entry_new_with_data          ( ofaHub *hub,
 														const GDate *deffect, const GDate *dope,

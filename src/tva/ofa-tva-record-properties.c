@@ -643,7 +643,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 
 	if( priv->is_current ){
 
-		is_valid = ofo_tva_record_is_valid( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+		is_valid = ofo_tva_record_is_valid_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
 
 		if( is_valid ){
 			/* the ending date is no more modifiable */

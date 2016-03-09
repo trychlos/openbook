@@ -582,7 +582,7 @@ ofo_tva_record_is_deletable( const ofoTVARecord *record )
 }
 
 /**
- * ofo_tva_record_is_valid:
+ * ofo_tva_record_is_valid_data:
  * @mnemo: an identifier mnemonic.
  * @begin: the begin date of the declaration.
  * @end: the end date of the declaration.
@@ -596,7 +596,7 @@ ofo_tva_record_is_deletable( const ofoTVARecord *record )
  * the end date.
  */
 gboolean
-ofo_tva_record_is_valid( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr )
+ofo_tva_record_is_valid_data( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr )
 {
 	gint cmp;
 
@@ -649,7 +649,7 @@ ofo_tva_record_is_validable_by_record( const ofoTVARecord *record )
 	cbegin = ofo_tva_record_get_begin( record );
 	cend = ofo_tva_record_get_end( record );
 
-	if( !ofo_tva_record_is_valid( cstr, cbegin, cend, NULL )){
+	if( !ofo_tva_record_is_valid_data( cstr, cbegin, cend, NULL )){
 		return( FALSE );
 	}
 
@@ -671,7 +671,7 @@ ofo_tva_record_is_validable_by_record( const ofoTVARecord *record )
 gboolean
 ofo_tva_record_is_validable_by_data( const gchar *mnemo, const GDate *begin, const GDate *end )
 {
-	if( !ofo_tva_record_is_valid( mnemo, begin, end, NULL )){
+	if( !ofo_tva_record_is_valid_data( mnemo, begin, end, NULL )){
 		return( FALSE );
 	}
 	return( my_date_is_valid( begin ) &&

@@ -93,7 +93,7 @@ const GTimeVal *ofo_tva_record_get_upd_stamp         ( const ofoTVARecord *recor
 
 gboolean        ofo_tva_record_is_deletable          ( const ofoTVARecord *record );
 
-gboolean        ofo_tva_record_is_valid              ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
+gboolean        ofo_tva_record_is_valid_data         ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
 
 gboolean        ofo_tva_record_is_validable_by_record( const ofoTVARecord *record );
 gboolean        ofo_tva_record_is_validable_by_data  ( const gchar *mnemo, const GDate *begin, const GDate *end );

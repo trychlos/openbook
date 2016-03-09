@@ -168,7 +168,7 @@ const gchar    *ofo_ope_template_get_upd_user             ( const ofoOpeTemplate
 const GTimeVal *ofo_ope_template_get_upd_stamp            ( const ofoOpeTemplate *model );
 
 gboolean        ofo_ope_template_is_deletable             ( const ofoOpeTemplate *model );
-gboolean        ofo_ope_template_is_valid                 ( const gchar *mnemo, const gchar *label, const gchar *ledger, gchar **msgerr );
+gboolean        ofo_ope_template_is_valid_data            ( const gchar *mnemo, const gchar *label, const gchar *ledger, gchar **msgerr );
 
 void            ofo_ope_template_set_mnemo                ( ofoOpeTemplate *model, const gchar *mnemo );
 void            ofo_ope_template_set_label                ( ofoOpeTemplate *model, const gchar *label );

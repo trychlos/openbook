@@ -814,7 +814,7 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 
 	msgerr = NULL;
 
-	ok = ofo_ope_template_is_valid( priv->mnemo, priv->label, priv->ledger, &msgerr );
+	ok = ofo_ope_template_is_valid_data( priv->mnemo, priv->label, priv->ledger, &msgerr );
 	if( ok ){
 		exists = ofo_ope_template_get_by_mnemo( priv->hub, priv->mnemo );
 		ok = !exists ||

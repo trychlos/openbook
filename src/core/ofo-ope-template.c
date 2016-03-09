@@ -767,7 +767,7 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 }
 
 /**
- * ofo_ope_template_is_valid:
+ * ofo_ope_template_is_valid_data:
  * @mnemo: operation template mnemomnic.
  * @label: operation template label.
  * @ledger: attached ledger mnemonic.
@@ -778,7 +778,7 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
  * message is set in @msgerr, and should be #g_free() by the caller.
  */
 gboolean
-ofo_ope_template_is_valid( const gchar *mnemo, const gchar *label, const gchar *ledger, gchar **msgerr )
+ofo_ope_template_is_valid_data( const gchar *mnemo, const gchar *label, const gchar *ledger, gchar **msgerr )
 {
 	gboolean ok;
 

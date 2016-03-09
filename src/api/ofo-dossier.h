@@ -132,12 +132,12 @@ const gchar         *ofo_dossier_get_sld_account           ( ofoDossier *dossier
 
 gboolean             ofo_dossier_is_current                ( const ofoDossier *dossier );
 
-gboolean             ofo_dossier_is_valid                  ( const gchar *label,
+gboolean             ofo_dossier_is_valid_data             ( const gchar *label,
 																	gint nb_months,
 																	const gchar *currency,
 																	const GDate *begin,
 																	const GDate *end,
-																	gchar **msg );
+																	gchar **msgerr );
 
 void                 ofo_dossier_set_default_currency      ( ofoDossier *dossier, const gchar *currency );
 void                 ofo_dossier_set_exe_begin             ( ofoDossier *dossier, const GDate *date );

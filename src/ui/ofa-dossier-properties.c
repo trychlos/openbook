@@ -719,7 +719,7 @@ is_dialog_valid( ofaDossierProperties *self )
 		}
 	}
 
-	if( !ofo_dossier_is_valid(
+	if( !ofo_dossier_is_valid_data(
 				priv->label, priv->duree, priv->currency, &priv->begin, &priv->end, &msg )){
 		set_msgerr( self, msg, MSG_ERROR );
 		g_free( msg );

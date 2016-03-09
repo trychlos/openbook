@@ -2042,13 +2042,14 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub )
 }
 
 /**
- * ofo_entry_is_valid:
+ * ofo_entry_is_valid_data:
  */
 gboolean
-ofo_entry_is_valid( ofaHub *hub,
+ofo_entry_is_valid_data( ofaHub *hub,
 							const GDate *deffect, const GDate *dope, const gchar *label,
 							const gchar *account, const gchar *currency, const gchar *ledger,
-							const gchar *model, ofxAmount debit, ofxAmount credit )
+							const gchar *model, ofxAmount debit, ofxAmount credit,
+							gchar **msgerr)
 {
 	ofoAccount *account_obj;
 	gboolean ok;
@@ -2112,8 +2113,8 @@ ofo_entry_new_with_data( ofaHub *hub,
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	if( !ofo_entry_is_valid(
-			hub, deffect, dope, label, account, currency, ledger, model, debit, credit )){
+	if( !ofo_entry_is_valid_data(
+			hub, deffect, dope, label, account, currency, ledger, model, debit, credit, NULL )){
 		return( NULL );
 	}
 
