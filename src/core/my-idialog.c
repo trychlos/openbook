@@ -337,6 +337,7 @@ my_idialog_run( myIDialog *instance )
 	g_return_val_if_fail( GTK_IS_DIALOG( instance ), 0 );
 
 	my_iwindow_init( MY_IWINDOW( instance ));
+	gtk_window_set_modal( GTK_WINDOW( instance ), TRUE );
 
 	g_debug( "%s: calling gtk_dialog_run", thisfn );
 	do {
