@@ -49,7 +49,7 @@ struct _ofaAccountSelectPrivate {
 	/* input data
 	 */
 	ofaHub              *hub;
-	gint                 allowed;
+	ofeAccountAllowed    allowed;
 
 	/* UI
 	 */
@@ -161,7 +161,7 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
  * that must be g_free() by the caller.
  */
 gchar *
-ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, gint allowed )
+ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, ofeAccountAllowed allowed )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;

@@ -40,7 +40,7 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-select.h"
+#include "ui/ofa-iaccount-entry.h"
 #include "ui/ofa-reconcil-bin.h"
 
 /* private instance data
@@ -77,18 +77,19 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-reconcil-bin.ui";
 static const gchar *st_settings         = "RenderReconciliation";
 
+static void iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
 static void setup_bin( ofaReconcilBin *self );
 static void setup_account_selection( ofaReconcilBin *self );
 static void setup_date_selection( ofaReconcilBin *self );
 static void setup_others( ofaReconcilBin *self );
 static void on_account_changed( GtkEntry *entry, ofaReconcilBin *self );
-static void on_account_select_clicked( GtkButton *button, ofaReconcilBin *self );
 static void on_date_changed( GtkEntry *entry, ofaReconcilBin *self );
 static void load_settings( ofaReconcilBin *self );
 static void set_settings( ofaReconcilBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilBin, ofa_reconcil_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaReconcilBin ))
+		G_ADD_PRIVATE( ofaReconcilBin )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init ))
 
 static void
 reconcil_bin_finalize( GObject *instance )
@@ -205,6 +206,17 @@ ofa_reconcil_bin_new( const ofaMainWindow *main_window )
 	return( self );
 }
 
+/*
+ * ofaIAccountEntry interface management
+ */
+static void
+iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+{
+	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
 static void
 setup_bin( ofaReconcilBin *self )
 {
@@ -225,7 +237,7 @@ static void
 setup_account_selection( ofaReconcilBin *self )
 {
 	ofaReconcilBinPrivate *priv;
-	GtkWidget *entry, *label, *button;
+	GtkWidget *entry, *label;
 
 	priv = ofa_reconcil_bin_get_instance_private( self );
 
@@ -233,6 +245,9 @@ setup_account_selection( ofaReconcilBin *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
 	priv->account_entry = entry;
+	ofa_iaccount_entry_init(
+			OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( entry ),
+			OFA_MAIN_WINDOW( priv->main_window ), ACCOUNT_ALLOW_RECONCILIABLE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "account-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -241,10 +256,6 @@ setup_account_selection( ofaReconcilBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->account_label = label;
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "account-select" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_account_select_clicked ), self );
 }
 
 static void
@@ -301,24 +312,6 @@ on_account_changed( GtkEntry *entry, ofaReconcilBin *self )
 	}
 
 	g_signal_emit_by_name( self, "ofa-changed" );
-}
-
-static void
-on_account_select_clicked( GtkButton *button, ofaReconcilBin *self )
-{
-	ofaReconcilBinPrivate *priv;
-	gchar *number;
-
-	priv = ofa_reconcil_bin_get_instance_private( self );
-
-	number = ofa_account_select_run(
-					priv->main_window,
-					gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
-					ACCOUNT_ALLOW_RECONCILIABLE );
-	if( number ){
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
-		g_free( number );
-	}
 }
 
 static void

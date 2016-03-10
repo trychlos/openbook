@@ -43,7 +43,7 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-select.h"
+#include "ui/ofa-iaccount-entry.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-settlement-page.h"
@@ -195,6 +195,7 @@ static void           itreeview_display_iface_init( ofaITreeviewDisplayInterface
 static guint          itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar         *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean       itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
+static void           iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
 static GtkWidget     *v_setup_view( ofaPage *page );
 static void           reparent_from_dialog( ofaSettlementPage *self, GtkContainer *parent );
 static void           setup_footer( ofaSettlementPage *self );
@@ -203,7 +204,6 @@ static void           setup_account_selection( ofaSettlementPage *self );
 static void           setup_settlement_selection( ofaSettlementPage *self );
 static void           setup_signaling_connect( ofaSettlementPage *self );
 static void           on_account_changed( GtkEntry *entry, ofaSettlementPage *self );
-static void           on_account_select( GtkButton *button, ofaSettlementPage *self );
 static void           on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self );
 static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettlementPage *self );
 static gint           cmp_strings( ofaSettlementPage *self, const gchar *stra, const gchar *strb );
@@ -234,6 +234,7 @@ static gboolean       find_entry_by_number( ofaSettlementPage *self, GtkTreeMode
 
 G_DEFINE_TYPE_EXTENDED( ofaSettlementPage, ofa_settlement_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaSettlementPage )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
 
@@ -372,6 +373,17 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 			break;
 	}
 	return( visible );
+}
+
+/*
+ * ofaIAccountEntry interface management
+ */
+static void
+iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+{
+	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static GtkWidget *
@@ -718,13 +730,12 @@ setup_account_selection( ofaSettlementPage *self )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	priv->account_entry = widget;
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
+	ofa_iaccount_entry_init(
+			OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( widget ),
+			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_SETTLEABLE );
 	if( my_strlen( priv->account_number )){
 		gtk_entry_set_text( GTK_ENTRY( widget ), priv->account_number );
 	}
-
-	widget = my_utils_container_get_child_by_name( priv->top_box, "account-select" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	g_signal_connect( widget, "clicked", G_CALLBACK( on_account_select ), self );
 }
 
 static void
@@ -827,24 +838,6 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 	}
 
 	set_settings( self );
-}
-
-static void
-on_account_select( GtkButton *button, ofaSettlementPage *self )
-{
-	ofaSettlementPagePrivate *priv;
-	gchar *account_number;
-
-	priv = ofa_settlement_page_get_instance_private( self );
-
-	account_number = ofa_account_select_run(
-							ofa_page_get_main_window( OFA_PAGE( self )),
-							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
-							ACCOUNT_ALLOW_SETTLEABLE );
-	if( account_number ){
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), account_number );
-		g_free( account_number );
-	}
 }
 
 static void

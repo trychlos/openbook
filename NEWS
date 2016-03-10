@@ -28,7 +28,7 @@
 
  New features and improvements:
 
-   - 
+   - Have a new icon for account selection (todo #1034).
 
  Bug fixes:
 
@@ -41,6 +41,7 @@
    - myIDialog: new interface.
    - myDialog, myWindow: removed classes (todo #992).
    - my_iwindow_msg_dialog(): new method (todo #1039).
+   - ofaIAccountEntry: new interface.
    - ofaISingleKeeper: new interface (todo #1038).
    - ofaOpeTemplateBookBin: removed class (todo #1037).
    - ofaSettlement: is renamed as ofaSettlementPage (todo #1040).

@@ -38,7 +38,7 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-select.h"
+#include <ui/ofa-iaccount-entry.h>
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-currency-combo.h"
 #include "ui/ofa-ope-template-select.h"
@@ -79,7 +79,6 @@ enum {
 	COL_ADD = 0,
 	COL_CURRENCY,
 	COL_ACCOUNT,
-	COL_SELECT,
 	COL_REMOVE,
 	N_COLUMNS
 };
@@ -98,6 +97,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing
 static void     setup_bin( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
 static void     setup_currency_accounts( ofaClosingParmsBin *bin );
+static void     iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
 static void     on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
 static void     on_sld_ope_select( GtkButton *button, ofaClosingParmsBin *bin );
 static void     on_for_ope_select( GtkButton *button, ofaClosingParmsBin *bin );
@@ -105,7 +105,6 @@ static void     add_empty_row( ofaClosingParmsBin *self );
 static void     add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint row );
 static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
 static void     on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self );
-static void     on_account_select( ofaClosingParmsBin *self, gint row );
 static void     on_button_clicked( GtkButton *button, ofaClosingParmsBin *self );
 static void     remove_row( ofaClosingParmsBin *self, gint row );
 static void     set_currency( ofaClosingParmsBin *self, gint row, const gchar *code );
@@ -117,7 +116,8 @@ static gboolean check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar
 static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaClosingParmsBin ))
+		G_ADD_PRIVATE( ofaClosingParmsBin )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init ))
 
 static void
 closing_parms_bin_finalize( GObject *instance )
@@ -342,6 +342,17 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 	}
 }
 
+/*
+ * ofaIAccountEntry interface management
+ */
+static void
+iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+{
+	static const gchar *thisfn = "ofa_closing_parms_bin_iaccount_entry_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
 static void
 on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self )
 {
@@ -427,9 +438,6 @@ add_empty_row( ofaClosingParmsBin *self )
 	gtk_grid_attach( priv->grid, widget, COL_ACCOUNT, row, 1, 1 );
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
 
-	/* account select */
-	add_button( self, "gtk-index", COL_SELECT, row );
-
 	/* management buttons */
 	add_button( self, "gtk-remove", COL_REMOVE, row );
 	add_button( self, "gtk-add", COL_ADD, row+1 );
@@ -471,29 +479,6 @@ on_account_changed( GtkEntry *entry, ofaClosingParmsBin *self )
 }
 
 static void
-on_account_select( ofaClosingParmsBin *self, gint row )
-{
-	ofaClosingParmsBinPrivate *priv;
-	GtkWidget *entry;
-	gchar *acc_number;
-
-	priv = ofa_closing_parms_bin_get_instance_private( self );
-
-	entry = gtk_grid_get_child_at( priv->grid, COL_ACCOUNT, row );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-
-	acc_number = ofa_account_select_run(
-						priv->main_window,
-						gtk_entry_get_text( GTK_ENTRY( entry )), ACCOUNT_ALLOW_DETAIL );
-
-	if( acc_number ){
-		gtk_entry_set_text( GTK_ENTRY( entry ), acc_number );
-	}
-
-	g_free( acc_number );
-}
-
-static void
 on_button_clicked( GtkButton *button, ofaClosingParmsBin *self )
 {
 	gint column, row;
@@ -503,9 +488,6 @@ on_button_clicked( GtkButton *button, ofaClosingParmsBin *self )
 	switch( column ){
 		case COL_ADD:
 			add_empty_row( self );
-			break;
-		case COL_SELECT:
-			on_account_select( self, row );
 			break;
 		case COL_REMOVE:
 			remove_row( self, row );
@@ -595,6 +577,7 @@ set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *accou
 	if( entry ){
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), account );
+		ofa_iaccount_entry_init( OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( entry ), priv->main_window, ACCOUNT_ALLOW_DETAIL );
 	}
 }
 

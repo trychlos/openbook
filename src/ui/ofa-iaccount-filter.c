@@ -38,7 +38,7 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-select.h"
+#include <ui/ofa-iaccount-entry.h>
 #include "ui/ofa-iaccount-filter.h"
 
 /* data associated to each implementor object
@@ -80,22 +80,19 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static guint st_initializations = 0;	/* interface initialization count */
 
-static GType             register_type( void );
-static void              interface_base_init( ofaIAccountFilterInterface *klass );
-static void              interface_base_finalize( ofaIAccountFilterInterface *klass );
+static GType            register_type( void );
+static void             interface_base_init( ofaIAccountFilterInterface *klass );
+static void             interface_base_finalize( ofaIAccountFilterInterface *klass );
 static sIAccountFilter *get_iaccount_filter_data( ofaIAccountFilter *filter );
-static void              on_widget_finalized( ofaIAccountFilter *iaccount_filter, void *finalized_widget );
-static void              setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata );
-static void              on_from_changed( GtkEntry *entry, ofaIAccountFilter *filter );
-static void              on_to_changed( GtkEntry *entry, ofaIAccountFilter *filter );
-static void              on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
-static void              on_from_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter );
-static void              on_to_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter );
-static void              on_select_clicked( ofaIAccountFilter *filter, gint who, GtkWidget *entry, sIAccountFilter *sdata );
-static void              on_all_accounts_toggled( GtkToggleButton *button, ofaIAccountFilter *filter );
-static gboolean          is_account_valid( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
-static void              load_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
-static void              set_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
+static void             on_widget_finalized( ofaIAccountFilter *iaccount_filter, void *finalized_widget );
+static void             setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata );
+static void             on_from_changed( GtkEntry *entry, ofaIAccountFilter *filter );
+static void             on_to_changed( GtkEntry *entry, ofaIAccountFilter *filter );
+static void             on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
+static void             on_all_accounts_toggled( GtkToggleButton *button, ofaIAccountFilter *filter );
+static gboolean         is_account_valid( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
+static void             load_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
+static void             set_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
 
 /**
  * ofa_iaccount_filter_get_type:
@@ -311,13 +308,13 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->from_entry = entry;
+	ofa_iaccount_entry_init(
+			OFA_IACCOUNT_ENTRY( filter ), GTK_ENTRY( entry ),
+			OFA_MAIN_WINDOW( sdata->main_window ), ACCOUNT_ALLOW_ALL );
 
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
-
-	gtk_entry_set_icon_from_icon_name( GTK_ENTRY( entry ), GTK_ENTRY_ICON_SECONDARY, "gtk-index" );
-	g_signal_connect( entry, "icon-press", G_CALLBACK( on_from_icon_pressed ), filter );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -331,13 +328,13 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->to_entry = entry;
+	ofa_iaccount_entry_init(
+			OFA_IACCOUNT_ENTRY( filter ), GTK_ENTRY( entry ),
+			OFA_MAIN_WINDOW( sdata->main_window ), ACCOUNT_ALLOW_ALL );
 
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
-
-	gtk_entry_set_icon_from_icon_name( GTK_ENTRY( entry ), GTK_ENTRY_ICON_SECONDARY, "gtk-index" );
-	g_signal_connect( entry, "icon-press", G_CALLBACK( on_to_icon_pressed ), filter );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -377,39 +374,6 @@ on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWid
 	is_account_valid( filter, who, entry, label, account, sdata );
 	set_settings( filter, sdata );
 	g_signal_emit_by_name( filter, "ofa-changed" );
-}
-
-static void
-on_from_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter )
-{
-	sIAccountFilter *sdata;
-
-	sdata = get_iaccount_filter_data( filter );
-	on_select_clicked( filter, IACCOUNT_FILTER_FROM, sdata->from_entry, sdata );
-}
-
-static void
-on_to_icon_pressed( GtkEntry *entry, GtkEntryIconPosition pos, GdkEvent *event, ofaIAccountFilter *filter )
-{
-	sIAccountFilter *sdata;
-
-	sdata = get_iaccount_filter_data( filter );
-	on_select_clicked( filter, IACCOUNT_FILTER_TO, sdata->to_entry, sdata );
-}
-
-static void
-on_select_clicked( ofaIAccountFilter *filter, gint who, GtkWidget *entry, sIAccountFilter *sdata )
-{
-	gchar *number;
-
-	number = ofa_account_select_run(
-					sdata->main_window,
-					gtk_entry_get_text( GTK_ENTRY( entry )),
-					ACCOUNT_ALLOW_ALL );
-	if( number ){
-		gtk_entry_set_text( GTK_ENTRY( entry ), number );
-		g_free( number );
-	}
 }
 
 static void

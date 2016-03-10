@@ -78,14 +78,15 @@ typedef struct {
  * to be selected
  * Note that closed account are never allowed, unless explicitely specified.
  */
-enum {
+typedef enum {
 	ACCOUNT_ALLOW_ROOT          = 1 << 0,
 	ACCOUNT_ALLOW_DETAIL        = 1 << 1,
 	ACCOUNT_ALLOW_SETTLEABLE    = 1 << 2,
 	ACCOUNT_ALLOW_RECONCILIABLE = 1 << 3,
 	ACCOUNT_ALLOW_CLOSED        = 1 << 4,
 	ACCOUNT_ALLOW_ALL = ACCOUNT_ALLOW_ROOT | ACCOUNT_ALLOW_DETAIL
-};
+}
+	ofeAccountAllowed;
 
 GType           ofo_account_get_type                ( void ) G_GNUC_CONST;
 

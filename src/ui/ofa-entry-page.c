@@ -57,6 +57,7 @@
 #include "ui/my-cell-renderer-date.h"
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-entry-page.h"
+#include "ui/ofa-iaccount-entry.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-ledger-combo.h"
@@ -243,6 +244,7 @@ static void            itreeview_display_iface_init( ofaITreeviewDisplayInterfac
 static guint           itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar          *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean        itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
+static void            iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
 static GtkWidget      *v_setup_view( ofaPage *page );
 static void            reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent );
 static void            setup_gen_selection( ofaEntryPage *self );
@@ -328,6 +330,7 @@ static gboolean        ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *e
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaEntryPage )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
 
@@ -455,6 +458,17 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 {
 	return( ofa_itreeview_column_get_def_visible(
 					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
+}
+
+/*
+ * ofaIAccountEntry interface management
+ */
+static void
+iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+{
+	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static GtkWidget *
@@ -592,24 +606,18 @@ static void
 setup_account_selection( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	GtkWidget *image;
-	GtkButton *btn;
 	GtkWidget *widget;
 	gchar *text;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	btn = ( GtkButton * ) my_utils_container_get_child_by_name( priv->top_box, "f1-account-select" );
-	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( btn, image );
-	g_signal_connect( G_OBJECT( btn ), "clicked", G_CALLBACK( on_account_select ), self );
-	priv->account_select = btn;
-
 	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-account-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_account_changed ), self );
 	priv->account_entry = GTK_ENTRY( widget );
+	ofa_iaccount_entry_init(
+			OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( widget ),
+			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_DETAIL );
 
 	g_signal_connect(
 			G_OBJECT( widget ), "key-press-event", G_CALLBACK( on_account_entry_key_pressed ), self );

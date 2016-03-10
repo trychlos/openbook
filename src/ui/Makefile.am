@@ -155,6 +155,8 @@ openbook_SOURCES = \
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
+	ofa-iaccount-entry.c								\
+	ofa-iaccount-entry.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
@@ -292,6 +294,7 @@ resources_ui = \
 	ofa-app-menubar.ui									\
 	ofa-dos-menubar.ui									\
 	\
+	ofa-iaccount-entry-icon-16.png						\
 	arrow-down.png										\
 	filler.png											\
 	green-checkmark.png									\

@@ -48,6 +48,7 @@
 
 #include "core/ofa-main-window.h"
 
+#include <ui/ofa-iaccount-entry.h>
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-guided-input-bin.h"
 #include "ui/ofa-ledger-combo.h"
@@ -212,6 +213,8 @@ static const gchar *st_resource_ui          = "/org/trychlos/openbook/ui/ofa-gui
 
 static void              setup_main_window( ofaGuidedInputBin *self );
 static void              setup_dialog( ofaGuidedInputBin *self );
+static void              iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
+static gchar            *iaccount_entry_on_post_select( ofaIAccountEntry *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id );
 static void              init_model_data( ofaGuidedInputBin *self );
 static void              add_entry_row( ofaGuidedInputBin *self, gint i );
 static void              add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row );
@@ -226,8 +229,6 @@ static gboolean          on_deffect_focus_out( GtkEntry *entry, GdkEvent *event,
 static void              on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *self );
 static void              on_piece_changed( GtkEditable *editable, ofaGuidedInputBin *self );
 static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *self );
-static void              on_account_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaGuidedInputBin *self );
-static void              on_account_selection( ofaGuidedInputBin *self, gint row );
 static void              do_account_selection( ofaGuidedInputBin *self, GtkEntry *entry, gint row );
 static void              check_for_account( ofaGuidedInputBin *self, GtkEntry *entry, gint row );
 static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self );
@@ -252,7 +253,8 @@ static void              on_hub_updated_object( const ofaHub *hub, const ofoBase
 static void              on_hub_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaGuidedInputBin ))
+		G_ADD_PRIVATE( ofaGuidedInputBin )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init ))
 
 static void
 guided_input_bin_finalize( GObject *instance )
@@ -506,6 +508,36 @@ setup_dialog( ofaGuidedInputBin *self )
 	gtk_widget_show_all( GTK_WIDGET( self ));
 }
 
+/*
+ * ofaIAccountEntry interface management
+ */
+static void
+iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+{
+	static const gchar *thisfn = "ofa_guided_input_bin_iaccount_entry_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->on_post_select = iaccount_entry_on_post_select;
+}
+
+static gchar *
+iaccount_entry_on_post_select( ofaIAccountEntry *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id )
+{
+	ofaGuidedInputBinPrivate *priv;
+	sEntryData *sdata;
+
+	priv = ofa_guided_input_bin_get_instance_private( OFA_GUIDED_INPUT_BIN( instance ));
+
+	if( my_strlen( account_id )){
+		sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
+		priv->focused_row = sdata->row_id;
+		priv->focused_column = OPE_COL_ACCOUNT;
+	}
+
+	return( NULL );
+}
+
 /**
  * ofa_guided_input_bin_set_ope_template:
  *
@@ -719,8 +751,9 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 		}
 
 		if( col_def->column_id == OPE_COL_ACCOUNT && !locked ){
-			gtk_entry_set_icon_from_icon_name( GTK_ENTRY( widget ), GTK_ENTRY_ICON_SECONDARY, "gtk-index" );
-			g_signal_connect( widget, "icon-press", G_CALLBACK( on_account_icon_pressed ), self );
+			ofa_iaccount_entry_init(
+					OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( widget ),
+					OFA_MAIN_WINDOW( priv->main_window ), ACCOUNT_ALLOW_DETAIL );
 		}
 	}
 
@@ -926,43 +959,6 @@ on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *self )
 	}
 
 	return( FALSE );
-}
-
-/*
- * click on an icon in the account entry
- */
-static void
-on_account_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaGuidedInputBin *self )
-{
-	sEntryData *sdata;
-
-	sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
-
-	switch( icon_pos ){
-		case GTK_ENTRY_ICON_SECONDARY:
-			on_account_selection( self, sdata->row_id );
-			break;
-		default:
-			break;
-	}
-}
-
-/*
- * we have clicked on the 'Account selection' button
- * unconditionnally open the selection account dialog box
- */
-static void
-on_account_selection( ofaGuidedInputBin *self, gint row )
-{
-	ofaGuidedInputBinPrivate *priv;
-	GtkWidget *entry;
-
-	priv = ofa_guided_input_bin_get_instance_private( self );
-
-	entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-
-	do_account_selection( self, GTK_ENTRY( entry ), row );
 }
 
 /*

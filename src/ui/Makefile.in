@@ -166,14 +166,14 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-cell-renderer-amount.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-guided-input.$(OBJEXT) \
-	ofa-guided-input-bin.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-import-assistant.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
-	ofa-irenderable.$(OBJEXT) ofa-itreeview-column.$(OBJEXT) \
-	ofa-itreeview-display.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
-	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
-	ofa-ledger-combo.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
-	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
-	ofa-ledger-summary-bin.$(OBJEXT) \
+	ofa-guided-input-bin.$(OBJEXT) ofa-iaccount-entry.$(OBJEXT) \
+	ofa-iaccount-filter.$(OBJEXT) ofa-import-assistant.$(OBJEXT) \
+	ofa-iprintable.$(OBJEXT) ofa-irenderable.$(OBJEXT) \
+	ofa-itreeview-column.$(OBJEXT) ofa-itreeview-display.$(OBJEXT) \
+	ofa-ledger-book-bin.$(OBJEXT) ofa-ledger-book-render.$(OBJEXT) \
+	ofa-ledger-close.$(OBJEXT) ofa-ledger-combo.$(OBJEXT) \
+	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
+	ofa-ledger-store.$(OBJEXT) ofa-ledger-summary-bin.$(OBJEXT) \
 	ofa-ledger-summary-render.$(OBJEXT) \
 	ofa-ledger-treeview.$(OBJEXT) ofa-main-window.$(OBJEXT) \
 	ofa-nomodal-page.$(OBJEXT) \
@@ -586,6 +586,8 @@ openbook_SOURCES = \
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
 	ofa-guided-input-bin.h								\
+	ofa-iaccount-entry.c								\
+	ofa-iaccount-entry.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
@@ -723,6 +725,7 @@ resources_ui = \
 	ofa-app-menubar.ui									\
 	ofa-dos-menubar.ui									\
 	\
+	ofa-iaccount-entry-icon-16.png						\
 	arrow-down.png										\
 	filler.png											\
 	green-checkmark.png									\
@@ -928,6 +931,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-ex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-entry.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@

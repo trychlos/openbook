@@ -40,7 +40,7 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-select.h"
+#include "ui/ofa-iaccount-entry.h"
 #include "ui/ofa-ledger-combo.h"
 #include "ui/ofa-ope-template-help.h"
 #include "ui/ofa-ope-template-properties.h"
@@ -102,7 +102,6 @@ struct _ofaOpeTemplatePropertiesPrivate {
 enum {
 	DET_COL_COMMENT = 0,
 	DET_COL_ACCOUNT,
-	DET_COL_ACCOUNT_SELECT,
 	DET_COL_ACCOUNT_LOCKED,
 	DET_COL_LABEL,
 	DET_COL_LABEL_LOCKED,
@@ -138,12 +137,12 @@ static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      set_detail_widgets( ofaOpeTemplateProperties *self, guint row );
 static void      set_detail_values( ofaOpeTemplateProperties *self, guint row );
+static void      iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
 static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
 static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
-static void      on_account_selection( GtkButton *button, ofaOpeTemplateProperties *self );
 static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
@@ -153,6 +152,7 @@ static void      set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateProperties, ofa_ope_template_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateProperties )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
@@ -568,7 +568,7 @@ static void
 set_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkWidget *toggle, *button;
+	GtkWidget *toggle;
 	GtkEntry *entry;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
@@ -590,12 +590,9 @@ set_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_ACCOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
-
-	button = my_igridlist_add_button(
-						MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-						"gtk-index", 1+DET_COL_ACCOUNT_SELECT, row, DETAIL_SPACE,
-						G_CALLBACK( on_account_selection ), self );
-	g_object_set_data( G_OBJECT( button ), DATA_ROW, GUINT_TO_POINTER( row ));
+	ofa_iaccount_entry_init(
+			OFA_IACCOUNT_ENTRY( self ), entry,
+			OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))), ACCOUNT_ALLOW_DETAIL );
 
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
@@ -686,6 +683,17 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_credit_locked( priv->ope_template, row-1 ));
 }
 
+/*
+ * ofaIAccountEntry interface management
+ */
+static void
+iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+{
+	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
 static void
 on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
 {
@@ -747,32 +755,6 @@ on_ref_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 	priv->ref_locked = gtk_toggle_button_get_active( btn );
 
 	/* doesn't change the validable status of the dialog */
-}
-
-static void
-on_account_selection( GtkButton *button, ofaOpeTemplateProperties *self )
-{
-	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
-	GtkEntry *entry;
-	gchar *number;
-	guint row;
-
-	priv = ofa_ope_template_properties_get_instance_private( self );
-
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT, row ));
-	number = ofa_account_select_run(
-					OFA_MAIN_WINDOW( main_window ),
-					gtk_entry_get_text( entry ),
-					ACCOUNT_ALLOW_DETAIL );
-	if( my_strlen( number )){
-		gtk_entry_set_text( entry, number );
-	}
-	g_free( number );
 }
 
 static void
