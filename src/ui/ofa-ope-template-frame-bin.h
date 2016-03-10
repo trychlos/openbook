@@ -66,24 +66,39 @@ typedef struct {
 }
 	ofaOpeTemplateFrameBinClass;
 
-/* "clicked" signal on frame buttons are proxyed with the following id's
+/**
+ * ofeOpeTemplateFrameBtn:
+ *
+ * These are the buttons that the frame is able to manage.
+ * It is up to the caller to set the desired buttons.
+ * Default is none.
  */
-enum {
-	TEMPLATE_BUTTON_NEW = 1,
-	TEMPLATE_BUTTON_PROPERTIES,
-	TEMPLATE_BUTTON_DELETE,
-	TEMPLATE_BUTTON_DUPLICATE,
-	TEMPLATE_BUTTON_GUIDED_INPUT
-};
+typedef enum {
+	TEMPLATE_BTN_SPACER = 1,
+	TEMPLATE_BTN_NEW,
+	TEMPLATE_BTN_PROPERTIES,
+	TEMPLATE_BTN_DELETE,
+	TEMPLATE_BTN_DUPLICATE,
+	TEMPLATE_BTN_GUIDED_INPUT
+}
+	ofeOpeTemplateFrameBtn;
 
-GType                   ofa_ope_template_frame_bin_get_type   ( void ) G_GNUC_CONST;
+GType                   ofa_ope_template_frame_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new        ( const ofaMainWindow *main_window );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                 ( const ofaMainWindow *main_window );
 
-void                    ofa_ope_template_frame_bin_set_buttons( ofaOpeTemplateFrameBin *bin,
-																			gboolean guided_input );
+GtkWidget              *ofa_ope_template_frame_bin_add_button          ( ofaOpeTemplateFrameBin *bin,
+																				ofeOpeTemplateFrameBtn id,
+																				gboolean sensitive );
 
-ofaOpeTemplateBookBin    *ofa_ope_template_frame_bin_get_book ( ofaOpeTemplateFrameBin *bin );
+GtkWidget              *ofa_ope_template_frame_bin_get_current_treeview( const ofaOpeTemplateFrameBin *bin );
+
+gchar                  *ofa_ope_template_frame_bin_get_selected        ( ofaOpeTemplateFrameBin *bin );
+
+void                    ofa_ope_template_frame_bin_set_selected        ( ofaOpeTemplateFrameBin *bin,
+																				const gchar *mnemo );
+
+void                    ofa_ope_template_frame_bin_write_settings      ( ofaOpeTemplateFrameBin *bin );
 
 G_END_DECLS
 

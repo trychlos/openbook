@@ -190,8 +190,6 @@ openbook_SOURCES = \
 	ofa-main-window.c									\
 	ofa-nomodal-page.c									\
 	ofa-nomodal-page.h									\
-	ofa-ope-template-book-bin.c							\
-	ofa-ope-template-book-bin.h							\
 	ofa-ope-template-frame-bin.c						\
 	ofa-ope-template-frame-bin.h						\
 	ofa-ope-template-help.c								\

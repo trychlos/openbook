@@ -126,9 +126,15 @@ v_setup_page( ofaPage *page )
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
 	priv->ope_frame = ofa_ope_template_frame_bin_new( ofa_page_get_main_window( page ));
-	gtk_widget_set_margin_top( GTK_WIDGET( priv->ope_frame ), 4 );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->ope_frame ), 4, 4, 4, 4 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->ope_frame ), 0, 0, 1, 1 );
-	ofa_ope_template_frame_bin_set_buttons( priv->ope_frame, TRUE );
+
+	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_NEW, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_PROPERTIES, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_DUPLICATE, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_DELETE, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_SPACER, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_GUIDED_INPUT, TRUE );
 
 	g_signal_connect( priv->ope_frame, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
@@ -139,15 +145,13 @@ static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaOpeTemplatePagePrivate *priv;
-	ofaOpeTemplateBookBin *book;
 	GtkWidget *top_widget;
 
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATE_PAGE( page ), NULL );
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	book = ofa_ope_template_frame_bin_get_book( priv->ope_frame );
-	top_widget = ofa_ope_template_book_bin_get_current_treeview( book );
+	top_widget = ofa_ope_template_frame_bin_get_current_treeview( priv->ope_frame );
 
 	return( top_widget );
 }
@@ -172,7 +176,6 @@ on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTempl
 		ofa_ope_template_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), ope, NULL );
 	}
 }
-
 static void
 on_page_removed( ofaOpeTemplatePage *self, GtkWidget *page_w, guint page_n, void *empty )
 {
@@ -184,5 +187,5 @@ on_page_removed( ofaOpeTemplatePage *self, GtkWidget *page_w, guint page_n, void
 
 	priv = ofa_ope_template_page_get_instance_private( self );
 
-	g_signal_emit_by_name( priv->ope_frame, "ofa-closed" );
+	ofa_ope_template_frame_bin_write_settings( priv->ope_frame );
 }

@@ -30,8 +30,6 @@
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
-#include "api/ofo-account.h"
 
 #include "core/ofa-main-window.h"
 
@@ -157,7 +155,6 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 {
 	static const gchar *thisfn = "ofa_ope_template_select_run";
 	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplateBookBin *book;
 	gchar *selected_mnemo;
 
 	g_debug( "%s: main_window=%p, asked_mnemo=%s",
@@ -187,9 +184,7 @@ ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnem
 	priv->ope_mnemo = NULL;
 
 	selected_mnemo = NULL;
-	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	ofa_ope_template_book_bin_set_selected( book, asked_mnemo );
-
+	ofa_ope_template_frame_bin_set_selected( priv->ope_templates_frame, asked_mnemo );
 	check_for_enable_dlg( st_this );
 
 	if( my_idialog_run( MY_IDIALOG( st_this )) == GTK_RESPONSE_OK ){
@@ -248,10 +243,16 @@ idialog_init( myIDialog *instance )
 
 	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( OFA_MAIN_WINDOW( main_window ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
-	ofa_ope_template_frame_bin_set_buttons( priv->ope_templates_frame, FALSE );
 
 	g_signal_connect( priv->ope_templates_frame, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
 	g_signal_connect( priv->ope_templates_frame, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );
+
+	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_NEW, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_PROPERTIES, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_DUPLICATE, TRUE );
+	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_DELETE, TRUE );
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
 static void
@@ -270,14 +271,12 @@ static void
 check_for_enable_dlg( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplateBookBin *book;
 	gchar *mnemo;
 	gboolean ok;
 
 	priv = ofa_ope_template_select_get_instance_private( self );
 
-	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	mnemo = ofa_ope_template_book_bin_get_selected( book );
+	mnemo = ofa_ope_template_frame_bin_get_selected( priv->ope_templates_frame );
 	ok = my_strlen( mnemo );
 	g_free( mnemo );
 
@@ -294,13 +293,11 @@ static gboolean
 do_select( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
-	ofaOpeTemplateBookBin *book;
 	gchar *mnemo;
 
 	priv = ofa_ope_template_select_get_instance_private( self );
 
-	book = ofa_ope_template_frame_bin_get_book( priv->ope_templates_frame );
-	mnemo = ofa_ope_template_book_bin_get_selected( book );
+	mnemo = ofa_ope_template_frame_bin_get_selected( priv->ope_templates_frame );
 	if( my_strlen( mnemo )){
 		g_free( priv->ope_mnemo );
 		priv->ope_mnemo = g_strdup( mnemo );
@@ -320,5 +317,7 @@ on_hub_finalized( gpointer is_null, gpointer finalized_hub )
 
 	g_return_if_fail( st_this && OFA_IS_OPE_TEMPLATE_SELECT( st_this ));
 
-	g_clear_object( &st_this );
+	//g_clear_object( &st_this );
+	gtk_widget_destroy( GTK_WIDGET( st_this ));
+	st_this = NULL;
 }

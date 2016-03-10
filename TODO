@@ -505,9 +505,6 @@
 1034 2016- 3- 3 FEAT find a better icon than gtk-index for account selection
                      + have the same, bigger, icon for account chart
 
-1037 2016- 3- 7 CODE merge ofaOpeTemplateBookBin and ofaOpeTemplateFrameBin
-                     (like ofaAccount equiv.)
-
 1040 2016- 3-10 CODE ofaSettlement -> ofaSettlementPage
 
 1041
@@ -955,6 +952,10 @@
                      complete my_utils_container_....
      2016- 3- 9 this is without any interest as this would only prevent a
                 cast to GTK_CONTAINER -> cancelled
+
+1037 2016- 3- 7 CODE merge ofaOpeTemplateBookBin and ofaOpeTemplateFrameBin
+                     (like ofaAccount equiv.)
+     2016- 3-10 done
 
 1038 2016- 3- 7 CODE replace self = ( ofaOpeTemplateStore * ) g_object_get_data( G_OBJECT( hub ), STORE_DATA_DOSSIER );
                      by a true function call
