@@ -274,6 +274,6 @@ on_instance_finalized( sISingleKeeper *sdata, GObject *finalized_single_keeper )
 static void
 free_kept( sKept *kept )
 {
-	g_clear_object( &kept->object );
+	//g_clear_object( &kept->object );
 	g_free( kept );
 }
