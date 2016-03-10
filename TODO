@@ -505,8 +505,6 @@
 1034 2016- 3- 3 FEAT find a better icon than gtk-index for account selection
                      + have the same, bigger, icon for account chart
 
-1040 2016- 3-10 CODE ofaSettlement -> ofaSettlementPage
-
 1041
 
 -----------------------------------------------------------------------
@@ -963,6 +961,9 @@
 
 1039 2016- 3- 7 CODE replace my_utils_dialog by my_iwindow
      2016- 3- 9 done
+
+1040 2016- 3-10 CODE ofaSettlement -> ofaSettlementPage
+     2016- 3-10 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

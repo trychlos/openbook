@@ -45,7 +45,7 @@
 #include "ui/ofa-account-store.h"
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-reconcil-page.h"
-#include "ui/ofa-settlement.h"
+#include "ui/ofa-settlement-page.h"
 
 /* private instance data
  */
@@ -1453,7 +1453,7 @@ button_on_settlement_clicked( GtkButton *button, ofaAccountFrameBin *self )
 
 	number = ofa_account_frame_bin_get_selected( self );
 	page = ofa_main_window_activate_theme( priv->main_window, THM_SETTLEMENT );
-	ofa_settlement_set_account( OFA_SETTLEMENT( page ), number );
+	ofa_settlement_page_set_account( OFA_SETTLEMENT_PAGE( page ), number );
 	g_free( number );
 }
 

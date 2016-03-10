@@ -71,7 +71,7 @@
 #include "ui/ofa-rate-page.h"
 #include "ui/ofa-reconcil-render.h"
 #include "ui/ofa-reconcil-page.h"
-#include "ui/ofa-settlement.h"
+#include "ui/ofa-settlement-page.h"
 
 /* private instance data
  */
@@ -263,7 +263,7 @@ static sThemeDef st_theme_defs[] = {
 		},
 		{ THM_SETTLEMENT,
 				N_( "Settlement" ),
-				ofa_settlement_get_type,
+				ofa_settlement_page_get_type,
 				FALSE
 		},
 		{ THM_ENTRIES,

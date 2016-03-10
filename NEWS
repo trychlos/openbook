@@ -42,6 +42,8 @@
    - myDialog, myWindow: removed classes (todo #992).
    - my_iwindow_msg_dialog(): new method (todo #1039).
    - ofaISingleKeeper: new interface (todo #1038).
+   - ofaOpeTemplateBookBin: removed class (todo #1037).
+   - ofaSettlement: is renamed as ofaSettlementPage (todo #1040).
 
 -----------------------------------------------------------------------
  Version 0.49

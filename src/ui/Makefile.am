@@ -218,8 +218,8 @@ openbook_SOURCES = \
 	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
-	ofa-settlement.c									\
-	ofa-settlement.h									\
+	ofa-settlement-page.c								\
+	ofa-settlement-page.h								\
 	ofa-tree-store.c									\
 	ofa-tree-store.h									\
 	ofa-user-credentials-bin.c							\
@@ -286,7 +286,7 @@ resources_ui = \
 	ofa-reconcil-page.ui								\
 	ofa-render-page.ui									\
 	ofa-restore-assistant.ui							\
-	ofa-settlement.ui									\
+	ofa-settlement-page.ui								\
 	ofa-user-credentials-bin.ui							\
 	\
 	ofa-app-menubar.ui									\

@@ -41,8 +41,6 @@
 
 #include "api/ofa-main-window-def.h"
 
-#include "ui/ofa-ope-template-book-bin.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_OPE_TEMPLATE_FRAME_BIN                ( ofa_ope_template_frame_bin_get_type())

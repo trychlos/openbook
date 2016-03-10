@@ -46,22 +46,22 @@
 #include "ui/ofa-account-select.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
-#include "ui/ofa-settlement.h"
+#include "ui/ofa-settlement-page.h"
 
 /*
- * ofaEntrySettlement:
+ * ofaEntrySettlementPage:
  */
 typedef enum {
-	ENT_SETTLEMENT_YES = 1,
-	ENT_SETTLEMENT_NO,
-	ENT_SETTLEMENT_ALL,
-	ENT_SETTLEMENT_SESSION
+	ENT_SETTLEMENT_PAGE_YES = 1,
+	ENT_SETTLEMENT_PAGE_NO,
+	ENT_SETTLEMENT_PAGE_ALL,
+	ENT_SETTLEMENT_PAGE_SESSION
 }
-	ofaEntrySettlement;
+	ofaEntrySettlementPage;
 
 /* priv instance data
  */
-struct _ofaSettlementPrivate {
+struct _ofaSettlementPagePrivate {
 
 	/* internals
 	 */
@@ -69,7 +69,7 @@ struct _ofaSettlementPrivate {
 	GList             *hub_handlers;
 	gchar             *account_number;
 	const gchar       *account_currency;
-	ofaEntrySettlement settlement;
+	ofaEntrySettlementPage settlement;
 
 	/* sorting the view
 	 */
@@ -113,13 +113,13 @@ typedef struct {
 	gint         code;
 	const gchar *label;
 }
-	sSettlement;
+	sSettlementPage;
 
-static const sSettlement st_settlements[] = {
-		{ ENT_SETTLEMENT_YES,     N_( "Settled entries" ) },
-		{ ENT_SETTLEMENT_NO,      N_( "Unsettled entries" ) },
-		{ ENT_SETTLEMENT_SESSION, N_( "Settlement session" ) },
-		{ ENT_SETTLEMENT_ALL,     N_( "All entries" ) },
+static const sSettlementPage st_settlements[] = {
+		{ ENT_SETTLEMENT_PAGE_YES,     N_( "Settled entries" ) },
+		{ ENT_SETTLEMENT_PAGE_NO,      N_( "Unsettled entries" ) },
+		{ ENT_SETTLEMENT_PAGE_SESSION, N_( "SettlementPage session" ) },
+		{ ENT_SETTLEMENT_PAGE_ALL,     N_( "All entries" ) },
 		{ 0 }
 };
 
@@ -135,7 +135,7 @@ enum {
 	ENT_COL_ACCOUNT,
 	ENT_COL_DEBIT,
 	ENT_COL_CREDIT,
-	ENT_COL_SETTLEMENT,
+	ENT_COL_SETTLEMENT_PAGE,
 	ENT_COL_STATUS,
 	ENT_COL_OBJECT,
 	ENT_N_COLUMNS
@@ -147,7 +147,7 @@ enum {
  * - when settling or unsettling the selection
  */
 typedef struct {
-	ofaSettlement *self;
+	ofaSettlementPage *self;
 	gint           rows;				/* count of. */
 	gint           settled;				/* count of. */
 	gint           unsettled;			/* count of. */
@@ -171,11 +171,11 @@ typedef struct {
 
 #define COLOR_SETTLED                   "#e0e0e0"		/* light gray background */
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-settlement.ui";
-static const gchar *st_ui_id            = "SettlementWindow";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-settlement-page.ui";
+static const gchar *st_ui_id            = "SettlementPageWindow";
 
-static const gchar *st_pref_settlement  = "SettlementPrefs";
-static const gchar *st_pref_columns     = "SettlementColumns";
+static const gchar *st_pref_settlement  = "SettlementPagePrefs";
+static const gchar *st_pref_columns     = "SettlementPageColumns";
 
 static const ofsTreeviewColumnId st_treeview_column_ids[] = {
 		{ ENT_COL_DOPE,       ITVC_DOPE },
@@ -183,7 +183,7 @@ static const ofsTreeviewColumnId st_treeview_column_ids[] = {
 		{ ENT_COL_REF,        ITVC_ENT_REF },
 		{ ENT_COL_LEDGER,     ITVC_LED_ID },
 		{ ENT_COL_LABEL,      ITVC_ENT_LABEL },
-		{ ENT_COL_SETTLEMENT, ITVC_STLMT_NUMBER },
+		{ ENT_COL_SETTLEMENT_PAGE, ITVC_STLMT_NUMBER },
 		{ ENT_COL_DEBIT,      ITVC_DEBIT },
 		{ ENT_COL_CREDIT,     ITVC_CREDIT },
 		{ -1 }
@@ -196,98 +196,98 @@ static guint          itreeview_display_get_interface_version( const ofaITreevie
 static gchar         *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean       itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
 static GtkWidget     *v_setup_view( ofaPage *page );
-static void           reparent_from_dialog( ofaSettlement *self, GtkContainer *parent );
-static void           setup_footer( ofaSettlement *self );
-static void           setup_entries_treeview( ofaSettlement *self );
-static void           setup_account_selection( ofaSettlement *self );
-static void           setup_settlement_selection( ofaSettlement *self );
-static void           setup_signaling_connect( ofaSettlement *self );
-static void           on_account_changed( GtkEntry *entry, ofaSettlement *self );
-static void           on_account_select( GtkButton *button, ofaSettlement *self );
-static void           on_settlement_changed( GtkComboBox *box, ofaSettlement *self );
-static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettlement *self );
-static gint           cmp_strings( ofaSettlement *self, const gchar *stra, const gchar *strb );
-static gint           cmp_amounts( ofaSettlement *self, const gchar *stra, const gchar *strb );
-static gint           cmp_counters( ofaSettlement *self, const gchar *stra, const gchar *strb );
-static gboolean       is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self );
-static gboolean       is_session_settled( ofaSettlement *self, ofoEntry *entry );
-static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self );
-static void           on_header_clicked( GtkTreeViewColumn *column, ofaSettlement *self );
-static gboolean       settlement_status_is_valid( ofaSettlement *self );
-static void           try_display_entries( ofaSettlement *self );
-static void           display_entries( ofaSettlement *self, GList *entries );
-static void           display_entry( ofaSettlement *self, GtkTreeModel *tmodel, ofoEntry *entry );
-static void           set_row_entry( ofaSettlement *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
-static void           on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *self );
+static void           reparent_from_dialog( ofaSettlementPage *self, GtkContainer *parent );
+static void           setup_footer( ofaSettlementPage *self );
+static void           setup_entries_treeview( ofaSettlementPage *self );
+static void           setup_account_selection( ofaSettlementPage *self );
+static void           setup_settlement_selection( ofaSettlementPage *self );
+static void           setup_signaling_connect( ofaSettlementPage *self );
+static void           on_account_changed( GtkEntry *entry, ofaSettlementPage *self );
+static void           on_account_select( GtkButton *button, ofaSettlementPage *self );
+static void           on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self );
+static gint           on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettlementPage *self );
+static gint           cmp_strings( ofaSettlementPage *self, const gchar *stra, const gchar *strb );
+static gint           cmp_amounts( ofaSettlementPage *self, const gchar *stra, const gchar *strb );
+static gint           cmp_counters( ofaSettlementPage *self, const gchar *stra, const gchar *strb );
+static gboolean       is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementPage *self );
+static gboolean       is_session_settled( ofaSettlementPage *self, ofoEntry *entry );
+static void           on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementPage *self );
+static void           on_header_clicked( GtkTreeViewColumn *column, ofaSettlementPage *self );
+static gboolean       settlement_status_is_valid( ofaSettlementPage *self );
+static void           try_display_entries( ofaSettlementPage *self );
+static void           display_entries( ofaSettlementPage *self, GList *entries );
+static void           display_entry( ofaSettlementPage *self, GtkTreeModel *tmodel, ofoEntry *entry );
+static void           set_row_entry( ofaSettlementPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
+static void           on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlementPage *self );
 static void           enum_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, sEnumSelected *ses );
-static void           on_settle_clicked( GtkButton *button, ofaSettlement *self );
-static void           on_unsettle_clicked( GtkButton *button, ofaSettlement *self );
-static void           update_selection( ofaSettlement *self, gboolean settle );
+static void           on_settle_clicked( GtkButton *button, ofaSettlementPage *self );
+static void           on_unsettle_clicked( GtkButton *button, ofaSettlementPage *self );
+static void           update_selection( ofaSettlementPage *self, gboolean settle );
 static void           update_row( GtkTreeModel *tmodel, GtkTreeIter *iter, sEnumSelected *ses );
-static void           get_settings( ofaSettlement *self );
-static void           set_settings( ofaSettlement *self );
-static void           on_hub_new_object( ofaHub *hub, ofoBase *object, ofaSettlement *self );
-static void           on_new_entry( ofaSettlement *self, ofoEntry *entry );
-static void           on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaSettlement *self );
-static void           on_updated_entry( ofaSettlement *self, ofoEntry *entry );
-static gboolean       find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter number, GtkTreeIter *iter );
+static void           get_settings( ofaSettlementPage *self );
+static void           set_settings( ofaSettlementPage *self );
+static void           on_hub_new_object( ofaHub *hub, ofoBase *object, ofaSettlementPage *self );
+static void           on_new_entry( ofaSettlementPage *self, ofoEntry *entry );
+static void           on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaSettlementPage *self );
+static void           on_updated_entry( ofaSettlementPage *self, ofoEntry *entry );
+static gboolean       find_entry_by_number( ofaSettlementPage *self, GtkTreeModel *tmodel, ofxCounter number, GtkTreeIter *iter );
 
-G_DEFINE_TYPE_EXTENDED( ofaSettlement, ofa_settlement, OFA_TYPE_PAGE, 0,
-		G_ADD_PRIVATE( ofaSettlement )
+G_DEFINE_TYPE_EXTENDED( ofaSettlementPage, ofa_settlement_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaSettlementPage )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
 
 static void
 settlement_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_settlement_finalize";
-	ofaSettlementPrivate *priv;
+	static const gchar *thisfn = "ofa_settlement_page_finalize";
+	ofaSettlementPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_SETTLEMENT( instance ));
+	g_return_if_fail( instance && OFA_IS_SETTLEMENT_PAGE( instance ));
 
 	/* free data members here */
-	priv = ofa_settlement_get_instance_private( OFA_SETTLEMENT( instance ));
+	priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( instance ));
 
 	g_free( priv->account_number );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_settlement_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_settlement_page_parent_class )->finalize( instance );
 }
 
 static void
 settlement_dispose( GObject *instance )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_SETTLEMENT( instance ));
+	g_return_if_fail( instance && OFA_IS_SETTLEMENT_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ofa_settlement_get_instance_private( OFA_SETTLEMENT( instance ));
+		priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( instance ));
 
 		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_settlement_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_settlement_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_settlement_init( ofaSettlement *self )
+ofa_settlement_page_init( ofaSettlementPage *self )
 {
-	static const gchar *thisfn = "ofa_settlement_init";
-	ofaSettlementPrivate *priv;
+	static const gchar *thisfn = "ofa_settlement_page_init";
+	ofaSettlementPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_SETTLEMENT( self ));
+	g_return_if_fail( self && OFA_IS_SETTLEMENT_PAGE( self ));
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	priv->settlement = -1;
 	priv->sort_column_id = -1;
@@ -295,9 +295,9 @@ ofa_settlement_init( ofaSettlement *self )
 }
 
 static void
-ofa_settlement_class_init( ofaSettlementClass *klass )
+ofa_settlement_page_class_init( ofaSettlementPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_settlement_class_init";
+	static const gchar *thisfn = "ofa_settlement_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -377,42 +377,42 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_settlement_v_setup_view";
-	ofaSettlementPrivate *priv;
+	static const gchar *thisfn = "ofa_settlement_page_v_setup_view";
+	ofaSettlementPagePrivate *priv;
 	GtkWidget *frame;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = ofa_settlement_get_instance_private( OFA_SETTLEMENT( page ));
+	priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( page ));
 
-	get_settings( OFA_SETTLEMENT( page ));
+	get_settings( OFA_SETTLEMENT_PAGE( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
-	reparent_from_dialog( OFA_SETTLEMENT( page ), GTK_CONTAINER( frame ));
+	reparent_from_dialog( OFA_SETTLEMENT_PAGE( page ), GTK_CONTAINER( frame ));
 
 	/* build first the targets of the data, and only after the triggers */
-	setup_footer( OFA_SETTLEMENT( page ));
-	setup_entries_treeview( OFA_SETTLEMENT( page ));
-	setup_settlement_selection( OFA_SETTLEMENT( page ));
-	setup_account_selection( OFA_SETTLEMENT( page ));
+	setup_footer( OFA_SETTLEMENT_PAGE( page ));
+	setup_entries_treeview( OFA_SETTLEMENT_PAGE( page ));
+	setup_settlement_selection( OFA_SETTLEMENT_PAGE( page ));
+	setup_account_selection( OFA_SETTLEMENT_PAGE( page ));
 
 	/* connect to dossier signaling system */
-	setup_signaling_connect( OFA_SETTLEMENT( page ));
+	setup_signaling_connect( OFA_SETTLEMENT_PAGE( page ));
 
 	return( frame );
 }
 
 static void
-reparent_from_dialog( ofaSettlement *self, GtkContainer *parent )
+reparent_from_dialog( ofaSettlementPage *self, GtkContainer *parent )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GtkWidget *box;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	/* load our dialog */
 	box = my_utils_container_attach_from_resource( parent, st_resource_ui, st_ui_id, "top" );
@@ -422,12 +422,12 @@ reparent_from_dialog( ofaSettlement *self, GtkContainer *parent )
 }
 
 static void
-setup_footer( ofaSettlement *self )
+setup_footer( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GtkWidget *widget;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	widget = my_utils_container_get_child_by_name( priv->top_box, "settle-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
@@ -460,10 +460,10 @@ setup_footer( ofaSettlement *self )
  * the treeview is filtered on the settlement status
  */
 static void
-setup_entries_treeview( ofaSettlement *self )
+setup_entries_treeview( ofaSettlementPage *self )
 {
-	static const gchar *thisfn = "ofa_settlement_setup_entries_treeview";
-	ofaSettlementPrivate *priv;
+	static const gchar *thisfn = "ofa_settlement_page_setup_entries_treeview";
+	ofaSettlementPagePrivate *priv;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel, *tfilter, *tsort;
 	GtkCellRenderer *text_cell;
@@ -472,7 +472,7 @@ setup_entries_treeview( ofaSettlement *self )
 	gint column_id;
 	GtkTreeViewColumn *sort_column;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	tview = ( GtkTreeView * ) my_utils_container_get_child_by_name( priv->top_box, "treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
@@ -667,11 +667,11 @@ setup_entries_treeview( ofaSettlement *self )
 
 	/* settlement number
 	 */
-	column_id = ENT_COL_SETTLEMENT;
+	column_id = ENT_COL_SETTLEMENT_PAGE;
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Settlement" ),
+			_( "SettlementPage" ),
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
@@ -702,12 +702,12 @@ setup_entries_treeview( ofaSettlement *self )
 }
 
 static void
-setup_account_selection( ofaSettlement *self )
+setup_account_selection( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GtkWidget *widget;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	/* label must be setup before entry may be changed */
 	widget = my_utils_container_get_child_by_name( priv->top_box, "account-label" );
@@ -728,16 +728,16 @@ setup_account_selection( ofaSettlement *self )
 }
 
 static void
-setup_settlement_selection( ofaSettlement *self )
+setup_settlement_selection( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GtkWidget *combo, *label, *columns;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	gint i, idx;
 	GtkTreeIter iter;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	columns = my_utils_container_get_child_by_name( priv->top_box, "f2-columns" );
 	g_return_if_fail( columns && GTK_IS_CONTAINER( columns ));
@@ -785,12 +785,12 @@ setup_settlement_selection( ofaSettlement *self )
 }
 
 static void
-setup_signaling_connect( ofaSettlement *self )
+setup_signaling_connect( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	gulong handler;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	handler = g_signal_connect(
 			priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
@@ -802,12 +802,12 @@ setup_signaling_connect( ofaSettlement *self )
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaSettlement *self )
+on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	ofoAccount *account;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	priv->account_currency = NULL;
 
@@ -830,12 +830,12 @@ on_account_changed( GtkEntry *entry, ofaSettlement *self )
 }
 
 static void
-on_account_select( GtkButton *button, ofaSettlement *self )
+on_account_select( GtkButton *button, ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	gchar *account_number;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	account_number = ofa_account_select_run(
 							ofa_page_get_main_window( OFA_PAGE( self )),
@@ -848,13 +848,13 @@ on_account_select( GtkButton *button, ofaSettlement *self )
 }
 
 static void
-on_settlement_changed( GtkComboBox *box, ofaSettlement *self )
+on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel, *tsort, *tfilter;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
 		tmodel = gtk_combo_box_get_model( box );
@@ -877,10 +877,10 @@ on_settlement_changed( GtkComboBox *box, ofaSettlement *self )
  * the difference is small, but actually exists
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettlement *self )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettlementPage *self )
 {
-	static const gchar *thisfn = "ofa_settlement_on_sort_model";
-	ofaSettlementPrivate *priv;
+	static const gchar *thisfn = "ofa_settlement_page_on_sort_model";
+	ofaSettlementPagePrivate *priv;
 	gint cmp;
 	gchar *sdopea, *sdeffa, *srefa, *slabela, *sleda, *sacca, *sdeba, *screa, *sstlmta;
 	gchar *sdopeb, *sdeffb, *srefb, *slabelb, *sledb, *saccb, *sdebb, *screb, *sstlmtb;
@@ -894,7 +894,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 			ENT_COL_ACCOUNT,    &sacca,
 			ENT_COL_DEBIT,      &sdeba,
 			ENT_COL_CREDIT,     &screa,
-			ENT_COL_SETTLEMENT, &sstlmta,
+			ENT_COL_SETTLEMENT_PAGE, &sstlmta,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -906,12 +906,12 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 			ENT_COL_ACCOUNT,    &saccb,
 			ENT_COL_DEBIT,      &sdebb,
 			ENT_COL_CREDIT,     &screb,
-			ENT_COL_SETTLEMENT, &sstlmtb,
+			ENT_COL_SETTLEMENT_PAGE, &sstlmtb,
 			-1 );
 
 	cmp = 0;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	switch( priv->sort_column_id ){
 		case ENT_COL_DOPE:
@@ -938,7 +938,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 		case ENT_COL_CREDIT:
 			cmp = cmp_amounts( self, screa, screb );
 			break;
-		case ENT_COL_SETTLEMENT:
+		case ENT_COL_SETTLEMENT_PAGE:
 			cmp = cmp_counters( self, sstlmta, sstlmtb );
 			break;
 		default:
@@ -973,13 +973,13 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaSettleme
 }
 
 static gint
-cmp_strings( ofaSettlement *self, const gchar *stra, const gchar *strb )
+cmp_strings( ofaSettlementPage *self, const gchar *stra, const gchar *strb )
 {
 	return( my_collate( stra, strb ));
 }
 
 static gint
-cmp_amounts( ofaSettlement *self, const gchar *stra, const gchar *strb )
+cmp_amounts( ofaSettlementPage *self, const gchar *stra, const gchar *strb )
 {
 	ofxAmount a, b;
 
@@ -994,7 +994,7 @@ cmp_amounts( ofaSettlement *self, const gchar *stra, const gchar *strb )
 }
 
 static gint
-cmp_counters( ofaSettlement *self, const gchar *stra, const gchar *strb )
+cmp_counters( ofaSettlementPage *self, const gchar *stra, const gchar *strb )
 {
 	ofxCounter a, b;
 
@@ -1012,15 +1012,15 @@ cmp_counters( ofaSettlement *self, const gchar *stra, const gchar *strb )
  * a row is visible if it is consistant with the selected settlement status
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
+is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	gboolean visible;
 	ofoEntry *entry;
 	gint entry_set_number;
 	const gchar *ent_account;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	visible = FALSE;
 
@@ -1046,20 +1046,20 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
 		entry_set_number = ofo_entry_get_settlement_number( entry );
 
 		switch( priv->settlement ){
-			case ENT_SETTLEMENT_YES:
+			case ENT_SETTLEMENT_PAGE_YES:
 				visible = ( entry_set_number > 0 );
 				break;
-			case ENT_SETTLEMENT_NO:
+			case ENT_SETTLEMENT_PAGE_NO:
 				visible = ( entry_set_number <= 0 );
 				break;
-			case ENT_SETTLEMENT_SESSION:
+			case ENT_SETTLEMENT_PAGE_SESSION:
 				if( entry_set_number <= 0 ){
 					visible = TRUE;
 				} else {
 					visible = is_session_settled( self, entry );
 				}
 				break;
-			case ENT_SETTLEMENT_ALL:
+			case ENT_SETTLEMENT_PAGE_ALL:
 				visible = TRUE;
 				break;
 			default:
@@ -1071,7 +1071,7 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlement *self )
 }
 
 static gboolean
-is_session_settled( ofaSettlement *self, ofoEntry *entry )
+is_session_settled( ofaSettlementPage *self, ofoEntry *entry )
 {
 	gboolean is_session;
 	const GTimeVal *stamp;
@@ -1091,7 +1091,7 @@ is_session_settled( ofaSettlement *self, ofoEntry *entry )
 static void
 on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaSettlement *self )
+						ofaSettlementPage *self )
 {
 	ofoEntry *entry;
 	ofxCounter number;
@@ -1125,15 +1125,15 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
  * header makes the sort order descending as the default
  */
 static void
-on_header_clicked( GtkTreeViewColumn *column, ofaSettlement *self )
+on_header_clicked( GtkTreeViewColumn *column, ofaSettlementPage *self )
 {
-	static const gchar *thisfn = "ofa_settlement_on_header_clicked";
-	ofaSettlementPrivate *priv;
+	static const gchar *thisfn = "ofa_settlement_page_on_header_clicked";
+	ofaSettlementPagePrivate *priv;
 	gint sort_column_id, new_column_id;
 	GtkSortType sort_order;
 	GtkTreeModel *tsort;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
 	gtk_tree_view_column_set_sort_indicator( column, TRUE );
@@ -1159,22 +1159,22 @@ on_header_clicked( GtkTreeViewColumn *column, ofaSettlement *self )
  * at least a settlement status must be set
  */
 static gboolean
-settlement_status_is_valid( ofaSettlement *self )
+settlement_status_is_valid( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	return( priv->settlement >= 1 );
 }
 
 static void
-try_display_entries( ofaSettlement *self )
+try_display_entries( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GList *entries;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	if( priv->account_number &&
 			settlement_status_is_valid( self ) &&
@@ -1187,13 +1187,13 @@ try_display_entries( ofaSettlement *self )
 }
 
 static void
-display_entries( ofaSettlement *self, GList *entries )
+display_entries( ofaSettlementPage *self, GList *entries )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GtkTreeModel *tsort, *tfilter, *tstore;
 	GList *iset;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	tsort = gtk_tree_view_get_model( priv->tview );
 	tfilter = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( tsort ));
@@ -1206,7 +1206,7 @@ display_entries( ofaSettlement *self, GList *entries )
 }
 
 static void
-display_entry( ofaSettlement *self, GtkTreeModel *tmodel, ofoEntry *entry )
+display_entry( ofaSettlementPage *self, GtkTreeModel *tmodel, ofoEntry *entry )
 {
 	GtkTreeIter iter;
 
@@ -1215,7 +1215,7 @@ display_entry( ofaSettlement *self, GtkTreeModel *tmodel, ofoEntry *entry )
 }
 
 static void
-set_row_entry( ofaSettlement *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
+set_row_entry( ofaSettlementPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
 	gchar *sdope, *sdeff, *sdeb, *scre, *str_number;
 	gdouble amount;
@@ -1254,7 +1254,7 @@ set_row_entry( ofaSettlement *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofo
 				ENT_COL_ACCOUNT,    ofo_entry_get_account( entry ),
 				ENT_COL_DEBIT,      sdeb,
 				ENT_COL_CREDIT,     scre,
-				ENT_COL_SETTLEMENT, str_number,
+				ENT_COL_SETTLEMENT_PAGE, str_number,
 				ENT_COL_OBJECT,     entry,
 				-1 );
 
@@ -1269,13 +1269,13 @@ set_row_entry( ofaSettlement *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofo
  * recompute the balance per currency each time the selection changes
  */
 static void
-on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlement *self )
+on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	sEnumSelected ses;
 	gchar *samount;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
@@ -1327,7 +1327,7 @@ enum_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, sEnum
 	gtk_tree_model_get( tmodel, iter,
 			ENT_COL_DEBIT,      &sdeb,
 			ENT_COL_CREDIT,     &scre,
-			ENT_COL_SETTLEMENT, &snum,
+			ENT_COL_SETTLEMENT_PAGE, &snum,
 			-1 );
 
 	number = atoi( snum );
@@ -1349,13 +1349,13 @@ enum_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, sEnum
 }
 
 static void
-on_settle_clicked( GtkButton *button, ofaSettlement *self )
+on_settle_clicked( GtkButton *button, ofaSettlementPage *self )
 {
 	update_selection( self, TRUE );
 }
 
 static void
-on_unsettle_clicked( GtkButton *button, ofaSettlement *self )
+on_unsettle_clicked( GtkButton *button, ofaSettlementPage *self )
 {
 	update_selection( self, FALSE );
 }
@@ -1366,9 +1366,9 @@ on_unsettle_clicked( GtkButton *button, ofaSettlement *self )
  * disappear from the view -> so update based on GtkListStore iters
  */
 static void
-update_selection( ofaSettlement *self, gboolean settle )
+update_selection( ofaSettlementPage *self, gboolean settle )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GtkTreeSelection *select;
 	sEnumSelected ses;
 	GList *selected_paths, *ipath;
@@ -1378,7 +1378,7 @@ update_selection( ofaSettlement *self, gboolean settle )
 	GList *list_iters, *it;
 	ofoDossier *dossier;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	memset( &ses, '\0', sizeof( sEnumSelected ));
 	ses.self = self;
@@ -1452,7 +1452,7 @@ update_row( GtkTreeModel *tstore, GtkTreeIter *iter, sEnumSelected *ses )
 	}
 
 	gtk_list_store_set( GTK_LIST_STORE( tstore ), iter,
-				ENT_COL_SETTLEMENT, snum,
+				ENT_COL_SETTLEMENT_PAGE, snum,
 				-1 );
 
 	g_free( snum );
@@ -1465,13 +1465,13 @@ update_row( GtkTreeModel *tstore, GtkTreeIter *iter, sEnumSelected *ses )
  * settings: account;mode;sort_column_id;sort_sens;
  */
 static void
-get_settings( ofaSettlement *self )
+get_settings( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	slist = ofa_settings_user_get_string_list( st_pref_settlement );
 	it = slist ? slist : NULL;
@@ -1503,12 +1503,12 @@ get_settings( ofaSettlement *self )
 }
 
 static void
-set_settings( ofaSettlement *self )
+set_settings( ofaSettlementPage *self )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	gchar *str;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	str = g_strdup_printf( "%s;%d;%d;%d;",
 			priv->account_number, priv->settlement, priv->sort_column_id, priv->sort_sens );
@@ -1522,9 +1522,9 @@ set_settings( ofaSettlement *self )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaSettlement *self )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaSettlementPage *self )
 {
-	static const gchar *thisfn = "ofa_settlement_on_hub_new_object";
+	static const gchar *thisfn = "ofa_settlement_page_on_hub_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -1542,13 +1542,13 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaSettlement *self )
  * currently selected account
  */
 static void
-on_new_entry( ofaSettlement *self, ofoEntry *entry )
+on_new_entry( ofaSettlementPage *self, ofoEntry *entry )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	const gchar *entry_account;
 	GtkTreeModel *tsort, *tfilter, *tstore;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	entry_account = ofo_entry_get_account( entry );
 
@@ -1565,9 +1565,9 @@ on_new_entry( ofaSettlement *self, ofoEntry *entry )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaSettlement *self )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaSettlementPage *self )
 {
-	static const gchar *thisfn = "ofa_settlement_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_settlement_page_on_hub_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
@@ -1582,14 +1582,14 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaSe
 }
 
 static void
-on_updated_entry( ofaSettlement *self, ofoEntry *entry )
+on_updated_entry( ofaSettlementPage *self, ofoEntry *entry )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 	const gchar *entry_account;
 	GtkTreeModel *tsort, *tfilter, *tstore;
 	GtkTreeIter iter;
 
-	priv = ofa_settlement_get_instance_private( self );
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	entry_account = ofo_entry_get_account( entry );
 
@@ -1613,7 +1613,7 @@ on_updated_entry( ofaSettlement *self, ofoEntry *entry )
  * return TRUE if we have found the requested entry row
  */
 static gboolean
-find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter entry_number, GtkTreeIter *iter )
+find_entry_by_number( ofaSettlementPage *self, GtkTreeModel *tmodel, ofxCounter entry_number, GtkTreeIter *iter )
 {
 	ofxCounter row_number;
 
@@ -1633,19 +1633,19 @@ find_entry_by_number( ofaSettlement *self, GtkTreeModel *tmodel, ofxCounter entr
 }
 
 /**
- * ofa_settlement_set_account:
+ * ofa_settlement_page_set_account:
  * @page:
  * @number:
  */
 void
-ofa_settlement_set_account( ofaSettlement *page, const gchar *number )
+ofa_settlement_page_set_account( ofaSettlementPage *page, const gchar *number )
 {
-	ofaSettlementPrivate *priv;
+	ofaSettlementPagePrivate *priv;
 
-	g_return_if_fail( page && OFA_IS_SETTLEMENT( page ));
+	g_return_if_fail( page && OFA_IS_SETTLEMENT_PAGE( page ));
 	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-	priv = ofa_settlement_get_instance_private( page );
+	priv = ofa_settlement_page_get_instance_private( page );
 
 	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), number );
 }

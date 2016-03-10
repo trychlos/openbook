@@ -22,16 +22,16 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_SETTLEMENT_H__
-#define __OFA_SETTLEMENT_H__
+#ifndef __OFA_SETTLEMENT_PAGE_H__
+#define __OFA_SETTLEMENT_PAGE_H__
 
 /**
- * SECTION: ofa_settlement
- * @short_description: #ofaSettlement class definition.
- * @include: ui/ofa-settlement.h
+ * SECTION: ofa_settlement_page
+ * @short_description: #ofaSettlementPage class definition.
+ * @include: ui/ofa-settlement-page.h
  *
  * Development rules:
- * - type:       dialog
+ * - type:       page
  * - settings:   yes
  * - current:    no
  */
@@ -40,32 +40,32 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_SETTLEMENT                ( ofa_settlement_get_type())
-#define OFA_SETTLEMENT( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_SETTLEMENT, ofaSettlement ))
-#define OFA_SETTLEMENT_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_SETTLEMENT, ofaSettlementClass ))
-#define OFA_IS_SETTLEMENT( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_SETTLEMENT ))
-#define OFA_IS_SETTLEMENT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_SETTLEMENT ))
-#define OFA_SETTLEMENT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_SETTLEMENT, ofaSettlementClass ))
+#define OFA_TYPE_SETTLEMENT_PAGE                ( ofa_settlement_page_get_type())
+#define OFA_SETTLEMENT_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_SETTLEMENT_PAGE, ofaSettlementPage ))
+#define OFA_SETTLEMENT_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_SETTLEMENT_PAGE, ofaSettlementPageClass ))
+#define OFA_IS_SETTLEMENT_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_SETTLEMENT_PAGE ))
+#define OFA_IS_SETTLEMENT_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_SETTLEMENT_PAGE ))
+#define OFA_SETTLEMENT_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_SETTLEMENT_PAGE, ofaSettlementPageClass ))
 
-typedef struct _ofaSettlementPrivate       ofaSettlementPrivate;
+typedef struct _ofaSettlementPagePrivate        ofaSettlementPagePrivate;
 
 typedef struct {
 	/*< public members >*/
 	ofaPage      parent;
 }
-	ofaSettlement;
+	ofaSettlementPage;
 
 typedef struct {
 	/*< public members >*/
 	ofaPageClass parent;
 }
-	ofaSettlementClass;
+	ofaSettlementPageClass;
 
-GType ofa_settlement_get_type       ( void ) G_GNUC_CONST;
+GType ofa_settlement_page_get_type   ( void ) G_GNUC_CONST;
 
-void  ofa_settlement_set_account    ( ofaSettlement *page,
+void  ofa_settlement_page_set_account( ofaSettlementPage *page,
 											const gchar *number );
 
 G_END_DECLS
 
-#endif /* __OFA_SETTLEMENT_H__ */
+#endif /* __OFA_SETTLEMENT_PAGE_H__ */

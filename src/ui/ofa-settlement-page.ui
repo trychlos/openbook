@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.18.3 -->
+<!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.6"/>
   <object class="GtkImage" id="image1">
@@ -7,7 +7,7 @@
     <property name="can_focus">False</property>
     <property name="stock">gtk-index</property>
   </object>
-  <object class="GtkWindow" id="SettlementWindow">
+  <object class="GtkWindow" id="SettlementPageWindow">
     <property name="can_focus">False</property>
     <child>
       <object class="GtkGrid" id="top">
@@ -155,6 +155,30 @@
                       <object class="GtkGrid" id="f2-columns">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
                         <child>
                           <placeholder/>
                         </child>
