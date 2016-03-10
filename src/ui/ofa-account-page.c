@@ -29,21 +29,16 @@
 #include <glib/gi18n.h>
 
 #include "api/my-utils.h"
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-account.h"
-#include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-properties.h"
 #include "ui/ofa-account-frame-bin.h"
 #include "ui/ofa-account-page.h"
-#include "ui/ofa-entry-page.h"
-#include "ui/ofa-settlement.h"
-#include "ui/ofa-reconcil-page.h"
 
 /* private instance data
  */
@@ -51,30 +46,15 @@ struct _ofaAccountPagePrivate {
 
 	/* runtime
 	 */
-	const ofaMainWindow *main_window;
 	ofaHub              *hub;
-	gboolean             is_current;
 
 	/* UI
 	 */
 	ofaAccountFrameBin  *account_bin;
-	GtkWidget           *properties_btn;
-	GtkWidget           *delete_btn;
-	GtkWidget           *entries_btn;
-	GtkWidget           *settlement_btn;
-	GtkWidget           *reconcil_btn;
 };
 
 static void       v_setup_page( ofaPage *page );
-static void       on_new_clicked( GtkButton *button, ofaAccountPage *page );
-static void       on_properties_clicked( GtkButton *button, ofaAccountPage *page );
-static void       on_delete_clicked( GtkButton *button, ofaAccountPage *page );
-static void       on_view_entries( GtkButton *button, ofaAccountPage *page );
-static void       on_settlement( GtkButton *button, ofaAccountPage *page );
-static void       on_reconciliation( GtkButton *button, ofaAccountPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_selection_changed( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
-static void       do_update_sensitivity( ofaAccountPage *self, ofoAccount *account );
 static void       on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE, 0,
@@ -140,127 +120,30 @@ v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_account_page_v_setup_page";
 	ofaAccountPagePrivate *priv;
-	ofaButtonsBox *box;
-	GtkWidget *btn;
-	ofoDossier *dossier;
+	const ofaMainWindow *main_window;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
-	priv->main_window = ofa_page_get_main_window( page );
+	main_window = ofa_page_get_main_window( page );
 
-	priv->hub = ofa_main_window_get_hub( priv->main_window );
+	priv->hub = ofa_main_window_get_hub( main_window );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
-
-	priv->account_bin = ofa_account_frame_bin_new( priv->main_window );
-	gtk_widget_set_margin_top( GTK_WIDGET( priv->account_bin ), 4 );
+	priv->account_bin = ofa_account_frame_bin_new( main_window );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 4 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
 
-	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_selection_changed ), page );
 	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
-	box = ofa_account_frame_bin_get_buttons_box( priv->account_bin );
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
-	gtk_widget_set_sensitive( btn, priv->is_current );
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), page );
-	priv->properties_btn = btn;
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
-	priv->delete_btn = btn;
-
-	ofa_buttons_box_add_spacer( box );
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, _( "_View entries..."), G_CALLBACK( on_view_entries ), page );
-	priv->entries_btn = btn;
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, _( "_Settlement..." ), G_CALLBACK( on_settlement ), page );
-	priv->settlement_btn = btn;
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, _( "_Reconcililation..." ), G_CALLBACK( on_reconciliation ), page );
-	priv->reconcil_btn = btn;
-}
-
-static void
-on_new_clicked( GtkButton *button, ofaAccountPage *page )
-{
-	ofaAccountPagePrivate *priv;
-
-	priv = ofa_account_page_get_instance_private( page );
-
-	ofa_account_frame_bin_do_new( priv->account_bin );
-}
-
-static void
-on_properties_clicked( GtkButton *button, ofaAccountPage *page )
-{
-	ofaAccountPagePrivate *priv;
-
-	priv = ofa_account_page_get_instance_private( page );
-
-	ofa_account_frame_bin_do_properties( priv->account_bin );
-}
-
-static void
-on_delete_clicked( GtkButton *button, ofaAccountPage *page )
-{
-	ofaAccountPagePrivate *priv;
-
-	priv = ofa_account_page_get_instance_private( page );
-
-	ofa_account_frame_bin_do_delete( priv->account_bin );
-}
-
-static void
-on_view_entries( GtkButton *button, ofaAccountPage *self )
-{
-	ofaAccountPagePrivate *priv;
-	gchar *number;
-	ofaPage *page;
-
-	priv = ofa_account_page_get_instance_private( self );
-
-	number = ofa_account_frame_bin_get_selected( priv->account_bin );
-	page = ofa_main_window_activate_theme( priv->main_window, THM_ENTRIES );
-	ofa_entry_page_display_entries( OFA_ENTRY_PAGE( page ), OFO_TYPE_ACCOUNT, number, NULL, NULL );
-	g_free( number );
-}
-
-static void
-on_settlement( GtkButton *button, ofaAccountPage *self )
-{
-	ofaAccountPagePrivate *priv;
-	gchar *number;
-	ofaPage *page;
-
-	priv = ofa_account_page_get_instance_private( self );
-
-	number = ofa_account_frame_bin_get_selected( priv->account_bin );
-	page = ofa_main_window_activate_theme( priv->main_window, THM_SETTLEMENT );
-	ofa_settlement_set_account( OFA_SETTLEMENT( page ), number );
-	g_free( number );
-}
-
-static void
-on_reconciliation( GtkButton *button, ofaAccountPage *self )
-{
-	ofaAccountPagePrivate *priv;
-	gchar *number;
-	ofaPage *page;
-
-	priv = ofa_account_page_get_instance_private( self );
-
-	number = ofa_account_frame_bin_get_selected( priv->account_bin );
-	page = ofa_main_window_activate_theme( priv->main_window, THM_RECONCIL );
-	ofa_reconcil_page_set_account( OFA_RECONCIL_PAGE( page ), number );
-	g_free( number );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_NEW, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_PROPERTIES, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_DELETE, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_SPACER, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_VIEW_ENTRIES, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_SETTLEMENT, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_RECONCILIATION, TRUE );
 }
 
 static GtkWidget *
@@ -279,39 +162,11 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static void
-on_selection_changed( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self )
-{
-	ofaAccountPagePrivate *priv;
-	ofoAccount *account;
-
-	priv = ofa_account_page_get_instance_private( self );
-
-	account = my_strlen( number ) ? ofo_account_get_by_number( priv->hub, number ) : NULL;
-	do_update_sensitivity( self, account );
-}
-
-static void
-do_update_sensitivity( ofaAccountPage *self, ofoAccount *account )
-{
-	ofaAccountPagePrivate *priv;
-	gboolean has_account;
-
-	priv = ofa_account_page_get_instance_private( self );
-
-	has_account = ( account && OFO_IS_ACCOUNT( account ));
-
-	gtk_widget_set_sensitive( priv->properties_btn, has_account );
-	gtk_widget_set_sensitive( priv->delete_btn, has_account && priv->is_current && ofo_account_is_deletable( account ));
-	gtk_widget_set_sensitive( priv->entries_btn, has_account  && !ofo_account_is_root( account ));
-	gtk_widget_set_sensitive( priv->settlement_btn, has_account && priv->is_current && ofo_account_is_settleable( account ));
-	gtk_widget_set_sensitive( priv->reconcil_btn, has_account && priv->is_current && ofo_account_is_reconciliable( account ));
-}
-
-static void
 on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self )
 {
 	ofaAccountPagePrivate *priv;
 	ofoAccount *account;
+	const ofaMainWindow *main_window;
 
 	priv = ofa_account_page_get_instance_private( self );
 
@@ -319,6 +174,7 @@ on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage
 		account = ofo_account_get_by_number( priv->hub, number );
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-		ofa_account_properties_run( priv->main_window, account );
+		main_window = ofa_page_get_main_window( OFA_PAGE( self ));
+		ofa_account_properties_run( main_window, account );
 	}
 }

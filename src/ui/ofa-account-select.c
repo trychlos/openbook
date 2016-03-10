@@ -49,16 +49,12 @@ struct _ofaAccountSelectPrivate {
 	/* input data
 	 */
 	ofaHub              *hub;
-	gboolean             is_current;
 	gint                 allowed;
 
 	/* UI
 	 */
 	ofaAccountFrameBin  *account_bin;
-	GtkWidget           *properties_btn;
-	GtkWidget           *delete_btn;
 	GtkWidget           *ok_btn;
-	GtkWidget           *msg_label;
 
 	/* returned value
 	 */
@@ -72,17 +68,11 @@ static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
 static void      on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
-static void      on_new_clicked( GtkButton *button, ofaAccountSelect *self );
-static void      on_properties_clicked( GtkButton *button, ofaAccountSelect *self );
-static void      on_delete_clicked( GtkButton *button, ofaAccountSelect *self );
-static void      on_account_changed( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
 static void      on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
 static void      check_for_enable_dlg( ofaAccountSelect *self );
 static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
-static void      do_update_sensitivity( ofaAccountSelect *self, ofoAccount *account );
 static gboolean  idialog_quit_on_ok( myIDialog *instance );
 static gboolean  do_select( ofaAccountSelect *self );
-static void      set_message( ofaAccountSelect *self, const gchar *str );
 static void      on_hub_finalized( gpointer is_null, gpointer finalized_hub );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountSelect, ofa_account_select, GTK_TYPE_DIALOG, 0,
@@ -248,9 +238,7 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_account_select_idialog_init";
 	ofaAccountSelectPrivate *priv;
 	GtkApplicationWindow *main_window;
-	GtkWidget *parent, *btn;
-	ofaButtonsBox *box;
-	ofoDossier *dossier;
+	GtkWidget *parent;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -259,10 +247,6 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
-	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p-message" );
-	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-	my_utils_widget_set_style( priv->msg_label, "labelerror" );
-
 	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
@@ -270,27 +254,16 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->account_bin = ofa_account_frame_bin_new( OFA_MAIN_WINDOW( main_window ));
+	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 4 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
 	ofa_account_frame_bin_set_cell_data_func(
 			priv->account_bin, ( GtkTreeCellDataFunc ) on_book_cell_data_func, instance );
 
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	priv->is_current = ofo_dossier_is_current( dossier );
-
-	box = ofa_account_frame_bin_get_buttons_box( priv->account_bin );
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), instance );
-	gtk_widget_set_sensitive( btn, priv->is_current );
-
-	btn = ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_PROPERTIES, G_CALLBACK( on_properties_clicked ), instance );
-	priv->properties_btn = btn;
-
-	ofa_buttons_box_add_button_with_mnemonic( box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), instance );
-	priv->delete_btn = btn;
-
-	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_account_changed ), instance );
 	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_account_activated ), instance );
+
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_NEW, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_PROPERTIES, TRUE );
+	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_DELETE, TRUE );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
@@ -320,42 +293,6 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
 		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 	}
-}
-
-static void
-on_new_clicked( GtkButton *button, ofaAccountSelect *self )
-{
-	ofaAccountSelectPrivate *priv;
-
-	priv = ofa_account_select_get_instance_private( self );
-
-	ofa_account_frame_bin_do_new( priv->account_bin );
-}
-
-static void
-on_properties_clicked( GtkButton *button, ofaAccountSelect *self )
-{
-	ofaAccountSelectPrivate *priv;
-
-	priv = ofa_account_select_get_instance_private( self );
-
-	ofa_account_frame_bin_do_properties( priv->account_bin );
-}
-
-static void
-on_delete_clicked( GtkButton *button, ofaAccountSelect *self )
-{
-	ofaAccountSelectPrivate *priv;
-
-	priv = ofa_account_select_get_instance_private( self );
-
-	ofa_account_frame_bin_do_delete( priv->account_bin );
-}
-
-static void
-on_account_changed( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self )
-{
-	check_for_enable_dlg( self );
 }
 
 static void
@@ -390,31 +327,15 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 	priv = ofa_account_select_get_instance_private( self );
 
 	ok = FALSE;
-	set_message( self, "" );
 
 	if( my_strlen( number )){
 		account = ofo_account_get_by_number( priv->hub, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
-		do_update_sensitivity( self, account );
 		ok = ofo_account_is_allowed( account, priv->allowed );
 	}
 
 	return( ok );
-}
-
-static void
-do_update_sensitivity( ofaAccountSelect *self, ofoAccount *account )
-{
-	ofaAccountSelectPrivate *priv;
-	gboolean has_account;
-
-	priv = ofa_account_select_get_instance_private( self );
-
-	has_account = ( account && OFO_IS_ACCOUNT( account ));
-
-	gtk_widget_set_sensitive( priv->properties_btn, has_account );
-	gtk_widget_set_sensitive( priv->delete_btn, has_account && priv->is_current && ofo_account_is_deletable( account ));
 }
 
 static gboolean
@@ -440,16 +361,6 @@ do_select( ofaAccountSelect *self )
 	g_free( account );
 
 	return( ok );
-}
-
-static void
-set_message( ofaAccountSelect *self, const gchar *str )
-{
-	ofaAccountSelectPrivate *priv;
-
-	priv = ofa_account_select_get_instance_private( self );
-
-	gtk_label_set_text( GTK_LABEL( priv->msg_label ), str );
 }
 
 static void

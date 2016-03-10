@@ -69,9 +69,31 @@ typedef struct {
 }
 	ofaAccountFrameBinClass;
 
+/**
+ * ofeAccountFrameBtn:
+ *
+ * These are the buttons that the frame is able to manage.
+ * It is up to the caller to set the desired buttons.
+ * Default is none.
+ */
+typedef enum {
+	ACCOUNT_BTN_SPACER = 1,
+	ACCOUNT_BTN_NEW,
+	ACCOUNT_BTN_PROPERTIES,
+	ACCOUNT_BTN_DELETE,
+	ACCOUNT_BTN_VIEW_ENTRIES,
+	ACCOUNT_BTN_SETTLEMENT,
+	ACCOUNT_BTN_RECONCILIATION,
+}
+	ofeAccountFrameBtn;
+
 GType               ofa_account_frame_bin_get_type            ( void ) G_GNUC_CONST;
 
 ofaAccountFrameBin *ofa_account_frame_bin_new                 ( const ofaMainWindow *main_window );
+
+GtkWidget          *ofa_account_frame_bin_add_button          ( ofaAccountFrameBin *bin,
+																	ofeAccountFrameBtn id,
+																	gboolean sensitive );
 
 GtkWidget          *ofa_account_frame_bin_get_current_treeview( const ofaAccountFrameBin *bin );
 
@@ -89,14 +111,6 @@ void                ofa_account_frame_bin_cell_data_render    ( ofaAccountFrameB
 																	GtkCellRenderer *cell,
 																	GtkTreeModel *tmodel,
 																	GtkTreeIter *iter );
-
-ofaButtonsBox      *ofa_account_frame_bin_get_buttons_box     ( const ofaAccountFrameBin *bin );
-
-void                ofa_account_frame_bin_do_new              ( ofaAccountFrameBin *bin );
-
-void                ofa_account_frame_bin_do_properties       ( ofaAccountFrameBin *bin );
-
-void                ofa_account_frame_bin_do_delete           ( ofaAccountFrameBin *bin );
 
 G_END_DECLS
 
