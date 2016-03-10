@@ -71,7 +71,7 @@ enum {
 static guint        st_initializations      = 0;	/* interface initialization count */
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 static const gchar *st_prefix               = "itreeview-display";
-static const gchar *st_resource_arrow_down  = "/org/trychlos/openbook/ui/arrow-down.png";
+static const gchar *st_resource_arrow_down  = "/org/trychlos/openbook/ui/ofa-itreeview-display-arrow-down.png";
 
 static GType              register_type( void );
 static void               interface_base_init( ofaITreeviewDisplayInterface *klass );

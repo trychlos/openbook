@@ -295,7 +295,7 @@ resources_ui = \
 	ofa-dos-menubar.ui									\
 	\
 	ofa-iaccount-entry-icon-16.png						\
-	arrow-down.png										\
+	ofa-itreeview-display-arrow-down.png				\
 	filler.png											\
 	green-checkmark.png									\
 	light-empty-14.png									\
