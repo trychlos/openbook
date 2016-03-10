@@ -297,7 +297,7 @@ resources_ui = \
 	ofa-iaccount-entry-icon-16.png						\
 	ofa-itreeview-display-arrow-down.png				\
 	filler.png											\
-	green-checkmark.png									\
+	ofa-guided-input-bin-green-checkmark.png			\
 	light-empty-14.png									\
 	light-green-14.png									\
 	light-yellow-14.png									\

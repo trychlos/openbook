@@ -208,7 +208,7 @@ static GDate st_last_dope                   = { 0 };
 static GDate st_last_deff                   = { 0 };
 
 static const gchar *st_resource_image_empty = "/org/trychlos/openbook/ui/filler.png";
-static const gchar *st_resource_image_check = "/org/trychlos/openbook/ui/green-checkmark.png";
+static const gchar *st_resource_image_check = "/org/trychlos/openbook/ui/ofa-guided-input-bin-green-checkmark.png";
 static const gchar *st_resource_ui          = "/org/trychlos/openbook/ui/ofa-guided-input-bin.ui";
 
 static void              setup_main_window( ofaGuidedInputBin *self );
