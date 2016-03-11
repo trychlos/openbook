@@ -29,6 +29,7 @@
  New features and improvements:
 
    - Have a new icon for account selection (todo #1034).
+   - ofaReconciliationRender: change the bottom summary font (todo #1001).
 
  Bug fixes:
 

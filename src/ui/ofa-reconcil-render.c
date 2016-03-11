@@ -105,9 +105,10 @@ static const gchar *st_print_settings    = "RenderReconcilPrint";
  */
 
 /* the columns of the body */
-static const gchar  *st_body_font        = "Sans 7";
-static const gchar  *st_line_number_font = "Sans 5";
-static const gdouble st_body_vspace_rate = 0.3;
+static const gchar  *st_body_font           = "Sans 7";
+static const gchar  *st_bottom_summary_font = "Sans Italic 6";
+static const gchar  *st_line_number_font    = "Sans 5";
+static const gdouble st_body_vspace_rate    = 0.3;
 
 #define st_effect_width                  (gdouble) 54
 #define st_ledger_width                  (gdouble) 36
@@ -639,10 +640,10 @@ static void
 irenderable_draw_bottom_summary( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.25;
+	static const gdouble st_vspace_rate = 0.5;
 	gdouble y, height;
 	GDate date;
-	gchar *str, *sdate, *str_amount, *font;
+	gchar *str, *sdate, *str_amount;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
@@ -669,9 +670,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	y += height * ( 1+st_vspace_rate );
 
 	ofa_irenderable_set_color( instance, COLOR_BLACK );
-	font = irenderable_get_body_font( instance );
-	ofa_irenderable_set_font( instance, font );
-	g_free( font );
+	ofa_irenderable_set_font( instance, st_bottom_summary_font );
 
 	height = ofa_irenderable_set_wrapped_text( instance,
 				priv->page_margin, y,
