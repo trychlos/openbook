@@ -144,6 +144,7 @@ v_setup_view( ofaPage *page )
 			BAT_DISP_COUNT, BAT_DISP_UNUSED,
 			BAT_DISP_FORMAT, BAT_DISP_RIB,
 			BAT_DISP_BEGIN_SOLDE, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
+			BAT_DISP_ACCOUNT,
 			0 };
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );

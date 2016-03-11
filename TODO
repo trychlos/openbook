@@ -298,12 +298,6 @@
  745 2015- 3-19 DISP AccountSelect: scroll the treeview to make sure the
                      pre-selected account is displayed
 
- 751 2015- 3-20 FEAT Reconciliation: associate the bat file with the
-                     openbook account as soon as we reconciliate one
-                     line thus refusing the selection for another account
-                     + add this account number to treeview from bat page
-                     + add this account number to bat properties
-
  752 2015- 3-20 FEAT Reconciliation: when selecting a bat file, only
                      allow those which are associated with the current
                      account number (if any) - of those which are not
@@ -407,8 +401,6 @@
                      interfaces but the exporter/importer plugins should
                      rather implement a ofaIEXporter/ofaIImporter
                      interface 
-
- 919 2015-12-10 GTK  my_utils_dialog_info/warning: have a transient parent
 
  920 2015-12-10 FEAT review RestoreAssistant
                      + let restore on a selected exercice rather than on
@@ -554,6 +546,13 @@
  729 2015- 3-14 FEAT PrintLedgers: have an option to print a summary
      2016- 1-25      new ofaLedgerSummaryRender print
 
+ 751 2015- 3-20 FEAT Reconciliation: associate the bat file with the
+                     openbook account as soon as we reconciliate one
+                     line thus refusing the selection for another account
+                     + add this account number to treeview from bat page
+                     + add this account number to bat properties
+     2016- 3-11 done
+
  754 2015- 3-21 add unused count to bat page treeview
      2016- 1-24 done
 
@@ -604,6 +603,10 @@
                      after the operation is much more difficult, because
                      must be made on per-widget basis
      2016- 2-10 cancelled
+
+ 919 2015-12-10 GTK  my_utils_dialog_info/warning: have a transient parent
+     2016- 3-11 this has been done at least for myIWindow implementations;
+                seems to be rather difficult for others...
 
  935 2015-12-17 DDLUpdate: does not show remediation when creating a
                 new dossier ?

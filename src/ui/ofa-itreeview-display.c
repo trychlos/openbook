@@ -76,7 +76,6 @@ static const gchar *st_resource_arrow_down  = "/org/trychlos/openbook/ui/ofa-itr
 static GType              register_type( void );
 static void               interface_base_init( ofaITreeviewDisplayInterface *klass );
 static void               interface_base_finalize( ofaITreeviewDisplayInterface *klass );
-static guint              itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gboolean           has_column_id( GList *list, gint column_id );
 static GtkWidget         *setup_button( const ofaITreeviewDisplay *instance, sITreeviewDisplay *sdata );
 static void               on_action_change_state( GSimpleAction *action, GVariant *value, ofaITreeviewDisplay *instance );
@@ -146,8 +145,6 @@ interface_base_init( ofaITreeviewDisplayInterface *klass )
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
-		klass->get_interface_version = itreeview_display_get_interface_version;
-
 		/**
 		 * ofaITreeviewDisplay::itreeview-display-toggled:
 		 *
@@ -190,22 +187,40 @@ interface_base_finalize( ofaITreeviewDisplayInterface *klass )
 	}
 }
 
-static guint
-itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance )
-{
-	return( 1 );
-}
-
 /**
  * ofa_itreeview_display_get_interface_last_version:
- * @instance: this #ofaITreeviewDisplay instance.
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_itreeview_display_get_interface_last_version( const ofaITreeviewDisplay *instance )
+ofa_itreeview_display_get_interface_last_version( void )
 {
 	return( ITREEVIEW_DISPLAY_LAST_VERSION );
+}
+
+/**
+ * ofa_itreeview_display_get_interface_version:
+ * @instance: this #ofaITreeviewDisplay instance.
+ *
+ * Returns: the version number of this interface implemented by the
+ * @instance.
+ *
+ * Defaults to 1.
+ */
+guint
+ofa_itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance )
+{
+	static const gchar *thisfn = "ofa_itreeview_display_get_interface_version";
+
+	g_return_val_if_fail( instance && OFA_IS_ITREEVIEW_DISPLAY( instance ), 1 );
+
+	if( OFA_ITREEVIEW_DISPLAY_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_ITREEVIEW_DISPLAY_GET_INTERFACE( instance )->get_interface_version( instance ));
+	}
+
+	g_info( "%s: ofaITreeviewDisplay instance %p does not provide 'get_interface_version()' method",
+			thisfn, ( void * ) instance );
+	return( 1 );
 }
 
 /**

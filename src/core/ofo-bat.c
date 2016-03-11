@@ -1082,7 +1082,7 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 
 	caccount = ofo_bat_get_account( bat );
 	if( my_strlen( caccount )){
-		g_string_append_printf( query, "BAT_ACCOUNT='%s',", notes );
+		g_string_append_printf( query, "BAT_ACCOUNT='%s',", caccount );
 	} else {
 		query = g_string_append( query, "BAT_ACCOUNT=NULL," );
 	}

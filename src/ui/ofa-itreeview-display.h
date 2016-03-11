@@ -31,13 +31,11 @@
  * @short_description: The ITreeviewDisplay Interface
  * @include: ui/ofa-itreeview-display.h
  *
- * The #ofaITreeviewDisplay interface is used to homogeneize and
- * mutualize the build and the appearance of GtkTreeView's. This is
- * mostly used - but not exclusive to - for #ofoEntry -based views.
- *
- * The interface works by associating an identifier provided by the
- * implementation to an internal identifier of the data to be
- * displayed.
+ * The #ofaITreeviewDisplay interface manages displayed column in a
+ * #GtkTreeView.
+ * The list of displayed columns is saved as a user preference.
+ * The interface is able to attach a popup-menu to a provided parent,
+ * letting the user select which columns he wants be displayed.
  *
  * The interface sends a 'ofa-toggled' message for each toggled column.
  */
@@ -112,26 +110,27 @@ typedef struct {
 }
 	ofaITreeviewDisplayInterface;
 
-GType    ofa_itreeview_display_get_type          ( void );
+GType    ofa_itreeview_display_get_type                  ( void );
 
-guint    ofa_itreeview_display_get_interface_last_version
-                                                 ( const ofaITreeviewDisplay *instance );
+guint    ofa_itreeview_display_get_interface_last_version( void );
 
-void     ofa_itreeview_display_add_column        ( ofaITreeviewDisplay *instance,
+guint    ofa_itreeview_display_get_interface_version     ( const ofaITreeviewDisplay *instance );
+
+void     ofa_itreeview_display_add_column                ( ofaITreeviewDisplay *instance,
 															GtkTreeViewColumn *column,
 															guint column_id );
 
-void     ofa_itreeview_display_init_visible      ( const ofaITreeviewDisplay *instance,
+void     ofa_itreeview_display_init_visible              ( const ofaITreeviewDisplay *instance,
 															const gchar *key );
 
-gboolean ofa_itreeview_display_get_visible       ( const ofaITreeviewDisplay *instance,
+gboolean ofa_itreeview_display_get_visible               ( const ofaITreeviewDisplay *instance,
 															guint column_id );
 
-void     ofa_itreeview_display_set_visible       ( const ofaITreeviewDisplay *instance,
+void     ofa_itreeview_display_set_visible               ( const ofaITreeviewDisplay *instance,
 															guint column_id,
 															gboolean visible );
 
-void     ofa_itreeview_display_attach_menu_button( const ofaITreeviewDisplay *instance,
+void     ofa_itreeview_display_attach_menu_button        ( const ofaITreeviewDisplay *instance,
 															GtkContainer *parent );
 
 G_END_DECLS

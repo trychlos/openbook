@@ -29,6 +29,7 @@
  New features and improvements:
 
    - Have a new icon for account selection (todo #1034).
+   - ofaReconciliation: asssociates an account to the used BAT files (todo #751).
    - ofaReconciliationRender: change the bottom summary font (todo #1001).
    - ofaReconciliationRender: Add the rendering date to the title (todo #1002).
 

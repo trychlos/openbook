@@ -56,7 +56,7 @@ static GType st_col_types[BAT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* currency, begin_solde, begin_solde_set */
 		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* end_solde, end_solde_set */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, count, unused */
-		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* acccount, upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoBat itself */
 };
 
@@ -241,7 +241,7 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat 
 	static const gchar *thisfn = "ofa_bat_store_set_row_by_store_iter";
 	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp, *sunused;
 	const GDate *date;
-	const gchar *cscurrency;
+	const gchar *cscurrency, *caccount;
 	gint count, used;
 
 	sid = g_strdup_printf( "%lu", ofo_bat_get_id( bat ));
@@ -271,6 +271,10 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat 
 	if( !cscurrency ){
 		cscurrency = "";
 	}
+	caccount = ofo_bat_get_account( bat );
+	if( !caccount ){
+		caccount = "";
+	}
 	count = ofo_bat_get_lines_count( bat );
 	scount = g_strdup_printf( "%u", count );
 	used = ofo_bat_get_used_count( bat );
@@ -294,6 +298,7 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat 
 			BAT_COL_NOTES,           ofo_bat_get_notes( bat ),
 			BAT_COL_COUNT,           scount,
 			BAT_COL_UNUSED,          sunused,
+			BAT_COL_ACCOUNT,         caccount,
 			BAT_COL_UPD_USER,        ofo_bat_get_upd_user( bat ),
 			BAT_COL_UPD_STAMP,       stamp,
 			BAT_COL_OBJECT,          bat,

@@ -167,7 +167,7 @@ ofa_isingle_keeper_get_interface_version( const ofaISingleKeeper *instance )
 		return( OFA_ISINGLE_KEEPER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaISingleKeeper instance %p does not provide 'get_last_version()' method",
+	g_info( "%s: ofaISingleKeeper instance %p does not provide 'get_interface_version()' method",
 			thisfn, ( void * ) instance );
 	return( 1 );
 }

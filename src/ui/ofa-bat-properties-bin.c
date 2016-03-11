@@ -418,7 +418,6 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	cstr = ofo_bat_get_account( bat );
 	if( my_strlen( cstr )){
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), cstr );
-		g_free( str );
 	} else {
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), "" );
 	}

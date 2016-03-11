@@ -155,7 +155,7 @@ ofa_icollectionable_get_interface_version( const ofaICollectionable *instance )
 		return( OFA_ICOLLECTIONABLE_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaICollectionable instance %p does not provide 'get_last_version()' method",
+	g_info( "%s: ofaICollectionable instance %p does not provide 'get_interface_version()' method",
 			thisfn, ( void * ) instance );
 	return( 1 );
 }

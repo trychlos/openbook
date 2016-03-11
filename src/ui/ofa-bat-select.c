@@ -248,7 +248,7 @@ static void
 setup_treeview( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	static ofaBatColumns st_columns[] = { BAT_DISP_URI, BAT_DISP_UNUSED, 0 };
+	static ofaBatColumns st_columns[] = { BAT_DISP_URI, BAT_DISP_UNUSED, BAT_DISP_ACCOUNT, 0 };
 	GtkApplicationWindow *main_window;
 	ofaHub *hub;
 	GtkWidget *widget;

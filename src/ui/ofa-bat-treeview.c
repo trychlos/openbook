@@ -233,14 +233,11 @@ attach_top_widget( ofaBatTreeview *self )
 	gtk_tree_view_set_headers_visible( priv->tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( priv->tview ));
 
-	g_signal_connect(
-			G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect(
-			G_OBJECT( priv->tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
+	g_signal_connect( priv->tview, "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect( priv->tview, "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
 
 	select = gtk_tree_view_get_selection( priv->tview );
-	g_signal_connect(
-			G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
+	g_signal_connect( select, "changed", G_CALLBACK( on_row_selected ), self );
 
 	gtk_container_add( GTK_CONTAINER( self ), top_widget );
 }
@@ -352,6 +349,13 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, ofaBatColumns *columns )
 			cell = gtk_cell_renderer_text_new();
 			column = gtk_tree_view_column_new_with_attributes(
 							_( "Cur." ), cell, "text", BAT_COL_CURRENCY, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
+
+		if( columns[i] == BAT_DISP_ACCOUNT ){
+			cell = gtk_cell_renderer_text_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							_( "Account" ), cell, "text", BAT_COL_ACCOUNT, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 		}
 

@@ -120,6 +120,10 @@ struct _ofaReconcilPagePrivate {
 	GtkTreeViewColumn   *sort_column;
 	gint                 activate_action;
 
+	/* UI
+	 */
+	GtkWidget           *msg_label;
+
 	/* UI - reconciliated balance
 	 * this is the balance of the account
 	 * with deduction of unreconciliated entries and bat lines
@@ -268,10 +272,10 @@ static void         setup_size_group( ofaPage *page, GtkContainer *parent );
 static void         setup_auto_rappro( ofaPage *page, GtkContainer *parent );
 static void         setup_action_buttons( ofaPage *page, GtkContainer *parent );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
-static void         on_account_entry_changed( GtkEntry *entry, ofaReconcilPage *self );
-static void         clear_account_content( ofaReconcilPage *self );
-static ofoAccount  *get_reconciliable_account( ofaReconcilPage *self );
-static void         set_account_balance( ofaReconcilPage *self );
+static void         account_on_entry_changed( GtkEntry *entry, ofaReconcilPage *self );
+static void         account_clear_content( ofaReconcilPage *self );
+static ofoAccount  *account_get_reconciliable( ofaReconcilPage *self );
+static void         account_set_header_balance( ofaReconcilPage *self );
 static void         do_display_entries( ofaReconcilPage *self );
 static void         insert_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         set_row_entry( ofaReconcilPage *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry );
@@ -293,9 +297,9 @@ static void         display_bat_name( ofaReconcilPage *self );
 static void         display_bat_counts( ofaReconcilPage *self );
 static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcilPage *self );
 static void         on_header_clicked( GtkTreeViewColumn *column, ofaReconcilPage *self );
-static gboolean     is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self );
-static gboolean     is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
-static gboolean     is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline );
+static gboolean     tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self );
+static gboolean     tview_is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry );
+static gboolean     tview_is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline );
 static gboolean     is_session_conciliated( ofaReconcilPage *self, ofoConcil *concil );
 static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self );
 static gboolean     tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconcilPage *self );
@@ -339,6 +343,7 @@ static void         on_updated_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
 static void         on_deleted_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         set_message( ofaReconcilPage *page, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaReconcilPage )
@@ -603,7 +608,7 @@ setup_treeview( ofaPage *page, GtkContainer *parent )
 	g_object_unref( priv->tstore );
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( priv->tfilter ),
-			( GtkTreeModelFilterVisibleFunc ) is_visible_row,
+			( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row,
 			page,
 			NULL );
 
@@ -822,6 +827,9 @@ setup_treeview_footer( ofaPage *page, GtkContainer *parent )
 
 	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( page ));
 
+	priv->msg_label = my_utils_container_get_child_by_name( parent, "footer-msg" );
+	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+
 	priv->select_debit = my_utils_container_get_child_by_name( parent, "select-debit" );
 	g_return_if_fail( priv->select_debit && GTK_IS_LABEL( priv->select_debit ));
 	my_utils_widget_set_style( priv->select_debit, "labelhelp" );
@@ -855,7 +863,7 @@ setup_account_selection( ofaPage *page, GtkContainer *parent )
 
 	priv->acc_id_entry = my_utils_container_get_child_by_name( parent, "account-number" );
 	g_return_if_fail( priv->acc_id_entry && GTK_IS_ENTRY( priv->acc_id_entry ));
-	g_signal_connect( priv->acc_id_entry, "changed", G_CALLBACK( on_account_entry_changed ), page );
+	g_signal_connect( priv->acc_id_entry, "changed", G_CALLBACK( account_on_entry_changed ), page );
 	ofa_iaccount_entry_init(
 			OFA_IACCOUNT_ENTRY( page ), GTK_ENTRY( priv->acc_id_entry ),
 			OFA_MAIN_WINDOW( ofa_page_get_main_window( page )), ACCOUNT_ALLOW_RECONCILIABLE );
@@ -1083,9 +1091,9 @@ v_get_top_focusable_widget( const ofaPage *page )
  * (and priv->account is NULL)
  */
 static void
-on_account_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
+account_on_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_on_account_entry_changed";
+	static const gchar *thisfn = "ofa_reconcil_page_account_on_entry_changed";
 	ofaReconcilPagePrivate *priv;
 	GtkTreeSelection *select;
 
@@ -1093,14 +1101,14 @@ on_account_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
 
 	priv->acc_precision = 0;
 	gtk_label_set_text( GTK_LABEL( priv->acc_label ), "" );
-	priv->account = get_reconciliable_account( self );
+	priv->account = account_get_reconciliable( self );
 
 	g_debug( "%s: entry=%p, self=%p, account=%p",
 			thisfn, ( void * ) entry, ( void * ) self, ( void * ) priv->account );
 
 	if( priv->account ){
-		clear_account_content( self );
-		set_account_balance( self );
+		account_clear_content( self );
+		account_set_header_balance( self );
 		do_display_entries( self );
 		set_reconciliated_balance( self );
 	}
@@ -1116,7 +1124,7 @@ on_account_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
  * remove all entries from the treeview
  */
 static void
-clear_account_content( ofaReconcilPage *self )
+account_clear_content( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 
@@ -1145,18 +1153,21 @@ clear_account_content( ofaReconcilPage *self )
  * a reconciliation session
  */
 static ofoAccount *
-get_reconciliable_account( ofaReconcilPage *self )
+account_get_reconciliable( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	const gchar *number;
 	gboolean ok;
 	ofoAccount *account;
-	const gchar *label, *cur_code;
+	const gchar *label, *cur_code, *bat_account;
 	ofoCurrency *currency;
+	ofoBat *bat;
+	gchar *msgerr;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	ok = FALSE;
+	msgerr = NULL;
 	number = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
 	account = ofo_account_get_by_number( priv->hub, number );
 
@@ -1166,6 +1177,20 @@ get_reconciliable_account( ofaReconcilPage *self )
 		ok = !ofo_account_is_root( account ) &&
 				!ofo_account_is_closed( account ) &&
 				ofo_account_is_reconciliable( account );
+	}
+
+	/* if at least one BAT file is loaded, check that this new account
+	 * is compatible with these BATs */
+	if( ok && priv->bats ){
+		bat = ( ofoBat * ) priv->bats->data;
+		g_return_val_if_fail( bat && OFO_IS_BAT( bat ), NULL );
+		bat_account = ofo_bat_get_account( bat );
+		if( my_strlen( bat_account ) && my_collate( bat_account, number )){
+			msgerr = g_strdup_printf(
+					_( "Selected account %s is not compatible with loaded BAT files which are associated to %s account" ),
+					number, bat_account );
+			ok = FALSE;
+		}
 	}
 
 	/* init account label */
@@ -1189,6 +1214,8 @@ get_reconciliable_account( ofaReconcilPage *self )
 		set_settings( self );
 	}
 
+	set_message( self, msgerr );
+
 	return( ok ? account : NULL );
 }
 
@@ -1198,7 +1225,7 @@ get_reconciliable_account( ofaReconcilPage *self )
  * or when remediating to an event signaled by through the dossier
  */
 static void
-set_account_balance( ofaReconcilPage *self )
+account_set_header_balance( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gchar *sdiff, *samount;
@@ -1537,11 +1564,17 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 	ofaReconcilPagePrivate *priv;
 	ofoBat *bat;
 	GList *it;
+	const gchar *bat_prev, *account_id, *bat_account;
+	gchar *msg;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
+	bat_prev = NULL;
 
 	for( it=priv->bats ; it ; it=it->next ){
 		bat = ( ofoBat * ) it->data;
+		if( !bat_prev ){
+			bat_prev = ofo_bat_get_account( bat );
+		}
 		if( ofo_bat_get_id( bat ) == bat_id ){
 			my_utils_msg_dialog(
 					GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
@@ -1553,6 +1586,31 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 
 	bat = ofo_bat_get_by_id( priv->hub, bat_id );
 	if( bat ){
+		bat_account = ofo_bat_get_account( bat );
+		/* check that this BAT is compatible with an already loaded account */
+		if( priv->account ){
+			account_id = ofo_account_get_number( priv->account );
+			if( my_strlen( bat_account ) && my_collate( account_id, bat_account )){
+				msg = g_strdup_printf(
+						_( "Selected BAT file is associated with %s account, while current account is %s" ),
+						bat_account, account_id );
+				my_utils_msg_dialog(
+						GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
+						GTK_MESSAGE_WARNING, msg );
+				g_free( msg );
+				return;
+			}
+		}
+		/* check that this BAT is compatible with already loaded BATs */
+		if( my_strlen( bat_prev ) && my_strlen( bat_account ) && my_collate( bat_prev, bat_account )){
+			msg = g_strdup_printf(
+					_( "Selected BAT file is associated with %s account which is not compatible with previously loaded BAT files (account=%s)" ),
+					bat_account, bat_prev );
+			my_utils_msg_dialog(
+					GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
+					GTK_MESSAGE_WARNING, msg );
+			g_free( msg );
+		}
 		priv->bats = g_list_prepend( priv->bats, bat );
 		display_bat_file( self, bat );
 	}
@@ -1697,15 +1755,24 @@ display_bat_counts( ofaReconcilPage *self )
 	ofaReconcilPagePrivate *priv;
 	GList *it;
 	gchar *str;
-	gint total, used, unused;
+	ofoBat *bat;
+	gint total, used, bat_used, unused;
+	const gchar *bat_account;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	total = 0;
 	used = 0;
 	for( it=priv->bats ; it ; it=it->next ){
-		total += ofo_bat_get_lines_count( OFO_BAT( it->data ));
-		used += ofo_bat_get_used_count( OFO_BAT( it->data ));
+		bat = OFO_BAT( it->data );
+		total += ofo_bat_get_lines_count( bat );
+		bat_used = ofo_bat_get_used_count( bat );
+		used += bat_used;
+		bat_account = ofo_bat_get_account( bat );
+		if( bat_used == 0 && my_strlen( bat_account )){
+			ofo_bat_set_account( bat, NULL );
+			ofo_bat_update( bat );
+		}
 	}
 	unused = total-used;
 
@@ -1718,6 +1785,52 @@ display_bat_counts( ofaReconcilPage *self )
 	g_free( str );
 
 	gtk_label_set_text( GTK_LABEL( priv->label3 ), ")" );
+}
+
+static ofoBat *
+bat_find_loaded_by_id( ofaReconcilPage *self, ofxCounter bat_id )
+{
+	ofaReconcilPagePrivate *priv;
+	GList *it;
+	ofoBat *bat;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	for( it=priv->bats ; it ; it=it->next ){
+		bat = ( ofoBat * ) it->data;
+		if( ofo_bat_get_id( bat ) == bat_id ){
+			return( bat );
+		}
+	}
+
+	g_return_val_if_reached( NULL );
+}
+
+static void
+batline_associates_account( ofaReconcilPage *self, ofoBatLine *batline, const gchar *account )
+{
+	static const gchar *thisfn = "ofa_reconcil_page_batline_associates_account";
+	ofxCounter bat_id;
+	ofoBat *bat;
+	const gchar *bat_account;
+
+	bat_id = ofo_bat_line_get_bat_id( batline );
+
+	bat = bat_find_loaded_by_id( self, bat_id );
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
+
+	bat_account = ofo_bat_get_account( bat );
+	/*g_debug( "%s: account=%s, bat_id=%ld, bat_account=%s", thisfn, account, bat_id, bat_account );*/
+
+	if( !my_strlen( bat_account )){
+		ofo_bat_set_account( bat, account );
+		ofo_bat_update( bat );
+
+	} else if( my_collate( bat_account, account )){
+		g_warning( "%s: trying to associate BAT id=%ld to account %s, while already associated to account=%s",
+				thisfn, bat_id, account, bat_account );
+		g_return_if_reached();
+	}
 }
 
 /*
@@ -1911,9 +2024,9 @@ on_header_clicked( GtkTreeViewColumn *column, ofaReconcilPage *self )
  * tmodel here is the main GtkTreeModelSort on which the view is built
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self )
+tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_is_visible_row";
+	static const gchar *thisfn = "ofa_reconcil_page_tview_is_visible_row";
 	ofaReconcilPagePrivate *priv;
 	gboolean visible, ok;
 	GObject *object;
@@ -1931,8 +2044,8 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self )
 	g_object_unref( object );
 
 	visible = OFO_IS_ENTRY( object ) ?
-			is_visible_entry( self, tmodel, iter, OFO_ENTRY( object )) :
-			is_visible_batline( self, OFO_BAT_LINE( object ));
+			tview_is_visible_entry( self, tmodel, iter, OFO_ENTRY( object )) :
+			tview_is_visible_batline( self, OFO_BAT_LINE( object ));
 
 	if( DEBUG_FILTER ){
 		g_debug( "%s: visible=%s", thisfn, visible ? "True":"False" );
@@ -1973,9 +2086,9 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self )
 }
 
 static gboolean
-is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
+tview_is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_is_visible_entry";
+	static const gchar *thisfn = "ofa_reconcil_page_tview_is_visible_entry";
 	ofaReconcilPagePrivate *priv;
 	gboolean visible;
 	ofoConcil *concil;
@@ -2043,7 +2156,7 @@ is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter
 			break;
 		default:
 			/* when display mode is not set */
-			visible = FALSE;
+			break;
 	}
 
 	return( visible );
@@ -2055,9 +2168,9 @@ is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter
  * entry
  */
 static gboolean
-is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
+tview_is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_is_visible_batline";
+	static const gchar *thisfn = "ofa_reconcil_page_tview_is_visible_batline";
 	ofaReconcilPagePrivate *priv;
 	gboolean visible;
 	ofoConcil *concil;
@@ -2076,7 +2189,7 @@ is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
 				thisfn, ( void * ) concil, concil ? ofo_concil_get_id( concil ) : 0 );
 	}
 
-	visible = FALSE;
+	visible = TRUE;
 
 	switch( priv->mode ){
 		case ENT_CONCILED_ALL:
@@ -2293,7 +2406,6 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self )
 	scre = my_double_to_str( credit );
 	gtk_label_set_text( GTK_LABEL( priv->select_credit ), scre );
 
-	g_debug( "sdeb=%s scre=%s", sdeb, scre );
 	if( debit || credit ){
 		if( !my_collate( sdeb, scre )){
 			gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_green );
@@ -2713,6 +2825,7 @@ do_reconciliate( ofaReconcilPage *self )
 	ofxCounter concil_id;
 	gint depth;
 	GtkTreePath *sort_path, *store_path, *filter_path, *parent_path;
+	const gchar *ent_account;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -2741,6 +2854,7 @@ do_reconciliate( ofaReconcilPage *self )
 		my_date_set_from_date( &dval, ofo_concil_get_dval( concil ));
 	}
 	concil_id = concil ? ofo_concil_get_id( concil ) : 0;
+	ent_account = NULL;
 
 	/* add each line to this same concil group
 	 * + in order to get rid of side effects due to filtering model, we
@@ -2755,6 +2869,7 @@ do_reconciliate( ofaReconcilPage *self )
 	 * and to add each selected row to this group
 	 * + we take advantage of this first conversion phase to take a ref
 	 *   on the future unique parent of the conciliation group
+	 * + we take the target Openbook account (if any)
 	 */
 	ent_parent_ref = NULL;
 	bat_parent_ref = NULL;
@@ -2794,6 +2909,11 @@ do_reconciliate( ofaReconcilPage *self )
 		}
 		update_concil_data_by_store_iter( self, &store_iter, concil_id, &dval );
 
+		if( !ent_account && OFO_IS_ENTRY( object )){
+			/*g_debug( "%s: setting ent_account=%s", thisfn, ent_account );*/
+			ent_account = ofo_entry_get_account( OFO_ENTRY( object ));
+		}
+
 		gtk_tree_path_free( store_path );
 	}
 	parent_ref = gtk_tree_row_reference_copy( ent_parent_ref ? ent_parent_ref : bat_parent_ref );
@@ -2806,6 +2926,7 @@ do_reconciliate( ofaReconcilPage *self )
 	 * iter through these refs, selecting rows which are not descendant
 	 * of the parent, they are kept to be removed and reinserted in the
 	 * right place
+	 * + setup the associated account to the BAT lines
 	 */
 	objects = NULL;
 	for( it=store_refs ; it ; it=it->next ){
@@ -2823,22 +2944,30 @@ do_reconciliate( ofaReconcilPage *self )
 		g_free( parent_str );
 		g_free( it_str );
 
-		if( gtk_tree_path_compare( store_path, parent_path ) != 0 &&
-			 !gtk_tree_path_is_descendant( store_path, parent_path )){
+		if( gtk_tree_path_compare( store_path, parent_path ) != 0 ){
 
 			gtk_tree_model_get_iter( priv->tstore, &store_iter, store_path );
-
 			gtk_tree_model_get( priv->tstore, &store_iter, COL_OBJECT, &object, -1 );
 			g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
-			objects = g_list_prepend( objects, object );
 
-			if( DEBUG_RECONCILIATE ){
-				g_debug( "%s: removing object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+			if( my_strlen( ent_account ) && OFO_IS_BAT_LINE( object )){
+				/*g_debug( "%s: calling batline_associates_account", thisfn );*/
+				batline_associates_account( self, OFO_BAT_LINE( object ), ent_account );
 			}
-			gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &store_iter );
-			if( !gtk_tree_row_reference_valid( parent_ref )){
-				g_warning( "%s: parent_ref no longer valid", thisfn );
-				return;
+
+			if( !gtk_tree_path_is_descendant( store_path, parent_path )){
+				objects = g_list_prepend( objects, object );
+
+				if( DEBUG_RECONCILIATE ){
+					g_debug( "%s: removing object=%p (%s)", thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+				}
+				gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &store_iter );
+				if( !gtk_tree_row_reference_valid( parent_ref )){
+					g_warning( "%s: parent_ref no longer valid", thisfn );
+					g_return_if_reached();
+				}
+			} else {
+				g_object_unref( object );
 			}
 		}
 
@@ -3856,4 +3985,17 @@ ofa_reconcil_page_set_account( ofaReconcilPage *page, const gchar *number )
 	priv = ofa_reconcil_page_get_instance_private( page );
 
 	gtk_entry_set_text( GTK_ENTRY( priv->acc_id_entry ), number );
+}
+
+static void
+set_message( ofaReconcilPage *page, const gchar *msg )
+{
+	ofaReconcilPagePrivate *priv;
+
+	priv = ofa_reconcil_page_get_instance_private( page );
+
+	if( priv->msg_label ){
+		my_utils_widget_set_style( priv->msg_label, "labelerror" );
+		gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
+	}
 }
