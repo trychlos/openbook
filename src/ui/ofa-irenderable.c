@@ -113,7 +113,6 @@ static const gchar  *st_default_footer_font                = "Sans Italic 5";
 static const gchar  *st_default_no_data_font               = "Sans 18";
 
 static const gdouble st_page_margin                        = 2.0;
-static const gdouble st_columns_vspace_rate_after          = 0.5;
 
 static guint st_initializations = 0;	/* interface initialization count */
 
@@ -129,8 +128,9 @@ static void          irenderable_draw_page_header( ofaIRenderable *instance, gin
 static void          draw_page_header_dossier( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static void          draw_page_header_title( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static void          draw_page_header_subtitle( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
+static void          draw_page_header_subtitle2( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static void          draw_page_header_notes( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
-static void          draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
+static gdouble       draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static gdouble       get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata );
 static void          draw_top_summary( ofaIRenderable *instance, sIRenderable *sdata );
 static void          draw_page_top_report( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
@@ -456,6 +456,7 @@ irenderable_draw_page_header( ofaIRenderable *instance, gint page_num )
 	draw_page_header_dossier( instance, page_num, sdata );
 	draw_page_header_title( instance, page_num, sdata );
 	draw_page_header_subtitle( instance, page_num, sdata );
+	draw_page_header_subtitle2( instance, page_num, sdata );
 	draw_page_header_notes( instance, page_num, sdata );
 	draw_page_header_columns( instance, page_num, sdata );
 }
@@ -518,34 +519,63 @@ draw_page_header_title( ofaIRenderable *instance, gint page_num, sIRenderable *s
 static void
 draw_page_header_subtitle( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 {
-	static const gdouble st_vspace_rate_after = 0.4;
 	gdouble y, height;
 	gchar *title;
-
-	y = sdata->last_y;
 
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle ){
 		title = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle( instance );
 		if( my_strlen( title )){
+			y = sdata->last_y;
+
 			ofa_irenderable_set_color( instance, COLOR_HEADER_SUBTITLE );
 			ofa_irenderable_set_font( instance, st_default_header_subtitle_font );
 			height = ofa_irenderable_set_text(
 					instance, sdata->render_width/2, y, title, PANGO_ALIGN_CENTER );
+
 			y += height;
+			sdata->last_y = y;
 		}
 		g_free( title );
 	}
+}
 
-	y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
-	sdata->last_y = y;
+static void
+draw_page_header_subtitle2( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
+{
+	static const gdouble st_vspace_rate_before = 0.15;
+	gdouble y, height;
+	gchar *title;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle2 ){
+		title = OFA_IRENDERABLE_GET_INTERFACE( instance )->get_page_header_subtitle2( instance );
+		if( my_strlen( title )){
+			y = sdata->last_y;
+
+			ofa_irenderable_set_color( instance, COLOR_HEADER_SUBTITLE );
+			ofa_irenderable_set_font( instance, st_default_header_subtitle_font );
+			y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_before;
+
+			height = ofa_irenderable_set_text(
+					instance, sdata->render_width/2, y, title, PANGO_ALIGN_CENTER );
+
+			y += height;
+			sdata->last_y = y;
+		}
+		g_free( title );
+	}
 }
 
 static void
 draw_page_header_notes( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 {
+	static const gdouble st_vspace_rate_before = 0.5;
+
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_notes ){
+
 		ofa_irenderable_set_color( instance, COLOR_HEADER_NOTES );
 		ofa_irenderable_set_font( instance, sdata->body_font );
+		sdata->last_y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_before;
+
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_notes( instance, page_num );
 	}
 }
@@ -556,27 +586,50 @@ draw_page_header_notes( ofaIRenderable *instance, gint page_num, sIRenderable *s
  *
  * May be called first with @page_num=-1 when computing the height of
  * the columns headers
+ *
+ * Returns: the height of the columns header from the *user* point of
+ * view, i.e. excluding before and after vertical spaces added by the
+ * interface itself.
+ * This is actually the height of the colored rectangle which acts as
+ * the columns headers background.
  */
-static void
+static gdouble
 draw_page_header_columns( ofaIRenderable *instance, gint page_num, sIRenderable *sdata )
 {
+	static const gdouble st_vspace_rate_before = 0.5;
+	static const gdouble st_vspace_rate_after = 0.5;
+	gdouble cy_before, cy_after, prev_y, rc_height;
+
+	rc_height = 0;
+	cy_before = 0;
+	cy_after = 0;
+
+	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns ){
+		ofa_irenderable_set_font( instance, st_default_header_columns_font );
+		cy_before = ofa_irenderable_get_text_height( instance ) * st_vspace_rate_before;
+		cy_after = ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
+	}
+
 	/* draw and paint a rectangle
 	 * this must be done before writing the columns headers */
 	if( page_num >= 0 ){
 		ofa_irenderable_set_color( instance, COLOR_HEADER_COLUMNS_BG );
 		cairo_rectangle( sdata->current_context,
-				0, sdata->last_y, sdata->render_width, sdata->page_header_columns_height );
+				0, sdata->last_y + cy_before, sdata->render_width, sdata->page_header_columns_height );
 		cairo_fill( sdata->current_context );
 	}
 
-	ofa_irenderable_set_color( instance, COLOR_HEADER_COLUMNS_FG );
-	ofa_irenderable_set_font( instance, st_default_header_columns_font );
-
 	if( OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns ){
+		sdata->last_y += cy_before;
+		ofa_irenderable_set_color( instance, COLOR_HEADER_COLUMNS_FG );
+		ofa_irenderable_set_font( instance, st_default_header_columns_font );
+		prev_y = sdata->last_y;
 		OFA_IRENDERABLE_GET_INTERFACE( instance )->draw_page_header_columns( instance, page_num );
+		rc_height = sdata->last_y - prev_y;
+		sdata->last_y += cy_after;
 	}
 
-	sdata->last_y += st_columns_vspace_rate_after * ofa_irenderable_get_text_height( instance );
+	return( rc_height );
 }
 
 /*
@@ -588,20 +641,16 @@ static gdouble
 get_page_header_columns_height( ofaIRenderable *instance, sIRenderable *sdata )
 {
 	static gboolean in_function = FALSE;	/* against recursion */
-	gdouble prev_y, height;
+	gdouble height;
 
 	height = 0;
 
 	if( !in_function ){
 		in_function = TRUE;
 		g_return_val_if_fail( sdata->paginating, 0 );
-		prev_y = sdata->last_y;
 
-		draw_page_header_columns( instance, -1, sdata );
+		height = draw_page_header_columns( instance, -1, sdata );
 
-		height = sdata->last_y
-				- prev_y
-				- st_columns_vspace_rate_after * ofa_irenderable_get_text_height( instance );
 		in_function = FALSE;
 	}
 

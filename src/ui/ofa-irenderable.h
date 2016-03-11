@@ -97,7 +97,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint              ( *get_interface_version )   ( const ofaIRenderable *instance );
+	guint              ( *get_interface_version )    ( const ofaIRenderable *instance );
 
 	/**
 	 * get_paper_name:
@@ -107,7 +107,7 @@ typedef struct {
 	 *
 	 * Default to GTK_PAPER_NAME_A4.
 	 */
-	const gchar *      ( *get_paper_name )          ( ofaIRenderable *instance );
+	const gchar *      ( *get_paper_name )           ( ofaIRenderable *instance );
 
 	/**
 	 * get_page_orientation:
@@ -117,7 +117,7 @@ typedef struct {
 	 *
 	 * Default to GTK_PAGE_ORIENTATION_PORTRAIT.
 	 */
-	GtkPageOrientation ( *get_page_orientation )    ( ofaIRenderable *instance );
+	GtkPageOrientation ( *get_page_orientation )     ( ofaIRenderable *instance );
 
 	/**
 	 * begin_render:
@@ -127,7 +127,7 @@ typedef struct {
 	 * This method is called by the interface when about to begin the
 	 * rendering.
 	 */
-	void               ( *begin_render )            ( ofaIRenderable *instance,
+	void               ( *begin_render )             ( ofaIRenderable *instance,
 															gdouble render_width,
 															gdouble render_height );
 
@@ -140,7 +140,7 @@ typedef struct {
 	 *
 	 * Default is "Sans 8".
 	 */
-	gchar *            ( *get_body_font )           ( ofaIRenderable *instance );
+	gchar *            ( *get_body_font )            ( ofaIRenderable *instance );
 
 	/**
 	 * get_body_vspace_rate:
@@ -150,7 +150,7 @@ typedef struct {
 	 *
 	 * Default is 0.35.
 	 */
-	gdouble            ( *get_body_vspace_rate )    ( ofaIRenderable *instance );
+	gdouble            ( *get_body_vspace_rate )     ( ofaIRenderable *instance );
 
 	/**
 	 * draw_page_header:
@@ -177,7 +177,7 @@ typedef struct {
 	 * See infra get_page_header_title() and get_page_header_subtitle()
 	 * virtuals.
 	 */
-	void               ( *draw_page_header )        ( ofaIRenderable *instance,
+	void               ( *draw_page_header )         ( ofaIRenderable *instance,
 															gint page_num );
 
 	/**
@@ -188,7 +188,7 @@ typedef struct {
 	 * implementation of #draw_page_header() virtual, as a newly
 	 * allocated string which should be g_free() by the caller.
 	 */
-	gchar *            ( *get_dossier_name )        ( const ofaIRenderable *instance );
+	gchar *            ( *get_dossier_name )         ( const ofaIRenderable *instance );
 
 	/**
 	 * get_page_header_title:
@@ -203,7 +203,7 @@ typedef struct {
 	 * - g_free-ing() the returned string
 	 * - updating the 'last_y' ordonate at the end of the drawing.
 	 */
-	gchar *            ( *get_page_header_title )   ( const ofaIRenderable *instance );
+	gchar *            ( *get_page_header_title )    ( const ofaIRenderable *instance );
 
 	/**
 	 * get_page_header_subtitle:
@@ -218,7 +218,19 @@ typedef struct {
 	 * - g_free-ing() the returned string
 	 * - updating the 'last_y' ordonate at the end of the drawing.
 	 */
-	gchar *            ( *get_page_header_subtitle )( const ofaIRenderable *instance );
+	gchar *            ( *get_page_header_subtitle ) ( const ofaIRenderable *instance );
+
+	/**
+	 * get_page_header_subtitle2:
+	 * @instance: the #ofaIRenderable instance.
+	 *
+	 * Returns: a second subtitle as a newly allocated string.
+	 *
+	 * The interface code takes care itself of :
+	 * - g_free-ing() the returned string
+	 * - updating the 'last_y' ordonate at the end of the drawing.
+	 */
+	gchar *            ( *get_page_header_subtitle2 )( const ofaIRenderable *instance );
 
 	/**
 	 * draw_page_header_notes:
@@ -237,7 +249,7 @@ typedef struct {
 	 * vertical space it may have added between these rows, and it wishes
 	 * to be added after the block of text.
 	 */
-	void               ( *draw_page_header_notes )  ( ofaIRenderable *instance,
+	void               ( *draw_page_header_notes )   ( ofaIRenderable *instance,
 															gint page_num );
 
 	/**
@@ -259,7 +271,7 @@ typedef struct {
 	 * Note that this method is called once with @page_num=-1 when
 	 * computing the height of the columns headers.
 	 */
-	void               ( *draw_page_header_columns )( ofaIRenderable *instance,
+	void               ( *draw_page_header_columns ) ( ofaIRenderable *instance,
 															gint page_num );
 
 	/**
@@ -275,7 +287,7 @@ typedef struct {
 	 * according to the vertical space it has used, and depending of the
 	 * vertical space it wants to set before the first line.
 	 */
-	void               ( *draw_top_summary )        ( ofaIRenderable *instance );
+	void               ( *draw_top_summary )         ( ofaIRenderable *instance );
 
 	/**
 	 * want_groups:
@@ -285,7 +297,7 @@ typedef struct {
 	 *
 	 * Defaults to FALSE.
 	 */
-	gboolean           ( *want_groups )             ( const ofaIRenderable *instance );
+	gboolean           ( *want_groups )              ( const ofaIRenderable *instance );
 
 	/**
 	 * want_new_page:
@@ -298,7 +310,7 @@ typedef struct {
 	 *
 	 * Defaults to FALSE (on the same page while there is enough place).
 	 */
-	gboolean           ( *want_new_page )           ( const ofaIRenderable *instance );
+	gboolean           ( *want_new_page )            ( const ofaIRenderable *instance );
 
 	/**
 	 * is_new_group:
@@ -312,7 +324,7 @@ typedef struct {
 	 *
 	 * Defaults to FALSE (no group).
 	 */
-	gboolean           ( *is_new_group )            ( const ofaIRenderable *instance,
+	gboolean           ( *is_new_group )             ( const ofaIRenderable *instance,
 															GList *current,
 															GList *prev );
 

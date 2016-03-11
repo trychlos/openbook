@@ -138,11 +138,13 @@ static void               irenderable_begin_render( ofaIRenderable *instance, gd
 static gchar             *irenderable_get_dossier_name( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_title( const ofaIRenderable *instance );
 static gchar             *irenderable_get_page_header_subtitle( const ofaIRenderable *instance );
+static gchar             *irenderable_get_page_header_subtitle2( const ofaIRenderable *instance );
 static void               irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num );
 static void               irenderable_draw_top_summary( ofaIRenderable *instance );
 static void               irenderable_draw_line( ofaIRenderable *instance, GList *current );
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
 static gchar             *account_solde_to_str( ofaReconcilRender *self, gdouble amount );
+static gchar             *get_render_date( ofaReconcilRender *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilRender, ofa_reconcil_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaReconcilRender )
@@ -370,6 +372,7 @@ irenderable_iface_init( ofaIRenderableInterface *iface )
 	iface->get_dossier_name = irenderable_get_dossier_name;
 	iface->get_page_header_title = irenderable_get_page_header_title;
 	iface->get_page_header_subtitle = irenderable_get_page_header_subtitle;
+	iface->get_page_header_subtitle2 = irenderable_get_page_header_subtitle2;
 	iface->draw_page_header_columns = irenderable_draw_page_header_columns;
 	iface->draw_top_summary = irenderable_draw_top_summary;
 	iface->draw_line = irenderable_draw_line;
@@ -491,6 +494,19 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 				ofo_account_get_label( priv->account ));
 
 	return( str );
+}
+
+/*
+ * Rendering date
+ */
+static gchar *
+irenderable_get_page_header_subtitle2( const ofaIRenderable *instance )
+{
+	gchar *sdate;
+
+	sdate = get_render_date( OFA_RECONCIL_RENDER( instance ));
+
+	return( sdate );
 }
 
 static void
@@ -642,7 +658,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	ofaReconcilRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.5;
 	gdouble y, height;
-	GDate date;
 	gchar *str, *sdate, *str_amount;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
@@ -651,14 +666,11 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	y = ofa_irenderable_get_last_y( instance );
 
-	my_date_set_from_date( &date, &priv->global_deffect );
-	if( !my_date_is_valid( &date ) || my_date_compare( &date, &priv->date ) < 0 ){
-		my_date_set_from_date( &date, &priv->date );
-	}
-	sdate = my_date_to_str( &date, ofa_prefs_date_display());
-
+	sdate = get_render_date( OFA_RECONCIL_RENDER( instance ));
 	str_amount = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->account_solde );
+
 	str = g_strdup_printf( _( "Reconciliated account solde on %s is %s" ), sdate, str_amount );
+
 	g_free( sdate );
 	g_free( str_amount );
 
@@ -705,4 +717,22 @@ account_solde_to_str( ofaReconcilRender *self, gdouble amount )
 	g_free( str_amount );
 
 	return( str );
+}
+
+static gchar *
+get_render_date( ofaReconcilRender *self )
+{
+	ofaReconcilRenderPrivate *priv;
+	GDate date;
+	gchar *sdate;
+
+	priv = ofa_reconcil_render_get_instance_private( self );
+
+	my_date_set_from_date( &date, &priv->global_deffect );
+	if( !my_date_is_valid( &date ) || my_date_compare( &date, &priv->date ) < 0 ){
+		my_date_set_from_date( &date, &priv->date );
+	}
+	sdate = my_date_to_str( &date, ofa_prefs_date_display());
+
+	return( sdate );
 }

@@ -118,6 +118,8 @@ static const gchar *st_print_settings    = "RenderBalancesPrint";
 
 /* the columns of the body */
 static const gint st_body_font_size      = 8;
+static const gchar *st_notes_font        = "Sans Italic 6";
+
 #define st_number_width                  (gdouble) 50/9*st_body_font_size
 #define st_currency_width                (gdouble) 23/9*st_body_font_size
 #define st_column_spacing                (gdouble) 4
@@ -556,7 +558,6 @@ static void
 irenderable_draw_page_header_notes( ofaIRenderable *instance, gint page_num )
 {
 	ofaBalanceRenderPrivate *priv;
-	static const gdouble st_vspace_rate_after = 0.5;
 	gdouble y;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
@@ -565,6 +566,9 @@ irenderable_draw_page_header_notes( ofaIRenderable *instance, gint page_num )
 		if( !priv->accounts_balance ){
 
 			y = ofa_irenderable_get_last_y( instance );
+
+			ofa_irenderable_set_font( instance, st_notes_font );
+
 			y += ofa_irenderable_set_wrapped_text( instance,
 						priv->page_margin, y,
 						(priv->render_width-priv->page_margin)*PANGO_SCALE,
@@ -575,7 +579,6 @@ irenderable_draw_page_header_notes( ofaIRenderable *instance, gint page_num )
 							"the balance of the accounts at the end of the period." ),
 						PANGO_ALIGN_LEFT );
 
-			y += ofa_irenderable_get_text_height( instance ) * st_vspace_rate_after;
 			ofa_irenderable_set_last_y( instance, y );
 		}
 	}

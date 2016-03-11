@@ -470,8 +470,6 @@
 
  999 2016- 2-24 FEAT add a Close button to detached nomodal pages
 
-1002 2016- 2-24 FEAT ReconciliationRender: move the date to the title
-
 1003 2016- 2-24 FEAT RenderPage: add navigation+zoom buttons
 
 1004 2016- 2-24 FEAT ReconciliationSummmary: when the BAT file has an
@@ -844,6 +842,9 @@
 
 1001 2016- 2-24 FEAT ReconciliationRender: slightly decrease the font
                      size of text at bottom page (+ italic)
+     2016- 3-11 done
+
+1002 2016- 2-24 FEAT ReconciliationRender: move the date to the title
      2016- 3-11 done
 
 1005 2016- 2-24 FEAT ImportAssistant: data format should be kept for each
