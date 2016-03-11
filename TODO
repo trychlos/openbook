@@ -481,10 +481,6 @@
                      ending solde, the reconciliation summary should display
                      a bottom note with "solde OK with bank"
 
-1006 2016- 2-25 BUG  import Boursorama-20150630.pdf: the last line 'AVOIR...'
-                     is not rightly imported
-                     idem: Boursorama-20150731.pdf line 'AVOIR...'
-
 1007 2016- 2-25 FEAT GuidedInput: have a red cross at the end of the line
                      when the amount is set, but one of another field is
                      wrong
@@ -852,6 +848,11 @@
 1005 2016- 2-24 FEAT ImportAssistant: data format should be kept for each
                      input data type
      2016- 3- 3 done
+
+1006 2016- 2-25 BUG  import Boursorama-20150630.pdf: the last line 'AVOIR...'
+                     is not rightly imported
+                     idem: Boursorama-20150731.pdf line 'AVOIR...'
+     2016- 3-11 fixed
 
 1008 2016- 2-25 FEAT ViewEntries: add operation template in the columns list
      2016- 3- 3 done

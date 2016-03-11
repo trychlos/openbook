@@ -32,6 +32,7 @@
 
  Bug fixes:
 
+   - import-bourso-pdf: fix PDF import (todo #1006).
    - ofaDossierTreeview: just ignore rows with empty columns (todo #1035).
    - ofoDossier: fix update of solde account per currency.
 

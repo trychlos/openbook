@@ -577,7 +577,7 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 	sLine *line;
 	ofsBatDetail *detail, *prev_detail;
 	ofxAmount debit, credit;
-	gchar *str;
+	gchar *str, *tmp;
 	gboolean dbg1;
 
 	g_debug( "%s: importer=%p, bat=%p, page=%p, page_i=%u, rc_list=%p",
@@ -632,8 +632,15 @@ read_lines( ofaBoursoPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint
 					}
 
 				} else if( src->rc->x1 < st_valeur_min_x ){
+					tmp = g_strstrip( g_strdup( src->text ));
+					if( my_strlen( line->slabel )){
+						str = g_strconcat( line->slabel, " ", tmp, NULL );
+					} else {
+						str = g_strdup( tmp );
+					}
+					g_free( tmp );
 					g_free( line->slabel );
-					line->slabel = g_strstrip( g_strdup( src->text ));
+					line->slabel = str;
 					if( dbg1 ){
 						g_debug( "%s: setting as label", thisfn );
 					}
