@@ -298,11 +298,6 @@
  745 2015- 3-19 DISP AccountSelect: scroll the treeview to make sure the
                      pre-selected account is displayed
 
- 752 2015- 3-20 FEAT Reconciliation: when selecting a bat file, only
-                     allow those which are associated with the current
-                     account number (if any) - of those which are not
-                     yet associated
-
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
                      entry +unsettle/unreconciliate
 
@@ -551,6 +546,12 @@
                      line thus refusing the selection for another account
                      + add this account number to treeview from bat page
                      + add this account number to bat properties
+     2016- 3-11 done
+
+ 752 2015- 3-20 FEAT Reconciliation: when selecting a bat file, only
+                     allow those which are associated with the current
+                     account number (if any) - of those which are not
+                     yet associated
      2016- 3-11 done
 
  754 2015- 3-21 add unused count to bat page treeview

@@ -285,9 +285,9 @@ static void         on_effect_dates_changed( ofaIDateFilter *filter, gint who, g
 static void         on_date_concil_changed( GtkEditable *editable, ofaReconcilPage *self );
 static void         on_select_bat( GtkButton *button, ofaReconcilPage *self );
 static void         do_select_bat( ofaReconcilPage *self );
-static void         on_import_clicked( GtkButton *button, ofaReconcilPage *self );
-static void         on_clear_clicked( GtkButton *button, ofaReconcilPage *self );
-static void         clear_bat_content( ofaReconcilPage *self );
+static void         bat_on_import_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         bat_on_clear_clicked( GtkButton *button, ofaReconcilPage *self );
+static void         bat_clear_content( ofaReconcilPage *self );
 static void         do_display_bat_files( ofaReconcilPage *self );
 static void         display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id );
 static void         display_bat_file( ofaReconcilPage *self, ofoBat *bat );
@@ -1013,11 +1013,11 @@ setup_auto_rappro( ofaPage *page, GtkContainer *parent )
 
 	button = my_utils_container_get_child_by_name( parent, "assist-import" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_import_clicked ), page );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( bat_on_import_clicked ), page );
 
 	button = my_utils_container_get_child_by_name( parent, "assist-clear" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_clear_clicked ), page );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( bat_on_clear_clicked ), page );
 	priv->clear = GTK_BUTTON( button );
 
 	label = my_utils_container_get_child_by_name( parent, "assist-name" );
@@ -1089,6 +1089,10 @@ v_get_top_focusable_widget( const ofaPage *page )
 /*
  * the treeview is disabled (insensitive) while the account is not ok
  * (and priv->account is NULL)
+ *
+ * Note that @entry may be %NULL, when we are trying to revalidate the
+ * entered account identifier after having cleared the loaded BAT files
+ * (cf. bat_on_clear_clicked()).
  */
 static void
 account_on_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
@@ -1486,7 +1490,7 @@ do_select_bat( ofaReconcilPage *self )
  * try to import a bank account transaction list
  */
 static void
-on_import_clicked( GtkButton *button, ofaReconcilPage *self )
+bat_on_import_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	ofxCounter imported_id;
 
@@ -1497,9 +1501,10 @@ on_import_clicked( GtkButton *button, ofaReconcilPage *self )
 }
 
 static void
-on_clear_clicked( GtkButton *button, ofaReconcilPage *self )
+bat_on_clear_clicked( GtkButton *button, ofaReconcilPage *self )
 {
-	clear_bat_content( self );
+	bat_clear_content( self );
+	account_on_entry_changed( NULL, self );
 }
 
 /*
@@ -1510,7 +1515,7 @@ on_clear_clicked( GtkButton *button, ofaReconcilPage *self )
  *  proposed reconciliation date in the entries
  */
 static void
-clear_bat_content( ofaReconcilPage *self )
+bat_clear_content( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 
