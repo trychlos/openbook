@@ -51,6 +51,7 @@
    - ofaISingleKeeper: new interface (todo #1038).
    - ofaOpeTemplateBookBin: removed class (todo #1037).
    - ofaSettlement: is renamed as ofaSettlementPage (todo #1040).
+   - ofo_bat_line_get_dataset_for_print_reconcil(): new method.
 
 -----------------------------------------------------------------------
  Version 0.49

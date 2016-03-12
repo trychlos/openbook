@@ -58,7 +58,7 @@ struct _ofoBatLinePrivate {
 	ofxAmount  amount;
 };
 
-static GList       *bat_line_load_dataset( ofxCounter bat_id, ofaHub *hub );
+static GList       *bat_line_load_dataset( ofaHub *hub, const gchar *where );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
 static gboolean     bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *connect );
 static gboolean     bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect );
@@ -147,43 +147,51 @@ ofo_bat_line_get_dataset( ofaHub *hub, ofxCounter bat_id )
 {
 	static const gchar *thisfn = "ofo_bat_line_get_dataset";
 	GList *dataset;
+	gchar *where;
 
 	g_debug( "%s: hub=%p, bat_id=%lu", thisfn, ( void * ) hub, bat_id );
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	dataset = bat_line_load_dataset( bat_id, hub );
+	where = g_strdup_printf( "WHERE BAT_ID=%ld ORDER BY BAT_LINE_DEFFECT ASC", bat_id );
+
+	dataset = bat_line_load_dataset( hub, where );
+
+	g_free( where );
 
 	return( dataset );
 }
 
+/*
+ * this function read all columns
+ * where and/or order clauses may be provided by the caller
+ */
 static GList *
-bat_line_load_dataset( ofxCounter bat_id, ofaHub *hub )
+bat_line_load_dataset( ofaHub *hub, const gchar *where )
 {
 	const ofaIDBConnect *connect;
-	GString *query;
+	gchar *query;
 	GSList *result, *irow, *icol;
 	GList *dataset;
+	ofxCounter bat_id;
 	ofoBatLine *line;
 	GDate date;
 
 	dataset = NULL;
 	connect = ofa_hub_get_connect( hub );
 
-	query = g_string_new(
-					"SELECT BAT_LINE_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,"
-					"	BAT_LINE_LABEL,BAT_LINE_REF,BAT_LINE_CURRENCY,"
+	query = g_strdup_printf(
+					"SELECT BAT_ID,BAT_LINE_ID,BAT_LINE_DEFFECT,BAT_LINE_DOPE,"
+					"	BAT_LINE_REF,BAT_LINE_LABEL,BAT_LINE_CURRENCY,"
 					"	BAT_LINE_AMOUNT "
-					"	FROM OFA_T_BAT_LINES " );
+					"	FROM OFA_T_BAT_LINES %s", where ? where : "" );
 
-	g_string_append_printf( query, "WHERE BAT_ID=%ld ", bat_id );
-
-	query = g_string_append( query, "ORDER BY BAT_LINE_DEFFECT ASC" );
-
-	if( ofa_idbconnect_query_ex( connect, query->str, &result, TRUE )){
+	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
+			bat_id = atol(( gchar * ) icol->data );
 			line = ofo_bat_line_new( bat_id );
+			icol = icol->next;
 			bat_line_set_line_id( line, atol(( gchar * ) icol->data ));
 			icol = icol->next;
 			my_date_set_from_sql( &date, ( const gchar * ) icol->data );
@@ -194,11 +202,11 @@ bat_line_load_dataset( ofxCounter bat_id, ofaHub *hub )
 				ofo_bat_line_set_dope( line, &date );
 			}
 			icol = icol->next;
-			ofo_bat_line_set_label( line, ( gchar * ) icol->data );
-			icol = icol->next;
 			if( icol->data ){
 				ofo_bat_line_set_ref( line, ( gchar * ) icol->data );
 			}
+			icol = icol->next;
+			ofo_bat_line_set_label( line, ( gchar * ) icol->data );
 			icol = icol->next;
 			if( icol->data ){
 				ofo_bat_line_set_currency( line, ( gchar * ) icol->data );
@@ -212,9 +220,39 @@ bat_line_load_dataset( ofxCounter bat_id, ofaHub *hub )
 		}
 		ofa_idbconnect_free_results( result );
 	}
-	g_string_free( query, TRUE );
+	g_free( query );
 
 	return( g_list_reverse( dataset ));
+}
+
+/**
+ * ofo_bat_line_get_dataset_for_print_reconcil:
+ * @hub: the current #ofaHub object.
+ * @account: the reconciliated account.
+ *
+ * Returns: the list of unconciliated lines on the specified account,
+ * ordered by ascending effect date.
+ */
+GList *
+ofo_bat_line_get_dataset_for_print_reconcil( ofaHub *hub, const gchar *account_id )
+{
+	static const gchar *thisfn = "ofo_bat_line_get_dataset_for_print_reconcil";
+	GList *dataset;
+	gchar *where;
+
+	g_debug( "%s: hub=%p, account_id=%s", thisfn, ( void * ) hub, account_id );
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( my_strlen( account_id ), NULL );
+
+	where = g_strdup_printf(
+				"WHERE BAT_LINE_ID NOT IN (SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='B') "
+				"	AND BAT_ID IN (SELECT BAT_ID FROM OFA_T_BAT WHERE BAT_ACCOUNT='%s') "
+				"	ORDER BY BAT_LINE_DEFFECT ASC", account_id );
+
+	dataset = bat_line_load_dataset( hub, where );
+
+	return( dataset );
 }
 
 /**
