@@ -88,6 +88,9 @@ typedef enum {
 }
 	ofeAccountAllowed;
 
+/* data max length */
+#define ACC_NUMBER_MAX_LENGTH           64
+
 GType           ofo_account_get_type                ( void ) G_GNUC_CONST;
 
 void            ofo_account_connect_to_hub_signaling_system

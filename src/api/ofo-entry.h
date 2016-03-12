@@ -88,6 +88,9 @@ typedef enum {
 }
 	ofaEntryStatus;
 
+/* data max length */
+#define ENT_LABEL_MAX_LENGTH          256
+
 GType           ofo_entry_get_type               ( void ) G_GNUC_CONST;
 
 void            ofo_entry_connect_to_hub_signaling_system

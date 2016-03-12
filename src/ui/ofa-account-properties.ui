@@ -93,9 +93,9 @@
                         <property name="can_focus">True</property>
                         <property name="tooltip_text" translatable="yes">The number of the account : it must begin with a class digit, and have at least one more character.</property>
                         <property name="halign">start</property>
-                        <property name="max_length">20</property>
+                        <property name="max_length">64</property>
                         <property name="invisible_char">●</property>
-                        <property name="width_chars">10</property>
+                        <property name="max_width_chars">64</property>
                         <property name="caps_lock_warning">False</property>
                       </object>
                       <packing>
@@ -121,10 +121,10 @@
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="tooltip_text" translatable="yes">The label of the account</property>
-                        <property name="hexpand">True</property>
-                        <property name="max_length">80</property>
+                        <property name="halign">start</property>
+                        <property name="max_length">256</property>
                         <property name="invisible_char">●</property>
-                        <property name="width_chars">40</property>
+                        <property name="max_width_chars">256</property>
                         <property name="caps_lock_warning">False</property>
                       </object>
                       <packing>

@@ -28,6 +28,8 @@
 
 #include <string.h>
 
+#include <api/ofo-account.h>
+
 #include <core/ofa-main-window.h>
 
 #include <ui/ofa-iaccount-entry.h>
@@ -188,6 +190,11 @@ ofa_iaccount_entry_init( ofaIAccountEntry *instance, GtkEntry *entry, ofaMainWin
 	g_return_if_fail( instance && OFA_IS_IACCOUNT_ENTRY( instance ));
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	gtk_widget_set_halign( GTK_WIDGET( entry ), GTK_ALIGN_START );
+	gtk_entry_set_alignment( entry, 0 );
+	gtk_entry_set_max_width_chars( entry, ACC_NUMBER_MAX_LENGTH );
+	gtk_entry_set_max_length( entry, ACC_NUMBER_MAX_LENGTH );
 
 	sdata = get_iaccount_entry_data( instance, entry );
 	sdata->instance = instance;

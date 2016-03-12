@@ -173,9 +173,6 @@ struct _ofoOpeTemplatePrivate {
 	GList     *details;
 };
 
-/* mnemonic max length */
-#define MNEMO_LENGTH                    6
-
 static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean        on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
@@ -639,9 +636,9 @@ ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model )
 	len_mnemo = my_strlen( mnemo );
 	for( i=2 ; ; ++i ){
 		/* if we are greater than 9999, there is a problem... */
-		maxlen = ( i < 10 ? MNEMO_LENGTH-1 :
-					( i < 100 ? MNEMO_LENGTH-2 :
-					( i < 1000 ? MNEMO_LENGTH-3 : MNEMO_LENGTH-4 )));
+		maxlen = ( i < 10 ? OTE_MNEMO_MAX_LENGTH-1 :
+					( i < 100 ? OTE_MNEMO_MAX_LENGTH-2 :
+					( i < 1000 ? OTE_MNEMO_MAX_LENGTH-3 : OTE_MNEMO_MAX_LENGTH-4 )));
 		if( maxlen < len_mnemo ){
 			str = g_strdup_printf( "%*.*s%d", maxlen, maxlen, mnemo, i );
 		} else {

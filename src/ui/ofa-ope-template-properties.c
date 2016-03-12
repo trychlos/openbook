@@ -51,7 +51,6 @@
  * - button 'Add' or line number
  * - comment
  * - account entry
- * - account btn selection
  * - account locked
  * - label entry
  * - label locked
@@ -368,6 +367,8 @@ idialog_init( myIDialog *instance )
 	 * sensitivity so that IGridList can individually adjust rows sensitivity */
 	init_detail( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
 	check_for_enable_dlg( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 }
 
@@ -573,67 +574,79 @@ set_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
+	/* ope template detail comment */
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
-	gtk_entry_set_max_length( entry, 80 );
+	gtk_widget_set_halign( GTK_WIDGET( entry ), GTK_ALIGN_START );
+	gtk_entry_set_alignment( entry, 0 );
+	gtk_entry_set_max_length( entry, OTE_DET_COMMENT_MAX_LENGTH );
+	gtk_entry_set_max_width_chars( entry, OTE_DET_COMMENT_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_COMMENT, row, 1, 1 );
 	if( priv->is_current ){
 		gtk_widget_grab_focus( GTK_WIDGET( entry ));
 	}
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
+	/* account identifier */
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_entry_set_max_length( entry, 20 );
-	gtk_entry_set_width_chars( entry, 10 );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_ACCOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 	ofa_iaccount_entry_init(
 			OFA_IACCOUNT_ENTRY( self ), entry,
 			OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))), ACCOUNT_ALLOW_DETAIL );
 
+	/* account locked */
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), toggle, 1+DET_COL_ACCOUNT_LOCKED, row, 1, 1 );
 	gtk_widget_set_sensitive( toggle, priv->is_current );
 
+	/* label */
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_widget_set_hexpand( GTK_WIDGET( entry ), TRUE );
-	gtk_entry_set_max_length( entry, 80 );
-	gtk_entry_set_width_chars( entry, 20 );
+	gtk_entry_set_max_length( entry, OTE_DET_LABEL_MAX_LENGTH );
+	gtk_entry_set_max_width_chars( entry, OTE_DET_LABEL_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_LABEL, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
+	/* label locked */
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), toggle, 1+DET_COL_LABEL_LOCKED, row, 1, 1 );
 	gtk_widget_set_sensitive( toggle, priv->is_current );
 
+	/* debit */
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_entry_set_max_length( entry, 80 );
+	gtk_entry_set_max_length( entry, OTE_DET_AMOUNT_MAX_LENGTH );
 	gtk_entry_set_width_chars( entry, 10 );
+	gtk_entry_set_max_width_chars( entry, OTE_DET_AMOUNT_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_DEBIT, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
+	/* debit locked */
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), toggle, 1+DET_COL_DEBIT_LOCKED, row, 1, 1 );
 	gtk_widget_set_sensitive( toggle, priv->is_current );
 
+	/* credit */
 	entry = GTK_ENTRY( gtk_entry_new());
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_entry_set_max_length( entry, 80 );
+	gtk_entry_set_max_length( entry, OTE_DET_AMOUNT_MAX_LENGTH );
 	gtk_entry_set_width_chars( entry, 10 );
+	gtk_entry_set_max_width_chars( entry, OTE_DET_AMOUNT_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_CREDIT, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
 
+	/* credit locked */
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), toggle, 1+DET_COL_CREDIT_LOCKED, row, 1, 1 );

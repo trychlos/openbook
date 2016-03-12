@@ -143,10 +143,10 @@
                               <object class="GtkEntry" id="p1-label-entry">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="hexpand">True</property>
-                                <property name="max_length">80</property>
+                                <property name="halign">start</property>
+                                <property name="max_length">256</property>
                                 <property name="invisible_char">●</property>
-                                <property name="width_chars">40</property>
+                                <property name="max_width_chars">256</property>
                                 <property name="caps_lock_warning">False</property>
                               </object>
                               <packing>
@@ -173,7 +173,8 @@
                                 <property name="can_focus">True</property>
                                 <property name="halign">start</property>
                                 <property name="max_length">9</property>
-                                <property name="width_chars">10</property>
+                                <property name="width_chars">16</property>
+                                <property name="max_width_chars">16</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -190,7 +191,7 @@
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
-                                <property name="top_attach">2</property>
+                                <property name="top_attach">3</property>
                               </packing>
                             </child>
                             <child>
@@ -203,7 +204,7 @@
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
-                                <property name="top_attach">3</property>
+                                <property name="top_attach">4</property>
                               </packing>
                             </child>
                             <child>
@@ -218,7 +219,7 @@
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
-                                <property name="top_attach">2</property>
+                                <property name="top_attach">3</property>
                               </packing>
                             </child>
                             <child>
@@ -233,7 +234,34 @@
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
-                                <property name="top_attach">3</property>
+                                <property name="top_attach">4</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="p1-siret-label">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">_SIRET :</property>
+                                <property name="use_underline">True</property>
+                                <property name="xalign">1</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">0</property>
+                                <property name="top_attach">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="p1-siret-entry">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="halign">start</property>
+                                <property name="max_length">14</property>
+                                <property name="width_chars">16</property>
+                                <property name="max_width_chars">16</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="top_attach">2</property>
                               </packing>
                             </child>
                           </object>

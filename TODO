@@ -420,9 +420,6 @@
 
  966 2016- 1-10 FEAT tva/ofoTVARecord: make it printable
 
- 969 2016- 1-14 DDL  increase mnemonic size (ofaOpeTemplate and more ?)
-     2016- 3-12 done in the database
-
  971 2016- 2- 3 FEAT have recently used dossiers
 
  983 2016- 2-11 FEAT ImportAssistant: each type should be able to add its
@@ -738,6 +735,10 @@
                 main window and ihubber/application and why this is
                 relevant
      2016- 1-18 done
+
+ 969 2016- 1-14 DDL  increase mnemonic size (ofaOpeTemplate and more ?)
+     2016- 3-12 done in the database
+     2016- 3-12 done in the UI
 
  970 2016- 1-28 PACK distribute but do not install ressources which are
                      managed as GResource

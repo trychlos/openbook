@@ -105,9 +105,9 @@ struct _ofaGuidedInputBinPrivate {
 };
 
 #define RANG_WIDTH                      3
-#define ACCOUNT_WIDTH                  10
-#define LABEL_WIDTH                    20
+#define LABEL_MAX_WIDTH               256
 #define AMOUNTS_WIDTH                  10
+#define AMOUNTS_MAX_WIDTH              10
 #define CURRENCY_WIDTH                  4
 
 #define TOTAUX_TOP_MARGIN               8
@@ -130,6 +130,7 @@ typedef struct {
 	const gchar * (*get_label)( const ofoOpeTemplate *, gint );
 	gboolean      (*is_locked)( const ofoOpeTemplate *, gint );
 	gint            width;					/* entry, label */
+	gint            max_width;
 	gboolean        is_double;				/* whether entry is managed by myEditableAmount */
 	float           xalign;					/* entry not double, label */
 	gboolean        expand;					/* entry not double */
@@ -145,37 +146,37 @@ static sColumnDef st_col_defs[] = {
 				TYPE_ENTRY,
 				ofo_ope_template_get_detail_account,
 				ofo_ope_template_get_detail_account_locked,
-				ACCOUNT_WIDTH, FALSE, 0, FALSE, NULL
+				-1, -1, FALSE, 0, FALSE, NULL
 		},
 		{ OPE_COL_LABEL,
 				TYPE_ENTRY,
 				ofo_ope_template_get_detail_label,
 				ofo_ope_template_get_detail_label_locked,
-				LABEL_WIDTH, FALSE, 0, TRUE, NULL
+				-1, LABEL_MAX_WIDTH, FALSE, 0, TRUE, NULL
 		},
 		{ OPE_COL_DEBIT,
 				TYPE_ENTRY,
 				ofo_ope_template_get_detail_debit,
 				ofo_ope_template_get_detail_debit_locked,
-				AMOUNTS_WIDTH, TRUE, 0, FALSE, NULL
+				AMOUNTS_WIDTH, AMOUNTS_MAX_WIDTH, TRUE, 0, FALSE, NULL
 		},
 		{ OPE_COL_CREDIT,
 				TYPE_ENTRY,
 				ofo_ope_template_get_detail_credit,
 				ofo_ope_template_get_detail_credit_locked,
-				AMOUNTS_WIDTH, TRUE, 0, FALSE, NULL
+				AMOUNTS_WIDTH, AMOUNTS_MAX_WIDTH, TRUE, 0, FALSE, NULL
 		},
 		{ OPE_COL_CURRENCY,
 				TYPE_LABEL,
 				NULL,
 				NULL,
-				CURRENCY_WIDTH, FALSE, 0, FALSE, NULL
+				CURRENCY_WIDTH, CURRENCY_WIDTH, FALSE, 0, FALSE, NULL
 		},
 		{ OPE_COL_VALID,
 				TYPE_IMAGE,
 				NULL,
 				NULL,
-				0, FALSE, 0.5, FALSE, NULL
+				-1, -1, FALSE, 0.5, FALSE, NULL
 		},
 		{ 0 }
 };
@@ -719,9 +720,11 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 		gtk_widget_set_hexpand( widget, col_def->expand );
 		gtk_widget_set_sensitive( widget, !locked );
 
-		if( col_def->width ){
+		if( col_def->width > 0 ){
 			gtk_entry_set_width_chars( GTK_ENTRY( widget ), col_def->width );
-			gtk_entry_set_max_width_chars( GTK_ENTRY( widget ), col_def->width );
+		}
+		if( col_def->max_width > 0 ){
+			gtk_entry_set_max_width_chars( GTK_ENTRY( widget ), col_def->max_width );
 		}
 
 		if( col_def->is_double ){
