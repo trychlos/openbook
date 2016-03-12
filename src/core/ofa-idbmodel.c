@@ -92,7 +92,6 @@ struct _ofaDBModelWindowPrivate {
 };
 
 static const gchar      *st_resource_ui = "/org/trychlos/openbook/core/ofa-idbmodel.ui";
-static const gchar      *st_settings    = "DBModelWindow-settings";
 
 /* interface management */
 static GType    register_type( void );
@@ -104,12 +103,12 @@ static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, m
 /* dialog management */
 static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
 static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_read_settings( myIWindow *instance, const gchar *settings_name );
+static void     iwindow_write_settings( myIWindow *instance, const gchar *settings_name );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static gboolean do_run( ofaDBModelWindow *dialog );
 static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWindow *dialog );
-static void     load_settings( ofaDBModelWindow *dialog );
-static void     write_settings( ofaDBModelWindow *dialog );
 
 G_DEFINE_TYPE_EXTENDED( ofaDBModelWindow, ofa_dbmodel_window, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDBModelWindow )
@@ -270,12 +269,10 @@ ofa_idbmodel_update( ofaHub *hub )
 		priv->hub = hub;
 
 		ok = FALSE;
-		load_settings( window );
 		if( my_idialog_run( MY_IDIALOG( window )) == GTK_RESPONSE_OK ){
 			ok = TRUE;
 			my_iwindow_close( MY_IWINDOW( window ));
 		}
-		write_settings( window );
 	}
 
 	ofa_plugin_free_extensions( plugins_list );
@@ -508,6 +505,49 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_idbmodel_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->read_settings = iwindow_read_settings;
+	iface->write_settings = iwindow_write_settings;
+}
+
+/*
+ * settings are a string list, with:
+ * - paned pos
+ */
+static void
+iwindow_read_settings( myIWindow *instance, const gchar *settings_name )
+{
+	ofaDBModelWindowPrivate *priv;
+	gchar *key_name;
+	GList *slist, *it;
+
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
+
+	key_name = g_strdup_printf( "%s-settings", settings_name );
+	slist = ofa_settings_user_get_string_list( key_name );
+	it = slist ? slist : NULL;
+	priv->paned_pos = it ? atoi( it->data ) : 50;
+
+	ofa_settings_free_string_list( slist );
+	g_free( key_name );
+}
+
+static void
+iwindow_write_settings( myIWindow *instance, const gchar *settings_name )
+{
+	ofaDBModelWindowPrivate *priv;
+	gchar *key_name;
+	gchar *str;
+
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
+
+	key_name = g_strdup_printf( "%s-settings", settings_name );
+	str = g_strdup_printf( "%d;", gtk_paned_get_position( GTK_PANED( priv->paned )));
+
+	ofa_settings_user_set_string( key_name, str );
+
+	g_free( str );
+	g_free( key_name );
 }
 
 /*
@@ -675,39 +715,4 @@ on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWind
 
 	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->upper_viewport ));
 	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
-}
-
-/*
- * settings are a string list, with:
- * - paned pos
- */
-static void
-load_settings( ofaDBModelWindow *window )
-{
-	ofaDBModelWindowPrivate *priv;
-	GList *slist, *it;
-
-	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
-
-	slist = ofa_settings_user_get_string_list( st_settings );
-	it = slist ? slist : NULL;
-	priv->paned_pos = it ? atoi( it->data ) : 50;
-
-	ofa_settings_free_string_list( slist );
-}
-
-static void
-write_settings( ofaDBModelWindow *window )
-{
-	ofaDBModelWindowPrivate *priv;
-	gchar *str;
-
-	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
-
-	str = g_strdup_printf( "%d;",
-			gtk_paned_get_position( GTK_PANED( priv->paned )));
-
-	ofa_settings_user_set_string( st_settings, str );
-
-	g_free( str );
 }

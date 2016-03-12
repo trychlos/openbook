@@ -871,6 +871,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	}
 	if( ok ){
 		/* initialize the newly created database */
+		/* Resized in v28 */
 		g_string_printf( query,
 				"CREATE TABLE IF NOT EXISTS OFA_T_AUDIT ("
 				"	AUD_ID    INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Intern identifier',"

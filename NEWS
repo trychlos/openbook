@@ -29,6 +29,7 @@
  New features and improvements:
 
    - Have a new icon for account selection (todo #1034).
+   - DBModel v28: increase all identifiers and labels size (todo #969). 
    - ofaReconciliation: asssociates an account to the used BAT files (todo #751).
    - ofaReconciliation: manage BAT vs. Account selection (todo #752).
    - ofaReconciliationRender: change the bottom summary font (todo #1001).

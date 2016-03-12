@@ -281,10 +281,6 @@
  714 2015- 3-11 associate an account with a piece ref
                 (e.g. ESP->531, CCP->51441, and so on)
 
- 719 2015- 3-13 Reconciliation: when new entries are added after having
-                already set a BAT file, new propositions are not 
-                expanded
-
  720 2015- 3-13 FEAT Reconciliation: when declining a proposition,
                      should search for the next
 
@@ -294,9 +290,6 @@
 
  744 2015- 3-19 FEAT have an option to automatically check the balances
                      when opening the dossier
-
- 745 2015- 3-19 DISP AccountSelect: scroll the treeview to make sure the
-                     pre-selected account is displayed
 
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
                      entry +unsettle/unreconciliate
@@ -369,8 +362,6 @@
 
  825 2015- 9-22 PACK use AM_GNU_GETTEXT instead of AM_GLIB_GNU_GETTEXT
 
- 843 2015- 9-30 DDL  account number should be renamed as account identifier
-
  862 2015-10- 7 DISP fix focus order on GtkBin-derived widgets on the
                      assistants
                      - RestoreAssistant: dossier treeview after created
@@ -430,6 +421,7 @@
  966 2016- 1-10 FEAT tva/ofoTVARecord: make it printable
 
  969 2016- 1-14 DDL  increase mnemonic size (ofaOpeTemplate and more ?)
+     2016- 3-12 done in the database
 
  971 2016- 2- 3 FEAT have recently used dossiers
 
@@ -538,8 +530,17 @@
      2015- 3-12 are we sure we want this ?
      2016- 1-18 cancelled (at least for now)
 
+ 719 2015- 3-13 Reconciliation: when new entries are added after having
+                already set a BAT file, new propositions are not 
+                expanded
+     2016- 3-11 fixed
+
  729 2015- 3-14 FEAT PrintLedgers: have an option to print a summary
      2016- 1-25      new ofaLedgerSummaryRender print
+
+ 745 2015- 3-19 DISP AccountSelect: scroll the treeview to make sure the
+                     pre-selected account is displayed
+     2016- 3-11 done
 
  751 2015- 3-20 FEAT Reconciliation: associate the bat file with the
                      openbook account as soon as we reconciliate one
@@ -585,6 +586,9 @@
                 need a single account selection
      2015-10- 7 see also (closed) #778
      2016- 1-10 class has been removed
+
+ 843 2015- 9-30 DDL  account number should be renamed as account identifier
+     2016- 3-12 yes, but no!
 
  853 2015-10- 1 GTK  review v_init_dialog's:
                      - only store GtkWidget (as GtkWidget *) when needed

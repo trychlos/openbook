@@ -77,9 +77,12 @@ typedef struct _myIWindow                    myIWindow;
  * myIWindowInterface:
  * @get_interface_version: [should]: returns the version of this
  *                         interface that the plugin implements.
- * @get_identifier: [should]: returns the identifier of this window.
- * @init: [should]: one-time initialization.
- * @quit_on_escape: [should]: let ask for a user confirmation.
+ * @get_identifier: [may]: returns the identifier of this window.
+ * @init: [may]: one-time initialization.
+ * @get_default_size: [may]: returns default size.
+ * @quit_on_escape: [may]: let ask for a user confirmation.
+ * @read_settings: [may]: read user preferences.
+ * @write_settings: [may]: write user preferences.
  *
  * This defines the interface that an #myIWindow may/should/must
  * implement.
@@ -164,6 +167,32 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *quit_on_escape )       ( const myIWindow *instance );
+
+	/**
+	 * read_settings:
+	 * @instance: the #myIWindow instance.
+	 * @settings_name: the key name proposed by the @instance.
+	 *
+	 * Called at initialization time, after window creation and restore
+	 * of size and position, to let the application read its own settings.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *read_settings )        ( myIWindow *instance,
+												const gchar *settings_name );
+
+	/**
+	 * write_settings:
+	 * @instance: the #myIWindow instance.
+	 * @settings_name: the key name proposed by the @instance.
+	 *
+	 * Called at dispose time, before save of window size and position,
+	 * to let the application write its own settings.
+	 *
+	 * Since: version 1
+	 */
+	void     ( *write_settings )       ( myIWindow *instance,
+												const gchar *settings_name );
 }
 	myIWindowInterface;
 

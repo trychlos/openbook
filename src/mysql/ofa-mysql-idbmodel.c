@@ -85,6 +85,8 @@ static gboolean dbmodel_v26( sUpdate *update_data, gint version );
 static gulong   count_v26( sUpdate *update_data );
 static gboolean dbmodel_v27( sUpdate *update_data, gint version );
 static gulong   count_v27( sUpdate *update_data );
+static gboolean dbmodel_v28( sUpdate *update_data, gint version );
+static gulong   count_v28( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -102,6 +104,7 @@ static sMigration st_migrates[] = {
 		{ 25, dbmodel_v25, count_v25 },
 		{ 26, dbmodel_v26, count_v26 },
 		{ 27, dbmodel_v27, count_v27 },
+		{ 28, dbmodel_v28, count_v28 },
 		{ 0 }
 };
 
@@ -427,6 +430,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	/* n° 1 */
 	/* ACC_TYPE is renamed to ACC_ROOT in v27 */
 	/* ACC_FORWARD is renamed to ACC_FORWARDABLE in v27 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
@@ -492,6 +496,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 
 	/* n° 2 */
 	/* BAT_SOLDE is remediated in v22 */
+	/* Labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE            COMMENT 'Intern import identifier',"
@@ -512,6 +517,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	/* n° 3 */
 	/* BAT_LINE_UPD_STAMP is remediated in v21 */
 	/* BAT_LINE_ENTRY and BAT_LINE_UPD_USER are remediated in v24 */
+	/* Labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL                 COMMENT 'Intern import identifier',"
@@ -530,6 +536,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	}
 
 	/* n° 4 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES ("
 			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE         COMMENT 'Class number',"
@@ -542,6 +549,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	}
 
 	/* n° 5 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES ("
 			"	CUR_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
@@ -557,6 +565,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 
 	/* n° 6 */
 	/* DOS_STATUS is renamed to DOS_CURRENT in v27 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
@@ -601,6 +610,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	}
 
 	/* n° 8 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_CUR ("
 			"	DOS_ID               INTEGER   NOT NULL              COMMENT 'Row identifier',"
@@ -612,6 +622,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	}
 
 	/* n° 9 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
@@ -639,6 +650,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	}
 
 	/* n° 10 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS ("
 			"	LED_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE     COMMENT 'Mnemonic identifier of the ledger',"
@@ -652,6 +664,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 	}
 
 	/* n° 11 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
 			"	LED_MNEMO            VARCHAR(6) NOT NULL             COMMENT 'Internal ledger identifier',"
@@ -669,6 +682,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 
 	/* n° 12 */
 	/* locked indicators are remediated in v27 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
@@ -686,6 +700,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 
 	/* n° 13 */
 	/* locked indicators are remediated in v27 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES_DET ("
 			"	OTE_MNEMO              VARCHAR(6) NOT NULL           COMMENT 'Operation template menmonic',"
@@ -722,6 +737,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 #endif
 
 	/* n° 14 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES ("
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL UNIQUE  COMMENT 'Mnemonic identifier of the rate',"
@@ -735,6 +751,7 @@ dbmodel_v20( sUpdate *update_data, gint version )
 
 	/* n° 15 */
 	/* RAT_VAL_BEG is renamed as RAT_VAL_BEGIN in v27 */
+	/* Identifiers and labels are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
 			"	RAT_UNUSED        INTEGER AUTO_INCREMENT PRIMARY KEY COMMENT 'An unused counter to have a unique key while keeping NULL values',"
@@ -955,6 +972,7 @@ dbmodel_v25( sUpdate *update_data, gint version )
 	last_concil = 0;
 
 	/* n° 1 */
+	/* Labels and identifiers are resized in v28 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL ("
 			"	REC_ID        BIGINT PRIMARY KEY NOT NULL            COMMENT 'Reconciliation identifier',"
@@ -1374,6 +1392,166 @@ static gulong
 count_v27( sUpdate *update_data )
 {
 	return( 31 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v28:
+ *
+ * - Review all identifiers and labels size
+ */
+static gboolean
+dbmodel_v28( sUpdate *update_data, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v28";
+
+	g_debug( "%s: update_data=%p, version=%d", thisfn, ( void * ) update_data, version );
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_ACCOUNTS"
+			"	MODIFY COLUMN ACC_NUMBER        VARCHAR(64)    BINARY NOT NULL UNIQUE COMMENT 'Account identifier',"
+			"   MODIFY COLUMN ACC_LABEL         VARCHAR(256)   NOT NULL               COMMENT 'Account label',"
+			"	MODIFY COLUMN ACC_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_AUDIT "
+			"	MODIFY COLUMN AUD_QUERY         VARCHAR(65520) NOT NULL               COMMENT 'Query content'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_BAT "
+			"	MODIFY COLUMN BAT_FORMAT        VARCHAR(128)                          COMMENT 'Identified file format',"
+			"	MODIFY COLUMN BAT_RIB           VARCHAR(128)                          COMMENT 'Bank provided RIB',"
+			"	MODIFY COLUMN BAT_ACCOUNT       VARCHAR(64)                           COMMENT 'Associated Openbook account',"
+			"	MODIFY COLUMN BAT_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of BAT file import'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_BAT_LINES "
+			"	MODIFY COLUMN BAT_LINE_REF      VARCHAR(256)                          COMMENT 'Line reference as recorded by the Bank',"
+			"	MODIFY COLUMN BAT_LINE_LABEL    VARCHAR(256)                          COMMENT 'Line label'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_CLASSES "
+			"	MODIFY COLUMN CLA_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Class label',"
+			"	MODIFY COLUMN CLA_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_CONCIL "
+			"	MODIFY COLUMN REC_USER          VARCHAR(64)                           COMMENT 'User responsible of the reconciliation'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_CURRENCIES "
+			"	MODIFY COLUMN CUR_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Currency label',"
+			"	MODIFY COLUMN CUR_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	MODIFY COLUMN DOS_FORW_OPE      VARCHAR(64)                           COMMENT 'Operation mnemo for carried forward entries',"
+			"	MODIFY COLUMN DOS_IMPORT_LEDGER VARCHAR(64)                           COMMENT 'Default import ledger',"
+			"	MODIFY COLUMN DOS_LABEL         VARCHAR(256)                          COMMENT 'Raison sociale',"
+			"	MODIFY COLUMN DOS_SIREN         VARCHAR(64)                           COMMENT 'Siren identifier',"
+			"	MODIFY COLUMN DOS_SIRET         VARCHAR(64)                           COMMENT 'Siret identifier',"
+			"	MODIFY COLUMN DOS_SLD_OPE       VARCHAR(64)                           COMMENT 'Operation mnemo for balancing entries',"
+			"	MODIFY COLUMN DOS_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_DOSSIER_CUR "
+			"	MODIFY COLUMN DOS_SLD_ACCOUNT   VARCHAR(64)                           COMMENT 'Balancing account when closing the exercice'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_ENTRIES "
+			"	MODIFY COLUMN ENT_LABEL         VARCHAR(256)                          COMMENT 'Entry label',"
+			"	MODIFY COLUMN ENT_REF           VARCHAR(256)                          COMMENT 'Piece reference',"
+			"	MODIFY COLUMN ENT_ACCOUNT       VARCHAR(64)                           COMMENT 'Account identifier',"
+			"	MODIFY COLUMN ENT_LEDGER        VARCHAR(64)                           COMMENT 'Ledger identifier',"
+			"	MODIFY COLUMN ENT_OPE_TEMPLATE  VARCHAR(64)                           COMMENT 'Operation template identifier',"
+			"	MODIFY COLUMN ENT_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of last update',"
+			"	MODIFY COLUMN ENT_STLMT_USER    VARCHAR(64)                           COMMENT 'User responsible of the settlement'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_LEDGERS "
+			"	MODIFY COLUMN LED_MNEMO         VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Ledger identifier',"
+			"	MODIFY COLUMN LED_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Ledger label',"
+			"	MODIFY COLUMN LED_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_LEDGERS_CUR "
+			"	MODIFY COLUMN LED_MNEMO         VARCHAR(64)  BINARY NOT NULL          COMMENT 'Ledger identifier'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES "
+			"	MODIFY COLUMN OTE_MNEMO         VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Operation template identifier',"
+			"	MODIFY COLUMN OTE_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Operation template label',"
+			"	MODIFY COLUMN OTE_LED_MNEMO     VARCHAR(64)                           COMMENT 'Generated entries imputation ledger',"
+			"	MODIFY COLUMN OTE_REF           VARCHAR(256)                          COMMENT 'Operation reference',"
+			"	MODIFY COLUMN OTE_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
+			"	MODIFY COLUMN OTE_MNEMO         VARCHAR(64)  BINARY NOT NULL          COMMENT 'Operation template identifier',"
+			"	MODIFY COLUMN OTE_DET_COMMENT   VARCHAR(128)                          COMMENT 'Detail line comment',"
+			"	MODIFY COLUMN OTE_DET_ACCOUNT   VARCHAR(128)                          COMMENT 'Account identifier computing rule',"
+			"	MODIFY COLUMN OTE_DET_LABEL     VARCHAR(256)                          COMMENT 'Entry label computing rule',"
+			"	MODIFY COLUMN OTE_DET_DEBIT     VARCHAR(128)                          COMMENT 'Debit amount computing rule',"
+			"	MODIFY COLUMN OTE_DET_CREDIT    VARCHAR(128)                          COMMENT 'Credit amount computing rule'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_RATES "
+			"	MODIFY COLUMN RAT_MNEMO         VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Rate identifier',"
+			"	MODIFY COLUMN RAT_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Rate label',"
+			"	MODIFY COLUMN RAT_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_RATES_VAL "
+			"	MODIFY COLUMN RAT_MNEMO         VARCHAR(64)  BINARY NOT NULL          COMMENT 'Rate identifier'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE OFA_T_ROLES "
+			"	MODIFY COLUMN ROL_USER          VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'User account'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v28( sUpdate *update_data )
+{
+	return( 17 );
 }
 
 static gboolean

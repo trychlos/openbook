@@ -55,6 +55,8 @@ static void       interface_base_init( myIWindowInterface *klass );
 static void       interface_base_finalize( myIWindowInterface *klass );
 static void       iwindow_init_application( myIWindow *instance );
 static void       iwindow_init_window( myIWindow *instance, sIWindow *sdata );
+static void       application_do_read_settings( myIWindow *instance, const gchar *settings_name );
+static void       application_do_write_settings( myIWindow *instance, const gchar *settings_name );
 static gboolean   iwindow_quit_on_escape( const myIWindow *instance );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance );
@@ -203,7 +205,8 @@ my_iwindow_get_main_window( const myIWindow *instance )
 /**
  * my_iwindow_set_main_window:
  * @instance: this #myIWindow instance.
- * @main_window: the #GtkApplicationWindow main window of the application.
+ * @main_window: [allow-none]: the #GtkApplicationWindow main window of
+ *  the application.
  *
  * Sets the main window, which happens to be the default parent.
  *
@@ -217,7 +220,7 @@ my_iwindow_set_main_window( myIWindow *instance, GtkApplicationWindow *main_wind
 	sIWindow *sdata;
 
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-	g_return_if_fail( main_window && GTK_IS_APPLICATION_WINDOW( main_window ));
+	g_return_if_fail( !main_window || GTK_IS_APPLICATION_WINDOW( main_window ));
 
 	sdata = get_iwindow_data( instance );
 	sdata->main_window = main_window;
@@ -315,6 +318,7 @@ iwindow_init_window( myIWindow *instance, sIWindow *sdata )
 	if( !my_utils_window_restore_position( GTK_WINDOW( instance ), settings_name )){
 		iwindow_set_default_size( instance );
 	}
+	application_do_read_settings( instance, settings_name );
 	g_free( settings_name );
 
 	if( st_dump_container ){
@@ -322,6 +326,34 @@ iwindow_init_window( myIWindow *instance, sIWindow *sdata )
 	}
 
 	g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
+}
+
+static void
+application_do_read_settings( myIWindow *instance, const gchar *settings_name )
+{
+	static const gchar *thisfn = "my_iwindow_application_do_read_settings";
+
+	if( MY_IWINDOW_GET_INTERFACE( instance )->read_settings ){
+		MY_IWINDOW_GET_INTERFACE( instance )->read_settings( instance, settings_name );
+
+	} else {
+		g_info( "%s: myIWindow instance %p (%s) does not provide 'read_settings()' method",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	}
+}
+
+static void
+application_do_write_settings( myIWindow *instance, const gchar *settings_name )
+{
+	static const gchar *thisfn = "my_iwindow_application_do_write_settings";
+
+	if( MY_IWINDOW_GET_INTERFACE( instance )->write_settings ){
+		MY_IWINDOW_GET_INTERFACE( instance )->write_settings( instance, settings_name );
+
+	} else {
+		g_info( "%s: myIWindow instance %p (%s) does not provide 'write_settings()' method",
+				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	}
 }
 
 /**
@@ -453,6 +485,7 @@ do_close( myIWindow *instance )
 	sdata = get_iwindow_data( instance );
 
 	settings_name = iwindow_get_settings_name( instance );
+	application_do_write_settings( instance, settings_name );
 	my_utils_window_save_position( GTK_WINDOW( instance ), settings_name );
 	g_free( settings_name );
 
@@ -495,7 +528,7 @@ iwindow_get_identifier( const myIWindow *instance )
 static GtkWindow *
 iwindow_get_parent( myIWindow *instance, sIWindow *sdata )
 {
-	if( !sdata->parent ){
+	if( !sdata->parent && sdata->main_window ){
 		sdata->parent = GTK_WINDOW( sdata->main_window );
 	}
 
