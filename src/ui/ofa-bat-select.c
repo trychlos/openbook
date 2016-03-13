@@ -259,6 +259,7 @@ setup_treeview( ofaBatSelect *self )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
 	priv->tview = ofa_bat_treeview_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 
 	ofa_bat_treeview_set_columns( priv->tview, st_columns );
@@ -287,6 +288,7 @@ setup_properties( ofaBatSelect *self )
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
 	priv->bat_bin = ofa_bat_properties_bin_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->bat_bin ), 0, 0, 2, 0 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
 }
 

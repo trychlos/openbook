@@ -126,7 +126,7 @@ v_setup_page( ofaPage *page )
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
 	priv->ope_frame = ofa_ope_template_frame_bin_new( ofa_page_get_main_window( page ));
-	my_utils_widget_set_margins( GTK_WIDGET( priv->ope_frame ), 4, 4, 4, 4 );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->ope_frame ), 4, 4, 4, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->ope_frame ), 0, 0, 1, 1 );
 
 	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_NEW, TRUE );

@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "api/my-date.h"
 #include "api/my-double.h"
@@ -116,7 +117,8 @@ struct _ofaLedgerBookRenderPrivate {
 
 static const gchar *st_page_header_title = N_( "General Ledgers Book" );
 
-static const gchar *st_print_settings    = "RenderLedgersBookPrint";
+static const gchar *st_page_settings     = "ofaLedgerBookRender-settings";
+static const gchar *st_print_settings    = "ofaLedgerBookRender-print";
 
 /* these are parms which describe the page layout
  */
@@ -162,6 +164,8 @@ static void               irenderable_draw_group_footer( ofaIRenderable *instanc
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
 static void               draw_ledger_totals( ofaIRenderable *instance );
 static void               free_currency( ofsCurrency *total_per_currency );
+static void               get_settings( ofaLedgerBookRender *self );
+static void               set_settings( ofaLedgerBookRender *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerBookRender, ofa_ledger_book_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerBookRender )
@@ -194,6 +198,8 @@ ledger_book_render_dispose( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_LEDGER_BOOK_RENDER( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
+
+		set_settings( OFA_LEDGER_BOOK_RENDER( instance ));
 
 		/* unref object members here */
 	}
@@ -247,6 +253,7 @@ page_init_view( ofaPage *page )
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
+	get_settings( OFA_LEDGER_BOOK_RENDER( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 }
@@ -936,4 +943,46 @@ free_currency( ofsCurrency *total_per_currency )
 {
 	g_free( total_per_currency->currency );
 	g_free( total_per_currency );
+}
+
+/*
+ * settings = paned_position;
+ */
+static void
+get_settings( ofaLedgerBookRender *self )
+{
+	GList *slist, *it;
+	const gchar *cstr;
+	GtkWidget *paned;
+	gint pos;
+
+	slist = ofa_settings_user_get_string_list( st_page_settings );
+	if( slist ){
+		it = slist ? slist : NULL;
+		cstr = it ? it->data : NULL;
+		if( cstr ){
+			pos = atoi( cstr );
+			paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
+			gtk_paned_set_position( GTK_PANED( paned ), pos );
+		}
+
+		ofa_settings_free_string_list( slist );
+	}
+}
+
+static void
+set_settings( ofaLedgerBookRender *self )
+{
+	GtkWidget *paned;
+	gint pos;
+	gchar *str;
+
+	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
+	pos = gtk_paned_get_position( GTK_PANED( paned ));
+
+	str = g_strdup_printf( "%d;", pos );
+
+	ofa_settings_user_set_string( st_page_settings, str );
+
+	g_free( str );
 }

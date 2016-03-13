@@ -161,6 +161,7 @@ v_setup_view( ofaPage *page )
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	priv->tview = ofa_bat_treeview_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 4, 4, 4, 0 );
 	ofa_bat_treeview_set_columns( priv->tview, st_columns );
 	ofa_bat_treeview_set_hub( priv->tview, priv->hub );
 
@@ -179,8 +180,7 @@ v_setup_buttons( ofaPage *page )
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
-
-	ofa_buttons_box_add_spacer( buttons_box );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
 
 	/* always disabled */
 	ofa_buttons_box_add_button_with_mnemonic(

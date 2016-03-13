@@ -96,23 +96,24 @@ typedef struct {
  * The theme identifiers of the pages of the main notebook
  * sorted in alphabetical order
  */
+										/* have buttons box */
 enum {
-	THM_ACCOUNTS = 1,
-	THM_BATFILES,
-	THM_CLASSES,
-	THM_CURRENCIES,
-	THM_ENTRIES,
-	THM_GUIDED_INPUT,
-	THM_LEDGERS,
-	THM_OPE_TEMPLATES,
-	THM_RATES,
-	THM_RECONCIL,
-	THM_RENDER_BALANCES,
-	THM_RENDER_ACCOUNTS_BOOK,
-	THM_RENDER_LEDGERS_BOOK,
-	THM_RENDER_LEDGERS_SUMMARY,
-	THM_RENDER_RECONCIL,
-	THM_SETTLEMENT,
+	THM_ACCOUNTS = 1,					/*       yes        */
+	THM_BATFILES,						/*       yes        */
+	THM_CLASSES,						/*       yes        */
+	THM_CURRENCIES,						/*       yes        */
+	THM_ENTRIES,						/*          no      */
+	THM_GUIDED_INPUT,					/*          no      */
+	THM_LEDGERS,						/*       yes        */
+	THM_OPE_TEMPLATES,					/*       yes        */
+	THM_RATES,							/*       yes        */
+	THM_RECONCIL,						/*          no      */
+	THM_RENDER_BALANCES,				/*          no      */
+	THM_RENDER_ACCOUNTS_BOOK,			/*          no      */
+	THM_RENDER_LEDGERS_BOOK,			/*          no      */
+	THM_RENDER_LEDGERS_SUMMARY,			/*          no      */
+	THM_RENDER_RECONCIL,				/*          no      */
+	THM_SETTLEMENT,						/*          no      */
 	THM_LAST_THEME
 };
 

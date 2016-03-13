@@ -254,7 +254,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->account_bin = ofa_account_frame_bin_new( OFA_MAIN_WINDOW( main_window ));
-	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 4 );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 0 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
 	ofa_account_frame_bin_set_cell_data_func(
 			priv->account_bin, ( GtkTreeCellDataFunc ) on_book_cell_data_func, instance );

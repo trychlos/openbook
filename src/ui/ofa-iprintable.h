@@ -116,7 +116,7 @@ typedef struct {
 	GtkPageOrientation ( *get_page_orientation ) ( ofaIPrintable *instance );
 
 	/**
-	 * get_settings:
+	 * get_print_settings:
 	 * @instance: the #ofaIPrintable provider.
 	 * @keyfile: [out]:
 	 * @group_name: [out]:

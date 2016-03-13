@@ -116,7 +116,6 @@ struct _ofaEntryPagePrivate {
 
 	GtkToggleButton     *account_btn;
 	GtkEntry            *account_entry;
-	GtkButton           *account_select;
 	gchar               *acc_number;
 	gboolean             acc_valid;
 
@@ -1457,7 +1456,6 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
 		/* update the frames sensitivity */
 		gtk_widget_set_sensitive( priv->ledger_parent, is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_entry ), !is_active );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_select ), !is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), !is_active );
 
 		/* update the default visibility of the columns */
@@ -1474,7 +1472,6 @@ on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
 		/* update the frames sensitivity */
 		gtk_widget_set_sensitive( priv->ledger_parent, !is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_entry ), is_active );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_select ), is_active );
 		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), is_active );
 
 		/* update the default visibility of the columns */

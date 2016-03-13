@@ -110,28 +110,28 @@ typedef struct {
 }
 	ofaITreeviewDisplayInterface;
 
-GType    ofa_itreeview_display_get_type                  ( void );
+GType      ofa_itreeview_display_get_type                  ( void );
 
-guint    ofa_itreeview_display_get_interface_last_version( void );
+guint      ofa_itreeview_display_get_interface_last_version( void );
 
-guint    ofa_itreeview_display_get_interface_version     ( const ofaITreeviewDisplay *instance );
+guint      ofa_itreeview_display_get_interface_version     ( const ofaITreeviewDisplay *instance );
 
-void     ofa_itreeview_display_add_column                ( ofaITreeviewDisplay *instance,
-															GtkTreeViewColumn *column,
-															guint column_id );
+void       ofa_itreeview_display_add_column                ( ofaITreeviewDisplay *instance,
+																	GtkTreeViewColumn *column,
+																	guint column_id );
 
-void     ofa_itreeview_display_init_visible              ( const ofaITreeviewDisplay *instance,
-															const gchar *key );
+void       ofa_itreeview_display_init_visible              ( const ofaITreeviewDisplay *instance,
+																	const gchar *key );
 
-gboolean ofa_itreeview_display_get_visible               ( const ofaITreeviewDisplay *instance,
-															guint column_id );
+gboolean   ofa_itreeview_display_get_visible               ( const ofaITreeviewDisplay *instance,
+																	guint column_id );
 
-void     ofa_itreeview_display_set_visible               ( const ofaITreeviewDisplay *instance,
-															guint column_id,
-															gboolean visible );
+void       ofa_itreeview_display_set_visible               ( const ofaITreeviewDisplay *instance,
+																	guint column_id,
+																	gboolean visible );
 
-void     ofa_itreeview_display_attach_menu_button        ( const ofaITreeviewDisplay *instance,
-															GtkContainer *parent );
+GtkWidget *ofa_itreeview_display_attach_menu_button        ( const ofaITreeviewDisplay *instance,
+																	GtkContainer *parent );
 
 G_END_DECLS
 

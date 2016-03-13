@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "api/my-date.h"
 #include "api/my-double.h"
@@ -111,7 +112,8 @@ typedef struct {
 static const gchar *st_page_header_title_entries  = N_( "Entries Balance Summary" );
 static const gchar *st_page_header_title_accounts = N_( "Accounts Balance Summary" );
 
-static const gchar *st_print_settings    = "RenderBalancesPrint";
+static const gchar *st_page_settings     = "ofaBalanceRender-settings";
+static const gchar *st_print_settings    = "ofaBalanceRender-print";
 
 /* these are parms which describe the page layout
  */
@@ -157,6 +159,8 @@ static void               draw_subtotals_balance( ofaIRenderable *instance, cons
 static void               draw_account_balance( ofaIRenderable *instance, GList *list, gdouble top, const gchar *title );
 static GList             *add_account_balance( ofaBalanceRender *self, GList *list, const gchar *currency, gdouble solde, ofsAccountBalance *sbal );
 static gint               cmp_currencies( const sCurrency *a, const sCurrency *b );
+static void               get_settings( ofaBalanceRender *self );
+static void               set_settings( ofaBalanceRender *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaBalanceRender, ofa_balance_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaBalanceRender )
@@ -196,6 +200,8 @@ balance_render_dispose( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BALANCE_RENDER( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
+
+		set_settings( OFA_BALANCE_RENDER( instance ));
 
 		/* unref object members here */
 	}
@@ -249,6 +255,7 @@ page_init_view( ofaPage *page )
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));
+	get_settings( OFA_BALANCE_RENDER( page ));
 
 	priv->hub = ofa_page_get_hub( page );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
@@ -987,4 +994,46 @@ static gint
 cmp_currencies( const sCurrency *a, const sCurrency *b )
 {
 	return( g_utf8_collate( a->currency, b->currency ));
+}
+
+/*
+ * settings = paned_position;
+ */
+static void
+get_settings( ofaBalanceRender *self )
+{
+	GList *slist, *it;
+	const gchar *cstr;
+	GtkWidget *paned;
+	gint pos;
+
+	slist = ofa_settings_user_get_string_list( st_page_settings );
+	if( slist ){
+		it = slist ? slist : NULL;
+		cstr = it ? it->data : NULL;
+		if( cstr ){
+			pos = atoi( cstr );
+			paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
+			gtk_paned_set_position( GTK_PANED( paned ), pos );
+		}
+
+		ofa_settings_free_string_list( slist );
+	}
+}
+
+static void
+set_settings( ofaBalanceRender *self )
+{
+	GtkWidget *paned;
+	gint pos;
+	gchar *str;
+
+	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
+	pos = gtk_paned_get_position( GTK_PANED( paned ));
+
+	str = g_strdup_printf( "%d;", pos );
+
+	ofa_settings_user_set_string( st_page_settings, str );
+
+	g_free( str );
 }

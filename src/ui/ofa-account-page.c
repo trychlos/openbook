@@ -132,7 +132,7 @@ v_setup_page( ofaPage *page )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->account_bin = ofa_account_frame_bin_new( main_window );
-	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 4 );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
 
 	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );

@@ -308,8 +308,7 @@ v_setup_buttons( ofaPage *page )
 	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
-
-	ofa_buttons_box_add_spacer( buttons_box );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
 
 	priv->new_btn =
 			ofa_buttons_box_add_button_with_mnemonic(

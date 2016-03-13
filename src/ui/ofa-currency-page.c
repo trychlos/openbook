@@ -323,8 +323,7 @@ v_setup_buttons( ofaPage *page )
 	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
-
-	ofa_buttons_box_add_spacer( buttons_box );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
 
 	btn = ofa_buttons_box_add_button_with_mnemonic(
 			buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );

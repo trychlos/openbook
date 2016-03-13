@@ -392,18 +392,22 @@ ofa_itreeview_display_set_visible( const ofaITreeviewDisplay *instance, guint id
  * Attach a menu button to the @parent container.
  * The menu contains one toggle action for each previously defined
  * column.
+ *
+ * Returns: the attached combo box
  */
-void
+GtkWidget *
 ofa_itreeview_display_attach_menu_button( const ofaITreeviewDisplay *instance, GtkContainer *parent )
 {
 	sITreeviewDisplay *sdata;
 	GtkWidget *button;
 
-	g_return_if_fail( instance && OFA_IS_ITREEVIEW_DISPLAY( instance ));
+	g_return_val_if_fail( instance && OFA_IS_ITREEVIEW_DISPLAY( instance ), NULL );
 
 	sdata = get_instance_data( instance );
 	button = setup_button( instance, sdata );
 	gtk_container_add( parent, button );
+
+	return( button );
 }
 
 /*
@@ -422,7 +426,8 @@ setup_button( const ofaITreeviewDisplay *instance, sITreeviewDisplay *sdata )
 	button = gtk_menu_button_new();
 
 	/* setup menu button */
-	gtk_widget_set_halign( button, GTK_ALIGN_START );
+	gtk_widget_set_halign( button, GTK_ALIGN_FILL );
+	gtk_widget_set_hexpand( button, TRUE );
 	gtk_menu_button_set_direction( GTK_MENU_BUTTON( button ), GTK_ARROW_DOWN );
 	gtk_menu_button_set_use_popover( GTK_MENU_BUTTON( button ), FALSE );
 	gtk_menu_button_set_align_widget( GTK_MENU_BUTTON( button ), NULL );
@@ -434,7 +439,7 @@ setup_button( const ofaITreeviewDisplay *instance, sITreeviewDisplay *sdata )
 	gtk_box_pack_start( GTK_BOX( box ), label, FALSE, TRUE, 0 );
 
 	image = gtk_image_new_from_resource( st_resource_arrow_down );
-	gtk_box_pack_start( GTK_BOX( box ), image, FALSE, TRUE, 0 );
+	gtk_box_pack_end( GTK_BOX( box ), image, FALSE, TRUE, 0 );
 
 	/* create the menu */
 	menu = g_menu_new();

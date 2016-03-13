@@ -216,7 +216,6 @@ attach_top_widget( ofaBatTreeview *self )
 	priv = ofa_bat_treeview_get_instance_private( self );
 
 	top_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margins( top_widget, 4, 4, 4, 4 );
 
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );

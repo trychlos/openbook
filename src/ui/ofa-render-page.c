@@ -47,6 +47,7 @@ struct _ofaRenderPagePrivate {
 
 	/* UI
 	 */
+	GtkWidget *top_paned;
 	GtkWidget *drawing_area;
 	GtkWidget *msg_label;
 	GtkWidget *render_btn;
@@ -82,10 +83,10 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-render-
 static const gchar *st_ui_name          = "RenderPageWindow";
 
 static GtkWidget         *v_setup_view( ofaPage *page );
-static void               setup_args_area( ofaRenderPage *page, GtkContainer *parent );
-static void               setup_actions_area( ofaRenderPage *page, GtkContainer *parent );
-static void               setup_drawing_area( ofaRenderPage *page, GtkContainer *parent );
-static void               setup_page_size( ofaRenderPage *page );
+static void               setup_args_area( ofaRenderPage *self, GtkContainer *parent );
+static void               setup_actions_area( ofaRenderPage *self, GtkContainer *parent );
+static void               setup_drawing_area( ofaRenderPage *self, GtkContainer *parent );
+static void               setup_page_size( ofaRenderPage *self, GtkContainer *parent );
 static GList             *get_dataset( ofaRenderPage *page );
 static gboolean           on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page );
 static void               draw_widget_background( cairo_t *cr, GtkWidget *area );
@@ -173,18 +174,22 @@ static GtkWidget *
 v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_render_page_v_setup_view";
+	ofaRenderPagePrivate *priv;
 	GtkWidget *widget, *page_widget;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
+	priv = ofa_render_page_get_instance_private( OFA_RENDER_PAGE( page ));
+
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
-	g_return_val_if_fail( widget && GTK_IS_CONTAINER( widget ), NULL );
+	g_return_val_if_fail( widget && GTK_IS_PANED( widget ), NULL );
+	priv->top_paned = widget;
 
 	setup_args_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
 	setup_actions_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
 	setup_drawing_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
-	setup_page_size( OFA_RENDER_PAGE( page ));
+	setup_page_size( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
 
 	return( page_widget );
 }
@@ -206,37 +211,37 @@ setup_args_area( ofaRenderPage *page, GtkContainer *parent )
 }
 
 static void
-setup_actions_area( ofaRenderPage *page, GtkContainer *parent )
+setup_actions_area( ofaRenderPage *self, GtkContainer *parent )
 {
 	ofaRenderPagePrivate *priv;
 	GtkWidget *button;
 
-	priv = ofa_render_page_get_instance_private( page );
+	priv = ofa_render_page_get_instance_private( self );
 
 	button = my_utils_container_get_child_by_name( parent, "render-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_render_clicked ), page );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_render_clicked ), self );
 	gtk_widget_set_sensitive( button, FALSE );
 	priv->render_btn = button;
 
 	button = my_utils_container_get_child_by_name( parent, "print-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_print_clicked ), page );
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_print_clicked ), self );
 	gtk_widget_set_sensitive( button, FALSE );
 	priv->print_btn = button;
 }
 
 static void
-setup_drawing_area( ofaRenderPage *page, GtkContainer *parent )
+setup_drawing_area( ofaRenderPage *self, GtkContainer *parent )
 {
 	ofaRenderPagePrivate *priv;
 	GtkWidget *drawing, *label;
 
-	priv = ofa_render_page_get_instance_private( page );
+	priv = ofa_render_page_get_instance_private( self );
 
 	drawing = my_utils_container_get_child_by_name( parent, "drawing-zone" );
 	g_return_if_fail( drawing && GTK_IS_DRAWING_AREA( drawing ));
-	g_signal_connect( G_OBJECT( drawing ), "draw", G_CALLBACK( on_draw ), page );
+	g_signal_connect( G_OBJECT( drawing ), "draw", G_CALLBACK( on_draw ), self );
 	priv->drawing_area = drawing;
 
 	label = my_utils_container_get_child_by_name( parent, "message" );
@@ -245,7 +250,7 @@ setup_drawing_area( ofaRenderPage *page, GtkContainer *parent )
 }
 
 static void
-setup_page_size( ofaRenderPage *page )
+setup_page_size( ofaRenderPage *self, GtkContainer *parent )
 {
 	static const gchar *thisfn = "ofa_render_page_setup_page_size";
 	ofaRenderPagePrivate *priv;
@@ -254,15 +259,15 @@ setup_page_size( ofaRenderPage *page )
 	GtkPageOrientation orientation;
 	GtkPageSetup *page_setup;
 
-	priv = ofa_render_page_get_instance_private( page );
+	priv = ofa_render_page_get_instance_private( self );
 
-	paper_name = OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name ?
-			OFA_RENDER_PAGE_GET_CLASS( page )->get_paper_name( OFA_RENDER_PAGE( page )) :
+	paper_name = OFA_RENDER_PAGE_GET_CLASS( self )->get_paper_name ?
+			OFA_RENDER_PAGE_GET_CLASS( self )->get_paper_name( OFA_RENDER_PAGE( self )) :
 			NULL;
 	g_return_if_fail( my_strlen( paper_name ));
 
-	orientation = OFA_RENDER_PAGE_GET_CLASS( page )->get_page_orientation ?
-			OFA_RENDER_PAGE_GET_CLASS( page )->get_page_orientation( OFA_RENDER_PAGE( page )) :
+	orientation = OFA_RENDER_PAGE_GET_CLASS( self )->get_page_orientation ?
+			OFA_RENDER_PAGE_GET_CLASS( self )->get_page_orientation( OFA_RENDER_PAGE( self )) :
 			-1;
 	g_return_if_fail( orientation != -1 );
 
@@ -573,6 +578,28 @@ pdf_crs_free( GList **pdf_crs )
 	*pdf_crs = NULL;
 }
 
+/**
+ * ofa_render_page_get_top_paned:
+ * @page:
+ *
+ * Returns: the top #GtkPaned widget.
+ */
+GtkWidget *
+ofa_render_page_get_top_paned( const ofaRenderPage *page )
+{
+	ofaRenderPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_RENDER_PAGE( page ), NULL );
+	g_return_val_if_fail( !OFA_PAGE( page )->prot->dispose_has_run, NULL );
+
+	priv = ofa_render_page_get_instance_private( page );
+
+	return( priv->top_paned );
+}
+
+/*
+ * ofaIPrintable interface management
+ */
 static void
 iprintable_iface_init( ofaIPrintableInterface *iface )
 {
