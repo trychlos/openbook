@@ -56,5 +56,5 @@ src/ui/ofa-reconcil-bin.ui
 src/ui/ofa-reconcil-page.ui
 src/ui/ofa-render-page.ui
 src/ui/ofa-restore-assistant.ui
-src/ui/ofa-settlement.ui
+src/ui/ofa-settlement-page.ui
 src/ui/ofa-user-credentials-bin.ui
