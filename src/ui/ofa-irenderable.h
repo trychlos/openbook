@@ -497,6 +497,8 @@ cairo_t     *ofa_irenderable_get_context          ( ofaIRenderable *instance );
 void         ofa_irenderable_set_font             ( ofaIRenderable *instance,
 															const gchar *font_str );
 
+void         ofa_irenderable_set_summary_font     ( ofaIRenderable *instance );
+
 gdouble      ofa_irenderable_get_text_height      ( ofaIRenderable *instance );
 
 gdouble      ofa_irenderable_get_text_width       ( ofaIRenderable *instance,

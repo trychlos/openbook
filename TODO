@@ -444,10 +444,6 @@
 
 1003 2016- 2-24 FEAT RenderPage: add navigation+zoom buttons
 
-1004 2016- 2-24 FEAT ReconciliationSummmary: when the BAT file has an
-                     ending solde, the reconciliation summary should display
-                     a bottom note with "solde OK with bank"
-
 1007 2016- 2-25 FEAT GuidedInput: have a red cross at the end of the line
                      when the amount is set, but one of another field is
                      wrong
@@ -856,6 +852,11 @@
 
 1002 2016- 2-24 FEAT ReconciliationRender: move the date to the title
      2016- 3-11 done
+
+1004 2016- 2-24 FEAT ReconciliationSummmary: when the BAT file has an
+                     ending solde, the reconciliation summary should display
+                     a bottom note with "solde OK with bank"
+     2016- 3-13 done
 
 1005 2016- 2-24 FEAT ImportAssistant: data format should be kept for each
                      input data type

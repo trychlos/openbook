@@ -76,6 +76,7 @@ static gboolean    bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect );
+static gint        bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b );
 static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
@@ -219,6 +220,42 @@ bat_find_by_id( GList *set, ofxCounter id )
 	}
 
 	return( NULL );
+}
+
+/**
+ * ofo_bat_get_most_recent_for_account:
+ * @hub: the current #ofaHub object.
+ * @account_id: the searched account identifier.
+ *
+ * Returns: the searched BAT object, or %NULL.
+ *
+ * The returned object is owned by the #ofoBat class, and should
+ * not be unreffed by the caller.
+ */
+ofoBat *
+ofo_bat_get_most_recent_for_account( ofaHub *hub, const gchar *account_id )
+{
+	GList *dataset, *acc_list, *it;
+	ofoBat *bat;
+	const gchar *bat_account;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( my_strlen( account_id ), NULL );
+
+	dataset = ofo_bat_get_dataset( hub );
+
+	acc_list = NULL;
+	for( it=dataset ; it ; it=it->next ){
+		bat = OFO_BAT( it->data );
+		bat_account = ofo_bat_get_account( bat );
+		if( bat_account && !my_collate( bat_account, account_id )){
+			acc_list = g_list_insert_sorted( acc_list, bat, ( GCompareFunc ) bat_cmp_by_date_desc );
+		}
+	}
+
+	bat = acc_list ? ( ofoBat * ) acc_list->data : NULL;
+
+	return( bat );
 }
 
 /**
@@ -1171,6 +1208,17 @@ bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect )
 	g_free( query );
 
 	return( ok );
+}
+
+static gint
+bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b )
+{
+	const GDate *a_end, *b_end;
+
+	a_end = ofo_bat_get_end_date( a );
+	b_end = ofo_bat_get_end_date( b );
+
+	return( -1*my_date_compare_ex( a_end, b_end, TRUE ));
 }
 
 static gint

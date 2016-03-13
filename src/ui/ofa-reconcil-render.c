@@ -26,7 +26,9 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <glib/gi18n.h>
+#include <math.h>
 #include <stdlib.h>
 
 #include "api/my-date.h"
@@ -41,6 +43,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
+#include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -814,15 +817,21 @@ static void
 irenderable_draw_bottom_summary( ofaIRenderable *instance )
 {
 	ofaReconcilRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.5;
-	gdouble y, height;
+	static const gdouble st_vspace_rate = 0.25;
+	gdouble y, line_height, height;
 	gchar *str, *sdate, *str_amount;
+	ofoBat *bat;
+	ofxAmount bat_solde, solde;
+	const GDate *bat_end;
+	const gchar *bat_currency;
+	GString *bat_str;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	g_return_if_fail( my_date_is_valid( &priv->date ));
 
 	y = ofa_irenderable_get_last_y( instance );
+	line_height = ofa_irenderable_get_line_height( instance );
 
 	sdate = get_render_date( OFA_RECONCIL_RENDER( instance ));
 	str_amount = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->account_solde );
@@ -832,12 +841,12 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	g_free( sdate );
 	g_free( str_amount );
 
-	height = ofa_irenderable_set_text( instance,
+	ofa_irenderable_set_text( instance,
 			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 
 	g_free( str );
 
-	y += height * ( 1+st_vspace_rate );
+	y += line_height * ( 1+st_vspace_rate );
 
 	ofa_irenderable_set_color( instance, COLOR_BLACK );
 	ofa_irenderable_set_font( instance, st_bottom_summary_font );
@@ -854,7 +863,47 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 					"by your bank, are present in your account extraction, but are not "
 					"found in your books." ), PANGO_ALIGN_LEFT );
 
-	y += height * ( 1+st_vspace_rate );
+	bat = ofo_bat_get_most_recent_for_account( priv->hub, priv->account_number );
+	if( bat ){
+		ofa_irenderable_set_summary_font( instance );
+
+		bat_solde = ofo_bat_get_end_solde( bat );
+		bat_end = ofo_bat_get_end_date( bat );
+		bat_currency = ofo_bat_get_currency( bat );
+
+		bat_str = g_string_new( "" );
+
+		sdate = my_date_to_str( bat_end, ofa_prefs_date_display());
+		str_amount = my_double_to_str_ex( bat_solde, priv->digits );
+		g_string_append_printf( bat_str, _( "Bank solde on %s is %s" ), sdate, str_amount );
+		g_free( str_amount );
+		g_free( sdate );
+
+		if( bat_currency ){
+			g_string_append_printf( bat_str, " %s", bat_currency );
+		}
+
+		bat_str = g_string_append( bat_str, ": " );
+
+		solde = priv->account_solde + bat_solde;
+		g_debug( "solde=%lf", solde );
+
+		if( fabs( solde ) < exp10( -1*priv->digits )){
+			bat_str = g_string_append( bat_str, "OK" );
+		} else {
+			str_amount = my_double_to_str_ex( solde, priv->digits );
+			g_string_append_printf( bat_str, "diff=%s", str_amount );
+			g_free( str_amount );
+		}
+
+		y += height + line_height * st_vspace_rate;
+
+		ofa_irenderable_set_text( instance, priv->body_solde_rtab, y, bat_str->str, PANGO_ALIGN_RIGHT );
+
+		g_string_free( bat_str, TRUE );
+	}
+
+	y += line_height * ( 1+st_vspace_rate );
 	ofa_irenderable_set_last_y( instance, y );
 }
 

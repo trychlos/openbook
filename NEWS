@@ -34,7 +34,8 @@
    - ofaReconciliation: manage BAT vs. Account selection (todo #752).
    - ofaReconciliationRender: prints unconciliated bank transactions (todo #985).
    - ofaReconciliationRender: change the bottom summary font (todo #1001).
-   - ofaReconciliationRender: Add the rendering date to the title (todo #1002).
+   - ofaReconciliationRender: add the rendering date to the title (todo #1002).
+   - ofaReconciliationRender: compare bank and account soldes (todo #1004).
 
  Bug fixes:
 
@@ -49,9 +50,11 @@
    - myDialog, myWindow: removed classes (todo #992).
    - my_iwindow_msg_dialog(): new method (todo #1039).
    - ofaIAccountEntry: new interface.
+   - ofa_irenderable_set_summmary_font(): new method.
    - ofaISingleKeeper: new interface (todo #1038).
    - ofaOpeTemplateBookBin: removed class (todo #1037).
    - ofaSettlement: is renamed as ofaSettlementPage (todo #1040).
+   - ofo_bat_get_most_recent_for_account(): new method.
    - ofo_bat_line_get_dataset_for_print_reconcil(): new method.
 
 -----------------------------------------------------------------------

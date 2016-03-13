@@ -1366,6 +1366,20 @@ ofa_irenderable_set_font( ofaIRenderable *instance, const gchar *font_str )
 	set_font( sdata->temp_layout, font_str, NULL );
 }
 
+/**
+ * ofa_irenderable_set_summary_font:
+ *
+ * Set summary font and color.
+ */
+void
+ofa_irenderable_set_summary_font( ofaIRenderable *instance )
+{
+	g_return_if_fail( instance && OFA_IS_IRENDERABLE( instance ));
+
+	ofa_irenderable_set_color( instance, COLOR_SUMMARY );
+	ofa_irenderable_set_font( instance, st_default_summary_font );
+}
+
 /*
  * set_font:
  */
