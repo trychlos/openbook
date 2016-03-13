@@ -429,10 +429,6 @@
                      or no, to import deleted entries
      2016- 3- 1 +accounts: import balances
 
- 985 2016- 2-12 BUG  Reconciliation summary: only take into account
-                     non-conciliated entries, but should also print
-                     unconciliated bat lines (or an empty set)
-
  986 2016- 2-13 FEAT after having validated a first operation, the ope
                      date is left on the dialog, but is considered as
                      invalid - see trash/bug986
@@ -793,6 +789,11 @@
      2016- 2-14 done
                 + use G_ADD_PRIVATE
                 + run non-modal
+
+ 985 2016- 2-12 BUG  Reconciliation summary: only take into account
+                     non-conciliated entries, but should also print
+                     unconciliated bat lines (or an empty set)
+     2016- 3-13 fixed
 
  987 2016- 2-13 PWI  delete LOYAVR operation (duplicate of AVRLOY)
      2016- 2-14 done

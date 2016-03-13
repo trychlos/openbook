@@ -32,6 +32,7 @@
    - DBModel v28: increase all identifiers and labels size (todo #969). 
    - ofaReconciliation: asssociates an account to the used BAT files (todo #751).
    - ofaReconciliation: manage BAT vs. Account selection (todo #752).
+   - ofaReconciliationRender: prints unconciliated bank transactions (todo #985).
    - ofaReconciliationRender: change the bottom summary font (todo #1001).
    - ofaReconciliationRender: Add the rendering date to the title (todo #1002).
 

@@ -68,11 +68,6 @@ typedef struct _ofaIRenderable                    ofaIRenderable;
  * The #IRenderable interface does not actually send the report to a
  * printer. Instead, it exports it to a named PDF file.
  *
- * To use it, the client class should be derived from myDialog, and
- * have a #GtkNotebook as one of the topmost children.
- * The #ofaIRenderable will add a tab to this notebook, letting the
- * user choose an exported filename.
- *
  * Application page setup (size and orientation) should be done just
  * after init_dialog() method returns.
  */
@@ -295,7 +290,7 @@ typedef struct {
 	 *
 	 * Returns: %TRUE if the implementation manages groups
 	 *
-	 * Defaults to FALSE.
+	 * Defaults to %FALSE.
 	 */
 	gboolean           ( *want_groups )              ( const ofaIRenderable *instance );
 
@@ -308,9 +303,24 @@ typedef struct {
 	 *
 	 * This is only called if #want_groups() has returned %TRUE.
 	 *
-	 * Defaults to FALSE (on the same page while there is enough place).
+	 * Defaults to %FALSE (on the same page while there is enough place).
 	 */
 	gboolean           ( *want_new_page )            ( const ofaIRenderable *instance );
+
+	/**
+	 * want_line_separation:
+	 * @instance: the #ofaIRenderable instance.
+	 *
+	 * Returns: If implemented, this method should return %TRUE if the
+	 * implementation wishes to separate groups on the same page by a line
+	 * separation/.
+	 *
+	 * This is only called if #want_groups() has returned %TRUE and
+	 * #want_new_page() has returned %FALSE.
+	 *
+	 * Defaults to %TRUE (groups are line-separated).
+	 */
+	gboolean           ( *want_line_separation )     ( const ofaIRenderable *instance );
 
 	/**
 	 * is_new_group:

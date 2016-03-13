@@ -1142,7 +1142,7 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
  * @account: the #ofoAccount account.
  * @date: [out]: where to store the returned date.
  *
- * Returns the most recent effect date of the account, keeping into
+ * Returns the most recent effect date of the account, taking into
  * account both validated, rough and future entries.
  *
  * This is used when printing reconciliation summary to qualify the
@@ -1189,7 +1189,7 @@ ofo_account_get_global_deffect( const ofoAccount *account, GDate *date )
  * @account: the #ofoAccount account
  *
  * Returns: the current global balance of the @account, taking into
- * account both validated and rough balances.
+ * account both validated, rough and future balances.
  *
  * This is used when printing reconciliation summary to qualify the
  * starting solde of the print.
@@ -1205,10 +1205,13 @@ ofo_account_get_global_solde( const ofoAccount *account )
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
 
+	amount = 0;
 	amount -= ofo_account_get_val_debit( account );
 	amount += ofo_account_get_val_credit( account );
 	amount -= ofo_account_get_rough_debit( account );
 	amount += ofo_account_get_rough_credit( account );
+	amount -= ofo_account_get_futur_debit( account );
+	amount += ofo_account_get_futur_credit( account );
 
 	return( amount );
 }

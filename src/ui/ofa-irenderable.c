@@ -51,6 +51,7 @@ typedef struct {
 	gint         pages_count;
 	gboolean     want_groups;			/* whether the implementation manages groups */
 	gboolean     want_new_page;			/* whether if wants new page on new group */
+	gboolean     want_line_separation;	/* whether if wants groups to be line-separated */
 	GList       *dataset;
 
 	/* data reset from each entry point of the api:
@@ -123,6 +124,7 @@ static gchar        *irenderable_get_body_font( ofaIRenderable *instance );
 static gdouble       irenderable_get_body_vspace_rate( ofaIRenderable *instance );
 static gboolean      irenderable_want_groups( const ofaIRenderable *instance );
 static gboolean      irenderable_want_new_page( const ofaIRenderable *instance );
+static gboolean      irenderable_want_line_separation( const ofaIRenderable *instance );
 static gboolean      draw_page( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
 static void          irenderable_draw_page_header( ofaIRenderable *instance, gint page_num );
 static void          draw_page_header_dossier( ofaIRenderable *instance, gint page_num, sIRenderable *sdata );
@@ -220,6 +222,7 @@ interface_base_init( ofaIRenderableInterface *klass )
 		klass->get_body_vspace_rate = irenderable_get_body_vspace_rate;
 		klass->want_groups = irenderable_want_groups;
 		klass->want_new_page = irenderable_want_new_page;
+		klass->want_line_separation = irenderable_want_line_separation;
 		klass->draw_page_header = irenderable_draw_page_header;
 		klass->is_new_group = irenderable_is_new_group;
 		klass->draw_page_footer = irenderable_draw_page_footer;
@@ -293,6 +296,7 @@ ofa_irenderable_begin_render( ofaIRenderable *instance, cairo_t *cr, gdouble ren
 	sdata->want_groups = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_groups( instance );
 	if( sdata->want_groups ){
 		sdata->want_new_page = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_new_page( instance );
+		sdata->want_line_separation = OFA_IRENDERABLE_GET_INTERFACE( instance )->want_line_separation( instance );
 	}
 
 	g_debug( "%s: instance=%p, cr=%p, render_width=%lf, render_height=%lf, max_y=%lf, dataset_count=%d",
@@ -344,6 +348,12 @@ static gboolean
 irenderable_want_new_page( const ofaIRenderable *instance )
 {
 	return( FALSE );
+}
+
+static gboolean
+irenderable_want_line_separation( const ofaIRenderable *instance )
+{
+	return( TRUE );
 }
 
 /**
@@ -843,7 +853,7 @@ draw_group_header( ofaIRenderable *instance, gint line_num, GList *line, sIRende
 	text_height = ofa_irenderable_get_text_height( instance );
 
 	/* separation line */
-	if( line_num > 0 ){
+	if( line_num > 0 && sdata->want_line_separation ){
 		y = sdata->last_y;
 		cairo_set_line_width( sdata->current_context, 0.5 );
 		cairo_move_to( sdata->current_context, 0, y );

@@ -394,6 +394,8 @@ idialog_init( myIDialog *instance )
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
 /*

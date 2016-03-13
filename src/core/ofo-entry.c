@@ -1690,6 +1690,8 @@ ofo_entry_get_max_futur_deffect( const ofaHub *hub, const gchar *account, GDate 
 	dossier = ofa_hub_get_dossier( hub );
 	exe_end = ofo_dossier_get_exe_end( dossier );
 
+	/* if the ending date of the exercice is not set, then there is no
+	 *  future entries */
 	if( my_date_is_valid( exe_end )){
 
 		query = g_string_new(
@@ -1699,7 +1701,7 @@ ofo_entry_get_max_futur_deffect( const ofaHub *hub, const gchar *account, GDate 
 
 		g_string_append_printf( query,
 				"ENT_ACCOUNT='%s' AND ENT_STATUS=%d AND ENT_DEFFECT>'%s'",
-				account, ENT_STATUS_ROUGH, sdate );
+				account, ENT_STATUS_FUTURE, sdate );
 
 		g_free( sdate );
 
