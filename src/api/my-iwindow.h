@@ -207,6 +207,8 @@ GtkApplicationWindow *my_iwindow_get_main_window           ( const myIWindow *in
 void                  my_iwindow_set_main_window           ( myIWindow *instance,
 																	GtkApplicationWindow *main_window );
 
+GtkWindow            *my_iwindow_get_parent                ( const myIWindow *instance );
+
 void                  my_iwindow_set_parent                ( myIWindow *instance,
 																	GtkWindow *parent );
 

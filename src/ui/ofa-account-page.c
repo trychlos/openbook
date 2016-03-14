@@ -167,14 +167,21 @@ on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage
 	ofaAccountPagePrivate *priv;
 	ofoAccount *account;
 	const ofaMainWindow *main_window;
+	GtkWidget *toplevel;
 
 	priv = ofa_account_page_get_instance_private( self );
 
-	if( number ){
+	if( my_strlen( number )){
 		account = ofo_account_get_by_number( priv->hub, number );
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
 		main_window = ofa_page_get_main_window( OFA_PAGE( self ));
-		ofa_account_properties_run( main_window, account );
+
+		toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+
+		ofa_account_properties_run(
+				OFA_MAIN_WINDOW( main_window ),
+				GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
+				account );
 	}
 }

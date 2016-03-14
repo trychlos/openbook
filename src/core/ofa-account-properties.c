@@ -203,12 +203,13 @@ ofa_account_properties_class_init( ofaAccountPropertiesClass *klass )
 /**
  * ofa_account_properties_run:
  * @main_window: the main window of the application.
+ * @parent: [allow-none]: the #GtkWindow parent of this dialog.
  * @account: the account.
  *
- * Update the properties of an account
+ * Update the properties of an account.
  */
 void
-ofa_account_properties_run( const ofaMainWindow *main_window, ofoAccount *account )
+ofa_account_properties_run( ofaMainWindow *main_window, GtkWindow *parent, ofoAccount *account )
 {
 	static const gchar *thisfn = "ofa_account_properties_run";
 	ofaAccountProperties *self;
@@ -217,17 +218,18 @@ ofa_account_properties_run( const ofaMainWindow *main_window, ofoAccount *accoun
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-	g_debug( "%s: main_window=%p, account=%p",
-			thisfn, ( void * ) main_window, ( void * ) account );
+	g_debug( "%s: main_window=%p, parent=%p, account=%p",
+			thisfn, ( void * ) main_window, ( void * ) parent, ( void * ) account );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_PROPERTIES, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 
 	priv = ofa_account_properties_get_instance_private( self );
 	priv->account = account;
 
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	/* run modal or non-modal depending of the parent */
+	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 }
 
 /*
@@ -716,16 +718,16 @@ do_update( ofaAccountProperties *self, gchar **msgerr )
 
 	ofo_account_set_number( priv->account, priv->number );
 	ofo_account_set_label( priv->account, priv->label );
+	ofo_account_set_closed( priv->account,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->closed_btn )));
 	ofo_account_set_root( priv->account, priv->root );
-	ofo_account_set_settleable(
-			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->settleable_btn )));
-	ofo_account_set_reconciliable(
-			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->reconciliable_btn )));
-	ofo_account_set_forwardable(
-			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->forward_btn )));
-	ofo_account_set_closed(
-			priv->account, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->closed_btn )));
-	ofo_account_set_currency( priv->account, priv->currency );
+	ofo_account_set_settleable( priv->account,
+			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->settleable_btn )));
+	ofo_account_set_reconciliable( priv->account,
+			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->reconciliable_btn )));
+	ofo_account_set_forwardable( priv->account,
+			priv->root ? FALSE : gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->forward_btn )));
+	ofo_account_set_currency( priv->account, priv->root ? NULL : priv->currency );
 	my_utils_container_notes_get( self, account );
 
 	if( priv->is_new ){

@@ -145,6 +145,8 @@ void       my_idialog_click_to_update           ( myIDialog *instance,
 
 gint       my_idialog_run                       ( myIDialog *instance );
 
+void       my_idialog_run_maybe_modal           ( myIDialog *instance );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_MY_IDIALOG_H__ */

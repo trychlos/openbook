@@ -33,7 +33,7 @@
  * Update properties of an account.
  *
  * Development rules:
- * - type:       non-modal dialog
+ * - type:       modal/non-modal dialog depending of the caller
  * - settings:   yes
  * - current:    yes
  */
@@ -66,8 +66,9 @@ typedef struct {
 
 GType ofa_account_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_account_properties_run     ( const ofaMainWindow *main_window,
-												ofoAccount *account );
+void  ofa_account_properties_run     ( ofaMainWindow *main_window,
+											GtkWindow *parent,
+											ofoAccount *account );
 
 G_END_DECLS
 

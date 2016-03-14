@@ -1510,12 +1510,19 @@ static void
 do_insert_account( ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
-	ofoAccount *account;
+	ofoAccount *account_obj;
+	GtkWidget *toplevel;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	account = ofo_account_new();
-	ofa_account_properties_run( priv->main_window, account );
+	account_obj = ofo_account_new();
+
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+
+	ofa_account_properties_run(
+			OFA_MAIN_WINDOW( priv->main_window ),
+			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
+			account_obj );
 }
 
 static void
@@ -1523,13 +1530,19 @@ do_update_account( ofaAccountFrameBin *self, const gchar *account_id )
 {
 	ofaAccountFrameBinPrivate *priv;
 	ofoAccount *account_obj;
+	GtkWidget *toplevel;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	account_obj = ofo_account_get_by_number( priv->hub, account_id );
 	g_return_if_fail( account_obj && OFO_IS_ACCOUNT( account_obj ));
 
-	ofa_account_properties_run( priv->main_window, account_obj );
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+
+	ofa_account_properties_run(
+			OFA_MAIN_WINDOW( priv->main_window ),
+			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
+			account_obj );
 }
 
 static void

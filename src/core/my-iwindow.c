@@ -61,7 +61,7 @@ static gboolean   iwindow_quit_on_escape( const myIWindow *instance );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance );
 static gchar     *iwindow_get_identifier( const myIWindow *instance );
-static GtkWindow *iwindow_get_parent( myIWindow *instance, sIWindow *sdata );
+static GtkWindow *iwindow_get_parent( const myIWindow *instance, sIWindow *sdata );
 static gchar     *iwindow_get_settings_name( myIWindow *instance );
 static void       iwindow_set_default_size( myIWindow *instance );
 static void       iwindow_set_transient_for( myIWindow *instance );
@@ -224,6 +224,28 @@ my_iwindow_set_main_window( myIWindow *instance, GtkApplicationWindow *main_wind
 
 	sdata = get_iwindow_data( instance );
 	sdata->main_window = main_window;
+}
+
+/**
+ * my_iwindow_get_parent:
+ * @instance: this #myIWindow instance.
+ *
+ * Returns: the #GtkWindow parent of this window, defaulting to the
+ * main windoww of the application (if set).
+ *
+ * The returned reference is owned by the implementation, and should
+ * not be released by the caller.
+ */
+GtkWindow *
+my_iwindow_get_parent( const myIWindow *instance )
+{
+	sIWindow *sdata;
+
+	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
+
+	sdata = get_iwindow_data( instance );
+
+	return( iwindow_get_parent( instance, sdata ));
 }
 
 /**
@@ -526,7 +548,7 @@ iwindow_get_identifier( const myIWindow *instance )
 }
 
 static GtkWindow *
-iwindow_get_parent( myIWindow *instance, sIWindow *sdata )
+iwindow_get_parent( const myIWindow *instance, sIWindow *sdata )
 {
 	if( !sdata->parent && sdata->main_window ){
 		sdata->parent = GTK_WINDOW( sdata->main_window );

@@ -33,10 +33,11 @@
 
  Bug fixes:
 
-   - 
+   - ofaAccountProperties: force indicators to FALSE if root account.
 
  Other changes:
 
+   - my_idialog_run_maybe_modal(): new method.
    - ofaIEntryOpeTemplate: new interface.
    - ofa_idbconnect_has_table(): new method.
    - Many UI sources are moved to core/.

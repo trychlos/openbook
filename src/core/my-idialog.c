@@ -58,6 +58,7 @@ static gboolean  ok_to_terminate( myIDialog *instance, gint response_code );
 static gboolean  do_quit_on_ok( myIDialog *instance );
 static gboolean  do_quit_on_code( myIDialog *instance, gint code );
 static void      on_update_button_clicked( GtkButton *button, myIDialog *instance );
+static void      do_update( myIDialog *instance );
 static sIDialog *get_idialog_data( const myIDialog *instance );
 static void      on_idialog_finalized( sIDialog *sdata, GObject *finalized_idialog );
 
@@ -350,6 +351,38 @@ my_idialog_run( myIDialog *instance )
 	return( response_code );
 }
 
+/**
+ * my_idialog_run_maybe_modal:
+ * @instance: this #myIDialog instance.
+ *
+ * Run as a modal or non-modal dialog depending of the parent.
+ *
+ * This method relies on #my_idialog_click_to_update() method being
+ * called at initialization time.
+ */
+void
+my_idialog_run_maybe_modal( myIDialog *instance )
+{
+	static const gchar *thisfn = "my_idialog_run_maybe_modal";
+	GtkWindow *parent;
+
+	g_return_if_fail( instance && MY_IS_IDIALOG( instance ));
+	g_return_if_fail( GTK_IS_DIALOG( instance ));
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	parent = my_iwindow_get_parent( MY_IWINDOW( instance ));
+	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
+
+	if( gtk_window_get_modal( GTK_WINDOW( parent ))){
+		my_idialog_run( instance );
+
+	} else {
+		/* after this call, @instance may be invalid */
+		my_iwindow_present( MY_IWINDOW( instance ));
+	}
+}
+
 /*
  * return %TRUE to allow quitting the dialog
  */
@@ -357,6 +390,12 @@ static gboolean
 ok_to_terminate( myIDialog *instance, gint response_code )
 {
 	gboolean quit = FALSE;
+
+	/* if the user has set #my_idialog_click_to_update() method,
+	 * then this dialog maybe already destroyed and finalized */
+	if( !MY_IS_IDIALOG( instance )){
+		return( TRUE );
+	}
 
 	switch( response_code ){
 		case GTK_RESPONSE_DELETE_EVENT:
@@ -434,6 +473,12 @@ my_idialog_click_to_update( myIDialog *instance, GtkWidget *button, myIDialogUpd
 
 static void
 on_update_button_clicked( GtkButton *button, myIDialog *instance )
+{
+	do_update( instance );
+}
+
+static void
+do_update( myIDialog *instance )
 {
 	sIDialog *sdata;
 	gboolean ok;
