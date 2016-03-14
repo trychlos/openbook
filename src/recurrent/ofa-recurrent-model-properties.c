@@ -37,6 +37,7 @@
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-ientry-ope-template.h"
 #include "api/ofa-periodicity-combo.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -87,6 +88,7 @@ static void     idialog_init( myIDialog *instance );
 static void     init_title( ofaRecurrentModelProperties *self );
 static void     init_page_properties( ofaRecurrentModelProperties *self );
 static void     setup_data( ofaRecurrentModelProperties *self );
+static void     ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *iface );
 static void     on_mnemo_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
@@ -99,7 +101,8 @@ static void     set_msgerr( ofaRecurrentModelProperties *dialog, const gchar *ms
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelProperties, ofa_recurrent_model_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaRecurrentModelProperties )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_OPE_TEMPLATE, ientry_ope_template_iface_init ))
 
 static void
 recurrent_model_properties_finalize( GObject *instance )
@@ -355,6 +358,10 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_ope_template_changed ), self );
 	priv->ope_template_entry = entry;
+	ofa_ientry_ope_template_init(
+			OFA_IENTRY_OPE_TEMPLATE( self ),
+			OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))),
+			GTK_ENTRY( entry ));
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ope-template-prompt" );
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
@@ -397,6 +404,17 @@ setup_data( ofaRecurrentModelProperties *self )
 	if( priv->ope_template ){
 		gtk_entry_set_text( GTK_ENTRY( priv->ope_template_entry ), priv->ope_template );
 	}
+}
+
+/*
+ * ofaIEntryOpeTemplate interface management
+ */
+static void
+ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *iface )
+{
+	static const gchar *thisfn = "ofa_recurrent_model_properties_ientry_ope_template_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
