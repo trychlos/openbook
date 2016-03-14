@@ -168,8 +168,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) my-cell-renderer-amount.$(OBJEXT) \
 	ofa-irenderable.$(OBJEXT) ofa-itreeview-column.$(OBJEXT) \
 	ofa-itreeview-display.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
 	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
-	ofa-ledger-combo.$(OBJEXT) ofa-ledger-page.$(OBJEXT) \
-	ofa-ledger-properties.$(OBJEXT) ofa-ledger-store.$(OBJEXT) \
+	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
 	ofa-ledger-summary-bin.$(OBJEXT) \
 	ofa-ledger-summary-render.$(OBJEXT) \
 	ofa-ledger-treeview.$(OBJEXT) ofa-main-window.$(OBJEXT) \
@@ -584,14 +583,10 @@ openbook_SOURCES = \
 	ofa-ledger-book-render.h							\
 	ofa-ledger-close.c									\
 	ofa-ledger-close.h									\
-	ofa-ledger-combo.c									\
-	ofa-ledger-combo.h									\
 	ofa-ledger-page.c									\
 	ofa-ledger-page.h									\
 	ofa-ledger-properties.c								\
 	ofa-ledger-properties.h								\
-	ofa-ledger-store.c									\
-	ofa-ledger-store.h									\
 	ofa-ledger-summary-bin.c							\
 	ofa-ledger-summary-bin.h							\
 	ofa-ledger-summary-render.c							\
@@ -891,10 +886,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-close.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-combo.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-properties.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-summary-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-summary-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-treeview.Po@am__quote@

@@ -30,7 +30,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofo-ledger.h"
 
-#include "ui/ofa-ledger-combo.h"
+#include "core/ofa-ledger-combo.h"
 
 /* private instance data
  */

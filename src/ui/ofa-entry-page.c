@@ -53,6 +53,7 @@
 
 #include "core/ofa-account-select.h"
 #include "core/ofa-iconcil.h"
+#include "core/ofa-ledger-combo.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/my-cell-renderer-amount.h"
@@ -60,7 +61,6 @@
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
-#include "ui/ofa-ledger-combo.h"
 
 /* columns in the entries store
  * must declared before the private data in order to be able to

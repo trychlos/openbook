@@ -40,10 +40,9 @@
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-main-window.h"
+#include "core/ofa-ledger-combo.h"
 #include "core/ofa-ope-template-help.h"
 #include "core/ofa-ope-template-properties.h"
-
-#include "ui/ofa-ledger-combo.h"
 
 /* private instance data
  *

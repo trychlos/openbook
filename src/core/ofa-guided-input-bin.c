@@ -48,10 +48,9 @@
 #include "api/ofs-ope.h"
 
 #include "core/ofa-account-select.h"
+#include "core/ofa-ledger-combo.h"
 #include "core/ofa-main-window.h"
 #include "core/ofa-guided-input-bin.h"
-
-#include "ui/ofa-ledger-combo.h"
 
 /* private instance data
  */

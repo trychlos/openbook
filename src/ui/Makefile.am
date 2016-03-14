@@ -161,14 +161,10 @@ openbook_SOURCES = \
 	ofa-ledger-book-render.h							\
 	ofa-ledger-close.c									\
 	ofa-ledger-close.h									\
-	ofa-ledger-combo.c									\
-	ofa-ledger-combo.h									\
 	ofa-ledger-page.c									\
 	ofa-ledger-page.h									\
 	ofa-ledger-properties.c								\
 	ofa-ledger-properties.h								\
-	ofa-ledger-store.c									\
-	ofa-ledger-store.h									\
 	ofa-ledger-summary-bin.c							\
 	ofa-ledger-summary-bin.h							\
 	ofa-ledger-summary-render.c							\

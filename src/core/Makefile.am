@@ -133,6 +133,10 @@ libofa_core_la_SOURCES = \
 	ofa-iprefs-provider.c								\
 	ofa-isingle-keeper.c								\
 	ofa-istore.c										\
+	ofa-ledger-combo.c									\
+	ofa-ledger-combo.h									\
+	ofa-ledger-store.c									\
+	ofa-ledger-store.h									\
 	ofa-list-store.c									\
 	ofa-main-window.h									\
 	ofa-ope-template-frame-bin.c						\

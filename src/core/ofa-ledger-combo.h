@@ -28,14 +28,14 @@
 /**
  * SECTION: ofa_ledger_combo
  * @short_description: #ofaLedgerCombo class definition.
- * @include: ui/ofa-ledger-combo.h
+ * @include: core/ofa-ledger-combo.h
  *
  * A #GtkComboBox -derived class which manages ledgers.
  */
 
 #include "api/ofa-hub-def.h"
 
-#include "ui/ofa-ledger-store.h"
+#include "core/ofa-ledger-store.h"
 
 G_BEGIN_DECLS
 
