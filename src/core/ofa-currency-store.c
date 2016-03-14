@@ -31,7 +31,7 @@
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofo-currency.h"
 
-#include "ui/ofa-currency-store.h"
+#include "core/ofa-currency-store.h"
 
 /* private instance data
  */
@@ -48,11 +48,6 @@ static GType st_col_types[CURRENCY_N_COLUMNS] = {
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoCurrency itself */
 };
-
-/* the key which is attached to the dossier in order to identify this
- * store
- */
-#define STORE_DATA_DOSSIER                   "ofa-currency-store"
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrencyStore *store );
 static void     load_dataset( ofaCurrencyStore *store, ofaHub *hub );

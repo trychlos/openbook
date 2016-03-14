@@ -174,6 +174,7 @@ am_libofa_core_la_OBJECTS = $(am__objects_2) my-date.lo \
 	ofa-account-frame-bin.lo ofa-account-properties.lo \
 	ofa-account-select.lo ofa-account-store.lo \
 	ofa-admin-credentials-bin.lo ofa-box.lo ofa-buttons-box.lo \
+	ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
 	ofa-dossier-delete-prefs-bin.lo ofa-file-dir.lo \
 	ofa-file-format.lo ofa-file-format-bin.lo ofa-guided-input.lo \
@@ -502,6 +503,10 @@ libofa_core_la_SOURCES = \
 	ofa-admin-credentials-bin.h							\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
+	ofa-currency-combo.c								\
+	ofa-currency-combo.h								\
+	ofa-currency-store.c								\
+	ofa-currency-store.h								\
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
@@ -733,6 +738,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-combo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@

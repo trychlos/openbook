@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_currency_combo
  * @short_description: #ofaCurrencyCombo class definition.
- * @include: ui/ofa-currency-combo.h
+ * @include: core/ofa-currency-combo.h
  *
  * A #GtkComboBox -derived class to manage currencies.
  *
@@ -38,7 +38,7 @@
 
 #include "api/ofa-hub-def.h"
 
-#include "ui/ofa-currency-store.h"
+#include "core/ofa-currency-store.h"
 
 G_BEGIN_DECLS
 

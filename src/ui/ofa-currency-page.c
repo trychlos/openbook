@@ -37,11 +37,11 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-currency-store.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-currency-properties.h"
 #include "ui/ofa-currency-page.h"
-#include "ui/ofa-currency-store.h"
 
 /* private instance data
  */

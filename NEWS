@@ -38,9 +38,23 @@
  Other changes:
 
    - my_idialog_run_maybe_modal(): new method.
+   - ofaAccountFrameBin: moved to core/.
+   - ofaAccountProperties: moved to core/.
+   - ofaAccountSelect: moved to core/.
+   - ofaAccountStore: moved to core/.
+   - ofaCurrencyCombo: moved to core/.
+   - ofaCurrencyStore: moved to core/.
+   - ofaGuidedInputBin: moved to core/.
    - ofaIEntryOpeTemplate: new interface.
+   - ofaLedgerCombo: moved to core/.
+   - ofaLedgerStore: moved to core/.
+   - ofaLedgerCombo: moved to core/.
+   - ofaOpeTemplateFrameBin: moved to core/.
+   - ofaOpeTemplateHelp: moved to core/.
+   - ofaOpeTemplateProperties: moved to core/.
+   - ofaOpeTemplateSelect: moved to core/.
+   - ofaOpeTemplateStore: moved to core/.
    - ofa_idbconnect_has_table(): new method.
-   - Many UI sources are moved to core/.
 
 -----------------------------------------------------------------------
  Version 0.50

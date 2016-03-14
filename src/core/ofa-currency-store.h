@@ -29,7 +29,7 @@
  * SECTION: currency_store
  * @title: ofaCurrencyStore
  * @short_description: The CurrencyStore class definition
- * @include: ui/ofa-currency-store.h
+ * @include: core/ofa-currency-store.h
  *
  * The #ofaCurrencyStore derived from #ofaListStore, which itself
  * derives from #GtkListStore. It is populated with all the currencies

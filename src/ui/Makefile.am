@@ -105,12 +105,8 @@ openbook_SOURCES = \
 	ofa-closing-parms-bin.h								\
 	ofa-currency-page.c									\
 	ofa-currency-page.h									\
-	ofa-currency-combo.c								\
-	ofa-currency-combo.h								\
 	ofa-currency-properties.c							\
 	ofa-currency-properties.h							\
-	ofa-currency-store.c								\
-	ofa-currency-store.h								\
 	ofa-dossier-delete.c								\
 	ofa-dossier-delete.h								\
 	ofa-dossier-display-notes.c							\

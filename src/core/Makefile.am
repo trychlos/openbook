@@ -95,6 +95,10 @@ libofa_core_la_SOURCES = \
 	ofa-admin-credentials-bin.h							\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
+	ofa-currency-combo.c								\
+	ofa-currency-combo.h								\
+	ofa-currency-store.c								\
+	ofa-currency-store.h								\
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\

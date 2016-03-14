@@ -41,9 +41,8 @@
 #include "api/ofo-entry.h"
 
 #include "core/ofa-account-properties.h"
+#include "core/ofa-currency-combo.h"
 #include "core/ofa-main-window.h"
-
-#include "ui/ofa-currency-combo.h"
 
 /* private instance data
  */
