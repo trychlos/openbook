@@ -1482,10 +1482,7 @@ get_settings( ofaSettlementPage *self )
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
-	pos = 0;
-	if( my_strlen( cstr )){
-		pos = atoi( cstr );
-	}
+	pos = cstr ? atoi( cstr ) : 0;
 	if( pos == 0 ){
 		pos = 150;
 	}

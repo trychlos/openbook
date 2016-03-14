@@ -226,6 +226,9 @@ pane_restore_position( GtkWidget *pane )
 	gint pos;
 
 	pos = ofa_settings_user_get_uint( "GuidedInputExDlg-pane" );
+	if( pos == 0 ){
+		pos = 150;
+	}
 	g_debug( "ofa_guided_ex_pane_restore_position: pos=%d", pos );
 	gtk_paned_set_position( GTK_PANED( pane ), pos );
 }
