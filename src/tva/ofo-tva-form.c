@@ -162,9 +162,6 @@ struct _ofoTVAFormPrivate {
 	GList     *details;
 };
 
-/* mnemonic max length */
-#define MNEMO_LENGTH                    10
-
 static void        on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean    do_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );

@@ -210,9 +210,6 @@ typedef struct {
 }
 	sCompare;
 
-/* mnemonic max length */
-#define MNEMO_LENGTH                    10
-
 static ofoTVARecord *record_find_by_mnemo_and_end( GList *set, const gchar *mnemo, const GDate *end );
 static void          tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user );
 static void          tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp );

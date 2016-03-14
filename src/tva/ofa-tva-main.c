@@ -183,7 +183,7 @@ on_main_window_created( GApplication *application, GtkApplicationWindow *window,
 static void
 on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "tva/ofa-module/on_tva_declare";
+	static const gchar *thisfn = "tva/ofa-tva-main/on_tva_declare";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -196,7 +196,7 @@ on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 static void
 on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "tva/ofa-module/on_tva_manage";
+	static const gchar *thisfn = "tva/ofa-tva-main/on_tva_manage";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
