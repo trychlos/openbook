@@ -493,8 +493,8 @@ ofa_idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean
 }
 
 /*
- * execute a query
- * may display an error message
+ * Execute a query whithout result set.
+ * May display an error message
  */
 static gboolean
 idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error )
@@ -595,6 +595,39 @@ ofa_idbconnect_query_int( const ofaIDBConnect *connect, const gchar *query, gint
 	}
 
 	return( ok );
+}
+
+/**
+ * ofa_idbconnect_has_table:
+ * @connect: this #ofaIDBConnect instance.
+ * @table: the name of the searched table.
+ *
+ * Returns: %TRUE if the specified @table exists, %FALSE else.
+ */
+gboolean
+ofa_idbconnect_has_table( const ofaIDBConnect *connect, const gchar *table )
+{
+	gboolean ok, found;
+	gchar *query;
+	GSList *result, *icol;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	query = g_strdup_printf( "SHOW TABLES LIKE '%s'", table );
+	result = NULL;
+	found = FALSE;
+
+	ok = ofa_idbconnect_query_ex( connect, query, &result, FALSE );
+	if( ok ){
+		icol = ( GSList * ) result->data;
+		if( icol && icol->data ){
+			found = TRUE;
+		}
+		ofa_idbconnect_free_results( result );
+	}
+	g_free( query );
+
+	return( found );
 }
 
 static void

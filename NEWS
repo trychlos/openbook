@@ -37,7 +37,7 @@
 
  Other changes:
 
-   - 
+   - ofa_idbconnect_has_table(): new method.
 
 -----------------------------------------------------------------------
  Version 0.50

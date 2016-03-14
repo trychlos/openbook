@@ -327,6 +327,9 @@ gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *
 																gint *result,
 																gboolean display_error );
 
+gboolean        ofa_idbconnect_has_table                 ( const ofaIDBConnect *connect,
+																const gchar *table );
+
 #define         ofa_idbconnect_free_results( L )         g_debug( "ofa_idbconnect_free_results" ); \
 																g_slist_foreach(( L ), ( GFunc ) g_slist_free_full, g_free ); \
 																g_slist_free( L )
