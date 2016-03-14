@@ -35,7 +35,7 @@
  * See api/ofo-ope-template.h for a full description of the model language.
  *
  * Development rules:
- * - type:       per-mnemo non-modal dialog
+ * - type:       per-mnemo modal/non-modal dialog
  * - settings:   yes
  * - current:    yes
  */

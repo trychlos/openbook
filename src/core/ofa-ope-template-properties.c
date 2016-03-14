@@ -264,8 +264,8 @@ ofa_ope_template_properties_run(
 	priv->ope_template = template;
 	priv->ledger = g_strdup( ledger );
 
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	/* run modal or non-modal depending of the parent */
+	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 }
 
 /*
