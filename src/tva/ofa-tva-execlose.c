@@ -65,7 +65,7 @@ static void     update_bar( myProgressBar *bar, guint *count, guint total );
 void
 ofa_tva_execlose_iface_init( ofaIExeCloseCloseInterface *iface )
 {
-	static const gchar *thisfn = "ofa_tva_dbmodel_iface_init";
+	static const gchar *thisfn = "ofa_tva_execlose_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
