@@ -1482,10 +1482,14 @@ get_settings( ofaSettlementPage *self )
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
+	pos = 0;
 	if( my_strlen( cstr )){
 		pos = atoi( cstr );
-		gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
 	}
+	if( pos == 0 ){
+		pos = 150;
+	}
+	gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
 
 	ofa_settings_free_string_list( slist );
 }
