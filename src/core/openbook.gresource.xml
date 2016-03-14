@@ -1,12 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/trychlos/openbook/core">
+    <file>ofa-account-properties.ui</file>
+    <file>ofa-account-select.ui</file>
     <file>ofa-admin-credentials-bin.ui</file>
     <file>ofa-date-filter-hv-bin.ui</file>
     <file>ofa-dbms-root-bin.ui</file>
     <file>ofa-dossier-delete-prefs-bin.ui</file>
     <file>ofa-file-format-bin.ui</file>
+    <file>ofa-guided-input.ui</file>
+    <file>ofa-guided-input-bin.ui</file>
     <file>ofa-idbmodel.ui</file>
+    <file>ofa-ope-template-help.ui</file>
+    <file>ofa-ope-template-properties.ui</file>
+    <file>ofa-ope-template-select.ui</file>
     <file>ofa-preferences.ui</file>
+
+    <file>filler.png</file>
+    <file>notes.png</file>
+    <file>ofa-guided-input-bin-green-checkmark.png</file>
+    <file>ofa-ientry-account-icon-16.png</file>
+    <file>ofa-ientry-ope-template-icon-16.png</file>
   </gresource>
 </gresources>

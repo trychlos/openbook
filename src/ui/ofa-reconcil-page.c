@@ -37,6 +37,7 @@
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
+#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
@@ -59,7 +60,6 @@
 
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-iaccount-entry.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-reconcil-page.h"
@@ -259,8 +259,8 @@ static void         itreeview_display_iface_init( ofaITreeviewDisplayInterface *
 static guint        itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar       *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean     itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static void         iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
-static gchar       *iaccount_entry_on_pre_select( ofaIAccountEntry *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed );
+static void         iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
+static gchar       *iaccount_entry_on_pre_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed );
 static GtkWidget   *v_setup_view( ofaPage *page );
 static void         setup_treeview_header( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_treeview( ofaReconcilPage *self, GtkContainer *parent );
@@ -348,7 +348,7 @@ static void         set_message( ofaReconcilPage *page, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaReconcilPage )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
 
@@ -479,10 +479,10 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 }
 
 /*
- * ofaIAccountEntry interface management
+ * ofaIEntryAccount interface management
  */
 static void
-iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
 {
 	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
 
@@ -492,7 +492,7 @@ iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
 }
 
 static gchar *
-iaccount_entry_on_pre_select( ofaIAccountEntry *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed )
+iaccount_entry_on_pre_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed )
 {
 	const gchar *text;
 
@@ -868,9 +868,9 @@ setup_account_selection( ofaReconcilPage *self, GtkContainer *parent )
 	priv->acc_id_entry = my_utils_container_get_child_by_name( parent, "account-number" );
 	g_return_if_fail( priv->acc_id_entry && GTK_IS_ENTRY( priv->acc_id_entry ));
 	g_signal_connect( priv->acc_id_entry, "changed", G_CALLBACK( account_on_entry_changed ), self );
-	ofa_iaccount_entry_init(
-			OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( priv->acc_id_entry ),
-			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_RECONCILIABLE );
+	ofa_ientry_account_init(
+			OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
+			GTK_ENTRY( priv->acc_id_entry ), ACCOUNT_ALLOW_RECONCILIABLE );
 
 	priv->acc_label = my_utils_container_get_child_by_name( parent, "account-label" );
 	g_return_if_fail( priv->acc_label && GTK_IS_LABEL( priv->acc_label ));

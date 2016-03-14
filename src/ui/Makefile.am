@@ -62,16 +62,8 @@ openbook_SOURCES = \
 	ofa-account-book-render.h							\
 	ofa-account-filter-vv-bin.c							\
 	ofa-account-filter-vv-bin.h							\
-	ofa-account-frame-bin.c								\
-	ofa-account-frame-bin.h								\
 	ofa-account-page.c									\
 	ofa-account-page.h									\
-	ofa-account-properties.c							\
-	ofa-account-properties.h							\
-	ofa-account-select.c								\
-	ofa-account-select.h								\
-	ofa-account-store.c									\
-	ofa-account-store.h									\
 	ofa-application.c									\
 	ofa-application.h									\
 	ofa-application-def.h								\
@@ -151,12 +143,6 @@ openbook_SOURCES = \
 	ofa-export-assistant.h								\
 	ofa-guided-ex.c										\
 	ofa-guided-ex.h										\
-	ofa-guided-input.c									\
-	ofa-guided-input.h									\
-	ofa-guided-input-bin.c								\
-	ofa-guided-input-bin.h								\
-	ofa-iaccount-entry.c								\
-	ofa-iaccount-entry.h								\
 	ofa-iaccount-filter.c								\
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
@@ -192,18 +178,8 @@ openbook_SOURCES = \
 	ofa-main-window.c									\
 	ofa-nomodal-page.c									\
 	ofa-nomodal-page.h									\
-	ofa-ope-template-frame-bin.c						\
-	ofa-ope-template-frame-bin.h						\
-	ofa-ope-template-help.c								\
-	ofa-ope-template-help.h								\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
-	ofa-ope-template-properties.c						\
-	ofa-ope-template-properties.h						\
-	ofa-ope-template-select.c							\
-	ofa-ope-template-select.h							\
-	ofa-ope-template-store.c							\
-	ofa-ope-template-store.h							\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-rate-page.c										\
@@ -248,8 +224,6 @@ images_files = \
 resources_ui = \
 	ofa-account-book-bin.ui								\
 	ofa-account-filter-vv-bin.ui						\
-	ofa-account-properties.ui							\
-	ofa-account-select.ui								\
 	ofa-balance-bin.ui									\
 	ofa-bat-properties.ui								\
 	ofa-bat-properties-bin.ui							\
@@ -272,16 +246,11 @@ resources_ui = \
 	ofa-entry-page.ui									\
 	ofa-exercice-close-assistant.ui						\
 	ofa-export-assistant.ui								\
-	ofa-guided-input.ui									\
-	ofa-guided-input-bin.ui								\
 	ofa-import-assistant.ui								\
 	ofa-ledger-book-bin.ui								\
 	ofa-ledger-close.ui									\
 	ofa-ledger-properties.ui							\
 	ofa-ledger-summary-bin.ui							\
-	ofa-ope-template-help.ui							\
-	ofa-ope-template-properties.ui						\
-	ofa-ope-template-select.ui							\
 	ofa-plugin-manager.ui								\
 	ofa-rate-properties.ui								\
 	ofa-reconcil-bin.ui									\
@@ -294,14 +263,10 @@ resources_ui = \
 	ofa-app-menubar.ui									\
 	ofa-dos-menubar.ui									\
 	\
-	ofa-iaccount-entry-icon-16.png						\
 	ofa-itreeview-display-arrow-down.png				\
-	filler.png											\
-	ofa-guided-input-bin-green-checkmark.png			\
 	light-empty-14.png									\
 	light-green-14.png									\
 	light-yellow-14.png									\
-	notes1.png											\
 	$(NULL)
 
 ui_data_DATA = \

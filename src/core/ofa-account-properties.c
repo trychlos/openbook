@@ -40,9 +40,9 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "core/ofa-account-properties.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-properties.h"
 #include "ui/ofa-currency-combo.h"
 
 /* private instance data
@@ -98,7 +98,7 @@ typedef gdouble       ( *fnGetDouble )( const ofoAccount * );
 typedef gint          ( *fnGetInt )   ( const ofoAccount * );
 typedef const GDate * ( *fnGetDate )  ( const ofoAccount * );
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-account-properties.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-account-properties.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );

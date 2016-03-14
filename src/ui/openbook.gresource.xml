@@ -3,8 +3,6 @@
   <gresource prefix="/org/trychlos/openbook/ui">
     <file>ofa-account-book-bin.ui</file>
     <file>ofa-account-filter-vv-bin.ui</file>
-    <file>ofa-account-properties.ui</file>
-    <file>ofa-account-select.ui</file>
     <file>ofa-balance-bin.ui</file>
     <file>ofa-bat-properties.ui</file>
     <file>ofa-bat-properties-bin.ui</file>
@@ -27,16 +25,11 @@
     <file>ofa-entry-page.ui</file>
     <file>ofa-exercice-close-assistant.ui</file>
     <file>ofa-export-assistant.ui</file>
-    <file>ofa-guided-input.ui</file>
-    <file>ofa-guided-input-bin.ui</file>
     <file>ofa-import-assistant.ui</file>
     <file>ofa-ledger-book-bin.ui</file>
     <file>ofa-ledger-close.ui</file>
     <file>ofa-ledger-properties.ui</file>
     <file>ofa-ledger-summary-bin.ui</file>
-    <file>ofa-ope-template-help.ui</file>
-    <file>ofa-ope-template-properties.ui</file>
-    <file>ofa-ope-template-select.ui</file>
     <file>ofa-plugin-manager.ui</file>
     <file>ofa-rate-properties.ui</file>
     <file>ofa-reconcil-bin.ui</file>
@@ -49,13 +42,9 @@
     <file>ofa-app-menubar.ui</file>
     <file>ofa-dos-menubar.ui</file>
 
-    <file>ofa-iaccount-entry-icon-16.png</file>
     <file>ofa-itreeview-display-arrow-down.png</file>
-    <file>filler.png</file>
-    <file>ofa-guided-input-bin-green-checkmark.png</file>
     <file>light-empty-14.png</file>
     <file>light-green-14.png</file>
     <file>light-yellow-14.png</file>
-    <file>notes1.png</file>
   </gresource>
 </gresources>

@@ -26,45 +26,41 @@
 #include <config.h>
 #endif
 
-#include <string.h>
+#include "api/ofa-ientry-account.h"
 
-#include <api/ofo-account.h>
-
-#include <core/ofa-main-window.h>
-
-#include <ui/ofa-iaccount-entry.h>
-#include <ui/ofa-account-select.h>
+#include "core/ofa-account-select.h"
+#include "core/ofa-main-window.h"
 
 /* a data structure attached to each managed GtkEntry
  */
 typedef struct {
-	ofaIAccountEntry *instance;
-	ofaMainWindow    *main_window;
-	ofeAccountAllowed allowed;
+	ofaIEntryAccount  *instance;
+	ofaMainWindow     *main_window;
+	ofeAccountAllowed  allowed;
 }
-	sIAccountEntry;
+	sIEntryAccount;
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-#define IACCOUNT_ENTRY_LAST_VERSION       1
-#define IACCOUNT_ENTRY_DATA               "ofa-iaccount-entry-data"
+#define IENTRY_ACCOUNT_LAST_VERSION       1
+#define IENTRY_ACCOUNT_DATA               "ofa-ientry-account-data"
 
-static const gchar *st_resource_account   = "/org/trychlos/openbook/ui/ofa-iaccount-entry-icon-16.png";
+static const gchar *st_resource_account = "/org/trychlos/openbook/core/ofa-ientry-account-icon-16.png";
 
 static GType           register_type( void );
-static void            interface_base_init( ofaIAccountEntryInterface *klass );
-static void            interface_base_finalize( ofaIAccountEntryInterface *klass );
-static void            on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaIAccountEntry *instance );
-static sIAccountEntry *get_iaccount_entry_data( const ofaIAccountEntry *instance, GtkEntry *entry );
-static void            on_entry_finalized( sIAccountEntry *data, GObject *finalized_entry );
+static void            interface_base_init( ofaIEntryAccountInterface *klass );
+static void            interface_base_finalize( ofaIEntryAccountInterface *klass );
+static void            on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaIEntryAccount *instance );
+static sIEntryAccount *get_iaccount_entry_data( const ofaIEntryAccount *instance, GtkEntry *entry );
+static void            on_entry_finalized( sIEntryAccount *data, GObject *finalized_entry );
 
 /**
- * ofa_iaccount_entry_get_type:
+ * ofa_ientry_account_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_iaccount_entry_get_type( void )
+ofa_ientry_account_get_type( void )
 {
 	static GType type = 0;
 
@@ -76,18 +72,18 @@ ofa_iaccount_entry_get_type( void )
 }
 
 /*
- * ofa_iaccount_entry_register_type:
+ * ofa_ientry_account_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_iaccount_entry_register_type";
+	static const gchar *thisfn = "ofa_ientry_account_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIAccountEntryInterface ),
+		sizeof( ofaIEntryAccountInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -100,7 +96,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIAccountEntry", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIEntryAccount", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -108,9 +104,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIAccountEntryInterface *klass )
+interface_base_init( ofaIEntryAccountInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iaccount_entry_interface_base_init";
+	static const gchar *thisfn = "ofa_ientry_account_interface_base_init";
 
 	if( st_initializations == 0 ){
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
@@ -122,9 +118,9 @@ interface_base_init( ofaIAccountEntryInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIAccountEntryInterface *klass )
+interface_base_finalize( ofaIEntryAccountInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iaccount_entry_interface_base_finalize";
+	static const gchar *thisfn = "ofa_ientry_account_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -134,62 +130,62 @@ interface_base_finalize( ofaIAccountEntryInterface *klass )
 }
 
 /**
- * ofa_iaccount_entry_get_interface_last_version:
+ * ofa_ientry_account_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_iaccount_entry_get_interface_last_version( void )
+ofa_ientry_account_get_interface_last_version( void )
 {
-	return( IACCOUNT_ENTRY_LAST_VERSION );
+	return( IENTRY_ACCOUNT_LAST_VERSION );
 }
 
 /**
- * ofa_iaccount_entry_get_interface_version:
- * @instance: this #ofaIAccountEntry instance.
+ * ofa_ientry_account_get_interface_version:
+ * @instance: this #ofaIEntryAccount instance.
  *
  * Returns: the version number implemented by the object.
  *
  * Defaults to 1.
  */
 guint
-ofa_iaccount_entry_get_interface_version( const ofaIAccountEntry *instance )
+ofa_ientry_account_get_interface_version( const ofaIEntryAccount *instance )
 {
-	static const gchar *thisfn = "ofa_iaccount_entry_get_interface_version";
+	static const gchar *thisfn = "ofa_ientry_account_get_interface_version";
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	g_return_val_if_fail( instance && OFA_IS_IACCOUNT_ENTRY( instance ), 0 );
+	g_return_val_if_fail( instance && OFA_IS_IENTRY_ACCOUNT( instance ), 0 );
 
-	if( OFA_IACCOUNT_ENTRY_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_IACCOUNT_ENTRY_GET_INTERFACE( instance )->get_interface_version( instance ));
+	if( OFA_IENTRY_ACCOUNT_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_IENTRY_ACCOUNT_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIAccountEntry instance %p does not provide 'get_interface_version()' method",
+	g_info( "%s: ofaIEntryAccount instance %p does not provide 'get_interface_version()' method",
 			thisfn, ( void * ) instance );
 	return( 1 );
 }
 
 /**
- * ofa_iaccount_entry_init:
- * @instance: the #ofaIAccountEntry instance.
- * @entry: the #GtkEntry entry to be set.
+ * ofa_ientry_account_init:
+ * @instance: the #ofaIEntryAccount instance.
  * @main_window: the #ofaMainWindow main window of the application.
+ * @entry: the #GtkEntry entry to be set.
  * @allowed: the allowed selection.
  *
  * Initialize the GtkEntry to setup an icon.
  * When this icon is pressed, an account selection dialog is triggered.
  */
 void
-ofa_iaccount_entry_init( ofaIAccountEntry *instance, GtkEntry *entry, ofaMainWindow *main_window, ofeAccountAllowed allowed )
+ofa_ientry_account_init( ofaIEntryAccount *instance, ofaMainWindow *main_window, GtkEntry *entry, ofeAccountAllowed allowed )
 {
-	sIAccountEntry *sdata;
+	sIEntryAccount *sdata;
 	GtkWidget *image;
 	GdkPixbuf *pixbuf;
 
-	g_return_if_fail( instance && OFA_IS_IACCOUNT_ENTRY( instance ));
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	g_return_if_fail( instance && OFA_IS_IENTRY_ACCOUNT( instance ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 
 	gtk_widget_set_halign( GTK_WIDGET( entry ), GTK_ALIGN_START );
 	gtk_entry_set_alignment( entry, 0 );
@@ -205,7 +201,7 @@ ofa_iaccount_entry_init( ofaIAccountEntry *instance, GtkEntry *entry, ofaMainWin
 
 #if 0
 	GtkImageType type = gtk_image_get_storage_type( GTK_IMAGE( image ));
-	g_debug( "ofa_iaccount_entry_init: storage_type=%s",
+	g_debug( "ofa_ientry_account_init: storage_type=%s",
 			type == GTK_IMAGE_EMPTY ? "GTK_IMAGE_EMPTY" : (
 			type == GTK_IMAGE_PIXBUF ? "GTK_IMAGE_PIXBUF":(
 			type == GTK_IMAGE_STOCK ? "GTK_IMAGE_STOCK" : (
@@ -232,33 +228,36 @@ ofa_iaccount_entry_init( ofaIAccountEntry *instance, GtkEntry *entry, ofaMainWin
 }
 
 static void
-on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaIAccountEntry *instance )
+on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event, ofaIEntryAccount *instance )
 {
-	static const gchar *thisfn = "ofa_iaccount_entry_on_icon_pressed";
-	sIAccountEntry *sdata;
+	static const gchar *thisfn = "ofa_ientry_account_on_icon_pressed";
+	sIEntryAccount *sdata;
 	gchar *initial_selection, *account_id, *tmp;
+	GtkWidget *toplevel;
 
 	sdata = get_iaccount_entry_data( instance, entry );
 
-	if( OFA_IACCOUNT_ENTRY_GET_INTERFACE( instance )->on_pre_select ){
-		initial_selection = OFA_IACCOUNT_ENTRY_GET_INTERFACE( instance )->on_pre_select( instance, entry, icon_pos, sdata->allowed );
+	if( OFA_IENTRY_ACCOUNT_GET_INTERFACE( instance )->on_pre_select ){
+		initial_selection = OFA_IENTRY_ACCOUNT_GET_INTERFACE( instance )->on_pre_select( instance, entry, icon_pos, sdata->allowed );
 	} else {
-		g_info( "%s: ofaIAccountEntry instance %p does not provide 'on_icon_pressed()' method",
+		g_info( "%s: ofaIEntryAccount instance %p does not provide 'on_pre_select()' method",
 				thisfn, ( void * ) instance );
 		initial_selection = g_strdup( gtk_entry_get_text( entry ));
 	}
 
-	account_id = ofa_account_select_run( sdata->main_window, initial_selection, sdata->allowed );
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( entry ));
+	account_id = ofa_account_select_run(
+			sdata->main_window, toplevel ? GTK_WINDOW( toplevel ) : NULL, initial_selection, sdata->allowed );
 
 	if( account_id ){
-		if( OFA_IACCOUNT_ENTRY_GET_INTERFACE( instance )->on_post_select ){
-			tmp = OFA_IACCOUNT_ENTRY_GET_INTERFACE( instance )->on_post_select( instance, entry, icon_pos, sdata->allowed, account_id );
+		if( OFA_IENTRY_ACCOUNT_GET_INTERFACE( instance )->on_post_select ){
+			tmp = OFA_IENTRY_ACCOUNT_GET_INTERFACE( instance )->on_post_select( instance, entry, icon_pos, sdata->allowed, account_id );
 			if( tmp ){
 				g_free( account_id );
 				account_id = tmp;
 			}
 		} else {
-			g_info( "%s: ofaIAccountEntry instance %p does not provide 'on_post_select()' method",
+			g_info( "%s: ofaIEntryAccount instance %p does not provide 'on_post_select()' method",
 					thisfn, ( void * ) instance );
 		}
 		gtk_entry_set_text( entry, account_id );
@@ -268,16 +267,16 @@ on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event
 	g_free( initial_selection );
 }
 
-static sIAccountEntry *
-get_iaccount_entry_data( const ofaIAccountEntry *instance, GtkEntry *entry )
+static sIEntryAccount *
+get_iaccount_entry_data( const ofaIEntryAccount *instance, GtkEntry *entry )
 {
-	sIAccountEntry *sdata;
+	sIEntryAccount *sdata;
 
-	sdata = ( sIAccountEntry * ) g_object_get_data( G_OBJECT( entry ), IACCOUNT_ENTRY_DATA );
+	sdata = ( sIEntryAccount * ) g_object_get_data( G_OBJECT( entry ), IENTRY_ACCOUNT_DATA );
 
 	if( !sdata ){
-		sdata = g_new0( sIAccountEntry, 1 );
-		g_object_set_data( G_OBJECT( entry ), IACCOUNT_ENTRY_DATA, sdata );
+		sdata = g_new0( sIEntryAccount, 1 );
+		g_object_set_data( G_OBJECT( entry ), IENTRY_ACCOUNT_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( entry ), ( GWeakNotify ) on_entry_finalized, sdata );
 	}
 
@@ -285,9 +284,9 @@ get_iaccount_entry_data( const ofaIAccountEntry *instance, GtkEntry *entry )
 }
 
 static void
-on_entry_finalized( sIAccountEntry *sdata, GObject *finalized_entry )
+on_entry_finalized( sIEntryAccount *sdata, GObject *finalized_entry )
 {
-	static const gchar *thisfn = "ofa_iaccount_entry_on_entry_finalized";
+	static const gchar *thisfn = "ofa_ientry_account_on_entry_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_entry=%p", thisfn, ( void * ) sdata, ( void * ) finalized_entry );
 

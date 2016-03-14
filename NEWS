@@ -37,7 +37,9 @@
 
  Other changes:
 
+   - ofaIEntryOpeTemplate: new interface.
    - ofa_idbconnect_has_table(): new method.
+   - Many UI sources are moved to core/.
 
 -----------------------------------------------------------------------
  Version 0.50
@@ -68,7 +70,7 @@
    - myIDialog: new interface.
    - myDialog, myWindow: removed classes (todo #992).
    - my_iwindow_msg_dialog(): new method (todo #1039).
-   - ofaIAccountEntry: new interface.
+   - ofaIEntryAccount: new interface.
    - ofa_irenderable_set_summmary_font(): new method.
    - ofaISingleKeeper: new interface (todo #1038).
    - ofaOpeTemplateBookBin: removed class (todo #1037).

@@ -37,10 +37,10 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-guided-input-bin.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-guided-ex.h"
-#include "ui/ofa-guided-input-bin.h"
 
 /* private instance data
  */

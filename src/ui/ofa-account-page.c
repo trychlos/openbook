@@ -34,10 +34,10 @@
 #include "api/ofa-page-prot.h"
 #include "api/ofo-account.h"
 
+#include "core/ofa-account-properties.h"
+#include "core/ofa-account-frame-bin.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-properties.h"
-#include "ui/ofa-account-frame-bin.h"
 #include "ui/ofa-account-page.h"
 
 /* private instance data

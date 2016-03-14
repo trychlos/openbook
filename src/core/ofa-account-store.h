@@ -110,8 +110,8 @@ GType            ofa_account_store_get_type     ( void );
 ofaAccountStore *ofa_account_store_new          ( ofaHub *hub );
 
 gboolean         ofa_account_store_get_by_number( ofaAccountStore *store,
-															const gchar *number,
-															GtkTreeIter *iter );
+														const gchar *number,
+														GtkTreeIter *iter );
 
 G_END_DECLS
 

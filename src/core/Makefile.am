@@ -83,6 +83,14 @@ libofa_core_la_SOURCES = \
 	my-timeout.c										\
 	my-utils.c											\
 	\
+	ofa-account-frame-bin.c								\
+	ofa-account-frame-bin.h								\
+	ofa-account-properties.c							\
+	ofa-account-properties.h							\
+	ofa-account-select.c								\
+	ofa-account-select.h								\
+	ofa-account-store.c									\
+	ofa-account-store.h									\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
 	ofa-box.c											\
@@ -97,6 +105,10 @@ libofa_core_la_SOURCES = \
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
 	ofa-file-format-bin.h								\
+	ofa-guided-input.c									\
+	ofa-guided-input.h									\
+	ofa-guided-input-bin.c								\
+	ofa-guided-input-bin.h								\
 	ofa-hub.c											\
 	ofa-iabout.c										\
 	ofa-icollectionable.c								\
@@ -110,6 +122,8 @@ libofa_core_la_SOURCES = \
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
+	ofa-ientry-account.c								\
+	ofa-ientry-ope-template.c							\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\
 	ofa-ihubber.c										\
@@ -121,6 +135,16 @@ libofa_core_la_SOURCES = \
 	ofa-istore.c										\
 	ofa-list-store.c									\
 	ofa-main-window.h									\
+	ofa-ope-template-frame-bin.c						\
+	ofa-ope-template-frame-bin.h						\
+	ofa-ope-template-help.c								\
+	ofa-ope-template-help.h								\
+	ofa-ope-template-properties.c						\
+	ofa-ope-template-properties.h						\
+	ofa-ope-template-select.c							\
+	ofa-ope-template-select.h							\
+	ofa-ope-template-store.c							\
+	ofa-ope-template-store.h							\
 	ofa-page.c											\
 	ofa-plugin.c										\
 	ofa-preferences.c									\
@@ -160,13 +184,26 @@ ui_files = \
 	$(NULL)
 
 resources_ui = \
+	ofa-account-properties.ui							\
+	ofa-account-select.ui								\
 	ofa-admin-credentials-bin.ui						\
 	ofa-date-filter-hv-bin.ui							\
 	ofa-dbms-root-bin.ui								\
 	ofa-dossier-delete-prefs-bin.ui						\
 	ofa-file-format-bin.ui								\
+	ofa-guided-input.ui									\
+	ofa-guided-input-bin.ui								\
 	ofa-idbmodel.ui										\
+	ofa-ope-template-help.ui							\
+	ofa-ope-template-properties.ui						\
+	ofa-ope-template-select.ui							\
 	ofa-preferences.ui									\
+	\
+	filler.png											\
+	notes.png											\
+	ofa-guided-input-bin-green-checkmark.png			\
+	ofa-ientry-account-icon-16.png						\
+	ofa-ientry-ope-template-icon-16.png					\
 	$(NULL)
 
 core_data_DATA = \

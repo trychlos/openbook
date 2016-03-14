@@ -22,43 +22,45 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_IACCOUNT_ENTRY_H__
-#define __OFA_IACCOUNT_ENTRY_H__
+#ifndef __OPENBOOK_API_UI_OFA_IENTRY_ACCOUNT_H__
+#define __OPENBOOK_API_UI_OFA_IENTRY_ACCOUNT_H__
 
 /**
  * SECTION: iaccount_entry
- * @title: ofaIAccountEntry
- * @short_description: The IAccountEntry interface
- * @include: ui/ofa-iaccount-entry.h
+ * @title: ofaIEntryAccount
+ * @short_description: The IEntryAccount interface
+ * @include: ui/ofa-ientry-account.h
  *
- * The #ofaIAccountEntry interface lets the user enter and select
+ * The #ofaIEntryAccount interface lets the user enter and select
  * accounts in the provided GtkEntry.
  *
- * Just call #ofa_iaccount_entry_init() with each GtkEntry you want
+ * Just call #ofa_ientry_account_init() with each GtkEntry you want
  * set, and the function will take care of setting an icon, triggering
  * #ofaAccountSelect dialog for account selection.
  */
+
+#include <gtk/gtk.h>
 
 #include "api/ofa-main-window-def.h"
 #include "api/ofo-account.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_IACCOUNT_ENTRY                      ( ofa_iaccount_entry_get_type())
-#define OFA_IACCOUNT_ENTRY( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IACCOUNT_ENTRY, ofaIAccountEntry ))
-#define OFA_IS_IACCOUNT_ENTRY( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IACCOUNT_ENTRY ))
-#define OFA_IACCOUNT_ENTRY_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IACCOUNT_ENTRY, ofaIAccountEntryInterface ))
+#define OFA_TYPE_IENTRY_ACCOUNT                      ( ofa_ientry_account_get_type())
+#define OFA_IENTRY_ACCOUNT( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IENTRY_ACCOUNT, ofaIEntryAccount ))
+#define OFA_IS_IENTRY_ACCOUNT( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IENTRY_ACCOUNT ))
+#define OFA_IENTRY_ACCOUNT_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IENTRY_ACCOUNT, ofaIEntryAccountInterface ))
 
-typedef struct _ofaIAccountEntry                     ofaIAccountEntry;
+typedef struct _ofaIEntryAccount                     ofaIEntryAccount;
 
 /**
- * ofaIAccountEntryInterface:
+ * ofaIEntryAccountInterface:
  * @get_interface_version: [should]: returns the version of the
  *  implemented interface.
  * @on_pre_select: [may]: modify the initial selection.
- * @on_icon_pressed: [may]: do something after the selection.
+ * @on_post_select: [may]: do something after the selection.
  *
- * This defines the interface that an #ofaIAccountEntry should implement.
+ * This defines the interface that an #ofaIEntryAccount may implement.
  */
 typedef struct {
 	/*< private >*/
@@ -67,14 +69,14 @@ typedef struct {
 	/*< public >*/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIAccountEntry instance.
+	 * @instance: the #ofaIEntryAccount instance.
 	 *
 	 * The interface code calls this method each time it needs to know
 	 * which version of this interface the application implements.
 	 *
 	 * If this method is not implemented by the application, then the
 	 * interface code considers that the application only implements
-	 * the version 1 of the ofaIAccountEntry interface.
+	 * the version 1 of the ofaIEntryAccount interface.
 	 *
 	 * Return value: if implemented, this method must return the version
 	 * number of this interface the application is supporting.
@@ -83,11 +85,11 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	guint   ( *get_interface_version )( const ofaIAccountEntry *instance );
+	guint   ( *get_interface_version )( const ofaIEntryAccount *instance );
 
 	/**
 	 * on_pre_select:
-	 * @instance: the #ofaIAccountEntry instance.
+	 * @instance: the #ofaIEntryAccount instance.
 	 * @entry: the #GtkEntry which embeds the pressed icon.
 	 * @position: the #GtkEntryIconPosition.
 	 * @allowed: the allowed selection.
@@ -106,14 +108,14 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gchar * ( *on_pre_select )        ( ofaIAccountEntry *instance,
+	gchar * ( *on_pre_select )        ( ofaIEntryAccount *instance,
 											GtkEntry *entry,
 											GtkEntryIconPosition position,
 											ofeAccountAllowed allowed );
 
 	/**
 	 * on_post_select:
-	 * @instance: the #ofaIAccountEntry instance.
+	 * @instance: the #ofaIEntryAccount instance.
 	 * @entry: the #GtkEntry which embeds the pressed icon.
 	 * @position: the #GtkEntryIconPosition.
 	 * @allowed: the allowed selection.
@@ -131,25 +133,25 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gchar * ( *on_post_select )       ( ofaIAccountEntry *instance,
+	gchar * ( *on_post_select )       ( ofaIEntryAccount *instance,
 											GtkEntry *entry,
 											GtkEntryIconPosition position,
 											ofeAccountAllowed allowed,
 											const gchar *account_id );
 }
-	ofaIAccountEntryInterface;
+	ofaIEntryAccountInterface;
 
-GType ofa_iaccount_entry_get_type                  ( void );
+GType ofa_ientry_account_get_type                  ( void );
 
-guint ofa_iaccount_entry_get_interface_last_version( void );
+guint ofa_ientry_account_get_interface_last_version( void );
 
-guint ofa_iaccount_entry_get_interface_version     ( const ofaIAccountEntry *instance );
+guint ofa_ientry_account_get_interface_version     ( const ofaIEntryAccount *instance );
 
-void  ofa_iaccount_entry_init                      ( ofaIAccountEntry *instance,
-															GtkEntry *entry,
+void  ofa_ientry_account_init                      ( ofaIEntryAccount *instance,
 															ofaMainWindow *main_window,
+															GtkEntry *entry,
 															ofeAccountAllowed allowed );
 
 G_END_DECLS
 
-#endif /* __OFA_IACCOUNT_ENTRY_H__ */
+#endif /* __OFA_IENTRY_ACCOUNT_H__ */

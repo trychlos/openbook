@@ -32,7 +32,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
-#include "ui/ofa-ope-template-store.h"
+#include "core/ofa-ope-template-store.h"
 
 /* private instance data
  */

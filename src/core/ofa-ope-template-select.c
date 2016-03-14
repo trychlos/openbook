@@ -32,9 +32,8 @@
 #include "api/ofa-hub.h"
 
 #include "core/ofa-main-window.h"
-
-#include "ui/ofa-ope-template-select.h"
-#include "ui/ofa-ope-template-frame-bin.h"
+#include "core/ofa-ope-template-select.h"
+#include "core/ofa-ope-template-frame-bin.h"
 
 /* private instance data
  */
@@ -55,7 +54,7 @@ struct _ofaOpeTemplateSelectPrivate {
 	gchar                  *ope_mnemo;
 };
 
-static const gchar          *st_resource_ui = "/org/trychlos/openbook/ui/ofa-ope-template-select.ui";
+static const gchar          *st_resource_ui = "/org/trychlos/openbook/core/ofa-ope-template-select.ui";
 static ofaOpeTemplateSelect *st_this        = NULL;
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
@@ -146,29 +145,33 @@ ofa_ope_template_select_class_init( ofaOpeTemplateSelectClass *klass )
 
 /**
  * ofa_ope_template_select_run:
+ * @main_window: the #ofaMainWindow main window of the application.
+ * @parent: [allow-none]: the #GtkWindow parent.
+ * @asked_mnemo: [allow-none]: the initially selected operation template identifier.
  *
  * Returns: the selected operation template mnemo, as a newly allocated
  * string that must be g_free() by the caller
  */
 gchar *
-ofa_ope_template_select_run( ofaMainWindow *main_window, const gchar *asked_mnemo )
+ofa_ope_template_select_run( ofaMainWindow *main_window, GtkWindow *parent, const gchar *asked_mnemo )
 {
 	static const gchar *thisfn = "ofa_ope_template_select_run";
 	ofaOpeTemplateSelectPrivate *priv;
 	gchar *selected_mnemo;
 
-	g_debug( "%s: main_window=%p, asked_mnemo=%s",
-			thisfn, ( void * ) main_window, asked_mnemo );
+	g_debug( "%s: main_window=%p, parent=%p, asked_mnemo=%s",
+			thisfn, ( void * ) main_window, ( void * ) parent, asked_mnemo );
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	g_return_val_if_fail( parent && MY_IS_IWINDOW( parent ), NULL );
 
 	if( !st_this ){
 		st_this = g_object_new( OFA_TYPE_OPE_TEMPLATE_SELECT, NULL );
 		my_iwindow_set_main_window( MY_IWINDOW( st_this ), GTK_APPLICATION_WINDOW( main_window ));
+		my_iwindow_set_parent( MY_IWINDOW( st_this ), parent );
 
 		priv = ofa_ope_template_select_get_instance_private( st_this );
 
-		priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+		priv->hub = ofa_main_window_get_hub( main_window );
 		g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 		my_iwindow_init( MY_IWINDOW( st_this ));

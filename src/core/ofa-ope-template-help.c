@@ -31,8 +31,7 @@
 #include "api/my-utils.h"
 
 #include "core/ofa-main-window.h"
-
-#include "ui/ofa-ope-template-help.h"
+#include "core/ofa-ope-template-help.h"
 
 /* private instance data
  *
@@ -52,7 +51,7 @@ struct _ofaOpeTemplateHelpPrivate {
 	GList   *parents;
 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-template-help.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-template-help.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     idialog_iface_init( myIDialogInterface *iface );

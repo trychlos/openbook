@@ -229,7 +229,7 @@ my_iwindow_set_main_window( myIWindow *instance, GtkApplicationWindow *main_wind
 /**
  * my_iwindow_set_parent:
  * @instance: this #myIWindow instance.
- * @parent: the parent #GtkWindow.
+ * @parent: [allow-none]: the #GtkWindow parent of this window.
  *
  * Sets the parent.
  */
@@ -239,7 +239,7 @@ my_iwindow_set_parent( myIWindow *instance, GtkWindow *parent )
 	sIWindow *sdata;
 
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	sdata = get_iwindow_data( instance );
 	sdata->parent = parent;

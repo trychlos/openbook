@@ -30,6 +30,8 @@
 
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-ientry-account.h"
+#include "api/ofa-ientry-ope-template.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -37,11 +39,10 @@
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-main-window.h"
+#include "core/ofa-ope-template-select.h"
 
-#include <ui/ofa-iaccount-entry.h>
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-currency-combo.h"
-#include "ui/ofa-ope-template-select.h"
 
 /* private instance data
  */
@@ -59,9 +60,9 @@ struct _ofaClosingParmsBinPrivate {
 	/* the closing operations
 	 */
 	GtkWidget      *sld_ope;
-	GtkWidget      *bope_select_button;
+	GtkWidget      *sld_ope_label;
 	GtkWidget      *for_ope;
-	GtkWidget      *fope_select_button;
+	GtkWidget      *for_ope_label;
 
 	/* the balancing accounts per currency
 	 */
@@ -97,10 +98,11 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing
 static void     setup_bin( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
 static void     setup_currency_accounts( ofaClosingParmsBin *bin );
-static void     iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
-static void     on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
-static void     on_sld_ope_select( GtkButton *button, ofaClosingParmsBin *bin );
-static void     on_for_ope_select( GtkButton *button, ofaClosingParmsBin *bin );
+static void     ientry_account_iface_init( ofaIEntryAccountInterface *iface );
+static void     ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *iface );
+static void     on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
+static void     on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
+static void     on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
 static void     add_empty_row( ofaClosingParmsBin *self );
 static void     add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint row );
 static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaClosingParmsBin *self );
@@ -117,7 +119,8 @@ static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaClosingParmsBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, ientry_account_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_OPE_TEMPLATE, ientry_ope_template_iface_init ))
 
 static void
 closing_parms_bin_finalize( GObject *instance )
@@ -236,7 +239,7 @@ setup_bin( ofaClosingParmsBin *bin )
 	ofaClosingParmsBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
-	GtkWidget *toplevel, *entry, *label, *button, *image;
+	GtkWidget *toplevel, *entry, *label, *prompt;
 
 	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
@@ -248,41 +251,38 @@ setup_bin( ofaClosingParmsBin *bin )
 
 	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
 
-	/* balancing accounts operation */
+	/* balancing accounts operation
+	 * aka. solde */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->sld_ope = entry;
+	ofa_ientry_ope_template_init(
+			OFA_IENTRY_OPE_TEMPLATE( bin ), OFA_MAIN_WINDOW( priv->main_window ), GTK_ENTRY( entry ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_sld_ope_changed ), bin );
+
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_ope_changed ), bin );
-	priv->sld_ope = entry;
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-select" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect(
-			G_OBJECT( button ), "clicked", G_CALLBACK( on_sld_ope_select ), bin );
-	priv->bope_select_button = button;
+	priv->sld_ope_label = label;
 
 	/* carried forward entries operation */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->for_ope = entry;
+	ofa_ientry_ope_template_init(
+			OFA_IENTRY_OPE_TEMPLATE( bin ), OFA_MAIN_WINDOW( priv->main_window ), GTK_ENTRY( entry ));
+	g_signal_connect( entry, "changed", G_CALLBACK( on_for_ope_changed ), bin );
+
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-	g_signal_connect(
-			G_OBJECT( entry ), "changed", G_CALLBACK( on_ope_changed ), bin );
-	priv->for_ope = entry;
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-select" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	image = gtk_image_new_from_icon_name( "gtk-index", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect(
-			G_OBJECT( button ), "clicked", G_CALLBACK( on_for_ope_select ), bin );
-	priv->fope_select_button = button;
+	priv->for_ope_label = label;
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -343,62 +343,63 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 }
 
 /*
- * ofaIAccountEntry interface management
+ * ofaIEntryAccount interface management
  */
 static void
-iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+ientry_account_iface_init( ofaIEntryAccountInterface *iface )
 {
-	static const gchar *thisfn = "ofa_closing_parms_bin_iaccount_entry_iface_init";
+	static const gchar *thisfn = "ofa_closing_parms_bin_ientry_account_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+/*
+ * ofaIEntryOpeTemplate interface management
+ */
+static void
+ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *iface )
+{
+	static const gchar *thisfn = "ofa_closing_parms_bin_ientry_ope_template_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
-on_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self )
+on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self )
 {
+	ofaClosingParmsBinPrivate *priv;
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	on_ope_changed( self, priv->sld_ope, priv->sld_ope_label );
+}
+
+static void
+on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self )
+{
+	ofaClosingParmsBinPrivate *priv;
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	on_ope_changed( self, priv->for_ope, priv->for_ope_label );
+}
+
+static void
+on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label )
+{
+	ofaClosingParmsBinPrivate *priv;
+	ofoOpeTemplate *template;
+	ofaHub *hub;
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	hub = ofa_main_window_get_hub( priv->main_window );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	template = ofo_ope_template_get_by_mnemo( hub, gtk_entry_get_text( GTK_ENTRY( entry )));
+	gtk_label_set_text( GTK_LABEL( label ), template ? ofo_ope_template_get_label( template ) : "" );
+
 	check_bin( self );
-}
-
-static void
-on_sld_ope_select( GtkButton *button, ofaClosingParmsBin *bin )
-{
-	ofaClosingParmsBinPrivate *priv;
-	gchar *mnemo;
-
-	priv = ofa_closing_parms_bin_get_instance_private( bin );
-
-	mnemo = ofa_ope_template_select_run(
-							priv->main_window,
-							gtk_entry_get_text( GTK_ENTRY( priv->sld_ope )));
-	if( mnemo ){
-		gtk_entry_set_text( GTK_ENTRY( priv->sld_ope ), mnemo );
-		g_free( mnemo );
-	}
-
-	/* re-check even if the content has not changed
-	 * which may happen after having created a operation template */
-	check_bin( bin );
-}
-
-static void
-on_for_ope_select( GtkButton *button, ofaClosingParmsBin *bin )
-{
-	ofaClosingParmsBinPrivate *priv;
-	gchar *mnemo;
-
-	priv = ofa_closing_parms_bin_get_instance_private( bin );
-
-	mnemo = ofa_ope_template_select_run(
-							priv->main_window,
-							gtk_entry_get_text( GTK_ENTRY( priv->for_ope )));
-	if( mnemo ){
-		gtk_entry_set_text( GTK_ENTRY( priv->for_ope ), mnemo );
-		g_free( mnemo );
-	}
-
-	/* re-check even if the content has not changed
-	 * which may happen after having created a operation template */
-	check_bin( bin );
 }
 
 /*
@@ -577,7 +578,9 @@ set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *accou
 	if( entry ){
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), account );
-		ofa_iaccount_entry_init( OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( entry ), priv->main_window, ACCOUNT_ALLOW_DETAIL );
+		ofa_ientry_account_init(
+				OFA_IENTRY_ACCOUNT( self ), priv->main_window,
+				GTK_ENTRY( entry ), ACCOUNT_ALLOW_DETAIL );
 	}
 }
 

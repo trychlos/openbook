@@ -33,12 +33,11 @@
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-isingle-keeper.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 
-#include "api/ofa-preferences.h"
-
-#include "ui/ofa-account-store.h"
+#include "core/ofa-account-store.h"
 
 /* private instance data
  */
@@ -71,8 +70,8 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 		G_TYPE_OBJECT									/* the #ofoAccount itself */
 };
 
-static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/ui/filler.png";
-static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/ui/notes1.png";
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
 static void     tree_store_load_dataset( ofaTreeStore *store );
@@ -80,7 +79,7 @@ static void     insert_row( ofaAccountStore *store, ofaHub *hub, const ofoAccoun
 static void     set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *iter );
 static gboolean find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
 static gboolean find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid );
-static gboolean find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gint *last );
+static gboolean find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, GtkTreeIter *smaller, gint *last );
 static void     realign_children( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *parent_iter );
 static GList   *realign_children_rec( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *iter, GList *children );
 static void     realign_children_move( sChild *child_str, ofaAccountStore *store );
@@ -422,21 +421,25 @@ find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter
  * @bvalid: [allow-none][out]: set to TRUE if the returned iter is
  *  valid.
  *
- * rows are sorted by account number
- * we exit the search as soon as we get a number greater than the
- * searched one
+ * Rows are sorted by account number
+ * We exit the search as soon as we get a number greater than the
+ * searched one, or the end of the tree.
  *
  * Returns TRUE if we have found an exact match, and @iter addresses
  * this exact match.
  *
- * Returns FALSE if we do not have found a match, and @iter addresses
- * the first number greater than the searched value.
+ * Returns FALSE if we do not have found a match:
+ * - @iter addresses
+ * the first number greater than the searched value, or lesser if at
+ * the end of the list, or nothing at all if the store is empty (and
+ * @bvalid will be %FALSE if this later case).
  */
 static gboolean
 find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid )
 {
-	gint last;
+	gint last_cmp;
 	gboolean found;
+	GtkTreeIter smaller;
 
 	if( bvalid ){
 		*bvalid = FALSE;
@@ -446,8 +449,8 @@ find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *it
 		if( bvalid ){
 			*bvalid = TRUE;
 		}
-		last = -1;
-		found = find_row_by_number_rec( store, number, iter, &last );
+		smaller = *iter;
+		found = find_row_by_number_rec( store, number, iter, &smaller, &last_cmp );
 		return( found );
 	}
 
@@ -455,7 +458,7 @@ find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *it
 }
 
 /*
- * enter here with a valid @iter
+ * enter here with a valid @iter (the first of the tree)
  * start by compare this @iter with the searched value
  * returns TRUE (and exit the recursion) if the @iter is equal to
  *   the searched value
@@ -469,35 +472,40 @@ find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *it
  * less or equal to the searched value
  */
 static gboolean
-find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gint *last )
+find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, GtkTreeIter *smaller, gint *last_cmp )
 {
 	gchar *cmp_number;
+	gint searched_class, cmp_class;
 	GtkTreeIter cmp_iter, child_iter, last_iter;
 
 	cmp_iter = *iter;
+	searched_class = ofo_account_get_class_from_number( number );
 
 	while( TRUE ){
 		gtk_tree_model_get( GTK_TREE_MODEL( store ), &cmp_iter, ACCOUNT_COL_NUMBER, &cmp_number, -1 );
-		*last = g_utf8_collate( cmp_number, number );
+		*last_cmp = g_utf8_collate( cmp_number, number );
+		cmp_class = ofo_account_get_class_from_number( cmp_number );
 		g_free( cmp_number );
-		if( *last == 0 ){
+		if( *last_cmp == 0 ){
 			*iter = cmp_iter;
 			return( TRUE );
 		}
-		if( *last > 0 ){
-			*iter = cmp_iter;
+		if( *last_cmp > 0 ){
+			*iter = cmp_class > searched_class ? *smaller : cmp_iter;
 			return( FALSE );
 		}
+		*smaller = cmp_iter;
 		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( store ), &child_iter, &cmp_iter )){
-			find_row_by_number_rec( store, number, &child_iter, last );
-			if( *last == 0 ){
+			find_row_by_number_rec( store, number, &child_iter, smaller, last_cmp );
+			if( *last_cmp == 0 ){
 				*iter = child_iter;
 				return( TRUE );
 			}
-			if( *last > 0 ){
-				*iter = child_iter;
+			if( *last_cmp > 0 ){
+				*iter = *smaller;
 				return( FALSE );
 			}
+			*smaller = child_iter;
 		}
 		last_iter = cmp_iter;
 		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &cmp_iter )){
@@ -724,15 +732,16 @@ on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
  * @number: the searched for account identifier.
  * @iter: [out]:
  *
- * Set the iter to the specified row.
+ * Set the iter to the specified row, of the nearest if possible, while
+ * staying in the same account class.
  *
- * Returns: %TRUE if found.
+ * Returns: %TRUE if returned iter is valid, %FALSE else.
  */
 gboolean
 ofa_account_store_get_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter )
 {
 	ofaAccountStorePrivate *priv;
-	gboolean found;
+	gboolean valid;
 
 	g_return_val_if_fail( store && OFA_IS_ACCOUNT_STORE( store ), FALSE );
 	g_return_val_if_fail( iter, FALSE );
@@ -742,9 +751,10 @@ ofa_account_store_get_by_number( ofaAccountStore *store, const gchar *number, Gt
 	}
 
 	priv = ofa_account_store_get_instance_private( store );
+
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	found = find_row_by_number( store, number, iter, NULL );
+	find_row_by_number( store, number, iter, &valid );
 
-	return( found );
+	return( valid );
 }

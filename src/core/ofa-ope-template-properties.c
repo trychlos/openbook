@@ -33,17 +33,17 @@
 #include "api/my-iwindow.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-account.h"
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-main-window.h"
+#include "core/ofa-ope-template-help.h"
+#include "core/ofa-ope-template-properties.h"
 
-#include "ui/ofa-iaccount-entry.h"
 #include "ui/ofa-ledger-combo.h"
-#include "ui/ofa-ope-template-help.h"
-#include "ui/ofa-ope-template-properties.h"
 
 /* private instance data
  *
@@ -118,7 +118,7 @@ enum {
 /* space between widgets in a detail line */
 #define DETAIL_SPACE                    2
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ope-template-properties.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-template-properties.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
@@ -136,7 +136,7 @@ static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      set_detail_widgets( ofaOpeTemplateProperties *self, guint row );
 static void      set_detail_values( ofaOpeTemplateProperties *self, guint row );
-static void      iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
+static void      iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
 static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
@@ -151,7 +151,7 @@ static void      set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateProperties, ofa_ope_template_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateProperties )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
@@ -234,6 +234,7 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
 /**
  * ofa_ope_template_properties_run:
  * @main_window: the #ofaMainWindow main window of the application.
+ * @parent: [allow-none]: the #GtkWindow parent of this dialog.
  * @template: [allow-none]: a #ofoOpeTemplate to be edited.
  * @ledger: [allow-none]: a #ofoLedger to be attached to @template.
  *
@@ -242,20 +243,22 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
  */
 void
 ofa_ope_template_properties_run(
-		const ofaMainWindow *main_window, ofoOpeTemplate *template, const gchar *ledger )
+		ofaMainWindow *main_window, GtkWindow *parent, ofoOpeTemplate *template, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofa_ope_template_properties_run";
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
 
-	g_debug( "%s: main_window=%p, template=%p, ledger=%s",
-			thisfn, ( void * ) main_window, ( void * ) template, ledger );
+	g_debug( "%s: main_window=%p, parent=%p, template=%p, ledger=%s",
+			thisfn, ( void * ) main_window, ( void * ) parent, ( void * ) template, ledger );
 
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 	g_return_if_fail( !template || OFO_IS_OPE_TEMPLATE( template ));
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_PROPERTIES, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 	priv->ope_template = template;
@@ -594,9 +597,9 @@ set_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_ACCOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
-	ofa_iaccount_entry_init(
-			OFA_IACCOUNT_ENTRY( self ), entry,
-			OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))), ACCOUNT_ALLOW_DETAIL );
+	ofa_ientry_account_init(
+			OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))),
+			entry, ACCOUNT_ALLOW_DETAIL );
 
 	/* account locked */
 	toggle = gtk_check_button_new();
@@ -697,10 +700,10 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 }
 
 /*
- * ofaIAccountEntry interface management
+ * ofaIEntryAccount interface management
  */
 static void
-iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
 {
 	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
 

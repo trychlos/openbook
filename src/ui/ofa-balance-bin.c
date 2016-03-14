@@ -39,7 +39,6 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"
 #include "ui/ofa-balance-bin.h"
 

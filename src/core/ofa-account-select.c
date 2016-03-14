@@ -35,11 +35,10 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-account-select.h"
+#include "core/ofa-account-store.h"
+#include "core/ofa-account-frame-bin.h"
 #include "core/ofa-main-window.h"
-
-#include "ui/ofa-account-select.h"
-#include "ui/ofa-account-store.h"
-#include "ui/ofa-account-frame-bin.h"
 
 /* private instance data
  */
@@ -61,7 +60,7 @@ struct _ofaAccountSelectPrivate {
 	gchar               *account_number;
 };
 
-static const gchar      *st_resource_ui = "/org/trychlos/openbook/ui/ofa-account-select.ui";
+static const gchar      *st_resource_ui = "/org/trychlos/openbook/core/ofa-account-select.ui";
 static ofaAccountSelect *st_this        = NULL;
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
@@ -154,6 +153,7 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 /**
  * ofa_account_select_run:
  * @main_window: the #ofaMainWindow main window of the application.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @asked_number: [allow-none]: the initially selected account identifier.
  * @allowed: flags which qualifies the allowed selection (see ofoAccount.h).
  *
@@ -161,20 +161,21 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
  * that must be g_free() by the caller.
  */
 gchar *
-ofa_account_select_run( const ofaMainWindow *main_window, const gchar *asked_number, ofeAccountAllowed allowed )
+ofa_account_select_run( ofaMainWindow *main_window, GtkWindow *parent, const gchar *asked_number, ofeAccountAllowed allowed )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
 	gchar *selected_id;
 
-	g_debug( "%s: main_window=%p, asked_number=%s",
-			thisfn, ( void * ) main_window, asked_number );
+	g_debug( "%s: main_window=%p, parent=%p, asked_number=%s, allowed=%u",
+			thisfn, ( void * ) main_window, ( void * ) parent, asked_number, allowed );
 
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
 
 	if( !st_this ){
 		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
 		my_iwindow_set_main_window( MY_IWINDOW( st_this ), GTK_APPLICATION_WINDOW( main_window ));
+		my_iwindow_set_parent( MY_IWINDOW( st_this ), parent );
 
 		priv = ofa_account_select_get_instance_private( st_this );
 

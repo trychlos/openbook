@@ -34,7 +34,6 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 
-#include "ui/ofa-account-select.h"
 #include "ui/ofa-account-filter-vv-bin.h"
 #include "ui/ofa-account-book-bin.h"
 

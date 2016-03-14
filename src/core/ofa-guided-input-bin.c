@@ -35,6 +35,7 @@
 #include "api/my-editable-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -46,11 +47,10 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
+#include "core/ofa-account-select.h"
 #include "core/ofa-main-window.h"
+#include "core/ofa-guided-input-bin.h"
 
-#include <ui/ofa-iaccount-entry.h>
-#include "ui/ofa-account-select.h"
-#include "ui/ofa-guided-input-bin.h"
 #include "ui/ofa-ledger-combo.h"
 
 /* private instance data
@@ -208,14 +208,14 @@ static guint st_signals[ N_SIGNALS ]        = { 0 };
 static GDate st_last_dope                   = { 0 };
 static GDate st_last_deff                   = { 0 };
 
-static const gchar *st_resource_image_empty = "/org/trychlos/openbook/ui/filler.png";
-static const gchar *st_resource_image_check = "/org/trychlos/openbook/ui/ofa-guided-input-bin-green-checkmark.png";
-static const gchar *st_resource_ui          = "/org/trychlos/openbook/ui/ofa-guided-input-bin.ui";
+static const gchar *st_resource_image_empty = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_image_check = "/org/trychlos/openbook/core/ofa-guided-input-bin-green-checkmark.png";
+static const gchar *st_resource_ui          = "/org/trychlos/openbook/core/ofa-guided-input-bin.ui";
 
 static void              setup_main_window( ofaGuidedInputBin *self );
 static void              setup_dialog( ofaGuidedInputBin *self );
-static void              iaccount_entry_iface_init( ofaIAccountEntryInterface *iface );
-static gchar            *iaccount_entry_on_post_select( ofaIAccountEntry *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id );
+static void              iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
+static gchar            *iaccount_entry_on_post_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id );
 static void              init_model_data( ofaGuidedInputBin *self );
 static void              add_entry_row( ofaGuidedInputBin *self, gint i );
 static void              add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row );
@@ -255,7 +255,7 @@ static void              on_hub_deleted_object( const ofaHub *hub, const ofoBase
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaGuidedInputBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_ENTRY, iaccount_entry_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init ))
 
 static void
 guided_input_bin_finalize( GObject *instance )
@@ -510,10 +510,10 @@ setup_dialog( ofaGuidedInputBin *self )
 }
 
 /*
- * ofaIAccountEntry interface management
+ * ofaIEntryAccount interface management
  */
 static void
-iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
+iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
 {
 	static const gchar *thisfn = "ofa_guided_input_bin_iaccount_entry_iface_init";
 
@@ -523,7 +523,7 @@ iaccount_entry_iface_init( ofaIAccountEntryInterface *iface )
 }
 
 static gchar *
-iaccount_entry_on_post_select( ofaIAccountEntry *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id )
+iaccount_entry_on_post_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id )
 {
 	ofaGuidedInputBinPrivate *priv;
 	sEntryData *sdata;
@@ -754,9 +754,9 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 		}
 
 		if( col_def->column_id == OPE_COL_ACCOUNT && !locked ){
-			ofa_iaccount_entry_init(
-					OFA_IACCOUNT_ENTRY( self ), GTK_ENTRY( widget ),
-					OFA_MAIN_WINDOW( priv->main_window ), ACCOUNT_ALLOW_DETAIL );
+			ofa_ientry_account_init(
+					OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( priv->main_window ),
+					GTK_ENTRY( widget ), ACCOUNT_ALLOW_DETAIL );
 		}
 	}
 
@@ -972,11 +972,17 @@ do_account_selection( ofaGuidedInputBin *self, GtkEntry *entry, gint row )
 {
 	ofaGuidedInputBinPrivate *priv;
 	gchar *number;
+	GtkWidget *toplevel;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( entry ));
+
 	number = ofa_account_select_run(
-			priv->main_window, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
+					OFA_MAIN_WINDOW( priv->main_window ),
+					toplevel ? GTK_WINDOW( toplevel ) : NULL,
+					gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
+
 	if( my_strlen( number )){
 		priv->focused_row = row;
 		priv->focused_column = OPE_COL_ACCOUNT;

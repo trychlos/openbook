@@ -41,6 +41,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-guided-input.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/my-tab.h"
@@ -60,7 +61,6 @@
 #include "ui/ofa-exercice-close-assistant.h"
 #include "ui/ofa-export-assistant.h"
 #include "ui/ofa-guided-ex.h"
-#include "ui/ofa-guided-input.h"
 #include "ui/ofa-import-assistant.h"
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-book-render.h"

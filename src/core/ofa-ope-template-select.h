@@ -69,7 +69,8 @@ typedef struct {
 GType  ofa_ope_template_select_get_type( void ) G_GNUC_CONST;
 
 gchar *ofa_ope_template_select_run     ( ofaMainWindow *main_window,
-													const gchar *asked_mnemo );
+												GtkWindow *parent,
+												const gchar *asked_mnemo );
 
 G_END_DECLS
 

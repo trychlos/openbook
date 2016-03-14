@@ -38,11 +38,11 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-account-properties.h"
+#include "core/ofa-account-frame-bin.h"
+#include "core/ofa-account-store.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-account-properties.h"
-#include "ui/ofa-account-frame-bin.h"
-#include "ui/ofa-account-store.h"
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-reconcil-page.h"
 #include "ui/ofa-settlement-page.h"
@@ -865,7 +865,7 @@ ofa_account_frame_bin_set_selected( ofaAccountFrameBin *bin, const gchar *number
 	static const gchar *thisfn = "ofa_account_frame_bin_set_selected";
 	ofaAccountFrameBinPrivate *priv;
 
-	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
+	g_debug( "%s: bin=%p, number=%s", thisfn, ( void * ) bin, number );
 
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
@@ -1209,22 +1209,30 @@ tview_select_row_by_number( ofaAccountFrameBin *self, const gchar *number )
 	GtkTreeModel *tfilter;
 	GtkTreeIter store_iter, filter_iter;
 	GtkTreePath *path;
+	gint acc_class;
+	gboolean valid;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	if( my_strlen( number )){
-		page_w = book_get_page_by_class( self,
-							ofo_account_get_class_from_number( number ), FALSE );
-		if( page_w ){
-			page_n = gtk_notebook_page_num( GTK_NOTEBOOK( priv->notebook ), page_w );
-			gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), page_n );
+		acc_class = ofo_account_get_class_from_number( number );
+		page_w = book_get_page_by_class( self, acc_class, FALSE );
+		/* asked page is empty */
+		if( !page_w ){
+			return;
+		}
+		page_n = gtk_notebook_page_num( GTK_NOTEBOOK( priv->notebook ), page_w );
+		gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), page_n );
 
-			ofa_account_store_get_by_number( priv->store, number, &store_iter );
-			tview = my_utils_container_get_child_by_type(
-							GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
-			tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
-			gtk_tree_model_filter_convert_child_iter_to_iter(
-					GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter );
+		valid = ofa_account_store_get_by_number( priv->store, number, &store_iter );
+		g_return_if_fail( valid );
+
+		tview = my_utils_container_get_child_by_type(
+						GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+		tfilter = gtk_tree_view_get_model( GTK_TREE_VIEW( tview ));
+
+		if( gtk_tree_model_filter_convert_child_iter_to_iter(
+					GTK_TREE_MODEL_FILTER( tfilter ), &filter_iter, &store_iter )){
 
 			path = gtk_tree_model_get_path( tfilter, &filter_iter );
 			gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );

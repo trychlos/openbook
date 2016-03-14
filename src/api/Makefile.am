@@ -44,6 +44,8 @@ api_include_HEADERS = \
 	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
+	ofa-ientry-account.h								\
+	ofa-ientry-ope-template.h							\
 	ofa-iexeclose-close.h								\
 	ofa-iexportable.h									\
 	ofa-ihubber.h										\

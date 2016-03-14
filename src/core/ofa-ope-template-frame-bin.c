@@ -37,12 +37,11 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
+#include "core/ofa-guided-input.h"
 #include "core/ofa-main-window.h"
-
-#include "ui/ofa-guided-input.h"
-#include "ui/ofa-ope-template-frame-bin.h"
-#include "ui/ofa-ope-template-properties.h"
-#include "ui/ofa-ope-template-store.h"
+#include "core/ofa-ope-template-frame-bin.h"
+#include "core/ofa-ope-template-properties.h"
+#include "core/ofa-ope-template-store.h"
 
 /* private instance data
  */
@@ -1155,7 +1154,7 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gint page_n;
-	GtkWidget *page_w;
+	GtkWidget *page_w, *toplevel;
 	const gchar *ledger;
 	sPageData *sdata;
 
@@ -1173,7 +1172,13 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 	}
 
 	ope = ofo_ope_template_new();
-	ofa_ope_template_properties_run( priv->main_window, ope, ledger );
+
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+
+	ofa_ope_template_properties_run(
+			OFA_MAIN_WINDOW( priv->main_window ),
+			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
+			ope, ledger );
 }
 
 static void
@@ -1181,13 +1186,19 @@ do_update_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
+	GtkWidget *toplevel;
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
-	ofa_ope_template_properties_run( priv->main_window, ope, NULL );
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+
+	ofa_ope_template_properties_run(
+			OFA_MAIN_WINDOW( priv->main_window ),
+			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
+			ope, NULL );
 }
 
 static void

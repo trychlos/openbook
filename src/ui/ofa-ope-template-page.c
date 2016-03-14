@@ -39,8 +39,8 @@
 
 #include "core/ofa-main-window.h"
 
-#include "ui/ofa-ope-template-properties.h"
-#include "ui/ofa-ope-template-frame-bin.h"
+#include <core/ofa-ope-template-properties.h>
+#include <core/ofa-ope-template-frame-bin.h>
 #include "ui/ofa-ope-template-page.h"
 
 /* private instance data
@@ -173,7 +173,8 @@ on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTempl
 		ope = ofo_ope_template_get_by_mnemo( hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
-		ofa_ope_template_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), ope, NULL );
+		ofa_ope_template_properties_run(
+				OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), NULL, ope, NULL );
 	}
 }
 static void

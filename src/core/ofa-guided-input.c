@@ -36,9 +36,8 @@
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-main-window.h"
-
-#include "ui/ofa-guided-input.h"
-#include "ui/ofa-guided-input-bin.h"
+#include "core/ofa-guided-input.h"
+#include "core/ofa-guided-input-bin.h"
 
 /* private instance data
  */
@@ -55,7 +54,7 @@ struct _ofaGuidedInputPrivate {
 	GtkWidget            *ok_btn;
 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-guided-input.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-guided-input.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );

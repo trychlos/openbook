@@ -69,7 +69,8 @@ typedef struct {
 
 GType ofa_ope_template_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_ope_template_properties_run     ( const ofaMainWindow *parent,
+void  ofa_ope_template_properties_run     ( ofaMainWindow *main_window,
+													GtkWindow *parent,
 													ofoOpeTemplate *template,
 													const gchar *ledger );
 
