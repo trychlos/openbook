@@ -27,6 +27,8 @@
 #endif
 
 #include "ofa-recurrent.h"
+#include "ofa-recurrent-dbmodel.h"
+#include "ofa-recurrent-execlose.h"
 
 /* private instance data
  */
@@ -65,9 +67,27 @@ ofa_recurrent_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
+	static const GInterfaceInfo idbmodel_iface_info = {
+		( GInterfaceInitFunc ) ofa_recurrent_dbmodel_iface_init,
+		NULL,
+		NULL
+	};
+
+	static const GInterfaceInfo iexeclose_iface_info = {
+		( GInterfaceInitFunc ) ofa_recurrent_execlose_iface_init,
+		NULL,
+		NULL
+	};
+
 	g_debug( "%s", thisfn );
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaRecurrent", &info, 0 );
+
+	g_type_module_add_interface(
+			module, st_module_type, OFA_TYPE_IDBMODEL, &idbmodel_iface_info );
+
+	g_type_module_add_interface(
+			module, st_module_type, OFA_TYPE_IEXECLOSE_CLOSE, &iexeclose_iface_info );
 }
 
 static void

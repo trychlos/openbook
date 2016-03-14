@@ -31,6 +31,23 @@
  * @include: openbook/ofa-recurrent.h
  *
  * Manage the recurrent operations.
+ *
+ * A recurrent operation is defined with:
+ * - an operation template, which must be fully defined (i.e. with
+ *   all needed amounts set), so that only an operation date is to
+ *   be added to get a valid operation
+ * - a periodicity (weekly, monthly, etc.).
+ *
+ * Recurrent operations can be  generated at any time.
+ * When a generation is run, a limit operation date must be provided be
+ * the user (defaults to day date).
+ *
+ * The plugin then proposes all operations which would have to be created
+ * since the last run date until the provided limit operation date. User
+ * may select the operations to be cancelled, validated or just pushed
+ * back until next generation.
+ *
+ * Validated operations are then be pushed into the accounting.
  */
 
 #include <glib-object.h>

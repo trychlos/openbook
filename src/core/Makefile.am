@@ -122,6 +122,8 @@ libofa_core_la_SOURCES = \
 	ofa-list-store.c									\
 	ofa-main-window.h									\
 	ofa-page.c											\
+	ofa-periodicity.c									\
+	ofa-periodicity-combo.c								\
 	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\

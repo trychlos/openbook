@@ -27,37 +27,90 @@ pkglib_LTLIBRARIES = libofa-recurrent.la
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
 
 AM_CPPFLAGS += \
-	-I $(top_srcdir)								\
-	-I $(top_srcdir)/src							\
-	$(OPENBOOK_CFLAGS)								\
-	-DG_LOG_DOMAIN=\"OFA\"							\
-	-DPROVIDER_ID=\"$(plugin_id)\"					\
-	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"		\
+	-I $(top_srcdir)									\
+	-I $(top_srcdir)/src								\
+	$(OPENBOOK_CFLAGS)									\
+	-DG_LOG_DOMAIN=\"OFA\"								\
+	-DPROVIDER_ID=\"$(plugin_id)\"						\
+	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"			\
+	$(NULL)
+
+resdir = $(srcdir)
+resxml = $(srcdir)/openbook.gresource.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
+openbook-resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
+openbook-resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
+
+openbook_built_sources = \
+	openbook-resources.c								\
+	openbook-resources.h								\
+	$(NULL)
+
+BUILT_SOURCES = \
+	$(openbook_built_sources)							\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(openbook_built_sources)							\
 	$(NULL)
 
 libofa_recurrent_la_SOURCES = \
-	ofa-module.c									\
-	ofa-recurrent.c									\
-	ofa-recurrent.h									\
+	$(BUILT_SOURCES)									\
+	ofa-module.c										\
+	ofa-recurrent.c										\
+	ofa-recurrent.h										\
+	ofa-recurrent-dbmodel.c								\
+	ofa-recurrent-dbmodel.h								\
+	ofa-recurrent-execlose.c							\
+	ofa-recurrent-execlose.h							\
+	ofa-recurrent-main.c								\
+	ofa-recurrent-main.h								\
+	ofa-recurrent-manage-page.c							\
+	ofa-recurrent-manage-page.h							\
+	ofa-recurrent-model-properties.c					\
+	ofa-recurrent-model-properties.h					\
+	ofa-recurrent-model-store.c							\
+	ofa-recurrent-model-store.h							\
+	ofa-recurrent-run-page.c							\
+	ofa-recurrent-run-page.h							\
+	ofo-recurrent-gen.c									\
+	ofo-recurrent-gen.h									\
+	ofo-recurrent-model.c								\
+	ofo-recurrent-model.h								\
+	ofo-recurrent-run.c									\
+	ofo-recurrent-run.h									\
 	$(NULL)
 
 libofa_recurrent_la_LIBADD = \
-	$(OPENBOOK_LIBS)								\
+	$(OPENBOOK_LIBS)									\
 	$(NULL)
 
 libofa_recurrent_la_LDFLAGS = \
-	-module 										\
-	-no-undefined									\
-	-avoid-version									\
+	-module 											\
+	-no-undefined										\
+	-avoid-version										\
+	$(NULL)
+
+resources_ui = \
+	ofa-recurrent-model-properties.ui					\
+	ofa-recurrent-run-page.ui							\
 	$(NULL)
 
 images_files = \
 	$(NULL)
 
 plugin_data_DATA = \
-	$(images_files)									\
+	$(images_files)										\
+	$(NULL)
+
+CLEANFILES = \
+	$(BUILT_SOURCES)									\
 	$(NULL)
 
 EXTRA_DIST = \
-	$(plugin_data_DATA)								\
+	$(plugin_data_DATA)									\
+	$(resources_ui)										\
+	$(resxml)											\
 	$(NULL)

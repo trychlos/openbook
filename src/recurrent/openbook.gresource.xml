@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/trychlos/openbook/recurrent">
+    <file>ofa-recurrent-model-properties.ui</file>
+    <file>ofa-recurrent-run-page.ui</file>
+  </gresource>
+</gresources>
