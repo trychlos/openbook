@@ -191,7 +191,7 @@ am_libofa_core_la_OBJECTS = $(am__objects_2) my-date.lo \
 	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
 	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
 	ofa-ope-template-store.lo ofa-page.lo ofa-periodicity.lo \
-	ofa-periodicity-combo.lo ofa-plugin.lo ofa-preferences.lo \
+	ofa-periodicity-bin.lo ofa-plugin.lo ofa-preferences.lo \
 	ofa-settings.lo ofo-account.lo ofo-base.lo ofo-bat.lo \
 	ofo-bat-line.lo ofo-class.lo ofo-concil.lo ofo-currency.lo \
 	ofo-dossier.lo ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo \
@@ -564,7 +564,7 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-store.h							\
 	ofa-page.c											\
 	ofa-periodicity.c									\
-	ofa-periodicity-combo.c								\
+	ofa-periodicity-bin.c								\
 	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
@@ -783,7 +783,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity-combo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Plo@am__quote@

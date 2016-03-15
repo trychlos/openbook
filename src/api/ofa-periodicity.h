@@ -36,23 +36,41 @@
 
 G_BEGIN_DECLS
 
-/* Periodicity codes are listed here in alphabetical order
+/* Periodicity codes are listed here in code alphabetical order
  *  to make sure there is no duplicate
  */
 #define PER_MONTHLY                     "M"
-#define PER_WEEKLY                      "W"
 #define PER_NEVER                       "N"
+#define PER_WEEKLY                      "W"
+
+/* Detail for 'weekly' periodicity
+ */
+#define PER_WEEK_MONDAY                 "MON"
+#define PER_WEEK_TUESDAY                "TUE"
+#define PER_WEEK_WEDNESDAY              "WED"
+#define PER_WEEK_THURSDAY               "THU"
+#define PER_WEEK_FRIDAY                 "FRI"
+#define PER_WEEK_SATURDAY               "SAT"
+#define PER_WEEK_SUNDAY                 "SUN"
 
 /**
  * PeriodicityEnumCb:
  *
  * The #ofa_periodicity_enum() callback.
  */
-typedef void (*PeriodicityEnumCb)( const gchar *code, const gchar *label, void *user_data );
+typedef void (*PeriodicityEnumCb) ( const gchar *code, const gchar *label, void *user_data );
 
-gchar *ofa_periodicity_get_label( const gchar *periodicity );
+gchar *ofa_periodicity_get_label       ( const gchar *periodicity );
 
-void   ofa_periodicity_enum     ( PeriodicityEnumCb fn, void *user_data );
+gchar *ofa_periodicity_get_detail_label( const gchar *periodicity,
+												const gchar *detail );
+
+void   ofa_periodicity_enum            ( PeriodicityEnumCb fn,
+												void *user_data );
+
+void   ofa_periodicity_enum_detail     ( const gchar *periodicity,
+												PeriodicityEnumCb fn,
+												void *user_data );
 
 G_END_DECLS
 

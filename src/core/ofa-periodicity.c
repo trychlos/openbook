@@ -46,6 +46,58 @@ static const sLabels st_labels[] = {
 		{ 0 }
 };
 
+/* weekly detail labels
+ */
+static const sLabels st_weekly_labels[] = {
+		{ PER_WEEK_MONDAY,    N_( "Monday" ) },
+		{ PER_WEEK_TUESDAY,   N_( "Tuesday" ) },
+		{ PER_WEEK_WEDNESDAY, N_( "Wednesday" ) },
+		{ PER_WEEK_THURSDAY,  N_( "Thursday" ) },
+		{ PER_WEEK_FRIDAY,    N_( "Friday" ) },
+		{ PER_WEEK_SATURDAY,  N_( "Saturday" ) },
+		{ PER_WEEK_SUNDAY,    N_( "Sunday" ) },
+		{ 0 }
+};
+
+/* monthly detail labels
+ */
+static const sLabels st_monthly_labels[] = {
+		{ "1",  N_( " 1" ) },
+		{ "2",  N_( " 2" ) },
+		{ "3",  N_( " 3" ) },
+		{ "4",  N_( " 4" ) },
+		{ "5",  N_( " 5" ) },
+		{ "6",  N_( " 6" ) },
+		{ "7",  N_( " 7" ) },
+		{ "8",  N_( " 8" ) },
+		{ "9",  N_( " 9" ) },
+		{ "10", N_( "10" ) },
+		{ "11", N_( "11" ) },
+		{ "12", N_( "12" ) },
+		{ "13", N_( "13" ) },
+		{ "14", N_( "14" ) },
+		{ "15", N_( "15" ) },
+		{ "16", N_( "16" ) },
+		{ "17", N_( "17" ) },
+		{ "18", N_( "18" ) },
+		{ "19", N_( "19" ) },
+		{ "20", N_( "20" ) },
+		{ "21", N_( "21" ) },
+		{ "22", N_( "22" ) },
+		{ "23", N_( "23" ) },
+		{ "24", N_( "24" ) },
+		{ "25", N_( "25" ) },
+		{ "26", N_( "26" ) },
+		{ "27", N_( "27" ) },
+		{ "28", N_( "28" ) },
+		{ "29", N_( "29" ) },
+		{ "30", N_( "30" ) },
+		{ "31", N_( "30" ) },
+		{ 0 }
+};
+
+static const sLabels *get_labels_for_periodicity( const gchar *periodicity );
+
 /**
  * ofa_periodicity_get_label:
  * @periodicity: the unlocalized periodicity code.
@@ -71,6 +123,38 @@ ofa_periodicity_get_label( const gchar *periodicity )
 }
 
 /**
+ * ofa_periodicity_get_detail_label:
+ * @periodicity: the unlocalized periodicity code.
+ * @detail: the unlocalized detail code.
+ *
+ * Returns: the corresponding localized label as a newly allocated string
+ * which should be g_free() by the caller.
+ */
+gchar *
+ofa_periodicity_get_detail_label( const gchar *periodicity, const gchar *detail )
+{
+	gint i;
+	gchar *str;
+	const sLabels *labels;
+
+	labels = get_labels_for_periodicity( periodicity );
+
+	if( labels ){
+		for( i=0 ; labels[i].code ; ++i ){
+			if( !my_collate( labels[i].code, detail )){
+				return( g_strdup( labels[i].label ));
+			}
+		}
+		str = g_strdup_printf( _( "Unknown detail code %s for %s periodicity" ), detail, periodicity );
+		return( str );
+	}
+
+	str = g_strdup_printf( _( "Unknown periodicity code: %s" ), periodicity );
+
+	return( str );
+}
+
+/**
  * ofa_periodicity_enum:
  * @fn:
  * @user_data:
@@ -85,4 +169,45 @@ ofa_periodicity_enum( PeriodicityEnumCb fn, void *user_data )
 	for( i=0 ; st_labels[i].code ; ++i ){
 		( *fn )( st_labels[i].code, st_labels[i].label, user_data );
 	}
+}
+
+/**
+ * ofa_periodicity_enum_detail:
+ * @periodicity:
+ * @fn:
+ * @user_data:
+ *
+ * Enumerate the known detail for the @periodicity.
+ */
+void
+ofa_periodicity_enum_detail( const gchar *periodicity, PeriodicityEnumCb fn, void *user_data )
+{
+	gint i;
+	const sLabels *labels;
+
+	labels = get_labels_for_periodicity( periodicity );
+
+	if( labels ){
+		for( i=0 ; labels[i].code ; ++i ){
+			( *fn )( labels[i].code, labels[i].label, user_data );
+		}
+	}
+}
+
+static const sLabels *
+get_labels_for_periodicity( const gchar *periodicity )
+{
+	const sLabels *labels;
+
+	if( !my_collate( periodicity, PER_WEEKLY )){
+		labels = st_weekly_labels;
+
+	} else if( !my_collate( periodicity, PER_MONTHLY )){
+		labels = st_monthly_labels;
+
+	} else {
+		labels = NULL;
+	}
+
+	return( labels );
 }

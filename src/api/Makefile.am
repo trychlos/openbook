@@ -76,7 +76,7 @@ api_include_HEADERS = \
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
 	ofa-periodicity.h									\
-	ofa-periodicity-combo.h								\
+	ofa-periodicity-bin.h								\
 	ofa-plugin.h										\
 	ofa-preferences.h									\
 	\

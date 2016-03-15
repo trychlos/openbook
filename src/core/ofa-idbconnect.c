@@ -619,11 +619,13 @@ ofa_idbconnect_has_table( const ofaIDBConnect *connect, const gchar *table )
 
 	ok = ofa_idbconnect_query_ex( connect, query, &result, FALSE );
 	if( ok ){
-		icol = ( GSList * ) result->data;
-		if( icol && icol->data ){
-			found = TRUE;
+		if( result ){
+			icol = ( GSList * ) result->data;
+			if( icol && icol->data ){
+				found = TRUE;
+			}
+			ofa_idbconnect_free_results( result );
 		}
-		ofa_idbconnect_free_results( result );
 	}
 	g_free( query );
 

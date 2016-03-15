@@ -227,6 +227,13 @@ setup_model_treeview( ofaRecurrentManagePage *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Detail" ),
+			text_cell, "text", REC_MODEL_COL_PERIODICITY_DETAIL,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );

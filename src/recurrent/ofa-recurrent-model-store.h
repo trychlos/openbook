@@ -81,6 +81,7 @@ enum {
 	REC_MODEL_COL_LABEL,
 	REC_MODEL_COL_OPE_TEMPLATE,
 	REC_MODEL_COL_PERIODICITY,
+	REC_MODEL_COL_PERIODICITY_DETAIL,
 	REC_MODEL_COL_NOTES,
 	REC_MODEL_COL_UPD_USER,
 	REC_MODEL_COL_UPD_STAMP,
@@ -93,13 +94,14 @@ enum {
  * The columns displayed in the views.
  */
 typedef enum {
-	REC_MODEL_DISP_MNEMO        = 1 << 0,
-	REC_MODEL_DISP_LABEL        = 1 << 1,
-	REC_MODEL_DISP_OPE_TEMPLATE = 1 << 2,
-	REC_MODEL_DISP_PERIODICITY  = 1 << 3,
-	REC_MODEL_DISP_NOTES        = 1 << 4,
-	REC_MODEL_DISP_UPD_USER     = 1 << 5,
-	REC_MODEL_DISP_UPD_STAMP    = 1 << 6
+	REC_MODEL_DISP_MNEMO              = 1 << 0,
+	REC_MODEL_DISP_LABEL              = 1 << 1,
+	REC_MODEL_DISP_OPE_TEMPLATE       = 1 << 2,
+	REC_MODEL_DISP_PERIODICITY        = 1 << 3,
+	REC_MODEL_DISP_PERIODICITY_DETAIL = 1 << 4,
+	REC_MODEL_DISP_NOTES              = 1 << 5,
+	REC_MODEL_DISP_UPD_USER           = 1 << 6,
+	REC_MODEL_DISP_UPD_STAMP          = 1 << 7
 }
 	ofeRecurrentModelColumns;
 

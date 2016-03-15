@@ -79,6 +79,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( REC_PERIOD_DETAIL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( REC_NOTES ),
 				OFA_TYPE_STRING,
 				TRUE,
@@ -740,9 +744,9 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
-	query = g_string_new( "UPDATE REC_T_MOMDELS SET " );
+	query = g_string_new( "UPDATE REC_T_MODELS SET " );
 
-	if( g_utf8_collate( new_mnemo, prev_mnemo )){
+	if( my_collate( new_mnemo, prev_mnemo )){
 		g_string_append_printf( query, "REC_MNEMO='%s',", new_mnemo );
 	}
 

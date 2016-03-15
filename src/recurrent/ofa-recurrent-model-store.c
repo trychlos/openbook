@@ -29,6 +29,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-isingle-keeper.h"
+#include "api/ofa-periodicity.h"
 
 #include "recurrent/ofa-recurrent-model-store.h"
 #include "recurrent/ofo-recurrent-model.h"
@@ -44,7 +45,7 @@ struct _ofaRecurrentModelStorePrivate {
 
 static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */
-		G_TYPE_STRING, G_TYPE_STRING,					/* ope_template, periodicity */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ope_template, periodicity, detail */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoRecurrentModel itself */
 };
@@ -225,20 +226,25 @@ insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *
 static void
 set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model, GtkTreeIter *iter )
 {
-	gchar *stamp;
+	gchar *stamp, *sper, *sdet;
+	const gchar *periodicity;
 
 	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
+	periodicity = ofo_recurrent_model_get_periodicity( model );
+	sper = ofa_periodicity_get_label( periodicity );
+	sdet = ofa_periodicity_get_detail_label( periodicity, ofo_recurrent_model_get_periodicity_detail( model ));
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			REC_MODEL_COL_MNEMO,        ofo_recurrent_model_get_mnemo( model ),
-			REC_MODEL_COL_LABEL,        ofo_recurrent_model_get_label( model ),
-			REC_MODEL_COL_OPE_TEMPLATE, ofo_recurrent_model_get_ope_template( model ),
-			REC_MODEL_COL_PERIODICITY,  ofo_recurrent_model_get_periodicity( model ),
-			REC_MODEL_COL_UPD_USER,     ofo_recurrent_model_get_upd_user( model ),
-			REC_MODEL_COL_UPD_STAMP,    stamp,
-			REC_MODEL_COL_OBJECT,       model,
+			REC_MODEL_COL_MNEMO,              ofo_recurrent_model_get_mnemo( model ),
+			REC_MODEL_COL_LABEL,              ofo_recurrent_model_get_label( model ),
+			REC_MODEL_COL_OPE_TEMPLATE,       ofo_recurrent_model_get_ope_template( model ),
+			REC_MODEL_COL_PERIODICITY,        sper,
+			REC_MODEL_COL_PERIODICITY_DETAIL, sdet,
+			REC_MODEL_COL_UPD_USER,           ofo_recurrent_model_get_upd_user( model ),
+			REC_MODEL_COL_UPD_STAMP,          stamp,
+			REC_MODEL_COL_OBJECT,             model,
 			-1 );
 
 	g_free( stamp );

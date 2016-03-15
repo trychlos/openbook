@@ -116,7 +116,7 @@
                       <object class="GtkEntry" id="p1-label-entry">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="halign">start</property>
+                        <property name="hexpand">True</property>
                         <property name="max_length">256</property>
                         <property name="invisible_char">●</property>
                         <property name="max_width_chars">256</property>
@@ -145,6 +145,7 @@
                       <object class="GtkLabel" id="p1-ope-template-label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
                         <property name="xalign">0</property>
                       </object>
                       <packing>
@@ -180,7 +181,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="p1-period-parent">
+                      <object class="GtkBox" id="p1-periodicity-parent">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
@@ -191,10 +192,8 @@
                       <packing>
                         <property name="left_attach">1</property>
                         <property name="top_attach">4</property>
+                        <property name="width">2</property>
                       </packing>
-                    </child>
-                    <child>
-                      <placeholder/>
                     </child>
                     <child>
                       <placeholder/>

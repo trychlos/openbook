@@ -38,7 +38,7 @@
 #include "api/my-utils.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ientry-ope-template.h"
-#include "api/ofa-periodicity-combo.h"
+#include "api/ofa-periodicity-bin.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
@@ -68,7 +68,7 @@ struct _ofaRecurrentModelPropertiesPrivate {
 	GtkWidget           *label_entry;
 	GtkWidget           *ope_template_entry;
 	GtkWidget           *ope_template_label;
-	ofaPeriodicityCombo *periodicity_combo;
+	ofaPeriodicityBin   *periodicity_bin;
 
 	/* data
 	 */
@@ -77,6 +77,7 @@ struct _ofaRecurrentModelPropertiesPrivate {
 	gchar               *ope_template;
 	ofoOpeTemplate      *template_obj;
 	gchar               *periodicity;
+	gchar               *periodicity_detail;
 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-model-properties.ui";
@@ -92,7 +93,7 @@ static void     ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *i
 static void     on_mnemo_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
-static void     on_periodicity_changed( ofaPeriodicityCombo *combo, const gchar *code, ofaRecurrentModelProperties *self );
+static void     on_periodicity_changed( ofaPeriodicityBin *bin, const gchar *periodicity, const gchar *detail, ofaRecurrentModelProperties *self );
 static void     check_for_enable_dlg( ofaRecurrentModelProperties *self );
 static gboolean is_dialog_validable( ofaRecurrentModelProperties *self );
 static gboolean do_update( ofaRecurrentModelProperties *self, gchar **msgerr );
@@ -329,7 +330,7 @@ static void
 init_page_properties( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
-	GtkWidget *entry, *prompt, *label, *parent;
+	GtkWidget *entry, *prompt, *label, *parent, *combo;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
@@ -372,38 +373,38 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	priv->ope_template_label = label;
 
 	/* periodicity */
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-period-parent" );
-	g_return_if_fail( entry && GTK_IS_CONTAINER( parent ));
-	priv->periodicity_combo = ofa_periodicity_combo_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->periodicity_combo ));
-	g_signal_connect( priv->periodicity_combo, "ofa-changed", G_CALLBACK( on_periodicity_changed ), self );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-periodicity-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->periodicity_bin = ofa_periodicity_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->periodicity_bin ));
+	g_signal_connect( priv->periodicity_bin, "ofa-changed", G_CALLBACK( on_periodicity_changed ), self );
+	combo = ofa_periodicity_bin_get_periodicity_combo( priv->periodicity_bin );
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-period-prompt" );
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), GTK_WIDGET( priv->periodicity_combo ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), combo );
 }
 
 static void
 setup_data( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
+	const gchar *cstr, *cper, *cdet;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
-	priv->mnemo = g_strdup( ofo_recurrent_model_get_label( priv->recurrent_model ));
-	if( priv->mnemo ){
-		gtk_entry_set_text( GTK_ENTRY( priv->mnemo_entry ), priv->mnemo );
-	}
+	cstr = ofo_recurrent_model_get_mnemo( priv->recurrent_model );
+	gtk_entry_set_text( GTK_ENTRY( priv->mnemo_entry ), cstr ? cstr : "" );
 
-	priv->label = g_strdup( ofo_recurrent_model_get_label( priv->recurrent_model ));
-	if( priv->label ){
-		gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), priv->label );
-	}
+	cstr = ofo_recurrent_model_get_label( priv->recurrent_model );
+	gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), cstr ? cstr : "" );
 
-	priv->ope_template = g_strdup( ofo_recurrent_model_get_ope_template( priv->recurrent_model ));
-	if( priv->ope_template ){
-		gtk_entry_set_text( GTK_ENTRY( priv->ope_template_entry ), priv->ope_template );
-	}
+	cstr = ofo_recurrent_model_get_ope_template( priv->recurrent_model );
+	gtk_entry_set_text( GTK_ENTRY( priv->ope_template_entry ), cstr ? cstr : "" );
+
+	cper = ofo_recurrent_model_get_periodicity( priv->recurrent_model );
+	cdet = ofo_recurrent_model_get_periodicity_detail( priv->recurrent_model );
+	ofa_periodicity_bin_set_selected( priv->periodicity_bin, cper, cdet );
 }
 
 /*
@@ -462,14 +463,17 @@ on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self )
 }
 
 static void
-on_periodicity_changed( ofaPeriodicityCombo *combo, const gchar *code, ofaRecurrentModelProperties *self )
+on_periodicity_changed( ofaPeriodicityBin *bin, const gchar *periodicity, const gchar *detail, ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
 	g_free( priv->periodicity );
-	priv->periodicity = g_strdup( code );
+	priv->periodicity = g_strdup( periodicity );
+
+	g_free( priv->periodicity_detail );
+	priv->periodicity_detail = g_strdup( detail );
 
 	check_for_enable_dlg( self );
 }
@@ -548,7 +552,15 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	ofo_recurrent_model_set_label( priv->recurrent_model, priv->label );
 	ofo_recurrent_model_set_ope_template( priv->recurrent_model, priv->ope_template );
 	ofo_recurrent_model_set_periodicity( priv->recurrent_model, priv->periodicity );
+	ofo_recurrent_model_set_periodicity_detail( priv->recurrent_model, priv->periodicity_detail );
 	my_utils_container_notes_get( GTK_WINDOW( self ), recurrent_model );
+
+	/*
+	g_debug( "prev_mnemo=%s, mnemo=%s, label=%s",
+			prev_mnemo,
+			ofo_recurrent_model_get_mnemo( priv->recurrent_model ),
+			ofo_recurrent_model_get_label( priv->recurrent_model ));
+			*/
 
 	if( priv->is_new ){
 		ok = ofo_recurrent_model_insert( priv->recurrent_model, priv->hub );
