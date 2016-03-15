@@ -190,7 +190,7 @@ on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data
 
 	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
 
-	activate_theme( GTK_APPLICATION_WINDOW( user_data ), "recurrentdeclare" );
+	activate_theme( GTK_APPLICATION_WINDOW( user_data ), "recurrentrun" );
 }
 
 static void

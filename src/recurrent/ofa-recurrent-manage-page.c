@@ -61,6 +61,7 @@ struct _ofaRecurrentManagePagePrivate {
 	GtkWidget           *model_treeview;
 	GtkWidget           *update_btn;
 	GtkWidget           *delete_btn;
+	GtkWidget           *run_btn;
 };
 
 static GtkWidget         *v_setup_view( ofaPage *page );
@@ -77,6 +78,7 @@ static void               on_delete_clicked( GtkButton *button, ofaRecurrentMana
 static void               try_to_delete_current_row( ofaRecurrentManagePage *self );
 static void               do_delete( ofaRecurrentManagePage *self, ofoRecurrentModel *model, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean           delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
+static void               on_run_clicked( GtkButton *button, ofaRecurrentManagePage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentManagePage, ofa_recurrent_manage_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaRecurrentManagePage ))
@@ -267,6 +269,12 @@ v_setup_buttons( ofaPage *page )
 			ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
 
+	ofa_buttons_box_add_spacer( buttons_box );
+
+	priv->run_btn =
+			ofa_buttons_box_add_button_with_mnemonic(
+					buttons_box, _( "_Run at date..." ), G_CALLBACK( on_run_clicked ), page );
+
 	return( GTK_WIDGET( buttons_box ));
 }
 
@@ -333,6 +341,11 @@ on_row_selected( GtkTreeSelection *selection, ofaRecurrentManagePage *self )
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
 				priv->is_current && is_model && ofo_recurrent_model_is_deletable( model ));
+	}
+
+	if( priv->run_btn ){
+		gtk_widget_set_sensitive( priv->run_btn,
+				is_model );
 	}
 }
 
@@ -442,4 +455,18 @@ delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
 	g_free( msg );
 
 	return( delete_ok );
+}
+
+/*
+ * opening the Run page
+ */
+static void
+on_run_clicked( GtkButton *button, ofaRecurrentManagePage *self )
+{
+	gint theme;
+
+	theme = ofa_recurrent_main_get_theme( "recurrentrun" );
+	if( theme > 0 ){
+		ofa_main_window_activate_theme( OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), theme );
+	}
 }
