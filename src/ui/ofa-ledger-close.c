@@ -301,8 +301,7 @@ setup_date( ofaLedgerClose *self )
 	priv = ofa_ledger_close_get_instance_private( self );
 
 	priv->closing_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-date" );
-	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display());
+	g_return_if_fail( priv->closing_entry && GTK_IS_ENTRY( priv->closing_entry ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -310,9 +309,12 @@ setup_date( ofaLedgerClose *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_editable_date_init( GTK_EDITABLE( priv->closing_entry ));
+	my_editable_date_set_format( GTK_EDITABLE( priv->closing_entry ), ofa_prefs_date_display());
 	my_editable_date_set_label( GTK_EDITABLE( priv->closing_entry ), label, ofa_prefs_date_check());
 
-	g_signal_connect( G_OBJECT( priv->closing_entry ), "changed", G_CALLBACK( on_date_changed ), self );
+	g_signal_connect( priv->closing_entry, "changed", G_CALLBACK( on_date_changed ), self );
 }
 
 static void

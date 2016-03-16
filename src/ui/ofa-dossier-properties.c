@@ -324,7 +324,7 @@ static void
 init_properties_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GtkWidget *entry, *label, *parent;
+	GtkWidget *entry, *label, *parent, *prompt;
 	gchar *str;
 	ofaCurrencyCombo *c_combo;
 	ofaLedgerCombo *l_combo;
@@ -409,46 +409,60 @@ init_properties_page( ofaDossierProperties *self )
 	/* beginning date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-check" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
 	my_editable_date_init( GTK_EDITABLE( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
+
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
+
 	/* beginning date of the exercice cannot be modified if at least one
 	 * account has an opening balance (main reason is that we do not know
 	 * how to remediate this ;) */
 	my_date_set_from_date( &priv->begin_init, ofo_dossier_get_exe_begin( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-
 	/* ending date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-end-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-end-check" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
 	my_editable_date_init( GTK_EDITABLE( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
 	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
+
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
+
 	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-end-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-
 	/* last closed periode */
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), last_closed );
-
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
+	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_display()) : NULL;
+	gtk_label_set_text( GTK_LABEL( label ), str ? str : "" );
+	g_free( str );
 
 	/* the end of the exercice cannot be rewinded back before the last
 	 * close of the ledgers or the last closed period */

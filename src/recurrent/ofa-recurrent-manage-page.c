@@ -388,11 +388,11 @@ v_setup_buttons( ofaPage *page )
 
 	priv->generate_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "Generate new operations..." ), G_CALLBACK( action_on_generate_clicked ), page );
+					buttons_box, _( "_Generate new operations..." ), G_CALLBACK( action_on_generate_clicked ), page );
 	gtk_widget_set_sensitive( priv->generate_btn, priv->is_current );
 
 	btn = ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "View waiting operations..." ), G_CALLBACK( action_on_view_clicked ), page );
+					buttons_box, _( "_View waiting operations..." ), G_CALLBACK( action_on_view_clicked ), page );
 	gtk_widget_set_sensitive( btn, TRUE );
 
 	return( GTK_WIDGET( buttons_box ));

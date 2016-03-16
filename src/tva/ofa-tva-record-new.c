@@ -289,14 +289,11 @@ init_properties( ofaTVARecordNew *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
+	/* declaration date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), NULL );
-	my_utils_widget_set_editable( entry, TRUE );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	priv->end_date = entry;
+	my_utils_widget_set_editable( entry, TRUE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -304,7 +301,13 @@ init_properties( ofaTVARecordNew *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_editable_date_set_date( GTK_EDITABLE( entry ), NULL );
+
+	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 }
 
 static void

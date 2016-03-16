@@ -378,7 +378,7 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="p1-exe-begin-label">
+                              <object class="GtkLabel" id="p1-exe-begin-prompt">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">_From date :</property>
@@ -412,16 +412,16 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkLabel" id="p1-exe-end-label">
+                                  <object class="GtkLabel" id="p1-exe-end-prompt">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="margin_left">18</property>
+                                    <property name="margin_left">20</property>
                                     <property name="label" translatable="yes">_To date :</property>
                                     <property name="use_underline">True</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
-                                    <property name="left_attach">1</property>
+                                    <property name="left_attach">2</property>
                                     <property name="top_attach">0</property>
                                   </packing>
                                 </child>
@@ -436,7 +436,29 @@
                                     <property name="max_width_chars">10</property>
                                   </object>
                                   <packing>
-                                    <property name="left_attach">2</property>
+                                    <property name="left_attach">3</property>
+                                    <property name="top_attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="p1-exe-begin-check">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <property name="xalign">0</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">1</property>
+                                    <property name="top_attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel" id="p1-exe-end-check">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <property name="xalign">0</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">4</property>
                                     <property name="top_attach">0</property>
                                   </packing>
                                 </child>
@@ -447,10 +469,10 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel" id="p1-exe-closed-label">
+                              <object class="GtkLabel" id="label21">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="label" translatable="yes">_Last closed period :</property>
+                                <property name="label" translatable="yes">Last closed exercice :</property>
                                 <property name="use_underline">True</property>
                                 <property name="xalign">1</property>
                               </object>
@@ -460,14 +482,10 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkEntry" id="p1-exe-closed-entry">
+                              <object class="GtkLabel" id="p1-exe-closed-label">
                                 <property name="visible">True</property>
-                                <property name="can_focus">True</property>
-                                <property name="halign">start</property>
-                                <property name="max_length">10</property>
-                                <property name="invisible_char">●</property>
-                                <property name="width_chars">10</property>
-                                <property name="max_width_chars">10</property>
+                                <property name="can_focus">False</property>
+                                <property name="xalign">0</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -879,8 +897,8 @@
       <widget name="p1-ledger-label"/>
       <widget name="label121"/>
       <widget name="p1-exe-length-label"/>
-      <widget name="p1-exe-begin-label"/>
-      <widget name="p1-exe-closed-label"/>
+      <widget name="p1-exe-begin-prompt"/>
+      <widget name="label21"/>
     </widgets>
   </object>
 </interface>

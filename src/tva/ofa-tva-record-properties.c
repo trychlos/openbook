@@ -397,22 +397,24 @@ init_properties( ofaTVARecordProperties *self )
 	/* begin date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 	priv->begin_editable = entry;
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-date" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-
-	my_date_set_from_date( &priv->begin_date, ofo_tva_record_get_begin( priv->tva_record ));
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
-	my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-date" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+
+	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
+
+	my_date_set_from_date( &priv->begin_date, ofo_tva_record_get_begin( priv->tva_record ));
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
+	my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
 
 	/* do not let the user edit the ending date of the declaration
 	 * because this is a key of the record
@@ -421,22 +423,24 @@ init_properties( ofaTVARecordProperties *self )
 	 */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 	priv->end_editable = entry;
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-date" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-
-	my_date_set_from_date( &priv->end_date, ofo_tva_record_get_end( priv->tva_record ));
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end_date );
-	my_utils_widget_set_editable( entry, FALSE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-date" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+
+	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
+
+	my_date_set_from_date( &priv->end_date, ofo_tva_record_get_end( priv->tva_record ));
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end_date );
+	my_utils_widget_set_editable( entry, FALSE );
 }
 
 static void

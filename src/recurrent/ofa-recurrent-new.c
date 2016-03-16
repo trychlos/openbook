@@ -322,9 +322,10 @@ init_dates( ofaRecurrentNew *self )
 
 		my_date_set_from_date( &priv->begin_date, last_date );
 		g_date_add_days( &priv->begin_date, 1 );
+		my_date_set_from_date( &priv->end_date, &priv->begin_date );
 	}
 
-	/* (excluded) begin date */
+	/* (included) begin date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->begin_entry = entry;
@@ -338,11 +339,10 @@ init_dates( ofaRecurrentNew *self )
 
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( generate_on_begin_date_changed ), self );
-	generate_on_begin_date_changed( GTK_EDITABLE( entry ), self );
 
 	/* (included) end date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-end-entry" );
@@ -358,8 +358,8 @@ init_dates( ofaRecurrentNew *self )
 
 	my_editable_date_init( GTK_EDITABLE( entry ));
 	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
 	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end_date );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( generate_on_end_date_changed ), self );
 }
@@ -393,7 +393,8 @@ generate_on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *d
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
-	my_date_set_from_date( date, my_editable_date_get_date( editable, NULL ));
+	my_date_set_from_date( date, my_editable_date_get_date( editable, &valid ));
+	g_debug( "generate_on_date_changed: valid=%s", valid ? "True":"False" );
 	msgerr = NULL;
 	valid = TRUE;
 
@@ -456,6 +457,7 @@ generate_do( ofaRecurrentNew *self )
 	ofaRecurrentNewPrivate *priv;
 	GList *models_dataset, *it, *opes;
 	gchar *str;
+	gint count;
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
@@ -468,15 +470,26 @@ generate_do( ofaRecurrentNew *self )
 				generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date ));
 	}
 
+	count = g_list_length( opes );
 	ofa_recurrent_run_treeview_set_from_list( priv->tview, opes );
 
-	str = g_strdup_printf( _( "%d generated operations" ), g_list_length( opes ));
+	if( count == 0 ){
+		str = g_strdup( _( "No generated operation" ));
+	} else if( count == 1 ){
+		str = g_strdup( _( "One generated operation" ));
+	} else {
+		str = g_strdup_printf( _( "%d generated operations" ), count );
+	}
 	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
 	g_free( str );
 
 	priv->dataset = opes;
 
-	if( g_list_length( opes ) > 0 ){
+	if( count == 0 ){
+		gtk_widget_set_sensitive( priv->begin_entry, TRUE );
+		gtk_widget_set_sensitive( priv->end_entry, TRUE );
+
+	} else {
 		gtk_widget_set_sensitive( priv->reset_btn, TRUE );
 		gtk_widget_set_sensitive( priv->ok_btn, TRUE );
 
@@ -497,9 +510,6 @@ generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *
 
 	per_main = ofo_recurrent_model_get_periodicity( model );
 	per_detail = ofo_recurrent_model_get_periodicity_detail( model );
-
-	g_debug( "generate_do_opes: mnemo=%s, per_main=%s, per_detail=%s",
-			ofo_recurrent_model_get_mnemo( model ), per_main, per_detail );
 
 	sdata.self = self;
 	sdata.model = model;
@@ -522,11 +532,6 @@ generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 
 	priv = ofa_recurrent_new_get_instance_private( data->self );
 
-	gchar *str;
-	str = my_date_to_str( date, ofa_prefs_date_display());
-	g_debug( "generate_enum_dates_cb: date=%s", str );
-	g_free( str );
-
 	mnemo = ofo_recurrent_model_get_mnemo( data->model );
 	ope = ofo_recurrent_run_get_by_id( priv->hub, mnemo, date );
 
@@ -544,6 +549,7 @@ do_update( ofaRecurrentNew *self, gchar **msgerr )
 	ofaRecurrentNewPrivate *priv;
 	GList *it;
 	gchar *str;
+	gint count;
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
@@ -556,7 +562,14 @@ do_update( ofaRecurrentNew *self, gchar **msgerr )
 		}
 	}
 
-	str = g_strdup_printf( _( "%d successfully inserted operations" ), g_list_length( priv->dataset ));
+	count = g_list_length( priv->dataset );
+	ofo_recurrent_gen_set_last_run_date( priv->hub, &priv->end_date );
+
+	if( count == 1 ){
+		str = g_strdup( _( "One successfully inserted operation" ));
+	} else {
+		str = g_strdup_printf( _( "%d successfully inserted operations" ), count );
+	}
 	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
 	g_free( str );
 

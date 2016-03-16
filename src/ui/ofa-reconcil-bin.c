@@ -268,6 +268,7 @@ setup_date_selection( ofaReconcilBin *self )
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->date_entry = entry;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -282,8 +283,6 @@ setup_date_selection( ofaReconcilBin *self )
 	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), TRUE );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
-	priv->date_entry = entry;
-
 }
 
 static void

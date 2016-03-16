@@ -310,6 +310,10 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->from_entry = entry;
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
@@ -321,14 +325,14 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), filter );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-prompt" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
-
 	/* To: block */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->to_entry = entry;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -340,10 +344,6 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), filter );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-prompt" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
