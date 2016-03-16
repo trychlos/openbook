@@ -1483,7 +1483,7 @@ get_settings( ofaSettlementPage *self )
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	pos = cstr ? atoi( cstr ) : 0;
-	if( pos == 0 ){
+	if( pos <= 10 ){
 		pos = 150;
 	}
 	gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );

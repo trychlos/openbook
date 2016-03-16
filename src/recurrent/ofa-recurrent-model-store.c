@@ -50,6 +50,16 @@ static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_OBJECT									/* the #ofoRecurrentModel itself */
 };
 
+/* signals defined here
+ */
+enum {
+	INSERTED = 0,
+	REMOVED,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentModelStore *self );
 static void     load_dataset( ofaRecurrentModelStore *self, ofaHub *hub );
 static void     insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model );
@@ -124,6 +134,50 @@ ofa_recurrent_model_store_class_init( ofaRecurrentModelStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = recurrent_model_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_model_store_finalize;
+
+	/**
+	 * ofaRecurrentModelStore::ofa-inserted:
+	 *
+	 * This signal is sent on the #ofaRecurrentModelStore when a new
+	 * row is inserted.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaRecurrentModelStore *store,
+	 * 						gpointer              user_data );
+	 */
+	st_signals[ INSERTED ] = g_signal_new_class_handler(
+				"ofa-inserted",
+				OFA_TYPE_RECURRENT_MODEL_STORE,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
+
+	/**
+	 * ofaRecurrentModelStore::ofa-removed:
+	 *
+	 * This signal is sent on the #ofaRecurrentModelStore when a row is
+	 * removed.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaRecurrentModelStore *store,
+	 * 						gpointer              user_data );
+	 */
+	st_signals[ REMOVED ] = g_signal_new_class_handler(
+				"ofa-removed",
+				OFA_TYPE_RECURRENT_MODEL_STORE,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
 }
 
 /**
@@ -221,6 +275,8 @@ insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
 	set_row( self, hub, model, &iter );
+
+	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
@@ -338,6 +394,7 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *sel
 				ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object )), &iter )){
 
 			gtk_list_store_remove( GTK_LIST_STORE( self ), &iter );
+			g_signal_emit_by_name( self, "ofa-removed" );
 		}
 	}
 }

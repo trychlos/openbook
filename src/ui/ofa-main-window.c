@@ -1124,7 +1124,7 @@ pane_restore_position( GtkPaned *pane )
 
 	key = g_strdup_printf( "%s-pane", st_main_window_name );
 	pos = ofa_settings_user_get_uint( key );
-	if( pos == 0 ){
+	if( pos <= 10 ){
 		pos = 150;
 	}
 	gtk_paned_set_position( pane, pos );

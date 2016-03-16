@@ -34,6 +34,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
+#include "api/ofa-periodicity.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -41,6 +42,7 @@
 #include "core/ofa-main-window.h"
 
 #include "ofa-recurrent-run-page.h"
+#include "ofa-recurrent-run-treeview.h"
 #include "ofo-recurrent-run.h"
 
 /* priv instance data
@@ -49,56 +51,42 @@ struct _ofaRecurrentRunPagePrivate {
 
 	/* internals
 	 */
-	ofaHub            *hub;
-	gboolean           is_current;
+	ofaHub                  *hub;
+	gboolean                 is_current;
 
 	/* UI
 	 */
-	GtkWidget         *top_paned;
-	GtkWidget         *tview;
+	GtkWidget               *top_paned;
+	ofaRecurrentRunTreeview *tview;
+	GtkWidget               *cancelled_toggle;
+	GtkWidget               *waiting_toggle;
+	GtkWidget               *validated_toggle;
+	GtkWidget               *generated_toggle;
+	GtkWidget               *generate_btn;
 
-	/* sorting the view
+	/* filtering
 	 */
-	gint               sort_column_id;
-	gint               sort_sens;
-	GtkTreeViewColumn *sort_column;
+	gboolean                 cancelled_visible;
+	gboolean                 waiting_visible;
+	gboolean                 validated_visible;
+	gboolean                 generated_visible;
 };
-
-/* columns in the operation store
- */
-enum {
-	COL_MNEMO = 0,
-	COL_DATE,
-	COL_STATUS,
-	COL_OBJECT,
-	COL_N_COLUMNS
-};
-
-/* the id of the column is set against sortable columns */
-#define DATA_COLUMN_ID                  "ofa-data-column-id"
-
-/* it appears that Gtk+ displays a counter intuitive sort indicator:
- * when asking for ascending sort, Gtk+ displays a 'v' indicator
- * while we would prefer the '^' version -
- * we are defining the inverse indicator, and we are going to sort
- * in reverse order to have our own illusion
- */
-#define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-run-page.ui";
 static const gchar *st_page_settings    = "ofaRecurrentRunPage-settings";
 
 static GtkWidget       *v_setup_view( ofaPage *page );
 static void             setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent );
+static void             setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void             setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
+static void             setup_datas( ofaRecurrentRunPage *self );
 static GtkWidget       *v_get_top_focusable_widget( const ofaPage *page );
-static gboolean         tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunPage *self );
-static void             tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentRunPage *self );
-static void             tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentRunPage *self );
-static gint             tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunPage *self );
-static gint             tview_cmp_strings( ofaRecurrentRunPage *self, const gchar *stra, const gchar *strb );
 //static ofoRecurrentRun *treeview_get_selected( ofaRecurrentRunPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void             filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void             filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void             filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void             filter_on_generated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void             action_on_generate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
 static void             get_settings( ofaRecurrentRunPage *self );
 static void             set_settings( ofaRecurrentRunPage *self );
 
@@ -183,13 +171,16 @@ v_setup_view( ofaPage *page )
 	priv->is_current = ofo_dossier_is_current( dossier );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	gtk_widget_set_hexpand( page_widget, TRUE );
 	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, "RecurrentRunPageWindow", "top" );
 	g_return_val_if_fail( widget && GTK_IS_PANED( widget ), NULL );
 	priv->top_paned = widget;
 
 	setup_treeview( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
+	setup_filters( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
 	setup_actions( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
 
+	setup_datas( OFA_RECURRENT_RUN_PAGE( page ));
 	get_settings( OFA_RECURRENT_RUN_PAGE( page ));
 
 	return( page_widget );
@@ -201,115 +192,50 @@ v_setup_view( ofaPage *page )
 static void
 setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 {
-	static const gchar *thisfn = "ofa_recurrent_run_page_setup_treeview";
 	ofaRecurrentRunPagePrivate *priv;
-	GtkWidget *tview;
-	GtkListStore *store;
-	GtkTreeModel *tfilter, *tsort;
-	GtkTreeViewColumn *sort_column;
-	gint column_id;
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
+	GtkWidget *tview_parent;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	tview = my_utils_container_get_child_by_name( parent, "treeview" );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	priv->tview = tview;
+	tview_parent = my_utils_container_get_child_by_name( parent, "tview-parent" );
+	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	store = gtk_list_store_new(
-					COL_N_COLUMNS,
-					G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* mnemo, date, status */
-					G_TYPE_OBJECT );									/* ofoRecurrentRun object */
+	priv->tview = ofa_recurrent_run_treeview_new( priv->hub, TRUE );
+	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 
-	tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( store ), NULL );
-	g_object_unref( store );
+	gtk_widget_show_all( GTK_WIDGET( parent ));
+}
 
-	gtk_tree_model_filter_set_visible_func(
-			GTK_TREE_MODEL_FILTER( tfilter ),
-			( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row,
-			self,
-			NULL );
+/*
+ * initialize the filter area
+ */
+static void
+setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	GtkWidget *btn;
 
-	tsort = gtk_tree_model_sort_new_with_model( tfilter );
-	g_object_unref( tfilter );
+	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tsort );
-	g_object_unref( tsort );
+	btn = my_utils_container_get_child_by_name( parent, "p3-cancelled-btn" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->cancelled_toggle = btn;
+	g_signal_connect( btn, "toggled", G_CALLBACK( filter_on_cancelled_btn_toggled ), self );
 
-	g_debug( "%s: store=%p, tfilter=%p, tsort=%p",
-			thisfn, ( void * ) store, ( void * ) tfilter, ( void * ) tsort );
+	btn = my_utils_container_get_child_by_name( parent, "p3-waiting-btn" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->waiting_toggle = btn;
+	g_signal_connect( btn, "toggled", G_CALLBACK( filter_on_waiting_btn_toggled ), self );
 
-	/* default is to sort by ascending operation date
-	 */
-	sort_column = NULL;
-	if( priv->sort_column_id < 0 ){
-		priv->sort_column_id = COL_DATE;
-	}
-	if( priv->sort_sens < 0 ){
-		priv->sort_sens = OFA_SORT_ASCENDING;
-	}
+	btn = my_utils_container_get_child_by_name( parent, "p3-validated-btn" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->validated_toggle = btn;
+	g_signal_connect( btn, "toggled", G_CALLBACK( filter_on_validated_btn_toggled ), self );
 
-	column_id = COL_MNEMO;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Operation" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_DATE;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Date" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_STATUS;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Status" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( tview_on_selection_changed ), self );
-
-	/* default is to sort by ascending operation date
-	 */
-	g_return_if_fail( sort_column && GTK_IS_TREE_VIEW_COLUMN( sort_column ));
-	gtk_tree_view_column_set_sort_indicator( sort_column, TRUE );
-	priv->sort_column = sort_column;
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tsort ), priv->sort_column_id, priv->sort_sens );
+	btn = my_utils_container_get_child_by_name( parent, "p3-generated-btn" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->generated_toggle = btn;
+	g_signal_connect( btn, "toggled", G_CALLBACK( filter_on_generated_btn_toggled ), self );
 }
 
 /*
@@ -318,7 +244,28 @@ setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 static void
 setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 {
+	ofaRecurrentRunPagePrivate *priv;
+	GtkWidget *btn;
 
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	btn = my_utils_container_get_child_by_name( parent, "p2-generate-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	priv->generate_btn = btn;
+	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_generate_clicked ), self );
+}
+
+/*
+ * load the current datas
+ */
+static void
+setup_datas( ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	ofa_recurrent_run_treeview_set_from_db( priv->tview );
 }
 
 static GtkWidget *
@@ -330,133 +277,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
 
-	return( priv->tview );
-}
-
-/*
- * a row is visible depending of the status filter
- */
-static gboolean
-tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunPage *self )
-{
-	//ofaRecurrentRunPagePrivate *priv;
-	gboolean visible;
-	ofoRecurrentRun *object;
-
-	//priv = ofa_recurrent_run_page_get_instance_private( self );
-
-	visible = FALSE;
-
-	gtk_tree_model_get( tmodel, iter, COL_OBJECT, &object, -1 );
-	if( object ){
-		g_return_val_if_fail( OFO_IS_RECURRENT_RUN( object ), FALSE );
-		g_object_unref( object );
-		visible = TRUE;
-	}
-
-	return( visible );
-}
-
-/*
- * Gtk+ changes automatically the sort order
- * we reset yet the sort column id
- *
- * as a side effect of our inversion of indicators, clicking on a new
- * header makes the sort order descending as the default
- */
-static void
-tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentRunPage *self )
-{
-	ofaRecurrentRunPagePrivate *priv;
-	gint sort_column_id, new_column_id;
-	GtkSortType sort_order;
-	GtkTreeModel *tsort;
-
-	priv = ofa_recurrent_run_page_get_instance_private( self );
-
-	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-	gtk_tree_view_column_set_sort_indicator( column, TRUE );
-	priv->sort_column = column;
-
-	tsort = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->tview ));
-	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( tsort ), &sort_column_id, &sort_order );
-
-	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
-	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( tsort ), new_column_id, sort_order );
-
-	priv->sort_column_id = new_column_id;
-	priv->sort_sens = sort_order;
-
-	set_settings( self );
-}
-
-/*
- * sorting the store
- */
-static gint
-tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunPage *self )
-{
-	static const gchar *thisfn = "ofa_recurrent_run_page_tview_on_sort_model";
-	ofaRecurrentRunPagePrivate *priv;
-	gint cmp;
-	gchar *smnemoa, *sdatea, *statusa;
-	gchar *smnemob, *sdateb, *statusb;
-
-	gtk_tree_model_get( tmodel, a,
-			COL_MNEMO,  &smnemoa,
-			COL_DATE,   &sdatea,
-			COL_STATUS, &statusa,
-			-1 );
-
-	gtk_tree_model_get( tmodel, b,
-			COL_MNEMO,  &smnemob,
-			COL_DATE,   &sdateb,
-			COL_STATUS, &statusb,
-			-1 );
-
-	cmp = 0;
-
-	priv = ofa_recurrent_run_page_get_instance_private( self );
-
-	switch( priv->sort_column_id ){
-		case COL_MNEMO:
-			cmp = tview_cmp_strings( self, smnemoa, smnemob );
-			break;
-		case COL_DATE:
-			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display());
-			break;
-		case COL_STATUS:
-			cmp = tview_cmp_strings( self, statusa, statusb );
-			break;
-		default:
-			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
-			break;
-	}
-
-	g_free( statusa );
-	g_free( sdatea );
-	g_free( smnemoa );
-
-	g_free( statusb );
-	g_free( sdateb );
-	g_free( smnemob );
-
-	/* return -1 if a > b, so that the order indicator points to the smallest:
-	 * ^: means from smallest to greatest (ascending order)
-	 * v: means from greatest to smallest (descending order)
-	 */
-	return( -cmp );
-}
-
-static gint
-tview_cmp_strings( ofaRecurrentRunPage *self, const gchar *stra, const gchar *strb )
-{
-	return( my_collate( stra, strb ));
-}
-
-static void
-tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentRunPage *self )
-{
+	return( ofa_recurrent_run_treeview_get_treeview( priv->tview ));
 }
 
 #if 0
@@ -482,8 +303,70 @@ treeview_get_selected( ofaRecurrentRunPage *page, GtkTreeModel **tmodel, GtkTree
 }
 #endif
 
+static void
+filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	priv->cancelled_visible = gtk_toggle_button_get_active( button );
+
+	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_CANCELLED, priv->cancelled_visible );
+
+	set_settings( self );
+}
+
+static void
+filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	priv->waiting_visible = gtk_toggle_button_get_active( button );
+
+	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_WAITING, priv->waiting_visible );
+
+	set_settings( self );
+}
+
+static void
+filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	priv->validated_visible = gtk_toggle_button_get_active( button );
+
+	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_VALIDATED, priv->validated_visible );
+
+	set_settings( self );
+}
+
+static void
+filter_on_generated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	priv->generated_visible = gtk_toggle_button_get_active( button );
+
+	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_GENERATED, priv->generated_visible );
+
+	set_settings( self );
+}
+
+static void
+action_on_generate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
+{
+
+}
+
 /*
- * settings: sort_column_id;sort_sens;paned_position;
+ * settings: sort_column_id;sort_sens;paned_position;cancelled_visible;waiting_visible;validated_visible;generated_visible;
  */
 static void
 get_settings( ofaRecurrentRunPage *self )
@@ -491,7 +374,7 @@ get_settings( ofaRecurrentRunPage *self )
 	ofaRecurrentRunPagePrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
-	gint pos;
+	gint sort_column_id, sort_sens, pos;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
@@ -499,15 +382,13 @@ get_settings( ofaRecurrentRunPage *self )
 
 	it = slist ? slist : NULL;
 	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_column_id = atoi( cstr );
-	}
+	sort_column_id = cstr ? atoi( cstr ) : 0;
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_sens = atoi( cstr );
-	}
+	sort_sens = cstr ? atoi( cstr ) : 0;
+
+	ofa_recurrent_run_treeview_set_sort_settings( priv->tview, sort_column_id, sort_sens );
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
@@ -515,10 +396,38 @@ get_settings( ofaRecurrentRunPage *self )
 	if( my_strlen( cstr )){
 		pos = atoi( cstr );
 	}
-	if( pos == 0 ){
+	if( pos <= 10 ){
 		pos = 150;
 	}
 	gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->cancelled_toggle ), my_utils_boolean_from_str( cstr ));
+		filter_on_cancelled_btn_toggled( GTK_TOGGLE_BUTTON( priv->cancelled_toggle ), self );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->waiting_toggle ), my_utils_boolean_from_str( cstr ));
+		filter_on_waiting_btn_toggled( GTK_TOGGLE_BUTTON( priv->waiting_toggle ), self );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->validated_toggle ), my_utils_boolean_from_str( cstr ));
+		filter_on_validated_btn_toggled( GTK_TOGGLE_BUTTON( priv->validated_toggle ), self );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->generated_toggle ), my_utils_boolean_from_str( cstr ));
+		filter_on_generated_btn_toggled( GTK_TOGGLE_BUTTON( priv->generated_toggle ), self );
+	}
 
 	ofa_settings_free_string_list( slist );
 }
@@ -528,13 +437,19 @@ set_settings( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	gchar *str;
-	gint pos;
+	gint sort_column_id, sort_sens, pos;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
+	ofa_recurrent_run_treeview_get_sort_settings( priv->tview, &sort_column_id, &sort_sens );
 	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
 
-	str = g_strdup_printf( "%d;%d;%d;", priv->sort_column_id, priv->sort_sens, pos );
+	str = g_strdup_printf( "%d;%d;%d;%s;%s;%s;%s;",
+			sort_column_id, sort_sens, pos,
+			priv->cancelled_visible ? "True":"False",
+			priv->waiting_visible ? "True":"False",
+			priv->validated_visible ? "True":"False",
+			priv->generated_visible ? "True":"False" );
 
 	ofa_settings_user_set_string( st_page_settings, str );
 

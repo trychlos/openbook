@@ -39,6 +39,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
+#include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
 
 /* priv instance data
@@ -86,10 +87,30 @@ struct _ofoRecurrentRunPrivate {
 	void *empty;						/* so that gcc -pedantic is happy */
 };
 
+/* Status labels
+ */
+typedef struct {
+	const gchar *code;
+	const gchar *label;
+}
+	sLabels;
+
+static const sLabels st_labels[] = {
+		{ REC_STATUS_CANCELLED, N_( "Cancelled" )},
+		{ REC_STATUS_WAITING,   N_( "Waiting" )},
+		{ REC_STATUS_VALIDATED, N_( "Validated" )},
+		{ REC_STATUS_GENERATED, N_( "Generated" )},
+		{ 0 }
+};
+
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static void     recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
 static void     recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
 static gboolean model_do_insert( ofoRecurrentRun *model, const ofaIDBConnect *connect );
 static gboolean model_insert_main( ofoRecurrentRun *model, const ofaIDBConnect *connect );
+static gboolean model_do_update( ofoRecurrentRun *model, const ofaIDBConnect *connect );
+static gboolean model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect );
 static gint     model_cmp_by_mnemo( const ofoRecurrentRun *a, const gchar *mnemo );
 static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void     icollectionable_iface_init( ofaICollectionableInterface *iface );
@@ -152,6 +173,80 @@ ofo_recurrent_run_class_init( ofoRecurrentRunClass *klass )
 }
 
 /**
+ * ofo_recurrent_run_connect_handlers:
+ *
+ * As the signal connection is protected by a static variable, there is
+ * no need here to handle signal disconnection
+ */
+void
+ofo_recurrent_run_connect_handlers( const ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_connect_handlers";
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_signal_connect( G_OBJECT( hub ),
+				SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_hub_on_updated_object";
+	const gchar *mnemo;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				hub_update_recurrent_model_identifier( hub, mnemo, prev_id );
+			}
+		}
+	}
+}
+
+static gboolean
+hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_hub_update_recurrent_model_identifier";
+	gchar *query;
+	const ofaIDBConnect *connect;
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
+
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf(
+					"UPDATE REC_T_RUN "
+					"	SET REC_MNEMO='%s' "
+					"	WHERE REC_MNEMO='%s'",
+							mnemo, prev_id );
+
+	ok = ofa_idbconnect_query( connect, query, TRUE );
+
+	g_free( query );
+
+	ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_RUN );
+	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_RUN );
+
+	return( ok );
+}
+
+/**
  * ofo_recurrent_run_get_dataset:
  * @hub: the current #ofaHub object.
  *
@@ -169,6 +264,53 @@ ofo_recurrent_run_get_dataset( ofaHub *hub )
 }
 
 /**
+ * ofo_recurrent_run_get_by_id:
+ * @hub: the current #ofaHub object.
+ * @mnemo: the mnemonic identifier of the model.
+ * @date: the date of the recurrent operation.
+ *
+ * Returns: the found operation, if exists, or %NULL.
+ *
+ * The search is made whatever be the status of the operation.
+ * All operations are candidate to be retrieved.
+ *
+ * The returned object is owned by the @hub collector, and should not
+ * be released by the caller.
+ */
+ofoRecurrentRun *
+ofo_recurrent_run_get_by_id( ofaHub *hub, const gchar *mnemo, const GDate *date )
+{
+	GList *dataset, *it;
+	ofoRecurrentRun *ope;
+	const gchar *mnemo_ope;
+	const GDate *date_ope;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	if( !my_strlen( mnemo ) || !my_date_is_valid( date )){
+		return( NULL );
+	}
+
+	dataset = ofo_recurrent_run_get_dataset( hub );
+
+	for( it=dataset ; it ; it=it->next ){
+		ope = OFO_RECURRENT_RUN( it->data );
+
+		mnemo_ope = ofo_recurrent_run_get_mnemo( ope );
+		g_return_val_if_fail( my_strlen( mnemo_ope ), NULL );
+
+		date_ope = ofo_recurrent_run_get_date( ope );
+		g_return_val_if_fail( my_date_is_valid( date_ope ), NULL );
+
+		if( !my_collate( mnemo_ope, mnemo ) && !my_date_compare( date_ope, date )){
+			return( ope );
+		}
+	}
+
+	return( NULL );
+}
+
+/**
  * ofo_recurrent_run_new:
  */
 ofoRecurrentRun *
@@ -178,6 +320,8 @@ ofo_recurrent_run_new( void )
 
 	model = g_object_new( OFO_TYPE_RECURRENT_RUN, NULL );
 	OFO_BASE( model )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
+
+	ofo_recurrent_run_set_status( model, REC_STATUS_WAITING );
 
 	return( model );
 }
@@ -208,6 +352,28 @@ const gchar *
 ofo_recurrent_run_get_status( const ofoRecurrentRun *model )
 {
 	ofo_base_getter( RECURRENT_RUN, model, string, NULL, REC_STATUS );
+}
+
+/**
+ * ofo_recurrent_run_get_status_label:
+ *
+ * Returns: the label of the status, as a newly allocated string which
+ * should be g_free() by the caller.
+ */
+gchar *
+ofo_recurrent_run_get_status_label( const gchar *status )
+{
+	gint i;
+	gchar *str;
+
+	for( i=0 ; st_labels[i].code ; ++i ){
+		if( !my_collate( st_labels[i].code, status )){
+			return( g_strdup( st_labels[i].label ));
+		}
+	}
+
+	str = g_strdup_printf( _( "Unknown status: %s" ), status );
+	return( str );
 }
 
 /**
@@ -351,6 +517,89 @@ model_insert_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
 	recurrent_run_set_upd_stamp( model, &stamp );
 
 	g_string_free( query, TRUE );
+	g_free( stamp_str );
+	g_free( userid );
+
+	return( ok );
+}
+
+/**
+ * ofo_recurrent_run_update:
+ * @model:
+ * @prev_mnemo:
+ *
+ * Update the status.
+ */
+gboolean
+ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_update";
+	ofaHub *hub;
+	gboolean ok;
+
+	g_debug( "%s: model=%p",
+			thisfn, ( void * ) recurrent_run );
+
+	g_return_val_if_fail( recurrent_run && OFO_IS_RECURRENT_RUN( recurrent_run ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( recurrent_run )->prot->dispose_has_run, FALSE );
+
+	ok = FALSE;
+	hub = ofo_base_get_hub( OFO_BASE( recurrent_run ));
+
+	if( model_do_update( recurrent_run, ofa_hub_get_connect( hub ))){
+		ofa_icollector_sort_collection(
+				OFA_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_MODEL, ( GCompareFunc ) recurrent_run_cmp_by_ptr );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_run, NULL );
+		ok = TRUE;
+	}
+
+	return( ok );
+}
+
+static gboolean
+model_do_update( ofoRecurrentRun *model, const ofaIDBConnect *connect )
+{
+	return( model_update_main( model, connect ));
+}
+
+static gboolean
+model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
+{
+	gboolean ok;
+	GString *query;
+	gchar *userid, *sdate;
+	const gchar *status, *mnemo;
+	const GDate *date;
+	gchar *stamp_str;
+	GTimeVal stamp;
+
+	mnemo = ofo_recurrent_run_get_mnemo( model );
+	userid = ofa_idbconnect_get_account( connect );
+	my_utils_stamp_set_now( &stamp );
+	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
+
+	date = ofo_recurrent_run_get_date( model );
+	sdate = my_date_to_str( date, MY_DATE_SQL );
+
+	query = g_string_new( "UPDATE REC_T_RUN SET " );
+
+	status = ofo_recurrent_run_get_status( model );
+	g_string_append_printf( query, "REC_STATUS='%s',", status );
+
+	g_string_append_printf( query,
+			"	REC_UPD_USER='%s',REC_UPD_STAMP='%s'"
+			"	WHERE REC_MNEMO='%s' AND REC_DATE='%s'",
+					userid,
+					stamp_str,
+					mnemo, sdate );
+
+	ok = ofa_idbconnect_query( connect, query->str, TRUE );
+
+	recurrent_run_set_upd_user( model, userid );
+	recurrent_run_set_upd_stamp( model, &stamp );
+
+	g_string_free( query, TRUE );
+	g_free( sdate );
 	g_free( stamp_str );
 	g_free( userid );
 

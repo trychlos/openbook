@@ -56,20 +56,35 @@ G_BEGIN_DECLS
 /**
  * PeriodicityEnumCb:
  *
- * The #ofa_periodicity_enum() callback.
+ * The #ofa_periodicity_enum() and #ofa_periodicity_enum_detail()
+ * callbacks.
  */
-typedef void (*PeriodicityEnumCb) ( const gchar *code, const gchar *label, void *user_data );
+typedef void (*PeriodicityEnumCb)( const gchar *code, const gchar *label, void *user_data );
 
-gchar *ofa_periodicity_get_label       ( const gchar *periodicity );
+/**
+ * PeriodicityDatesCb:
+ *
+ * The #ofa_periodicity_enum_dates_between() callback.
+ */
+typedef void (*PeriodicityDatesCb)( const GDate *date, void *user_data );
 
-gchar *ofa_periodicity_get_detail_label( const gchar *periodicity,
+gchar *ofa_periodicity_get_label         ( const gchar *periodicity );
+
+gchar *ofa_periodicity_get_detail_label  ( const gchar *periodicity,
 												const gchar *detail );
 
-void   ofa_periodicity_enum            ( PeriodicityEnumCb fn,
+void   ofa_periodicity_enum              ( PeriodicityEnumCb fn,
 												void *user_data );
 
-void   ofa_periodicity_enum_detail     ( const gchar *periodicity,
+void   ofa_periodicity_enum_detail       ( const gchar *periodicity,
 												PeriodicityEnumCb fn,
+												void *user_data );
+
+void   ofa_periodicity_enum_dates_between( const gchar *periodicity,
+												const gchar *detail,
+												const GDate *begin,
+												const GDate *end,
+												PeriodicityDatesCb cb,
 												void *user_data );
 
 G_END_DECLS

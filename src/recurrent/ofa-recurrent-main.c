@@ -73,7 +73,7 @@ static const GActionEntry st_win_entries[] = {
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "recurrentrun", N_( "_Recurrent operations generation..." ) },
+		{ "recurrentrun", N_( "_Recurrent operations validation..." ) },
 		{ 0 }
 };
 
@@ -85,7 +85,7 @@ static const sItemDef st_items_ref[] = {
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "recurrentrun",  N_( "_Recurrent operations generation" ),  ofa_recurrent_run_page_get_type, FALSE, 0 },
+		{ "recurrentrun",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type, FALSE, 0 },
 		{ "recurrentmanage",  N_( "_Recurrent operations management" ),  ofa_recurrent_manage_page_get_type, FALSE, 0 },
 		{ 0 }
 };

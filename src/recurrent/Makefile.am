@@ -73,8 +73,12 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-model-properties.h					\
 	ofa-recurrent-model-store.c							\
 	ofa-recurrent-model-store.h							\
+	ofa-recurrent-new.c									\
+	ofa-recurrent-new.h									\
 	ofa-recurrent-run-page.c							\
 	ofa-recurrent-run-page.h							\
+	ofa-recurrent-run-treeview.c						\
+	ofa-recurrent-run-treeview.h						\
 	ofo-recurrent-gen.c									\
 	ofo-recurrent-gen.h									\
 	ofo-recurrent-model.c								\
@@ -94,7 +98,9 @@ libofa_recurrent_la_LDFLAGS = \
 	$(NULL)
 
 resources_ui = \
+	ofa-recurrent-manage-page.ui						\
 	ofa-recurrent-model-properties.ui					\
+	ofa-recurrent-new.ui								\
 	ofa-recurrent-run-page.ui							\
 	$(NULL)
 

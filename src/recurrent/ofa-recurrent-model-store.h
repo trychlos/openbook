@@ -42,6 +42,10 @@
  *
  * The #ofaRecurrentModelStore takes advantage of the hub signaling
  * system to maintain itself up to date.
+ *
+ * Signals defined here:
+ * - ofa-inserted: when a new row is inserted,
+ * - ofa-removed: when a row is removed.
  */
 
 #include "api/ofa-hub-def.h"

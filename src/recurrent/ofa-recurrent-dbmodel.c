@@ -37,6 +37,8 @@
 #include "ofa-recurrent.h"
 #include "ofa-recurrent-dbmodel.h"
 #include "ofo-recurrent-gen.h"
+#include "ofo-recurrent-model.h"
+#include "ofo-recurrent-run.h"
 
 /* a dedicated structure to hold needed datas
  */
@@ -148,6 +150,9 @@ idbmodel_connect_handlers( const ofaIDBModel *instance, const ofaHub *hub )
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_idbmodel_connect_handlers";
 
 	g_debug( "%s: instance=%p, hub=%p", thisfn, ( void * ) instance, ( void * ) hub );
+
+	ofo_recurrent_model_connect_handlers( hub );
+	ofo_recurrent_run_connect_handlers( hub );
 }
 
 static gboolean

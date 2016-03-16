@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_recurrent
  * @short_description: #ofaRecurrent class definition.
- * @include: openbook/ofa-recurrent.h
+ * @include: recurrent/ofa-recurrent.h
  *
  * Manage the recurrent operations.
  *

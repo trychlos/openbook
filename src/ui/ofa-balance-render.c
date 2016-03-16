@@ -1012,7 +1012,7 @@ get_settings( ofaBalanceRender *self )
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
 		pos = cstr ? atoi( cstr ) : 0;
-		if( pos == 0 ){
+		if( pos <= 10 ){
 			pos = 150;
 		}
 		paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));

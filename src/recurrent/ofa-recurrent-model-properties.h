@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_recurrent_model_properties
  * @short_description: #ofaRecurrentModelProperties class definition.
- * @include: ui/ofa-recurrent_model-properties.h
+ * @include: recurrent/ofa-recurrent_model-properties.h
  *
  * Create a new/Update the recurrent model properties.
  *

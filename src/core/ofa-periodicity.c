@@ -27,7 +27,9 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
+#include "api/my-date.h"
 #include "api/my-utils.h"
 #include "api/ofa-periodicity.h"
 
@@ -36,6 +38,12 @@ typedef struct {
 	const gchar *label;
 }
 	sLabels;
+
+typedef struct {
+	const gchar *code;
+	GDateWeekday weekday;
+}
+	sWeekdays;
 
 /* periodicity labels are listed here in display order
  */
@@ -49,17 +57,30 @@ static const sLabels st_labels[] = {
 /* weekly detail labels
  */
 static const sLabels st_weekly_labels[] = {
-		{ PER_WEEK_MONDAY,    N_( "Monday" ) },
-		{ PER_WEEK_TUESDAY,   N_( "Tuesday" ) },
-		{ PER_WEEK_WEDNESDAY, N_( "Wednesday" ) },
-		{ PER_WEEK_THURSDAY,  N_( "Thursday" ) },
-		{ PER_WEEK_FRIDAY,    N_( "Friday" ) },
-		{ PER_WEEK_SATURDAY,  N_( "Saturday" ) },
-		{ PER_WEEK_SUNDAY,    N_( "Sunday" ) },
+		{ PER_WEEK_MONDAY,    N_( "Monday" )},
+		{ PER_WEEK_TUESDAY,   N_( "Tuesday" )},
+		{ PER_WEEK_WEDNESDAY, N_( "Wednesday" )},
+		{ PER_WEEK_THURSDAY,  N_( "Thursday" )},
+		{ PER_WEEK_FRIDAY,    N_( "Friday" )},
+		{ PER_WEEK_SATURDAY,  N_( "Saturday" )},
+		{ PER_WEEK_SUNDAY,    N_( "Sunday" )},
+		{ 0 }
+};
+
+static const sWeekdays st_weekly_days[] = {
+		{ PER_WEEK_MONDAY,    G_DATE_MONDAY },
+		{ PER_WEEK_TUESDAY,   G_DATE_TUESDAY },
+		{ PER_WEEK_WEDNESDAY, G_DATE_WEDNESDAY },
+		{ PER_WEEK_THURSDAY,  G_DATE_THURSDAY },
+		{ PER_WEEK_FRIDAY,    G_DATE_FRIDAY },
+		{ PER_WEEK_SATURDAY,  G_DATE_SATURDAY },
+		{ PER_WEEK_SUNDAY,    G_DATE_SUNDAY },
 		{ 0 }
 };
 
 /* monthly detail labels
+ *
+ * Note that code is subject to atoi() interpretation.
  */
 static const sLabels st_monthly_labels[] = {
 		{ "1",  N_( " 1" ) },
@@ -97,6 +118,7 @@ static const sLabels st_monthly_labels[] = {
 };
 
 static const sLabels *get_labels_for_periodicity( const gchar *periodicity );
+static gint           get_weekday( const gchar *detail );
 
 /**
  * ofa_periodicity_get_label:
@@ -210,4 +232,63 @@ get_labels_for_periodicity( const gchar *periodicity )
 	}
 
 	return( labels );
+}
+
+/**
+ * ofa_periodicity_enum_dates_between:
+ * @periodicity: the periodicity code.
+ * @detail: the periodicity detail code.
+ * @begin: the beginning date.
+ * @end: the ending date.
+ * @cb: the user callback.
+ * @user_data: a user data provided pointer.
+ *
+ * Enumerates all valid dates between (excluded) @begin and (included)
+ * @end dates.
+ */
+void
+ofa_periodicity_enum_dates_between( const gchar *periodicity, const gchar *detail,
+										const GDate *begin, const GDate *end, PeriodicityDatesCb cb, void *user_data )
+{
+	GDate date;
+	GDateDay date_day;
+	GDateWeekday date_week;
+	gint detail_day, detail_week;
+
+	g_return_if_fail( my_date_is_valid( begin ));
+	g_return_if_fail( my_date_is_valid( end ));
+
+	my_date_set_from_date( &date, begin );
+	detail_day = my_collate( periodicity, PER_MONTHLY ) ? G_DATE_BAD_DAY : atoi( detail );
+	detail_week = my_collate( periodicity, PER_WEEKLY ) ? G_DATE_BAD_WEEKDAY : get_weekday( detail );
+
+	while( my_date_compare( &date, end ) <= 0 ){
+		g_date_add_days( &date, 1 );
+		if( !my_collate( periodicity, PER_MONTHLY )){
+			date_day = g_date_get_day( &date );
+			if( date_day == detail_day ){
+				( *cb )( &date, user_data );
+			}
+		}
+		if( !my_collate( periodicity, PER_WEEKLY )){
+			date_week = g_date_get_weekday( &date );
+			if( date_week == detail_week ){
+				( *cb )( &date, user_data );
+			}
+		}
+	}
+}
+
+static gint
+get_weekday( const gchar *detail )
+{
+	gint i;
+
+	for( i=0 ; st_weekly_days[i].code ; ++i ){
+		if( !my_collate( st_weekly_days[i].code, detail )){
+			return( st_weekly_days[i].weekday );
+		}
+	}
+
+	return( G_DATE_BAD_WEEKDAY );
 }

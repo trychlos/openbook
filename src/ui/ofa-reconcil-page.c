@@ -971,8 +971,7 @@ setup_manual_rappro( ofaReconcilPage *self, GtkContainer *parent )
 	my_editable_date_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
 	my_editable_date_set_label( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check());
 
-	g_signal_connect(
-			G_OBJECT( priv->date_concil ), "changed", G_CALLBACK( on_date_concil_changed ), self );
+	g_signal_connect( priv->date_concil, "changed", G_CALLBACK( on_date_concil_changed ), self );
 }
 
 /*
@@ -3682,7 +3681,7 @@ get_settings( ofaReconcilPage *self )
 		it = it ? it->next : NULL;
 		cstr = it ? it->data : NULL;
 		pos = cstr ? atoi( cstr ) : 0;
-		if( pos == 0 ){
+		if( pos <= 10 ){
 			pos = 150;
 		}
 		gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
