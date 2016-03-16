@@ -243,8 +243,7 @@ get_labels_for_periodicity( const gchar *periodicity )
  * @cb: the user callback.
  * @user_data: a user data provided pointer.
  *
- * Enumerates all valid dates between (excluded) @begin and (included)
- * @end dates.
+ * Enumerates all valid dates between @begin and @end included dates.
  */
 void
 ofa_periodicity_enum_dates_between( const gchar *periodicity, const gchar *detail,
@@ -263,7 +262,6 @@ ofa_periodicity_enum_dates_between( const gchar *periodicity, const gchar *detai
 	detail_week = my_collate( periodicity, PER_WEEKLY ) ? G_DATE_BAD_WEEKDAY : get_weekday( detail );
 
 	while( my_date_compare( &date, end ) <= 0 ){
-		g_date_add_days( &date, 1 );
 		if( !my_collate( periodicity, PER_MONTHLY )){
 			date_day = g_date_get_day( &date );
 			if( date_day == detail_day ){
@@ -276,6 +274,7 @@ ofa_periodicity_enum_dates_between( const gchar *periodicity, const gchar *detai
 				( *cb )( &date, user_data );
 			}
 		}
+		g_date_add_days( &date, 1 );
 	}
 }
 

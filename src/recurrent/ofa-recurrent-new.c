@@ -321,6 +321,7 @@ init_dates( ofaRecurrentNew *self )
 		g_free( str );
 
 		my_date_set_from_date( &priv->begin_date, last_date );
+		g_date_add_days( &priv->begin_date, 1 );
 	}
 
 	/* (excluded) begin date */
