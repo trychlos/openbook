@@ -79,23 +79,24 @@ static const gchar *st_page_settings    = "ofaRecurrentRunPage-settings";
 
 typedef void ( *ObjValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj );
 
-static GtkWidget       *v_setup_view( ofaPage *page );
-static void             setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent );
-static void             setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent );
-static void             setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
-static void             setup_datas( ofaRecurrentRunPage *self );
-static GtkWidget       *v_get_top_focusable_widget( const ofaPage *page );
-static void             filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
-static void             filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
-static void             filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
-static void             tview_on_selection_changed( ofaRecurrentRunTreeview *bin, GList *selected, ofaRecurrentRunPage *self );
-static void             action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self );
-static void             action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self );
-static void             action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
-static void             action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, ObjValidCb cb );
-static void             action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj );
-static void             get_settings( ofaRecurrentRunPage *self );
-static void             set_settings( ofaRecurrentRunPage *self );
+static GtkWidget *v_setup_view( ofaPage *page );
+static void       setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent );
+static void       setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent );
+static void       setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
+static void       setup_datas( ofaRecurrentRunPage *self );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void       filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void       filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
+static void       tview_on_selection_changed( ofaRecurrentRunTreeview *bin, GList *selected, ofaRecurrentRunPage *self );
+static void       tview_examine_selected( ofaRecurrentRunTreeview *bin, GList *selected, guint *cancelled, guint *waiting, guint *validated );
+static void       action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void       action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void       action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void       action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, ObjValidCb cb );
+static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj );
+static void       get_settings( ofaRecurrentRunPage *self );
+static void       set_settings( ofaRecurrentRunPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunPage, ofa_recurrent_run_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaRecurrentRunPage ))
@@ -341,15 +342,40 @@ static void
 tview_on_selection_changed( ofaRecurrentRunTreeview *bin, GList *selected, ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
-	gint count;
+	guint cancelled, waiting, validated;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	count = g_list_length( selected );
+	tview_examine_selected( bin, selected, &cancelled, &waiting, &validated );
 
-	gtk_widget_set_sensitive( priv->cancel_btn, count > 0 );
-	gtk_widget_set_sensitive( priv->wait_btn, count > 0 );
-	gtk_widget_set_sensitive( priv->validate_btn, count > 0 );
+	gtk_widget_set_sensitive( priv->cancel_btn, waiting > 0 );
+	gtk_widget_set_sensitive( priv->wait_btn, cancelled > 0 );
+	gtk_widget_set_sensitive( priv->validate_btn, waiting > 0 );
+}
+
+static void
+tview_examine_selected( ofaRecurrentRunTreeview *bin, GList *selected, guint *cancelled, guint *waiting, guint *validated )
+{
+	GList *it;
+	ofoRecurrentRun *obj;
+	const gchar *status;
+
+	*cancelled = 0;
+	*waiting = 0;
+	*validated = 0;
+
+	for( it=selected ; it ; it=it->next ){
+		obj = OFO_RECURRENT_RUN( it->data );
+		status = ofo_recurrent_run_get_status( obj );
+
+		if( !my_collate( status, REC_STATUS_CANCELLED )){
+			*cancelled += 1;
+		} else if( !my_collate( status, REC_STATUS_WAITING )){
+			*waiting += 1;
+		} else if( !my_collate( status, REC_STATUS_VALIDATED )){
+			*validated += 1;
+		}
+	}
 }
 
 static void
