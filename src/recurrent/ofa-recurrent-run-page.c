@@ -38,11 +38,16 @@
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-entry.h"
+#include "api/ofo-ledger.h"
+#include "api/ofo-ope-template.h"
+#include "api/ofs-ope.h"
 
 #include "core/ofa-main-window.h"
 
 #include "ofa-recurrent-run-page.h"
 #include "ofa-recurrent-run-treeview.h"
+#include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
 
 /* priv instance data
@@ -77,7 +82,7 @@ struct _ofaRecurrentRunPagePrivate {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-run-page.ui";
 static const gchar *st_page_settings    = "ofaRecurrentRunPage-settings";
 
-typedef void ( *ObjValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj );
+typedef void ( *RecurrentValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, guint *count );
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static void       setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent );
@@ -93,8 +98,8 @@ static void       tview_examine_selected( ofaRecurrentRunTreeview *bin, GList *s
 static void       action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self );
 static void       action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self );
 static void       action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
-static void       action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, ObjValidCb cb );
-static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj );
+static void       action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, RecurrentValidCb cb, void *user_data );
+static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, guint *count );
 static void       get_settings( ofaRecurrentRunPage *self );
 static void       set_settings( ofaRecurrentRunPage *self );
 
@@ -381,23 +386,43 @@ tview_examine_selected( ofaRecurrentRunTreeview *bin, GList *selected, guint *ca
 static void
 action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 {
-	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_CANCELLED, NULL );
+	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_CANCELLED, NULL, NULL );
 }
 
 static void
 action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 {
-	action_update_status( self, REC_STATUS_CANCELLED, REC_STATUS_WAITING, NULL );
+	action_update_status( self, REC_STATUS_CANCELLED, REC_STATUS_WAITING, NULL, NULL );
 }
 
 static void
 action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 {
-	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_VALIDATED, ( ObjValidCb ) action_on_object_validated );
+	guint count;
+	gchar *str;
+	GtkWidget *toplevel;
+
+	count = 0;
+	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_VALIDATED, ( RecurrentValidCb ) action_on_object_validated, &count );
+
+	if( count == 0 ){
+		str = g_strdup( _( "No created entry" ));
+	} else {
+		str = g_strdup_printf( _( "%u inserted entries" ), count );
+	}
+
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+
+	my_utils_msg_dialog(
+			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
+			GTK_MESSAGE_INFO,
+			str );
+
+	g_free( str );
 }
 
 static void
-action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, ObjValidCb cb )
+action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, RecurrentValidCb cb, void *user_data )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	GList *selected, *it;
@@ -414,7 +439,7 @@ action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, co
 		if( !my_collate( cur_status, allowed_status )){
 			ofo_recurrent_run_set_status( run_obj, new_status );
 			if( ofo_recurrent_run_update( run_obj ) && cb ){
-				( *cb )( self, run_obj );
+				( *cb )( self, run_obj, user_data );
 			}
 		}
 	}
@@ -423,9 +448,47 @@ action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, co
 }
 
 static void
-action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj )
+action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj, guint *count )
 {
-	g_debug( "action_on_object_validated" );
+	ofaRecurrentRunPagePrivate *priv;
+	const gchar *rec_id, *tmpl_id, *ledger_id;
+	ofoDossier *dossier;
+	ofoRecurrentModel *model;
+	ofoOpeTemplate *template_obj;
+	ofoLedger *ledger_obj;
+	ofsOpe *ope;
+	GList *entries, *it;
+	GDate dmin;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	dossier = ofa_hub_get_dossier( priv->hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+
+	rec_id = ofo_recurrent_run_get_mnemo( run_obj );
+	model = ofo_recurrent_model_get_by_mnemo( priv->hub, rec_id );
+	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+
+	tmpl_id = ofo_recurrent_model_get_ope_template( model );
+	template_obj = ofo_ope_template_get_by_mnemo( priv->hub, tmpl_id );
+	g_return_if_fail( template_obj && OFO_IS_OPE_TEMPLATE( template_obj ));
+
+	ledger_id = ofo_ope_template_get_ledger( template_obj );
+	ledger_obj = ofo_ledger_get_by_mnemo( priv->hub, ledger_id );
+	g_return_if_fail( ledger_obj && OFO_IS_LEDGER( ledger_obj ));
+
+	ope = ofs_ope_new( template_obj );
+	my_date_set_from_date( &ope->dope, ofo_recurrent_run_get_date( run_obj ));
+	ope->dope_user_set = TRUE;
+	ofo_dossier_get_min_deffect( dossier, ledger_obj, &dmin );
+	my_date_set_from_date( &ope->deffect, my_date_compare( &ope->dope, &dmin ) >= 0 ? &ope->dope : &dmin );
+	ofs_ope_apply_template( ope );
+	entries = ofs_ope_generate_entries( ope );
+
+	for( it=entries ; it ; it=it->next ){
+		ofo_entry_insert( OFO_ENTRY( it->data ), priv->hub );
+		*count += 1;
+	}
 }
 
 /*
