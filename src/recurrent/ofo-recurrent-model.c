@@ -175,15 +175,15 @@ ofo_recurrent_model_class_init( ofoRecurrentModelClass *klass )
 }
 
 /**
- * ofo_recurrent_model_connect_handlers:
+ * ofo_recurrent_model_connect_to_hub_handlers:
  *
  * As the signal connection is protected by a static variable, there is
  * no need here to handle signal disconnection
  */
 void
-ofo_recurrent_model_connect_handlers( const ofaHub *hub )
+ofo_recurrent_model_connect_to_hub_handlers( ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_recurrent_model_connect_handlers";
+	static const gchar *thisfn = "ofo_recurrent_model_connect_to_hub_handlers";
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
@@ -870,7 +870,7 @@ recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a, const ofoRecurrentModel 
 static void
 icollectionable_iface_init( ofaICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_recurrent_model_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

@@ -137,7 +137,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	void          ( *connect_handlers )     ( const ofaIDBModel *instance,
-													const ofaHub *hub );
+													ofaHub *hub );
 
 	/**
 	 * needs_update:
@@ -181,7 +181,7 @@ guint        ofa_idbmodel_get_interface_version     ( const ofaIDBModel *instanc
 
 gboolean     ofa_idbmodel_update                    ( ofaHub *hub );
 
-void         ofa_idbmodel_init_hub_signaling_system ( const ofaHub *hub );
+void         ofa_idbmodel_init_hub_signaling_system ( ofaHub *hub );
 
 ofaIDBModel *ofa_idbmodel_get_by_name               ( const gchar *name );
 

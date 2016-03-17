@@ -70,29 +70,29 @@ typedef struct {
 #define REC_STATUS_VALIDATED            "V"
 #define REC_STATUS_GENERATED            "G"
 
-GType            ofo_recurrent_run_get_type        ( void ) G_GNUC_CONST;
+GType            ofo_recurrent_run_get_type               ( void ) G_GNUC_CONST;
 
-void             ofo_recurrent_run_connect_handlers( const ofaHub *hub );
+void             ofo_recurrent_run_connect_to_hub_handlers( ofaHub *hub );
 
-GList           *ofo_recurrent_run_get_dataset     ( ofaHub *hub );
+GList           *ofo_recurrent_run_get_dataset            ( ofaHub *hub );
 
-ofoRecurrentRun *ofo_recurrent_run_get_by_id       ( ofaHub *hub, const gchar *mnemo, const GDate *date );
+ofoRecurrentRun *ofo_recurrent_run_get_by_id              ( ofaHub *hub, const gchar *mnemo, const GDate *date );
 
-ofoRecurrentRun *ofo_recurrent_run_new             ( void );
+ofoRecurrentRun *ofo_recurrent_run_new                    ( void );
 
-const gchar     *ofo_recurrent_run_get_mnemo       ( const ofoRecurrentRun *model );
-const GDate     *ofo_recurrent_run_get_date        ( const ofoRecurrentRun *model );
-const gchar     *ofo_recurrent_run_get_status      ( const ofoRecurrentRun *model );
-gchar           *ofo_recurrent_run_get_status_label( const gchar *status );
-const gchar     *ofo_recurrent_run_get_upd_user    ( const ofoRecurrentRun *model );
-const GTimeVal  *ofo_recurrent_run_get_upd_stamp   ( const ofoRecurrentRun *model );
+const gchar     *ofo_recurrent_run_get_mnemo              ( const ofoRecurrentRun *model );
+const GDate     *ofo_recurrent_run_get_date               ( const ofoRecurrentRun *model );
+const gchar     *ofo_recurrent_run_get_status             ( const ofoRecurrentRun *model );
+gchar           *ofo_recurrent_run_get_status_label       ( const gchar *status );
+const gchar     *ofo_recurrent_run_get_upd_user           ( const ofoRecurrentRun *model );
+const GTimeVal  *ofo_recurrent_run_get_upd_stamp          ( const ofoRecurrentRun *model );
 
-void             ofo_recurrent_run_set_mnemo       ( ofoRecurrentRun *model, const gchar *mnemo );
-void             ofo_recurrent_run_set_date        ( ofoRecurrentRun *model, const GDate *date );
-void             ofo_recurrent_run_set_status      ( ofoRecurrentRun *model, const gchar *status );
+void             ofo_recurrent_run_set_mnemo              ( ofoRecurrentRun *model, const gchar *mnemo );
+void             ofo_recurrent_run_set_date               ( ofoRecurrentRun *model, const GDate *date );
+void             ofo_recurrent_run_set_status             ( ofoRecurrentRun *model, const gchar *status );
 
-gboolean         ofo_recurrent_run_insert          ( ofoRecurrentRun *model, ofaHub *hub );
-gboolean         ofo_recurrent_run_update          ( ofoRecurrentRun *model );
+gboolean         ofo_recurrent_run_insert                 ( ofoRecurrentRun *model, ofaHub *hub );
+gboolean         ofo_recurrent_run_update                 ( ofoRecurrentRun *model );
 
 G_END_DECLS
 

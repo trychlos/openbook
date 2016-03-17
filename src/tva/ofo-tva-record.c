@@ -332,6 +332,24 @@ ofo_tva_record_class_init( ofoTVARecordClass *klass )
 }
 
 /**
+ * ofo_tva_record_connect_to_hub_handlers:
+ *
+ * As the signal connection is protected by a static variable, there is
+ * no need here to handle signal disconnection
+ */
+void
+ofo_tva_record_connect_to_hub_handlers( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_tva_record_connect_to_hub_handlers";
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	//g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+}
+
+/**
  * ofo_tva_record_get_dataset:
  * @hub: the current #ofaHub object.
  *
@@ -1675,7 +1693,7 @@ tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b )
 static void
 icollectionable_iface_init( ofaICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_tva_record_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

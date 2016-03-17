@@ -938,6 +938,7 @@ do_insert_dataset( ofaRecurrentRunTreeview *self, GList *dataset )
 	gtk_list_store_clear( priv->store );
 
 	for( it=dataset ; it ; it=it->next ){
+		g_debug( "it->data=%p", it->data );
 		g_return_if_fail( OFO_IS_RECURRENT_RUN( it->data ));
 		tview_insert_row( self, OFO_RECURRENT_RUN( it->data ));
 	}

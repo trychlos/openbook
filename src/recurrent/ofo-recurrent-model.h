@@ -61,39 +61,39 @@ typedef struct {
 }
 	ofoRecurrentModelClass;
 
-GType              ofo_recurrent_model_get_type              ( void ) G_GNUC_CONST;
+GType              ofo_recurrent_model_get_type               ( void ) G_GNUC_CONST;
 
-void               ofo_recurrent_model_connect_handlers      ( const ofaHub *hub );
+void               ofo_recurrent_model_connect_to_hub_handlers( ofaHub *hub );
 
-GList             *ofo_recurrent_model_get_dataset           ( ofaHub *hub );
-ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo          ( ofaHub *hub, const gchar *mnemo );
+GList             *ofo_recurrent_model_get_dataset            ( ofaHub *hub );
+ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
 
-gboolean           ofo_recurrent_model_use_ope_template      ( ofaHub *hub, const gchar *ope_template );
+gboolean           ofo_recurrent_model_use_ope_template       ( ofaHub *hub, const gchar *ope_template );
 
-ofoRecurrentModel *ofo_recurrent_model_new                   ( void );
+ofoRecurrentModel *ofo_recurrent_model_new                    ( void );
 
-const gchar       *ofo_recurrent_model_get_mnemo             ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_label             ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_ope_template      ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_periodicity       ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_periodicity_detail( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_notes             ( const ofoRecurrentModel *model );
-const gchar       *ofo_recurrent_model_get_upd_user          ( const ofoRecurrentModel *model );
-const GTimeVal    *ofo_recurrent_model_get_upd_stamp         ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_mnemo              ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_label              ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_ope_template       ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_periodicity        ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_periodicity_detail ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_notes              ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_upd_user           ( const ofoRecurrentModel *model );
+const GTimeVal    *ofo_recurrent_model_get_upd_stamp          ( const ofoRecurrentModel *model );
 
-gboolean           ofo_recurrent_model_is_deletable          ( const ofoRecurrentModel *model );
-gboolean           ofo_recurrent_model_is_valid_data         ( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, gchar **msgerr );
+gboolean           ofo_recurrent_model_is_deletable           ( const ofoRecurrentModel *model );
+gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, gchar **msgerr );
 
-void               ofo_recurrent_model_set_mnemo             ( ofoRecurrentModel *model, const gchar *mnemo );
-void               ofo_recurrent_model_set_label             ( ofoRecurrentModel *model, const gchar *label );
-void               ofo_recurrent_model_set_ope_template      ( ofoRecurrentModel *model, const gchar *ope_template );
-void               ofo_recurrent_model_set_periodicity       ( ofoRecurrentModel *model, const gchar *periodicity );
-void               ofo_recurrent_model_set_periodicity_detail( ofoRecurrentModel *model, const gchar *detail );
-void               ofo_recurrent_model_set_notes             ( ofoRecurrentModel *model, const gchar *notes );
+void               ofo_recurrent_model_set_mnemo              ( ofoRecurrentModel *model, const gchar *mnemo );
+void               ofo_recurrent_model_set_label              ( ofoRecurrentModel *model, const gchar *label );
+void               ofo_recurrent_model_set_ope_template       ( ofoRecurrentModel *model, const gchar *ope_template );
+void               ofo_recurrent_model_set_periodicity        ( ofoRecurrentModel *model, const gchar *periodicity );
+void               ofo_recurrent_model_set_periodicity_detail ( ofoRecurrentModel *model, const gchar *detail );
+void               ofo_recurrent_model_set_notes              ( ofoRecurrentModel *model, const gchar *notes );
 
-gboolean           ofo_recurrent_model_insert                ( ofoRecurrentModel *model, ofaHub *hub );
-gboolean           ofo_recurrent_model_update                ( ofoRecurrentModel *model, const gchar *prev_mnemo );
-gboolean           ofo_recurrent_model_delete                ( ofoRecurrentModel *model );
+gboolean           ofo_recurrent_model_insert                 ( ofoRecurrentModel *model, ofaHub *hub );
+gboolean           ofo_recurrent_model_update                 ( ofoRecurrentModel *model, const gchar *prev_mnemo );
+gboolean           ofo_recurrent_model_delete                 ( ofoRecurrentModel *model );
 
 G_END_DECLS
 

@@ -81,7 +81,7 @@ static sMigration st_migrates[] = {
 static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static void       idbmodel_connect_handlers( const ofaIDBModel *instance, const ofaHub *hub );
+static void       idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub );
 static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
@@ -145,14 +145,14 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *con
 }
 
 static void
-idbmodel_connect_handlers( const ofaIDBModel *instance, const ofaHub *hub )
+idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_idbmodel_connect_handlers";
 
 	g_debug( "%s: instance=%p, hub=%p", thisfn, ( void * ) instance, ( void * ) hub );
 
-	ofo_recurrent_model_connect_handlers( hub );
-	ofo_recurrent_run_connect_handlers( hub );
+	ofo_recurrent_model_connect_to_hub_handlers( hub );
+	ofo_recurrent_run_connect_to_hub_handlers( hub );
 }
 
 static gboolean

@@ -394,7 +394,6 @@ generate_on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *d
 	priv = ofa_recurrent_new_get_instance_private( self );
 
 	my_date_set_from_date( date, my_editable_date_get_date( editable, &valid ));
-	g_debug( "generate_on_date_changed: valid=%s", valid ? "True":"False" );
 	msgerr = NULL;
 	valid = TRUE;
 
@@ -547,6 +546,7 @@ static gboolean
 do_update( ofaRecurrentNew *self, gchar **msgerr )
 {
 	ofaRecurrentNewPrivate *priv;
+	ofoRecurrentRun *object;
 	GList *it;
 	gchar *str;
 	gint count;
@@ -554,12 +554,15 @@ do_update( ofaRecurrentNew *self, gchar **msgerr )
 	priv = ofa_recurrent_new_get_instance_private( self );
 
 	for( it=priv->dataset ; it ; it=it->next ){
-		if( !ofo_recurrent_run_insert( OFO_RECURRENT_RUN( it->data ), priv->hub )){
+		object = OFO_RECURRENT_RUN( it->data );
+		if( !ofo_recurrent_run_insert( object, priv->hub )){
 			if( msgerr ){
 				*msgerr = g_strdup( _( "Unable to insert a new operation" ));
 			}
 			return( FALSE );
 		}
+		/* this is the reference we just give to the collection dataset */
+		g_object_ref( object );
 	}
 
 	count = g_list_length( priv->dataset );

@@ -76,7 +76,7 @@ static gint st_signals[ N_SIGNALS ]     = { 0 };
 static void    icollector_iface_init( ofaICollectorInterface *iface );
 static guint   icollector_get_interface_version( const ofaICollector *instance );
 static void    isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
-static void    init_signaling_system( const ofaHub *hub );
+static void    init_signaling_system( ofaHub *hub );
 static void    check_db_vs_settings( const ofaHub *hub );
 static GSList *get_lines_from_content( const gchar *content, const ofaFileFormat *settings, guint *errors );
 static void    free_fields( GSList *fields );
@@ -410,16 +410,16 @@ ofa_hub_new_with_connect( const ofaIDBConnect *connect )
 }
 
 /*
- * be sure object class handlers are connected to the dossier signaling
+ * Be sure object class handlers are connected to the dossier signaling
  * system, as they may be needed before the class has the opportunity
  * to initialize itself
  *
- * example of a use case: the intermediate closing by ledger may be run
+ * Example of a use case: the intermediate closing by ledger may be run
  * without having first loaded the accounts, but the accounts should be
  * connected in order to update themselves.
  */
 static void
-init_signaling_system( const ofaHub *hub )
+init_signaling_system( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_hub_init_signaling_system";
 

@@ -162,8 +162,8 @@ struct _ofoTVAFormPrivate {
 	GList     *details;
 };
 
-static void        on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean    do_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean    hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
 static guint       form_count_for_account( const ofaIDBConnect *connect, const gchar *account );
 static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user );
@@ -283,31 +283,30 @@ ofo_tva_form_class_init( ofoTVAFormClass *klass )
 }
 
 /**
- * ofo_tva_form_connect_handlers:
+ * ofo_tva_form_connect_to_hub_handlers:
  *
  * As the signal connection is protected by a static variable, there is
  * no need here to handle signal disconnection
  */
 void
-ofo_tva_form_connect_handlers( const ofaHub *hub )
+ofo_tva_form_connect_to_hub_handlers( ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_tva_form_connect_handlers";
+	static const gchar *thisfn = "ofo_tva_form_connect_to_hub_handlers";
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
-	g_signal_connect( G_OBJECT( hub ),
-				SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
 }
 
 /*
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_tva_form_on_hub_updated_object";
+	static const gchar *thisfn = "ofo_tva_form_hub_on_updated_object";
 	const gchar *mnemo;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
@@ -321,16 +320,16 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				do_update_account_identifier( hub, mnemo, prev_id );
+				hub_update_account_identifier( hub, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-do_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_tva_form_do_update_account_identifier";
+	static const gchar *thisfn = "ofo_tva_form_hub_update_account_identifier";
 	gchar *query;
 	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;
@@ -1427,7 +1426,7 @@ tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b )
 static void
 icollectionable_iface_init( ofaICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_tva_form_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

@@ -88,37 +88,37 @@ typedef struct {
 }
 	ofoTVAFormClass;
 
-GType           ofo_tva_form_get_type              ( void ) G_GNUC_CONST;
+GType           ofo_tva_form_get_type               ( void ) G_GNUC_CONST;
 
-void            ofo_tva_form_connect_handlers      ( const ofaHub *hub );
+void            ofo_tva_form_connect_to_hub_handlers( ofaHub *hub );
 
-GList          *ofo_tva_form_get_dataset           ( ofaHub *hub );
+GList          *ofo_tva_form_get_dataset            ( ofaHub *hub );
 
-ofoTVAForm     *ofo_tva_form_get_by_mnemo          ( ofaHub *hub, const gchar *mnemo );
-gboolean        ofo_tva_form_use_account           ( ofaHub *hub, const gchar *account );
+ofoTVAForm     *ofo_tva_form_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
+gboolean        ofo_tva_form_use_account            ( ofaHub *hub, const gchar *account );
 
-ofoTVAForm     *ofo_tva_form_new                   ( void );
-ofoTVAForm     *ofo_tva_form_new_from_form         ( const ofoTVAForm *form );
+ofoTVAForm     *ofo_tva_form_new                    ( void );
+ofoTVAForm     *ofo_tva_form_new_from_form          ( const ofoTVAForm *form );
 
-const gchar    *ofo_tva_form_get_mnemo             ( const ofoTVAForm *form );
-gchar          *ofo_tva_form_get_mnemo_new_from    ( const ofoTVAForm *form );
-const gchar    *ofo_tva_form_get_label             ( const ofoTVAForm *form );
-gboolean        ofo_tva_form_get_has_correspondence( const ofoTVAForm *form );
-const gchar    *ofo_tva_form_get_notes             ( const ofoTVAForm *form );
-const gchar    *ofo_tva_form_get_upd_user          ( const ofoTVAForm *form );
-const GTimeVal *ofo_tva_form_get_upd_stamp         ( const ofoTVAForm *form );
+const gchar    *ofo_tva_form_get_mnemo              ( const ofoTVAForm *form );
+gchar          *ofo_tva_form_get_mnemo_new_from     ( const ofoTVAForm *form );
+const gchar    *ofo_tva_form_get_label              ( const ofoTVAForm *form );
+gboolean        ofo_tva_form_get_has_correspondence ( const ofoTVAForm *form );
+const gchar    *ofo_tva_form_get_notes              ( const ofoTVAForm *form );
+const gchar    *ofo_tva_form_get_upd_user           ( const ofoTVAForm *form );
+const GTimeVal *ofo_tva_form_get_upd_stamp          ( const ofoTVAForm *form );
 
-gboolean        ofo_tva_form_is_deletable          ( const ofoTVAForm *form );
-gboolean        ofo_tva_form_is_valid_data         ( const gchar *mnemo, gchar **msgerr );
+gboolean        ofo_tva_form_is_deletable           ( const ofoTVAForm *form );
+gboolean        ofo_tva_form_is_valid_data          ( const gchar *mnemo, gchar **msgerr );
 
-gint            ofo_tva_form_compare_id            ( const ofoTVAForm *a, const ofoTVAForm *b );
+gint            ofo_tva_form_compare_id             ( const ofoTVAForm *a, const ofoTVAForm *b );
 
-void            ofo_tva_form_set_mnemo             ( ofoTVAForm *form, const gchar *mnemo );
-void            ofo_tva_form_set_label             ( ofoTVAForm *form, const gchar *label );
-void            ofo_tva_form_set_has_correspondence( ofoTVAForm *form, gboolean has_correspondence );
-void            ofo_tva_form_set_notes             ( ofoTVAForm *form, const gchar *notes );
+void            ofo_tva_form_set_mnemo              ( ofoTVAForm *form, const gchar *mnemo );
+void            ofo_tva_form_set_label              ( ofoTVAForm *form, const gchar *label );
+void            ofo_tva_form_set_has_correspondence ( ofoTVAForm *form, gboolean has_correspondence );
+void            ofo_tva_form_set_notes              ( ofoTVAForm *form, const gchar *notes );
 
-void            ofo_tva_form_detail_add            ( ofoTVAForm *form,
+void            ofo_tva_form_detail_add             ( ofoTVAForm *form,
 														guint level,
 														const gchar *code,
 														const gchar *label,
@@ -127,28 +127,28 @@ void            ofo_tva_form_detail_add            ( ofoTVAForm *form,
 														gboolean has_amount,
 														const gchar *amount );
 
-void            ofo_tva_form_detail_free_all       ( ofoTVAForm *form );
+void            ofo_tva_form_detail_free_all        ( ofoTVAForm *form );
 
-guint           ofo_tva_form_detail_get_count      ( const ofoTVAForm *form );
-guint           ofo_tva_form_detail_get_level      ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_code       ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_label      ( const ofoTVAForm *form, guint idx );
-gboolean        ofo_tva_form_detail_get_has_base   ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_base       ( const ofoTVAForm *form, guint idx );
-gboolean        ofo_tva_form_detail_get_has_amount ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_amount     ( const ofoTVAForm *form, guint idx );
+guint           ofo_tva_form_detail_get_count       ( const ofoTVAForm *form );
+guint           ofo_tva_form_detail_get_level       ( const ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_code        ( const ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_label       ( const ofoTVAForm *form, guint idx );
+gboolean        ofo_tva_form_detail_get_has_base    ( const ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_base        ( const ofoTVAForm *form, guint idx );
+gboolean        ofo_tva_form_detail_get_has_amount  ( const ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_amount      ( const ofoTVAForm *form, guint idx );
 
-void            ofo_tva_form_boolean_add           ( ofoTVAForm *form,
+void            ofo_tva_form_boolean_add            ( ofoTVAForm *form,
 														const gchar *label );
 
-void            ofo_tva_form_boolean_free_all      ( ofoTVAForm *form );
+void            ofo_tva_form_boolean_free_all       ( ofoTVAForm *form );
 
-guint           ofo_tva_form_boolean_get_count     ( const ofoTVAForm *form );
-const gchar    *ofo_tva_form_boolean_get_label     ( const ofoTVAForm *form, guint idx );
+guint           ofo_tva_form_boolean_get_count      ( const ofoTVAForm *form );
+const gchar    *ofo_tva_form_boolean_get_label      ( const ofoTVAForm *form, guint idx );
 
-gboolean        ofo_tva_form_insert                ( ofoTVAForm *form, ofaHub *hub );
-gboolean        ofo_tva_form_update                ( ofoTVAForm *form, const gchar *prev_mnemo );
-gboolean        ofo_tva_form_delete                ( ofoTVAForm *form );
+gboolean        ofo_tva_form_insert                 ( ofoTVAForm *form, ofaHub *hub );
+gboolean        ofo_tva_form_update                 ( ofoTVAForm *form, const gchar *prev_mnemo );
+gboolean        ofo_tva_form_delete                 ( ofoTVAForm *form );
 
 G_END_DECLS
 

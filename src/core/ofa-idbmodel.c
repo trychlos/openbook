@@ -288,7 +288,7 @@ ofa_idbmodel_update( ofaHub *hub )
  * the hub signaling system.
  */
 void
-ofa_idbmodel_init_hub_signaling_system( const ofaHub *hub )
+ofa_idbmodel_init_hub_signaling_system( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_idbmodel_init_hub_signaling_system";
 	GList *plugins_list, *it;
