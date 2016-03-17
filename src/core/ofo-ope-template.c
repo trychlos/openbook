@@ -37,6 +37,7 @@
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
@@ -751,6 +752,7 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 	ofaHub *hub;
 	const gchar *mnemo;
 	ofoDossier *dossier;
+	gboolean deletable;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
@@ -759,8 +761,12 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 	dossier = ofa_hub_get_dossier( hub );
 	mnemo = ofo_ope_template_get_mnemo( model );
 
-	return( !ofo_entry_use_ope_template( hub, mnemo ) &&
-			!ofo_dossier_use_ope_template( dossier, mnemo ));
+	deletable = !ofo_entry_use_ope_template( hub, mnemo ) &&
+				!ofo_dossier_use_ope_template( dossier, mnemo );
+
+	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( model ));
+
+	return( deletable );
 }
 
 /**

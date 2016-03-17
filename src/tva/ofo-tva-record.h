@@ -76,7 +76,10 @@ GType           ofo_tva_record_get_type               ( void ) G_GNUC_CONST;
 void            ofo_tva_record_connect_to_hub_handlers( ofaHub *hub );
 
 GList          *ofo_tva_record_get_dataset            ( ofaHub *hub );
+
 ofoTVARecord   *ofo_tva_record_get_by_key             ( ofaHub *hub, const gchar *mnemo, const GDate *end );
+
+gboolean        ofo_tva_record_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
 
 ofoTVARecord   *ofo_tva_record_new                    ( void );
 ofoTVARecord   *ofo_tva_record_new_from_form          ( const ofoTVAForm *form );

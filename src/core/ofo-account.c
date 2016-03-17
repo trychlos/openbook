@@ -39,6 +39,7 @@
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
@@ -956,6 +957,8 @@ ofo_account_is_deletable( const ofoAccount *account )
 		}
 		g_list_free( children );
 	}
+
+	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( account ));
 
 	return( deletable );
 }

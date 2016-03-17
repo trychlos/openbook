@@ -66,9 +66,10 @@ GType              ofo_recurrent_model_get_type               ( void ) G_GNUC_CO
 void               ofo_recurrent_model_connect_to_hub_handlers( ofaHub *hub );
 
 GList             *ofo_recurrent_model_get_dataset            ( ofaHub *hub );
+
 ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
 
-gboolean           ofo_recurrent_model_use_ope_template       ( ofaHub *hub, const gchar *ope_template );
+gboolean           ofo_recurrent_model_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
 
 ofoRecurrentModel *ofo_recurrent_model_new                    ( void );
 

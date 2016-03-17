@@ -37,6 +37,7 @@
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-account.h"
@@ -370,6 +371,8 @@ ofo_class_is_deletable( const ofoClass *class )
 	hub = ofo_base_get_hub( OFO_BASE( class ));
 	used_by_accounts = ofo_account_use_class( hub, ofo_class_get_number( class ));
 	deletable = !used_by_accounts;
+
+	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( class ));
 
 	return( deletable );
 }

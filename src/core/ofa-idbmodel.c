@@ -36,6 +36,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-base.h"
 
 #define IDBMODEL_LAST_VERSION           1
 
@@ -309,6 +310,40 @@ ofa_idbmodel_init_hub_signaling_system( ofaHub *hub )
 	}
 
 	ofa_plugin_free_extensions( plugins_list );
+}
+
+/**
+ * ofa_idbmodel_get_is_deletable:
+ * @object: the #ofoBase object to be checked.
+ *
+ * Returns: %TRUE if all the plugins accept that this object be deleted.
+ */
+gboolean
+ofa_idbmodel_get_is_deletable( const ofaHub *hub, const ofoBase *object )
+{
+	static const gchar *thisfn = "ofa_idbmodel_get_is_deletable";
+	GList *plugins_list, *it;
+	ofaIDBModel *instance;
+	gboolean ok;
+
+	g_return_val_if_fail( object && OFO_IS_BASE( object ), FALSE );
+
+	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+	ok = TRUE;
+
+	for( it=plugins_list ; it && ok ; it=it->next ){
+		instance = OFA_IDBMODEL( it->data );
+		if( OFA_IDBMODEL_GET_INTERFACE( instance )->get_is_deletable ){
+			ok &= OFA_IDBMODEL_GET_INTERFACE( instance )->get_is_deletable( instance, hub, object );
+		} else {
+			g_info( "%s: ofaIDBModel instance %p does not provide 'get_is_deletable()' method",
+					thisfn, ( void * ) instance );
+		}
+	}
+
+	ofa_plugin_free_extensions( plugins_list );
+
+	return( ok );
 }
 
 /**

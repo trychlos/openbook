@@ -62,10 +62,6 @@
                  times on a journal selection in journal_treeview from
                  journals_set)
 
- 213 2014- 6-13 recurrente entries
-     2014- 6-16 to be built as a plugin
-     2015- 3-17 define new 'recurrent' plugin - git #4affe14
-
  215 2014- 6-13 assets management
      2014- 6-16 to be built as a plugin
 
@@ -458,18 +454,18 @@
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
-1041 2016- 3-15 BUG  ofaTVA: connect handlers to hub signaling system
-
 1042 2016- 3-15 FEAT CheckDBMSIntegrity: call plugins
-
-1043 2016- 3-15 FEAT All core objects: before being deletable, must ask
-                     the plugins
 
 1044
 
 -----------------------------------------------------------------------
  DONE
  ====
+
+ 213 2014- 6-13 recurrente entries
+     2014- 6-16 to be built as a plugin
+     2015- 3-17 define new 'recurrent' plugin - git #4affe14
+     2016- 3-17 done
 
  311 2014- 9-21 editing CA12 VAT declaration
      2015-11-14 due to new VAT declaration rules, must also provide a
@@ -987,6 +983,13 @@
 
 1040 2016- 3-10 CODE ofaSettlement -> ofaSettlementPage
      2016- 3-10 done
+
+1041 2016- 3-15 BUG  ofaTVA: connect handlers to hub signaling system
+     2016- 3-16 fixed
+
+1043 2016- 3-15 FEAT All core objects: before being deletable, must ask
+                     the plugins
+     2016- 3-17 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

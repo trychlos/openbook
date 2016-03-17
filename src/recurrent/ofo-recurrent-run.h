@@ -77,6 +77,8 @@ GList           *ofo_recurrent_run_get_dataset            ( ofaHub *hub );
 
 ofoRecurrentRun *ofo_recurrent_run_get_by_id              ( ofaHub *hub, const gchar *mnemo, const GDate *date );
 
+gboolean         ofo_recurrent_run_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
+
 ofoRecurrentRun *ofo_recurrent_run_new                    ( void );
 
 const gchar     *ofo_recurrent_run_get_mnemo              ( const ofoRecurrentRun *model );

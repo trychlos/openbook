@@ -38,6 +38,7 @@
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base.h"
@@ -360,6 +361,7 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 	ofaHub *hub;
 	const gchar *dev_code;
 	ofoDossier *dossier;
+	gboolean deletable;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
@@ -368,10 +370,14 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 	dossier = ofa_hub_get_dossier( hub );
 	dev_code = ofo_currency_get_code( currency );
 
-	return( !ofo_account_use_currency( hub, dev_code ) &&
-			!ofo_dossier_use_currency( dossier, dev_code ) &&
-			!ofo_entry_use_currency( hub, dev_code ) &&
-			!ofo_ledger_use_currency( hub, dev_code ));
+	deletable = !ofo_account_use_currency( hub, dev_code ) &&
+				!ofo_dossier_use_currency( dossier, dev_code ) &&
+				!ofo_entry_use_currency( hub, dev_code ) &&
+				!ofo_ledger_use_currency( hub, dev_code );
+
+	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( currency ));
+
+	return( deletable );
 }
 
 /**

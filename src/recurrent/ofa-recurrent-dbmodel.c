@@ -82,6 +82,7 @@ static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static void       idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub );
+static gboolean   idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object );
 static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
@@ -105,6 +106,7 @@ ofa_recurrent_dbmodel_iface_init( ofaIDBModelInterface *iface )
 	iface->get_last_version = idbmodel_get_last_version;
 	iface->ddl_update = idbmodel_ddl_update;
 	iface->connect_handlers = idbmodel_connect_handlers;
+	iface->get_is_deletable = idbmodel_get_is_deletable;
 }
 
 /*
@@ -153,6 +155,13 @@ idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub )
 
 	ofo_recurrent_model_connect_to_hub_handlers( hub );
 	ofo_recurrent_run_connect_to_hub_handlers( hub );
+}
+
+static gboolean
+idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object )
+{
+	return( ofo_recurrent_model_get_is_deletable( hub, object ) &&
+			ofo_recurrent_run_get_is_deletable( hub, object ));
 }
 
 static gboolean

@@ -39,6 +39,7 @@
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-preferences.h"
@@ -577,13 +578,18 @@ gboolean
 ofo_rate_is_deletable( const ofoRate *rate )
 {
 	ofaHub *hub;
+	gboolean deletable;
 
 	g_return_val_if_fail( rate && OFO_IS_RATE( rate ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( rate )->prot->dispose_has_run, FALSE );
 
 	hub = ofo_base_get_hub( OFO_BASE( rate ));
 
-	return( !ofo_ope_template_use_rate( hub, ofo_rate_get_mnemo( rate )));
+	deletable = !ofo_ope_template_use_rate( hub, ofo_rate_get_mnemo( rate ));
+
+	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( rate ));
+
+	return( deletable );
 }
 
 /**

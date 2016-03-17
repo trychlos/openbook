@@ -95,7 +95,8 @@ void            ofo_tva_form_connect_to_hub_handlers( ofaHub *hub );
 GList          *ofo_tva_form_get_dataset            ( ofaHub *hub );
 
 ofoTVAForm     *ofo_tva_form_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
-gboolean        ofo_tva_form_use_account            ( ofaHub *hub, const gchar *account );
+
+gboolean        ofo_tva_form_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
 
 ofoTVAForm     *ofo_tva_form_new                    ( void );
 ofoTVAForm     *ofo_tva_form_new_from_form          ( const ofoTVAForm *form );

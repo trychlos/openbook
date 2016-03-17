@@ -30,6 +30,7 @@
  New features and improvements:
 
    - Recurrent: new plugin (todo #213).
+   - ofaIDBModel: extended to let plugins check objects deletability (todo #1043). 
 
  Bug fixes:
 

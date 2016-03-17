@@ -40,6 +40,7 @@
 #include "my-iwindow.h"
 #include "ofa-hub-def.h"
 #include "ofa-idbconnect.h"
+#include "ofo-base-def.h"
 
 G_BEGIN_DECLS
 
@@ -57,6 +58,7 @@ typedef struct _ofaIDBModel                    ofaIDBModel;
  * @get_current_version: [should]: return the current version of the DB model.
  * @get_last_version: [should]: return the last version of the DB model.
  * @connect_handlers: [may]: let connect to the hub signaling system.
+ * @get_is_deletable: [may]: check if the object may be deleted.
  * @needs_update: [should]: returns whether the DB model needs an update.
  * @ddl_update: [should]: returns whether the DB model has been successfully updated.
  *
@@ -140,6 +142,19 @@ typedef struct {
 													ofaHub *hub );
 
 	/**
+	 * get_is_deletable:
+	 * @instance: the #ofaIDBModel provider.
+	 * @object: the #ofoBase object to be tested.
+	 *
+	 * Returns: %TRUE if the @object may be deleted.
+	 *
+	 * Since: version 1
+	 */
+	gboolean      ( *get_is_deletable )     ( const ofaIDBModel *instance,
+													const ofaHub *hub,
+													const ofoBase *object );
+
+	/**
 	 * needs_update:
 	 * @instance: the #ofaIDBModel provider.
 	 * @connect: the #ofaIDBConnect connection object.
@@ -182,6 +197,9 @@ guint        ofa_idbmodel_get_interface_version     ( const ofaIDBModel *instanc
 gboolean     ofa_idbmodel_update                    ( ofaHub *hub );
 
 void         ofa_idbmodel_init_hub_signaling_system ( ofaHub *hub );
+
+gboolean     ofa_idbmodel_get_is_deletable          ( const ofaHub *hub,
+															const ofoBase *object );
 
 ofaIDBModel *ofa_idbmodel_get_by_name               ( const gchar *name );
 

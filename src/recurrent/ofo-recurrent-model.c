@@ -305,20 +305,32 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 }
 
 /**
- * ofo_recurrent_model_use_ope_template:
- * @hub:
- * @temmplate:
+ * ofo_recurrent_model_get_is_deletable:
+ * @hub: the current #ofaHub object of the application.
+ * @object: the object to be tested.
  *
- * Returns: %TRUE if a recorded entry makes use of the specified
- * operation template.
+ * Returns: %TRUE if the @object is not used by ofoTVAForm, thus may be
+ * deleted.
  */
 gboolean
-ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *template )
+ofo_recurrent_model_get_is_deletable( const ofaHub *hub, const ofoBase *object )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( my_strlen( template ), FALSE );
+	gboolean ok;
+	const gchar *template_id;
+	guint count;
 
-	return( model_count_for_ope_template( ofa_hub_get_connect( hub ), template ) > 0 );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( object && OFO_IS_BASE( object ), FALSE );
+
+	ok = TRUE;
+
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		template_id = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
+		count = model_count_for_ope_template( ofa_hub_get_connect( hub ), template_id );
+		ok = ( count == 0 );
+	}
+
+	return( ok );
 }
 
 static guint
