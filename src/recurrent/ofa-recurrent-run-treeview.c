@@ -47,6 +47,8 @@ struct _ofaRecurrentRunTreeviewPrivate {
 	/* runtime
 	 */
 	ofaHub            *hub;
+	GList             *hub_handlers;
+
 	/* UI
 	 */
 	GtkWidget         *tview;
@@ -132,13 +134,18 @@ static gint     tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 static void     tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self );
 static void     tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentRunTreeview *self );
 static GList   *tview_get_selected( ofaRecurrentRunTreeview *self );
-static void     tview_insert_row( ofaRecurrentRunTreeview *self, ofoRecurrentRun *ope );
-static void     tview_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun *ope );
 static void     tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self );
 static void     tview_on_status_changed( GtkCellRendererCombo *combo, gchar *path_string, GtkTreeIter *new_iter, ofaRecurrentRunTreeview *self );
+static void     store_insert_row( ofaRecurrentRunTreeview *self, ofoRecurrentRun *ope );
+static void     store_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun *ope );
+static gboolean store_find_by_mnemo( ofaRecurrentRunTreeview *self, const gchar *mnemo, GtkTreeIter *iter );
 static void     do_insert_dataset( ofaRecurrentRunTreeview *self, GList *dataset );
 //static void     select_row_by_mnemo( ofaRecurrentRunTreeview *tview, const gchar *recurrent_run );
 //static gboolean find_row_by_mnemo( ofaRecurrentRunTreeview *tview, const gchar *recurrent_run, GtkTreeIter *iter );
+static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self );
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentRunTreeview *self );
+static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self );
+static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentRunTreeview *self );
 
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunTreeview, ofa_recurrent_run_treeview, GTK_TYPE_BIN, 0,
@@ -164,6 +171,7 @@ static void
 recurrent_run_treeview_dispose( GObject *instance )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
+	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_RECURRENT_RUN_TREEVIEW( instance ));
 
@@ -174,6 +182,11 @@ recurrent_run_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		/* disconnect from hub signaling system */
+		for( it=priv->hub_handlers ; it ; it=it->next ){
+			g_signal_handler_disconnect( priv->hub, ( gulong ) it->data );
+		}
 	}
 
 	/* chain up to the parent class */
@@ -269,6 +282,7 @@ ofa_recurrent_run_treeview_new( ofaHub *hub, gboolean editable )
 {
 	ofaRecurrentRunTreeview *self;
 	ofaRecurrentRunTreeviewPrivate *priv;
+	gulong handler;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
@@ -281,6 +295,19 @@ ofa_recurrent_run_treeview_new( ofaHub *hub, gboolean editable )
 
 	setup_bin( self );
 	setup_treeview( self );
+
+	/* connect to the hub signaling system */
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	return( self );
 }
@@ -671,48 +698,6 @@ tview_get_selected( ofaRecurrentRunTreeview *self )
 	return( sel_mnemos );
 }
 
-static void
-tview_insert_row( ofaRecurrentRunTreeview *self, ofoRecurrentRun *ope )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkTreeIter iter;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	gtk_list_store_insert( priv->store, &iter, -1 );
-	tview_set_row( self, &iter, ope );
-}
-
-static void
-tview_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun *ope )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	ofoRecurrentModel *model;
-	const gchar *mnemo, *stt;
-	gchar *sdate, *status;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	mnemo = ofo_recurrent_run_get_mnemo( ope );
-	model = ofo_recurrent_model_get_by_mnemo( priv->hub, mnemo );
-	if( model ){
-		sdate = my_date_to_str( ofo_recurrent_run_get_date( ope ), ofa_prefs_date_display());
-		stt = ofo_recurrent_run_get_status( ope );
-		status = ofo_recurrent_run_get_status_label( stt );
-
-		gtk_list_store_set( priv->store, iter,
-				COL_MNEMO,  mnemo,
-				COL_LABEL,  ofo_recurrent_model_get_label( model ),
-				COL_DATE,   sdate ? sdate : "",
-				COL_STATUS, status,
-				COL_OBJECT, ope,
-				-1 );
-
-		g_free( status );
-		g_free( sdate );
-	}
-}
-
 /*
  * Display the 'Status' column in italic on light gray background
  */
@@ -884,6 +869,77 @@ ofa_recurrent_run_treeview_set_sort_settings( ofaRecurrentRunTreeview *bin, gint
 			GTK_TREE_SORTABLE( priv->tsort ), priv->sort_column_id, priv->sort_sens );
 }
 
+static void
+store_insert_row( ofaRecurrentRunTreeview *self, ofoRecurrentRun *ope )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	GtkTreeIter iter;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	gtk_list_store_insert( priv->store, &iter, -1 );
+	store_set_row( self, &iter, ope );
+}
+
+/*
+ * set data through a store iter
+ */
+static void
+store_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun *ope )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	ofoRecurrentModel *model;
+	const gchar *mnemo, *stt;
+	gchar *sdate, *status;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	mnemo = ofo_recurrent_run_get_mnemo( ope );
+	model = ofo_recurrent_model_get_by_mnemo( priv->hub, mnemo );
+	if( model ){
+		sdate = my_date_to_str( ofo_recurrent_run_get_date( ope ), ofa_prefs_date_display());
+		stt = ofo_recurrent_run_get_status( ope );
+		status = ofo_recurrent_run_get_status_label( stt );
+
+		gtk_list_store_set( priv->store, iter,
+				COL_MNEMO,  mnemo,
+				COL_LABEL,  ofo_recurrent_model_get_label( model ),
+				COL_DATE,   sdate ? sdate : "",
+				COL_STATUS, status,
+				COL_OBJECT, ope,
+				-1 );
+
+		g_free( status );
+		g_free( sdate );
+	}
+}
+
+static gboolean
+store_find_by_mnemo( ofaRecurrentRunTreeview *self, const gchar *code, GtkTreeIter *iter )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	gchar *str;
+	gint cmp;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, COL_MNEMO, &str, -1 );
+			cmp = g_utf8_collate( str, code );
+			g_free( str );
+			if( cmp == 0 ){
+				return( TRUE );
+			}
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), iter )){
+				break;
+			}
+		}
+	}
+
+	return( FALSE );
+}
+
 /**
  * ofa_recurrent_run_treeview_set_from_list:
  * @bin: this #ofaRecurrentRunTreeview instance.
@@ -938,9 +994,8 @@ do_insert_dataset( ofaRecurrentRunTreeview *self, GList *dataset )
 	gtk_list_store_clear( priv->store );
 
 	for( it=dataset ; it ; it=it->next ){
-		g_debug( "it->data=%p", it->data );
 		g_return_if_fail( OFO_IS_RECURRENT_RUN( it->data ));
-		tview_insert_row( self, OFO_RECURRENT_RUN( it->data ));
+		store_insert_row( self, OFO_RECURRENT_RUN( it->data ));
 	}
 }
 
@@ -1146,3 +1201,94 @@ ofa_recurrent_run_treeview_get_treeview( const ofaRecurrentRunTreeview *view )
 	return( GTK_WIDGET( priv->tview ));
 }
 #endif
+
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
+static void
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_new_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_RECURRENT_RUN( object )){
+		store_insert_row( self, OFO_RECURRENT_RUN( object ));
+	}
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentRunTreeview *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_updated_object";
+	ofaRecurrentRunTreeviewPrivate *priv;
+	GtkTreeIter iter;
+	const gchar *code, *new_code;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self );
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		new_code = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
+		code = prev_id ? prev_id : new_code;
+		if( my_collate( code, new_code )){
+			if( store_find_by_mnemo( self, code, &iter )){
+				gtk_list_store_set( priv->store, &iter, COL_MNEMO, new_code, -1 );
+			}
+		}
+	}
+}
+
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
+static void
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_deleted_object";
+	ofaRecurrentRunTreeviewPrivate *priv;
+	GtkTreeIter iter;
+
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	if( OFO_IS_RECURRENT_RUN( object )){
+		if( store_find_by_mnemo( self, ofo_recurrent_run_get_mnemo( OFO_RECURRENT_RUN( object )), &iter )){
+			gtk_list_store_remove( priv->store, &iter );
+		}
+	}
+}
+
+/*
+ * SIGNAL_HUB_RELOAD signal handler
+ */
+static void
+hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentRunTreeview *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_reload_dataset";
+
+	g_debug( "%s: hub=%p, type=%lu, self=%p",
+			thisfn, ( void * ) hub, type, ( void * ) self );
+
+	if( type == OFO_TYPE_RECURRENT_RUN ){
+		ofa_recurrent_run_treeview_set_from_db( self );
+	}
+}
