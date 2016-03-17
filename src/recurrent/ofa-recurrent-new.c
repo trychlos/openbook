@@ -275,7 +275,7 @@ init_treeview( ofaRecurrentNew *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->tview = ofa_recurrent_run_treeview_new( priv->hub, FALSE );
+	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 
 	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_WAITING, TRUE );

@@ -58,22 +58,26 @@ struct _ofaRecurrentRunPagePrivate {
 	 */
 	GtkWidget               *top_paned;
 	ofaRecurrentRunTreeview *tview;
+
 	GtkWidget               *cancelled_toggle;
 	GtkWidget               *waiting_toggle;
 	GtkWidget               *validated_toggle;
-	GtkWidget               *generated_toggle;
-	GtkWidget               *generate_btn;
+
+	GtkWidget               *cancel_btn;
+	GtkWidget               *wait_btn;
+	GtkWidget               *validate_btn;
 
 	/* filtering
 	 */
 	gboolean                 cancelled_visible;
 	gboolean                 waiting_visible;
 	gboolean                 validated_visible;
-	gboolean                 generated_visible;
 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-run-page.ui";
 static const gchar *st_page_settings    = "ofaRecurrentRunPage-settings";
+
+typedef void ( *ObjValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj );
 
 static GtkWidget       *v_setup_view( ofaPage *page );
 static void             setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent );
@@ -81,12 +85,15 @@ static void             setup_filters( ofaRecurrentRunPage *self, GtkContainer *
 static void             setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void             setup_datas( ofaRecurrentRunPage *self );
 static GtkWidget       *v_get_top_focusable_widget( const ofaPage *page );
-//static ofoRecurrentRun *treeview_get_selected( ofaRecurrentRunPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void             filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void             filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void             filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
-static void             filter_on_generated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
-static void             action_on_generate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void             tview_on_selection_changed( ofaRecurrentRunTreeview *bin, GList *selected, ofaRecurrentRunPage *self );
+static void             action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void             action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void             action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void             action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, ObjValidCb cb );
+static void             action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj );
 static void             get_settings( ofaRecurrentRunPage *self );
 static void             set_settings( ofaRecurrentRunPage *self );
 
@@ -200,8 +207,11 @@ setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 	tview_parent = my_utils_container_get_child_by_name( parent, "tview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	priv->tview = ofa_recurrent_run_treeview_new( priv->hub, TRUE );
+	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
+
+	ofa_recurrent_run_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
+	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( tview_on_selection_changed ), self );
 
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 }
@@ -231,11 +241,6 @@ setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
 	priv->validated_toggle = btn;
 	g_signal_connect( btn, "toggled", G_CALLBACK( filter_on_validated_btn_toggled ), self );
-
-	btn = my_utils_container_get_child_by_name( parent, "p3-generated-btn" );
-	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
-	priv->generated_toggle = btn;
-	g_signal_connect( btn, "toggled", G_CALLBACK( filter_on_generated_btn_toggled ), self );
 }
 
 /*
@@ -249,10 +254,20 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	btn = my_utils_container_get_child_by_name( parent, "p2-generate-btn" );
+	btn = my_utils_container_get_child_by_name( parent, "p2-cancel-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	priv->generate_btn = btn;
-	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_generate_clicked ), self );
+	priv->cancel_btn = btn;
+	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_cancel_clicked ), self );
+
+	btn = my_utils_container_get_child_by_name( parent, "p2-wait-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	priv->wait_btn = btn;
+	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_wait_clicked ), self );
+
+	btn = my_utils_container_get_child_by_name( parent, "p2-validate-btn" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	priv->validate_btn = btn;
+	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_validate_clicked ), self );
 }
 
 /*
@@ -279,29 +294,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	return( ofa_recurrent_run_treeview_get_treeview( priv->tview ));
 }
-
-#if 0
-static ofoRecurrentRun  *
-treeview_get_selected( ofaRecurrentRunPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
-{
-	ofaRecurrentRunPagePrivate *priv;
-	GtkTreeSelection *select;
-	ofoRecurrentRun  *object;
-
-	priv = ofa_recurrent_run_page_get_instance_private( page );
-
-	object = NULL;
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->record_treeview ));
-	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
-		gtk_tree_model_get( *tmodel, iter, RECURRENT_RUN_COL_OBJECT, &object, -1 );
-		g_return_val_if_fail( object && OFO_IS_RECURRENT_RUN( object ), NULL );
-		g_object_unref( object );
-	}
-
-	return( object );
-}
-#endif
 
 static void
 filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
@@ -346,27 +338,72 @@ filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *s
 }
 
 static void
-filter_on_generated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
+tview_on_selection_changed( ofaRecurrentRunTreeview *bin, GList *selected, ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
+	gint count;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	priv->generated_visible = gtk_toggle_button_get_active( button );
+	count = g_list_length( selected );
 
-	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_GENERATED, priv->generated_visible );
-
-	set_settings( self );
+	gtk_widget_set_sensitive( priv->cancel_btn, count > 0 );
+	gtk_widget_set_sensitive( priv->wait_btn, count > 0 );
+	gtk_widget_set_sensitive( priv->validate_btn, count > 0 );
 }
 
 static void
-action_on_generate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
+action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 {
+	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_CANCELLED, NULL );
+}
 
+static void
+action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self )
+{
+	action_update_status( self, REC_STATUS_CANCELLED, REC_STATUS_WAITING, NULL );
+}
+
+static void
+action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
+{
+	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_VALIDATED, ( ObjValidCb ) action_on_object_validated );
+}
+
+static void
+action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, ObjValidCb cb )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	GList *selected, *it;
+	const gchar *cur_status;
+	ofoRecurrentRun *run_obj;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	selected = ofa_recurrent_run_treeview_get_selected( priv->tview );
+
+	for( it=selected ; it ; it=it->next ){
+		run_obj = OFO_RECURRENT_RUN( it->data );
+		cur_status = ofo_recurrent_run_get_status( run_obj );
+		if( !my_collate( cur_status, allowed_status )){
+			ofo_recurrent_run_set_status( run_obj, new_status );
+			if( ofo_recurrent_run_update( run_obj ) && cb ){
+				( *cb )( self, run_obj );
+			}
+		}
+	}
+
+	ofa_recurrent_run_treeview_free_selected( selected );
+}
+
+static void
+action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj )
+{
+	g_debug( "action_on_object_validated" );
 }
 
 /*
- * settings: sort_column_id;sort_sens;paned_position;cancelled_visible;waiting_visible;validated_visible;generated_visible;
+ * settings: sort_column_id;sort_sens;paned_position;cancelled_visible;waiting_visible;validated_visible;
  */
 static void
 get_settings( ofaRecurrentRunPage *self )
@@ -422,13 +459,6 @@ get_settings( ofaRecurrentRunPage *self )
 		filter_on_validated_btn_toggled( GTK_TOGGLE_BUTTON( priv->validated_toggle ), self );
 	}
 
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->generated_toggle ), my_utils_boolean_from_str( cstr ));
-		filter_on_generated_btn_toggled( GTK_TOGGLE_BUTTON( priv->generated_toggle ), self );
-	}
-
 	ofa_settings_free_string_list( slist );
 }
 
@@ -444,12 +474,11 @@ set_settings( ofaRecurrentRunPage *self )
 	ofa_recurrent_run_treeview_get_sort_settings( priv->tview, &sort_column_id, &sort_sens );
 	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
 
-	str = g_strdup_printf( "%d;%d;%d;%s;%s;%s;%s;",
+	str = g_strdup_printf( "%d;%d;%d;%s;%s;%s;",
 			sort_column_id, sort_sens, pos,
 			priv->cancelled_visible ? "True":"False",
 			priv->waiting_visible ? "True":"False",
-			priv->validated_visible ? "True":"False",
-			priv->generated_visible ? "True":"False" );
+			priv->validated_visible ? "True":"False" );
 
 	ofa_settings_user_set_string( st_page_settings, str );
 

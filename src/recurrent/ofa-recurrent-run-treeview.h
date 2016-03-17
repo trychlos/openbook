@@ -65,12 +65,14 @@ typedef struct {
 
 GType                    ofa_recurrent_run_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaHub *hub,
-																			gboolean editable );
+ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaHub *hub );
 
 void                     ofa_recurrent_run_treeview_set_visible       ( ofaRecurrentRunTreeview *bin,
 																			const gchar *status,
 																			gboolean visible );
+
+void                     ofa_recurrent_run_treeview_set_selection_mode( ofaRecurrentRunTreeview *bin,
+																			GtkSelectionMode mode );
 
 void                     ofa_recurrent_run_treeview_get_sort_settings ( ofaRecurrentRunTreeview *bin,
 																			gint *sort_column_id,
@@ -89,13 +91,9 @@ void                     ofa_recurrent_run_treeview_clear             ( ofaRecur
 
 GtkWidget               *ofa_recurrent_run_treeview_get_treeview      ( const ofaRecurrentRunTreeview *bin );
 
-#define                  ofa_recurrent_run_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+#define                  ofa_recurrent_run_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
-#if 0
 GList                   *ofa_recurrent_run_treeview_get_selected      ( ofaRecurrentRunTreeview *bin );
-
-GtkWidget               *ofa_recurrent_run_treeview_get_treeview      ( const ofaRecurrentRunTreeview *bin );
-#endif
 
 G_END_DECLS
 

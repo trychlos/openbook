@@ -68,7 +68,6 @@ typedef struct {
 #define REC_STATUS_CANCELLED            "C"
 #define REC_STATUS_WAITING              "W"
 #define REC_STATUS_VALIDATED            "V"
-#define REC_STATUS_GENERATED            "G"
 
 GType            ofo_recurrent_run_get_type               ( void ) G_GNUC_CONST;
 
@@ -86,6 +85,8 @@ const gchar     *ofo_recurrent_run_get_status             ( const ofoRecurrentRu
 gchar           *ofo_recurrent_run_get_status_label       ( const gchar *status );
 const gchar     *ofo_recurrent_run_get_upd_user           ( const ofoRecurrentRun *model );
 const GTimeVal  *ofo_recurrent_run_get_upd_stamp          ( const ofoRecurrentRun *model );
+
+gint             ofo_recurrent_run_compare                ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 
 void             ofo_recurrent_run_set_mnemo              ( ofoRecurrentRun *model, const gchar *mnemo );
 void             ofo_recurrent_run_set_date               ( ofoRecurrentRun *model, const GDate *date );

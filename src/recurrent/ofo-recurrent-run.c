@@ -99,7 +99,6 @@ static const sLabels st_labels[] = {
 		{ REC_STATUS_CANCELLED, N_( "Cancelled" )},
 		{ REC_STATUS_WAITING,   N_( "Waiting" )},
 		{ REC_STATUS_VALIDATED, N_( "Validated" )},
-		{ REC_STATUS_GENERATED, N_( "Generated" )},
 		{ 0 }
 };
 
@@ -111,7 +110,7 @@ static gboolean model_do_insert( ofoRecurrentRun *model, const ofaIDBConnect *co
 static gboolean model_insert_main( ofoRecurrentRun *model, const ofaIDBConnect *connect );
 static gboolean model_do_update( ofoRecurrentRun *model, const ofaIDBConnect *connect );
 static gboolean model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect );
-static gint     model_cmp_by_mnemo( const ofoRecurrentRun *a, const gchar *mnemo );
+static gint     model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
 static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void     icollectionable_iface_init( ofaICollectionableInterface *iface );
 static guint    icollectionable_get_interface_version( const ofaICollectionable *instance );
@@ -395,6 +394,22 @@ ofo_recurrent_run_get_upd_stamp( const ofoRecurrentRun *model )
 }
 
 /**
+ * ofo_recurrent_run_compare:
+ * @a: a #ofoRecurrentRun object.
+ * @b: another #ofoRecurrentRun object.
+ *
+ * Returns: -1, 0 or 1 depending of whether @a < @b, @a == @b or @a > @b.
+ */
+gint
+ofo_recurrent_run_compare( const ofoRecurrentRun *a, const ofoRecurrentRun *b )
+{
+	g_return_val_if_fail( a && OFO_IS_RECURRENT_RUN( a ), 0 );
+	g_return_val_if_fail( b && OFO_IS_RECURRENT_RUN( b ), 0 );
+
+	return( recurrent_run_cmp_by_ptr( a, b ));
+}
+
+/**
  * ofo_recurrent_run_set_mnemo:
  */
 void
@@ -607,15 +622,21 @@ model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
 }
 
 static gint
-model_cmp_by_mnemo( const ofoRecurrentRun *a, const gchar *mnemo )
+model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date )
 {
-	return( g_utf8_collate( ofo_recurrent_run_get_mnemo( a ), mnemo ));
+	gint cmp;
+
+	cmp = g_utf8_collate( ofo_recurrent_run_get_mnemo( a ), mnemo );
+	if( cmp == 0 ){
+		cmp = my_date_compare( ofo_recurrent_run_get_date( a ), date );
+	}
+	return( cmp );
 }
 
 static gint
 recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b )
 {
-	return( model_cmp_by_mnemo( a, ofo_recurrent_run_get_mnemo( b )));
+	return( model_cmp_by_mnemo_date( a, ofo_recurrent_run_get_mnemo( b ), ofo_recurrent_run_get_date( b )));
 }
 
 /*
