@@ -36,7 +36,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -159,22 +158,14 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(core_datadir)"
+am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = openbook-resources.lo
-am__objects_2 = $(am__objects_1)
-am_libofa_core_la_OBJECTS = $(am__objects_2) my-date.lo \
-	my-date-combo.lo my-decimal-combo.lo my-double.lo \
-	my-editable-amount.lo my-editable-date.lo my-field-combo.lo \
-	my-file-monitor.lo my-idialog.lo my-igridlist.lo \
-	my-isettings.lo my-iwindow.lo my-progress-bar.lo \
-	my-settings.lo my-timeout.lo my-utils.lo \
-	ofa-account-frame-bin.lo ofa-account-properties.lo \
-	ofa-account-select.lo ofa-account-store.lo \
-	ofa-admin-credentials-bin.lo ofa-box.lo ofa-buttons-box.lo \
-	ofa-currency-combo.lo ofa-currency-store.lo \
+am_libofa_core_la_OBJECTS = ofa-account-frame-bin.lo \
+	ofa-account-properties.lo ofa-account-select.lo \
+	ofa-account-store.lo ofa-admin-credentials-bin.lo ofa-box.lo \
+	ofa-buttons-box.lo ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
 	ofa-dossier-delete-prefs-bin.lo ofa-file-dir.lo \
 	ofa-file-format.lo ofa-file-format-bin.lo ofa-guided-input.lo \
@@ -197,7 +188,10 @@ am_libofa_core_la_OBJECTS = $(am__objects_2) my-date.lo \
 	ofo-dossier.lo ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo \
 	ofo-rate.lo ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
 	ofs-currency.lo ofs-ope.lo
-libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS)
+am__objects_1 = resources.lo
+nodist_libofa_core_la_OBJECTS = $(am__objects_1)
+libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
+	$(nodist_libofa_core_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -240,14 +234,13 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libofa_core_la_SOURCES)
+SOURCES = $(libofa_core_la_SOURCES) $(nodist_libofa_core_la_SOURCES)
 DIST_SOURCES = $(libofa_core_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-DATA = $(core_data_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -382,6 +375,7 @@ POPPLER_LIBS = @POPPLER_LIBS@
 POSUB = @POSUB@
 PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
 PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
+PWI_LIBS = @PWI_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -450,48 +444,28 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pkglib_LTLIBRARIES = libofa-core.la
-core_datadir = $(pkgdatadir)/core
 css_datadir = $(pkgdatadir)/css
 init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
-resdir = $(srcdir)
-resxml = $(srcdir)/openbook.gresource.xml
-resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
-openbook_built_sources = \
-	openbook-resources.c								\
-	openbook-resources.h								\
+
+# Resources are bundled as GResource binary data in the library.
+# They are distributed in the package, but not installed.
+resname = ofa_core
+resxml = $(srcdir)/resources.xml
+resfiles = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
+res_built_sources = \
+	resources.c											\
+	resources.h											\
 	$(NULL)
 
 BUILT_SOURCES = \
-	$(openbook_built_sources)							\
+	$(res_built_sources)								\
 	$(NULL)
 
-nodist_openbook_SOURCES = \
-	$(openbook_built_sources)							\
+nodist_libofa_core_la_SOURCES = \
+	$(res_built_sources)								\
 	$(NULL)
 
 libofa_core_la_SOURCES = \
-	$(BUILT_SOURCES)									\
-	my-date.c											\
-	my-date-combo.c										\
-	my-date-combo.h										\
-	my-decimal-combo.c									\
-	my-decimal-combo.h									\
-	my-double.c											\
-	my-editable-amount.c								\
-	my-editable-date.c									\
-	my-field-combo.c									\
-	my-field-combo.h									\
-	my-file-monitor.c									\
-	my-idialog.c										\
-	my-igridlist.c										\
-	my-isettings.c										\
-	my-iwindow.c										\
-	my-progress-bar.c									\
-	my-settings.c										\
-	my-settings.h										\
-	my-timeout.c										\
-	my-utils.c											\
-	\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
 	ofa-account-properties.c							\
@@ -568,7 +542,6 @@ libofa_core_la_SOURCES = \
 	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
-	\
 	ofo-account.c										\
 	ofo-base.c											\
 	ofo-bat.c											\
@@ -581,7 +554,6 @@ libofa_core_la_SOURCES = \
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
 	ofo-rate.c											\
-	\
 	ofs-account-balance.c								\
 	ofs-bat.c											\
 	ofs-concil-id.c										\
@@ -599,43 +571,12 @@ libofa_core_la_LDFLAGS = \
 	-fPIC												\
 	$(NULL)
 
-ui_files = \
-	$(NULL)
-
-resources_ui = \
-	ofa-account-properties.ui							\
-	ofa-account-select.ui								\
-	ofa-admin-credentials-bin.ui						\
-	ofa-date-filter-hv-bin.ui							\
-	ofa-dbms-root-bin.ui								\
-	ofa-dossier-delete-prefs-bin.ui						\
-	ofa-file-format-bin.ui								\
-	ofa-guided-input.ui									\
-	ofa-guided-input-bin.ui								\
-	ofa-idbmodel.ui										\
-	ofa-ope-template-help.ui							\
-	ofa-ope-template-properties.ui						\
-	ofa-ope-template-select.ui							\
-	ofa-preferences.ui									\
-	\
-	filler.png											\
-	notes.png											\
-	ofa-guided-input-bin-green-checkmark.png			\
-	ofa-ientry-account-icon-16.png						\
-	ofa-ientry-ope-template-icon-16.png					\
-	$(NULL)
-
-core_data_DATA = \
-	$(ui_files)											\
-	$(NULL)
-
 CLEANFILES = \
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
 EXTRA_DIST = \
-	$(core_data_DATA)									\
-	$(resources_ui)										\
+	$(resfiles)											\
 	$(resxml)											\
 	$(NULL)
 
@@ -718,22 +659,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date-combo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-decimal-combo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-double.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-amount.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-date.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-file-monitor.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-idialog.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-igridlist.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-isettings.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iwindow.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-settings.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-timeout.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Plo@am__quote@
@@ -805,7 +730,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-concil-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-currency.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-ope.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openbook-resources.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -833,27 +758,6 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-core_dataDATA: $(core_data_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(core_data_DATA)'; test -n "$(core_datadir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(core_datadir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(core_datadir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(core_datadir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(core_datadir)" || exit $$?; \
-	done
-
-uninstall-core_dataDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(core_data_DATA)'; test -n "$(core_datadir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(core_datadir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -940,9 +844,9 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LTLIBRARIES) $(DATA)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
-	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(core_datadir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1001,7 +905,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-core_dataDATA
+install-data-am:
 
 install-dvi: install-dvi-am
 
@@ -1047,7 +951,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-core_dataDATA uninstall-pkglibLTLIBRARIES
+uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .MAKE: all check install install-am install-strip
 
@@ -1055,24 +959,23 @@ uninstall-am: uninstall-core_dataDATA uninstall-pkglibLTLIBRARIES
 	clean-libtool clean-pkglibLTLIBRARIES cscopelist-am ctags \
 	ctags-am distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-core_dataDATA \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-html install-html-am \
-	install-info install-info-am install-man install-pdf \
-	install-pdf-am install-pkglibLTLIBRARIES install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-core_dataDATA \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkglibLTLIBRARIES install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
 	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-openbook-resources.c: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
-openbook-resources.h: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
+resources.c: $(resxml) $(resfiles)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name $(resname) $(resxml)
+resources.h: $(resxml) $(resfiles)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name $(resname) $(resxml)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

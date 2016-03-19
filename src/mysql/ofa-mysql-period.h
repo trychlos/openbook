@@ -34,7 +34,7 @@
  * In particular, it implements #ofaIDBPeriod interface.
  */
 
-#include "api/my-isettings.h"
+#include "my/my-isettings.h"
 
 #include "ofa-mysql-idbprovider.h"
 

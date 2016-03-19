@@ -29,9 +29,11 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-iwindow.h"
-#include "api/my-progress-bar.h"
-#include "api/my-utils.h"
+#include "my/my-iassistant.h"
+#include "my/my-iwindow.h"
+#include "my/my-progress-bar.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
@@ -47,7 +49,6 @@
 #include "core/ofa-file-dir.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-iassistant.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-mini.h"
 #include "ui/ofa-dossier-open.h"
@@ -173,16 +174,14 @@ static sFilter st_filters[] = {
 		{ 0 }
 };
 
-#define CHOOSER_FILTER_TYPE             "file-chooser-filter-type"
+#define CHOOSER_FILTER_TYPE               "file-chooser-filter-type"
 
-/* the user preferences stored as a string list
- * folder
- */
-static const gchar *st_prefs_import     = "ofaRestoreAssistant-settings";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-restore-assistant.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
+static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
+static void     set_settings( ofaRestoreAssistant *self );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -219,8 +218,6 @@ static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidg
 static gboolean p6_restore_confirmed( const ofaRestoreAssistant *self );
 static gboolean p6_do_restore( ofaRestoreAssistant *self );
 static gboolean p6_do_open( ofaRestoreAssistant *self );
-static void     get_settings( ofaRestoreAssistant *self );
-static void     update_settings( ofaRestoreAssistant *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRestoreAssistant, ofa_restore_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaRestoreAssistant )
@@ -357,6 +354,7 @@ ofa_restore_assistant_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_RESTORE_ASSISTANT, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -373,6 +371,7 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
+	iface->read_settings = iwindow_read_settings;
 }
 
 static void
@@ -383,7 +382,63 @@ iwindow_init( myIWindow *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
-	get_settings( OFA_RESTORE_ASSISTANT( instance ));
+}
+
+/*
+ * settings is "folder;open;filter_type;"
+ */
+static void
+iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
+{
+	ofaRestoreAssistantPrivate *priv;
+	GList *list, *it;
+	const gchar *cstr;
+
+	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
+
+	list = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
+
+	it = list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( priv->p1_folder );
+		priv->p1_folder = g_strdup( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_open = my_utils_boolean_from_str( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p1_filter = atoi( cstr );
+	}
+
+	my_isettings_free_string_list( settings, list );
+}
+
+static void
+set_settings( ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+	myISettings *settings;
+	gchar *keyname, *str;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	settings = my_iwindow_get_settings( MY_IWINDOW( self ));
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+
+	str = g_strdup_printf( "%s;%s;%d;",
+				priv->p1_folder, priv->p4_open ? "True":"False", priv->p1_filter );
+
+	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
+
+	g_free( str );
+	g_free( keyname );
 }
 
 /*
@@ -525,7 +580,7 @@ p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 	filter = gtk_file_chooser_get_filter( priv->p1_chooser );
 	priv->p1_filter = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( filter ), CHOOSER_FILTER_TYPE ));
 
-	update_settings( self );
+	set_settings( self );
 }
 
 /*
@@ -675,7 +730,7 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 static void
 p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 {
-	update_settings( self );
+	set_settings( self );
 }
 
 /*
@@ -1021,7 +1076,7 @@ p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
-	update_settings( self );
+	set_settings( self );
 }
 
 /*
@@ -1267,57 +1322,4 @@ p6_do_open( ofaRestoreAssistant *self )
 	}
 
 	return( G_SOURCE_REMOVE );
-}
-
-/*
- * settings is "folder;open;filter_type;"
- */
-static void
-get_settings( ofaRestoreAssistant *self )
-{
-	ofaRestoreAssistantPrivate *priv;
-	GList *list, *it;
-	const gchar *cstr;
-
-	priv = ofa_restore_assistant_get_instance_private( self );
-
-	list = ofa_settings_user_get_string_list( st_prefs_import );
-
-	it = list;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( priv->p1_folder );
-		priv->p1_folder = g_strdup( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p4_open = my_utils_boolean_from_str( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p1_filter = atoi( cstr );
-	}
-
-	ofa_settings_free_string_list( list );
-}
-
-static void
-update_settings( ofaRestoreAssistant *self )
-{
-	ofaRestoreAssistantPrivate *priv;
-	GList *list;
-
-	priv = ofa_restore_assistant_get_instance_private( self );
-
-	list = g_list_append( NULL, g_strdup( priv->p1_folder ));
-	list = g_list_append( list, g_strdup_printf( "%s", priv->p4_open ? "True":"False" ));
-	list = g_list_append( list, g_strdup_printf( "%d", priv->p1_filter ));
-
-	ofa_settings_user_set_string_list( st_prefs_import, list );
-
-	ofa_settings_free_string_list( list );
 }

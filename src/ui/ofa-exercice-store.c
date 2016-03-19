@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
-#include "api/my-date.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-preferences.h"

@@ -36,7 +36,6 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -159,20 +158,20 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(pkglibdir)" \
-	"$(DESTDIR)$(plugin_datadir)"
+am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_1 = openbook-resources.lo
-am__objects_2 = $(am__objects_1)
-am_libofa_tva_la_OBJECTS = $(am__objects_2) ofa-module.lo ofa-tva.lo \
-	ofa-tva-dbmodel.lo ofa-tva-declare-page.lo ofa-tva-execlose.lo \
+am_libofa_tva_la_OBJECTS = ofa-module.lo ofa-tva.lo ofa-tva-dbmodel.lo \
+	ofa-tva-declare-page.lo ofa-tva-execlose.lo \
 	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
 	ofa-tva-main.lo ofa-tva-manage-page.lo ofa-tva-record-new.lo \
 	ofa-tva-record-properties.lo ofa-tva-record-store.lo \
 	ofo-tva-form.lo ofo-tva-record.lo
-libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS)
+am__objects_1 = resources.lo
+nodist_libofa_tva_la_OBJECTS = $(am__objects_1)
+libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS) \
+	$(nodist_libofa_tva_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -214,14 +213,13 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libofa_tva_la_SOURCES)
+SOURCES = $(libofa_tva_la_SOURCES) $(nodist_libofa_tva_la_SOURCES)
 DIST_SOURCES = $(libofa_tva_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-DATA = $(plugin_data_DATA)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -354,6 +352,7 @@ POPPLER_LIBS = @POPPLER_LIBS@
 POSUB = @POSUB@
 PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
 PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
+PWI_LIBS = @PWI_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -424,24 +423,26 @@ top_srcdir = @top_srcdir@
 plugin_id = ofa-tva
 pkglib_LTLIBRARIES = libofa-tva.la
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
-resdir = $(srcdir)
-resxml = $(srcdir)/openbook.gresource.xml
-resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
-openbook_built_sources = \
-	openbook-resources.c								\
-	openbook-resources.h								\
+
+# Resources are bundled as GResource binary data in the library.
+# They are distributed in the package, but not installed.
+resname = ofa_tva
+resxml = $(srcdir)/resources.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
+tva_built_sources = \
+	resources.c											\
+	resources.h											\
 	$(NULL)
 
 BUILT_SOURCES = \
-	$(openbook_built_sources)							\
+	$(tva_built_sources)								\
 	$(NULL)
 
-nodist_openbook_SOURCES = \
-	$(openbook_built_sources)							\
+nodist_libofa_tva_la_SOURCES = \
+	$(tva_built_sources)								\
 	$(NULL)
 
 libofa_tva_la_SOURCES = \
-	$(BUILT_SOURCES)									\
 	ofa-module.c										\
 	ofa-tva.c											\
 	ofa-tva.h											\
@@ -481,30 +482,12 @@ libofa_tva_la_LDFLAGS = \
 	-avoid-version										\
 	$(NULL)
 
-ui_files = \
-	$(NULL)
-
-resources_ui = \
-	ofa-tva-form-properties.ui							\
-	ofa-tva-record-new.ui								\
-	ofa-tva-record-properties.ui						\
-	$(NULL)
-
-images_files = \
-	$(NULL)
-
-plugin_data_DATA = \
-	$(ui_files)											\
-	$(images_files)										\
-	$(NULL)
-
 CLEANFILES = \
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
 EXTRA_DIST = \
-	$(plugin_data_DATA)									\
-	$(resources_ui)										\
+	$(resfiles)											\
 	$(resxml)											\
 	$(NULL)
 
@@ -601,7 +584,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tva-form.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tva-record.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/openbook-resources.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -629,27 +612,6 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-plugin_dataDATA: $(plugin_data_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(plugin_data_DATA)'; test -n "$(plugin_datadir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(plugin_datadir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(plugin_datadir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(plugin_datadir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(plugin_datadir)" || exit $$?; \
-	done
-
-uninstall-plugin_dataDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(plugin_data_DATA)'; test -n "$(plugin_datadir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(plugin_datadir)'; $(am__uninstall_files_from_dir)
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -736,9 +698,9 @@ distdir: $(DISTFILES)
 check-am: all-am
 check: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) check-am
-all-am: Makefile $(LTLIBRARIES) $(DATA)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
-	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(plugin_datadir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -797,7 +759,7 @@ info: info-am
 
 info-am:
 
-install-data-am: install-plugin_dataDATA
+install-data-am:
 
 install-dvi: install-dvi-am
 
@@ -843,7 +805,7 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-plugin_dataDATA
+uninstall-am: uninstall-pkglibLTLIBRARIES
 
 .MAKE: all check install install-am install-strip
 
@@ -855,20 +817,19 @@ uninstall-am: uninstall-pkglibLTLIBRARIES uninstall-plugin_dataDATA
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
 	install-info-am install-man install-pdf install-pdf-am \
-	install-pkglibLTLIBRARIES install-plugin_dataDATA install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-pkglibLTLIBRARIES \
-	uninstall-plugin_dataDATA
+	install-pkglibLTLIBRARIES install-ps install-ps-am \
+	install-strip installcheck installcheck-am installdirs \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-pkglibLTLIBRARIES
 
 .PRECIOUS: Makefile
 
-openbook-resources.c: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
-openbook-resources.h: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
+resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name $(resname) $(resxml)
+resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name $(resname) $(resxml)
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

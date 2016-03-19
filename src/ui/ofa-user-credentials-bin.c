@@ -28,7 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
 
 #include "ui/ofa-user-credentials-bin.h"
 

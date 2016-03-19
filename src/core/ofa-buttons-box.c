@@ -26,7 +26,8 @@
 #include <config.h>
 #endif
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-buttons-box.h"
 
 /* private instance data

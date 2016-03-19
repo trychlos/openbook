@@ -26,7 +26,8 @@
 #include <config.h>
 #endif
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofo-currency.h"

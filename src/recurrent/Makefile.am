@@ -35,29 +35,30 @@ AM_CPPFLAGS += \
 	-DPROVIDER_DATADIR=\"$(plugin_datadir)\"			\
 	$(NULL)
 
-resdir = $(srcdir)
-resxml = $(srcdir)/openbook.gresource.xml
-resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
-openbook-resources.c: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
-openbook-resources.h: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
+# Resources are bundled as GResource binary data in the library.
+# They are distributed in the package, but not installed.
+resname = ofa_recurrent
+resxml = $(srcdir)/resources.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
+resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name $(resname) $(resxml)
+resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name $(resname) $(resxml)
 
-openbook_built_sources = \
-	openbook-resources.c								\
-	openbook-resources.h								\
+recurrent_built_sources = \
+	resources.c											\
+	resources.h											\
 	$(NULL)
 
 BUILT_SOURCES = \
-	$(openbook_built_sources)							\
+	$(recurrent_built_sources)							\
 	$(NULL)
 
-nodist_openbook_SOURCES = \
-	$(openbook_built_sources)							\
+nodist_libofa_recurrent_la_SOURCES = \
+	$(recurrent_built_sources)							\
 	$(NULL)
 
 libofa_recurrent_la_SOURCES = \
-	$(BUILT_SOURCES)									\
 	ofa-module.c										\
 	ofa-recurrent.c										\
 	ofa-recurrent.h										\
@@ -97,26 +98,11 @@ libofa_recurrent_la_LDFLAGS = \
 	-avoid-version										\
 	$(NULL)
 
-resources_ui = \
-	ofa-recurrent-manage-page.ui						\
-	ofa-recurrent-model-properties.ui					\
-	ofa-recurrent-new.ui								\
-	ofa-recurrent-run-page.ui							\
-	$(NULL)
-
-images_files = \
-	$(NULL)
-
-plugin_data_DATA = \
-	$(images_files)										\
-	$(NULL)
-
 CLEANFILES = \
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
 EXTRA_DIST = \
-	$(plugin_data_DATA)									\
-	$(resources_ui)										\
+	$(resfiles)											\
 	$(resxml)											\
 	$(NULL)

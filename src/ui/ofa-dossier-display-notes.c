@@ -26,10 +26,12 @@
 #include <config.h>
 #endif
 
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
@@ -149,6 +151,7 @@ ofa_dossier_display_notes_run( ofaMainWindow *main_window, const gchar *main_not
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DISPLAY_NOTES, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_dossier_display_notes_get_instance_private( self );
 

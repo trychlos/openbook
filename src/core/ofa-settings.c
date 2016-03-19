@@ -26,11 +26,11 @@
 #include <config.h>
 #endif
 
-#include "api/my-utils.h"
+#include "my/my-settings.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-settings.h"
-
-#include "my-settings.h"
 
 static mySettings *st_user_settings     = NULL;
 static mySettings *st_dossier_settings  = NULL;
@@ -264,7 +264,6 @@ ofa_settings_set_string( ofaSettingsTarget target, const gchar *group, const gch
  * Returns: a newly allocated GList of strings.
  *
  * The returned list should be #ofa_settings_free_string_list() by the
- * caller.
  * caller.
  */
 GList *

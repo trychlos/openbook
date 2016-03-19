@@ -44,7 +44,8 @@
  * the #ofaFileDir singleton.
  */
 
-#include "api/my-isettings.h"
+#include "my/my-isettings.h"
+
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"

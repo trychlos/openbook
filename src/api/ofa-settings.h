@@ -41,8 +41,9 @@
  *   default is HOME/.config/PACKAGE/dossier.conf
  */
 
-#include "my-isettings.h"
-#include "ofa-idbmeta-def.h"
+#include "my/my-isettings.h"
+
+#include "api/ofa-idbmeta-def.h"
 
 G_BEGIN_DECLS
 

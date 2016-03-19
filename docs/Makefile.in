@@ -292,6 +292,7 @@ POPPLER_LIBS = @POPPLER_LIBS@
 POSUB = @POSUB@
 PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
 PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
+PWI_LIBS = @PWI_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -363,7 +364,6 @@ pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
 dist_pkgdoc_DATA = \
 	DataDictionary.xls					\
 	ExeDateRemediations.xls				\
-	IDBMS.README						\
 	ImportFormats.README				\
 	Signals.README						\
 	Styles.README						\

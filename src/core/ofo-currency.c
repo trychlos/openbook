@@ -32,7 +32,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"

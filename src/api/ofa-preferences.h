@@ -41,7 +41,8 @@
 
 #include <gtk/gtk.h>
 
-#include "api/my-date.h"
+#include "my/my-date.h"
+
 #include "api/ofa-plugin.h"
 
 G_BEGIN_DECLS

@@ -25,10 +25,6 @@ api_includedir = $(pkgincludedir)
 api_include_HEADERS = \
 	ofa-extension.h										\
 	\
-	my-idialog.h										\
-	my-igridlist.h										\
-	my-isettings.h										\
-	my-iwindow.h										\
 	ofa-file-format.h									\
 	ofa-hub.h											\
 	ofa-hub-def.h										\
@@ -60,14 +56,6 @@ api_include_HEADERS = \
 	ofa-list-store.h									\
 	ofa-settings.h										\
 	\
-	my-date.h											\
-	my-double.h											\
-	my-editable-amount.h								\
-	my-editable-date.h									\
-	my-file-monitor.h									\
-	my-progress-bar.h									\
-	my-timeout.h										\
-	my-utils.h											\
 	ofa-box.h											\
 	ofa-buttons-box.h									\
 	ofa-date-filter-hv-bin.h							\

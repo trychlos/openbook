@@ -28,9 +28,10 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-iwindow.h"
-#include "api/my-progress-bar.h"
-#include "api/my-utils.h"
+#include "my/my-iwindow.h"
+#include "my/my-progress-bar.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 

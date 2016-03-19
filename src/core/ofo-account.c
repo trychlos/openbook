@@ -30,9 +30,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/my-date.h"
-#include "api/my-double.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-double.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-box.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
@@ -42,6 +43,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -49,8 +51,6 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
-
-#include "api/ofa-preferences.h"
 
 /* priv instance data
  */

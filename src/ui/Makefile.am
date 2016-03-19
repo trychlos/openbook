@@ -44,16 +44,31 @@ AM_CPPFLAGS += \
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
+# Resources are bundled as GResource binary data in the library.
+# They are distributed in the package, but not installed.
+resname = ofa_ui
+resxml = $(srcdir)/resources.xml
+resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
+resources.c: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name $(resname) $(resxml)
+resources.h: $(resxml) $(resource_files)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name $(resname) $(resxml)
+
+main_built_sources = \
+	resources.c											\
+	resources.h											\
+	$(NULL)
+
+BUILT_SOURCES = \
+	$(main_built_sources)								\
+	$(NULL)
+
+nodist_openbook_SOURCES = \
+	$(main_built_sources)								\
+	$(NULL)
+
 openbook_SOURCES = \
 	main.c												\
-	my-cell-renderer-amount.c							\
-	my-cell-renderer-amount.h							\
-	my-cell-renderer-date.c								\
-	my-cell-renderer-date.h								\
-	my-iassistant.c										\
-	my-iassistant.h										\
-	my-tab.c											\
-	my-tab.h											\
 	ofa-about.c											\
 	ofa-about.h											\
 	ofa-account-book-bin.c								\
@@ -201,94 +216,6 @@ openbook_LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
 
-actions_files = \
-	$(NULL)
-
-rc_files = \
-	$(NULL)
-
-ui_files = \
-	$(NULL)
-
-images_files = \
-	$(NULL)
-
-resources_ui = \
-	ofa-account-book-bin.ui								\
-	ofa-account-filter-vv-bin.ui						\
-	ofa-balance-bin.ui									\
-	ofa-bat-properties.ui								\
-	ofa-bat-properties-bin.ui							\
-	ofa-bat-select.ui									\
-	ofa-check-balances.ui								\
-	ofa-check-balances-bin.ui							\
-	ofa-check-integrity.ui								\
-	ofa-check-integrity-bin.ui							\
-	ofa-class-properties.ui								\
-	ofa-closing-parms-bin.ui							\
-	ofa-currency-properties.ui							\
-	ofa-dossier-delete.ui								\
-	ofa-dossier-display-notes.ui						\
-	ofa-dossier-manager.ui								\
-	ofa-dossier-new.ui									\
-	ofa-dossier-new-bin.ui								\
-	ofa-dossier-new-mini.ui								\
-	ofa-dossier-open.ui									\
-	ofa-dossier-properties.ui							\
-	ofa-entry-page.ui									\
-	ofa-exercice-close-assistant.ui						\
-	ofa-export-assistant.ui								\
-	ofa-import-assistant.ui								\
-	ofa-ledger-book-bin.ui								\
-	ofa-ledger-close.ui									\
-	ofa-ledger-properties.ui							\
-	ofa-ledger-summary-bin.ui							\
-	ofa-plugin-manager.ui								\
-	ofa-rate-properties.ui								\
-	ofa-reconcil-bin.ui									\
-	ofa-reconcil-page.ui								\
-	ofa-render-page.ui									\
-	ofa-restore-assistant.ui							\
-	ofa-settlement-page.ui								\
-	ofa-user-credentials-bin.ui							\
-	\
-	ofa-app-menubar.ui									\
-	ofa-dos-menubar.ui									\
-	\
-	ofa-itreeview-display-arrow-down.png				\
-	light-empty-14.png									\
-	light-green-14.png									\
-	light-yellow-14.png									\
-	$(NULL)
-
-ui_data_DATA = \
-	$(actions_files)									\
-	$(rc_files)											\
-	$(ui_files)											\
-	$(images_files)										\
-	$(NULL)
-
-resdir = $(srcdir)
-resxml = $(srcdir)/openbook.gresource.xml
-resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
-openbook-resources.c: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
-openbook-resources.h: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
-
-openbook_built_sources = \
-	openbook-resources.c								\
-	openbook-resources.h								\
-	$(NULL)
-
-BUILT_SOURCES = \
-	$(openbook_built_sources)							\
-	$(NULL)
-
-nodist_openbook_SOURCES = \
-	$(openbook_built_sources)							\
-	$(NULL)
-
 @INTLTOOL_DESKTOP_RULE@
 
 #applications_in_files = nact.desktop.in
@@ -310,7 +237,6 @@ CLEANFILES = \
 
 EXTRA_DIST = \
 	$(applications_in_files)							\
-	$(ui_data_DATA)										\
-	$(resources_ui)										\
+	$(resfiles)											\
 	$(resxml)											\
 	$(NULL)

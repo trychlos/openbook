@@ -29,11 +29,12 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
-#include "api/my-editable-date.h"
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-editable-date.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-periodicity.h"
 #include "api/ofa-preferences.h"
@@ -199,6 +200,7 @@ ofa_recurrent_new_run( ofaMainWindow *main_window, GtkWindow *parent )
 	self = g_object_new( OFA_TYPE_RECURRENT_NEW, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));

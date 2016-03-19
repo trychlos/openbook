@@ -29,9 +29,10 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
-#include "api/my-date.h"
-#include "api/my-editable-date.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-editable-date.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-idate-filter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"

@@ -22,14 +22,17 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
+# misc/ directory hosts some test programs which themselves heavily
+# rely on orgtrychlosmy and core libraries
+# => so build misc/ after src/
 SUBDIRS = \
 	data								\
 	docs								\
 	m4									\
 	maintainer							\
-	misc								\
 	po									\
 	src									\
+	misc								\
 	$(NULL)
 
 DISTCHECK_CONFIGURE_FLAGS = \

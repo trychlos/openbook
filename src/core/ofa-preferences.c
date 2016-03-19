@@ -29,18 +29,19 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-date-combo.h"
+#include "my/my-decimal-combo.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-iprefs-page.h"
 #include "api/ofa-iprefs-provider.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 
-#include "my-date-combo.h"
-#include "my-decimal-combo.h"
 #include "ofa-dossier-delete-prefs-bin.h"
 #include "ofa-file-format-bin.h"
 
@@ -261,6 +262,7 @@ ofa_preferences_run( GtkApplicationWindow *main_window, ofaPlugin *plugin )
 
 	self = g_object_new( OFA_TYPE_PREFERENCES, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_preferences_get_instance_private( self );
 

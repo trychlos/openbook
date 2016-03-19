@@ -28,8 +28,8 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-progress-bar.h"
-#include "api/my-utils.h"
+#include "my/my-progress-bar.h"
+#include "my/my-utils.h"
 
 #include "ofa-tva.h"
 #include "ofa-tva-execlose.h"

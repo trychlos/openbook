@@ -28,7 +28,8 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-date.h"
+#include "my/my-date.h"
+
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-preferences.h"
 

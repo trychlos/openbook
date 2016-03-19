@@ -30,7 +30,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
 
 #include "ui/ofa-irenderable.h"
 

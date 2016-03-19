@@ -28,12 +28,13 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-date.h"
-#include "api/my-editable-date.h"
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-progress-bar.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-editable-date.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-progress-bar.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
@@ -193,6 +194,7 @@ ofa_ledger_close_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_LEDGER_CLOSE, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));

@@ -28,12 +28,12 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-date.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-date-combo.h"
+#include "my/my-decimal-combo.h"
+#include "my/my-field-combo.h"
+#include "my/my-utils.h"
 
-#include "my-date-combo.h"
-#include "my-decimal-combo.h"
-#include "my-field-combo.h"
 #include "ofa-file-format-bin.h"
 
 /* private instance data

@@ -37,10 +37,11 @@
  * which may want update the DB model through a suitable UI.
  */
 
-#include "my-iwindow.h"
-#include "ofa-hub-def.h"
-#include "ofa-idbconnect.h"
-#include "ofo-base-def.h"
+#include "my/my-iwindow.h"
+
+#include "api/ofa-hub-def.h"
+#include "api/ofa-idbconnect.h"
+#include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
 

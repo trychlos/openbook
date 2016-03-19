@@ -30,9 +30,11 @@
 #include <glib/gprintf.h>
 #include <stdlib.h>
 
-#include "api/my-iwindow.h"
-#include "api/my-progress-bar.h"
-#include "api/my-utils.h"
+#include "my/my-iassistant.h"
+#include "my/my-iwindow.h"
+#include "my/my-progress-bar.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"
@@ -52,7 +54,6 @@
 #include "core/ofa-file-format-bin.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-iassistant.h"
 #include "ui/ofa-import-assistant.h"
 
 /* Export Assistant
@@ -161,10 +162,11 @@ static const sRadios st_radios[] = {
 #define DATA_BUTTON_INDEX               "ofa-data-button-idx"
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-import-assistant.ui";
-static const gchar *st_prefs_import     = "ofaImportAssistant-settings";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
+static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
+static void     set_settings( ofaImportAssistant *self );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     iimporter_iface_init( ofaIImporterInterface *iface );
@@ -195,8 +197,6 @@ static guint    p5_do_import_other( ofaImportAssistant *self, guint *errors );
 static void     p5_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progress, const gchar *text, ofaImportAssistant *self );
 static void     p5_on_pulse( ofaIImporter *importer, ofeImportablePhase phase, ofaImportAssistant *self );
 static void     p5_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg status, const gchar *msg, ofaImportAssistant *self );
-static void     get_settings( ofaImportAssistant *self );
-static void     update_settings( ofaImportAssistant *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaImportAssistant, ofa_import_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaImportAssistant )
@@ -327,6 +327,7 @@ ofa_import_assistant_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_IMPORT_ASSISTANT, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -362,6 +363,7 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
+	iface->read_settings = iwindow_read_settings;
 }
 
 static void
@@ -372,12 +374,63 @@ iwindow_init( myIWindow *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
-	get_settings( OFA_IMPORT_ASSISTANT( instance ));
 
 	/* messages provided by the ofaIImporter interface */
 	g_signal_connect( instance, "pulse", G_CALLBACK( p5_on_pulse ), instance );
 	g_signal_connect( instance, "progress", G_CALLBACK( p5_on_progress ), instance );
 	g_signal_connect( instance, "message", G_CALLBACK( p5_on_message ), instance );
+}
+
+/*
+ * settings is "folder;last_chosen_type;"
+ */
+static void
+iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
+{
+	ofaImportAssistantPrivate *priv;
+	GList *list, *it;
+	const gchar *cstr;
+
+	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
+
+	list = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
+
+	it = list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p2_type = atoi( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( priv->p1_folder );
+		priv->p1_folder = g_strdup( cstr );
+	}
+
+	my_isettings_free_string_list( settings, list );
+}
+
+static void
+set_settings( ofaImportAssistant *self )
+{
+	ofaImportAssistantPrivate *priv;
+	myISettings *settings;
+	gchar *keyname, *str;
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	settings = my_iwindow_get_settings( MY_IWINDOW( self ));
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+
+	str = g_strdup_printf( "%d;%s;",
+			priv->p2_type,
+			priv->p1_folder ? priv->p1_folder : "" );
+
+	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
+
+	g_free( str );
+	g_free( keyname );
 }
 
 /*
@@ -518,7 +571,7 @@ p1_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_debug( "%s: uri=%s, folder=%s", thisfn, priv->p1_furi, priv->p1_folder );
 
-	update_settings( self );
+	set_settings( self );
 }
 
 /*
@@ -615,7 +668,7 @@ p2_check_for_complete( ofaImportAssistant *self )
 static void
 p2_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
-	update_settings( self );
+	set_settings( self );
 }
 
 /*
@@ -1087,51 +1140,4 @@ p5_on_message( ofaIImporter *importer, guint line_number, ofeImportableMsg statu
 	while( gtk_events_pending()){
 		gtk_main_iteration();
 	}
-}
-
-/*
- * settings is "folder;last_chosen_type;"
- */
-static void
-get_settings( ofaImportAssistant *self )
-{
-	ofaImportAssistantPrivate *priv;
-	GList *list, *it;
-	const gchar *cstr;
-
-	priv = ofa_import_assistant_get_instance_private( self );
-
-	list = ofa_settings_user_get_string_list( st_prefs_import );
-
-	it = list;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p2_type = atoi( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( priv->p1_folder );
-		priv->p1_folder = g_strdup( cstr );
-	}
-
-	ofa_settings_free_string_list( list );
-}
-
-static void
-update_settings( ofaImportAssistant *self )
-{
-	ofaImportAssistantPrivate *priv;
-	gchar *str;
-
-	priv = ofa_import_assistant_get_instance_private( self );
-
-	str = g_strdup_printf( "%d;%s;",
-			priv->p2_type,
-			priv->p1_folder ? priv->p1_folder : "" );
-
-	ofa_settings_user_set_string( st_prefs_import, str );
-
-	g_free( str );
 }

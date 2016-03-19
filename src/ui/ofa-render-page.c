@@ -31,7 +31,8 @@
 #include <glib/gi18n.h>
 #include <math.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 

@@ -44,10 +44,12 @@
 #include <sys/wait.h>
 #endif
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-iprefs-provider.h"
+#include "api/ofa-settings.h"
 
 #include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"
@@ -477,6 +479,7 @@ do_execute_async( const gchar *template,
 	GPid child_pid;
 	gboolean ok;
 	guint source_id;
+	myISettings *settings;
 
 	cmdline = cmdline_build_from_connect( template, connect, period, fname, NULL );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
@@ -506,7 +509,9 @@ do_execute_async( const gchar *template,
 		if( infos->verbose ){
 			g_debug( "%s: running the display dialog", thisfn );
 			gtk_dialog_run( GTK_DIALOG( infos->window ));
-			my_utils_window_save_position( GTK_WINDOW( infos->window ), st_window_name );
+
+			settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+			my_utils_window_save_position( GTK_WINDOW( infos->window ), settings, st_window_name );
 
 		} else {
 			g_main_loop_run( infos->loop );
@@ -535,6 +540,7 @@ static void
 async_create_window( sExecuteInfos *infos, const gchar *window_title )
 {
 	GtkWidget *content, *grid, *scrolled;
+	myISettings *settings;
 
 	infos->window = gtk_dialog_new_with_buttons(
 							window_title,
@@ -564,7 +570,8 @@ async_create_window( sExecuteInfos *infos, const gchar *window_title )
 	my_utils_widget_set_margins( infos->close_btn, 4, 4, 0, 8 );
 	gtk_widget_set_sensitive( infos->close_btn, FALSE );
 
-	my_utils_window_restore_position( GTK_WINDOW( infos->window ), st_window_name );
+	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	my_utils_window_restore_position( GTK_WINDOW( infos->window ), settings, st_window_name );
 
 	gtk_widget_show_all( infos->window );
 }

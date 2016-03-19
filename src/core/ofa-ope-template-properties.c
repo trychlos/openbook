@@ -28,13 +28,15 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-idialog.h"
-#include "api/my-igridlist.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-idialog.h"
+#include "my/my-igridlist.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-account.h"
 #include "api/ofo-ope-template.h"
@@ -258,6 +260,7 @@ ofa_ope_template_properties_run(
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_PROPERTIES, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 	priv->ope_template = template;

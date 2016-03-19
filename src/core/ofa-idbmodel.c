@@ -29,9 +29,10 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-plugin.h"
@@ -104,8 +105,8 @@ static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, m
 /* dialog management */
 static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
 static void     iwindow_iface_init( myIWindowInterface *iface );
-static void     iwindow_read_settings( myIWindow *instance, const gchar *settings_name );
-static void     iwindow_write_settings( myIWindow *instance, const gchar *settings_name );
+static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
+static void     iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static gboolean do_run( ofaDBModelWindow *dialog );
@@ -263,6 +264,7 @@ ofa_idbmodel_update( ofaHub *hub )
 	if( need_update ){
 		window = g_object_new( OFA_TYPE_DBMODEL_WINDOW, NULL );
 		my_iwindow_set_main_window( MY_IWINDOW( window ), NULL );
+		my_iwindow_set_settings( MY_IWINDOW( window ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 		priv = ofa_dbmodel_window_get_instance_private( window );
 
@@ -550,39 +552,33 @@ iwindow_iface_init( myIWindowInterface *iface )
  * - paned pos
  */
 static void
-iwindow_read_settings( myIWindow *instance, const gchar *settings_name )
+iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
 {
 	ofaDBModelWindowPrivate *priv;
-	gchar *key_name;
 	GList *slist, *it;
 
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
-	key_name = g_strdup_printf( "%s-settings", settings_name );
-	slist = ofa_settings_user_get_string_list( key_name );
+	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
 	it = slist ? slist : NULL;
-	priv->paned_pos = it ? atoi( it->data ) : 50;
+	priv->paned_pos = it ? atoi( it->data ) : 150;
 
 	ofa_settings_free_string_list( slist );
-	g_free( key_name );
 }
 
 static void
-iwindow_write_settings( myIWindow *instance, const gchar *settings_name )
+iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
 {
 	ofaDBModelWindowPrivate *priv;
-	gchar *key_name;
 	gchar *str;
 
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
-	key_name = g_strdup_printf( "%s-settings", settings_name );
 	str = g_strdup_printf( "%d;", gtk_paned_get_position( GTK_PANED( priv->paned )));
 
-	ofa_settings_user_set_string( key_name, str );
+	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
 
 	g_free( str );
-	g_free( key_name );
 }
 
 /*

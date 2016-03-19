@@ -28,8 +28,9 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-date.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"

@@ -53,7 +53,7 @@
  *   lines in an imported file
  */
 
-#include "api/my-date.h"
+#include "my/my-date.h"
 
 G_BEGIN_DECLS
 

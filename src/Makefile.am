@@ -20,17 +20,20 @@
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
 
+# Apart from api/, all code more or less heavily relies on orgtrychlosmy
+# library -> so built it first  
 SUBDIRS = \
-	api									\
-	core								\
-	css									\
-	import-bourso						\
-	import-bourso-pdf					\
-	import-lcl							\
-	import-lcl-pdf						\
-	mysql								\
-	postgre								\
-	recurrent							\
-	tva									\
-	ui									\
+	my-1												\
+	api													\
+	core												\
+	css													\
+	import-bourso										\
+	import-bourso-pdf									\
+	import-lcl											\
+	import-lcl-pdf										\
+	mysql												\
+	postgre												\
+	recurrent											\
+	tva													\
+	ui													\
 	$(NULL)

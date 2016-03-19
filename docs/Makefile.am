@@ -25,7 +25,6 @@ pkgdocdir = $(datarootdir)/doc/@PACKAGE@-@VERSION@
 dist_pkgdoc_DATA = \
 	DataDictionary.xls					\
 	ExeDateRemediations.xls				\
-	IDBMS.README						\
 	ImportFormats.README				\
 	Signals.README						\
 	Styles.README						\

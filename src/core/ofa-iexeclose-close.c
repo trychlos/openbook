@@ -29,7 +29,8 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-iexeclose-close.h"
 #include "api/ofa-plugin.h"

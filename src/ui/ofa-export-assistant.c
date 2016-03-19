@@ -30,9 +30,11 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-progress-bar.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-iassistant.h"
+#include "my/my-iwindow.h"
+#include "my/my-progress-bar.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iexportable.h"
@@ -50,7 +52,6 @@
 #include "core/ofa-file-format-bin.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-iassistant.h"
 #include "ui/ofa-export-assistant.h"
 
 /* private instance data
@@ -164,13 +165,14 @@ static sTypes st_types[] = {
 };
 
 /* data set against each data type radio button */
-#define DATA_TYPE_INDEX                 "ofa-data-type"
+#define DATA_TYPE_INDEX                   "ofa-data-type"
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-export-assistant.ui";
-static const gchar *st_pref_settings    = "ofaExportAssistant-settings";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      iwindow_init( myIWindow *instance );
+static void      iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
+static void      set_settings( ofaExportAssistant *self );
 static void      iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean  iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void      p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -196,8 +198,6 @@ static gboolean  p3_confirm_overwrite( const ofaExportAssistant *self, const gch
 static void      p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static gboolean  export_data( ofaExportAssistant *self );
 static void      p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self );
-static void      get_settings( ofaExportAssistant *self );
-static void      set_settings( ofaExportAssistant *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaExportAssistant, ofa_export_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaExportAssistant )
@@ -327,6 +327,7 @@ ofa_export_assistant_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_EXPORT_ASSISTANT, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -343,6 +344,7 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
+	iface->read_settings = iwindow_read_settings;
 }
 
 static void
@@ -353,7 +355,58 @@ iwindow_init( myIWindow *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
-	get_settings( OFA_EXPORT_ASSISTANT( instance ));
+}
+
+/*
+ * settings are:
+ * content;uri;
+ */
+static void
+iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
+{
+	ofaExportAssistantPrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
+
+	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
+
+	it = slist;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p1_code = atoi( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p3_furi = g_strdup( cstr );
+	}
+
+	my_isettings_free_string_list( settings, slist );
+}
+
+static void
+set_settings( ofaExportAssistant *self )
+{
+	ofaExportAssistantPrivate *priv;
+	myISettings *settings;
+	gchar *keyname, *str;
+
+	priv = ofa_export_assistant_get_instance_private( self );
+
+	settings = my_iwindow_get_settings( MY_IWINDOW( self ));
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+
+	str = g_strdup_printf( "%d;%s;",
+			priv->p1_code,
+			priv->p3_furi ? priv->p3_furi : "" );
+
+	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
+
+	g_free( str );
+	g_free( keyname );
 }
 
 /*
@@ -1038,51 +1091,4 @@ p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text,
 
 	g_signal_emit_by_name( priv->p5_bar, "ofa-double", progress );
 	g_signal_emit_by_name( priv->p5_bar, "ofa-text", text );
-}
-
-/*
- * settings are:
- * content;uri;
- */
-static void
-get_settings( ofaExportAssistant *self )
-{
-	ofaExportAssistantPrivate *priv;
-	GList *slist, *it;
-	const gchar *cstr;
-
-	priv = ofa_export_assistant_get_instance_private( self );
-
-	slist = ofa_settings_user_get_string_list( st_pref_settings );
-
-	it = slist;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p1_code = atoi( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p3_furi = g_strdup( cstr );
-	}
-
-	ofa_settings_free_string_list( slist );
-}
-
-static void
-set_settings( ofaExportAssistant *self )
-{
-	ofaExportAssistantPrivate *priv;
-	gchar *str;
-
-	priv = ofa_export_assistant_get_instance_private( self );
-
-	str = g_strdup_printf( "%d;%s;",
-			priv->p1_code,
-			priv->p3_furi ? priv->p3_furi : "" );
-
-	ofa_settings_user_set_string( st_pref_settings, str );
-
-	g_free( str );
 }

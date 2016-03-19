@@ -28,9 +28,10 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
@@ -181,6 +182,7 @@ ofa_dossier_delete_run( ofaMainWindow *main_window, const ofaIDBMeta *meta, cons
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DELETE, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_dossier_delete_get_instance_private( self );
 

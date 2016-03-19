@@ -33,8 +33,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/my-date.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"

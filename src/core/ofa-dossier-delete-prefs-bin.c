@@ -28,7 +28,8 @@
 
 #include <stdlib.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-settings.h"
 
 #include "ofa-dossier-delete-prefs-bin.h"

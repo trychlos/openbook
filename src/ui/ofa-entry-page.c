@@ -29,10 +29,13 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
-#include "api/my-double.h"
-#include "api/my-editable-date.h"
-#include "api/my-utils.h"
+#include "my/my-cell-renderer-amount.h"
+#include "my/my-cell-renderer-date.h"
+#include "my/my-date.h"
+#include "my/my-double.h"
+#include "my/my-editable-date.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
@@ -56,8 +59,6 @@
 #include "core/ofa-ledger-combo.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-cell-renderer-amount.h"
-#include "ui/my-cell-renderer-date.h"
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"

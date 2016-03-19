@@ -22,8 +22,6 @@
 
 pkglib_LTLIBRARIES = libofa-core.la
 
-core_datadir = $(pkgdatadir)/core
-
 css_datadir = $(pkgdatadir)/css
 
 init1_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
@@ -39,50 +37,30 @@ AM_CPPFLAGS += \
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
-resdir = $(srcdir)
-resxml = $(srcdir)/openbook.gresource.xml
-resource_files = $(shell glib-compile-resources --sourcedir=$(resdir) --generate-dependencies $(resxml))
-openbook-resources.c: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-source --c-name openbook $(resxml)
-openbook-resources.h: $(resxml) $(resource_files)
-	glib-compile-resources --target=$@ --sourcedir=$(resdir) --generate-header --c-name openbook $(resxml)
+# Resources are bundled as GResource binary data in the library.
+# They are distributed in the package, but not installed.
+resname = ofa_core
+resxml = $(srcdir)/resources.xml
+resfiles = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
+resources.c: $(resxml) $(resfiles)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name $(resname) $(resxml)
+resources.h: $(resxml) $(resfiles)
+	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name $(resname) $(resxml)
 
-openbook_built_sources = \
-	openbook-resources.c								\
-	openbook-resources.h								\
+res_built_sources = \
+	resources.c											\
+	resources.h											\
 	$(NULL)
 
 BUILT_SOURCES = \
-	$(openbook_built_sources)							\
+	$(res_built_sources)								\
 	$(NULL)
 
-nodist_openbook_SOURCES = \
-	$(openbook_built_sources)							\
+nodist_libofa_core_la_SOURCES = \
+	$(res_built_sources)								\
 	$(NULL)
 
 libofa_core_la_SOURCES = \
-	$(BUILT_SOURCES)									\
-	my-date.c											\
-	my-date-combo.c										\
-	my-date-combo.h										\
-	my-decimal-combo.c									\
-	my-decimal-combo.h									\
-	my-double.c											\
-	my-editable-amount.c								\
-	my-editable-date.c									\
-	my-field-combo.c									\
-	my-field-combo.h									\
-	my-file-monitor.c									\
-	my-idialog.c										\
-	my-igridlist.c										\
-	my-isettings.c										\
-	my-iwindow.c										\
-	my-progress-bar.c									\
-	my-settings.c										\
-	my-settings.h										\
-	my-timeout.c										\
-	my-utils.c											\
-	\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
 	ofa-account-properties.c							\
@@ -159,7 +137,6 @@ libofa_core_la_SOURCES = \
 	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
-	\
 	ofo-account.c										\
 	ofo-base.c											\
 	ofo-bat.c											\
@@ -172,7 +149,6 @@ libofa_core_la_SOURCES = \
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
 	ofo-rate.c											\
-	\
 	ofs-account-balance.c								\
 	ofs-bat.c											\
 	ofs-concil-id.c										\
@@ -190,42 +166,11 @@ libofa_core_la_LDFLAGS = \
 	-fPIC												\
 	$(NULL)
 
-ui_files = \
-	$(NULL)
-
-resources_ui = \
-	ofa-account-properties.ui							\
-	ofa-account-select.ui								\
-	ofa-admin-credentials-bin.ui						\
-	ofa-date-filter-hv-bin.ui							\
-	ofa-dbms-root-bin.ui								\
-	ofa-dossier-delete-prefs-bin.ui						\
-	ofa-file-format-bin.ui								\
-	ofa-guided-input.ui									\
-	ofa-guided-input-bin.ui								\
-	ofa-idbmodel.ui										\
-	ofa-ope-template-help.ui							\
-	ofa-ope-template-properties.ui						\
-	ofa-ope-template-select.ui							\
-	ofa-preferences.ui									\
-	\
-	filler.png											\
-	notes.png											\
-	ofa-guided-input-bin-green-checkmark.png			\
-	ofa-ientry-account-icon-16.png						\
-	ofa-ientry-ope-template-icon-16.png					\
-	$(NULL)
-
-core_data_DATA = \
-	$(ui_files)											\
-	$(NULL)
-
 CLEANFILES = \
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
 EXTRA_DIST = \
-	$(core_data_DATA)									\
-	$(resources_ui)										\
+	$(resfiles)											\
 	$(resxml)											\
 	$(NULL)

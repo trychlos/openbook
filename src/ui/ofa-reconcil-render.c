@@ -31,9 +31,10 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
-#include "api/my-double.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-double.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"

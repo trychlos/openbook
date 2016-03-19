@@ -85,8 +85,12 @@ PWI_CHECK_MODULE([POPPLER],     [poppler],     [0.24],            [no])
 PWI_CHECK_MODULE([POPPLER_GLIB],[poppler-glib],[0.24],            [no])
 PWI_CHECK_MYSQL([5.5],[no])
 
-OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${PWI_CFLAGS}"
-OPENBOOK_LIBS="${OPENBOOK_LIBS} ${PWI_LIBS}"
+# /org/trychlos/my miscellaneous library v1
+MY1_CFLAGS="-I\$(top_srcdir)/src/my-1"
+MY1_LIBS="\$(top_builddir)/src/my-1/src/liborgtrychlosmy1.la"
+
+OPENBOOK_CFLAGS="${OPENBOOK_CFLAGS} ${PWI_CFLAGS} ${MY1_CFLAGS}"
+OPENBOOK_LIBS="${OPENBOOK_LIBS} ${PWI_LIBS} ${MY1_LIBS}"
 
 # GLib marshaling
 AC_PATH_PROG(GLIB_GENMARSHAL, glib-genmarshal, no)
@@ -95,6 +99,7 @@ if test "${GLIB_GENMARSHAL}" = "no"; then
 	let ofa_fatal_count+=1
 fi
 
+AC_SUBST([PWI_LIBS])
 AC_SUBST([OPENBOOK_CFLAGS])
 AC_SUBST([OPENBOOK_LIBS])
 
@@ -147,6 +152,9 @@ AC_CONFIG_FILES([
 	src/import-bourso-pdf/Makefile
 	src/import-lcl/Makefile
 	src/import-lcl-pdf/Makefile
+	src/my-1/Makefile
+	src/my-1/my/Makefile
+	src/my-1/src/Makefile
 	src/mysql/Makefile
 	src/postgre/Makefile
 	src/recurrent/Makefile
@@ -189,6 +197,7 @@ else
 	$as_echo "	  PostgreSQL                    ${have_POSTGRE}"
 fi
 	$as_echo "	  Recurrent                     yes"
+	$as_echo "	  VAT                           yes"
 	$as_echo " "
 
 if test "${have_MYSQL}" = "no" && test "${have_POSTGRE}" = "no"; then

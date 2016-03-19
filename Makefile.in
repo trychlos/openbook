@@ -373,6 +373,7 @@ POPPLER_LIBS = @POPPLER_LIBS@
 POSUB = @POSUB@
 PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
 PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
+PWI_LIBS = @PWI_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -441,14 +442,18 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
+
+# misc/ directory hosts some test programs which themselves heavily
+# rely on orgtrychlosmy and core libraries
+# => so build misc/ after src/
 SUBDIRS = \
 	data								\
 	docs								\
 	m4									\
 	maintainer							\
-	misc								\
 	po									\
 	src									\
+	misc								\
 	$(NULL)
 
 DISTCHECK_CONFIGURE_FLAGS = \

@@ -30,7 +30,8 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-iexportable.h"
 #include "api/ofo-dossier.h"
 

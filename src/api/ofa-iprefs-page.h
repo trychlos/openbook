@@ -43,9 +43,10 @@
 
 #include <gtk/gtk.h>
 
-#include "my-isettings.h"
-#include "ofa-iprefs-page-def.h"
-#include "ofa-iprefs-provider-def.h"
+#include "my/my-isettings.h"
+
+#include "api/ofa-iprefs-page-def.h"
+#include "api/ofa-iprefs-provider-def.h"
 
 G_BEGIN_DECLS
 

@@ -30,9 +30,11 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-iwindow.h"
+#include "my/my-tab.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-ihubber.h"
@@ -44,7 +46,6 @@
 #include "core/ofa-guided-input.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-tab.h"
 #include "ui/ofa-account-book-render.h"
 #include "ui/ofa-account-page.h"
 #include "ui/ofa-application.h"
@@ -381,6 +382,7 @@ main_window_dispose( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_main_window_dispose";
 	ofaMainWindowPrivate *priv;
+	myISettings *settings;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -392,7 +394,8 @@ main_window_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		my_utils_window_save_position( GTK_WINDOW( instance ), st_main_window_name );
+		settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+		my_utils_window_save_position( GTK_WINDOW( instance ), settings, st_main_window_name );
 		if( priv->pane ){
 			pane_save_position( priv->pane );
 		}
@@ -439,6 +442,7 @@ main_window_constructed( GObject *instance )
 	GError *error;
 	GtkBuilder *builder;
 	GMenuModel *menu;
+	myISettings *settings;
 
 	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
@@ -508,7 +512,8 @@ main_window_constructed( GObject *instance )
 		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
 		gtk_container_add( GTK_CONTAINER( instance ), GTK_WIDGET( priv->grid ));
 
-		my_utils_window_restore_position( GTK_WINDOW( instance), st_main_window_name );
+		settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+		my_utils_window_restore_position( GTK_WINDOW( instance), settings, st_main_window_name );
 
 		/* connect some signals
 		 */

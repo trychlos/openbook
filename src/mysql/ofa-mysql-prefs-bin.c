@@ -30,8 +30,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "api/my-isettings.h"
-#include "api/my-utils.h"
+#include "my/my-isettings.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-iprefs-page.h"
 

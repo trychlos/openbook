@@ -30,8 +30,9 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
@@ -94,6 +95,7 @@ static void
 backup_dispose( GObject *instance )
 {
 	ofaBackupPrivate *priv;
+	myISettings *settings;
 
 	g_return_if_fail( instance && OFA_IS_BACKUP( instance ));
 
@@ -104,8 +106,11 @@ backup_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		my_utils_window_save_position( GTK_WINDOW( priv->dialog ), st_dialog_name );
+		settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+		my_utils_window_save_position( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
+
 		gtk_widget_destroy( priv->dialog );
+
 		g_clear_object( &priv->meta );
 	}
 
@@ -179,6 +184,7 @@ init_dialog( ofaBackup *self )
 	ofaBackupPrivate *priv;
 	GtkApplication *application;
 	gchar *last_folder, *def_name;
+	myISettings *settings;
 
 	priv = ofa_backup_get_instance_private( self );
 
@@ -199,7 +205,8 @@ init_dialog( ofaBackup *self )
 							_( "_Save" ), GTK_RESPONSE_OK,
 							NULL );
 
-	my_utils_window_restore_position( GTK_WINDOW( priv->dialog ), st_dialog_name );
+	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	my_utils_window_restore_position( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
 
 	gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( priv->dialog ), TRUE );
 

@@ -30,7 +30,8 @@
 #include <gtk/gtk.h>
 #include <stdlib.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 

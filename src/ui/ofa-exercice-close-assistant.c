@@ -30,11 +30,13 @@
 #include <glib/gstdio.h>
 #include <math.h>
 
-#include "api/my-date.h"
-#include "api/my-editable-date.h"
-#include "api/my-iwindow.h"
-#include "api/my-progress-bar.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-editable-date.h"
+#include "my/my-iassistant.h"
+#include "my/my-iwindow.h"
+#include "my/my-progress-bar.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
@@ -44,6 +46,7 @@
 #include "api/ofa-ihubber.h"
 #include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -56,7 +59,6 @@
 #include "core/ofa-iconcil.h"
 #include "core/ofa-main-window.h"
 
-#include "ui/my-iassistant.h"
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-check-integrity-bin.h"
@@ -323,6 +325,7 @@ ofa_exercice_close_assistant_run( ofaMainWindow *main_window )
 
 	self = g_object_new( OFA_TYPE_EXERCICE_CLOSE_ASSISTANT, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));

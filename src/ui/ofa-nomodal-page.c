@@ -26,9 +26,11 @@
 #include <config.h>
 #endif
 
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-page.h"
+#include "api/ofa-settings.h"
 
 #include "core/ofa-main-window.h"
 
@@ -148,6 +150,7 @@ ofa_nomodal_page_run( const ofaMainWindow *main_window, const gchar *title, GtkW
 
 	self = g_object_new( OFA_TYPE_NOMODAL_PAGE, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_nomodal_page_get_instance_private( self );
 	priv->title = g_strdup( title );

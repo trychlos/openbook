@@ -26,8 +26,8 @@
 #include <config.h>
 #endif
 
-#include "api/my-double.h"
-#include "api/my-utils.h"
+#include "my/my-double.h"
+#include "my/my-utils.h"
 
 #include "ui/ofa-balance-grid-bin.h"
 

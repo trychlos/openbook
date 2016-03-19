@@ -29,8 +29,9 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib/gi18n.h>
 
-#include "api/my-double.h"
-#include "api/my-utils.h"
+#include "my/my-double.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofa-preferences.h"

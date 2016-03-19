@@ -30,15 +30,17 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "api/my-date.h"
-#include "api/my-double.h"
-#include "api/my-editable-amount.h"
-#include "api/my-editable-date.h"
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-date.h"
+#include "my/my-double.h"
+#include "my/my-editable-amount.h"
+#include "my/my-editable-date.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -233,6 +235,7 @@ ofa_tva_record_properties_run( const ofaMainWindow *main_window, ofoTVARecord *r
 
 	self = g_object_new( OFA_TYPE_TVA_RECORD_PROPERTIES, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 	priv->tva_record = record;

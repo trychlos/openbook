@@ -29,9 +29,10 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
@@ -174,6 +175,7 @@ ofa_bat_select_run( const ofaMainWindow *main_window, ofxCounter id )
 
 	self = g_object_new( OFA_TYPE_BAT_SELECT, NULL );
 	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_bat_select_get_instance_private( self );
 	priv->bat_id = id;

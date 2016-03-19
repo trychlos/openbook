@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
-#include "api/my-date.h"
-#include "api/my-double.h"
+#include "my/my-date.h"
+#include "my/my-double.h"
+
 #include "api/ofa-preferences.h"
 #include "api/ofs-bat.h"
 

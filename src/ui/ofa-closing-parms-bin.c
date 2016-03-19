@@ -28,7 +28,8 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-utils.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
 #include "api/ofa-ientry-account.h"
 #include "api/ofa-ientry-ope-template.h"

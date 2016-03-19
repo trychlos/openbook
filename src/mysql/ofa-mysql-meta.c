@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
-#include "api/my-isettings.h"
-#include "api/my-utils.h"
+#include "my/my-isettings.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
 

@@ -28,10 +28,12 @@
 
 #include <glib/gi18n.h>
 
-#include "api/my-idialog.h"
-#include "api/my-iwindow.h"
-#include "api/my-utils.h"
+#include "my/my-idialog.h"
+#include "my/my-iwindow.h"
+#include "my/my-utils.h"
+
 #include "api/ofa-hub.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
@@ -176,6 +178,7 @@ ofa_account_select_run( ofaMainWindow *main_window, GtkWindow *parent, const gch
 		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
 		my_iwindow_set_main_window( MY_IWINDOW( st_this ), GTK_APPLICATION_WINDOW( main_window ));
 		my_iwindow_set_parent( MY_IWINDOW( st_this ), parent );
+		my_iwindow_set_settings( MY_IWINDOW( st_this ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 		priv = ofa_account_select_get_instance_private( st_this );
 

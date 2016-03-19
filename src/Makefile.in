@@ -322,6 +322,7 @@ POPPLER_LIBS = @POPPLER_LIBS@
 POSUB = @POSUB@
 PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
 PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
+PWI_LIBS = @PWI_LIBS@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
@@ -389,19 +390,23 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+# Apart from api/, all code more or less heavily relies on orgtrychlosmy
+# library -> so built it first  
 SUBDIRS = \
-	api									\
-	core								\
-	css									\
-	import-bourso						\
-	import-bourso-pdf					\
-	import-lcl							\
-	import-lcl-pdf						\
-	mysql								\
-	postgre								\
-	recurrent							\
-	tva									\
-	ui									\
+	my-1												\
+	api													\
+	core												\
+	css													\
+	import-bourso										\
+	import-bourso-pdf									\
+	import-lcl											\
+	import-lcl-pdf										\
+	mysql												\
+	postgre												\
+	recurrent											\
+	tva													\
+	ui													\
 	$(NULL)
 
 all: config.h
