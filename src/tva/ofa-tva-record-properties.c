@@ -31,7 +31,6 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-editable-amount.h"
 #include "my/my-editable-date.h"
 #include "my/my-idialog.h"
@@ -859,9 +858,7 @@ eval_rule( ofaTVARecordProperties *self, const gchar *rule )
 
 	str1 = g_regex_replace_eval( priv->regex_fn,
 				rule, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, self, NULL );
-	str2 = my_double_to_str_ex( eval_opes( self, str1 ),
-				g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-				g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
+	str2 = ofa_amount_to_str( eval_opes( self, str1 ), NULL );
 
 	g_free( str1 );
 	return( str2 );
@@ -1009,9 +1006,7 @@ get_account_balance( ofaTVARecordProperties *self, const gchar *content )
 	g_free( end_id );
 
 	DEBUG( "%s: ACC(%s)=%lf", thisfn, content, amount );
-	return( my_double_to_str_ex( amount,
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 ));
+	return( ofa_amount_to_str( amount, NULL ));
 }
 
 /*

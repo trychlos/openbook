@@ -35,9 +35,9 @@
 #include <string.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"
@@ -461,12 +461,8 @@ bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri )
 			credit += bat->begin_solde;
 		}
 
-		sdebit = my_double_to_str_ex( priv->tot_debit,
-						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
-		scredit = my_double_to_str_ex( priv->tot_credit,
-						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
+		sdebit = ofa_amount_to_str( priv->tot_debit, NULL );
+		scredit = ofa_amount_to_str( priv->tot_credit, NULL );
 		msg = g_strdup_printf( "Bank debit=%s, bank credit=%s", sdebit, scredit );
 		ofa_iimportable_set_message(
 				OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD, msg );
@@ -481,9 +477,7 @@ bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri )
 
 		} else {
 			if( debit != priv->tot_debit ){
-				sdebit = my_double_to_str_ex( debit,
-								g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-								g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
+				sdebit = ofa_amount_to_str( debit, NULL );
 				msg = g_strdup_printf( _( "Error detected: computed debit=%s" ), sdebit );
 				ofa_iimportable_set_message(
 						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
@@ -491,9 +485,7 @@ bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri )
 				g_free( sdebit );
 			}
 			if( credit != priv->tot_credit ){
-				scredit = my_double_to_str_ex( credit,
-								g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-								g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
+				scredit = ofa_amount_to_str( credit, NULL );
 				msg = g_strdup_printf( _( "Error detected: computed credit=%s" ), scredit );
 				ofa_iimportable_set_message(
 						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );

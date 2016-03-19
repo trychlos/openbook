@@ -315,28 +315,13 @@ my_bigint_to_str( glong value, gunichar thousand_sep )
  * @value:
  * @thousand_sep:
  * @decimal_sep:
- *
- * Returns: a newly allocated string which represents the specified
- * value, decorated for display (with thousand and decimal separators).
- */
-gchar *
-my_double_to_str( gdouble value, gunichar thousand_sep, gunichar decimal_sep )
-{
-	return( my_double_to_str_ex( value, thousand_sep, decimal_sep, 2 ));
-}
-
-/**
- * my_double_to_str_ex:
- * @value:
- * @thousand_sep:
- * @decimal_sep:
  * @decimal_digits:
  *
  * Returns: a newly allocated string which represents the specified
  * value, decorated for display (with thousand and decimal separators).
  */
 gchar *
-my_double_to_str_ex( gdouble value, gunichar thousand_sep, gunichar decimal_sep, gint decimal_digits )
+my_double_to_str( gdouble value, gunichar thousand_sep, gunichar decimal_sep, gint decimal_digits )
 {
 	gchar *text, *deco;
 

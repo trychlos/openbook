@@ -71,7 +71,7 @@ ofa_amount_to_str( ofxAmount amount, ofoCurrency *currency )
 	digits = currency && OFO_IS_CURRENCY( currency ) ?
 					ofo_currency_get_digits( currency ) : CUR_DEFAULT_DIGITS;
 
-	str = my_double_to_str_ex( amount,
+	str = my_double_to_str( amount,
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
 					g_utf8_get_char( ofa_prefs_amount_decimal_sep()), digits );
 

@@ -511,7 +511,7 @@ editable_amount_get_localized_string( GtkEditable *editable, sEditable **pdata )
 
 	data = get_editable_amount_data( editable );
 
-	text = my_double_to_str_ex( data->amount, data->thousand_sep, data->decimal_sep, data->decimals );
+	text = my_double_to_str( data->amount, data->thousand_sep, data->decimal_sep, data->decimals );
 
 	if( pdata ){
 		*pdata = data;

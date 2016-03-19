@@ -46,8 +46,7 @@ gchar     *my_bigint_to_str         ( glong value, gunichar thousand_sep );
 
 gchar     *my_double_to_sql         ( gdouble value );
 gchar     *my_double_to_sql_ex      ( gdouble value, gint decimals );
-gchar     *my_double_to_str         ( gdouble value, gunichar thousand_sep, gunichar decimal_sep );
-gchar     *my_double_to_str_ex      ( gdouble value, gunichar thousand_sep, gunichar decimal_sep, gint decimal_degits );
+gchar     *my_double_to_str         ( gdouble value, gunichar thousand_sep, gunichar decimal_sep, gint decimal_degits );
 
 G_END_DECLS
 

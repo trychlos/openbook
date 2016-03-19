@@ -479,7 +479,7 @@ is_rate( const gchar *token, sHelper *helper, gchar **str )
 		ok = TRUE;
 		if( my_date_is_valid( &helper->ope->dope )){
 			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/( gdouble ) 100;
-			*str = my_double_to_str_ex( amount,
+			*str = my_double_to_str( amount,
 						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
 						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 5 );
 			g_debug( "%s: amount=%.5lf, str=%s", thisfn, amount, *str );
@@ -626,7 +626,7 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 
 		} else if( !g_utf8_collate( field, "RATE" )){
 			amount = rate( helper, content );
-			*str = my_double_to_str_ex( amount,
+			*str = my_double_to_str( amount,
 							g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
 							g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 5 );
 			g_debug( "%s: amount=%.5lf, rate=%s", thisfn, amount, *str );
