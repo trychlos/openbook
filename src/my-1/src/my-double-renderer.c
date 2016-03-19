@@ -26,22 +26,22 @@
 #include <config.h>
 #endif
 
-#include "my/my-cell-renderer-amount.h"
+#include "my/my-double-renderer.h"
 #include "my/my-editable-amount.h"
 
 static void on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, gpointer user_data );
 
 /**
- * my_cell_renderer_amount_init:
+ * my_double_renderer_init:
  * @renderer: this #GtkCellRendererText object
  *
  * Initialise a cell renderer which is created to enter an amount or
  * a rate. Is thought to be called once at cell renderer creation.
  */
 void
-my_cell_renderer_amount_init( GtkCellRenderer *renderer )
+my_double_renderer_init( GtkCellRenderer *renderer )
 {
-	static const gchar *thisfn = "my_cell_renderer_amount_init";
+	static const gchar *thisfn = "my_double_renderer_init";
 
 	g_debug( "%s: renderer=%p (%s)",
 			thisfn, ( void * ) renderer, G_OBJECT_TYPE_NAME( renderer ));

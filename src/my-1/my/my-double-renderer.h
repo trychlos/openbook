@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_API_MY_CELL_RENDERER_AMOUNT_H__
-#define __MY_API_MY_CELL_RENDERER_AMOUNT_H__
+#ifndef __MY_API_MY_DOUBLE_RENDERER_H__
+#define __MY_API_MY_DOUBLE_RENDERER_H__
 
 /**
  * SECTION: my_cell_renderer_amount
@@ -35,10 +35,12 @@
 
 #include <gtk/gtk.h>
 
+#include <my/my-double.h>
+
 G_BEGIN_DECLS
 
-void my_cell_renderer_amount_init( GtkCellRenderer *renderer );
+void my_double_renderer_init( GtkCellRenderer *renderer );
 
 G_END_DECLS
 
-#endif /* __MY_API_MY_CELL_RENDERER_AMOUNT_H__ */
+#endif /* __MY_API_MY_DOUBLE_RENDERER_H__ */
