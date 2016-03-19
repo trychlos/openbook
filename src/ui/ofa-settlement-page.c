@@ -30,9 +30,9 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ientry-account.h"
 #include "api/ofa-page.h"
@@ -40,6 +40,7 @@
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
@@ -69,7 +70,7 @@ struct _ofaSettlementPagePrivate {
 	ofaHub            *hub;
 	GList             *hub_handlers;
 	gchar             *account_number;
-	const gchar       *account_currency;
+	ofoCurrency       *account_currency;
 	ofaEntrySettlementPage settlement;
 
 	/* sorting the view
@@ -805,6 +806,7 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 {
 	ofaSettlementPagePrivate *priv;
 	ofoAccount *account;
+	const gchar *cur_code;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
@@ -816,7 +818,12 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 	account = ofo_account_get_by_number( priv->hub, priv->account_number );
 
 	if( account && OFO_IS_ACCOUNT( account ) && !ofo_account_is_root( account )){
-		priv->account_currency = ofo_account_get_currency( account );
+		cur_code = ofo_account_get_currency( account );
+
+		if( my_strlen( cur_code )){
+			priv->account_currency = ofo_currency_get_by_code( priv->hub, cur_code );
+			g_return_if_fail( priv->account_currency && OFO_IS_CURRENCY( priv->account_currency ));
+		}
 
 		gtk_label_set_text( GTK_LABEL( priv->account_label ), ofo_account_get_label( account ));
 		try_display_entries( self );
@@ -965,8 +972,8 @@ cmp_amounts( ofaSettlementPage *self, const gchar *stra, const gchar *strb )
 	ofxAmount a, b;
 
 	if( stra && strb ){
-		a = my_double_set_from_str( stra );
-		b = my_double_set_from_str( strb );
+		a = ofa_amount_from_str( stra );
+		b = ofa_amount_from_str( strb );
 
 		return( a < b ? -1 : ( a > b ? 1 : 0 ));
 	}
@@ -1198,21 +1205,24 @@ display_entry( ofaSettlementPage *self, GtkTreeModel *tmodel, ofoEntry *entry )
 static void
 set_row_entry( ofaSettlementPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoEntry *entry )
 {
+	ofaSettlementPagePrivate *priv;
 	gchar *sdope, *sdeff, *sdeb, *scre, *str_number;
 	gdouble amount;
 	gint set_number;
+
+	priv = ofa_settlement_page_get_instance_private( self );
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
-		sdeb = my_double_to_str( amount );
+		sdeb = ofa_amount_to_str( amount, priv->account_currency );
 	} else {
 		sdeb = g_strdup( "" );
 	}
 	amount = ofo_entry_get_credit( entry );
 	if( amount ){
-		scre = my_double_to_str( amount );
+		scre = ofa_amount_to_str( amount, priv->account_currency );
 	} else {
 		scre = g_strdup( "" );
 	}
@@ -1270,7 +1280,7 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlementPa
 	my_utils_widget_set_style(
 			priv->footer_label, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
-	samount = my_double_to_str( ses.debit );
+	samount = ofa_amount_to_str( ses.debit, priv->account_currency );
 	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 	g_free( samount );
 	my_utils_widget_remove_style(
@@ -1278,7 +1288,7 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlementPa
 	my_utils_widget_set_style(
 			priv->debit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
-	samount = my_double_to_str( ses.credit );
+	samount = ofa_amount_to_str( ses.credit, priv->account_currency );
 	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 	g_free( samount );
 	my_utils_widget_remove_style(
@@ -1286,7 +1296,7 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlementPa
 	my_utils_widget_set_style(
 			priv->credit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
-	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), priv->account_currency );
+	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), ofo_currency_get_code( priv->account_currency ));
 	my_utils_widget_remove_style(
 			priv->currency_balance, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
 	my_utils_widget_set_style(
@@ -1318,10 +1328,10 @@ enum_selected( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, sEnum
 		ses->unsettled += 1;
 	}
 
-	amount = my_double_set_from_str( sdeb );
+	amount = ofa_amount_from_str( sdeb );
 	ses->debit += amount;
 
-	amount = my_double_set_from_str( scre );
+	amount = ofa_amount_from_str( scre );
 	ses->credit += amount;
 
 	g_free( sdeb );

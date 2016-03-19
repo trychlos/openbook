@@ -34,6 +34,7 @@
  * This file defines the #ofoCurrency public API.
  */
 
+#include "api/ofa-box.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-currency-def.h"

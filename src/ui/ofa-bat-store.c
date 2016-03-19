@@ -29,15 +29,17 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
+#include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-bat-store.h"
@@ -47,8 +49,9 @@
 struct _ofaBatStorePrivate {
 	gboolean    dispose_has_run;
 
-	/*
+	/* initialization
 	 */
+	ofaHub     *hub;
 };
 
 static GType st_col_types[BAT_N_COLUMNS] = {
@@ -157,6 +160,7 @@ ofaBatStore *
 ofa_bat_store_new( ofaHub *hub )
 {
 	ofaBatStore *store;
+	ofaBatStorePrivate *priv;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
@@ -170,6 +174,10 @@ ofa_bat_store_new( ofaHub *hub )
 						OFA_TYPE_BAT_STORE,
 						OFA_PROP_HUB,       hub,
 						NULL );
+
+		priv = ofa_bat_store_get_instance_private( store );
+
+		priv->hub = hub;
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), BAT_N_COLUMNS, st_col_types );
@@ -240,12 +248,16 @@ static void
 set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat )
 {
 	static const gchar *thisfn = "ofa_bat_store_set_row_by_store_iter";
+	ofaBatStorePrivate *priv;
 	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp, *sunused;
 	const GDate *date;
 	const gchar *cscurrency, *caccount;
 	gint count, used;
+	ofoCurrency *cur_obj;
 
-	sid = g_strdup_printf( "%lu", ofo_bat_get_id( bat ));
+	priv = ofa_bat_store_get_instance_private( store );
+
+	sid = ofa_counter_to_str( ofo_bat_get_id( bat ));
 	date = ofo_bat_get_begin_date( bat );
 	if( my_date_is_valid( date )){
 		sbegin = my_date_to_str( date, ofa_prefs_date_display());
@@ -258,19 +270,21 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat 
 	} else {
 		send = g_strdup( "" );
 	}
+	cscurrency = ofo_bat_get_currency( bat );
+	if( !cscurrency ){
+		cscurrency = "";
+	}
+	cur_obj = my_strlen( cscurrency ) ? ofo_currency_get_by_code( priv->hub, cscurrency ) : NULL;
+	g_return_if_fail( !cur_obj || OFO_IS_CURRENCY( cur_obj ));
 	if( ofo_bat_get_begin_solde_set( bat )){
-		sbeginsolde = my_double_to_str( ofo_bat_get_begin_solde( bat ));
+		sbeginsolde = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), cur_obj );
 	} else {
 		sbeginsolde = g_strdup( "" );
 	}
 	if( ofo_bat_get_end_solde_set( bat )){
-		sendsolde = my_double_to_str( ofo_bat_get_end_solde( bat ));
+		sendsolde = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), cur_obj );
 	} else {
 		sendsolde = g_strdup( "" );
-	}
-	cscurrency = ofo_bat_get_currency( bat );
-	if( !cscurrency ){
-		cscurrency = "";
 	}
 	caccount = ofo_bat_get_account( bat );
 	if( !caccount ){

@@ -73,19 +73,18 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-check-balances-bin.ui";
 
-static void             setup_bin( ofaCheckBalancesBin *self );
-static gboolean         do_run( ofaCheckBalancesBin *bin );
-static void             check_entries_balance_run( ofaCheckBalancesBin *bin );
-static void             check_ledgers_balance_run( ofaCheckBalancesBin *bin );
-static void             check_accounts_balance_run( ofaCheckBalancesBin *bin );
-static ofsCurrency     *get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *currency );
-static gboolean         check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances );
-static void             set_balance_status( ofaCheckBalancesBin *bin, gboolean ok, const gchar *w_name );
-static myProgressBar   *get_new_bar( ofaCheckBalancesBin *bin, const gchar *w_name );
+static void               setup_bin( ofaCheckBalancesBin *self );
+static gboolean           do_run( ofaCheckBalancesBin *bin );
+static void               check_entries_balance_run( ofaCheckBalancesBin *bin );
+static void               check_ledgers_balance_run( ofaCheckBalancesBin *bin );
+static void               check_accounts_balance_run( ofaCheckBalancesBin *bin );
+static gboolean           check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances );
+static void               set_balance_status( ofaCheckBalancesBin *bin, gboolean ok, const gchar *w_name );
+static myProgressBar     *get_new_bar( ofaCheckBalancesBin *bin, const gchar *w_name );
 static ofaBalanceGridBin *get_new_balance_grid_bin( ofaCheckBalancesBin *bin, const gchar *w_name );
-static void             set_bar_progression( myProgressBar *bar, gulong total, gulong current );
-static void             set_checks_result( ofaCheckBalancesBin *bin );
-static gboolean         cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b );
+static void               set_bar_progression( myProgressBar *bar, gulong total, gulong current );
+static void               set_checks_result( ofaCheckBalancesBin *bin );
+static gboolean           cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b );
 
 G_DEFINE_TYPE_EXTENDED( ofaCheckBalancesBin, ofa_check_balances_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaCheckBalancesBin ))
@@ -297,12 +296,11 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 
 		entry = OFO_ENTRY( it->data );
 		currency = ofo_entry_get_currency( entry );
-		sbal = get_balance_for_currency( bin, &priv->entries_list, currency );
 
-		sbal->ldebit += ofs_currency_amount_to_long( sbal, ofo_entry_get_debit( entry ));
-		sbal->lcredit += ofs_currency_amount_to_long( sbal, ofo_entry_get_credit( entry ));
+		sbal = ofs_currency_add_by_code(
+					&priv->entries_list, priv->hub, currency,
+					ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
 
-		ofs_currency_update_amounts( sbal );
 		g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		set_bar_progression( bar, count, i );
 	}
@@ -352,16 +350,12 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 
 		for( ic=currencies ; ic ; ic=ic->next ){
 			currency = ( const gchar * ) ic->data;
-			sbal = get_balance_for_currency( bin, &priv->ledgers_list, currency );
 
-			sbal->ldebit +=
-					ofs_currency_amount_to_long( sbal, ofo_ledger_get_val_debit( ledger, currency ))
-					+ ofs_currency_amount_to_long( sbal, ofo_ledger_get_rough_debit( ledger, currency ));
-			sbal->lcredit +=
-					ofs_currency_amount_to_long( sbal, ofo_ledger_get_val_credit( ledger, currency ))
-					+ ofs_currency_amount_to_long( sbal, ofo_ledger_get_rough_credit( ledger, currency ));
+			sbal = ofs_currency_add_by_code(
+						&priv->ledgers_list, priv->hub, currency,
+						ofo_ledger_get_val_debit( ledger, currency ) + ofo_ledger_get_rough_debit( ledger, currency ),
+						ofo_ledger_get_val_credit( ledger, currency ) + ofo_ledger_get_rough_credit( ledger, currency ));
 
-			ofs_currency_update_amounts( sbal );
 			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		}
 		g_list_free( currencies );
@@ -404,16 +398,12 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 		account = OFO_ACCOUNT( it->data );
 		if( !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
-			sbal = get_balance_for_currency( bin, &priv->accounts_list, currency );
 
-			sbal->ldebit +=
-					ofs_currency_amount_to_long( sbal, ofo_account_get_val_debit( account ))
-					+ ofs_currency_amount_to_long( sbal, ofo_account_get_rough_debit( account ));
-			sbal->lcredit +=
-					ofs_currency_amount_to_long( sbal, ofo_account_get_val_credit( account ))
-					+ ofs_currency_amount_to_long( sbal, ofo_account_get_rough_credit( account ));
+			sbal = ofs_currency_add_by_code(
+						&priv->accounts_list, priv->hub, currency,
+						ofo_account_get_val_debit( account ) + ofo_account_get_rough_debit( account ),
+						ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account ));
 
-			ofs_currency_update_amounts( sbal );
 			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		}
 
@@ -422,39 +412,6 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 
 	priv->accounts_ok = check_balances_per_currency( bin, priv->accounts_list );
 	set_balance_status( bin, priv->accounts_ok, "p4-account-ok" );
-}
-
-static ofsCurrency *
-get_balance_for_currency( ofaCheckBalancesBin *bin, GList **list, const gchar *currency )
-{
-	ofaCheckBalancesBinPrivate *priv;
-	GList *it;
-	ofsCurrency *sbal;
-	ofoCurrency *cur_object;
-	gboolean found;
-
-	priv = ofa_check_balances_bin_get_instance_private( bin );
-
-	found = FALSE;
-
-	for( it=*list ; it ; it=it->next ){
-		sbal = ( ofsCurrency * ) it->data;
-		if( !g_utf8_collate( sbal->currency, currency )){
-			found = TRUE;
-			break;
-		}
-	}
-
-	if( !found ){
-		sbal = g_new0( ofsCurrency, 1 );
-		sbal->currency = g_strdup( currency );
-		cur_object = ofo_currency_get_by_code( priv->hub, currency );
-		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), NULL );
-		sbal->digits = ofo_currency_get_digits( cur_object );
-		*list = g_list_prepend( *list, sbal );
-	}
-
-	return( sbal );
 }
 
 static gboolean
@@ -587,7 +544,7 @@ cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b )
 	/* check that all 'a' records are found and same in list_b */
 	for( it=list_a ; it ; it=it->next ){
 		sbal_a = ( ofsCurrency * ) it->data;
-		sbal_b = get_balance_for_currency( bin, &list_b, sbal_a->currency );
+		sbal_b = ofs_currency_get_by_code( list_b, ofo_currency_get_code( sbal_a->currency ));
 		if( sbal_a->debit != sbal_b->debit || sbal_a->credit != sbal_b->credit ){
 			return( FALSE );
 		}
@@ -596,7 +553,7 @@ cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b )
 	/* check that all 'b' records are found and same in list_a */
 	for( it=list_b ; it ; it=it->next ){
 		sbal_b = ( ofsCurrency * ) it->data;
-		sbal_a = get_balance_for_currency( bin, &list_a, sbal_b->currency );
+		sbal_a = ofs_currency_get_by_code( list_a, ofo_currency_get_code( sbal_b->currency ));
 		if( sbal_b->debit != sbal_a->debit || sbal_b->credit != sbal_a->credit ){
 			return( FALSE );
 		}

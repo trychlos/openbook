@@ -29,15 +29,17 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
+#include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofs-concil-id.h"
 
@@ -71,6 +73,10 @@ struct _ofaBatPropertiesBinPrivate {
 	ofoBat       *bat;
 	ofaHub       *hub;
 	gboolean      is_new;
+
+	/* currency: taken from bat or line
+	 */
+	ofoCurrency  *currency;
 };
 
 /* columns in the lines treeview
@@ -357,7 +363,7 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
 	bat_id = ofo_bat_get_id( bat );
-	str = g_strdup_printf( "%lu", bat_id );
+	str = ofa_counter_to_str( bat_id );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_id ), str );
 	g_free( str );
 
@@ -394,14 +400,12 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	}
 
 	cstr = ofo_bat_get_currency( bat );
-	if( cstr ){
-		gtk_entry_set_text( GTK_ENTRY( priv->bat_currency ), cstr );
-	} else {
-		gtk_entry_set_text( GTK_ENTRY( priv->bat_currency ), "" );
-	}
+	gtk_entry_set_text( GTK_ENTRY( priv->bat_currency ), cstr ? cstr : "" );
+	priv->currency = cstr ? ofo_currency_get_by_code( priv->hub, cstr ) : NULL;
+	g_return_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ));
 
 	if( ofo_bat_get_begin_solde_set( bat )){
-		str = my_double_to_str( ofo_bat_get_begin_solde( bat ));
+		str = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), priv->currency );
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_begin ), str );
 		g_free( str );
 	} else {
@@ -409,7 +413,7 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	}
 
 	if( ofo_bat_get_end_solde_set( bat )){
-		str = my_double_to_str( ofo_bat_get_end_solde( bat ));
+		str = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), priv->currency );
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_end ), str );
 		g_free( str );
 	} else {
@@ -453,21 +457,31 @@ display_bat_lines( ofaBatPropertiesBin *self, ofoBat *bat )
 static void
 display_line( ofaBatPropertiesBin *self, GtkTreeModel *tstore, ofoBatLine *line )
 {
+	ofaBatPropertiesBinPrivate *priv;
 	gchar *sid, *sdope, *sdeffect, *samount;
 	ofxCounter bat_id;
 	GtkTreeIter iter;
 	ofoConcil *concil;
-	const gchar *cuser;
+	const gchar *cuser, *cur_code;
 	gchar *stamp;
 	GString *snumbers;
 	GList *ids, *it;
 	ofsConcilId *scid;
 
+	priv = ofa_bat_properties_bin_get_instance_private( self );
+
 	bat_id = ofo_bat_line_get_line_id( line );
 	sid = g_strdup_printf( "%lu", bat_id );
 	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display());
 	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display());
-	samount = my_double_to_str( ofo_bat_line_get_amount( line ));
+
+	if( !priv->currency ){
+		cur_code = ofo_bat_line_get_currency( line );
+		priv->currency = cur_code ? ofo_currency_get_by_code( priv->hub, cur_code ) : NULL;
+		g_return_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ));
+	}
+
+	samount = ofa_amount_to_str( ofo_bat_line_get_amount( line ), priv->currency );
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ));
 	snumbers = g_string_new( "" );
 	if( concil ){
@@ -498,7 +512,7 @@ display_line( ofaBatPropertiesBin *self, GtkTreeModel *tstore, ofoBatLine *line 
 			COL_REF,      ofo_bat_line_get_ref( line ),
 			COL_LABEL,    ofo_bat_line_get_label( line ),
 			COL_AMOUNT,   samount,
-			COL_CURRENCY, ofo_bat_line_get_currency( line ),
+			COL_CURRENCY, priv->currency ? ofo_currency_get_code( priv->currency ) : "",
 			COL_ENTRY,    snumbers->str,
 			COL_USER,     cuser,
 			COL_STAMP,    stamp,
@@ -532,6 +546,7 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat )
 
 	priv->bat = bat;
 	priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
+	priv->currency = NULL;
 	display_bat_properties( bin, bat );
 	display_bat_lines( bin, bat );
 }

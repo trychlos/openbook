@@ -71,8 +71,10 @@ libofa_core_la_SOURCES = \
 	ofa-account-store.h									\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
+	ofa-amount.c										\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
+	ofa-counter.c										\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
 	ofa-currency-store.c								\

@@ -45,35 +45,42 @@
 
 #include <glib.h>
 
+#include "api/ofa-hub.h"
+#include "api/ofo-currency-def.h"
+
 G_BEGIN_DECLS
 
 /**
  * ofsCurrency:
  */
 typedef struct {
-	gchar  *currency;
-	gint    digits;
-	gdouble debit;
-	gdouble credit;
-	glong   ldebit;
-	glong   lcredit;
+	ofoCurrency *currency;
+	gdouble      debit;
+	gdouble      credit;
 }
 	ofsCurrency;
 
-void  ofs_currency_add_currency  ( GList **list,
-										const gchar *currency,
-										gint digits,
-										gdouble debit,
-										gdouble credit );
+ofsCurrency *ofs_currency_add_by_code  ( GList **list,
+												ofaHub *hub,
+												const gchar *currency,
+												gdouble debit,
+												gdouble credit );
 
-glong ofs_currency_amount_to_long( const ofsCurrency *currency,
-										gdouble amount );
+ofsCurrency *ofs_currency_add_by_object( GList **list,
+												ofoCurrency *currency,
+												gdouble debit,
+												gdouble credit );
 
-void  ofs_currency_update_amounts( ofsCurrency *currency );
+ofsCurrency *ofs_currency_get_by_code  ( GList *list,
+												const gchar *currency );
 
-void  ofs_currency_list_dump     ( GList *list );
+gboolean     ofs_currency_is_balanced  ( const ofsCurrency *currency );
 
-void  ofs_currency_list_free     ( GList **list );
+gboolean     ofs_currency_is_zero      ( const ofsCurrency *currency );
+
+void         ofs_currency_list_dump    ( GList *list );
+
+void         ofs_currency_list_free    ( GList **list );
 
 G_END_DECLS
 

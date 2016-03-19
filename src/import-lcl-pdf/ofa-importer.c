@@ -38,6 +38,7 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"
@@ -456,8 +457,12 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 			credit += bat->begin_solde;
 		}
 
-		sdebit = my_double_to_str( priv->tot_debit );
-		scredit = my_double_to_str( priv->tot_credit );
+		sdebit = my_double_to_str_ex( priv->tot_debit,
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
+		scredit = my_double_to_str_ex( priv->tot_credit,
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
 		msg = g_strdup_printf( "Bank debit=%s, bank credit=%s", sdebit, scredit );
 		ofa_iimportable_set_message(
 				OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD, msg );
@@ -472,7 +477,9 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 
 		} else {
 			if( debit != priv->tot_debit ){
-				sdebit = my_double_to_str( debit );
+				sdebit = my_double_to_str_ex( debit,
+								g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+								g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
 				msg = g_strdup_printf( _( "Error detected: computed debit=%s" ), sdebit );
 				ofa_iimportable_set_message(
 						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
@@ -480,7 +487,9 @@ lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri )
 				g_free( sdebit );
 			}
 			if( credit != priv->tot_credit ){
-				scredit = my_double_to_str( credit );
+				scredit = my_double_to_str_ex( credit,
+								g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+								g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
 				msg = g_strdup_printf( _( "Error detected: computed credit=%s" ), scredit );
 				ofa_iimportable_set_message(
 						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
@@ -544,7 +553,7 @@ read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list )
 		if( !g_utf8_collate( src->text, "ANCIEN SOLDE" ) && !begin_solde_found ){
 			it_next = it->next;
 			src_next = ( sRC * ) it_next->data;
-			amount = my_double_set_from_str( src_next->text );
+			amount = ofa_amount_from_str( src_next->text );
 			if( src_next->rc->x1 < st_credit_min_x ){
 				amount *= -1;
 			}
@@ -695,15 +704,15 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 		if( !line->sdate &&
 				!g_utf8_collate( line->slabel, "TOTAUX" ) &&
 				!line->svaleur ){
-			priv->tot_debit = my_double_set_from_str( line->sdebit );
-			priv->tot_credit = my_double_set_from_str( line->scredit );
+			priv->tot_debit = ofa_amount_from_str( line->sdebit );
+			priv->tot_credit = ofa_amount_from_str( line->scredit );
 			continue;
 		}
 
 		/* final solde */
 		if( g_str_has_prefix( line->slabel, "SOLDE EN " )){
-			debit = my_double_set_from_str( line->sdebit );
-			credit = my_double_set_from_str( line->scredit );
+			debit = ofa_amount_from_str( line->sdebit );
+			credit = ofa_amount_from_str( line->scredit );
 			bat->end_solde = credit - debit;
 			bat->end_solde_set = TRUE;
 			break;
@@ -715,8 +724,8 @@ read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint pa
 			get_dope_from_str( &detail->dope, bat, line->sdate );
 			get_dot_dmyy( &detail->deffect, line->svaleur );
 			detail->label = g_strdup( line->slabel );
-			debit = my_double_set_from_str( line->sdebit );
-			credit = my_double_set_from_str( line->scredit );
+			debit = ofa_amount_from_str( line->sdebit );
+			credit = ofa_amount_from_str( line->scredit );
 			detail->amount = credit - debit;
 			if( my_date_is_valid( &detail->deffect ) && detail->amount != 0 ){
 				prev_detail = detail;

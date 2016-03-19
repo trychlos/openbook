@@ -41,6 +41,8 @@ typedef struct {
 	/* configuration
 	 */
 	guint    decimals;
+	gunichar thousand_sep;
+	gunichar decimal_sep;
 	gboolean accept_sign;
 
 	/* amount
@@ -268,7 +270,7 @@ on_changed( GtkEditable *editable, sEditable *data )
 
 	if( !data->setting_text ){
 		text1 = gtk_editable_get_chars( editable, 0, -1 );
-		data->amount = my_double_set_from_str( text1 );
+		data->amount = my_double_set_from_str( text1, data->thousand_sep, data->decimal_sep );
 		g_free( text1 );
 
 	} else {
@@ -298,7 +300,7 @@ on_focus_in( GtkWidget *entry, GdkEvent *event, sEditable *data )
 			thisfn, ( void * ) entry, ( void * ) event, ( void * ) data );
 
 	text1 = gtk_editable_get_chars( GTK_EDITABLE( entry ), 0, -1 );
-	text2 = my_double_undecorate( text1 );
+	text2 = my_double_undecorate( text1, data->thousand_sep, data->decimal_sep );
 	data->has_decimal = ( g_strstr_len( text2, -1, "." ) != NULL );
 
 	for( it=data->cbs ; it ; it=it->next ){
@@ -370,6 +372,50 @@ my_editable_amount_set_decimals( GtkEditable *editable, gint decimals )
 	} else {
 		data->decimals = decimals;
 	}
+}
+
+/**
+ * my_editable_amount_set_thousand_sep:
+ * @editable: this #GtkEditable instance.
+ * @thousand_sep: the desired thousand separator.
+ *
+ * Set the desired thousand separator.
+ *
+ * If not set here, the thousand separator defaults to the current
+ * locale one.
+ */
+void
+my_editable_amount_set_thousand_sep( GtkEditable *editable, gunichar thousand_sep )
+{
+	sEditable *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_amount_data( editable );
+
+	data->thousand_sep = thousand_sep;
+}
+
+/**
+ * my_editable_amount_set_decimal_sep:
+ * @editable: this #GtkEditable instance.
+ * @decimal_sep: the desired decimal separator.
+ *
+ * Set the desired decimal separator.
+ *
+ * If not set here, the decimal separator defaults to the current
+ * locale one.
+ */
+void
+my_editable_amount_set_decimal_sep( GtkEditable *editable, gunichar decimal_sep )
+{
+	sEditable *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_amount_data( editable );
+
+	data->decimal_sep = decimal_sep;
 }
 
 /**
@@ -445,11 +491,13 @@ my_editable_amount_get_string( GtkEditable *editable )
 void
 my_editable_amount_set_string( GtkEditable *editable, const gchar *string )
 {
+	sEditable *data;
 	gdouble amount;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
 
-	amount = my_double_set_from_str( string );
+	data = get_editable_amount_data( editable );
+	amount = my_double_set_from_str( string, data->thousand_sep, data->decimal_sep );
 	my_editable_amount_set_amount( editable, amount );
 }
 
@@ -463,7 +511,7 @@ editable_amount_get_localized_string( GtkEditable *editable, sEditable **pdata )
 
 	data = get_editable_amount_data( editable );
 
-	text = my_double_to_str_ex( data->amount, data->decimals );
+	text = my_double_to_str_ex( data->amount, data->thousand_sep, data->decimal_sep, data->decimals );
 
 	if( pdata ){
 		*pdata = data;

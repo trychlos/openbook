@@ -30,9 +30,9 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
@@ -112,6 +112,7 @@ struct _ofaAccountBookRenderPrivate {
 	ofoAccount        *account_object;
 	gchar             *currency_code;
 	gint               currency_digits;
+	ofoCurrency       *currency_object;
 
 	/* general summary
 	 */
@@ -637,7 +638,6 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	ofaAccountBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
 	gdouble y, height;
-	ofoCurrency *currency;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
@@ -655,10 +655,10 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 
 	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
 
-	currency = ofo_currency_get_by_code( priv->hub, priv->currency_code );
-	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
+	priv->currency_object = ofo_currency_get_by_code( priv->hub, priv->currency_code );
+	g_return_if_fail( priv->currency_object && OFO_IS_CURRENCY( priv->currency_object ));
 
-	priv->currency_digits = ofo_currency_get_digits( currency );
+	priv->currency_digits = ofo_currency_get_digits( priv->currency_object );
 
 	/* display the account header */
 	/* account number */
@@ -716,12 +716,12 @@ draw_account_report( ofaAccountBookRender *self, gboolean with_solde )
 				ofo_account_get_label( priv->account_object ), priv->body_acclabel_max_size );
 
 		/* current account balance */
-		str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
+		str = ofa_amount_to_str( priv->account_debit, priv->currency_object );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
+		str = ofa_amount_to_str( priv->account_credit, priv->currency_object );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -749,7 +749,7 @@ draw_account_solde_debit_credit( ofaAccountBookRender *self, gdouble y )
 	 * if current balance is zero, then also print it */
 	amount = priv->account_credit - priv->account_debit;
 	if( amount >= 0 ){
-		str = my_double_to_str_ex( amount, priv->currency_digits );
+		str = ofa_amount_to_str( amount, priv->currency_object );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -757,7 +757,7 @@ draw_account_solde_debit_credit( ofaAccountBookRender *self, gdouble y )
 				priv->body_solde_sens_rtab, y, _( "CR" ), PANGO_ALIGN_RIGHT );
 
 	} else {
-		str = my_double_to_str_ex( -1*amount, priv->currency_digits );
+		str = ofa_amount_to_str( -1*amount, priv->currency_object );
 		ofa_irenderable_set_text( OFA_IRENDERABLE( self ),
 				priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -832,7 +832,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	/* debit */
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
-		str = my_double_to_str_ex( amount, priv->currency_digits );
+		str = ofa_amount_to_str( amount, priv->currency_object );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -842,7 +842,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	/* credit */
 	amount = ofo_entry_get_credit( entry );
 	if( amount ){
-		str = my_double_to_str_ex( amount, priv->currency_digits );
+		str = ofa_amount_to_str( amount, priv->currency_object );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -893,13 +893,13 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 		g_free( str );
 
 		/* solde debit */
-		str = my_double_to_str_ex( priv->account_debit, priv->currency_digits );
+		str = ofa_amount_to_str( priv->account_debit, priv->currency_object );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		/* solde credit */
-		str = my_double_to_str_ex( priv->account_credit, priv->currency_digits );
+		str = ofa_amount_to_str( priv->account_credit, priv->currency_object );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -909,9 +909,7 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 
 		/* add the account balance to the total per currency */
 		is_paginating = ofa_irenderable_is_paginating( instance );
-		ofs_currency_add_currency( &priv->totals,
-				priv->currency_code,
-				priv->currency_digits,
+		ofs_currency_add_by_object( &priv->totals, priv->currency_object,
 				is_paginating ? 0 : priv->account_debit,
 				is_paginating ? 0 : priv->account_credit );
 	}
@@ -933,8 +931,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	GList *it;
 	ofsCurrency *scur;
 	gboolean first;
-	ofoCurrency *currency;
-	gint digits;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
@@ -958,9 +954,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	for( it=priv->totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->hub, scur->currency );
-		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-		digits = ofo_currency_get_digits( currency );
 
 		if( first ){
 			ofa_irenderable_set_text( instance,
@@ -969,18 +962,18 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 			first = FALSE;
 		}
 
-		str = my_double_to_str_ex( scur->debit, digits );
+		str = ofa_amount_to_str( scur->debit, scur->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str_ex( scur->credit, digits );
+		str = ofa_amount_to_str( scur->credit, scur->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		ofa_irenderable_set_text( instance,
-				priv->body_solde_sens_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
+				priv->body_solde_sens_rtab, top, ofo_currency_get_code( scur->currency ), PANGO_ALIGN_RIGHT );
 
 		top += height+vspace;
 	}

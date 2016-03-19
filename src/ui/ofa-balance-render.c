@@ -30,9 +30,9 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
@@ -42,6 +42,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofs-account-balance.h"
@@ -758,6 +759,8 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofoAccount *account;
 	gchar *str;
 	gdouble solde;
+	const gchar *cur_code;
+	ofoCurrency *cur_obj;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
@@ -766,8 +769,16 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	sbal = ( ofsAccountBalance * ) current->data;
 	g_return_if_fail( my_strlen( sbal->account ));
+
 	account = ofo_account_get_by_number( priv->hub, sbal->account );
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 	/*g_debug( "irenderable_draw_line: account=%s %s", sbal->account, ofo_account_get_label( account ));*/
+
+	cur_code = ofo_account_get_currency( account );
+	g_return_if_fail( my_strlen( cur_code ));
+
+	cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+	g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
 
 	solde = 0;
 
@@ -779,7 +790,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 			ofo_account_get_label( account ), priv->body_label_max_size );
 
 	if( sbal->debit ){
-		str = my_double_to_str( sbal->debit );
+		str = ofa_amount_to_str( sbal->debit, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -787,19 +798,19 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	}
 
 	if( sbal->credit ){
-		str = my_double_to_str( sbal->credit );
+		str = ofa_amount_to_str( sbal->credit, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_period_rtab, y, str, PANGO_ALIGN_RIGHT );
 		solde += sbal->credit;
 	}
 
 	if( solde < 0 ){
-		str = my_double_to_str( -1*solde );
+		str = ofa_amount_to_str( -1*solde, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 
 	} else {
-		str = my_double_to_str( solde );
+		str = ofa_amount_to_str( solde, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	}
@@ -910,6 +921,7 @@ draw_account_balance( ofaIRenderable *instance,
 	sCurrency *scur;
 	gchar *str;
 	gdouble height;
+	ofoCurrency *cur_obj;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
@@ -924,23 +936,27 @@ draw_account_balance( ofaIRenderable *instance,
 			}
 
 		scur = ( sCurrency * ) it->data;
+		g_return_if_fail( scur && my_strlen( scur->currency ));
 
-		str = my_double_to_str( scur->period_d );
+		cur_obj = ofo_currency_get_by_code( priv->hub, scur->currency );
+		g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
+
+		str = ofa_amount_to_str( scur->period_d, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str( scur->period_c );
+		str = ofa_amount_to_str( scur->period_c, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_period_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str( scur->solde_d );
+		str = ofa_amount_to_str( scur->solde_d, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str( scur->solde_c );
+		str = ofa_amount_to_str( scur->solde_c, cur_obj );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_solde_rtab, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );

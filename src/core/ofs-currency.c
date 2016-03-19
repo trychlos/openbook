@@ -29,60 +29,176 @@
 #define _GNU_SOURCE
 #include <math.h>
 
+#include "my/my-utils.h"
+
+#include "api/ofo-currency.h"
 #include "api/ofs-currency.h"
 
-static ofsCurrency *currency_get_by_code( GList **list, const gchar *currency, gint digits );
-static gint         cmp_currency( const ofsCurrency *a, const ofsCurrency *b );
-static void         currency_dump( ofsCurrency *cur, void *empty );
-static void         currency_free( ofsCurrency *cur );
+static gint cmp_currency( const ofsCurrency *a, const ofsCurrency *b );
+static void currency_dump( ofsCurrency *cur, void *empty );
+static void currency_free( ofsCurrency *cur );
 
-/*
- * currency_get_by_code:
+/**
+ * ofs_currency_add_by_code:
  */
-static ofsCurrency *
-currency_get_by_code( GList **list, const gchar *currency, gint digits )
+ofsCurrency *
+ofs_currency_add_by_code( GList **list, ofaHub *hub, const gchar *currency, gdouble debit, gdouble credit )
 {
-	GList *it;
 	ofsCurrency *found;
+	ofoCurrency *cur_object;
 
-	found = NULL;
-	for( it=*list ; it ; it=it->next ){
-		if( !g_utf8_collate((( ofsCurrency * ) it->data )->currency, currency )){
-			found = ( ofsCurrency * ) it->data;
-			break;
-		}
-	}
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( my_strlen( currency ), NULL );
+
+	found = ofs_currency_get_by_code( *list, currency );
 
 	if( !found ){
+		cur_object = ofo_currency_get_by_code( hub, currency );
+		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), NULL );
 		found = g_new0( ofsCurrency, 1 );
-		found->currency = g_strdup( currency );
-		found->digits = digits;
+		found->currency = g_object_ref( cur_object );
 		*list = g_list_insert_sorted( *list, found, ( GCompareFunc ) cmp_currency );
 	}
 
+	found->debit += debit;
+	found->credit += credit;
+
 	return( found );
+}
+
+/**
+ * ofs_currency_add_by_object:
+ */
+ofsCurrency *
+ofs_currency_add_by_object( GList **list, ofoCurrency *currency, gdouble debit, gdouble credit )
+{
+	ofsCurrency *found;
+
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+
+	found = ofs_currency_get_by_code( *list, ofo_currency_get_code( currency ));
+
+	if( !found ){
+		found = g_new0( ofsCurrency, 1 );
+		found->currency = g_object_ref( currency );
+		*list = g_list_insert_sorted( *list, found, ( GCompareFunc ) cmp_currency );
+	}
+
+	found->debit += debit;
+	found->credit += credit;
+
+	return( found );
+}
+
+/**
+ * ofs_currency_get_by_code:
+ */
+ofsCurrency *
+ofs_currency_get_by_code( GList *list, const gchar *currency )
+{
+	GList *it;
+	ofsCurrency *it_cur;
+	const gchar *it_code;
+
+	g_return_val_if_fail( list, NULL );
+	g_return_val_if_fail( my_strlen( currency ), NULL );
+
+	for( it=list ; it ; it=it->next ){
+		it_cur = ( ofsCurrency * ) it->data;
+		g_return_val_if_fail( it_cur && it_cur->currency && OFO_IS_CURRENCY( it_cur->currency ), NULL );
+		it_code = ofo_currency_get_code( it_cur->currency );
+		if( !my_collate( currency, it_code )){
+			return( it_cur );
+		}
+	}
+
+	return( NULL );
 }
 
 static gint
 cmp_currency( const ofsCurrency *a, const ofsCurrency *b )
 {
-	return( g_utf8_collate( a->currency, b->currency ));
+	const gchar *a_code, *b_code;
+
+	g_return_val_if_fail( a && a->currency && OFO_IS_CURRENCY( a->currency ), 0 );
+	g_return_val_if_fail( b && b->currency && OFO_IS_CURRENCY( b->currency ), 0 );
+
+	a_code = ofo_currency_get_code( a->currency );
+	b_code = ofo_currency_get_code( b->currency );
+
+	return( g_utf8_collate( a_code, b_code ));
 }
 
+#if 0
+static glong
+amount_to_long_by_currency( gdouble amount, ofoCurrency *currency )
+{
+	gint digits;
+	gdouble precision;
+
+	digits = ofo_currency_get_digits( currency );
+	precision = exp10( digits );
+
+	return( amount_to_long_by_precision( amount, precision ));
+}
+
+static glong
+amount_to_long_by_precision( gdouble amount, gdouble precision )
+{
+	gdouble temp;
+
+	temp = amount * precision + 0.5;
+
+	return(( glong ) temp );
+}
+#endif
+
+/**
+ * ofs_currency_is_balanced:
+ * @currency:
+ *
+ * Returns: %TRUE if debit and credit are balanced.
+ */
+gboolean
+ofs_currency_is_balanced( const ofsCurrency *currency )
+{
+	gint digits;
+	gdouble precision, diff;
+
+	digits = ofo_currency_get_digits( currency->currency );
+	precision = 1/exp10( digits );
+
+	diff = currency->debit - currency->credit;
+
+	return( fabs( diff ) < precision );
+}
+
+/**
+ * ofs_currency_is_zero:
+ * @currency:
+ *
+ * Returns: %TRUE if debit and credit are equal to zero.
+ */
+gboolean
+ofs_currency_is_zero( const ofsCurrency *currency )
+{
+	gint digits;
+	gdouble precision;
+
+	digits = ofo_currency_get_digits( currency->currency );
+	precision = 1/exp10( digits );
+
+	return( fabs( currency->debit ) < precision && fabs( currency->credit) < precision );
+}
+
+#if 0
 /**
  * ofs_currency_amount_to_long:
  */
 glong
 ofs_currency_amount_to_long( const ofsCurrency *currency, gdouble amount )
 {
-	glong result;
-	gdouble dbl;
-
-	dbl = amount * exp10( currency->digits );
-	dbl = round( dbl );
-	result = ( glong ) dbl;
-
-	return( result );
+	return( amount_to_long_by_currency( amount, currency->currency ));
 }
 
 /**
@@ -91,33 +207,16 @@ ofs_currency_amount_to_long( const ofsCurrency *currency, gdouble amount )
 void
 ofs_currency_update_amounts( ofsCurrency *currency )
 {
+	gint digits;
 	gdouble precision;
 
-	precision = exp10( currency->digits );
+	digits = ofo_currency_get_digits( currency->currency );
+	precision = exp10( digits );
 
 	currency->debit = currency->ldebit / precision;
 	currency->credit = currency->lcredit / precision;
 }
-
-/**
- * ofs_currency_add_currency:
- */
-void
-ofs_currency_add_currency( GList **list, const gchar *currency, gint digits, gdouble debit, gdouble credit )
-{
-	ofsCurrency *found;
-	gdouble precision, temp_amount;
-
-	found = currency_get_by_code( list, currency, digits );
-	found->debit += debit;
-	found->credit += credit;
-
-	precision = exp10( found->digits );
-	temp_amount = found->debit * precision + 0.5;
-	found->ldebit = ( gulong ) temp_amount;
-	temp_amount = found->credit * precision + 0.5;
-	found->lcredit = ( gulong ) temp_amount;
-}
+#endif
 
 /**
  * ofs_currency_list_dump:
@@ -132,7 +231,7 @@ static void
 currency_dump( ofsCurrency *cur, void *empty )
 {
 	g_debug( "  [%p] %s: debit=%.5lf, credit=%.5lf",
-			( void * ) cur, cur->currency, cur->debit, cur->credit );
+			( void * ) cur, ofo_currency_get_code( cur->currency ), cur->debit, cur->credit );
 }
 
 /*
@@ -141,7 +240,7 @@ currency_dump( ofsCurrency *cur, void *empty )
 static void
 currency_free( ofsCurrency *cur )
 {
-	g_free( cur->currency );
+	g_object_unref( cur->currency );
 	g_free( cur );
 }
 

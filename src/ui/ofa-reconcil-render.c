@@ -26,15 +26,13 @@
 #include <config.h>
 #endif
 
-#define _GNU_SOURCE
 #include <glib/gi18n.h>
-#include <math.h>
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
@@ -67,8 +65,7 @@ struct _ofaReconcilRenderPrivate {
 	 */
 	gchar          *account_number;
 	ofoAccount     *account;
-	const gchar    *currency;
-	gint            digits;				/* decimal digits for the currency */
+	ofoCurrency    *currency;
 	GDate           date;
 	gint            count;				/* count of entries in the dataset */
 
@@ -305,7 +302,7 @@ render_page_get_dataset( ofaRenderPage *page )
 {
 	ofaReconcilRenderPrivate *priv;
 	GList *dataset, *batlist;
-	ofoCurrency *currency;
+	const gchar *cur_code;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
 
@@ -317,11 +314,11 @@ render_page_get_dataset( ofaRenderPage *page )
 	priv->account = ofo_account_get_by_number( priv->hub, priv->account_number );
 	g_return_val_if_fail( priv->account && OFO_IS_ACCOUNT( priv->account ), NULL );
 
-	priv->currency = ofo_account_get_currency( priv->account );
-	currency = ofo_currency_get_by_code( priv->hub, priv->currency );
-	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	cur_code = ofo_account_get_currency( priv->account );
+	g_return_val_if_fail( my_strlen( cur_code ), NULL );
 
-	priv->digits = ofo_currency_get_digits( currency );
+	priv->currency = ofo_currency_get_by_code( priv->hub, cur_code );
+	g_return_val_if_fail( priv->currency && OFO_IS_CURRENCY( priv->currency ), NULL );
 
 	my_date_set_from_date( &priv->date, ofa_reconcil_bin_get_date( priv->args_bin ));
 
@@ -725,7 +722,7 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
-		str = my_double_to_str( amount );
+		str = ofa_amount_to_str( amount, priv->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -734,7 +731,7 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 
 	amount = ofo_entry_get_credit( entry );
 	if( amount ){
-		str = my_double_to_str( amount );
+		str = ofa_amount_to_str( amount, priv->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -743,7 +740,7 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 
 	/* current solde */
 	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
-	str = my_double_to_str( priv->account_solde );
+	str = ofa_amount_to_str( priv->account_solde, priv->currency );
 	ofa_irenderable_set_text( instance,
 			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
@@ -786,13 +783,13 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 
 	amount = ofo_bat_line_get_amount( batline );
 	if( amount > 0 ){
-		str = my_double_to_str( amount );
+		str = ofa_amount_to_str( amount, priv->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 		priv->account_solde += amount;
 	} else {
-		str = my_double_to_str( -amount );
+		str = ofa_amount_to_str( -amount, priv->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -801,7 +798,7 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 
 	/* current solde */
 	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
-	str = my_double_to_str( priv->account_solde );
+	str = ofa_amount_to_str( priv->account_solde, priv->currency );
 	ofa_irenderable_set_text( instance,
 			priv->body_solde_rtab, y, str, PANGO_ALIGN_RIGHT );
 	g_free( str );
@@ -875,7 +872,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 		bat_str = g_string_new( "" );
 
 		sdate = my_date_to_str( bat_end, ofa_prefs_date_display());
-		str_amount = my_double_to_str_ex( bat_solde, priv->digits );
+		str_amount = ofa_amount_to_str( bat_solde, priv->currency );
 		g_string_append_printf( bat_str, _( "Bank solde on %s is %s" ), sdate, str_amount );
 		g_free( str_amount );
 		g_free( sdate );
@@ -887,12 +884,11 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 		bat_str = g_string_append( bat_str, ": " );
 
 		solde = priv->account_solde + bat_solde;
-		g_debug( "solde=%lf", solde );
 
-		if( fabs( solde ) < exp10( -1*priv->digits )){
+		if( ofa_amount_is_zero( solde, priv->currency )){
 			bat_str = g_string_append( bat_str, "OK" );
 		} else {
-			str_amount = my_double_to_str_ex( solde, priv->digits );
+			str_amount = ofa_amount_to_str( solde, priv->currency );
 			g_string_append_printf( bat_str, "diff=%s", str_amount );
 			g_free( str_amount );
 		}
@@ -916,8 +912,8 @@ account_solde_to_str( ofaReconcilRender *self, gdouble amount )
 
 	priv = ofa_reconcil_render_get_instance_private( self );
 
-	str_amount = my_double_to_str_ex( amount, priv->digits );
-	str = g_strdup_printf( "%s %s", str_amount, priv->currency );
+	str_amount = ofa_amount_to_str( amount, priv->currency );
+	str = g_strdup_printf( "%s %s", str_amount, ofo_currency_get_code( priv->currency ));
 	/*
 	g_debug( "account_solde_to_str: digits=%d, currency=%s, amount=%lf, str=%s",
 			priv->digits, priv->currency, amount, str );

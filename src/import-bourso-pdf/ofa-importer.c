@@ -461,8 +461,12 @@ bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri )
 			credit += bat->begin_solde;
 		}
 
-		sdebit = my_double_to_str( priv->tot_debit );
-		scredit = my_double_to_str( priv->tot_credit );
+		sdebit = my_double_to_str_ex( priv->tot_debit,
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
+		scredit = my_double_to_str_ex( priv->tot_credit,
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
 		msg = g_strdup_printf( "Bank debit=%s, bank credit=%s", sdebit, scredit );
 		ofa_iimportable_set_message(
 				OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD, msg );
@@ -477,7 +481,9 @@ bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri )
 
 		} else {
 			if( debit != priv->tot_debit ){
-				sdebit = my_double_to_str( debit );
+				sdebit = my_double_to_str_ex( debit,
+								g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+								g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
 				msg = g_strdup_printf( _( "Error detected: computed debit=%s" ), sdebit );
 				ofa_iimportable_set_message(
 						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
@@ -485,7 +491,9 @@ bourso_pdf_v1_import( ofaBoursoPdfImporter *importer, const gchar *uri )
 				g_free( sdebit );
 			}
 			if( credit != priv->tot_credit ){
-				scredit = my_double_to_str( credit );
+				scredit = my_double_to_str_ex( credit,
+								g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+								g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
 				msg = g_strdup_printf( _( "Error detected: computed credit=%s" ), scredit );
 				ofa_iimportable_set_message(
 						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
@@ -802,7 +810,7 @@ cmp_rectangles( sRC *a, sRC *b )
 
 /*
  * amounts are specified with a dot as thousand separator, and a comma
- * as decimal separator (eg. 2.540,92), that my_double_set_from_str
+ * as decimal separator (eg. 2.540,92), that my_double_set_from_str()
  * doesn't know how to handle because it is not the current locale
  */
 static gdouble

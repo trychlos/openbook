@@ -38,6 +38,7 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -858,7 +859,9 @@ eval_rule( ofaTVARecordProperties *self, const gchar *rule )
 
 	str1 = g_regex_replace_eval( priv->regex_fn,
 				rule, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, self, NULL );
-	str2 = my_double_to_str( eval_opes( self, str1 ));
+	str2 = my_double_to_str_ex( eval_opes( self, str1 ),
+				g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+				g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 );
 
 	g_free( str1 );
 	return( str2 );
@@ -1006,7 +1009,9 @@ get_account_balance( ofaTVARecordProperties *self, const gchar *content )
 	g_free( end_id );
 
 	DEBUG( "%s: ACC(%s)=%lf", thisfn, content, amount );
-	return( my_double_to_str( amount ));
+	return( my_double_to_str_ex( amount,
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 2 ));
 }
 
 /*
@@ -1084,7 +1089,7 @@ eval_opes_rec( const gchar *content, gchar **iter, gdouble *amount, gint count )
 					iter = eval_opes_rec( content, iter, &amount_iter, 1+count );
 					DEBUG( "%s: count=%d, amount=%lf, oper=%s, amount_iter=%lf", thisfn, count, *amount, oper, amount_iter );
 				} else {
-					amount_iter = my_double_set_from_str( *iter );
+					amount_iter = ofa_amount_from_str( *iter );
 				}
 				if( !g_utf8_collate( oper, "-" )){
 					*amount -= amount_iter;

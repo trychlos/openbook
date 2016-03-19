@@ -30,9 +30,9 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
@@ -164,7 +164,6 @@ static void               irenderable_draw_group_bottom_report( ofaIRenderable *
 static void               irenderable_draw_group_footer( ofaIRenderable *instance );
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
 static void               draw_ledger_totals( ofaIRenderable *instance );
-static void               free_currency( ofsCurrency *total_per_currency );
 static void               get_settings( ofaLedgerBookRender *self );
 static void               set_settings( ofaLedgerBookRender *self );
 
@@ -652,7 +651,7 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	priv->ledger_object = ofo_ledger_get_by_mnemo( priv->hub, priv->ledger_mnemo );
 	g_return_if_fail( priv->ledger_object && OFO_IS_LEDGER( priv->ledger_object ));
 
-	g_list_free_full( priv->ledger_totals, ( GDestroyNotify ) free_currency );
+	ofs_currency_list_free( &priv->ledger_totals );
 	priv->ledger_totals = NULL;
 
 	/* display the ledger header */
@@ -686,7 +685,6 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	gdouble y;
 	ofxAmount debit, credit;
 	ofoCurrency *currency;
-	gint digits;
 	ofoConcil *concil;
 	gboolean is_paginating;
 
@@ -699,7 +697,6 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	code = ofo_entry_get_currency( entry );
 	currency = ofo_currency_get_by_code( priv->hub, code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-	digits = ofo_currency_get_digits( currency );
 
 	/* operation date */
 	str = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
@@ -753,7 +750,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	/* debit */
 	debit = ofo_entry_get_debit( entry );
 	if( debit ){
-		str = my_double_to_str_ex( debit, digits );
+		str = ofa_amount_to_str( debit, currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -762,7 +759,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	/* credit */
 	credit = ofo_entry_get_credit( entry );
 	if( credit ){
-		str = my_double_to_str_ex( credit, digits );
+		str = ofa_amount_to_str( credit, currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
@@ -773,8 +770,8 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 			priv->body_currency_rtab, y, code, PANGO_ALIGN_RIGHT );
 
 	is_paginating = ofa_irenderable_is_paginating( instance );
-	ofs_currency_add_currency(
-			&priv->ledger_totals, code, digits,
+	ofs_currency_add_by_code(
+			&priv->ledger_totals, priv->hub, code,
 			is_paginating ? 0 : debit, is_paginating ? 0 : credit );
 }
 
@@ -808,8 +805,8 @@ irenderable_draw_group_footer( ofaIRenderable *instance )
 	is_paginating = ofa_irenderable_is_paginating( instance );
 	for( it=priv->ledger_totals ; it ; it=it->next ){
 		cur = ( ofsCurrency * ) it->data;
-		ofs_currency_add_currency(
-				&priv->report_totals, cur->currency, cur->digits,
+		ofs_currency_add_by_object(
+				&priv->report_totals, cur->currency,
 				is_paginating ? 0 : cur->debit, is_paginating ? 0 : cur->credit );
 	}
 }
@@ -827,8 +824,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	GList *it;
 	ofsCurrency *scur;
 	gboolean first;
-	ofoCurrency *currency;
-	gint digits, shift;
+	gint shift;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
@@ -853,9 +849,6 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	for( it=priv->report_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->hub, scur->currency );
-		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-		digits = ofo_currency_get_digits( currency );
 
 		if( first ){
 			ofa_irenderable_set_text( instance,
@@ -864,18 +857,18 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 			first = FALSE;
 		}
 
-		str = my_double_to_str_ex( scur->debit, digits );
+		str = ofa_amount_to_str( scur->debit, scur->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab-shift, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str_ex( scur->credit, digits );
+		str = ofa_amount_to_str( scur->credit, scur->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab-shift, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		ofa_irenderable_set_text( instance,
-				priv->body_currency_rtab, top, scur->currency, PANGO_ALIGN_RIGHT );
+				priv->body_currency_rtab, top, ofo_currency_get_code( scur->currency ), PANGO_ALIGN_RIGHT );
 
 		top += height+vspace;
 	}
@@ -897,8 +890,6 @@ draw_ledger_totals( ofaIRenderable *instance )
 	gchar *str;
 	GList *it;
 	ofsCurrency *scur;
-	ofoCurrency *currency;
-	gint digits;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
@@ -907,9 +898,6 @@ draw_ledger_totals( ofaIRenderable *instance )
 
 	for( it=priv->ledger_totals, first=TRUE ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		currency = ofo_currency_get_by_code( priv->hub, scur->currency );
-		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-		digits = ofo_currency_get_digits( currency );
 
 		if( first ){
 			str = g_strdup_printf( _( "%s ledger balance : " ), priv->ledger_mnemo );
@@ -920,30 +908,23 @@ draw_ledger_totals( ofaIRenderable *instance )
 			first = FALSE;
 		}
 
-		str = my_double_to_str_ex( scur->debit, digits );
+		str = ofa_amount_to_str( scur->debit, scur->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = my_double_to_str_ex( scur->credit, digits );
+		str = ofa_amount_to_str( scur->credit, scur->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
 		ofa_irenderable_set_text( instance,
-				priv->body_currency_rtab, y, scur->currency, PANGO_ALIGN_RIGHT );
+				priv->body_currency_rtab, y, ofo_currency_get_code( scur->currency ), PANGO_ALIGN_RIGHT );
 
 		y += height * ( 1+st_vspace_rate );
 	}
 
 	ofa_irenderable_set_last_y( instance, y );
-}
-
-static void
-free_currency( ofsCurrency *total_per_currency )
-{
-	g_free( total_per_currency->currency );
-	g_free( total_per_currency );
 }
 
 /*

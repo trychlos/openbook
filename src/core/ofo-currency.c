@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-double.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-file-format.h"
@@ -42,6 +43,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"

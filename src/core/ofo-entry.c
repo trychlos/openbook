@@ -35,6 +35,7 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
@@ -2878,10 +2879,10 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	GList *dataset, *it;
 	guint errors, line;
 	GDate date;
-	gchar *currency, *msg, *userid, *str;
+	gchar *currency, *msg, *userid, *str, *sdeb, *scre;
 	ofoAccount *account;
 	ofoLedger *ledger;
-	gdouble debit, credit, precision;
+	gdouble debit, credit;
 	ofaEntryStatus status;
 	GList *past, *exe, *fut;
 	ofsCurrency *sdet;
@@ -2892,7 +2893,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	myDateFormat date_format;
 	const ofaIDBConnect *connect;
 	ofoDossier *dossier;
-	gint cur_digits;
 
 	dataset = NULL;
 	line = 0;
@@ -3062,7 +3062,6 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			continue;
 		}
 		ofo_entry_set_currency( entry, currency );
-		cur_digits = ofo_currency_get_digits( cur_object );
 
 		/* debit */
 		str = ofa_iimportable_get_string( &itf, settings );
@@ -3165,15 +3164,15 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		status = ofo_entry_get_status( entry );
 		switch( status ){
 			case ENT_STATUS_PAST:
-				ofs_currency_add_currency( &past, currency, cur_digits, debit, credit );
+				ofs_currency_add_by_object( &past, cur_object, debit, credit );
 				break;
 
 			case ENT_STATUS_ROUGH:
-				ofs_currency_add_currency( &exe, currency, cur_digits, debit, credit );
+				ofs_currency_add_by_object( &exe, cur_object, debit, credit );
 				break;
 
 			case ENT_STATUS_FUTURE:
-				ofs_currency_add_currency( &fut, currency, cur_digits, debit, credit );
+				ofs_currency_add_by_object( &fut, cur_object, debit, credit );
 				break;
 
 			default:
@@ -3193,39 +3192,49 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	/* rough and future entries must be balanced:
 	 * as we are storing 5 decimal digits in the DBMS, so this is the
 	 * maximal rounding error accepted */
-	/*precision = ( gdouble ) 1 / ( gdouble ) PRECISION;*/
-	precision = 0.001;
 	for( it=past ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		msg = g_strdup_printf( "PAST [%s] tot_debits=%'.5lf, tot_credits=%'.5lf",
-				sdet->currency, sdet->debit, sdet->credit );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency );
+		msg = g_strdup_printf( "PAST [%s] tot_debits=%s, tot_credits=%s",
+					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_STANDARD, msg );
 		g_free( msg );
+		g_free( sdeb );
+		g_free( scre );
 	}
 	for( it=exe ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		msg = g_strdup_printf( "EXE [%s] tot_debits=%'.5lf, tot_credits=%'.5lf",
-				sdet->currency, sdet->debit, sdet->credit );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency );
+		msg = g_strdup_printf( "EXE [%s] tot_debits=%s, tot_credits=%s",
+					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_STANDARD, msg );
 		g_free( msg );
-		if( fabs( sdet->debit - sdet->credit ) > precision ){
+		g_free( sdeb );
+		g_free( scre );
+		if( !ofs_currency_is_balanced( sdet )){
 			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "entries are not balanced" ));
+					importable, line, IMPORTABLE_MSG_ERROR, _( "entries for the current exercice are not balanced" ));
 			errors += 1;
 		}
 	}
 	for( it=fut ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		msg = g_strdup_printf( "FUTURE [%s] tot_debits=%'.5lf, tot_credits=%'.5lf",
-				sdet->currency, sdet->debit, sdet->credit );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency );
+		msg = g_strdup_printf( "FUTURE [%s] tot_debits=%s, tot_credits=%s",
+					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimportable_set_message(
 				importable, line, IMPORTABLE_MSG_STANDARD, msg );
 		g_free( msg );
-		if( fabs( sdet->debit - sdet->credit ) > precision ){
+		g_free( sdeb );
+		g_free( scre );
+		if( !ofs_currency_is_balanced( sdet )){
 			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "entries are not balanced" ));
+					importable, line, IMPORTABLE_MSG_ERROR, _( "entries in the future are not balanced" ));
 			errors += 1;
 		}
 	}

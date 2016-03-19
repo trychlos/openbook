@@ -29,12 +29,13 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
@@ -88,6 +89,7 @@ struct _ofaAccountPropertiesPrivate {
 	gchar               *number;
 	gchar               *label;
 	gchar               *currency;
+	ofoCurrency         *cur_object;
 	gint                 cur_digits;
 	const gchar         *cur_symbol;
 	gboolean             root;
@@ -542,7 +544,7 @@ set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, cons
 	priv = ofa_account_properties_get_instance_private( self );
 
 	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname ));
-	str = my_double_to_str_ex( amount, priv->cur_digits );
+	str = ofa_amount_to_str( amount, priv->cur_object );
 	gtk_label_set_text( label, str );
 	g_free( str );
 
@@ -584,7 +586,6 @@ static void
 on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
-	ofoCurrency *cur_obj;
 	const gchar *iso3a;
 
 	priv = ofa_account_properties_get_instance_private( self );
@@ -592,17 +593,18 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 	g_free( priv->currency );
 	priv->currency = g_strdup( code );
 
-	cur_obj = ofo_currency_get_by_code( priv->hub, code );
+	priv->cur_object = ofo_currency_get_by_code( priv->hub, code );
 
-	if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
+	if( !priv->cur_object || !OFO_IS_CURRENCY( priv->cur_object )){
 		iso3a = ofo_dossier_get_default_currency( priv->dossier );
-		cur_obj = ofo_currency_get_by_code( priv->hub, iso3a );
+		priv->cur_object = ofo_currency_get_by_code( priv->hub, iso3a );
 	}
+
 	priv->cur_digits = 2;
 	priv->cur_symbol = NULL;
-	if( cur_obj && OFO_IS_CURRENCY( cur_obj )){
-		priv->cur_digits = ofo_currency_get_digits( cur_obj );
-		priv->cur_symbol = ofo_currency_get_symbol( cur_obj );
+	if( priv->cur_object && OFO_IS_CURRENCY( priv->cur_object )){
+		priv->cur_digits = ofo_currency_get_digits( priv->cur_object );
+		priv->cur_symbol = ofo_currency_get_symbol( priv->cur_object );
 	}
 
 	if( priv->balances_displayed ){

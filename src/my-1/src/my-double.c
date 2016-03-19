@@ -50,37 +50,45 @@ static GRegex      *st_inter_regex           = NULL;
 static const gchar *st_inter                 = "|";
 
 static void   double_set_locale( void );
-static gchar *double_decorate( const gchar *text );
+static gchar *double_decorate( const gchar *text, gunichar thousand_sep, gunichar decimal_sep );
 
 /**
  * my_double_undecorate:
+ * @text:
+ * @thousand_sep:
+ * @decimal_sep:
  *
  * Remove from the given string all decoration added for the display
- * of a double, returning so a 'brut' double string, without the locale
- * thousand separator and with a dot as the decimal point
+ * of a double, returning so a 'brut' double string:
+ * - without any thousand separator,
+ * - with a dot as the decimal sep.
  *
- * This is a "prefs to brut editable" transformation
+ * This is a "prefs to brut editable" transformation, suitable for
+ * #g_strtod() interpretation.
+ *
+ * Returns: a newly allocated string which should be g_free() by the
+ * caller.
  */
 gchar *
-my_double_undecorate( const gchar *text )
+my_double_undecorate( const gchar *text, gunichar thousand_sep, gunichar decimal_sep )
 {
 	gchar *dest1, *dest2;
 	GRegex *regex;
-	const gchar *cstr;
+	gchar *str;
 
-	double_set_locale();
-
-	/* remove locale thousand separator */
-	cstr = ofa_prefs_amount_thousand_sep();
-	regex = g_regex_new( cstr, 0, 0, NULL );
+	/* remove the specified thousand separator */
+	str = g_strdup_printf( "%c", thousand_sep );
+	regex = g_regex_new( str, 0, 0, NULL );
 	dest1 = g_regex_replace_literal( regex, text, -1, 0, "", 0, NULL );
 	g_regex_unref( regex );
+	g_free( str );
 
-	/* replace locale decimal separator with a dot '.' */
-	cstr = ofa_prefs_amount_decimal_sep();
-	regex = g_regex_new( cstr, 0, 0, NULL );
+	/* replace the specified decimal separator with a dot '.' */
+	str = g_strdup_printf( "%c", decimal_sep );
+	regex = g_regex_new( str, 0, 0, NULL );
 	dest2 = g_regex_replace_literal( regex, dest1, -1, 0, ".", 0, NULL );
 	g_regex_unref( regex );
+	g_free( str );
 
 	g_free( dest1 );
 
@@ -199,20 +207,20 @@ my_double_set_from_sql_ex( const gchar *sql_string, gint digits )
 
 /**
  * my_double_set_from_str:
+ * @string:
+ * @thousand_sep:
+ * @decimal_sep:
  *
- * In v1, we only target fr locale, so with space as thousand separator
- * and comma as decimal one on display -
- * When parsing a string - and because we want be able to re-parse a
- * string that we have previously displayed - we accept both
+ * Parse the @string which is expected to be a decorated double.
  */
 gdouble
-my_double_set_from_str( const gchar *string )
+my_double_set_from_str( const gchar *string, gunichar thousand_sep, gunichar decimal_sep )
 {
 	gchar *text;
 	gdouble d;
 
 	if( my_strlen( string )){
-		text = my_double_undecorate( string );
+		text = my_double_undecorate( string, thousand_sep, decimal_sep );
 		d = g_strtod( text, NULL );
 		g_free( text );
 
@@ -284,17 +292,18 @@ my_double_to_sql_ex( gdouble value, gint decimals )
 /**
  * my_bigint_to_str:
  * @value:
+ * @thousand_sep:
  *
  * Returns: a newly allocated string which represents the specified
  * value, decorated for display (with thousand separator).
  */
 gchar *
-my_bigint_to_str( glong value )
+my_bigint_to_str( glong value, gunichar thousand_sep )
 {
 	gchar *text, *deco;
 
 	text = g_strdup_printf( "%'ld", value);
-	deco = double_decorate( text );
+	deco = double_decorate( text, thousand_sep, '\0' );
 
 	g_free( text );
 
@@ -304,31 +313,35 @@ my_bigint_to_str( glong value )
 /**
  * my_double_to_str:
  * @value:
+ * @thousand_sep:
+ * @decimal_sep:
  *
  * Returns: a newly allocated string which represents the specified
  * value, decorated for display (with thousand and decimal separators).
  */
 gchar *
-my_double_to_str( gdouble value )
+my_double_to_str( gdouble value, gunichar thousand_sep, gunichar decimal_sep )
 {
-	return( my_double_to_str_ex( value, 2 ));
+	return( my_double_to_str_ex( value, thousand_sep, decimal_sep, 2 ));
 }
 
 /**
  * my_double_to_str_ex:
  * @value:
- * @decimals:
+ * @thousand_sep:
+ * @decimal_sep:
+ * @decimal_digits:
  *
  * Returns: a newly allocated string which represents the specified
  * value, decorated for display (with thousand and decimal separators).
  */
 gchar *
-my_double_to_str_ex( gdouble value, gint decimals )
+my_double_to_str_ex( gdouble value, gunichar thousand_sep, gunichar decimal_sep, gint decimal_digits )
 {
 	gchar *text, *deco;
 
-	text = g_strdup_printf( "%'.*lf", decimals, value);
-	deco = double_decorate( text );
+	text = g_strdup_printf( "%'.*lf", decimal_digits, value);
+	deco = double_decorate( text, thousand_sep, decimal_sep );
 
 	g_free( text );
 
@@ -341,24 +354,33 @@ my_double_to_str_ex( gdouble value, gint decimals )
  * This a "locale to prefs" transformation.
  */
 static gchar *
-double_decorate( const gchar *text )
+double_decorate( const gchar *text, gunichar thousand_sep, gunichar decimal_sep )
 {
 	gchar *dest1, *dest2, *dest3;
-	const gchar *cstr;
+	gchar *str;
 
 	double_set_locale();
 
 	/* change locale thousand separator to inter */
 	dest1 = g_regex_replace_literal( st_locale_thousand_regex, text, -1, 0, st_inter, 0, NULL );
 
-	/* change locale decimal separator prefs */
-	cstr = ofa_prefs_amount_decimal_sep();
-	dest2 = g_regex_replace_literal( st_locale_decimal_regex, dest1, -1, 0, cstr, 0, NULL );
+	/* change locale decimal separator with the provided one */
+	if( decimal_sep ){
+		str = g_strdup_printf( "%c", decimal_sep );
+		dest2 = g_regex_replace_literal( st_locale_decimal_regex, dest1, -1, 0, str, 0, NULL );
+		g_free( str );
+	} else {
+		dest2 = g_strdup( dest1 );
+	}
 
 	/* change inter to prefs thousand separator */
-	cstr = ofa_prefs_amount_thousand_sep();
-	dest3 = g_regex_replace_literal( st_inter_regex, dest2, -1, 0, cstr, 0, NULL );
-	/*dest3 = g_strdup( dest2 );*/
+	if( thousand_sep ){
+		str = g_strdup_printf( "%c", thousand_sep );
+		dest3 = g_regex_replace_literal( st_inter_regex, dest2, -1, 0, str, 0, NULL );
+		g_free( str );
+	} else {
+		dest3 = g_strdup( dest2 );
+	}
 
 	g_free( dest1 );
 	g_free( dest2 );

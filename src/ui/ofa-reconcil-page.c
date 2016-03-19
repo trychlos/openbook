@@ -26,15 +26,16 @@
 #include <config.h>
 #endif
 
+#define _GNU_SOURCE
 #include <glib/gi18n.h>
 #include <math.h>
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-editable-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
@@ -78,7 +79,7 @@ struct _ofaReconcilPagePrivate {
 	GtkWidget           *acc_debit_label;
 	GtkWidget           *acc_credit_label;
 	ofoAccount          *account;
-	gdouble              acc_precision;
+	ofoCurrency         *acc_currency;
 	ofxAmount            acc_debit;
 	ofxAmount            acc_credit;
 
@@ -1102,7 +1103,6 @@ account_on_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	priv->acc_precision = 0;
 	gtk_label_set_text( GTK_LABEL( priv->acc_label ), "" );
 	priv->account = account_get_reconciliable( self );
 
@@ -1133,6 +1133,7 @@ account_clear_content( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
+	priv->acc_currency = NULL;
 	priv->acc_debit = 0;
 	priv->acc_credit = 0;
 	gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), "" );
@@ -1162,8 +1163,7 @@ account_get_reconciliable( ofaReconcilPage *self )
 	const gchar *number;
 	gboolean ok;
 	ofoAccount *account;
-	const gchar *label, *cur_code, *bat_account;
-	ofoCurrency *currency;
+	const gchar *label, *bat_account;
 	ofoBat *bat;
 	gchar *msgerr;
 
@@ -1205,18 +1205,6 @@ account_get_reconciliable( ofaReconcilPage *self )
 		my_utils_widget_set_style( priv->acc_label, "labelerror" );
 	}
 
-	if( ok ){
-		/* init account precision depending of the currency */
-		cur_code = ofo_account_get_currency( account );
-		g_return_val_if_fail( my_strlen( cur_code ), NULL );
-		currency = ofo_currency_get_by_code( priv->hub, cur_code );
-		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
-		priv->acc_precision = ofo_currency_get_precision( currency );
-
-		/* only update user preferences if account is ok */
-		set_settings( self );
-	}
-
 	set_message( self, msgerr );
 
 	return( ok ? account : NULL );
@@ -1232,26 +1220,37 @@ account_set_header_balance( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gchar *sdiff, *samount;
+	const gchar *cur_code;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	if( priv->account ){
+		cur_code = ofo_account_get_currency( priv->account );
+		g_return_if_fail( my_strlen( cur_code ));
+
+		priv->acc_currency = ofo_currency_get_by_code( priv->hub, cur_code );
+		g_return_if_fail( priv->acc_currency && OFO_IS_CURRENCY( priv->acc_currency ));
+
 		priv->acc_debit = ofo_account_get_val_debit( priv->account )
 				+ ofo_account_get_rough_debit( priv->account );
 		priv->acc_credit = ofo_account_get_val_credit( priv->account )
 				+ ofo_account_get_rough_credit( priv->account );
 
 		if( priv->acc_credit >= priv->acc_debit ){
-			sdiff = my_double_to_str( priv->acc_credit - priv->acc_debit );
+			sdiff = ofa_amount_to_str( priv->acc_credit - priv->acc_debit, priv->acc_currency );
 			samount = g_strdup_printf( _( "%s CR" ), sdiff );
 			gtk_label_set_text( GTK_LABEL( priv->acc_credit_label ), samount );
+
 		} else {
-			sdiff = my_double_to_str( priv->acc_debit - priv->acc_credit );
+			sdiff = ofa_amount_to_str( priv->acc_debit - priv->acc_credit, priv->acc_currency );
 			samount = g_strdup_printf( _( "%s DB" ), sdiff );
 			gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), samount );
 		}
 		g_free( sdiff );
 		g_free( samount );
+
+		/* only update user preferences if account is ok */
+		set_settings( self );
 	}
 }
 
@@ -1325,21 +1324,24 @@ insert_entry( ofaReconcilPage *self, ofoEntry *entry )
 static void
 set_row_entry( ofaReconcilPage *self, GtkTreeModel *tstore, GtkTreeIter *iter, ofoEntry *entry )
 {
+	ofaReconcilPagePrivate *priv;
 	ofxAmount amount;
 	gchar *sdope, *sdeb, *scre, *sdrap, *sid;
 	const GDate *dconcil;
 	ofoConcil *concil;
 
+	priv = ofa_reconcil_page_get_instance_private( self );
+
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
 	amount = ofo_entry_get_debit( entry );
 	if( amount ){
-		sdeb = my_double_to_str( amount );
+		sdeb = ofa_amount_to_str( amount, priv->acc_currency );
 	} else {
 		sdeb = g_strdup( "" );
 	}
 	amount = ofo_entry_get_credit( entry );
 	if( amount ){
-		scre = my_double_to_str( amount );
+		scre = ofa_amount_to_str( amount, priv->acc_currency );
 	} else {
 		scre = g_strdup( "" );
 	}
@@ -1681,18 +1683,21 @@ insert_batline( ofaReconcilPage *self, ofoBatLine *batline )
 static void
 set_row_batline( ofaReconcilPage *self, GtkTreeModel *store, GtkTreeIter *iter, ofoBatLine *batline )
 {
+	ofaReconcilPagePrivate *priv;
 	ofxAmount bat_amount;
 	gchar *sdeb, *scre, *sdope, *sdreconcil, *sid;
 	ofoConcil *concil;
 	const GDate *dope;
 
+	priv = ofa_reconcil_page_get_instance_private( self );
+
 	bat_amount = ofo_bat_line_get_amount( batline );
 	if( bat_amount < 0 ){
-		sdeb = my_double_to_str( -bat_amount );
+		sdeb = ofa_amount_to_str( -bat_amount, priv->acc_currency );
 		scre = g_strdup( "" );
 	} else {
 		sdeb = g_strdup( "" );
-		scre = my_double_to_str( bat_amount );
+		scre = ofa_amount_to_str( bat_amount, priv->acc_currency );
 	}
 
 	dope = get_bat_line_dope( self, batline );
@@ -2101,8 +2106,8 @@ tview_is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	if( DEBUG_FILTER ){
-		gchar *sdeb = my_double_to_str( ofo_entry_get_debit( entry ));
-		gchar *scre = my_double_to_str( ofo_entry_get_credit( entry ));
+		gchar *sdeb = ofa_amount_to_str( ofo_entry_get_debit( entry ), priv->acc_currency );
+		gchar *scre = ofa_amount_to_str( ofo_entry_get_credit( entry ), priv->acc_currency );
 		g_debug( "%s: entry=%s, debit=%s, credit=%s",
 				thisfn, ofo_entry_get_label( entry ), sdeb, scre );
 		g_free( sdeb );
@@ -2182,7 +2187,7 @@ tview_is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	if( DEBUG_FILTER ){
-		gchar *samount = my_double_to_str( ofo_bat_line_get_amount( batline ));
+		gchar *samount = ofa_amount_to_str( ofo_bat_line_get_amount( batline ), priv->acc_currency );
 		g_debug( "%s: batline=%s, amount=%s", thisfn, ofo_bat_line_get_label( batline ), samount );
 		g_free( samount );
 	}
@@ -2405,9 +2410,9 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self )
 	examine_selection( self,
 			&debit, &credit, &concil, &count, &unconcil_rows, &unique, &is_child );
 
-	sdeb = my_double_to_str( debit );
+	sdeb = ofa_amount_to_str( debit, priv->acc_currency );
 	gtk_label_set_text( GTK_LABEL( priv->select_debit ), sdeb );
-	scre = my_double_to_str( credit );
+	scre = ofa_amount_to_str( credit, priv->acc_currency );
 	gtk_label_set_text( GTK_LABEL( priv->select_credit ), scre );
 
 	if( debit || credit ){
@@ -3039,8 +3044,8 @@ user_confirm_reconciliation( ofaReconcilPage *self, ofxAmount debit, ofxAmount c
 	gboolean ok;
 	gchar *sdeb, *scre, *str;
 
-	sdeb = my_double_to_str( debit );
-	scre = my_double_to_str( credit );
+	sdeb = ofa_amount_to_str( debit, NULL );
+	scre = ofa_amount_to_str( credit, NULL );
 	str = g_strdup_printf( _( "Caution: reconciliated amounts are not balanced:\n"
 			"debit=%s, credit=%s.\n"
 			"Are you sure you want reconciliate this group ?" ), sdeb, scre );
@@ -3350,12 +3355,12 @@ set_reconciliated_balance( ofaReconcilPage *self )
 
 	/*g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
 	if( debit > credit ){
-		str = my_double_to_str( debit-credit );
+		str = ofa_amount_to_str( debit-credit, priv->acc_currency );
 		sdeb = g_strdup_printf( _( "%s DB" ), str );
 		scre = g_strdup( "" );
 	} else {
 		sdeb = g_strdup( "" );
-		str = my_double_to_str( credit-debit );
+		str = ofa_amount_to_str( credit-debit, priv->acc_currency );
 		scre = g_strdup_printf( _( "%s CR" ), str );
 	}
 
@@ -3544,7 +3549,7 @@ search_for_parent_by_amount( ofaReconcilPage *self, ofoBase *object, GtkTreeMode
 					if( is_debug ){
 						g_debug( "%s: iter_balance=%lf", thisfn, iter_balance );
 					}
-					if( fabs( object_balance+iter_balance ) < priv->acc_precision ){
+					if( ofa_amount_is_zero( object_balance+iter_balance, priv->acc_currency )){
 						if( is_debug ){
 							g_debug( "%s: returning TRUE", thisfn );
 						}

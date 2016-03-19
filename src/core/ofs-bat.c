@@ -54,10 +54,10 @@ ofs_bat_dump( const ofsBat *bat )
 	g_debug( "%s:         end=%s", thisfn, send );
 	g_free( send );
 	g_debug( "%s:    currency=%s", thisfn, bat->currency );
-	sbegin = my_double_to_str( bat->begin_solde );
+	sbegin = my_double_to_sql_ex( bat->begin_solde, 2 );
 	g_debug( "%s: begin_solde=%s, set=%s", thisfn, sbegin, bat->begin_solde_set ? "True":"False" );
 	g_free( sbegin );
-	send = my_double_to_str( bat->end_solde );
+	send = my_double_to_sql_ex( bat->end_solde, 2 );
 	g_debug( "%s:   end_solde=%s, set=%s", thisfn, send, bat->end_solde_set ? "True":"False" );
 	g_free( send );
 
@@ -71,7 +71,7 @@ bat_dump_detail( ofsBatDetail *detail, const gchar *thisfn )
 
 	sdope = my_date_to_str( &detail->dope, ofa_prefs_date_display());
 	sdeffect = my_date_to_str( &detail->deffect, ofa_prefs_date_display());
-	samount = my_double_to_str( detail->amount );
+	samount = my_double_to_sql_ex( detail->amount, 2 );
 
 	g_debug( "%s: version=%u, dope=%s, deffect=%s, ref=%s, label=%s, amount=%s, currency=%s",
 			thisfn, detail->version,

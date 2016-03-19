@@ -35,20 +35,19 @@
 
 G_BEGIN_DECLS
 
-gchar     *my_double_undecorate     ( const gchar *decorated );
+gchar     *my_double_undecorate     ( const gchar *decorated, gunichar thousand_sep, gunichar decimal_sep );
 
 gdouble    my_double_set_from_csv   ( const gchar *csv_string, gchar decimal_sep );
 gdouble    my_double_set_from_sql   ( const gchar *sql_string );
 gdouble    my_double_set_from_sql_ex( const gchar *sql_string, gint digits );
+gdouble    my_double_set_from_str   ( const gchar *string, gunichar thousand_sep, gunichar decimal_sep );
 
-gdouble    my_double_set_from_str   ( const gchar *string );
-
-gchar     *my_bigint_to_str         ( glong value );
+gchar     *my_bigint_to_str         ( glong value, gunichar thousand_sep );
 
 gchar     *my_double_to_sql         ( gdouble value );
 gchar     *my_double_to_sql_ex      ( gdouble value, gint decimals );
-gchar     *my_double_to_str         ( gdouble value );
-gchar     *my_double_to_str_ex      ( gdouble value, gint decimals );
+gchar     *my_double_to_str         ( gdouble value, gunichar thousand_sep, gunichar decimal_sep );
+gchar     *my_double_to_str_ex      ( gdouble value, gunichar thousand_sep, gunichar decimal_sep, gint decimal_degits );
 
 G_END_DECLS
 

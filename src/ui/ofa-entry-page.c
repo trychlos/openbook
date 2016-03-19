@@ -32,10 +32,11 @@
 #include "my/my-cell-renderer-amount.h"
 #include "my/my-cell-renderer-date.h"
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-editable-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
+#include "api/ofa-counter.h"
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
@@ -1328,8 +1329,8 @@ cmp_amounts( ofaEntryPage *self, const gchar *stra, const gchar *strb )
 	ofxAmount a, b;
 
 	if( stra && strb ){
-		a = my_double_set_from_str( stra );
-		b = my_double_set_from_str( strb );
+		a = ofa_amount_from_str( stra );
+		b = ofa_amount_from_str( strb );
 
 		return( a < b ? -1 : ( a > b ? 1 : 0 ));
 	}
@@ -1685,18 +1686,27 @@ display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 	ofxCounter counter;
 	ofxAmount amount;
 	ofoConcil *concil;
-	const gchar *cstr, *cref;
+	const gchar *cstr, *cref, *cur_code;
+	ofoCurrency *cur_obj;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
+
+	cur_code = ofo_entry_get_currency( entry );
+	g_return_if_fail( my_strlen( cur_code ));
+
+	cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+	g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
+
 	amount = ofo_entry_get_debit( entry );
-	sdeb = amount ? my_double_to_str( amount ) : g_strdup( "" );
+	sdeb = amount ? ofa_amount_to_str( amount, cur_obj ) : g_strdup( "" );
 	amount = ofo_entry_get_credit( entry );
-	scre = amount ? my_double_to_str( amount ) : g_strdup( "" );
+	scre = amount ? ofa_amount_to_str( amount, cur_obj ) : g_strdup( "" );
+
 	counter = ofo_entry_get_settlement_number( entry );
-	ssettle = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
+	ssettle = counter ? ofa_counter_to_str( counter ) : g_strdup( "" );
 	cstr = ofo_entry_get_ref( entry );
 	cref = cstr ? cstr : "";
 
@@ -1712,7 +1722,7 @@ display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
 				ENT_COL_ACCOUNT,      ofo_entry_get_account( entry ),
 				ENT_COL_DEBIT,        sdeb,
 				ENT_COL_CREDIT,       scre,
-				ENT_COL_CURRENCY,     ofo_entry_get_currency( entry ),
+				ENT_COL_CURRENCY,     cur_code,
 				ENT_COL_SETTLE,       ssettle,
 				ENT_COL_DRECONCIL,    "",
 				ENT_COL_OPE_TEMPLATE, ofo_entry_get_ope_template( entry ),
@@ -1777,8 +1787,6 @@ compute_balances( ofaEntryPage *self )
 	GtkWidget *box;
 	GtkTreeIter iter;
 	gchar *sdeb, *scre, *dev_code;
-	ofoCurrency *currency;
-	gint cur_digits;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1797,13 +1805,9 @@ compute_balances( ofaEntryPage *self )
 					-1 );
 
 			if( my_strlen( dev_code ) && ( my_strlen( sdeb ) || my_strlen( scre ))){
-				currency = ofo_currency_get_by_code( priv->hub, dev_code );
-				g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-				cur_digits = ofo_currency_get_digits( currency );
-				ofs_currency_add_currency(
-						&priv->balances,
-						dev_code, cur_digits,
-						my_double_set_from_str( sdeb ), my_double_set_from_str( scre ));
+				ofs_currency_add_by_code(
+						&priv->balances, priv->hub, dev_code,
+						ofa_amount_from_str( sdeb ), ofa_amount_from_str( scre ));
 			}
 
 			g_free( sdeb );
@@ -1845,7 +1849,7 @@ display_balance( ofsCurrency *pc, ofaEntryPage *self )
 	gchar *str;
 	gboolean egal;
 
-	if( pc->ldebit || pc->lcredit ){
+	if( !ofs_currency_is_zero( pc )){
 
 		priv = ofa_entry_page_get_instance_private( self );
 
@@ -1855,10 +1859,10 @@ display_balance( ofsCurrency *pc, ofaEntryPage *self )
 		row = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
 		gtk_box_pack_start( GTK_BOX( box ), row, FALSE, FALSE, 0 );
 
-		egal = ( pc->ldebit == pc->lcredit );
-		g_debug( "display_balance: ldebit=%ld lcredit=%ld egal=%s", pc->ldebit, pc->lcredit, egal ? "True":"False" );
+		egal = ofs_currency_is_balanced( pc );
+		//g_debug( "display_balance: ldebit=%lf lcredit=%lf egal=%s", pc->debit, pc->credit, egal ? "True":"False" );
 
-		label = gtk_label_new( pc->currency );
+		label = gtk_label_new( ofo_currency_get_code( pc->currency ));
 		my_utils_widget_set_style( label, egal ? "labelbalance" : "labelwarning" );
 		my_utils_widget_set_xalign( label, 0 );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
@@ -1867,7 +1871,7 @@ display_balance( ofsCurrency *pc, ofaEntryPage *self )
 		my_utils_widget_set_style( label, egal ? "labelbalance" : "labelwarning" );
 		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = my_double_to_str( pc->credit );
+		str = ofa_amount_to_str( pc->credit, pc->currency );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
@@ -1876,7 +1880,7 @@ display_balance( ofsCurrency *pc, ofaEntryPage *self )
 		my_utils_widget_set_style( label, egal ? "labelbalance" : "labelwarning" );
 		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = my_double_to_str( pc->debit );
+		str = ofa_amount_to_str( pc->debit, pc->currency );
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
@@ -2257,8 +2261,8 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaEntr
 
 			/* reformat amounts before storing them */
 			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
-				amount = my_double_set_from_str( text );
-				str = my_double_to_str( amount );
+				amount = ofa_amount_from_str( text );
+				str = ofa_amount_to_str( amount, NULL );
 			} else {
 				str = g_strdup( text );
 			}
@@ -2631,8 +2635,8 @@ check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DEBIT, &sdeb, ENT_COL_CREDIT, &scre, -1 );
 
 	if( my_strlen( sdeb ) || my_strlen( scre )){
-		debit = my_double_set_from_str( sdeb );
-		credit = my_double_set_from_str( scre );
+		debit = ofa_amount_from_str( sdeb );
+		credit = ofa_amount_from_str( scre );
 		if(( debit && !credit ) || ( !debit && credit )){
 			is_valid = TRUE;
 
@@ -2947,8 +2951,8 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	ofo_entry_set_label( entry, label );
 	ofo_entry_set_ledger( entry, ledger );
 	ofo_entry_set_account( entry, account );
-	ofo_entry_set_debit( entry, my_double_set_from_str( sdeb ));
-	ofo_entry_set_credit( entry, my_double_set_from_str( scre ));
+	ofo_entry_set_debit( entry, ofa_amount_from_str( sdeb ));
+	ofo_entry_set_credit( entry, ofa_amount_from_str( scre ));
 	ofo_entry_set_currency( entry, currency );
 
 	if( is_new ){

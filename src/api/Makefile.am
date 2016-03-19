@@ -25,6 +25,11 @@ api_includedir = $(pkgincludedir)
 api_include_HEADERS = \
 	ofa-extension.h										\
 	\
+	ofa-amount.h										\
+	ofa-box.h											\
+	ofa-buttons-box.h									\
+	ofa-counter.h										\
+	ofa-date-filter-hv-bin.h							\
 	ofa-file-format.h									\
 	ofa-hub.h											\
 	ofa-hub-def.h										\
@@ -54,12 +59,6 @@ api_include_HEADERS = \
 	ofa-isingle-keeper.h								\
 	ofa-istore.h										\
 	ofa-list-store.h									\
-	ofa-settings.h										\
-	\
-	ofa-box.h											\
-	ofa-buttons-box.h									\
-	ofa-date-filter-hv-bin.h							\
-	ofa-main-window-def.h								\
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
@@ -67,6 +66,9 @@ api_include_HEADERS = \
 	ofa-periodicity-bin.h								\
 	ofa-plugin.h										\
 	ofa-preferences.h									\
+	ofa-settings.h										\
+	\
+	ofa-main-window-def.h								\
 	\
 	ofo-account.h										\
 	ofo-account-def.h									\

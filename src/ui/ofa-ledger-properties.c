@@ -29,11 +29,11 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
@@ -360,7 +360,7 @@ init_balances_page( ofaLedgerProperties *self )
 	GList *currencies, *it;
 	const gchar *code, *symbol;
 	ofoCurrency *currency;
-	gint i, count, digits;
+	gint i, count;
 	gchar *str;
 	ofxAmount amount, tot_debit, tot_credit;
 
@@ -378,7 +378,7 @@ init_balances_page( ofaLedgerProperties *self )
 		code = ( const gchar * ) it->data;
 		currency = ofo_currency_get_by_code( priv->hub, code );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-		digits = ofo_currency_get_digits( currency );
+
 		symbol = ofo_currency_get_symbol( currency );
 		tot_debit = 0;
 		tot_credit = 0;
@@ -399,7 +399,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+2, 1, 1 );
 
 		amount = ofo_ledger_get_val_debit( priv->ledger, code );
-		str = my_double_to_str_ex( amount, digits );
+		str = ofa_amount_to_str( amount, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		tot_debit += amount;
@@ -410,7 +410,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+2, 1, 1 );
 
 		amount = ofo_ledger_get_val_credit( priv->ledger, code );
-		str = my_double_to_str_ex( amount, digits );
+		str = ofa_amount_to_str( amount, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		tot_credit += amount;
@@ -429,7 +429,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+3, 1, 1 );
 
 		amount = ofo_ledger_get_rough_debit( priv->ledger, code );
-		str = my_double_to_str_ex( amount, digits );
+		str = ofa_amount_to_str( amount, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		tot_debit += amount;
@@ -440,7 +440,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+3, 1, 1 );
 
 		amount = ofo_ledger_get_rough_credit( priv->ledger, code );
-		str = my_double_to_str_ex( amount, digits );
+		str = ofa_amount_to_str( amount, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		tot_credit += amount;
@@ -459,7 +459,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+4, 1, 1 );
 
 		amount = ofo_ledger_get_futur_debit( priv->ledger, code );
-		str = my_double_to_str_ex( amount, digits );
+		str = ofa_amount_to_str( amount, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		tot_debit += amount;
@@ -470,7 +470,7 @@ init_balances_page( ofaLedgerProperties *self )
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+4, 1, 1 );
 
 		amount = ofo_ledger_get_futur_credit( priv->ledger, code );
-		str = my_double_to_str_ex( amount, digits );
+		str = ofa_amount_to_str( amount, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		tot_credit += amount;
@@ -491,7 +491,7 @@ init_balances_page( ofaLedgerProperties *self )
 		my_utils_widget_set_style( label, "labelinfo" );
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+5, 1, 1 );
 
-		str = my_double_to_str_ex( tot_debit, digits );
+		str = ofa_amount_to_str( tot_debit, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		my_utils_widget_set_xalign( label, 1.0 );
@@ -502,7 +502,7 @@ init_balances_page( ofaLedgerProperties *self )
 		my_utils_widget_set_style( label, "labelinfo" );
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+5, 1, 1 );
 
-		str = my_double_to_str_ex( tot_credit, digits );
+		str = ofa_amount_to_str( tot_credit, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		my_utils_widget_set_xalign( label, 1.0 );

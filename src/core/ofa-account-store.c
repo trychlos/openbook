@@ -29,9 +29,9 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <glib/gi18n.h>
 
-#include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofa-preferences.h"
@@ -274,43 +274,44 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 {
 	static const gchar *thisfn = "ofa_account_store_set_row";
 	const gchar *currency_code, *notes;
-	gint digits;
 	ofoCurrency *currency_obj;
 	gchar *stamp;
 	gchar *svdeb, *svcre, *srdeb, *srcre, *sodeb, *socre, *sfdeb, *sfcre, *sedeb, *secre, *sesol;
 	gchar *str;
-	ofxAmount val_debit, val_credit, rough_debit, rough_credit, exe_solde;
+	ofxAmount val_debit, val_credit, rough_debit, rough_credit, fut_debit, fut_credit, exe_solde;
 	GdkPixbuf *notes_png;
 	GError *error;
 
 	currency_code = ofo_account_get_currency( account );
 	if( !ofo_account_is_root( account )){
 		currency_obj = ofo_currency_get_by_code( hub, currency_code );
-		if( currency_obj && OFO_IS_CURRENCY( currency_obj )){
-			digits = ofo_currency_get_digits( currency_obj );
-		} else {
-			digits = 2;
-		}
+		g_return_if_fail( currency_obj && OFO_IS_CURRENCY( currency_obj ));
+
 		val_debit = ofo_account_get_val_debit( account );
-		svdeb = my_double_to_str_ex( val_debit, digits );
 		val_credit = ofo_account_get_val_credit( account );
-		svcre = my_double_to_str_ex( val_credit, digits );
 		rough_debit = ofo_account_get_rough_debit( account );
-		srdeb = my_double_to_str_ex( rough_debit, digits );
 		rough_credit = ofo_account_get_rough_credit( account );
-		srcre = my_double_to_str_ex( rough_credit, digits );
-		sodeb = my_double_to_str_ex( ofo_account_get_open_debit( account ), digits );
-		socre = my_double_to_str_ex( ofo_account_get_open_credit( account ), digits );
-		sfdeb = my_double_to_str_ex( ofo_account_get_futur_debit( account ), digits );
-		sfcre = my_double_to_str_ex( ofo_account_get_futur_credit( account ), digits );
-		sedeb = my_double_to_str_ex( val_debit+rough_debit, digits );
-		secre = my_double_to_str_ex( val_credit+rough_credit, digits );
-		exe_solde = val_debit+rough_debit-val_credit-rough_credit;
+		fut_debit = ofo_account_get_futur_debit( account );
+		fut_credit = ofo_account_get_futur_credit( account );
+
+		svdeb = ofa_amount_to_str( val_debit, currency_obj );
+		svcre = ofa_amount_to_str( val_credit, currency_obj );
+		srdeb = ofa_amount_to_str( rough_debit, currency_obj );
+		srcre = ofa_amount_to_str( rough_credit, currency_obj );
+		sodeb = ofa_amount_to_str( ofo_account_get_open_debit( account ), currency_obj );
+		socre = ofa_amount_to_str( ofo_account_get_open_credit( account ), currency_obj );
+		sfdeb = ofa_amount_to_str( fut_debit, currency_obj );
+		sfcre = ofa_amount_to_str( fut_credit, currency_obj );
+
+		sedeb = ofa_amount_to_str( val_debit+rough_debit+fut_debit, currency_obj );
+		secre = ofa_amount_to_str( val_credit+rough_credit+fut_credit, currency_obj );
+
+		exe_solde = val_debit-val_credit+rough_debit-rough_credit+fut_debit-fut_credit;
 		if( exe_solde >= 0 ){
-			str = my_double_to_str_ex( exe_solde, digits );
+			str = ofa_amount_to_str( exe_solde, currency_obj );
 			sesol = g_strdup_printf( _( "%s DB" ), str );
 		} else {
-			str = my_double_to_str_ex( -exe_solde, digits );
+			str = ofa_amount_to_str( -exe_solde, currency_obj );
 			sesol = g_strdup_printf( _( "%s CR" ), str );
 		}
 		g_free( str );

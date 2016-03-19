@@ -26,8 +26,9 @@
 #include <config.h>
 #endif
 
-#include "my/my-double.h"
 #include "my/my-utils.h"
+
+#include "api/ofa-amount.h"
 
 #include "ui/ofa-balance-grid-bin.h"
 
@@ -262,7 +263,7 @@ write_double( ofaBalanceGridBin *self, gdouble amount, gint left, gint top )
 	widget = gtk_grid_get_child_at( priv->grid, left, top );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 
-	str = my_double_to_str( amount );
+	str = ofa_amount_to_str( amount, NULL );
 	gtk_label_set_text( GTK_LABEL( widget ), str );
 	g_free( str );
 }

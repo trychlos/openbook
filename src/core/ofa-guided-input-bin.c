@@ -30,16 +30,17 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-editable-amount.h"
 #include "my/my-editable-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -246,7 +247,7 @@ static void              set_comment( ofaGuidedInputBin *self, const gchar *comm
 static void              set_message( ofaGuidedInputBin *self, const gchar *errmsg );
 static gboolean          update_totals( ofaGuidedInputBin *self );
 static void              add_total_diff_lines( ofaGuidedInputBin *self, gint model_count );
-static void              total_display_diff( ofaGuidedInputBin *self, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff );
+static void              total_display_diff( ofaGuidedInputBin *self, ofoCurrency *currency, gint row, gdouble ddiff, gdouble cdiff );
 static gboolean          do_validate( ofaGuidedInputBin *self );
 static void              display_ok_message( ofaGuidedInputBin *self, gint count );
 static void              do_reset_entries_rows( ofaGuidedInputBin *self );
@@ -1141,14 +1142,14 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 				}
 				break;
 			case OPE_COL_DEBIT:
-				detail->debit = my_double_set_from_str( cstr );
+				detail->debit = ofa_amount_from_str( cstr );
 				if( priv->focused_row == sdata->row_id && priv->focused_column == sdata->col_def->column_id ){
 					detail->debit_user_set = TRUE;
 					g_debug( "%s: row=%d, setting debit_user_set to %s", thisfn, sdata->row_id, detail->debit_user_set ? "True":"False" );
 				}
 				break;
 			case OPE_COL_CREDIT:
-				detail->credit = my_double_set_from_str( cstr );
+				detail->credit = ofa_amount_from_str( cstr );
 				if( priv->focused_row == sdata->row_id && priv->focused_column == sdata->col_def->column_id ){
 					detail->credit_user_set = TRUE;
 				}
@@ -1268,7 +1269,7 @@ is_dialog_validable( ofaGuidedInputBin *self )
 	ofaGuidedInputBinPrivate *priv;
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
-	gchar *message, *amount;
+	gchar *message, *amount_str;
 	gboolean ok;
 	gint i;
 
@@ -1290,14 +1291,14 @@ is_dialog_validable( ofaGuidedInputBin *self )
 			set_ope_to_ui( self, i+1, OPE_COL_LABEL, detail->label );
 		}
 		if( !detail->debit_user_set ){
-			amount = my_double_to_str( detail->debit );
-			set_ope_to_ui( self, i+1, OPE_COL_DEBIT, amount );
-			g_free( amount );
+			amount_str = ofa_amount_to_str( detail->debit, detail->currency );
+			set_ope_to_ui( self, i+1, OPE_COL_DEBIT, amount_str );
+			g_free( amount_str );
 		}
 		if( !detail->credit_user_set ){
-			amount = my_double_to_str( detail->credit );
-			set_ope_to_ui( self, i+1, OPE_COL_CREDIT, amount );
-			g_free( amount );
+			amount_str = ofa_amount_to_str( detail->credit, detail->currency );
+			set_ope_to_ui( self, i+1, OPE_COL_CREDIT, amount_str );
+			g_free( amount_str );
 		}
 	}
 
@@ -1486,7 +1487,7 @@ update_totals( ofaGuidedInputBin *self )
 		/* setup currency, totals and diffs */
 		label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_LABEL, i );
 		g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
-		total_str = g_strdup_printf( _( "Total %s :"), sbal->currency );
+		total_str = g_strdup_printf( _( "Total %s :"), ofo_currency_get_code( sbal->currency ));
 		gtk_label_set_text( GTK_LABEL( label ), total_str );
 		g_free( total_str );
 
@@ -1581,7 +1582,7 @@ add_total_diff_lines( ofaGuidedInputBin *self, gint row )
 }
 
 static void
-total_display_diff( ofaGuidedInputBin *self, const gchar *currency, gint row, gdouble ddiff, gdouble cdiff )
+total_display_diff( ofaGuidedInputBin *self, ofoCurrency *currency, gint row, gdouble ddiff, gdouble cdiff )
 {
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label;
@@ -1597,7 +1598,7 @@ total_display_diff( ofaGuidedInputBin *self, const gchar *currency, gint row, gd
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	amount_str = NULL;
 	if( ddiff > 0.001 ){
-		amount_str = my_double_to_str( ddiff );
+		amount_str = ofa_amount_to_str( ddiff, currency );
 		has_diff = TRUE;
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );
@@ -1609,7 +1610,7 @@ total_display_diff( ofaGuidedInputBin *self, const gchar *currency, gint row, gd
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	amount_str = NULL;
 	if( cdiff > 0.001 ){
-		amount_str = my_double_to_str( cdiff );
+		amount_str = ofa_amount_to_str( cdiff, currency );
 		has_diff = TRUE;
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );
@@ -1619,7 +1620,7 @@ total_display_diff( ofaGuidedInputBin *self, const gchar *currency, gint row, gd
 	/* set the currency */
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CURRENCY, row );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_text( GTK_LABEL( label ), has_diff ? currency : NULL );
+	gtk_label_set_text( GTK_LABEL( label ), has_diff ? ofo_currency_get_label( currency ) : "" );
 	my_utils_widget_set_style( label, "labelerror" );
 }
 

@@ -34,6 +34,7 @@
  * an ope + an ope template = n entries (if %TRUE)
  */
 
+#include "api/ofo-currency-def.h"
 #include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
@@ -73,6 +74,7 @@ typedef struct {
 	gchar                *account;
 	gboolean              account_user_set;
 	gboolean              account_is_valid;
+	ofoCurrency          *currency;
 	gchar                *label;
 	gboolean              label_user_set;
 	gboolean              label_is_valid;

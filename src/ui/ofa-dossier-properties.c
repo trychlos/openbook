@@ -30,13 +30,13 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
 #include "my/my-editable-date.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
@@ -526,37 +526,37 @@ init_counters_page( ofaDossierProperties *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-bat" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_bigint_to_str( ofo_dossier_get_last_bat( priv->dossier ));
+	str = ofa_counter_to_str( ofo_dossier_get_last_bat( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-batline" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_bigint_to_str( ofo_dossier_get_last_batline( priv->dossier ));
+	str = ofa_counter_to_str( ofo_dossier_get_last_batline( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_bigint_to_str( ofo_dossier_get_last_entry( priv->dossier ));
+	str = ofa_counter_to_str( ofo_dossier_get_last_entry( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-settlement" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_bigint_to_str( ofo_dossier_get_last_settlement( priv->dossier ));
+	str = ofa_counter_to_str( ofo_dossier_get_last_settlement( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-concil" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_bigint_to_str( ofo_dossier_get_last_concil( priv->dossier ));
+	str = ofa_counter_to_str( ofo_dossier_get_last_concil( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = my_bigint_to_str( ofo_dossier_get_prev_exe_last_entry( priv->dossier ));
+	str = ofa_counter_to_str( ofo_dossier_get_prev_exe_last_entry( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 

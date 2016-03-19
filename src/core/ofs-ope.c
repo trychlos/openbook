@@ -34,6 +34,7 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -226,14 +227,14 @@ compute_simple_formulas( sHelper *helper )
 		if( !detail->debit_user_set ){
 			str = compute_formula(
 					helper, ofo_ope_template_get_detail_debit( template, i ), i, OPE_COL_DEBIT );
-			detail->debit = my_double_set_from_str( str );
+			detail->debit = ofa_amount_from_str( str );
 			g_free( str );
 		}
 
 		if( !detail->credit_user_set ){
 			str = compute_formula(
 					helper, ofo_ope_template_get_detail_credit( template, i ), i, OPE_COL_CREDIT );
-			detail->credit = my_double_set_from_str( str );
+			detail->credit = ofa_amount_from_str( str );
 			g_free( str );
 		}
 	}
@@ -297,7 +298,8 @@ compute_formula( sHelper *helper, const gchar *formula, gint row, gint column )
 					str1, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, helper, NULL );
 
 		if( column == OPE_COL_DEBIT || column == OPE_COL_CREDIT ){
-			str3 = my_double_to_str( eval( helper, str2 ));
+			str3 = ofa_amount_to_str( eval( helper, str2 ), NULL );
+
 		} else {
 			str3 = g_strdup( str2 );
 		}
@@ -375,17 +377,17 @@ is_detail_ref( const gchar *token, sHelper *helper, gchar **str )
 	if( ok ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( helper->ope->detail, num-1 );
 
-		if( !g_utf8_collate( field, "A" )){
+		if( !my_collate( field, "A" )){
 			*str = g_strdup( detail->account );
 
-		} else if( !g_utf8_collate( field, "L" )){
+		} else if( !my_collate( field, "L" )){
 			*str = g_strdup( detail->label );
 
-		} else if( !g_utf8_collate( field, "D" )){
-			*str = my_double_to_str( detail->debit );
+		} else if( !my_collate( field, "D" )){
+			*str = ofa_amount_to_str( detail->debit, detail->currency );
 
-		} else if( !g_utf8_collate( field, "C" )){
-			*str = my_double_to_str( detail->credit );
+		} else if( !my_collate( field, "C" )){
+			*str = ofa_amount_to_str( detail->credit, detail->currency );
 
 		} else {
 			ok = FALSE;
@@ -444,7 +446,7 @@ is_global_ref( const gchar *token, sHelper *helper, gchar **str )
 			*str = g_strdup( helper->ope->ref );
 
 		} else if( !g_utf8_collate( field, "SOLDE" )){
-			*str = my_double_to_str( compute_solde( helper ));
+			*str = ofa_amount_to_str( compute_solde( helper ), NULL );
 
 		} else if( !g_utf8_collate( field, "IDEM" )){
 			*str = get_prev( helper );
@@ -477,7 +479,9 @@ is_rate( const gchar *token, sHelper *helper, gchar **str )
 		ok = TRUE;
 		if( my_date_is_valid( &helper->ope->dope )){
 			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/( gdouble ) 100;
-			*str = my_double_to_str_ex( amount, 5 );
+			*str = my_double_to_str_ex( amount,
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 5 );
 			g_debug( "%s: amount=%.5lf, str=%s", thisfn, amount, *str );
 		}
 	}
@@ -552,10 +556,10 @@ get_prev( sHelper *helper )
 				str = g_strdup( prev->label );
 				break;
 			case OPE_COL_DEBIT:
-				str = my_double_to_str( prev->debit );
+				str = ofa_amount_to_str( prev->debit, prev->currency );
 				break;
 			case OPE_COL_CREDIT:
-				str = my_double_to_str( prev->credit );;
+				str = ofa_amount_to_str( prev->credit, prev->currency );
 				break;
 		}
 	}
@@ -618,11 +622,13 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 			*str = g_strdup( get_account_currency( helper, content ));
 
 		} else if( !g_utf8_collate( field, "EVAL" )){
-			*str = my_double_to_str( eval( helper, content ));
+			*str = ofa_amount_to_str( eval( helper, content ), NULL );
 
 		} else if( !g_utf8_collate( field, "RATE" )){
 			amount = rate( helper, content );
-			*str = my_double_to_str_ex( amount, 5 );
+			*str = my_double_to_str_ex( amount,
+							g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+							g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 5 );
 			g_debug( "%s: amount=%.5lf, rate=%s", thisfn, amount, *str );
 
 		} else if( !g_utf8_collate( field, "ACCL" )){
@@ -755,7 +761,7 @@ eval_rec( const gchar *content, gchar **iter, gdouble *amount, gint count )
 					iter = eval_rec( content, iter, &amount_iter, 1+count );
 					DEBUG( "%s: count=%d, amount=%lf, oper=%s, amount_iter=%lf", thisfn, count, *amount, oper, amount_iter );
 				} else {
-					amount_iter = my_double_set_from_str( *iter );
+					amount_iter = ofa_amount_from_str( *iter );
 				}
 				if( !g_utf8_collate( oper, "-" )){
 					*amount -= amount_iter;
@@ -1027,8 +1033,6 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	ofoAccount *account;
 	const gchar *currency;
 	gboolean ok;
-	ofoCurrency *cur_object;
-	gint cur_digits;
 
 	ok = TRUE;
 	account = NULL;
@@ -1036,6 +1040,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	detail->account_is_valid = FALSE;
 	detail->label_is_valid = FALSE;
 	detail->amounts_are_valid = FALSE;
+	detail->currency = NULL;
 	hub = ofo_base_get_hub( OFO_BASE( checker->ope->ope_template ));
 
 	if( my_strlen( detail->label )){
@@ -1072,6 +1077,8 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 
 			} else {
 				detail->account_is_valid = TRUE;
+				detail->currency = ofo_currency_get_by_code( hub, currency );
+				g_return_val_if_fail( detail->currency && OFO_IS_CURRENCY( detail->currency ), FALSE );
 			}
 		}
 	}
@@ -1088,10 +1095,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	}
 
 	if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
-		cur_object = ofo_currency_get_by_code( hub, currency );
-		g_return_val_if_fail( cur_object && OFO_IS_CURRENCY( cur_object ), FALSE );
-		cur_digits = ofo_currency_get_digits( cur_object );
-		ofs_currency_add_currency( &checker->currencies, currency, cur_digits, detail->debit, detail->credit );
+		ofs_currency_add_by_object( &checker->currencies, detail->currency, detail->debit, detail->credit );
 	}
 
 	return( ok );
@@ -1106,22 +1110,20 @@ check_for_currencies( sChecker *checker )
 	GList *it;
 	ofsCurrency *scur;
 	gint errors;
-	gdouble precision;
 
 	errors = 0;
-	precision = 1/PRECISION;
 
 	for( it=checker->currencies ; it ; it=it->next ){
 		scur = ( ofsCurrency * ) it->data;
-		if( scur->debit == scur->credit && !scur->debit ){
+		if( ofs_currency_is_zero( scur )){
 			errors += 1;
 			g_free( checker->message );
-			checker->message = g_strdup_printf( _( "Empty currency balance: %s" ), scur->currency );
+			checker->message = g_strdup_printf( _( "Empty currency balance: %s" ), ofo_currency_get_code( scur->currency ));
 
-		} else if( abs( scur->debit - scur->credit ) > precision ){
+		} else if( !ofs_currency_is_balanced( scur )){
 			errors += 1;
 			g_free( checker->message );
-			checker->message = g_strdup_printf( _( "Unbalanced currency: %s" ), scur->currency );
+			checker->message = g_strdup_printf( _( "Unbalanced currency: %s" ), ofo_currency_get_code( scur->currency ));
 		}
 
 		/* debit = credit and are not nuls */
