@@ -248,6 +248,8 @@ idialog_init( myIDialog *instance )
 	my_utils_widget_set_style( label, "labelerror" );
 	priv->msg_label = label;
 
+	gtk_widget_show_all( GTK_WIDGET( instance ));
+
 	check_for_enable_dlg( OFA_DOSSIER_NEW_MINI( instance ));
 }
 
