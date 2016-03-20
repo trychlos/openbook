@@ -1,6 +1,6 @@
 /*
  * Open Freelance Accounting
- * A double-entry accounting application for freelances.
+ * A double-editable accounting application for freelances.
  *
  * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
  *
@@ -26,24 +26,24 @@
 #include <config.h>
 #endif
 
-#include "my/my-double.h"
-#include "my/my-editable-amount.h"
+#include "my/my-double-editable.h"
 #include "my/my-utils.h"
-
-#include "api/ofa-preferences.h"
 
 /*
  * data attached to each implementor object
- * (typically a GtkEntry, or anything which implements the GtkEditable
+ * (typically a GtkEditable, or anything which implements the GtkEditable
  *  interface)
  */
 typedef struct {
+
 	/* configuration
 	 */
 	guint    decimals;
 	gunichar thousand_sep;
 	gunichar decimal_sep;
 	gboolean accept_sign;
+	gboolean accept_dot;
+	gboolean accept_comma;
 
 	/* amount
 	 */
@@ -65,39 +65,41 @@ typedef struct {
 
 #define DEFAULT_DECIMALS                 2
 #define DEFAULT_ACCEPT_SIGN              TRUE
-#define EDITABLE_AMOUNT_DATA             "my-editable-amount-data"
+#define DOUBLE_EDITABLE_DATA            "my-double-editable-data"
 
-static void       editable_amount_init( GtkEditable *editable );
+static void       double_editable_init( GtkEditable *editable );
 static void       on_editable_finalized( sEditable *data, GObject *was_the_editable );
 static sEditable *get_editable_amount_data( GtkEditable *editable );
 static void       on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditable *data );
 static void       on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditable *data );
 static void       on_changed( GtkEditable *editable, sEditable *data );
-static gboolean   on_focus_in( GtkWidget *entry, GdkEvent *event, sEditable *data );
-static gboolean   on_focus_out( GtkWidget *entry, GdkEvent *event, sEditable *data );
+static gboolean   on_focus_in( GtkWidget *editable, GdkEvent *event, sEditable *data );
+static gboolean   on_focus_out( GtkWidget *editable, GdkEvent *event, sEditable *data );
 static gchar     *editable_amount_get_localized_string( GtkEditable *editable, sEditable **pdata );
 static void       editable_amount_render( GtkEditable *editable, const gchar *string, sEditable *data );
 
 /**
- * my_editable_amount_init:
+ * my_double_editable_init:
  * @editable: the #GtkEditable object
  *
  * Initialize the GtkEditable to enter an amount. Is supposed to be
  * called each time the edition is started.
  */
 void
-my_editable_amount_init( GtkEditable *editable )
+my_double_editable_init( GtkEditable *editable )
 {
-	static const gchar *thisfn = "my_editable_amount_init";
+	static const gchar *thisfn = "my_double_editable_init";
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) editable, G_OBJECT_TYPE_NAME( editable ));
 
-	editable_amount_init( editable );
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	double_editable_init( editable );
 }
 
 /**
- * my_editable_amount_init_ex:
+ * my_double_editable_init_ex:
  * @editable: the #GtkEditable object
  * @decimals: the decimals count to be set.
  *
@@ -105,15 +107,23 @@ my_editable_amount_init( GtkEditable *editable )
  * called each time the edition is started.
  */
 void
-my_editable_amount_init_ex( GtkEditable *editable, gint decimals )
+my_double_editable_init_ex( GtkEditable *editable,
+		gunichar thousand_sep, gunichar decimal_sep, gboolean accept_dot, gboolean accept_comma, gint decimals )
 {
-	static const gchar *thisfn = "my_editable_amount_init_ex";
+	static const gchar *thisfn = "my_double_editable_init_ex";
 
-	g_debug( "%s: self=%p (%s)",
-			thisfn, ( void * ) editable, G_OBJECT_TYPE_NAME( editable ));
+	g_debug( "%s: self=%p (%s), thousand_sep=%c, decimal_sep=%c, accept_dot=%s, accept_comma=%s, decimals=%d",
+			thisfn, ( void * ) editable, G_OBJECT_TYPE_NAME( editable ),
+			thousand_sep, decimal_sep, accept_dot ? "True":"False", accept_comma ? "True":"False", decimals );
 
-	editable_amount_init( editable );
-	my_editable_amount_set_decimals( editable, decimals );
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	double_editable_init( editable );
+	my_double_editable_set_thousand_sep( editable, thousand_sep );
+	my_double_editable_set_decimal_sep( editable, decimal_sep );
+	my_double_editable_set_accept_dot( editable, accept_dot );
+	my_double_editable_set_accept_comma( editable, accept_comma );
+	my_double_editable_set_decimals( editable, decimals );
 }
 
 /*
@@ -122,13 +132,9 @@ my_editable_amount_init_ex( GtkEditable *editable, gint decimals )
  * - replace decimal comma with a dot
  */
 static void
-editable_amount_init( GtkEditable *editable )
+double_editable_init( GtkEditable *editable )
 {
 	sEditable *data;
-
-	if( GTK_IS_ENTRY( editable )){
-		gtk_entry_set_alignment( GTK_ENTRY( editable ), 1 );
-	}
 
 	data = get_editable_amount_data( editable );
 
@@ -138,7 +144,7 @@ editable_amount_init( GtkEditable *editable )
 static void
 on_editable_finalized( sEditable *data, GObject *finalized_editable )
 {
-	static const gchar *thisfn = "my_editable_amount_on_weak_notify";
+	static const gchar *thisfn = "my_double_editable_on_editable_finalized";
 
 	g_debug( "%s: data=%p, finalized_editable=%p",
 			thisfn, ( void * ) data, ( void * ) finalized_editable );
@@ -153,31 +159,26 @@ get_editable_amount_data( GtkEditable *editable )
 {
 	sEditable *data;
 
-	data = ( sEditable * ) g_object_get_data( G_OBJECT( editable ), EDITABLE_AMOUNT_DATA );
+	data = ( sEditable * ) g_object_get_data( G_OBJECT( editable ), DOUBLE_EDITABLE_DATA );
 
 	if( !data ){
 		data = g_new0( sEditable, 1 );
-		g_object_set_data( G_OBJECT( editable ), EDITABLE_AMOUNT_DATA, data );
+		g_object_set_data( G_OBJECT( editable ), DOUBLE_EDITABLE_DATA, data );
 
 		data->accept_sign = DEFAULT_ACCEPT_SIGN;
 		data->amount = 0;
 		data->setting_text = FALSE;
-		my_editable_amount_set_decimals( editable, -1 );
+		my_double_editable_set_decimals( editable, -1 );
 
-		g_signal_connect(
-				G_OBJECT( editable ), "insert-text", G_CALLBACK( on_text_inserted ), data );
-		g_signal_connect(
-				G_OBJECT( editable ), "delete-text", G_CALLBACK( on_text_deleted ), data );
-		g_signal_connect(
-				G_OBJECT( editable ), "changed", G_CALLBACK( on_changed ), data );
+		g_signal_connect( editable, "insert-text", G_CALLBACK( on_text_inserted ), data );
+		g_signal_connect( editable, "delete-text", G_CALLBACK( on_text_deleted ), data );
+		g_signal_connect( editable, "changed", G_CALLBACK( on_changed ), data );
 
-		my_editable_amount_set_changed_cb( editable, G_CALLBACK( on_changed ), data );
+		my_double_editable_set_changed_cb( editable, G_CALLBACK( on_changed ), data );
 
 		if( GTK_IS_WIDGET( editable )){
-			g_signal_connect(
-					G_OBJECT( editable ), "focus-in-event", G_CALLBACK( on_focus_in ), data );
-			g_signal_connect(
-					G_OBJECT( editable ), "focus-out-event", G_CALLBACK( on_focus_out ), data );
+			g_signal_connect( editable, "focus-in-event", G_CALLBACK( on_focus_in ), data );
+			g_signal_connect( editable, "focus-out-event", G_CALLBACK( on_focus_out ), data );
 		}
 
 		if( GTK_IS_ENTRY( editable )){
@@ -222,11 +223,11 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 				is_ok = FALSE;
 				continue;
 			}
-			if( ithchar == '.' && ofa_prefs_amount_accept_dot()){
+			if( ithchar == '.' && data->accept_dot ){
 				data->has_decimal = TRUE;
 				continue;
 			}
-			if( ithchar == ',' && ofa_prefs_amount_accept_comma()){
+			if( ithchar == ',' && data->accept_comma ){
 				data->has_decimal = TRUE;
 				continue;
 			}
@@ -287,30 +288,30 @@ on_changed( GtkEditable *editable, sEditable *data )
  *  FALSE to propagate the event further.
  */
 static gboolean
-on_focus_in( GtkWidget *entry, GdkEvent *event, sEditable *data )
+on_focus_in( GtkWidget *editable, GdkEvent *event, sEditable *data )
 {
-	static const gchar *thisfn = "my_editable_amount_on_focus_in";
+	static const gchar *thisfn = "my_double_editable_on_focus_in";
 	gchar *text1, *text2;
 	GList *it;
 	sCB *scb;
 
-	g_return_val_if_fail( GTK_IS_EDITABLE( entry ), TRUE );
+	g_debug( "%s: editable=%p, event=%p, data=%p",
+			thisfn, ( void * ) editable, ( void * ) event, ( void * ) data );
 
-	g_debug( "%s: entry=%p, event=%p, data=%p",
-			thisfn, ( void * ) entry, ( void * ) event, ( void * ) data );
+	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), TRUE );
 
-	text1 = gtk_editable_get_chars( GTK_EDITABLE( entry ), 0, -1 );
+	text1 = gtk_editable_get_chars( GTK_EDITABLE( editable ), 0, -1 );
 	text2 = my_double_undecorate( text1, data->thousand_sep, data->decimal_sep );
 	data->has_decimal = ( g_strstr_len( text2, -1, "." ) != NULL );
 
 	for( it=data->cbs ; it ; it=it->next ){
 		scb = ( sCB * ) it->data;
-		g_signal_handlers_block_by_func( entry, scb->cb, scb->user_data );
+		g_signal_handlers_block_by_func( editable, scb->cb, scb->user_data );
 	}
-	editable_amount_render( GTK_EDITABLE( entry ), text2, data );
+	editable_amount_render( GTK_EDITABLE( editable ), text2, data );
 	for( it=data->cbs ; it ; it=it->next ){
 		scb = ( sCB * ) it->data;
-		g_signal_handlers_unblock_by_func( entry, scb->cb, scb->user_data );
+		g_signal_handlers_unblock_by_func( editable, scb->cb, scb->user_data );
 	}
 
 	g_free( text2 );
@@ -328,21 +329,21 @@ on_focus_in( GtkWidget *entry, GdkEvent *event, sEditable *data )
  *  FALSE to propagate the event further.
  */
 static gboolean
-on_focus_out( GtkWidget *entry, GdkEvent *event, sEditable *data )
+on_focus_out( GtkWidget *editable, GdkEvent *event, sEditable *data )
 {
-	static const gchar *thisfn = "my_editable_amount_on_focus_out";
+	static const gchar *thisfn = "my_double_editable_on_focus_out";
 	gchar *text;
 
-	g_return_val_if_fail( GTK_IS_EDITABLE( entry ), TRUE );
+	g_debug( "%s: editable=%p, event=%p, data=%p",
+			thisfn, ( void * ) editable, ( void * ) event, ( void * ) data );
 
-	g_debug( "%s: entry=%p, event=%p, data=%p",
-			thisfn, ( void * ) entry, ( void * ) event, ( void * ) data );
+	g_return_val_if_fail( editable && GTK_IS_EDITABLE( editable ), TRUE );
 
-	text = editable_amount_get_localized_string( GTK_EDITABLE( entry ), NULL );
+	text = editable_amount_get_localized_string( GTK_EDITABLE( editable ), NULL );
 
-	g_signal_handlers_block_by_func( entry, on_changed, data );
-	editable_amount_render( GTK_EDITABLE( entry ), text, data );
-	g_signal_handlers_unblock_by_func( entry, on_changed, data );
+	g_signal_handlers_block_by_func( editable, on_changed, data );
+	editable_amount_render( GTK_EDITABLE( editable ), text, data );
+	g_signal_handlers_unblock_by_func( editable, on_changed, data );
 
 	g_free( text );
 
@@ -350,7 +351,7 @@ on_focus_out( GtkWidget *entry, GdkEvent *event, sEditable *data )
 }
 
 /**
- * my_editable_amount_set_decimals:
+ * my_double_editable_set_decimals:
  * @editable: this #GtkEditable instance.
  * @decimals: the decimals count to be set ; reset to the default count
  *  of decimals if @decimals is equal to -1.
@@ -358,7 +359,7 @@ on_focus_out( GtkWidget *entry, GdkEvent *event, sEditable *data )
  * Set the current decimals count.
  */
 void
-my_editable_amount_set_decimals( GtkEditable *editable, gint decimals )
+my_double_editable_set_decimals( GtkEditable *editable, gint decimals )
 {
 	sEditable *data;
 
@@ -375,7 +376,7 @@ my_editable_amount_set_decimals( GtkEditable *editable, gint decimals )
 }
 
 /**
- * my_editable_amount_set_thousand_sep:
+ * my_double_editable_set_thousand_sep:
  * @editable: this #GtkEditable instance.
  * @thousand_sep: the desired thousand separator.
  *
@@ -385,7 +386,7 @@ my_editable_amount_set_decimals( GtkEditable *editable, gint decimals )
  * locale one.
  */
 void
-my_editable_amount_set_thousand_sep( GtkEditable *editable, gunichar thousand_sep )
+my_double_editable_set_thousand_sep( GtkEditable *editable, gunichar thousand_sep )
 {
 	sEditable *data;
 
@@ -397,7 +398,7 @@ my_editable_amount_set_thousand_sep( GtkEditable *editable, gunichar thousand_se
 }
 
 /**
- * my_editable_amount_set_decimal_sep:
+ * my_double_editable_set_decimal_sep:
  * @editable: this #GtkEditable instance.
  * @decimal_sep: the desired decimal separator.
  *
@@ -407,7 +408,7 @@ my_editable_amount_set_thousand_sep( GtkEditable *editable, gunichar thousand_se
  * locale one.
  */
 void
-my_editable_amount_set_decimal_sep( GtkEditable *editable, gunichar decimal_sep )
+my_double_editable_set_decimal_sep( GtkEditable *editable, gunichar decimal_sep )
 {
 	sEditable *data;
 
@@ -419,13 +420,47 @@ my_editable_amount_set_decimal_sep( GtkEditable *editable, gunichar decimal_sep 
 }
 
 /**
- * my_editable_amount_get_amount:
+ * my_double_editable_set_accept_dot:
+ * @editable: this #GtkEditable instance.
+ * @accept_dot: whether we accept the dot as the decimal separator.
+ */
+void
+my_double_editable_set_accept_dot( GtkEditable *editable, gboolean accept_dot )
+{
+	sEditable *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_amount_data( editable );
+
+	data->accept_dot = accept_dot;
+}
+
+/**
+ * my_double_editable_set_accept_comma:
+ * @editable: this #GtkEditable instance.
+ * @accept_comma: whether we accept the comma as the decimal separator.
+ */
+void
+my_double_editable_set_accept_comma( GtkEditable *editable, gboolean accept_comma )
+{
+	sEditable *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_amount_data( editable );
+
+	data->accept_comma = accept_comma;
+}
+
+/**
+ * my_double_editable_get_amount:
  * @editable: this #GtkEditable instance.
  *
  * Returns the current amount after interpretation.
  */
 gdouble
-my_editable_amount_get_amount( GtkEditable *editable )
+my_double_editable_get_amount( GtkEditable *editable )
 {
 	sEditable *data;
 
@@ -437,7 +472,7 @@ my_editable_amount_get_amount( GtkEditable *editable )
 }
 
 /**
- * my_editable_amount_set_amount:
+ * my_double_editable_set_amount:
  * @editable: this #GtkEditable instance.
  * @amount:
  *
@@ -446,7 +481,7 @@ my_editable_amount_get_amount( GtkEditable *editable )
  * be triggered on the GtkEditable
  */
 void
-my_editable_amount_set_amount( GtkEditable *editable, gdouble amount )
+my_double_editable_set_amount( GtkEditable *editable, gdouble amount )
 {
 	sEditable *data;
 	gchar *text;
@@ -463,14 +498,14 @@ my_editable_amount_set_amount( GtkEditable *editable, gdouble amount )
 }
 
 /**
- * my_editable_amount_get_string:
+ * my_double_editable_get_string:
  * @editable: this #GtkEditable instance.
  *
  * Returns the localized representation of the current amount as a
  * newly allocated string which should be g_free() by the caller.
  */
 gchar *
-my_editable_amount_get_string( GtkEditable *editable )
+my_double_editable_get_string( GtkEditable *editable )
 {
 	gchar *text;
 
@@ -482,14 +517,14 @@ my_editable_amount_get_string( GtkEditable *editable )
 }
 
 /**
- * my_editable_amount_set_string:
+ * my_double_editable_set_string:
  * @editable: this #GtkEditable instance.
  * @string:
  *
  * Set the amount after string evaluation.
  */
 void
-my_editable_amount_set_string( GtkEditable *editable, const gchar *string )
+my_double_editable_set_string( GtkEditable *editable, const gchar *string )
 {
 	sEditable *data;
 	gdouble amount;
@@ -498,7 +533,7 @@ my_editable_amount_set_string( GtkEditable *editable, const gchar *string )
 
 	data = get_editable_amount_data( editable );
 	amount = my_double_set_from_str( string, data->thousand_sep, data->decimal_sep );
-	my_editable_amount_set_amount( editable, amount );
+	my_double_editable_set_amount( editable, amount );
 }
 
 static gchar *
@@ -521,7 +556,7 @@ editable_amount_get_localized_string( GtkEditable *editable, sEditable **pdata )
 }
 
 /*
- * my_editable_amount_render:
+ * my_double_editable_render:
  * @editable: this #GtkEditable instance.
  *
  * Displays the localized representation of the current amount.
@@ -530,7 +565,7 @@ editable_amount_get_localized_string( GtkEditable *editable, sEditable **pdata )
 static void
 editable_amount_render( GtkEditable *editable, const gchar *string, sEditable *data )
 {
-	static const gchar *thisfn = "my_editable_amount_editable_amount_render";
+	static const gchar *thisfn = "my_double_editable_editable_amount_render";
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
 
@@ -545,7 +580,7 @@ editable_amount_render( GtkEditable *editable, const gchar *string, sEditable *d
 }
 
 /**
- * my_editable_amount_set_changed_cb:
+ * my_double_editable_set_changed_cb:
  * @editable: this #GtkEditable instance.
  * @cb: the "changed" callback
  * @user_data: the associated user data
@@ -556,7 +591,7 @@ editable_amount_render( GtkEditable *editable, const gchar *string, sEditable *d
  * @cb is kept to be triggered.
  */
 void
-my_editable_amount_set_changed_cb( GtkEditable *editable, GCallback cb, void *user_data )
+my_double_editable_set_changed_cb( GtkEditable *editable, GCallback cb, void *user_data )
 {
 	sEditable *data;
 	sCB *scb;

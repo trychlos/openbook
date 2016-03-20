@@ -185,7 +185,7 @@ am__DEPENDENCIES_1 =
 liborgtrychlosmy1_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_liborgtrychlosmy1_la_OBJECTS = my-cell-renderer-date.lo my-date.lo \
 	my-date-combo.lo my-decimal-combo.lo my-double.lo \
-	my-double-renderer.lo my-editable-amount.lo \
+	my-double-editable.lo my-double-renderer.lo \
 	my-editable-date.lo my-field-combo.lo my-file-monitor.lo \
 	my-iassistant.lo my-idialog.lo my-igridlist.lo my-isettings.lo \
 	my-iwindow.lo my-progress-bar.lo my-settings.lo my-tab.lo \
@@ -471,8 +471,8 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-decimal-combo.c									\
 	my-decimal-combo.h									\
 	my-double.c											\
+	my-double-editable.c								\
 	my-double-renderer.c								\
-	my-editable-amount.c								\
 	my-editable-date.c									\
 	my-field-combo.c									\
 	my-field-combo.h									\
@@ -593,9 +593,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-decimal-combo.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-double-editable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-double-renderer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-double.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-amount.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-editable-date.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-file-monitor.Plo@am__quote@

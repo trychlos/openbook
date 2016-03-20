@@ -30,7 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-editable-amount.h"
+#include "my/my-double-editable.h"
 #include "my/my-editable-date.h"
 #include "my/my-utils.h"
 
@@ -729,9 +729,10 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 		}
 
 		if( col_def->is_double ){
-			my_editable_amount_init(
-					GTK_EDITABLE( widget ));
-			my_editable_amount_set_changed_cb(
+			my_double_editable_init_ex( GTK_EDITABLE( widget ),
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), CUR_DEFAULT_DIGITS );
+			my_double_editable_set_changed_cb(
 					GTK_EDITABLE( widget ), G_CALLBACK( on_entry_changed ), self );
 		} else {
 			gtk_entry_set_alignment( GTK_ENTRY( widget ), col_def->xalign );
@@ -1046,7 +1047,7 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self )
 	/* get a copy of the initial content */
 	g_free( sdata->initial );
 	if( sdata->col_def->is_double ){
-		sdata->initial = my_editable_amount_get_string( GTK_EDITABLE( entry ));
+		sdata->initial = my_double_editable_get_string( GTK_EDITABLE( entry ));
 	} else {
 		sdata->initial = g_strdup( gtk_entry_get_text( entry ));
 	}
@@ -1342,7 +1343,7 @@ set_ope_to_ui( const ofaGuidedInputBin *self, gint row, gint col_id, const gchar
 
 				if( def->is_double ){
 					g_signal_handlers_block_by_func( entry, on_entry_changed, ( gpointer ) self );
-					my_editable_amount_set_string( GTK_EDITABLE( entry ), content );
+					my_double_editable_set_string( GTK_EDITABLE( entry ), content );
 					g_signal_handlers_unblock_by_func( entry, on_entry_changed, ( gpointer ) self );
 
 				} else {
@@ -1493,11 +1494,11 @@ update_totals( ofaGuidedInputBin *self )
 
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-		my_editable_amount_set_amount( GTK_EDITABLE( entry ), sbal->debit );
+		my_double_editable_set_amount( GTK_EDITABLE( entry ), sbal->debit );
 
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-		my_editable_amount_set_amount( GTK_EDITABLE( entry ), sbal->credit );
+		my_double_editable_set_amount( GTK_EDITABLE( entry ), sbal->credit );
 
 		ddiff = 0;
 		cdiff = 0;
@@ -1544,7 +1545,9 @@ add_total_diff_lines( ofaGuidedInputBin *self, gint row )
 	gtk_grid_attach( priv->entries_grid, label, OPE_COL_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
-	my_editable_amount_init( GTK_EDITABLE( entry ));
+	my_double_editable_init_ex( GTK_EDITABLE( entry ),
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), CUR_DEFAULT_DIGITS );
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
@@ -1552,7 +1555,9 @@ add_total_diff_lines( ofaGuidedInputBin *self, gint row )
 	gtk_grid_attach( priv->entries_grid, entry, OPE_COL_DEBIT, row, 1, 1 );
 
 	entry = gtk_entry_new();
-	my_editable_amount_init( GTK_EDITABLE( entry ));
+	my_double_editable_init_ex( GTK_EDITABLE( entry ),
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), CUR_DEFAULT_DIGITS );
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );

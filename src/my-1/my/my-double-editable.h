@@ -1,6 +1,6 @@
 /*
  * Open Freelance Accounting
- * A double-entry accounting application for freelances.
+ * A double-editable accounting application for freelances.
  *
  * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
  *
@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_API_MY_EDITABLE_AMOUNT_H__
-#define __MY_API_MY_EDITABLE_AMOUNT_H__
+#ifndef __MY_API_MY_DOUBLE_EDITABLE_H__
+#define __MY_API_MY_DOUBLE_EDITABLE_H__
 
 /**
  * SECTION: my_editable_amount
@@ -48,36 +48,48 @@
 
 #include <gtk/gtk.h>
 
+#include <my/my-double.h>
+
 G_BEGIN_DECLS
 
-void    my_editable_amount_init            ( GtkEditable *editable );
+void    my_double_editable_init            ( GtkEditable *editable );
 
-void    my_editable_amount_init_ex         ( GtkEditable *editable,
-													gint decimals );
+void    my_double_editable_init_ex         ( GtkEditable *editable,
+												gunichar thousand_sep,
+												gunichar decimal_sep,
+												gboolean accept_dot,
+												gboolean accept_comma,
+												gint decimals );
 
-void    my_editable_amount_set_decimals    ( GtkEditable *editable,
-													gint decimals );
+void    my_double_editable_set_decimals    ( GtkEditable *editable,
+												gint decimals );
 
-void    my_editable_amount_set_thousand_sep( GtkEditable *editable,
-													gunichar thousand_sep );
+void    my_double_editable_set_thousand_sep( GtkEditable *editable,
+												gunichar thousand_sep );
 
-void    my_editable_amount_set_decimal_sep ( GtkEditable *editable,
-													gunichar thousand_sep );
+void    my_double_editable_set_decimal_sep ( GtkEditable *editable,
+												gunichar decimal_sep );
 
-gdouble my_editable_amount_get_amount      ( GtkEditable *editable );
+void    my_double_editable_set_accept_dot  ( GtkEditable *editable,
+												gboolean accept_dot );
 
-void    my_editable_amount_set_amount      ( GtkEditable *editable,
-													gdouble amount );
+void    my_double_editable_set_accept_comma( GtkEditable *editable,
+												gboolean accept_comma );
 
-gchar  *my_editable_amount_get_string      ( GtkEditable *editable );
+gdouble my_double_editable_get_amount      ( GtkEditable *editable );
 
-void    my_editable_amount_set_string      ( GtkEditable *editable,
-													const gchar *string );
+void    my_double_editable_set_amount      ( GtkEditable *editable,
+												gdouble amount );
 
-void    my_editable_amount_set_changed_cb  ( GtkEditable *editable,
-													GCallback cb,
-													void *user_data );
+gchar  *my_double_editable_get_string      ( GtkEditable *editable );
+
+void    my_double_editable_set_string      ( GtkEditable *editable,
+												const gchar *string );
+
+void    my_double_editable_set_changed_cb  ( GtkEditable *editable,
+												GCallback cb,
+												void *user_data );
 
 G_END_DECLS
 
-#endif /* __MY_API_MY_EDITABLE_AMOUNT_H__ */
+#endif /* __MY_API_MY_DOUBLE_EDITABLE_H__ */

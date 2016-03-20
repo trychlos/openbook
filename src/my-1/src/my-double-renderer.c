@@ -26,8 +26,8 @@
 #include <config.h>
 #endif
 
+#include "my/my-double-editable.h"
 #include "my/my-double-renderer.h"
-#include "my/my-editable-amount.h"
 
 static void on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, gpointer user_data );
 
@@ -64,5 +64,5 @@ my_double_renderer_init( GtkCellRenderer *renderer )
 static void
 on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, gpointer user_data )
 {
-	my_editable_amount_init( GTK_EDITABLE( editable ));
+	my_double_editable_init( GTK_EDITABLE( editable ));
 }

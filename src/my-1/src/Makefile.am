@@ -66,8 +66,8 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-decimal-combo.c									\
 	my-decimal-combo.h									\
 	my-double.c											\
+	my-double-editable.c								\
 	my-double-renderer.c								\
-	my-editable-amount.c								\
 	my-editable-date.c									\
 	my-field-combo.c									\
 	my-field-combo.h									\

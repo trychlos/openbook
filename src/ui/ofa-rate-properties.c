@@ -30,8 +30,7 @@
 #include <stdarg.h>
 
 #include "my/my-date.h"
-#include "my/my-double.h"
-#include "my/my-editable-amount.h"
+#include "my/my-double-editable.h"
 #include "my/my-editable-date.h"
 #include "my/my-idialog.h"
 #include "my/my-igridlist.h"
@@ -434,7 +433,9 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 	gtk_grid_attach( GTK_GRID( priv->grid ), label, 1+COL_END_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
-	my_editable_amount_init_ex( GTK_EDITABLE( entry ), DEFAULT_RATE_DECIMALS );
+	my_double_editable_init_ex( GTK_EDITABLE( entry ),
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), DEFAULT_RATE_DECIMALS );
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
@@ -474,7 +475,7 @@ set_detail_values( ofaRateProperties *self, guint row )
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_RATE, row );
 	rate = ofo_rate_get_val_rate( priv->rate, idx );
-	my_editable_amount_set_amount( GTK_EDITABLE( entry ), rate );
+	my_double_editable_set_amount( GTK_EDITABLE( entry ), rate );
 }
 
 static void
@@ -520,7 +521,7 @@ on_rate_changed( GtkEntry *entry, ofaRateProperties *self )
 	if( !my_strlen( content )){
 		str = g_strdup( "" );
 	} else {
-		text = my_editable_amount_get_string( GTK_EDITABLE( entry ));
+		text = my_double_editable_get_string( GTK_EDITABLE( entry ));
 		str = g_strdup_printf( "%s %%", text );
 		g_free( text );
 	}
@@ -590,7 +591,7 @@ is_dialog_validable( ofaRateProperties *self )
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_END, i ));
 		dend = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_RATE, i ));
-		vrate = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
+		vrate = my_double_editable_get_amount( GTK_EDITABLE( entry ));
 
 		if( my_date_is_valid( dbegin ) || my_date_is_valid( dend ) || vrate > 0 ){
 
@@ -657,8 +658,8 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_END, i ));
 		dend = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_RATE, i ));
-		rate = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
-		str = my_editable_amount_get_string( GTK_EDITABLE( entry ));
+		rate = my_double_editable_get_amount( GTK_EDITABLE( entry ));
+		str = my_double_editable_get_string( GTK_EDITABLE( entry ));
 		g_debug( "do_update: amount=%.5lf, str=%s", rate, str );
 		if( my_date_is_valid( dbegin ) ||
 			my_date_is_valid( dend ) ||

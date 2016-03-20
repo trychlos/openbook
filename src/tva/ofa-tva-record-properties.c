@@ -31,7 +31,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
-#include "my/my-editable-amount.h"
+#include "my/my-double-editable.h"
 #include "my/my-editable-date.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
@@ -526,7 +526,9 @@ init_taxes( ofaTVARecordProperties *self )
 		if( has_base ){
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
-			my_editable_amount_init_ex( GTK_EDITABLE( entry ), 0 );
+			my_double_editable_init_ex( GTK_EDITABLE( entry ),
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_BASE, row, 1, 1 );
@@ -536,7 +538,7 @@ init_taxes( ofaTVARecordProperties *self )
 					entry, ofo_tva_record_detail_get_base_rule( priv->tva_record, idx ));
 
 			amount = ofo_tva_record_detail_get_base( priv->tva_record, idx );
-			my_editable_amount_set_amount( GTK_EDITABLE( entry ), amount );
+			my_double_editable_set_amount( GTK_EDITABLE( entry ), amount );
 		}
 
 		/* amount */
@@ -544,7 +546,9 @@ init_taxes( ofaTVARecordProperties *self )
 		if( has_amount ){
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
-			my_editable_amount_init_ex( GTK_EDITABLE( entry ), 0 );
+			my_double_editable_init_ex( GTK_EDITABLE( entry ),
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_AMOUNT, row, 1, 1 );
@@ -554,7 +558,7 @@ init_taxes( ofaTVARecordProperties *self )
 					entry, ofo_tva_record_detail_get_amount_rule( priv->tva_record, idx ));
 
 			amount = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
-			my_editable_amount_set_amount( GTK_EDITABLE( entry ), amount );
+			my_double_editable_set_amount( GTK_EDITABLE( entry ), amount );
 		}
 
 		/* padding on the right so that the scrollbar does not hide the
@@ -752,13 +756,13 @@ do_update( ofaTVARecordProperties *self, gchar **msgerr )
 		if( ofo_tva_record_detail_get_has_base( priv->tva_record, idx )){
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-			amount = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
+			amount = my_double_editable_get_amount( GTK_EDITABLE( entry ));
 			ofo_tva_record_detail_set_base( priv->tva_record, idx, amount );
 		}
 		if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
 			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-			amount = my_editable_amount_get_amount( GTK_EDITABLE( entry ));
+			amount = my_double_editable_get_amount( GTK_EDITABLE( entry ));
 			ofo_tva_record_detail_set_amount( priv->tva_record, idx, amount );
 		}
 	}
@@ -816,7 +820,7 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 					result = eval_rule( self, rule );
 					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
 					g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-					my_editable_amount_set_string( GTK_EDITABLE( entry ), result );
+					my_double_editable_set_string( GTK_EDITABLE( entry ), result );
 					g_free( result );
 				}
 			}
@@ -826,7 +830,7 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 					result = eval_rule( self, rule );
 					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
 					g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-					my_editable_amount_set_string( GTK_EDITABLE( entry ), result );
+					my_double_editable_set_string( GTK_EDITABLE( entry ), result );
 					g_free( result );
 				}
 			}

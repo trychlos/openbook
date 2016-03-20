@@ -27,8 +27,8 @@ my_include_HEADERS = \
 	my-cell-renderer-date.h								\
 	my-date.h											\
 	my-double.h											\
+	my-double-editable.h								\
 	my-double-renderer.h								\
-	my-editable-amount.h								\
 	my-editable-date.h									\
 	my-file-monitor.h									\
 	my-iassistant.h										\
