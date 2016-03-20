@@ -100,7 +100,6 @@ ofs_currency_get_by_code( GList *list, const gchar *currency )
 	ofsCurrency *it_cur;
 	const gchar *it_code;
 
-	g_return_val_if_fail( list, NULL );
 	g_return_val_if_fail( my_strlen( currency ), NULL );
 
 	for( it=list ; it ; it=it->next ){
