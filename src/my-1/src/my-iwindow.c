@@ -299,7 +299,7 @@ my_iwindow_set_settings( myIWindow *instance, myISettings *settings )
 	sIWindow *sdata;
 
 	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-	g_return_if_fail( !settings || GTK_IS_WINDOW( settings ));
+	g_return_if_fail( !settings || MY_IS_ISETTINGS( settings ));
 
 	sdata = get_iwindow_data( instance );
 	sdata->settings = settings;
