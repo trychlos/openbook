@@ -473,7 +473,7 @@ form_count_for_account( const ofaIDBConnect *connect, const gchar *account )
 
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM TVA_T_FORMS_DET "
-				"	WHERE TFO_DET_BASE LIKE '%%%s%%' OR WHERE TFO_DET_AMOUNT LIKE '%%%s%%'", account, account );
+				"	WHERE TFO_DET_BASE LIKE '%%%s%%' OR TFO_DET_AMOUNT LIKE '%%%s%%'", account, account );
 
 	ofa_idbconnect_query_int( connect, query, &count, TRUE );
 
