@@ -964,6 +964,13 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-strdelim" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	my_utils_widget_set_style( label, "labelinfo" );
+	str = g_strdup_printf( "%c", ofa_file_format_get_string_delim( priv->p2_export_settings ));
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-headers" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_utils_widget_set_style( label, "labelinfo" );
