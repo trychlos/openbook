@@ -32,10 +32,11 @@
  *
  * A convenience class to manage the progress bars.
  *
- * This defines two action signals to let the user display its
+ * This defines three action signals to let the user display its
  * progression in the bar:
- * - double
- * - text.
+ * - my-double
+ * - my-text
+ * - my-pulse.
  */
 
 #include <gtk/gtk.h>

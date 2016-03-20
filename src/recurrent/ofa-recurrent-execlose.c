@@ -186,6 +186,6 @@ update_bar( myProgressBar *bar, guint *count, guint total )
 
 	*count += 1;
 	progress = ( gdouble ) *count / ( gdouble ) total;
-	g_signal_emit_by_name( bar, "ofa-double", progress );
-	g_signal_emit_by_name( bar, "ofa-text", NULL );			/* shows a percentage */
+	g_signal_emit_by_name( bar, "my-double", progress );
+	g_signal_emit_by_name( bar, "my-text", NULL );			/* shows a percentage */
 }

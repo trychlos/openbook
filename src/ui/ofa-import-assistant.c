@@ -1090,13 +1090,13 @@ p5_on_progress( ofaIImporter *importer, ofeImportablePhase phase, gdouble progre
 	priv = ofa_import_assistant_get_instance_private( self );
 
 	if( phase == IMPORTABLE_PHASE_IMPORT ){
-		g_signal_emit_by_name( priv->p5_import, "ofa-double", progress );
-		g_signal_emit_by_name( priv->p5_import, "ofa-text", text );
+		g_signal_emit_by_name( priv->p5_import, "my-double", progress );
+		g_signal_emit_by_name( priv->p5_import, "my-text", text );
 
 	} else {
 		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
-		g_signal_emit_by_name( priv->p5_insert, "ofa-double", progress );
-		g_signal_emit_by_name( priv->p5_insert, "ofa-text", text );
+		g_signal_emit_by_name( priv->p5_insert, "my-double", progress );
+		g_signal_emit_by_name( priv->p5_insert, "my-text", text );
 	}
 }
 
@@ -1108,11 +1108,11 @@ p5_on_pulse( ofaIImporter *importer, ofeImportablePhase phase, ofaImportAssistan
 	priv = ofa_import_assistant_get_instance_private( self );
 
 	if( phase == IMPORTABLE_PHASE_IMPORT ){
-		g_signal_emit_by_name( priv->p5_import, "ofa-pulse" );
+		g_signal_emit_by_name( priv->p5_import, "my-pulse" );
 
 	} else {
 		g_return_if_fail( phase == IMPORTABLE_PHASE_INSERT );
-		g_signal_emit_by_name( priv->p5_insert, "ofa-pulse" );
+		g_signal_emit_by_name( priv->p5_insert, "my-pulse" );
 	}
 }
 

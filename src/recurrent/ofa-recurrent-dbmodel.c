@@ -291,11 +291,11 @@ set_bar_progression( sUpdate *update_data )
 
 	if( update_data->total > 0 ){
 		progress = ( gdouble ) update_data->current / ( gdouble ) update_data->total;
-		g_signal_emit_by_name( update_data->bar, "ofa-double", progress );
+		g_signal_emit_by_name( update_data->bar, "my-double", progress );
 	}
 	if( 0 ){
 		text = g_strdup_printf( "%lu/%lu", update_data->current, update_data->total );
-		g_signal_emit_by_name( update_data->bar, "ofa-text", text );
+		g_signal_emit_by_name( update_data->bar, "my-text", text );
 		g_free( text );
 	}
 }

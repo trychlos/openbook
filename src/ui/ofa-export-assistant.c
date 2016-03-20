@@ -1089,6 +1089,6 @@ p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text,
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	g_signal_emit_by_name( priv->p5_bar, "ofa-double", progress );
-	g_signal_emit_by_name( priv->p5_bar, "ofa-text", text );
+	g_signal_emit_by_name( priv->p5_bar, "my-double", progress );
+	g_signal_emit_by_name( priv->p5_bar, "my-text", text );
 }

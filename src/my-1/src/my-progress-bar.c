@@ -116,7 +116,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = progress_bar_finalize;
 
 	/**
-	 * myProgressBar::double:
+	 * myProgressBar::my-double:
 	 *
 	 * This signal may be sent to make the bar progress.
 	 *
@@ -128,7 +128,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ DOUBLE ] = g_signal_new_class_handler(
-				"ofa-double",
+				"my-double",
 				MY_TYPE_PROGRESS_BAR,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -140,7 +140,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 				G_TYPE_DOUBLE );
 
 	/**
-	 * myProgressBar::text:
+	 * myProgressBar::my-text:
 	 *
 	 * This signal may be sent to display a text in the bar.
 	 *
@@ -152,7 +152,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ TEXT ] = g_signal_new_class_handler(
-				"ofa-text",
+				"my-text",
 				MY_TYPE_PROGRESS_BAR,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -164,7 +164,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 				G_TYPE_STRING );
 
 	/**
-	 * myProgressBar::pulse:
+	 * myProgressBar::my-pulse:
 	 *
 	 * This signal may be sent to make the bar pulsing.
 	 *
@@ -173,7 +173,7 @@ my_progress_bar_class_init( myProgressBarClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ PULSE ] = g_signal_new_class_handler(
-				"ofa-pulse",
+				"my-pulse",
 				MY_TYPE_PROGRESS_BAR,
 				G_SIGNAL_ACTION,
 				NULL,
@@ -198,9 +198,9 @@ my_progress_bar_new( void )
 	gtk_widget_set_hexpand( GTK_WIDGET( self ), TRUE );
 	my_utils_widget_set_style( GTK_WIDGET( self ), "bar12" );
 
-	g_signal_connect( G_OBJECT( self ), "ofa-double", G_CALLBACK( on_double ), NULL );
-	g_signal_connect( G_OBJECT( self ), "ofa-text", G_CALLBACK( on_text ), NULL );
-	g_signal_connect( G_OBJECT( self ), "ofa-pulse", G_CALLBACK( on_pulse ), NULL );
+	g_signal_connect( G_OBJECT( self ), "my-double", G_CALLBACK( on_double ), NULL );
+	g_signal_connect( G_OBJECT( self ), "my-text", G_CALLBACK( on_text ), NULL );
+	g_signal_connect( G_OBJECT( self ), "my-pulse", G_CALLBACK( on_pulse ), NULL );
 
 	return( self );
 }

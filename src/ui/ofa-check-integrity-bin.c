@@ -871,10 +871,10 @@ set_bar_progression( myProgressBar *bar, gulong total, gulong current )
 
 	if( total > 0 ){
 		progress = ( gdouble ) current / ( gdouble ) total;
-		g_signal_emit_by_name( bar, "ofa-double", progress );
+		g_signal_emit_by_name( bar, "my-double", progress );
 	}
 	text = g_strdup_printf( "%lu/%lu", current, total );
-	g_signal_emit_by_name( bar, "ofa-text", text );
+	g_signal_emit_by_name( bar, "my-text", text );
 	g_free( text );
 }
 

@@ -667,7 +667,7 @@ on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, 
 	priv->entries_count = count;
 
 	if( priv->entries_count == 0 ){
-		g_signal_emit_by_name( priv->bar, "ofa-text", "0/0" );
+		g_signal_emit_by_name( priv->bar, "my-text", "0/0" );
 	}
 
 	priv->entries_num = 0;
@@ -687,10 +687,10 @@ on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 
 	priv->entries_num += 1;
 	progress = ( gdouble ) priv->entries_num / ( gdouble ) priv->entries_count;
-	g_signal_emit_by_name( priv->bar, "ofa-double", progress );
+	g_signal_emit_by_name( priv->bar, "my-double", progress );
 
 	text = g_strdup_printf( "%u/%u", priv->entries_num, priv->entries_count );
-	g_signal_emit_by_name( priv->bar, "ofa-text", text );
+	g_signal_emit_by_name( priv->bar, "my-text", text );
 	g_free( text );
 }
 

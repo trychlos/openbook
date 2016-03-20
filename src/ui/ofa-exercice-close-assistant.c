@@ -1025,7 +1025,7 @@ p6_validate_entries( ofaExerciceCloseAssistant *self )
 		update_bar( bar, &i, count, thisfn );
 	}
 	if( count == 0 ){
-		g_signal_emit_by_name( bar, "ofa-text", "0/0" );
+		g_signal_emit_by_name( bar, "my-text", "0/0" );
 	}
 
 	ofo_entry_free_dataset( entries );
@@ -1737,7 +1737,7 @@ p6_future( ofaExerciceCloseAssistant *self )
 		update_bar( bar, &i, count, thisfn );
 	}
 	if( count == 0 ){
-		g_signal_emit_by_name( bar, "ofa-text", "0/0" );
+		g_signal_emit_by_name( bar, "my-text", "0/0" );
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( bar ));
@@ -1808,10 +1808,10 @@ update_bar( myProgressBar *bar, guint *count, guint total, const gchar *emitter_
 	*count += 1;
 
 	progress = ( gdouble ) *count / ( gdouble ) total;
-	g_signal_emit_by_name( bar, "ofa-double", progress );
+	g_signal_emit_by_name( bar, "my-double", progress );
 
 	text = g_strdup_printf( "%u/%u", *count, total );
-	g_signal_emit_by_name( bar, "ofa-text", text );
+	g_signal_emit_by_name( bar, "my-text", text );
 
 	g_debug( "%s: progress=%.5lf, text=%s", emitter_name, progress, text );
 

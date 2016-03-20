@@ -962,8 +962,8 @@ on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 	progress = ( gdouble ) priv->count / ( gdouble ) priv->total;
 	text = g_strdup_printf( "%lu/%lu", priv->count, priv->total );
 
-	g_signal_emit_by_name( priv->bar, "ofa-double", progress );
-	g_signal_emit_by_name( priv->bar, "ofa-text", text );
+	g_signal_emit_by_name( priv->bar, "my-double", progress );
+	g_signal_emit_by_name( priv->bar, "my-text", text );
 
 	g_free( text );
 }
