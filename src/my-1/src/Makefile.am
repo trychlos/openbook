@@ -59,8 +59,9 @@ nodist_liborgtrychlosmy1_la_OURCES = \
 	$(NULL)
 
 liborgtrychlosmy1_la_SOURCES = \
-	my-cell-renderer-date.c								\
 	my-date.c											\
+	my-date-editable.c									\
+	my-date-renderer.c									\
 	my-date-combo.c										\
 	my-date-combo.h										\
 	my-decimal-combo.c									\
@@ -68,7 +69,6 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-double.c											\
 	my-double-editable.c								\
 	my-double-renderer.c								\
-	my-editable-date.c									\
 	my-field-combo.c									\
 	my-field-combo.h									\
 	my-file-monitor.c									\

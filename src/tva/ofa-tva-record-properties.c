@@ -30,9 +30,8 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "my/my-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-double-editable.h"
-#include "my/my-editable-date.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
@@ -409,14 +408,14 @@ init_properties( ofaTVARecordProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 
 	my_date_set_from_date( &priv->begin_date, ofo_tva_record_get_begin( priv->tva_record ));
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
 	my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
 
 	/* do not let the user edit the ending date of the declaration
@@ -435,14 +434,14 @@ init_properties( ofaTVARecordProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 
 	my_date_set_from_date( &priv->end_date, ofo_tva_record_get_end( priv->tva_record ));
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end_date );
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end_date );
 	my_utils_widget_set_editable( entry, FALSE );
 }
 
@@ -600,7 +599,7 @@ on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	my_date_set_from_date( &priv->begin_date, my_editable_date_get_date( entry, NULL ));
+	my_date_set_from_date( &priv->begin_date, my_date_editable_get_date( entry, NULL ));
 
 	check_for_enable_dlg( self );
 }
@@ -612,7 +611,7 @@ on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	my_date_set_from_date( &priv->end_date, my_editable_date_get_date( entry, NULL ));
+	my_date_set_from_date( &priv->end_date, my_date_editable_get_date( entry, NULL ));
 
 	set_dialog_title( self );
 	check_for_enable_dlg( self );
@@ -736,10 +735,10 @@ do_update( ofaTVARecordProperties *self, gchar **msgerr )
 			gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
 
 	ofo_tva_record_set_begin( priv->tva_record,
-			my_editable_date_get_date( GTK_EDITABLE( priv->begin_editable ), NULL ));
+			my_date_editable_get_date( GTK_EDITABLE( priv->begin_editable ), NULL ));
 
 	ofo_tva_record_set_end( priv->tva_record,
-			my_editable_date_get_date( GTK_EDITABLE( priv->end_editable ), NULL ));
+			my_date_editable_get_date( GTK_EDITABLE( priv->end_editable ), NULL ));
 
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
 	ofo_tva_record_boolean_free_all( priv->tva_record );

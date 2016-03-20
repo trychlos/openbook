@@ -30,8 +30,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
 typedef struct {
@@ -67,7 +66,7 @@ typedef struct {
 #define DEFAULT_ENTRY_FORMAT            MY_DATE_DMYY
 #define DEFAULT_MANDATORY               TRUE
 
-#define EDITABLE_DATE_DATA              "my-editable-date-data"
+#define DATE_EDITABLE_DATA              "my-editable-date-data"
 
 static const gboolean st_debug          = FALSE;
 #define DEBUG                           if( st_debug ) g_debug
@@ -90,16 +89,16 @@ static gboolean           on_focus_out( GtkWidget *entry, GdkEvent *event, sEdit
 static void               editable_date_render( GtkEditable *editable );
 
 /**
- * my_editable_date_init:
+ * my_date_editable_init:
  * @editable: the #GtkEditable object
  *
  * Initialize the GtkEditable to enter a date. Is supposed to be
  * called each time the edition is started.
  */
 void
-my_editable_date_init( GtkEditable *editable )
+my_date_editable_init( GtkEditable *editable )
 {
-	static const gchar *thisfn = "my_editable_date_init";
+	static const gchar *thisfn = "my_date_editable_init";
 	sEditableDate *data;
 
 	g_debug( "%s: self=%p (%s)",
@@ -107,21 +106,12 @@ my_editable_date_init( GtkEditable *editable )
 
 	data = get_editable_date_data( editable );
 	g_object_weak_ref( G_OBJECT( editable ), ( GWeakNotify ) on_editable_finalized, data );
-
-	if( GTK_IS_ENTRY( editable )){
-		/* this should have been done in the .xml UI definition file
-		 * but is re-done here for dynamically created fields */
-		gtk_entry_set_width_chars( GTK_ENTRY( editable ), 10 );
-		gtk_entry_set_max_width_chars( GTK_ENTRY( editable ), 10 );
-		/* centering */
-		gtk_entry_set_alignment( GTK_ENTRY( editable ), 0.5 );
-	}
 }
 
 static void
 on_editable_finalized( sEditableDate *data, GObject *finalized_editable )
 {
-	static const gchar *thisfn = "my_editable_date_on_weak_notify";
+	static const gchar *thisfn = "my_date_editable_on_weak_notify";
 
 	g_debug( "%s: data=%p, finalized_editable=%p",
 			thisfn, ( void * ) data, ( void * ) finalized_editable );
@@ -134,30 +124,33 @@ get_editable_date_data( GtkEditable *editable )
 {
 	sEditableDate *data;
 
-	data = ( sEditableDate * ) g_object_get_data( G_OBJECT( editable ), EDITABLE_DATE_DATA );
+	data = ( sEditableDate * ) g_object_get_data( G_OBJECT( editable ), DATE_EDITABLE_DATA );
 
 	if( !data ){
 		data = g_new0( sEditableDate, 1 );
-		g_object_set_data( G_OBJECT( editable ), EDITABLE_DATE_DATA, data );
+		g_object_set_data( G_OBJECT( editable ), DATE_EDITABLE_DATA, data );
 
 		data->setting_text = FALSE;
-		my_editable_date_set_format( editable, -1 );
+		my_date_editable_set_format( editable, -1 );
 		data->mandatory = DEFAULT_MANDATORY;
 
-		g_signal_connect(
-				G_OBJECT( editable ), "insert-text", G_CALLBACK( on_text_inserted ), data );
-		g_signal_connect(
-				G_OBJECT( editable ), "delete-text", G_CALLBACK( on_text_deleted ), data );
-		g_signal_connect(
-				G_OBJECT( editable ), "changed", G_CALLBACK( on_changed ), data );
+		g_signal_connect( editable, "insert-text", G_CALLBACK( on_text_inserted ), data );
+		g_signal_connect( editable, "delete-text", G_CALLBACK( on_text_deleted ), data );
+		g_signal_connect( editable, "changed", G_CALLBACK( on_changed ), data );
 
 		if( GTK_IS_WIDGET( editable )){
-			g_signal_connect(
-					G_OBJECT( editable ), "focus-in-event", G_CALLBACK( on_focus_in ), data );
-			g_signal_connect(
-					G_OBJECT( editable ), "focus-out-event", G_CALLBACK( on_focus_out ), data );
-			g_signal_connect(
-					G_OBJECT( editable ), "key-press-event", G_CALLBACK( on_key_pressed ), data );
+			g_signal_connect( editable, "focus-in-event", G_CALLBACK( on_focus_in ), data );
+			g_signal_connect( editable, "focus-out-event", G_CALLBACK( on_focus_out ), data );
+			g_signal_connect( editable, "key-press-event", G_CALLBACK( on_key_pressed ), data );
+		}
+
+		if( GTK_IS_ENTRY( editable )){
+			/* this may have been done in the .xml UI definition file
+			 * but is re-done here for dynamically created fields */
+			gtk_entry_set_width_chars( GTK_ENTRY( editable ), 10 );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( editable ), 10 );
+			/* centering */
+			gtk_entry_set_alignment( GTK_ENTRY( editable ), 0.5 );
 		}
 	}
 
@@ -179,7 +172,7 @@ get_date_format( guint date_format )
 }
 
 /**
- * my_editable_date_set_format:
+ * my_date_editable_set_format:
  * @editable: this #GtkEditable instance.
  * @format: the allowed format for the date; set to -1 to restore the
  *  default value.
@@ -187,7 +180,7 @@ get_date_format( guint date_format )
  * Set up the current date format.
  */
 void
-my_editable_date_set_format( GtkEditable *editable, myDateFormat format )
+my_date_editable_set_format( GtkEditable *editable, myDateFormat format )
 {
 	sEditableDate *data;
 
@@ -211,7 +204,7 @@ my_editable_date_set_format( GtkEditable *editable, myDateFormat format )
 static void
 on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableDate *data )
 {
-	static const gchar *thisfn = "my_editable_date_on_text_inserted";
+	static const gchar *thisfn = "my_date_editable_on_text_inserted";
 	gchar *text;
 
 	DEBUG( "%s: editable=%p, new_text=%s, new_text_length=%u, position=%d",
@@ -254,7 +247,7 @@ on_text_inserted( GtkEditable *editable, gchar *new_text, gint new_text_length, 
 static gchar *
 on_text_inserted_dmyy( GtkEditable *editable, gchar *new_text, gint new_text_length, gint *position, sEditableDate *data )
 {
-	static const gchar *thisfn = "my_editable_date_on_text_inserted_dmyy";
+	static const gchar *thisfn = "my_date_editable_on_text_inserted_dmyy";
 	static const int st_days[] = { 31,29,31,30,31,30,31,31,30,31,30,31 };
 	gint i, pos;
 	gchar *ithpos;
@@ -551,7 +544,7 @@ insert_char_at_pos( GtkEditable *editable, gint pos, gchar c, sEditableDate *dat
 static void
 on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableDate *data )
 {
-	DEBUG( "my_editable_date_on_text_deleted: editable=%p, start=%d, end=%d",
+	DEBUG( "my_date_editable_on_text_deleted: editable=%p, start=%d, end=%d",
 			( void * ) editable, start_pos, end_pos );
 
 	g_signal_handlers_block_by_func( editable, ( gpointer ) on_text_deleted, data );
@@ -564,7 +557,7 @@ on_text_deleted( GtkEditable *editable, gint start_pos, gint end_pos, sEditableD
 static void
 on_changed( GtkEditable *editable, sEditableDate *data )
 {
-	static const gchar *thisfn = "my_editable_date_on_changed";
+	static const gchar *thisfn = "my_date_editable_on_changed";
 	gchar *text, *markup;
 	gint len_text;
 
@@ -633,7 +626,7 @@ try_for_completion( sEditableDate *data, GtkEntry *entry )
 		cstr = gtk_entry_get_text( entry );
 		my_date_set_from_str_ex( &date, cstr, data->format->date_format, &st_year );
 		if( my_date_is_valid( &date )){
-			my_editable_date_set_date( GTK_EDITABLE( entry ), &date );
+			my_date_editable_set_date( GTK_EDITABLE( entry ), &date );
 		}
 	}
 }
@@ -660,14 +653,14 @@ on_focus_out( GtkWidget *entry, GdkEvent *event, sEditableDate *data )
 }
 
 /**
- * my_editable_date_set_date:
+ * my_date_editable_set_date:
  * @editable: this #GtkEditable instance.
  * @date: the date to be set
  *
  * Set up the current date.
  */
 void
-my_editable_date_set_date( GtkEditable *editable, const GDate *date )
+my_date_editable_set_date( GtkEditable *editable, const GDate *date )
 {
 	sEditableDate *data;
 
@@ -683,7 +676,7 @@ my_editable_date_set_date( GtkEditable *editable, const GDate *date )
 }
 
 /**
- * my_editable_date_set_label:
+ * my_date_editable_set_label:
  * @editable: this #GtkEditable instance.
  * @label: a #GtkWidget which will be updated with a representation of
  *  the current date at each change.
@@ -694,7 +687,7 @@ my_editable_date_set_date( GtkEditable *editable, const GDate *date )
  * the user enters the date in the main #GtkEditable.
  */
 void
-my_editable_date_set_label( GtkEditable *editable, GtkWidget *label, myDateFormat format )
+my_date_editable_set_label( GtkEditable *editable, GtkWidget *label, myDateFormat format )
 {
 	sEditableDate *data;
 
@@ -709,13 +702,13 @@ my_editable_date_set_label( GtkEditable *editable, GtkWidget *label, myDateForma
 }
 
 /**
- * my_editable_date_set_mandatory:
+ * my_date_editable_set_mandatory:
  * @editable: this #GtkEditable instance.
  * @mandatory: whether the date is mandatory, i.e. also invalid when
  *  empty.
  */
 void
-my_editable_date_set_mandatory( GtkEditable *editable, gboolean mandatory )
+my_date_editable_set_mandatory( GtkEditable *editable, gboolean mandatory )
 {
 	sEditableDate *data;
 
@@ -727,7 +720,7 @@ my_editable_date_set_mandatory( GtkEditable *editable, gboolean mandatory )
 }
 
 /**
- * my_editable_date_get_date:
+ * my_date_editable_get_date:
  * @editable: this #GtkEditable instance.
  * @valid: [allow-none][out]: whether the current date is valid or not
  *
@@ -735,7 +728,7 @@ my_editable_date_set_mandatory( GtkEditable *editable, gboolean mandatory )
  * not be cleared nor modified by the caller.
  */
 const GDate *
-my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
+my_date_editable_get_date( GtkEditable *editable, gboolean *valid )
 {
 	sEditableDate *data;
 
@@ -751,7 +744,7 @@ my_editable_date_get_date( GtkEditable *editable, gboolean *valid )
 }
 
 /*
- * my_editable_date_render:
+ * my_date_editable_render:
  * @editable: this #GtkEditable instance.
  *
  * Displays the representation of the current date.
@@ -778,13 +771,13 @@ editable_date_render( GtkEditable *editable )
 }
 
 /**
- * my_editable_date_is_empty:
+ * my_date_editable_is_empty:
  * @editable: this #GtkEditable instance.
  *
  * Returns: %TRUE if the #GtkEditable is empty.
  */
 gboolean
-my_editable_date_is_empty( GtkEditable *editable )
+my_date_editable_is_empty( GtkEditable *editable )
 {
 	gchar *text;
 	gboolean empty;

@@ -29,8 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
@@ -339,10 +338,10 @@ init_dates( ofaRecurrentNew *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-begin-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( generate_on_begin_date_changed ), self );
 
@@ -358,10 +357,10 @@ init_dates( ofaRecurrentNew *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-end-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end_date );
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end_date );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( generate_on_end_date_changed ), self );
 }
@@ -395,7 +394,7 @@ generate_on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *d
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
-	my_date_set_from_date( date, my_editable_date_get_date( editable, &valid ));
+	my_date_set_from_date( date, my_date_editable_get_date( editable, &valid ));
 	msgerr = NULL;
 	valid = TRUE;
 

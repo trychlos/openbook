@@ -30,8 +30,7 @@
 #include <glib/gstdio.h>
 #include <math.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-iassistant.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
@@ -431,12 +430,12 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p1-closing-begin-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( priv->p1_begin_cur ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->p1_begin_cur ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( priv->p1_begin_cur ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p1_begin_cur ), TRUE );
+	my_date_editable_init( GTK_EDITABLE( priv->p1_begin_cur ));
+	my_date_editable_set_format( GTK_EDITABLE( priv->p1_begin_cur ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( priv->p1_begin_cur ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_begin_cur ), TRUE );
 	begin_cur = ofo_dossier_get_exe_begin( priv->dossier );
-	my_editable_date_set_date( GTK_EDITABLE( priv->p1_begin_cur ), begin_cur );
+	my_date_editable_set_date( GTK_EDITABLE( priv->p1_begin_cur ), begin_cur );
 
 	g_signal_connect( priv->p1_begin_cur, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
@@ -451,12 +450,12 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p1-closing-end-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( priv->p1_end_cur ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->p1_end_cur ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( priv->p1_end_cur ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p1_end_cur ), TRUE );
+	my_date_editable_init( GTK_EDITABLE( priv->p1_end_cur ));
+	my_date_editable_set_format( GTK_EDITABLE( priv->p1_end_cur ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( priv->p1_end_cur ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_end_cur ), TRUE );
 	end_cur = ofo_dossier_get_exe_end( priv->dossier );
-	my_editable_date_set_date( GTK_EDITABLE( priv->p1_end_cur ), end_cur );
+	my_date_editable_set_date( GTK_EDITABLE( priv->p1_end_cur ), end_cur );
 
 	g_signal_connect( priv->p1_end_cur, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
@@ -465,14 +464,14 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 		my_date_set_from_date( &begin, end_cur );
 		g_date_subtract_months( &begin, exe_length );
 		g_date_add_days( &begin, 1 );
-		my_editable_date_set_date( GTK_EDITABLE( priv->p1_begin_cur ), &begin );
+		my_date_editable_set_date( GTK_EDITABLE( priv->p1_begin_cur ), &begin );
 		my_date_set_from_date( &end, end_cur );
 
 	} else if( my_date_is_valid( begin_cur ) && !my_date_is_valid( end_cur ) && exe_length > 0 ){
 		my_date_set_from_date( &end, begin_cur );
 		g_date_add_months( &end, exe_length );
 		g_date_subtract_days( &end, 1 );
-		my_editable_date_set_date( GTK_EDITABLE( priv->p1_end_cur ), &end );
+		my_date_editable_set_date( GTK_EDITABLE( priv->p1_end_cur ), &end );
 
 	} else if( my_date_is_valid( end_cur )){
 		my_date_set_from_date( &end, end_cur );
@@ -489,17 +488,17 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p1-next-begin-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( priv->p1_begin_next ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( priv->p1_begin_next ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p1_begin_next ), TRUE );
+	my_date_editable_init( GTK_EDITABLE( priv->p1_begin_next ));
+	my_date_editable_set_format( GTK_EDITABLE( priv->p1_begin_next ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( priv->p1_begin_next ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_begin_next ), TRUE );
 
 	g_signal_connect( priv->p1_begin_next, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
 	if( my_date_is_valid( &end )){
 		my_date_set_from_date( &begin, &end );
 		g_date_add_days( &begin, 1 );
-		my_editable_date_set_date( GTK_EDITABLE( priv->p1_begin_next ), &begin );
+		my_date_editable_set_date( GTK_EDITABLE( priv->p1_begin_next ), &begin );
 	}
 
 	/* next exercice - ending date */
@@ -513,16 +512,16 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p1-next-end-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( priv->p1_end_next ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( priv->p1_end_next ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( priv->p1_end_next ), TRUE );
+	my_date_editable_init( GTK_EDITABLE( priv->p1_end_next ));
+	my_date_editable_set_format( GTK_EDITABLE( priv->p1_end_next ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( priv->p1_end_next ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_end_next ), TRUE );
 
 	g_signal_connect( G_OBJECT( priv->p1_end_next ), "changed", G_CALLBACK( p1_on_date_changed ), self );
 
 	if( my_date_is_valid( &end ) && exe_length > 0 ){
 		g_date_add_months( &end, exe_length );
-		my_editable_date_set_date( GTK_EDITABLE( priv->p1_end_next ), &end );
+		my_date_editable_set_date( GTK_EDITABLE( priv->p1_end_next ), &end );
 	}
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p1-forward-parent" );
@@ -572,10 +571,10 @@ p1_check_for_complete( ofaExerciceCloseAssistant *self )
 	complete = FALSE;
 
 	if( priv->p1_end_next ){
-		begin_cur = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
-		end_cur = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
-		begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
-		end_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
+		begin_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
+		end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+		begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+		end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
 
 		/* check that all dates are valid
 		 * and next exercice begins the next day after the end of the
@@ -615,8 +614,8 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	begin_cur = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
-	end_cur = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
+	begin_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_cur ), NULL );
+	end_cur = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_cur ), NULL );
 
 	ofo_dossier_set_exe_begin( priv->dossier, begin_cur );
 	ofo_dossier_set_exe_end( priv->dossier, end_cur );
@@ -1113,7 +1112,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	priv->p6_forwards = NULL;
 
 	end_cur = ofo_dossier_get_exe_end( priv->dossier );
-	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 
 	sld_ope = ofo_dossier_get_sld_ope( priv->dossier );
 	sld_template = ofo_ope_template_get_by_mnemo( priv->hub, sld_ope );
@@ -1374,8 +1373,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofa_idbmeta_update_period( priv->meta, period, FALSE, begin_old, end_old );
 	g_object_unref( period );
 
-	begin_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
-	end_next = my_editable_date_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
+	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+	end_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_end_next ), NULL );
 	ok = ofa_idbconnect_archive_and_new(
 				priv->connect, priv->p2_account, priv->p2_password, begin_next, end_next );
 

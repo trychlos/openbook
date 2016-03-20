@@ -29,9 +29,8 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "my/my-date.h"
 #include "my/my-double-editable.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -453,9 +452,9 @@ setup_dialog( ofaGuidedInputBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( priv->dope_entry ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
+	my_date_editable_init( GTK_EDITABLE( priv->dope_entry ));
+	my_date_editable_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
 
 	g_signal_connect( priv->dope_entry, "changed", G_CALLBACK( on_dope_changed ), self );
 
@@ -471,9 +470,9 @@ setup_dialog( ofaGuidedInputBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-deffect-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( priv->deffect_entry ));
-	my_editable_date_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
+	my_date_editable_init( GTK_EDITABLE( priv->deffect_entry ));
+	my_date_editable_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
 
 	g_signal_connect( priv->deffect_entry, "focus-in-event", G_CALLBACK( on_deffect_focus_in ), self );
 	g_signal_connect( priv->deffect_entry, "focus-out-event", G_CALLBACK( on_deffect_focus_out ), self );
@@ -604,10 +603,10 @@ init_model_data( ofaGuidedInputBin *self )
 	g_free( str );
 
 	/* initialize the new operation data */
-	my_editable_date_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
+	my_date_editable_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
 	my_date_set_from_date( &priv->ope->dope, &st_last_dope );
 
-	my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
+	my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
 	my_date_set_from_date( &priv->ope->deffect, &st_last_deff );
 
 	/* ledger */
@@ -843,7 +842,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 
 	/* check the operation date */
 	my_date_set_from_date( &ope->dope,
-			my_editable_date_get_date( GTK_EDITABLE( priv->dope_entry ), NULL ));
+			my_date_editable_get_date( GTK_EDITABLE( priv->dope_entry ), NULL ));
 
 	/* setup the effect date if it has not been manually changed */
 	if( my_date_is_valid( &ope->dope ) && !priv->deffect_changed_while_focus ){
@@ -857,7 +856,7 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 			my_date_set_from_date( &ope->deffect, &ope->dope );
 		}
 
-		my_editable_date_set_date( GTK_EDITABLE( priv->deffect_entry ), &ope->deffect );
+		my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &ope->deffect );
 	}
 
 	check_for_enable_dlg( self );
@@ -910,7 +909,7 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 	if( priv->deffect_has_focus ){
 
 		my_date_set_from_date( &ope->deffect,
-				my_editable_date_get_date( GTK_EDITABLE( priv->deffect_entry ), NULL ));
+				my_date_editable_get_date( GTK_EDITABLE( priv->deffect_entry ), NULL ));
 
 		priv->deffect_changed_while_focus = TRUE;
 	}

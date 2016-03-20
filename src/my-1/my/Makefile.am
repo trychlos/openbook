@@ -24,12 +24,12 @@ include ../make.inc
 
 my_include_HEADERS = \
 	my.h												\
-	my-cell-renderer-date.h								\
 	my-date.h											\
+	my-date-editable.h									\
+	my-date-renderer.h									\
 	my-double.h											\
 	my-double-editable.h								\
 	my-double-renderer.h								\
-	my-editable-date.h									\
 	my-file-monitor.h									\
 	my-iassistant.h										\
 	my-idialog.h										\

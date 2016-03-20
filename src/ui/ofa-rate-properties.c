@@ -29,9 +29,8 @@
 #include <glib/gi18n.h>
 #include <stdarg.h>
 
-#include "my/my-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-double-editable.h"
-#include "my/my-editable-date.h"
 #include "my/my-idialog.h"
 #include "my/my-igridlist.h"
 #include "my/my-iwindow.h"
@@ -401,15 +400,15 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 	priv = ofa_rate_properties_get_instance_private( self );
 
 	entry = gtk_entry_new();
-	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_date_editable_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_grid_attach( GTK_GRID( priv->grid ), entry, 1+COL_BEGIN, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
 
 	label = gtk_label_new( "" );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
 	my_utils_widget_set_xalign( label, 0 );
@@ -417,15 +416,15 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 	gtk_grid_attach( GTK_GRID( priv->grid ), label, 1+COL_BEGIN_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
-	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_date_editable_init( GTK_EDITABLE( entry ));
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_grid_attach( GTK_GRID( priv->grid ), entry, 1+COL_END, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
 
 	label = gtk_label_new( "" );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
 	my_utils_widget_set_xalign( label, 0 );
@@ -467,11 +466,11 @@ set_detail_values( ofaRateProperties *self, guint row )
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_BEGIN, row );
 	d = ofo_rate_get_val_begin( priv->rate, idx );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), d );
+	my_date_editable_set_date( GTK_EDITABLE( entry ), d );
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_END, row );
 	d = ofo_rate_get_val_end( priv->rate, idx );
-	my_editable_date_set_date( GTK_EDITABLE( entry ), d );
+	my_date_editable_set_date( GTK_EDITABLE( entry ), d );
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_RATE, row );
 	rate = ofo_rate_get_val_rate( priv->rate, idx );
@@ -587,9 +586,9 @@ is_dialog_validable( ofaRateProperties *self )
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
 	for( i=1, valids=NULL ; i<=count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_BEGIN, i ));
-		dbegin = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
+		dbegin = my_date_editable_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_END, i ));
-		dend = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
+		dend = my_date_editable_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_RATE, i ));
 		vrate = my_double_editable_get_amount( GTK_EDITABLE( entry ));
 
@@ -654,9 +653,9 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 
 	for( i=1 ; i<=count ; ++i ){
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_BEGIN, i ));
-		dbegin = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
+		dbegin = my_date_editable_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_END, i ));
-		dend = my_editable_date_get_date( GTK_EDITABLE( entry ), NULL );
+		dend = my_date_editable_get_date( GTK_EDITABLE( entry ), NULL );
 		entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->grid ), 1+COL_RATE, i ));
 		rate = my_double_editable_get_amount( GTK_EDITABLE( entry ));
 		str = my_double_editable_get_string( GTK_EDITABLE( entry ));

@@ -28,8 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -278,10 +277,10 @@ setup_date_selection( ofaReconcilBin *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), TRUE );
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), TRUE );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 }
@@ -356,7 +355,7 @@ ofa_reconcil_bin_is_valid( ofaReconcilBin *bin, gchar **msgerr )
 	if( valid ){
 		my_date_set_from_date(
 				&priv->date,
-				my_editable_date_get_date( GTK_EDITABLE( priv->date_entry ), &valid ));
+				my_date_editable_get_date( GTK_EDITABLE( priv->date_entry ), &valid ));
 		if( !valid  && msgerr ){
 			*msgerr = g_strdup( _( "Invalid reconciliation date" ));
 		}
@@ -462,7 +461,7 @@ load_settings( ofaReconcilBin *self )
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
-		my_editable_date_set_date( GTK_EDITABLE( priv->date_entry ), &date );
+		my_date_editable_set_date( GTK_EDITABLE( priv->date_entry ), &date );
 	}
 
 	ofa_settings_free_string_list( list );

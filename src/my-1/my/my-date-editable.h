@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_API_MY_EDITABLE_DATE_H__
-#define __MY_API_MY_EDITABLE_DATE_H__
+#ifndef __MY_API_MY_DATE_EDITABLE_H__
+#define __MY_API_MY_DATE_EDITABLE_H__
 
 /**
  * SECTION: my_editable_date
@@ -45,20 +45,26 @@
 
 G_BEGIN_DECLS
 
-void         my_editable_date_init            ( GtkEditable *editable );
+void         my_date_editable_init         ( GtkEditable *editable );
 
-void         my_editable_date_set_format      ( GtkEditable *editable, myDateFormat format );
+void         my_date_editable_set_format   ( GtkEditable *editable,
+													myDateFormat format );
 
-void         my_editable_date_set_date        ( GtkEditable *editable, const GDate *date );
+void         my_date_editable_set_date     ( GtkEditable *editable,
+													const GDate *date );
 
-void         my_editable_date_set_label       ( GtkEditable *editable, GtkWidget *label, myDateFormat format );
+void         my_date_editable_set_label    ( GtkEditable *editable,
+													GtkWidget *label,
+													myDateFormat format );
 
-void         my_editable_date_set_mandatory   ( GtkEditable *editable, gboolean mandatory );
+void         my_date_editable_set_mandatory( GtkEditable *editable,
+													gboolean mandatory );
 
-const GDate *my_editable_date_get_date        ( GtkEditable *editable, gboolean *valid );
+const GDate *my_date_editable_get_date     ( GtkEditable *editable,
+													gboolean *valid );
 
-gboolean     my_editable_date_is_empty        ( GtkEditable *editable );
+gboolean     my_date_editable_is_empty     ( GtkEditable *editable );
 
 G_END_DECLS
 
-#endif /* __MY_API_MY_EDITABLE_DATE_H__ */
+#endif /* __MY_API_MY_DATE_EDITABLE_H__ */

@@ -31,8 +31,7 @@
 #include <math.h>
 #include <stdlib.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -968,10 +967,10 @@ setup_manual_rappro( ofaReconcilPage *self, GtkContainer *parent )
 	label = my_utils_container_get_child_by_name( parent, "manual-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( priv->date_concil ));
-	my_editable_date_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
+	my_date_editable_init( GTK_EDITABLE( priv->date_concil ));
+	my_date_editable_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
 
 	g_signal_connect( priv->date_concil, "changed", G_CALLBACK( on_date_concil_changed ), self );
 }
@@ -1451,7 +1450,7 @@ on_date_concil_changed( GtkEditable *editable, ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	my_date_set_from_date( &date, my_editable_date_get_date( editable, &valid ));
+	my_date_set_from_date( &date, my_date_editable_get_date( editable, &valid ));
 	if( valid ){
 		my_date_set_from_date( &priv->dconcil, &date );
 	}

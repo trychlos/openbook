@@ -29,8 +29,7 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idate-filter.h"
@@ -318,10 +317,10 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), filter );
@@ -338,10 +337,10 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), filter );
@@ -430,8 +429,8 @@ on_date_changed( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date 
 {
 	gboolean empty, valid;
 
-	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
-	empty = my_editable_date_is_empty( GTK_EDITABLE( entry ));
+	my_date_set_from_date( date, my_date_editable_get_date( GTK_EDITABLE( entry ), NULL ));
+	empty = my_date_editable_is_empty( GTK_EDITABLE( entry ));
 	valid = my_date_is_valid( date );
 
 	g_signal_emit_by_name( filter, "ofa-changed", who, empty, valid );
@@ -443,10 +442,10 @@ on_date_changed( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date 
 static gboolean
 on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDateFilter *sdata )
 {
-	my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( entry ), NULL ));
+	my_date_set_from_date( date, my_date_editable_get_date( GTK_EDITABLE( entry ), NULL ));
 
 	if( my_date_is_valid( date ) ||
-			( my_editable_date_is_empty( GTK_EDITABLE( entry )) && !sdata->mandatory )){
+			( my_date_editable_is_empty( GTK_EDITABLE( entry )) && !sdata->mandatory )){
 
 		set_settings( filter, sdata );
 	}
@@ -530,10 +529,10 @@ ofa_idate_filter_set_date( ofaIDateFilter *filter, gint who, const GDate *date )
 
 	switch( who ){
 		case IDATE_FILTER_FROM:
-			my_editable_date_set_date( GTK_EDITABLE( sdata->from_entry ), date );
+			my_date_editable_set_date( GTK_EDITABLE( sdata->from_entry ), date );
 			break;
 		case IDATE_FILTER_TO:
-			my_editable_date_set_date( GTK_EDITABLE( sdata->to_entry ), date );
+			my_date_editable_set_date( GTK_EDITABLE( sdata->to_entry ), date );
 			break;
 		default:
 			g_warning( "%s: invalid date identifier: %d", thisfn, who );
@@ -588,7 +587,7 @@ ofa_idate_filter_is_valid( ofaIDateFilter *filter, gint who, gchar **message )
 
 	if( date ){
 		valid = my_date_is_valid( date ) ||
-				( !sdata->mandatory && my_editable_date_is_empty( GTK_EDITABLE( entry )));
+				( !sdata->mandatory && my_date_editable_is_empty( GTK_EDITABLE( entry )));
 	}
 
 	if( !valid && message ){
@@ -697,14 +696,14 @@ load_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 		cstr = it ? it->data : NULL;
 		if( my_strlen( cstr )){
 			my_date_set_from_sql( &sdata->from_date, cstr );
-			my_editable_date_set_date( GTK_EDITABLE( sdata->from_entry ), &sdata->from_date );
+			my_date_editable_set_date( GTK_EDITABLE( sdata->from_entry ), &sdata->from_date );
 		}
 
 		it = it ? it->next : NULL;
 		cstr = it ? it->data : NULL;
 		if( my_strlen( cstr )){
 			my_date_set_from_sql( &sdata->to_date, cstr );
-			my_editable_date_set_date( GTK_EDITABLE( sdata->to_entry ), &sdata->to_date );
+			my_date_editable_set_date( GTK_EDITABLE( sdata->to_entry ), &sdata->to_date );
 		}
 
 		ofa_settings_free_string_list( slist );

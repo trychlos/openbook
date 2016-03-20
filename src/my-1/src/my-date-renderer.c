@@ -26,22 +26,22 @@
 #include <config.h>
 #endif
 
-#include "my/my-cell-renderer-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
+#include "my/my-date-renderer.h"
 
 static void on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, gpointer user_data );
 
 /**
- * my_cell_renderer_date_init:
+ * my_date_renderer_init:
  * @renderer: this #GtkCellRendererText object
  *
  * Initialise a cell renderer which is created to enter adate.
  *  Is thought to be called once at cell renderer creation.
  */
 void
-my_cell_renderer_date_init( GtkCellRenderer *renderer )
+my_date_renderer_init( GtkCellRenderer *renderer )
 {
-	static const gchar *thisfn = "my_cell_renderer_date_init";
+	static const gchar *thisfn = "my_date_renderer_init";
 
 	g_debug( "%s: renderer=%p (%s)",
 			thisfn, ( void * ) renderer, G_OBJECT_TYPE_NAME( renderer ));
@@ -62,5 +62,5 @@ my_cell_renderer_date_init( GtkCellRenderer *renderer )
 static void
 on_editing_started( GtkCellRenderer *renderer, GtkCellEditable *editable, gchar *path, gpointer user_data )
 {
-	my_editable_date_init( GTK_EDITABLE( editable ));
+	my_date_editable_init( GTK_EDITABLE( editable ));
 }

@@ -29,10 +29,8 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "my/my-cell-renderer-date.h"
-#include "my/my-date.h"
+#include "my/my-date-renderer.h"
 #include "my/my-double-renderer.h"
-#include "my/my-editable-date.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -842,7 +840,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	 */
 	column_id = ENT_COL_DOPE;
 	text_cell = gtk_cell_renderer_text_new();
-	my_cell_renderer_date_init( text_cell );
+	my_date_renderer_init( text_cell );
 	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );
@@ -866,7 +864,7 @@ setup_entries_treeview( ofaEntryPage *self )
 	 */
 	column_id = ENT_COL_DEFF;
 	text_cell = gtk_cell_renderer_text_new();
-	my_cell_renderer_date_init( text_cell );
+	my_date_renderer_init( text_cell );
 	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( G_OBJECT( text_cell ), "edited", G_CALLBACK( on_cell_edited ), self );

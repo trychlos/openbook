@@ -29,8 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
@@ -420,13 +419,13 @@ init_properties_page( ofaDossierProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_set_from_date( &priv->begin, ofo_dossier_get_exe_begin( priv->dossier ));
 	priv->begin_empty = !my_date_is_valid( &priv->begin );
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->begin );
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 
@@ -446,13 +445,13 @@ init_properties_page( ofaDossierProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-end-check" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
+	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_set_from_date( &priv->end, ofo_dossier_get_exe_end( priv->dossier ));
 	priv->end_empty = !my_date_is_valid( &priv->end );
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_editable_date_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( entry ), &priv->end );
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
 
@@ -662,7 +661,7 @@ on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date,
 	content = gtk_editable_get_chars( editable, 0, -1 );
 	if( my_strlen( content )){
 		*is_empty = FALSE;
-		my_date_set_from_date( date, my_editable_date_get_date( GTK_EDITABLE( editable ), &valid ));
+		my_date_set_from_date( date, my_date_editable_get_date( GTK_EDITABLE( editable ), &valid ));
 		/*g_debug( "ofa_dossier_properties_on_date_changed: is_empty=False, valid=%s", valid ? "True":"False" );*/
 
 	} else {

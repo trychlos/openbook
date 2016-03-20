@@ -28,8 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "my/my-date.h"
-#include "my/my-editable-date.h"
+#include "my/my-date-editable.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
@@ -305,10 +304,10 @@ init_properties( ofaTVARecordNew *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-date" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	my_editable_date_init( GTK_EDITABLE( entry ));
-	my_editable_date_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_editable_date_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_editable_date_set_date( GTK_EDITABLE( entry ), NULL );
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_date( GTK_EDITABLE( entry ), NULL );
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 }
@@ -321,7 +320,7 @@ on_end_changed( GtkEntry *entry, ofaTVARecordNew *self )
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
-	date = my_editable_date_get_date( GTK_EDITABLE( priv->end_date ), NULL );
+	date = my_date_editable_get_date( GTK_EDITABLE( priv->end_date ), NULL );
 	ofo_tva_record_set_end( priv->tva_record, date );
 
 	check_for_enable_dlg( self );
