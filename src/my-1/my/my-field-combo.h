@@ -35,6 +35,8 @@
  *
  * The instanciated object is automatically unreffed when the parent
  * widget to which it has been attached to is destroyed.
+ *
+ * The 'my-changed' signal is sent on selection change.
  */
 
 #include <gtk/gtk.h>
@@ -69,7 +71,7 @@ myFieldCombo *my_field_combo_new         ( void );
 gchar        *my_field_combo_get_selected( myFieldCombo *combo );
 
 void          my_field_combo_set_selected( myFieldCombo *combo,
-														const gchar *field_sep );
+												const gchar *field_sep );
 
 G_END_DECLS
 

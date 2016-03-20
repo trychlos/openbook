@@ -135,7 +135,7 @@ my_field_combo_class_init( myFieldComboClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = field_combo_finalize;
 
 	/**
-	 * myFieldCombo::ofa-changed:
+	 * myFieldCombo::my-changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
@@ -147,7 +147,7 @@ my_field_combo_class_init( myFieldComboClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
+				"my-changed",
 				MY_TYPE_FIELD_COMBO,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -228,7 +228,7 @@ on_field_changed( myFieldCombo *combo, void *empty )
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
 		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter, COL_CHARSEP, &field_sep, -1 );
-		g_signal_emit_by_name( combo, "ofa-changed", field_sep );
+		g_signal_emit_by_name( combo, "my-changed", field_sep );
 		g_free( field_sep );
 	}
 }

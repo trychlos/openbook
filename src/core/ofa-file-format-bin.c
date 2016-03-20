@@ -490,7 +490,7 @@ init_field_separator( ofaFileFormatBin *self )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->field_combo ));
 	priv->field_label = label;
 
-	g_signal_connect( priv->field_combo, "ofa-changed", G_CALLBACK( on_field_changed ), self );
+	g_signal_connect( priv->field_combo, "my-changed", G_CALLBACK( on_field_changed ), self );
 }
 
 static void
