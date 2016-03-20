@@ -774,8 +774,9 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 	ofaIDBPeriod *target_period;
 	gboolean ok;
 
-	g_debug( "%s: connect=%p, period=%p, uri=%s",
-			thisfn, ( void * ) connect, ( void * ) period, uri );
+	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s",
+			thisfn, ( void * ) connect, ( void * ) period, uri,
+			adm_account, adm_password ? "******" : adm_password );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( !period || OFA_IS_IDBPERIOD( period ), FALSE );
@@ -789,7 +790,8 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 			g_return_val_if_fail( data->meta && OFA_IS_IDBMETA( data->meta ), FALSE );
 			target_period = ofa_idbmeta_get_current_period( data->meta );
 		}
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri );
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri ) &&
+				idbconnect_set_admin_credentials( connect, target_period, adm_account, adm_password );
 		if( !period ){
 			g_clear_object( &target_period );
 		}
@@ -936,7 +938,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 }
 
 /*
- * ofa_idbconnect_set_admin_credentials:
+ * idbconnect_set_admin_credentials:
  * @connect: an #ofaIDBConnect object which handles a superuser
  *  connection on the DBMS at server-level. It is expected this
  *  @connect object holds a valid #ofaIDBMeta object which describes
@@ -952,8 +954,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
  * Returns: %TRUE if successful.
  */
 static gboolean
-idbconnect_set_admin_credentials( const ofaIDBConnect *connect,
-										const ofaIDBPeriod *period,
+idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBPeriod *period,
 										const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_set_admin_credentials";
@@ -964,7 +965,7 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect,
 
 	g_debug( "%s: connect=%p, period=%p, adm_account=%s, adm_password=%s",
 			thisfn, ( void * ) connect, ( void * ) period,
-			adm_account, adm_password ? "******":adm_password );
+			adm_account, adm_password ? "******" : adm_password );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );

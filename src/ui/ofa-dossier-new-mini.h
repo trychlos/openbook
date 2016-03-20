@@ -30,7 +30,9 @@
  * @short_description: #ofaDossierNewMini class definition.
  * @include: ui/ofa-dossier-new-mini.h
  *
- * Define a new dossier.
+ * Define a new dossier in dossier settings, but does not create the
+ * corresponding database (thus does not define dossier administrative
+ * credentials).
  * Use case: when restoring a backup...
  *
  * #ofaDossierNewMini dialog only implements the dossier definition in

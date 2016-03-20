@@ -33,7 +33,7 @@
 
  Bug fixes:
 
-   - 
+   - ofaIDBConnect: setup admin credentials when restoring a database.
 
  Other changes:
 
