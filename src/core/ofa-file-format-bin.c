@@ -462,7 +462,7 @@ init_decimal_dot( ofaFileFormatBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->decimal_combo ));
 
-	g_signal_connect( priv->decimal_combo, "ofa-changed", G_CALLBACK( on_decimal_changed ), self );
+	g_signal_connect( priv->decimal_combo, "my-changed", G_CALLBACK( on_decimal_changed ), self );
 }
 
 static void

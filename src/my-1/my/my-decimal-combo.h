@@ -35,6 +35,8 @@
  *
  * The instanciated object is automatically unreffed when the parent
  * widget to which it has been attached to is destroyed.
+ *
+ * The 'my-changed' signal is sent on selection change.
  */
 
 #include <gtk/gtk.h>
