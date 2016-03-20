@@ -55,6 +55,44 @@ ofa_amount_from_str( const gchar *str )
 }
 
 /**
+ * ofa_amount_to_csv:
+ * @amount:
+ * @currency:
+ * @format: the #ofaFileFormat export format.
+ *
+ * In CSV file, the decimal separator is chosen by the user in the
+ * @format specification. No thousand separator is provided.
+ *
+ * Returns: the amount as a newly allocated string, which should be
+ * g_free() by the caller.
+ */
+gchar *
+ofa_amount_to_csv( ofxAmount amount, ofoCurrency *currency, const ofaFileFormat *format )
+{
+	gchar *str1, *str2, *decimal_str;
+	guint digits;
+	gchar decimal_sep;
+	GRegex *regex;
+
+	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), NULL );
+	g_return_val_if_fail( format && OFA_IS_FILE_FORMAT( format ), NULL );
+
+	digits = ofo_currency_get_digits( currency );
+	str1 = my_double_to_sql_ex( amount, digits );
+
+	decimal_sep = ofa_file_format_get_decimal_sep( format );
+	decimal_str = g_strdup_printf( "%c", decimal_sep );
+
+	regex = g_regex_new( "\\.", 0, 0, NULL );
+	str2 = g_regex_replace_literal( regex, str1, -1, 0, decimal_str, 0, NULL );
+
+	g_regex_unref( regex );
+	g_free( str1 );
+
+	return( str2 );
+}
+
+/**
  * ofa_amount_to_str:
  * @amount:
  * @currency: [allow-none]:

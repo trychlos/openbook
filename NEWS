@@ -35,6 +35,7 @@
 
    - ofaDossierNewMini: fix dialog display at initialization time.
    - ofaExportAssistant: display the chosen string delimiter.
+   - ofaExportAssistant: fix amounts export format.
    - ofaIDBConnect: setup admin credentials when restoring a database.
    - ofoTVAForm: fix ofo_tva_form_get_is_deletable() method.
 

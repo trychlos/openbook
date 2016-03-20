@@ -34,6 +34,7 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
@@ -1819,7 +1820,7 @@ export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar 
 
 	box_def = ofa_box_data_get_def( box_data );
 	if( box_def->type == OFA_TYPE_AMOUNT ){
-		str = my_double_to_sql_ex( ofa_box_data_get_amount( box_data ), ofo_currency_get_digits( currency ));
+		str = ofa_amount_to_csv( ofa_box_data_get_amount( box_data ), currency, format );
 	} else {
 		str = g_strdup( text );
 	}

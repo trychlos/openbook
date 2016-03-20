@@ -32,11 +32,14 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-file-format.h"
 #include "api/ofo-currency-def.h"
 
 G_BEGIN_DECLS
 
 ofxAmount ofa_amount_from_str( const gchar *str );
+
+gchar    *ofa_amount_to_csv  ( ofxAmount amount, ofoCurrency *currency, const ofaFileFormat *format );
 
 gchar    *ofa_amount_to_str  ( ofxAmount amount, ofoCurrency *currency );
 
