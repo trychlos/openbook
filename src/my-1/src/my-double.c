@@ -34,9 +34,6 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-box.h"
-#include "api/ofa-preferences.h"
-
 /* we have to deal with:
  * - from locale to prefs display (this is needed so that we do not
  *   have to try to insert spaces between thousand digits)

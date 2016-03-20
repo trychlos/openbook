@@ -34,6 +34,8 @@
  *
  * The instanciated object is automatically unreffed when the parent
  * widget to which it has been attached to is destroyed.
+ *
+ * The 'my-changed' signal is sent on selection change.
  */
 
 #include <gtk/gtk.h>
@@ -70,7 +72,7 @@ myDateCombo *my_date_combo_new         ( void );
 myDateFormat my_date_combo_get_selected( myDateCombo *combo );
 
 void         my_date_combo_set_selected( myDateCombo *combo,
-													myDateFormat format );
+												myDateFormat format );
 
 G_END_DECLS
 

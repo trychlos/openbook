@@ -121,7 +121,7 @@ my_date_combo_class_init( myDateComboClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = date_combo_finalize;
 
 	/**
-	 * myDateCombo::ofa-changed:
+	 * myDateCombo::my-changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
@@ -133,7 +133,7 @@ my_date_combo_class_init( myDateComboClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
+				"my-changed",
 				MY_TYPE_DATE_COMBO,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -216,7 +216,7 @@ on_format_changed( myDateCombo *combo, void *empty )
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
 		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter, COL_FORMAT, &format, -1 );
-		g_signal_emit_by_name( combo, "ofa-changed", format );
+		g_signal_emit_by_name( combo, "my-changed", format );
 	}
 }
 

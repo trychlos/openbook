@@ -42,6 +42,7 @@
    - my_editable_date_xxx(): are renamed to my_date_editable_xxx().
    - my_cell_renderer_double_xxx(): are renamed to my_double_renderer_xxx().
    - my_editable_double_xxx(): are renamed to my_double_editable_xxx().
+   - myDateCombo: rename 'ofa-changed' signal to 'my-changed'.
    - ofa_amount_xxx(): new functions.
    - ofa_counter_xxx(): new functions.
 

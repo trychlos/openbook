@@ -434,7 +434,7 @@ init_date_format( ofaFileFormatBin *self )
 
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->date_combo ));
 
-	g_signal_connect( priv->date_combo, "ofa-changed", G_CALLBACK( on_date_changed ), self );
+	g_signal_connect( priv->date_combo, "my-changed", G_CALLBACK( on_date_changed ), self );
 }
 
 static void
