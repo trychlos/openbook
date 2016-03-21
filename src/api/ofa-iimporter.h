@@ -31,6 +31,9 @@
  * @short_description: The Import Interface
  * @include: openbook/ofa-iimporter.h
  *
+ * The #ofaIImporter interface is called by the application in order to
+ * try to import objects from an external stream.
+ *
  * The #ofaIImporter lets the importable object communicate with the
  * importer code. Two signals are defined:
  * - "progress" to visually render the progress of the import (resp.

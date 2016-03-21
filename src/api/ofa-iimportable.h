@@ -31,21 +31,22 @@
  * @short_description: The Import Interface
  * @include: openbook/ofa-iimportable.h
  *
- * The #ofaIImportable interface imports items from the outside world.
+ * The #ofaIImportable interface must be implemented by objects which
+ * want to be imported in the application: the object class
+ * implementation is provided with a list of lines, each line being
+ * itself a list of fields.
  *
- * The #ofaIImportable interface is supposed to be implemented either
- * by object classes which want to be imported (so are "importable"),
- * or by the plugins which manage the import of files.
+ * The interface takes care of splitting the input stream per line, and
+ * of splitting each line per field, according to the provided file
+ * format.
  *
- * The interface provides several function to let the implementation
- * communicate with the caller (see infra for what is a caller):
- * - increment the count of imported lines
- * - send a standard, warning or error message to the caller.
- * At the end, the implementation must return the count of found errors.
+ * It is the responsability of the implementation:
+ * - to fill up the provided object with the provided fields contents,
+ * - to advertize the importer with an eventual error,
+ * - to advertize the importer with its progress.
  *
  * A caller which would take advantage of this mechanism should implement
- * the #ofaIImporter interface. This later defines ad-hoc signals which
- * are used by the above functions.
+ * the #ofaIImporter interface.
  */
 
 #include "api/ofa-box.h"
