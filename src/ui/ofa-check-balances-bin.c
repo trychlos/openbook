@@ -417,6 +417,7 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 static gboolean
 check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances )
 {
+	static const gchar *thisfn = "ofa_check_balances_bin_check_balances_per_currency";
 	gboolean ok;
 	GList *it;
 	ofsCurrency *sbal;
@@ -425,8 +426,9 @@ check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances )
 
 	for( it=balances ; it ; it=it->next ){
 		sbal = ( ofsCurrency * ) it->data;
-		g_debug( "check_balances_per_currency: debit=%lf, credit=%lf", sbal->debit, sbal->credit );
-		ok &= ( sbal->debit == sbal->credit );
+		g_debug( "%s: currency=%s, debit=%lf, credit=%lf",
+				thisfn, ofo_currency_get_code( sbal->currency ), sbal->debit, sbal->credit );
+		ok &= ofs_currency_is_balanced( sbal );
 	}
 
 	return( ok );
@@ -526,7 +528,7 @@ set_checks_result( ofaCheckBalancesBin *bin )
 
 		} else {
 			gtk_label_set_text( GTK_LABEL( label ),
-					_( "\nThough each book is individually balanced, it appears "
+					_( "Though each book is individually balanced, it appears "
 						"that some distorsion has happened among them.\n"
 						"In this current state, we will be unable to close this "
 						"exercice until you fix your balances." ));
@@ -545,7 +547,7 @@ cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b )
 	for( it=list_a ; it ; it=it->next ){
 		sbal_a = ( ofsCurrency * ) it->data;
 		sbal_b = ofs_currency_get_by_code( list_b, ofo_currency_get_code( sbal_a->currency ));
-		if( sbal_a->debit != sbal_b->debit || sbal_a->credit != sbal_b->credit ){
+		if( ofs_currency_cmp( sbal_a, sbal_b ) != 0 ){
 			return( FALSE );
 		}
 	}
@@ -554,7 +556,7 @@ cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b )
 	for( it=list_b ; it ; it=it->next ){
 		sbal_b = ( ofsCurrency * ) it->data;
 		sbal_a = ofs_currency_get_by_code( list_a, ofo_currency_get_code( sbal_b->currency ));
-		if( sbal_b->debit != sbal_a->debit || sbal_b->credit != sbal_a->credit ){
+		if( ofs_currency_cmp( sbal_a, sbal_b ) != 0 ){
 			return( FALSE );
 		}
 	}

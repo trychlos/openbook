@@ -35,6 +35,8 @@
 
 G_BEGIN_DECLS
 
+gboolean   my_double_is_zero        ( gdouble value, gint decimal_digits );
+
 gchar     *my_double_undecorate     ( const gchar *decorated, gunichar thousand_sep, gunichar decimal_sep );
 
 gdouble    my_double_set_from_csv   ( const gchar *csv_string, gchar decimal_sep );

@@ -50,6 +50,25 @@ static void   double_set_locale( void );
 static gchar *double_decorate( const gchar *text, gunichar thousand_sep, gunichar decimal_sep );
 
 /**
+ * my_double_is_zero:
+ * @value:
+ * @decimal_digits:
+ *
+ * Returns: %TRUE if @value is zero with respect to @decimal_digits.
+ */
+gboolean
+my_double_is_zero( gdouble value, gint decimal_digits )
+{
+	gdouble precision;
+	gboolean zero;
+
+	precision = 1.0 / exp10( decimal_digits );
+	zero = ( fabs( value ) < precision );
+
+	return( zero );
+}
+
+/**
  * my_double_undecorate:
  * @text:
  * @thousand_sep:

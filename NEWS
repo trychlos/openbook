@@ -33,6 +33,7 @@
 
  Bug fixes:
 
+   - ofaCheckBalances: get rid of rounding errors.
    - ofaDossierNewMini: fix dialog display at initialization time.
    - ofaExportAssistant: display the chosen string delimiter.
    - ofaExportAssistant: fix amounts export format.
@@ -43,6 +44,7 @@
 
    - Define a separated 'my' library.
    - my_cell_renderer_date_xxx(): are renamed to my_date_renderer_xxx().
+   - my_double_is_zero(): new function.
    - my_editable_date_xxx(): are renamed to my_date_editable_xxx().
    - my_cell_renderer_double_xxx(): are renamed to my_double_renderer_xxx().
    - my_editable_double_xxx(): are renamed to my_double_editable_xxx().
@@ -52,6 +54,7 @@
    - myProgressBar: ofa-double, ofa-text and ofa-pulse signals are renamed to my-xxx equivalents.
    - ofa_amount_xxx(): new functions.
    - ofa_counter_xxx(): new functions.
+   - ofs_currency_cmp(): new function.
 
 -----------------------------------------------------------------------
  Version 0.51

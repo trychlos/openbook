@@ -78,6 +78,8 @@ gboolean     ofs_currency_is_balanced  ( const ofsCurrency *currency );
 
 gboolean     ofs_currency_is_zero      ( const ofsCurrency *currency );
 
+gint         ofs_currency_cmp          ( const ofsCurrency *a, const ofsCurrency *b );
+
 void         ofs_currency_list_dump    ( GList *list );
 
 void         ofs_currency_list_free    ( GList **list );

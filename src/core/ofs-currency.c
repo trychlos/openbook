@@ -26,9 +26,7 @@
 #include <config.h>
 #endif
 
-#define _GNU_SOURCE
-#include <math.h>
-
+#include "my/my-double.h"
 #include "my/my-utils.h"
 
 #include "api/ofo-currency.h"
@@ -128,30 +126,6 @@ cmp_currency( const ofsCurrency *a, const ofsCurrency *b )
 	return( g_utf8_collate( a_code, b_code ));
 }
 
-#if 0
-static glong
-amount_to_long_by_currency( gdouble amount, ofoCurrency *currency )
-{
-	gint digits;
-	gdouble precision;
-
-	digits = ofo_currency_get_digits( currency );
-	precision = exp10( digits );
-
-	return( amount_to_long_by_precision( amount, precision ));
-}
-
-static glong
-amount_to_long_by_precision( gdouble amount, gdouble precision )
-{
-	gdouble temp;
-
-	temp = amount * precision + 0.5;
-
-	return(( glong ) temp );
-}
-#endif
-
 /**
  * ofs_currency_is_balanced:
  * @currency:
@@ -162,14 +136,12 @@ gboolean
 ofs_currency_is_balanced( const ofsCurrency *currency )
 {
 	gint digits;
-	gdouble precision, diff;
+	gdouble diff;
 
 	digits = ofo_currency_get_digits( currency->currency );
-	precision = 1/exp10( digits );
-
 	diff = currency->debit - currency->credit;
 
-	return( fabs( diff ) < precision );
+	return( my_double_is_zero( diff, digits ));
 }
 
 /**
@@ -182,40 +154,53 @@ gboolean
 ofs_currency_is_zero( const ofsCurrency *currency )
 {
 	gint digits;
-	gdouble precision;
+	gboolean debit_is_zero, credit_is_zero;
 
 	digits = ofo_currency_get_digits( currency->currency );
-	precision = 1/exp10( digits );
+	debit_is_zero = my_double_is_zero( currency->debit, digits );
+	credit_is_zero = my_double_is_zero( currency->credit, digits );
 
-	return( fabs( currency->debit ) < precision && fabs( currency->credit) < precision );
-}
-
-#if 0
-/**
- * ofs_currency_amount_to_long:
- */
-glong
-ofs_currency_amount_to_long( const ofsCurrency *currency, gdouble amount )
-{
-	return( amount_to_long_by_currency( amount, currency->currency ));
+	return( debit_is_zero && credit_is_zero );
 }
 
 /**
- * ofs_currency_update_amounts:
+ * ofs_currency_cmp:
+ * @a:
+ * @b:
+ *
+ * The two #ofsCurrency are first compared by currency code.
+ * If @a and @b both use the same currency, then debits are compared.
+ * If debits are the same, then credits are compared.
+ *
+ * Returns: -1 if @a < @b, 1 if @a > @b, 0 if @a == @b.
  */
-void
-ofs_currency_update_amounts( ofsCurrency *currency )
+gint
+ofs_currency_cmp( const ofsCurrency *a, const ofsCurrency *b )
 {
-	gint digits;
-	gdouble precision;
+	gint cmp, digits;
+	gboolean is_zero;
+	gdouble diff;
 
-	digits = ofo_currency_get_digits( currency->currency );
-	precision = exp10( digits );
+	cmp = my_collate( ofo_currency_get_code( a->currency ), ofo_currency_get_code( b->currency ));
+	if( cmp == 0 ){
+		digits = ofo_currency_get_digits( a->currency );
+		diff = a->debit - b->debit;
+		is_zero = my_double_is_zero( diff, digits );
+		if( !is_zero ){
+			cmp = ( a->debit < b->debit ) ? -1 : 1;
+		} else {
+			diff = a->credit - b->credit;
+			is_zero = my_double_is_zero( diff, digits );
+			if( !is_zero ){
+				cmp = ( a->credit < b->credit ) ? -1 : 1;
+			} else {
+				cmp = 0;
+			}
+		}
+	}
 
-	currency->debit = currency->ldebit / precision;
-	currency->credit = currency->lcredit / precision;
+	return( cmp );
 }
-#endif
 
 /**
  * ofs_currency_list_dump:
@@ -233,16 +218,6 @@ currency_dump( ofsCurrency *cur, void *empty )
 			( void * ) cur, ofo_currency_get_code( cur->currency ), cur->debit, cur->credit );
 }
 
-/*
- * ofs_currency_free:
- */
-static void
-currency_free( ofsCurrency *cur )
-{
-	g_object_unref( cur->currency );
-	g_free( cur );
-}
-
 /**
  * ofs_currency_list_free:
  */
@@ -253,4 +228,11 @@ ofs_currency_list_free( GList **list )
 		g_list_free_full( *list, ( GDestroyNotify ) currency_free );
 		*list = NULL;
 	}
+}
+
+static void
+currency_free( ofsCurrency *cur )
+{
+	g_object_unref( cur->currency );
+	g_free( cur );
 }
