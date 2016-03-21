@@ -32,6 +32,8 @@
  *  files.
  * @include: my/my-isettings.h
  *
+ * This is an interface to manage group/key/value triplets.
+ *
  * This interface is the settings API opened to the plugins in order
  * they are able to manage the settings file(s). It is implemented
  * (at the moment) by the #mySettings object class.

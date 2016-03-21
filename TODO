@@ -451,7 +451,10 @@
 
 1046 2016- 3-21 BUG  close all opened dialogs when closing the dossier
 
-1047
+1047 2016- 3-21 FEAT when upgrading the db model, have a OK on the right
+                     of the progress bar (as in check balances)
+
+1048
 
 -----------------------------------------------------------------------
  DONE

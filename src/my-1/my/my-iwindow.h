@@ -31,6 +31,9 @@
  * @short_description: An interface to manage our GtkWindow-derived windows.
  * @include: my/my-iwindow.h
  *
+ * This is a GtkWindow extension:
+ * - the implementation must derives from GtkWindow.
+ *
  * This interface manages for the application:
  * - the size and the position of windows, including dialogs and assistants
  * - the modal dialogs

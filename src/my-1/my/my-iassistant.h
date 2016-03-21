@@ -31,6 +31,10 @@
  * @short_description: An interface to manage our GtkAssistant-derived assistants.
  * @include: my/my-iassistant.h
  *
+ * This is a GtkAssistant extension:
+ * - the implementation must derives from GtkAssistant
+ * - it is expected that the implementation also implements myIWindow.
+ *
  * This interface provides to the implementation a callback for each
  * state of each page:
  * - init: before the page be displayed for the first time; this is a

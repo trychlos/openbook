@@ -31,17 +31,20 @@
  * @short_description: An interface to manage our dialogs.
  * @include: my/my-idialog.h
  *
+ * This is a GtkDialog extension:
+ * - the implementation must derives from GtkDialog
+ * - it is expected that the implementation also implements myIWindow.
+ *
  * This interface manages for the application:
  * - the dialog buttons
- * - the modal dialogs.
+ * - the modal and non-modal dialogs.
  *
  * Response codes are taken from /usr/include/gtk-3.0/gtk/gtkdialog.h.
  * Most often used are:
  *   GTK_RESPONSE_DELETE_EVENT = -4,
  *   GTK_RESPONSE_OK           = -5,
  *   GTK_RESPONSE_CANCEL       = -6,
- *   GTK_RESPONSE_CLOSE        = -7,
- *
+ *   GTK_RESPONSE_CLOSE        = -7
  */
 
 #include <gtk/gtk.h>

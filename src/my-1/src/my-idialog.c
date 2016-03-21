@@ -106,10 +106,10 @@ register_type( void )
 
 	type = g_type_register_static( G_TYPE_INTERFACE, "myIDialog", &info, 0 );
 
-	g_type_interface_add_prerequisite( type, MY_TYPE_IWINDOW );
+	g_type_interface_add_prerequisite( type, GTK_TYPE_DIALOG );
 	/*
 	An interface can have at most one instantiatable prerequisite type
-	g_type_interface_add_prerequisite( type, GTK_TYPE_DIALOG );
+	g_type_interface_add_prerequisite( type, MY_TYYPE_IWINDOW );
 	*/
 
 	return( type );
