@@ -843,6 +843,14 @@ do_open_dossier( ofaMainWindow *main_window )
 		}
 	}
 
+	/* check balances and DBMS integrity*/
+	if( ofa_prefs_dossier_open_balance()){
+		ofa_check_balances_run( main_window );
+	}
+	if( ofa_prefs_dossier_open_integrity()){
+		ofa_check_integrity_run( main_window );
+	}
+
 	/* display dossier properties */
 	if( ofa_prefs_dossier_open_properties()){
 		g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );

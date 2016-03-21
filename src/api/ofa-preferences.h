@@ -85,6 +85,8 @@ gboolean     ofa_prefs_appli_confirm_on_altf4           ( void );
 gboolean     ofa_prefs_dossier_open_notes               ( void );
 gboolean     ofa_prefs_dossier_open_notes_if_empty      ( void );
 gboolean     ofa_prefs_dossier_open_properties          ( void );
+gboolean     ofa_prefs_dossier_open_balance             ( void );
+gboolean     ofa_prefs_dossier_open_integrity           ( void );
 
 gboolean     ofa_prefs_account_delete_root_with_children( void );
 

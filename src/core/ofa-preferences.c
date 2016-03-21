@@ -69,6 +69,8 @@ struct _ofaPreferencesPrivate {
 	GtkWidget                *open_notes_btn;
 	GtkWidget                *open_notes_empty_btn;
 	GtkWidget                *open_properties_btn;
+	GtkWidget                *open_balance_btn;
+	GtkWidget                *open_integrity_btn;
 	ofaDossierDeletePrefsBin *dd_prefs;
 
 	/* UI - Account delete page
@@ -119,6 +121,8 @@ static const gchar *st_appli_confirm_on_altf4         = "ApplicationConfirmOnAlt
 static const gchar *st_dossier_open_notes             = "DossierOpenNotes";
 static const gchar *st_dossier_open_notes_if_empty    = "DossierOpenNotesIfEmpty";
 static const gchar *st_dossier_open_properties        = "DossierOpenProperties";
+static const gchar *st_dossier_open_balance           = "DossierOpenBalance";
+static const gchar *st_dossier_open_integrity         = "DossierOpenIntegrity";
 static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCancel";
 
 static const gchar *st_resource_ui                    = "/org/trychlos/openbook/core/ofa-preferences.ui";
@@ -392,6 +396,16 @@ init_dossier_page( ofaPreferences *self )
 			GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn ), !ofa_prefs_dossier_open_notes_if_empty());
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->open_properties_btn ), ofa_prefs_dossier_open_properties());
+
+	priv->open_balance_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pdo-balance" );
+	g_return_if_fail( priv->open_balance_btn && GTK_IS_CHECK_BUTTON( priv->open_balance_btn ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->open_balance_btn ), ofa_prefs_dossier_open_balance());
+
+	priv->open_integrity_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pdo-integrity" );
+	g_return_if_fail( priv->open_integrity_btn && GTK_IS_CHECK_BUTTON( priv->open_integrity_btn ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->open_integrity_btn ), ofa_prefs_dossier_open_integrity());
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dossier-delete-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -925,6 +939,14 @@ do_update_dossier_page( ofaPreferences *self, gchar **msgerr )
 			st_dossier_open_properties,
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_properties_btn )));
 
+	ofa_settings_user_set_boolean(
+			st_dossier_open_balance,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_balance_btn )));
+
+	ofa_settings_user_set_boolean(
+			st_dossier_open_integrity,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_integrity_btn )));
+
 	ofa_dossier_delete_prefs_bin_set_settings( priv->dd_prefs );
 
 	return( TRUE );
@@ -955,6 +977,24 @@ gboolean
 ofa_prefs_dossier_open_properties( void )
 {
 	return( ofa_settings_user_get_boolean( st_dossier_open_properties ));
+}
+
+/**
+ * ofa_prefs_dossier_open_balance:
+ */
+gboolean
+ofa_prefs_dossier_open_balance( void )
+{
+	return( ofa_settings_user_get_boolean( st_dossier_open_balance ));
+}
+
+/**
+ * ofa_prefs_dossier_open_integrity:
+ */
+gboolean
+ofa_prefs_dossier_open_integrity( void )
+{
+	return( ofa_settings_user_get_boolean( st_dossier_open_integrity ));
 }
 
 static gboolean

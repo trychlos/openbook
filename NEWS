@@ -29,7 +29,7 @@
 
  New features and improvements:
 
-   - 
+   - UserPreferences: check for balances and DBMS integrity on dossier opening (todo #744).
 
  Bug fixes:
 

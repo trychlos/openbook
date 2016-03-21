@@ -150,18 +150,6 @@
      2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
                 the ofaIExportable interface - so it is not urgent
 
- 463 2014-11-26 move ofoCurrency to ofaBoxed
-     2015- 1- 5 really only required when ofoCurrency will implement the
-                ofaIExportable interface *and* if exports any amounts -
-                so it is not urgent
-     2015- 1- 8 nonetheless required to correctly implement field sep
-
- 464 2014-11-26 move ofoDossier to ofaBoxed
-     2015- 1- 5 really only required when ofoDossier will implement the
-                ofaIExportable interface *and* if exports any amounts -
-                so it is not urgent
-     2015- 1- 8 nonetheless required to correctly implement field sep
-
  469 2014-11-28 ExportSettings: the field separator should be free 
                 (but not empty nor space) instead of having to select
                 among predefined values
@@ -254,6 +242,7 @@
  668 2015- 2-17 have main notebook pages detachable ? getting so non-
                 modal dialogs
      2015- 2-20 this requires to implement DnD on some non-modal windows
+     2016- 3-20 ofaNonModalPage is a temporary work-around
 
  669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
                 color, a logo, etc.)
@@ -283,9 +272,6 @@
  732 2015- 3-15 FEAT have a misc option to consult the audit log
 
  733 2015- 3-15 FEAT be able to search for an entry
-
- 744 2015- 3-19 FEAT have an option to automatically check the balances
-                     when opening the dossier
 
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
                      entry +unsettle/unreconciliate
@@ -456,7 +442,16 @@
 
 1042 2016- 3-15 FEAT CheckDBMSIntegrity: call plugins
 
-1044
+1044 2016- 3-20 FEAT do not close any period (exercice or intermediate)
+                     or any ledger without first check for balance and
+                     integrity
+
+1045 2016- 3-21 DDL  open properties, display notes, check balances and
+                     dbms integrity: may be per-dossier options
+
+1046 2016- 3-21 BUG  close all opened dialogs when closing the dossier
+
+1047
 
 -----------------------------------------------------------------------
  DONE
@@ -477,6 +472,20 @@
 
  429 2014-11-11 implement print preview inside of Openbook
      2016- 1-16 done long ago with IRenderable interface
+
+ 463 2014-11-26 move ofoCurrency to ofaBoxed
+     2015- 1- 5 really only required when ofoCurrency will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
+     2016- 3-20 done
+
+ 464 2014-11-26 move ofoDossier to ofaBoxed
+     2015- 1- 5 really only required when ofoDossier will implement the
+                ofaIExportable interface *and* if exports any amounts -
+                so it is not urgent
+     2015- 1- 8 nonetheless required to correctly implement field sep
+     2016- 3-20 done
 
  472 2014-11-29 set dialogs readonly if not current exercice
      2015- 2- 5 done for properties
@@ -526,6 +535,11 @@
 
  729 2015- 3-14 FEAT PrintLedgers: have an option to print a summary
      2016- 1-25      new ofaLedgerSummaryRender print
+
+ 744 2015- 3-19 FEAT have an option to automatically check the balances
+                     when opening the dossier
+     2016- 3-20 usere preferences: also check for DBMS integrity
+     2016- 3-21 done
 
  745 2015- 3-19 DISP AccountSelect: scroll the treeview to make sure the
                      pre-selected account is displayed
