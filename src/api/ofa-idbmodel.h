@@ -37,7 +37,32 @@
  *
  * In other words, this interface must be implemented by any code
  * which may want update the DB model through a suitable UI.
+ *
+ * The #ofaIDBModel interface is able to update the underlying DB model
+ * via the #ofaDBModelWindow. This window implements the #myIProgress
+ * interface with the following behavior:
+ * - start_work (first time for the worker):
+ *   . create a frame with the provided label
+ *   . create a grid inside of this frame.
+ * - start_work (second time for the worker):
+ *   . set the provided label in the first row of the first grid
+ *   . create a second grid starting with the second row of the first grid.
+ * - start_progress (several times per worker):
+ *   . if a widget is provided, attach it to column 0 of a new row of
+ *     the second grid
+ *   . if with_bar, create a progress bar in the column 1.
+ * - pulse:
+ *   . update the progress bar.
+ * - set_row:
+ *   . update the last inserted row of the second grid.
+ * - set_ok:
+ *   . widget is ignored
+ *   . display OK or the count of errors.
+ * - set_text:
+ *   . display the executed queries in the text view.
  */
+
+#include <gtk/gtk.h>
 
 #include "my/my-iprogress.h"
 #include "my/my-iwindow.h"
@@ -178,7 +203,7 @@ typedef struct {
 	 * @instance: the #ofaIDBModel provider.
 	 * @hub: the #ofaHub instance which manages the connection
 	 *  (required to be able to import files to collections).
-	 * @window: the #myIWindow which displays the update.
+	 * @window: the #myIProgress which displays the update.
 	 *
 	 * Returns: %TRUE if the DB model has been successfully updated,
 	 * %FALSE else.
@@ -189,7 +214,7 @@ typedef struct {
 	 */
 	gboolean      ( *ddl_update )           ( const ofaIDBModel *instance,
 													ofaHub *hub,
-													myIWindow *window );
+													myIProgress *window );
 
 	/**
 	 * check_dbms_integrity:
@@ -213,7 +238,8 @@ guint        ofa_idbmodel_get_interface_last_version( void );
 
 guint        ofa_idbmodel_get_interface_version     ( const ofaIDBModel *instance );
 
-gboolean     ofa_idbmodel_update                    ( ofaHub *hub );
+gboolean     ofa_idbmodel_update                    ( ofaHub *hub,
+															GtkWindow *parent );
 
 void         ofa_idbmodel_init_hub_signaling_system ( ofaHub *hub );
 
@@ -227,14 +253,6 @@ guint        ofa_idbmodel_get_current_version       ( const ofaIDBModel *instanc
 
 guint        ofa_idbmodel_get_last_version          ( const ofaIDBModel *instance,
 															const ofaIDBConnect *connect );
-
-void         ofa_idbmodel_add_row_widget            ( const ofaIDBModel *instance,
-															myIWindow *window,
-															GtkWidget *widget );
-
-void         ofa_idbmodel_add_text                  ( const ofaIDBModel *instance,
-															myIWindow *window,
-															const gchar *text );
 
 G_END_DECLS
 

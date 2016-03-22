@@ -30,7 +30,9 @@
 #include <stdlib.h>
 
 #include "my/my-idialog.h"
+#include "my/my-iprogress.h"
 #include "my/my-iwindow.h"
+#include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -39,7 +41,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 
-#define IDBMODEL_LAST_VERSION           1
+#define IDBMODEL_LAST_VERSION             1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -73,16 +75,17 @@ struct _ofaDBModelWindowPrivate {
 	 */
 	GList         *plugins_list;
 	ofaHub        *hub;
+	GList         *workers;
 
 	/* UI
 	 */
 	GtkWidget     *close_btn;
 	GtkWidget     *paned;
 	GtkWidget     *upper_viewport;
-	GtkWidget     *grid;
-	guint          row;
+	GtkWidget     *objects_grid;
+	guint          objects_row;
 	GtkWidget     *textview;
-	GtkTextBuffer *buffer;
+	GtkTextBuffer *text_buffer;
 
 	/* settings
 	 */
@@ -93,14 +96,26 @@ struct _ofaDBModelWindowPrivate {
 	gboolean       updated;
 };
 
-static const gchar      *st_resource_ui = "/org/trychlos/openbook/core/ofa-idbmodel.ui";
+/* a data structure for each myIProgress worker
+ */
+typedef struct {
+	const void    *worker;
+	GtkWidget     *grid1;
+	GtkWidget     *grid2;
+	GtkWidget     *grid3;
+	gint           row2;
+	myProgressBar *bar;
+}
+	sWorker;
+
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-idbmodel.ui";
 
 /* interface management */
 static GType    register_type( void );
 static void     interface_base_init( ofaIDBModelInterface *klass );
 static void     interface_base_finalize( ofaIDBModelInterface *klass );
 static gboolean idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *dialog );
+static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *dialog );
 
 /* dialog management */
 static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
@@ -111,10 +126,19 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static gboolean do_run( ofaDBModelWindow *dialog );
 static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWindow *dialog );
+static void     iprogress_iface_init( myIProgressInterface *iface );
+static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
+static void     iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar );
+static void     iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
+static void     iprogress_set_row( myIProgress *instance, const void *worker, GtkWidget *widget );
+static void     iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count );
+static void     iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text );
+static sWorker *get_worker_data( ofaDBModelWindow *self, const void *worker );
 
 G_DEFINE_TYPE_EXTENDED( ofaDBModelWindow, ofa_dbmodel_window, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDBModelWindow )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IPROGRESS, iprogress_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
 
 /**
@@ -230,6 +254,7 @@ ofa_idbmodel_get_interface_version( const ofaIDBModel *instance )
 /**
  * ofa_idbmodel_update:
  * @hub: the #ofaHub object.
+ * @parent: the #GtkWindow parent window.
  *
  * Ask all ofaIDBModel implentations whether they need to update their
  * current DB model, and run them.
@@ -239,7 +264,7 @@ ofa_idbmodel_get_interface_version( const ofaIDBModel *instance )
  * else.
  */
 gboolean
-ofa_idbmodel_update( ofaHub *hub )
+ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 {
 	GList *plugins_list, *it;
 	gboolean need_update, ok;
@@ -263,7 +288,7 @@ ofa_idbmodel_update( ofaHub *hub )
 
 	if( need_update ){
 		window = g_object_new( OFA_TYPE_DBMODEL_WINDOW, NULL );
-		my_iwindow_set_main_window( MY_IWINDOW( window ), NULL );
+		my_iwindow_set_parent( MY_IWINDOW( window ), parent );
 		my_iwindow_set_settings( MY_IWINDOW( window ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 		priv = ofa_dbmodel_window_get_instance_private( window );
@@ -453,12 +478,12 @@ idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *con
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *dialog )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 {
 	static const gchar *thisfn = "ofa_idbmodel_ddl_update";
 
 	if( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update ){
-		return( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update( instance, hub, dialog ));
+		return( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update( instance, hub, window ));
 	}
 
 	g_info( "%s: ofaIDBModel instance %p does not provide 'ddl_update()' method",
@@ -470,6 +495,7 @@ static void
 dbmodel_window_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_dbmodel_window_finalize";
+	ofaDBModelWindowPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -477,6 +503,9 @@ dbmodel_window_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DBMODEL_WINDOW( instance ));
 
 	/* free data members here */
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
+
+	g_list_free_full( priv->workers, ( GDestroyNotify ) g_free );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dbmodel_window_parent_class )->finalize( instance );
@@ -627,24 +656,31 @@ idialog_init( myIDialog *instance )
 	priv->upper_viewport = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-upperviewport" );
 	g_return_if_fail( priv->upper_viewport && GTK_IS_VIEWPORT( priv->upper_viewport ));
 
-	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-grid" );
-	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
-	priv->row = 0;
-	g_signal_connect( priv->grid, "size-allocate", G_CALLBACK( on_grid_size_allocate ), instance );
+	priv->objects_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-grid" );
+	g_return_if_fail( priv->objects_grid && GTK_IS_GRID( priv->objects_grid ));
+	priv->objects_row = 0;
+	g_signal_connect( priv->objects_grid, "size-allocate", G_CALLBACK( on_grid_size_allocate ), instance );
 
 	priv->textview = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "dud-textview" );
 	g_return_if_fail( priv->textview && GTK_IS_TEXT_VIEW( priv->textview ));
-	priv->buffer = gtk_text_buffer_new( NULL );
-	gtk_text_buffer_set_text( priv->buffer, "", -1 );
-	gtk_text_view_set_buffer( GTK_TEXT_VIEW( priv->textview ), priv->buffer );
+	priv->text_buffer = gtk_text_buffer_new( NULL );
+	gtk_text_buffer_set_text( priv->text_buffer, "", -1 );
+	gtk_text_view_set_buffer( GTK_TEXT_VIEW( priv->textview ), priv->text_buffer );
 
 	g_idle_add(( GSourceFunc ) do_run, instance );
 }
 
+/*
+ * First upgrade the DB provider which should itself implement the
+ * IDBModel interface.
+ * Only then upgrade other IDBModels.
+ */
 static gboolean
 do_run( ofaDBModelWindow *self )
 {
 	ofaDBModelWindowPrivate *priv;
+	const ofaIDBConnect *connect;
+	ofaIDBProvider *provider;
 	GList *it;
 	gboolean ok;
 	gchar *str;
@@ -652,12 +688,19 @@ do_run( ofaDBModelWindow *self )
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
-	ok = TRUE;
+	connect = ofa_hub_get_connect( priv->hub );
+	provider = ofa_idbconnect_get_provider( connect );
+	g_return_val_if_fail( provider && OFA_IS_IDBMODEL( provider ), FALSE );
+
+	ok = idbmodel_ddl_update( OFA_IDBMODEL( provider ), priv->hub, MY_IPROGRESS( self ));
 
 	for( it=priv->plugins_list ; it && ok ; it=it->next ){
-		ok = idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_IWINDOW( self ));
+		if( it->data != ( void * ) provider ){
+			ok &= idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_IPROGRESS( self ));
+		}
 	}
 
+	g_object_unref( provider );
 	priv->updated = ok;
 
 	if( ok ){
@@ -677,62 +720,6 @@ do_run( ofaDBModelWindow *self )
 	return( G_SOURCE_REMOVE );
 }
 
-/**
- * ofa_idbmodel_add_row_widget:
- * @instance: the #ofaIDBModel implementation instance.
- * @window: the #ofaDBModelWindow dialog.
- * @widget: a widget to be added to the upper grid.
- *
- * Adds a row to the grid.
- */
-void
-ofa_idbmodel_add_row_widget( const ofaIDBModel *instance, myIWindow *window, GtkWidget *widget )
-{
-	ofaDBModelWindowPrivate *priv;
-
-	g_return_if_fail( instance && OFA_IS_IDBMODEL( instance ));
-	g_return_if_fail( window && OFA_IS_DBMODEL_WINDOW( window ));
-	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
-
-	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	gtk_grid_attach( GTK_GRID( priv->grid ), widget, 0, priv->row, 1, 1 );
-	priv->row += 1;
-	gtk_widget_show_all( priv->grid );
-}
-
-/**
- * ofa_idbmodel_add_text:
- * @instance: the #ofaIDBModel implementation instance.
- * @window: the #ofaDBModelWindow window.
- * @text: the text to be added.
- *
- * Adds some text to the lower textview.
- */
-void
-ofa_idbmodel_add_text( const ofaIDBModel *instance, myIWindow *window, const gchar *text )
-{
-	ofaDBModelWindowPrivate *priv;
-	GtkTextIter iter;
-	gchar *str;
-
-	g_return_if_fail( instance && OFA_IS_IDBMODEL( instance ));
-	g_return_if_fail( window && OFA_IS_DBMODEL_WINDOW( window ));
-
-	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( window ));
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	gtk_text_buffer_get_end_iter( priv->buffer, &iter );
-	str = g_strdup_printf( "%s\n", text );
-	gtk_text_buffer_insert( priv->buffer, &iter, str, -1 );
-	g_free( str );
-	gtk_text_buffer_get_end_iter( priv->buffer, &iter );
-	gtk_text_view_scroll_to_iter( GTK_TEXT_VIEW( priv->textview ), &iter, 0, FALSE, 0, 0 );
-}
-
 /*
  * thanks to http://stackoverflow.com/questions/2683531/stuck-on-scrolling-gtkviewport-to-end
  */
@@ -746,4 +733,194 @@ on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWind
 
 	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->upper_viewport ));
 	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
+}
+
+/*
+ * myIProgress interface management
+ */
+static void
+iprogress_iface_init( myIProgressInterface *iface )
+{
+	static const gchar *thisfn = "ofa_idbmodel_iprogress_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->start_work = iprogress_start_work;
+	iface->start_progress = iprogress_start_progress;
+	iface->pulse = iprogress_pulse;
+	iface->set_row = iprogress_set_row;
+	iface->set_ok = iprogress_set_ok;
+	iface->set_text = iprogress_set_text;
+}
+
+/*
+ * expects a GtkLabel
+ */
+static void
+iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget )
+{
+	ofaDBModelWindowPrivate *priv;
+	GtkWidget *frame;
+	sWorker *sdata;
+
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
+
+	sdata = get_worker_data( OFA_DBMODEL_WINDOW( instance ), worker );
+
+	/* the first time: create the frame and a first grid */
+	if( !sdata->grid1 ){
+		frame = gtk_frame_new( NULL );
+		gtk_widget_set_hexpand( frame, TRUE );
+		my_utils_widget_set_margin_right( frame, 16 );
+		gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+
+		if( widget ){
+			gtk_frame_set_label_widget( GTK_FRAME( frame ), widget );
+		}
+
+		sdata->grid1 = gtk_grid_new();
+		my_utils_widget_set_margins( sdata->grid1, 4, 4, 20, 16 );
+		gtk_container_add( GTK_CONTAINER( frame ), sdata->grid1 );
+		gtk_grid_set_row_spacing( GTK_GRID( sdata->grid1 ), 3 );
+
+		gtk_grid_attach( GTK_GRID( priv->objects_grid ), frame, 0, priv->objects_row++, 1, 1 );
+
+	/* the second time: create a second grid */
+	} else if( !sdata->grid2 ){
+		gtk_grid_attach( GTK_GRID( sdata->grid1 ), widget, 0, 0, 1, 1 );
+
+		sdata->grid2 = gtk_grid_new();
+		gtk_grid_set_row_spacing( GTK_GRID( sdata->grid2 ), 3 );
+		gtk_grid_set_column_spacing( GTK_GRID( sdata->grid2 ), 12 );
+
+		gtk_grid_attach( GTK_GRID( sdata->grid1 ), sdata->grid2, 0, 1, 1, 1 );
+		sdata->row2 = 0;
+	}
+
+	gtk_widget_show_all( priv->objects_grid );
+}
+
+static void
+iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar )
+{
+	sWorker *sdata;
+
+	sdata = get_worker_data( OFA_DBMODEL_WINDOW( instance ), worker );
+
+	if( widget ){
+		if( !with_bar ){
+			sdata->grid3 = gtk_grid_new();
+			gtk_grid_set_column_spacing( GTK_GRID( sdata->grid3 ), 4 );
+			gtk_grid_attach( GTK_GRID( sdata->grid3 ), widget, 0, 0, 1, 1 );
+			gtk_grid_attach( GTK_GRID( sdata->grid2 ), sdata->grid3, 0, sdata->row2, 3, 1 );
+
+		} else {
+			gtk_grid_attach( GTK_GRID( sdata->grid2 ), widget, 0, sdata->row2, 1, 1 );
+		}
+	}
+
+	if( with_bar ){
+		sdata->bar = my_progress_bar_new();
+		gtk_grid_attach( GTK_GRID( sdata->grid2 ), GTK_WIDGET( sdata->bar ), 1, sdata->row2, 1, 1 );
+	}
+
+	if( widget || with_bar ){
+		sdata->row2 += 1;
+	}
+
+	gtk_widget_show_all( sdata->grid1 );
+}
+
+static void
+iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total )
+{
+	sWorker *sdata;
+	gdouble progress;
+	gchar *str;
+
+	sdata = get_worker_data( OFA_DBMODEL_WINDOW( instance ), worker );
+
+	if( sdata->bar ){
+		progress = total ? ( gdouble ) count / ( gdouble ) total : 0;
+		g_signal_emit_by_name( sdata->bar, "my-double", progress );
+
+		str = g_strdup_printf( "%.0lf%%", 100*progress );
+		g_signal_emit_by_name( sdata->bar, "my-text", str );
+	}
+}
+
+static void
+iprogress_set_row( myIProgress *instance, const void *worker, GtkWidget *widget )
+{
+	sWorker *sdata;
+
+	sdata = get_worker_data( OFA_DBMODEL_WINDOW( instance ), worker );
+
+	if( widget ){
+		gtk_grid_attach( GTK_GRID( sdata->grid3 ), widget, 1, 0, 1, 1 );
+	}
+
+	gtk_widget_show_all( sdata->grid3 );
+}
+
+static void
+iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count )
+{
+	sWorker *sdata;
+	GtkWidget *label;
+
+	sdata = get_worker_data( OFA_DBMODEL_WINDOW( instance ), worker );
+
+	if( widget ){
+		gtk_grid_attach( GTK_GRID( sdata->grid2 ), widget, 1, 0, 1, 1 );
+	}
+
+	if( sdata->bar ){
+		label = gtk_label_new( errs_count ? _( "NOT OK" ) : _( "OK" ));
+		gtk_widget_set_valign( label, GTK_ALIGN_END );
+		my_utils_widget_set_style( label, errs_count == 0 ? "labelinfo" : "labelerror" );
+
+		gtk_grid_attach( GTK_GRID( sdata->grid2 ), label, 2, sdata->row2-1, 1, 1 );
+	}
+
+	gtk_widget_show_all( sdata->grid1 );
+}
+
+static void
+iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text )
+{
+	ofaDBModelWindowPrivate *priv;
+	GtkTextIter iter;
+	gchar *str;
+
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
+
+	gtk_text_buffer_get_end_iter( priv->text_buffer, &iter );
+
+	str = g_strdup_printf( "%s\n", text );
+	gtk_text_buffer_insert( priv->text_buffer, &iter, str, -1 );
+	g_free( str );
+}
+
+static sWorker *
+get_worker_data( ofaDBModelWindow *self, const void *worker )
+{
+	ofaDBModelWindowPrivate *priv;
+	GList *it;
+	sWorker *sdata;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	for( it=priv->workers ; it ; it=it->next ){
+		sdata = ( sWorker * ) it->data;
+		if( sdata->worker == worker ){
+			return( sdata );
+		}
+	}
+
+	sdata = g_new0( sWorker, 1 );
+	sdata->worker = worker;
+	priv->workers = g_list_prepend( priv->workers, sdata );
+
+	return( sdata );
 }

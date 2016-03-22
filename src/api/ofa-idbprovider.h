@@ -36,6 +36,13 @@
  *
  * This #ofaIDBProvider is dedicated to instance management.
  *
+ * The #ofaIDBProvider instance should most probably also implement
+ * the #ofaIDBModel interface (as it is its responsability to create
+ * the underlying DB model).
+ *
+ * The application expects that #ofaIDBModel and #ofaIDBProvider
+ * implementations both points to the same #GObject.
+ *
  * This is an Openbook software suite choice to store most of the
  * meta data a dossier may require in a dedicated settings file.
  */

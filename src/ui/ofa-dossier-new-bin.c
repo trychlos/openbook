@@ -501,7 +501,7 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
 	} else {
 		meta = ofa_file_dir_get_meta( priv->dir, priv->dossier_name );
 		if( meta ){
-			str = g_strdup_printf( _( "%s: dossier is already defined" ), priv->dossier_name );
+			str = g_strdup_printf( _( "%s is already defined" ), priv->dossier_name );
 			g_clear_object( &meta );
 
 		} else {

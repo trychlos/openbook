@@ -152,7 +152,8 @@ typedef struct {
 
 GType                ofa_hub_get_type           ( void ) G_GNUC_CONST;
 
-ofaHub              *ofa_hub_new_with_connect   ( const ofaIDBConnect *connect );
+ofaHub              *ofa_hub_new_with_connect   ( const ofaIDBConnect *connect,
+														GtkWindow *parent );
 
 const ofaIDBConnect *ofa_hub_get_connect        ( const ofaHub *hub );
 

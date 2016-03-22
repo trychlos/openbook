@@ -28,8 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "my/my-iwindow.h"
-#include "my/my-progress-bar.h"
+#include "my/my-iprogress.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -49,11 +48,10 @@ typedef struct {
 	const ofaIDBModel   *instance;
 	ofaHub              *hub;
 	const ofaIDBConnect *connect;
-	myIWindow            *window;
+	myIProgress         *window;
 
-	/* progression bar
+	/* progression
 	 */
-	GtkWidget           *bar;
 	gulong               total;
 	gulong               current;
 }
@@ -92,10 +90,8 @@ static guint      idbmodel_get_current_version( const ofaIDBModel *instance, con
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static void       idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub );
 static gboolean   idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object );
-static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window );
+static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
-static GtkWidget *add_row( sUpdate *update_data, const gchar *title, gboolean with_bar );
-static void       set_bar_progression( sUpdate *update_data );
 static gboolean   exec_query( sUpdate *update_data, const gchar *query );
 static gboolean   version_begin( sUpdate *update_data, gint version );
 static gboolean   version_end( sUpdate *update_data, gint version );
@@ -176,7 +172,7 @@ idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window )
+idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 {
 	sUpdate *update_data;
 	guint i, cur_version, last_version;
@@ -194,16 +190,14 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window
 	cur_version = idbmodel_get_current_version( instance, update_data->connect );
 	last_version = idbmodel_get_last_version( instance, update_data->connect );
 
-	label = gtk_label_new( _( "Updating VAT DB model" ));
-	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-	ofa_idbmodel_add_row_widget( instance, window, label );
+	label = gtk_label_new( _( " Updating VAT DB model " ));
+	my_iprogress_start_work( window, instance, label );
 
 	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );
 	label = gtk_label_new( str );
 	g_free( str );
-	my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
 	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-	ofa_idbmodel_add_row_widget( instance, window, label );
+	my_iprogress_start_work( window, instance, label );
 
 	if( cur_version < last_version ){
 		for( i=0 ; st_migrates[i].ver_target && ok ; ++i ){
@@ -217,19 +211,18 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIWindow *window
 					my_utils_widget_set_margins( label, 0, 0, 2*MARGIN_LEFT, 0 );
 					my_utils_widget_set_style( label, "labelerror" );
 					gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-					ofa_idbmodel_add_row_widget( instance, window, label );
+					my_iprogress_start_progress( update_data->window, update_data->instance, label, FALSE );
 					ok = FALSE;
 					break;
 				}
 			}
 		}
 	} else {
-		str = g_strdup_printf( _( "Last version is v %u: up to date" ), last_version );
+		str = g_strdup_printf( _( "Last version is v %u : up to date" ), last_version );
 		label = gtk_label_new( str );
 		g_free( str );
-		my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-		ofa_idbmodel_add_row_widget( instance, window, label );
+		my_iprogress_start_progress( update_data->window, update_data->instance, label, FALSE );
 	}
 
 	return( ok );
@@ -242,11 +235,15 @@ static gboolean
 upgrade_to( sUpdate *update_data, sMigration *smig )
 {
 	gboolean ok;
+	GtkWidget *label;
 	gchar *str;
 
 	str = g_strdup_printf( _( "Upgrading to v %d :" ), smig->ver_target );
-	update_data->bar = add_row( update_data, str, TRUE );
+	label = gtk_label_new( str );
 	g_free( str );
+	gtk_widget_set_valign( label, GTK_ALIGN_END );
+	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
+	my_iprogress_start_progress( update_data->window, update_data->instance, label, TRUE );
 
 	update_data->total = smig->fncount( update_data )+3;	/* counting version_begin+version_end */
 	update_data->current = 0;
@@ -255,59 +252,9 @@ upgrade_to( sUpdate *update_data, sMigration *smig )
 			smig->fnquery( update_data, smig->ver_target ) &&
 			version_end( update_data, smig->ver_target );
 
+	my_iprogress_set_ok( update_data->window, update_data->instance, NULL, ok ? 0 : 1 );
+
 	return( ok );
-}
-
-/*
- * if with_bar, then add a progress bar in column 1
- * else add a label
- */
-static GtkWidget *
-add_row( sUpdate *update_data, const gchar *title, gboolean with_bar )
-{
-	GtkWidget *grid, *label;
-	myProgressBar *bar;
-
-	grid = gtk_grid_new();
-	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
-
-	label = gtk_label_new( title );
-	my_utils_widget_set_margins( label, 0, 0, MARGIN_LEFT, 0 );
-	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
-	gtk_grid_attach( GTK_GRID( grid ), label, 0, 0, 1, 1 );
-
-	bar = NULL;
-
-	if( with_bar ){
-		bar = my_progress_bar_new();
-		gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( bar ), 1, 0, 1, 1 );
-
-	} else {
-		label = gtk_label_new( NULL );
-		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, 0, 1, 1 );
-	}
-
-	ofa_idbmodel_add_row_widget( update_data->instance, update_data->window, grid );
-
-	return( with_bar ? GTK_WIDGET( bar ) : label );
-}
-
-static void
-set_bar_progression( sUpdate *update_data )
-{
-	gdouble progress;
-	gchar *text;
-
-	if( update_data->total > 0 ){
-		progress = ( gdouble ) update_data->current / ( gdouble ) update_data->total;
-		g_signal_emit_by_name( update_data->bar, "my-double", progress );
-	}
-	if( 0 ){
-		text = g_strdup_printf( "%lu/%lu", update_data->current, update_data->total );
-		g_signal_emit_by_name( update_data->bar, "my-text", text );
-		g_free( text );
-	}
 }
 
 static gboolean
@@ -315,10 +262,12 @@ exec_query( sUpdate *update_data, const gchar *query )
 {
 	gboolean ok;
 
-	ofa_idbmodel_add_text( update_data->instance, update_data->window, query );
+	my_iprogress_set_text( update_data->window, update_data->instance, query );
+
 	ok = ofa_idbconnect_query( update_data->connect, query, TRUE );
+
 	update_data->current += 1;
-	set_bar_progression( update_data );
+	my_iprogress_pulse( update_data->window, update_data->instance, update_data->current, update_data->total );
 
 	return( ok );
 }

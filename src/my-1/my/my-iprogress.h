@@ -40,6 +40,10 @@
  *
  * The myIProgress implementation may also provide a text view for
  * possible error messages.
+ *
+ * Note that this #myIProgress interface is absolutely transparent,
+ * i.e. does not do any work before of after the implementation. All
+ * the behavior is fully dependant of the implementation.
  */
 
 #include <gtk/gtk.h>
@@ -85,7 +89,7 @@ typedef struct {
 	guint    ( *get_interface_version )( const myIProgress *instance );
 
 	/**
-	 * work_start:
+	 * start_work:
 	 * @instance: the #myIProgress instance.
 	 * @worker: any worker.
 	 * @widget: [allow-none]: a widget to be displayed to mark the start
@@ -95,61 +99,61 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void     ( *work_start )           ( myIProgress *instance,
-												void *worker,
+	void     ( *start_work )           ( myIProgress *instance,
+												const void *worker,
 												GtkWidget *widget );
 
 	/**
-	 * work_end:
-	 * @instance: the #myIProgress instance.
-	 * @worker: any worker.
-	 * @widget: [allow-none]: a widget to be displayed to mark the end
-	 *  of the work.
-	 *
-	 * Display the @widget.
-	 *
-	 * Since: version 1.
-	 */
-	void     ( *work_end )             ( myIProgress *instance,
-												void *worker,
-												GtkWidget *widget );
-
-	/**
-	 * progress_start:
+	 * start_progress:
 	 * @instance: the #myIProgress instance.
 	 * @worker: any worker.
 	 * @widget: [allow-none]: a widget to be displayed to mark the start
 	 *  of the progress.
+	 * @with_bar: whether to create a progress bar on the right of the
+	 *  @widget.
 	 *
 	 * Display the @widget.
-	 *
-	 * It is expected that the implementation displays a progress bar
-	 * on the right of the @widget.
+	 * Maybe create a progress bar.
 	 *
 	 * Since: version 1.
 	 */
-	void     ( *progress_start )       ( myIProgress *instance,
-												void *worker,
-												GtkWidget *widget );
+	void     ( *start_progress )       ( myIProgress *instance,
+												const void *worker,
+												GtkWidget *widget,
+												gboolean with_bar );
 
 	/**
-	 * progress_pulse:
+	 * pulse:
 	 * @instance: the #myIProgress instance.
 	 * @worker: any worker.
-	 * @progress: the progress, from 0 to 1.
-	 * @text: [allow-none]: a text to be set with the progress.
+	 * @count: the current counter.
+	 * @total: the expected total.
 	 *
 	 * Increments the progress bar.
 	 *
 	 * Since: version 1.
 	 */
-	void     ( *progress_pulse )       ( myIProgress *instance,
-												void *worker,
-												gdouble progress,
-												const gchar *text );
+	void     ( *pulse )                ( myIProgress *instance,
+												const void *worker,
+												gulong count,
+												gulong total );
 
 	/**
-	 * progress_end:
+	 * set_row:
+	 * @instance: the #myIProgress instance.
+	 * @worker: any worker.
+	 * @widget: [allow-none]: a widget to be displayed on the latest row.
+	 *
+	 * Display the @widget.
+	 *
+	 * Since: version 1.
+	 */
+	void     ( *set_row )              ( myIProgress *instance,
+												const void *worker,
+												GtkWidget *widget );
+
+	/**
+	 * set_ok:
 	 * @instance: the #myIProgress instance.
 	 * @worker: any worker.
 	 * @widget: [allow-none]: a widget to be displayed to mark the end
@@ -157,19 +161,17 @@ typedef struct {
 	 * @errs_count: the count of errors.
 	 *
 	 * Display the @widget.
-	 *
-	 * It is expected that the implementation displays a "OK" label
-	 * on the right of the progress bar.
+	 * Display the result as 'OK' or the count of errors.
 	 *
 	 * Since: version 1.
 	 */
-	void     ( *progress_end )         ( myIProgress *instance,
-												void *worker,
+	void     ( *set_ok )               ( myIProgress *instance,
+												const void *worker,
 												GtkWidget *widget,
 												gulong errs_count );
 
 	/**
-	 * text:
+	 * set_text:
 	 * @instance: the #myIProgress instance.
 	 * @worker: any worker.
 	 * @text: [allow-none]: a text to be added in a text view.
@@ -178,8 +180,8 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void     ( *text )                 ( myIProgress *instance,
-												void *worker,
+	void     ( *set_text )             ( myIProgress *instance,
+												const void *worker,
 												const gchar *text );
 }
 	myIProgressInterface;
@@ -190,30 +192,31 @@ guint           my_iprogress_get_interface_last_version( void );
 
 guint           my_iprogress_get_interface_version     ( const myIProgress *instance );
 
-void            my_iprogress_work_start                ( myIProgress *instance,
-																void *worker,
+void            my_iprogress_start_work                ( myIProgress *instance,
+																const void *worker,
 																GtkWidget *widget );
 
-void            my_iprogress_work_end                  ( myIProgress *instance,
-																void *worker,
+void            my_iprogress_start_progress            ( myIProgress *instance,
+																const void *worker,
+																GtkWidget *widget,
+																gboolean with_bar );
+
+void            my_iprogress_pulse                     ( myIProgress *instance,
+																const void *worker,
+																gulong count,
+																gulong total );
+
+void            my_iprogress_set_row                   ( myIProgress *instance,
+																const void *worker,
 																GtkWidget *widget );
 
-void            my_iprogress_progress_start            ( myIProgress *instance,
-																void *worker,
-																GtkWidget *widget );
-
-void            my_iprogress_progress_pulse            ( myIProgress *instance,
-																void *worker,
-																gdouble progress,
-																const gchar *text );
-
-void            my_iprogress_progress_end              ( myIProgress *instance,
-																void *worker,
+void            my_iprogress_set_ok                    ( myIProgress *instance,
+																const void *worker,
 																GtkWidget *widget,
 																gulong errs_count );
 
-void            my_iprogress_text                      ( myIProgress *instance,
-																void *worker,
+void            my_iprogress_set_text                  ( myIProgress *instance,
+																const void *worker,
 																const gchar *text );
 
 G_END_DECLS

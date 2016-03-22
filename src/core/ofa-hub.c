@@ -370,6 +370,7 @@ isingle_keeper_iface_init( ofaISingleKeeperInterface *iface )
 /*
  * ofa_hub_new_with_connect:
  * @connect: a valid connection to the targeted database.
+ * @parent: the #GtkWindow parent window.
  *
  * Opens the dossier and exercice pointed to by the @connect connection.
  * On success, the new #ofaHub takes a reference on this @connect
@@ -382,7 +383,7 @@ isingle_keeper_iface_init( ofaISingleKeeperInterface *iface )
  * implementation.
  */
 ofaHub *
-ofa_hub_new_with_connect( const ofaIDBConnect *connect )
+ofa_hub_new_with_connect( const ofaIDBConnect *connect, GtkWindow *parent )
 {
 	ofaHub *hub;
 	ofaHubPrivate *priv;
@@ -395,7 +396,7 @@ ofa_hub_new_with_connect( const ofaIDBConnect *connect )
 	priv->connect = g_object_ref(( gpointer ) connect );
 	ok = FALSE;
 
-	if( ofa_idbmodel_update( hub )){
+	if( ofa_idbmodel_update( hub, parent )){
 		priv->dossier = ofo_dossier_new_with_hub( hub );
 		if( priv->dossier ){
 			init_signaling_system( hub );

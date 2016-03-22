@@ -38,6 +38,23 @@
  * Caller should connect to "ofa-done" signal in order to be signaled
  * when the checks are done.
  *
+ * The #ofaCheckIntegrityBin class implements the #myIProgress interface
+ * with the following behavior:
+ * - start_work:
+ *   . create a frame with the provided label
+ *   . create a grid inside of this frame.
+ * - start_progress:
+ *   . if a widget is provided, attach it to column 0 of a new row of
+ *     the previously created grid
+ *   . if with_bar, create a progress bar in the column 1.
+ * - pulse:
+ *   . update the progress bar.
+ * - set_ok:
+ *   . widget is ignored
+ *   . display OK or the count of errors.
+ * - set_text:
+ *   . display an error message in the text view.
+ *
  * Development rules:
  * - type:       bin (parent='top')
  * - validation: no

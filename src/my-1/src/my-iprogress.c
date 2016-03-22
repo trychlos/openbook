@@ -147,7 +147,7 @@ my_iprogress_get_interface_version( const myIProgress *instance )
 }
 
 /**
- * my_iprogress_work_start:
+ * my_iprogress_start_work:
  * @instance: the #myIProgress instance.
  * @worker: any worker.
  * @widget: [allow-none]: a widget to be displayed to mark the start
@@ -158,108 +158,111 @@ my_iprogress_get_interface_version( const myIProgress *instance )
  * Since: version 1.
  */
 void
-my_iprogress_work_start( myIProgress *instance, void *worker, GtkWidget *widget )
+my_iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget )
 {
-	static const gchar *thisfn = "my_iprogress_work_start";
+	static const gchar *thisfn = "my_iprogress_start_work";
 
 	g_return_if_fail( instance && MY_IS_IPROGRESS( instance ));
 	g_return_if_fail( worker );
 
-	if( MY_IPROGRESS_GET_INTERFACE( instance )->work_start ){
-		MY_IPROGRESS_GET_INTERFACE( instance )->work_start( instance, worker, widget );
+	if( MY_IPROGRESS_GET_INTERFACE( instance )->start_work ){
+		MY_IPROGRESS_GET_INTERFACE( instance )->start_work( instance, worker, widget );
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'work_start()' method",
+	g_info( "%s: myIProgress instance %p does not provide 'start_work()' method",
 			thisfn, ( void * ) instance );
 }
 
 /**
- * my_iprogress_work_end:
- * @instance: the #myIProgress instance.
- * @worker: any worker.
- * @widget: [allow-none]: a widget to be displayed to mark the end
- *  of the work.
- *
- * Display the @widget.
- *
- * Since: version 1.
- */
-void
-my_iprogress_work_end( myIProgress *instance, void *worker, GtkWidget *widget )
-{
-	static const gchar *thisfn = "my_iprogress_work_end";
-
-	g_return_if_fail( instance && MY_IS_IPROGRESS( instance ));
-	g_return_if_fail( worker );
-
-	if( MY_IPROGRESS_GET_INTERFACE( instance )->work_end ){
-		MY_IPROGRESS_GET_INTERFACE( instance )->work_end( instance, worker, widget );
-		return;
-	}
-
-	g_info( "%s: myIProgress instance %p does not provide 'work_end()' method",
-			thisfn, ( void * ) instance );
-}
-
-/**
- * my_iprogress_progress_start:
+ * my_iprogress_start_progress:
  * @instance: the #myIProgress instance.
  * @worker: any worker.
  * @widget: [allow-none]: a widget to be displayed to mark the start
  *  of the progress.
+ * @with_bar: whether to create a progress bar on the right of the
+ *  @widget.
  *
  * Display the @widget.
+ * Maybe create a progress bar.
  *
  * Since: version 1.
  */
 void
-my_iprogress_progress_start( myIProgress *instance, void *worker, GtkWidget *widget )
+my_iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar )
 {
-	static const gchar *thisfn = "my_iprogress_progress_start";
+	static const gchar *thisfn = "my_iprogress_start_progress";
 
 	g_return_if_fail( instance && MY_IS_IPROGRESS( instance ));
 	g_return_if_fail( worker );
 
-	if( MY_IPROGRESS_GET_INTERFACE( instance )->progress_start ){
-		MY_IPROGRESS_GET_INTERFACE( instance )->progress_start( instance, worker, widget );
+	if( MY_IPROGRESS_GET_INTERFACE( instance )->start_progress ){
+		MY_IPROGRESS_GET_INTERFACE( instance )->start_progress( instance, worker, widget, with_bar );
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'progress_start()' method",
+	g_info( "%s: myIProgress instance %p does not provide 'start_progress()' method",
 			thisfn, ( void * ) instance );
 }
 
 /**
- * my_iprogress_progress_pulse:
+ * my_iprogress_pulse:
  * @instance: the #myIProgress instance.
  * @worker: any worker.
- * @progress: the progress, from 0 to 1.
- * @text: [allow-none]: a text to be set with the progress.
+ * @count: the current counter.
+ * @total: the expected total.
  *
  * Increments the progress bar.
  *
  * Since: version 1.
  */
 void
-my_iprogress_progress_pulse( myIProgress *instance, void *worker, gdouble progress, const gchar *text )
+my_iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total )
 {
-	static const gchar *thisfn = "my_iprogress_progress_pulse";
+	static const gchar *thisfn = "my_iprogress_pulse";
 
 	g_return_if_fail( instance && MY_IS_IPROGRESS( instance ));
 	g_return_if_fail( worker );
 
-	if( MY_IPROGRESS_GET_INTERFACE( instance )->progress_pulse ){
-		MY_IPROGRESS_GET_INTERFACE( instance )->progress_pulse( instance, worker, progress, text );
+	if( MY_IPROGRESS_GET_INTERFACE( instance )->pulse ){
+		MY_IPROGRESS_GET_INTERFACE( instance )->pulse( instance, worker, count, total );
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'progress_pulse()' method",
+	g_info( "%s: myIProgress instance %p does not provide 'pulse()' method",
 			thisfn, ( void * ) instance );
 }
 
 /**
- * my_iprogress_progress_end:
+ * my_iprogress_set_row:
+ * @instance: the #myIProgress instance.
+ * @worker: any worker.
+ * @widget: [allow-none]: a widget to be displayed on the latest row.
+ *  of the work.
+ *
+ * Display the @widget.
+ *
+ * Since: version 1.
+ */
+void
+my_iprogress_set_row( myIProgress *instance, const void *worker, GtkWidget *widget )
+{
+	static const gchar *thisfn = "my_iprogress_set_row";
+
+	g_return_if_fail( instance && MY_IS_IPROGRESS( instance ));
+	g_return_if_fail( worker );
+
+	if( MY_IPROGRESS_GET_INTERFACE( instance )->set_row ){
+		MY_IPROGRESS_GET_INTERFACE( instance )->set_row( instance, worker, widget );
+		return;
+	}
+
+	g_info( "%s: myIProgress instance %p does not provide 'set_row()' method",
+			thisfn, ( void * ) instance );
+}
+
+/**
+ * my_iprogress_set_ok:
  * @instance: the #myIProgress instance.
  * @worker: any worker.
  * @widget: [allow-none]: a widget to be displayed to mark the start
@@ -272,24 +275,24 @@ my_iprogress_progress_pulse( myIProgress *instance, void *worker, gdouble progre
  * Since: version 1.
  */
 void
-my_iprogress_progress_end( myIProgress *instance, void *worker, GtkWidget *widget, gulong errs_count )
+my_iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count )
 {
-	static const gchar *thisfn = "my_iprogress_progress_end";
+	static const gchar *thisfn = "my_iprogress_set_ok";
 
 	g_return_if_fail( instance && MY_IS_IPROGRESS( instance ));
 	g_return_if_fail( worker );
 
-	if( MY_IPROGRESS_GET_INTERFACE( instance )->progress_end ){
-		MY_IPROGRESS_GET_INTERFACE( instance )->progress_end( instance, worker, widget, errs_count );
+	if( MY_IPROGRESS_GET_INTERFACE( instance )->set_ok ){
+		MY_IPROGRESS_GET_INTERFACE( instance )->set_ok( instance, worker, widget, errs_count );
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'progress_end()' method",
+	g_info( "%s: myIProgress instance %p does not provide 'set_ok()' method",
 			thisfn, ( void * ) instance );
 }
 
 /**
- * my_iprogress_text:
+ * my_iprogress_set_text:
  * @instance: the #myIProgress instance.
  * @worker: any worker.
  * @text: [allow-none]: a text to be displayed in a text view.
@@ -299,18 +302,18 @@ my_iprogress_progress_end( myIProgress *instance, void *worker, GtkWidget *widge
  * Since: version 1.
  */
 void
-my_iprogress_text( myIProgress *instance, void *worker, const gchar *text )
+my_iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text )
 {
-	static const gchar *thisfn = "my_iprogress_text";
+	static const gchar *thisfn = "my_iprogress_set_text";
 
 	g_return_if_fail( instance && MY_IS_IPROGRESS( instance ));
 	g_return_if_fail( worker );
 
-	if( MY_IPROGRESS_GET_INTERFACE( instance )->text ){
-		MY_IPROGRESS_GET_INTERFACE( instance )->text( instance, worker, text );
+	if( MY_IPROGRESS_GET_INTERFACE( instance )->set_text ){
+		MY_IPROGRESS_GET_INTERFACE( instance )->set_text( instance, worker, text );
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'text()' method",
+	g_info( "%s: myIProgress instance %p does not provide 'set_text()' method",
 			thisfn, ( void * ) instance );
 }

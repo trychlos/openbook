@@ -474,7 +474,7 @@ ihubber_new_hub( ofaIHubber *instance, const ofaIDBConnect *connect )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	g_clear_object( &priv->hub );
-	priv->hub = ofa_hub_new_with_connect( connect );
+	priv->hub = ofa_hub_new_with_connect( connect, priv->main_window ? GTK_WINDOW( priv->main_window ) : NULL );
 
 	return( priv->hub );
 }

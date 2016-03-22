@@ -449,9 +449,6 @@
 
 1046 2016- 3-21 BUG  close all opened dialogs when closing the dossier
 
-1047 2016- 3-21 FEAT when upgrading the db model, have a OK on the right
-                     of the progress bar (as in check balances)
-
 1048
 
 -----------------------------------------------------------------------
@@ -1008,6 +1005,10 @@
 1043 2016- 3-15 FEAT All core objects: before being deletable, must ask
                      the plugins
      2016- 3-17 done
+
+1047 2016- 3-21 FEAT when upgrading the db model, have a OK on the right
+                     of the progress bar (as in check balances)
+     2016- 3-22
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

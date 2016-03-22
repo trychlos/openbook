@@ -76,6 +76,7 @@ struct _ofaCheckIntegrityBinPrivate {
 	/* UI
 	 */
 	GtkWidget     *paned;
+	GtkWidget     *upper_viewport;
 	GtkWidget     *objects_grid;
 	gint           objects_row;
 	GtkTextBuffer *text_buffer;
@@ -84,7 +85,7 @@ struct _ofaCheckIntegrityBinPrivate {
 /* a data structure defined for each worker
  */
 typedef struct {
-	void          *worker;
+	const void    *worker;
 	GtkWidget     *grid;
 	myProgressBar *bar;
 }
@@ -114,14 +115,14 @@ static void     check_entries_run( ofaCheckIntegrityBin *self );
 static void     check_ledgers_run( ofaCheckIntegrityBin *self );
 static void     check_ope_templates_run( ofaCheckIntegrityBin *self );
 static void     set_checks_result( ofaCheckIntegrityBin *self );
+static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaCheckIntegrityBin *self );
 static void     iprogress_iface_init( myIProgressInterface *iface );
-static void     iprogress_work_start( myIProgress *instance, void *worker, GtkWidget *widget );
-static void     iprogress_progress_start( myIProgress *instance, void *worker, GtkWidget *widget );
-static void     iprogress_progress_pulse( myIProgress *instance, void *worker, gdouble progress, const gchar *text );
-static void     iprogress_progress_end( myIProgress *instance, void *worker, GtkWidget *widget, gulong errs_count );
-static void     iprogress_text( myIProgress *instance, void *worker, const gchar *text );
-static void     set_worker_progress( ofaCheckIntegrityBin *self, void *worker, gulong current, gulong total );
-static sWorker *get_worker_data( ofaCheckIntegrityBin *self, void *worker );
+static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
+static void     iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar );
+static void     iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
+static void     iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count );
+static void     iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text );
+static sWorker *get_worker_data( ofaCheckIntegrityBin *self, const void *worker );
 
 /* intern function
  */
@@ -278,9 +279,13 @@ setup_bin( ofaCheckIntegrityBin *self )
 	priv->paned = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "paned" );
 	g_return_if_fail( priv->paned && GTK_IS_PANED( priv->paned ));
 
+	priv->upper_viewport = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "upper-viewport" );
+	g_return_if_fail( priv->upper_viewport && GTK_IS_VIEWPORT( priv->upper_viewport ));
+
 	priv->objects_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "objects-grid" );
 	g_return_if_fail( priv->objects_grid && GTK_IS_GRID( priv->objects_grid ));
 	priv->objects_row = 0;
+	g_signal_connect( priv->objects_grid, "size-allocate", G_CALLBACK( on_grid_size_allocate ), self );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
@@ -402,7 +407,7 @@ static void
 check_dossier_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	void *worker;
+	const void *worker;
 	GtkWidget *label;
 	ofoDossier *dossier;
 	gulong count, i;
@@ -419,10 +424,10 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 
 	/* start work */
 	label = gtk_label_new( _( " Check for dossier integrity " ));
-	my_iprogress_work_start( MY_IPROGRESS( self ), worker, label );
+	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
 
 	/* start progress */
-	my_iprogress_progress_start( MY_IPROGRESS( self ), worker, NULL );
+	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 
 	/* progress */
 	dossier = ofa_hub_get_dossier( priv->hub );
@@ -434,72 +439,72 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 	/* check for default currency */
 	cur_code = ofo_dossier_get_default_currency( dossier );
 	if( !my_strlen( cur_code )){
-		my_iprogress_text( MY_IPROGRESS( self ), worker, _( "Dossier has no default currency" ));
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier has no default currency" ));
 		priv->dossier_errs += 1;
 	} else {
 		cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 		if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 			str = g_strdup_printf( _( "Dossier default currency '%s' doesn't exist" ), cur_code );
-			my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->dossier_errs += 1;
 		}
 	}
 
-	set_worker_progress( self, worker, ++i, count );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* check for forward and solde operation templates */
 	for_ope = ofo_dossier_get_forward_ope( dossier );
 	if( !my_strlen( for_ope )){
-		my_iprogress_text( MY_IPROGRESS( self ), worker, _( "Dossier has no forward operation template" ));
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier has no forward operation template" ));
 		priv->dossier_errs += 1;
 	} else {
 		ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf( _( "Dossier forward operation template '%s' doesn't exist" ), for_ope );
-			my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->dossier_errs += 1;
 		}
 	}
 
-	set_worker_progress( self, worker, ++i, count );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	sld_ope = ofo_dossier_get_sld_ope( dossier );
 	if( !my_strlen( sld_ope )){
-		my_iprogress_text( MY_IPROGRESS( self ), worker, _( "Dossier has no solde operation template" ));
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier has no solde operation template" ));
 		priv->dossier_errs += 1;
 	} else {
 		ope_obj = ofo_ope_template_get_by_mnemo( priv->hub, sld_ope );
 		if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 			str = g_strdup_printf( _( "Dossier solde operation template '%s' doesn't exist" ), sld_ope );
-			my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->dossier_errs += 1;
 		}
 	}
 
-	set_worker_progress( self, worker, ++i, count );
+	my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 
 	/* check solde accounts per currency */
 
 	for( it=currencies ; it ; it=it->next ){
 		cur_code = ( const gchar * ) it->data;
 		if( !my_strlen( cur_code )){
-			my_iprogress_text( MY_IPROGRESS( self ), worker, _( "Dossier solde account has no currency" ));
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, _( "Dossier solde account has no currency" ));
 			priv->dossier_errs += 1;
 		} else {
 			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf( _( "Dossier solde account currency '%s' doesn't exist" ), cur_code );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->dossier_errs += 1;
 			}
 			acc_number = ofo_dossier_get_sld_account( dossier, cur_code );
 			if( !my_strlen( acc_number )){
 				str = g_strdup_printf( _( "Dossier solde account for currency '%s' is empty" ), cur_code );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->dossier_errs += 1;
 			} else {
@@ -507,19 +512,19 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 				if( !acc_obj || !OFO_IS_ACCOUNT( acc_obj )){
 					str = g_strdup_printf( _( "Dossier solde account '%s' for currency '%s' doesn't exist" ),
 							acc_number, cur_code );
-					my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 					g_free( str );
 					priv->dossier_errs += 1;
 				}
 			}
 		}
-		set_worker_progress( self, worker, ++i, count );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, ++i, count );
 	}
 
 	ofo_dossier_free_currencies( currencies );
 
 	/* progress end */
-	my_iprogress_progress_end( MY_IPROGRESS( self ), worker, NULL, priv->dossier_errs );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->dossier_errs );
 }
 
 /*
@@ -529,7 +534,7 @@ static void
 check_bat_lines_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	void *worker;
+	const void *worker;
 	GtkWidget *label;
 	gulong count, i;
 	GList *bats, *it, *lines, *itl;
@@ -546,17 +551,17 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 
 	/* start work */
 	label = gtk_label_new( _( " Check for BAT files and lines integrity " ));
-	my_iprogress_work_start( MY_IPROGRESS( self ), worker, label );
+	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
 
 	/* start progress */
-	my_iprogress_progress_start( MY_IPROGRESS( self ), worker, NULL );
+	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 
 	priv->bat_lines_errs = 0;
 	bats = ofo_bat_get_dataset( priv->hub );
 	count = g_list_length( bats );
 
 	if( count == 0 ){
-		set_worker_progress( self, worker, 0, 0 );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
 	}
 
 	for( i=1, it=bats ; it ; ++i, it=it->next ){
@@ -569,7 +574,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf( _( "BAT file %lu currency '%s' doesn't exist" ), id, cur_code );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->bat_lines_errs += 1;
 			}
@@ -589,7 +594,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 					str = g_strdup_printf(
 							_( "BAT line %lu (from BAT file %lu) currency '%s' doesn't exist" ),
 							idline, id, cur_code );
-					my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 					g_free( str );
 					priv->bat_lines_errs += 1;
 				}
@@ -599,11 +604,11 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 		}
 
 		ofo_bat_line_free_dataset( lines );
-		set_worker_progress( self, worker, i, count );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
 	}
 
 	/* progress end */
-	my_iprogress_progress_end( MY_IPROGRESS( self ), worker, NULL, priv->bat_lines_errs );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->bat_lines_errs );
 }
 
 /*
@@ -613,7 +618,7 @@ static void
 check_accounts_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	void *worker;
+	const void *worker;
 	GtkWidget *label;
 	GList *accounts, *it;
 	gulong count, i;
@@ -630,17 +635,17 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 
 	/* start work */
 	label = gtk_label_new( _( " Check for accounts integrity " ));
-	my_iprogress_work_start( MY_IPROGRESS( self ), worker, label );
+	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
 
 	/* start progress */
-	my_iprogress_progress_start( MY_IPROGRESS( self ), worker, NULL );
+	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 
 	priv->accounts_errs = 0;
 	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
 
 	if( count == 0 ){
-		set_worker_progress( self, worker, 0, 0 );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
 	}
 
 	for( i=1, it=accounts ; it && count ; ++i, it=it->next ){
@@ -652,7 +657,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 		if( !cla_obj || !OFO_IS_CLASS( cla_obj )){
 			str = g_strdup_printf(
 					_( "Class %d doesn't exist for account %s" ), cla_num, acc_num );
-			my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->accounts_errs += 1;
 		}
@@ -661,7 +666,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 			cur_code = ofo_account_get_currency( account );
 			if( !my_strlen( cur_code )){
 				str = g_strdup_printf( _( "Account %s doesn't have a currency" ), acc_num );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->accounts_errs += 1;
 			} else {
@@ -669,18 +674,18 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Account %s currency '%s' doesn't exist" ), acc_num, cur_code );
-					my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 					g_free( str );
 					priv->accounts_errs += 1;
 				}
 			}
 		}
 
-		set_worker_progress( self, worker, i, count );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
 	}
 
 	/* progress end */
-	my_iprogress_progress_end( MY_IPROGRESS( self ), worker, NULL, priv->accounts_errs );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->accounts_errs );
 }
 
 /*
@@ -690,7 +695,7 @@ static void
 check_entries_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	void *worker;
+	const void *worker;
 	GtkWidget *label;
 	GList *entries, *it;
 	gulong count, i;
@@ -709,17 +714,17 @@ check_entries_run( ofaCheckIntegrityBin *self )
 
 	/* start work */
 	label = gtk_label_new( _( " Check for entries integrity " ));
-	my_iprogress_work_start( MY_IPROGRESS( self ), worker, label );
+	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
 
 	/* start progress */
-	my_iprogress_progress_start( MY_IPROGRESS( self ), worker, NULL );
+	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 
 	priv->entries_errs = 0;
 	entries = ofo_entry_get_dataset_by_account( priv->hub, NULL );
 	count = g_list_length( entries );
 
 	if( count == 0 ){
-		set_worker_progress( self, worker, 0, 0 );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
 	}
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
@@ -730,7 +735,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 		if( !my_strlen( acc_number )){
 			str = g_strdup_printf(
 					_( "Entry %lu doesn't have account" ), number );
-			my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
@@ -738,7 +743,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			if( !acc_obj || !OFO_IS_ACCOUNT( acc_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has account %s which doesn't exist" ), number, acc_number );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->entries_errs += 1;
 			}
@@ -747,7 +752,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 		cur_code = ofo_entry_get_currency( entry );
 		if( !my_strlen( cur_code )){
 			str = g_strdup_printf( _( "Entry %lu doesn't have a currency" ), number );
-			my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
@@ -755,7 +760,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has currency '%s' which doesn't exist" ), number, cur_code );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->entries_errs += 1;
 			}
@@ -764,7 +769,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 		led_mnemo = ofo_entry_get_ledger( entry );
 		if( !my_strlen( led_mnemo )){
 			str = g_strdup_printf( _( "Entry %lu doesn't have a ledger" ), number );
-			my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 			g_free( str );
 			priv->entries_errs += 1;
 		} else {
@@ -772,7 +777,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has ledger '%s' which doesn't exist" ), number, led_mnemo );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->entries_errs += 1;
 			}
@@ -785,17 +790,17 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			if( !ope_obj || !OFO_IS_OPE_TEMPLATE( ope_obj )){
 				str = g_strdup_printf(
 						_( "Entry %lu has operation template '%s' which doesn't exist" ), number, ope_mnemo );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->entries_errs += 1;
 			}
 		}
 
-		set_worker_progress( self, worker, i, count );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
 	}
 
 	/* progress end */
-	my_iprogress_progress_end( MY_IPROGRESS( self ), worker, NULL, priv->entries_errs );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->entries_errs );
 }
 
 /*
@@ -805,7 +810,7 @@ static void
 check_ledgers_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	void *worker;
+	const void *worker;
 	GtkWidget *label;
 	GList *ledgers, *it;
 	GList *currencies, *itc;
@@ -821,17 +826,17 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 
 	/* start work */
 	label = gtk_label_new( _( " Check for ledgers integrity " ));
-	my_iprogress_work_start( MY_IPROGRESS( self ), worker, label );
+	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
 
 	/* start progress */
-	my_iprogress_progress_start( MY_IPROGRESS( self ), worker, NULL );
+	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 
 	priv->ledgers_errs = 0;
 	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
 
 	if( count == 0 ){
-		set_worker_progress( self, worker, 0, 0 );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
 	}
 
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
@@ -842,7 +847,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 			cur_code = ( const gchar * ) itc->data;
 			if( !my_strlen( cur_code )){
 				str = g_strdup_printf( _( "Ledger %s has an empty currency" ), mnemo );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->ledgers_errs += 1;
 			} else {
@@ -850,18 +855,18 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
 					str = g_strdup_printf(
 							_( "Ledger %s has currency '%s' which doesn't exist" ), mnemo, cur_code );
-					my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 					g_free( str );
 					priv->ledgers_errs += 1;
 				}
 			}
 		}
 		g_list_free( currencies );
-		set_worker_progress( self, worker, i, count );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
 	}
 
 	/* progress end */
-	my_iprogress_progress_end( MY_IPROGRESS( self ), worker, NULL, priv->ledgers_errs );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->ledgers_errs );
 }
 
 /*
@@ -871,7 +876,7 @@ static void
 check_ope_templates_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	void *worker;
+	const void *worker;
 	GtkWidget *label;
 	GList *ope_templates, *it;
 	gulong count, i;
@@ -887,17 +892,17 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 
 	/* start work */
 	label = gtk_label_new( _( " Check for operation templates integrity " ));
-	my_iprogress_work_start( MY_IPROGRESS( self ), worker, label );
+	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
 
 	/* start progress */
-	my_iprogress_progress_start( MY_IPROGRESS( self ), worker, NULL );
+	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
 
 	priv->ope_templates_errs = 0;
 	ope_templates = ofo_ope_template_get_dataset( priv->hub );
 	count = g_list_length( ope_templates );
 
 	if( count == 0 ){
-		set_worker_progress( self, worker, 0, 0 );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
 	}
 
 	for( i=1, it=ope_templates ; it && count ; ++i, it=it->next ){
@@ -911,7 +916,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
 				str = g_strdup_printf(
 						_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );
-				my_iprogress_text( MY_IPROGRESS( self ), worker, str );
+				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 				g_free( str );
 				priv->ope_templates_errs += 1;
 			}
@@ -926,11 +931,11 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 			}
 		}
 
-		set_worker_progress( self, worker, i, count );
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
 	}
 
 	/* progress end */
-	my_iprogress_progress_end( MY_IPROGRESS( self ), worker, NULL, priv->ope_templates_errs );
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->ope_templates_errs );
 }
 
 /*
@@ -979,6 +984,21 @@ set_checks_result( ofaCheckIntegrityBin *self )
 	}
 }
 
+/*
+ * thanks to http://stackoverflow.com/questions/2683531/stuck-on-scrolling-gtkviewport-to-end
+ */
+static void
+on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaCheckIntegrityBin *self )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	GtkAdjustment* adjustment;
+
+	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( self ));
+
+	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->upper_viewport ));
+	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
+}
+
 /**
  * ofa_check_integrity_bin_get_status:
  */
@@ -1006,18 +1026,18 @@ iprogress_iface_init( myIProgressInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->work_start = iprogress_work_start;
-	iface->progress_start = iprogress_progress_start;
-	iface->progress_pulse = iprogress_progress_pulse;
-	iface->progress_end = iprogress_progress_end;
-	iface->text = iprogress_text;
+	iface->start_work = iprogress_start_work;
+	iface->start_progress = iprogress_start_progress;
+	iface->pulse = iprogress_pulse;
+	iface->set_ok = iprogress_set_ok;
+	iface->set_text = iprogress_set_text;
 }
 
 /*
  * expects a GtkLabel
  */
 static void
-iprogress_work_start( myIProgress *instance, void *worker, GtkWidget *widget )
+iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 	GtkWidget *frame;
@@ -1042,11 +1062,11 @@ iprogress_work_start( myIProgress *instance, void *worker, GtkWidget *widget )
 
 	gtk_grid_attach( GTK_GRID( priv->objects_grid ), frame, 0, priv->objects_row++, 1, 1 );
 
-	gtk_widget_show_all( GTK_WIDGET( instance ));
+	gtk_widget_show_all( priv->objects_grid );
 }
 
 static void
-iprogress_progress_start( myIProgress *instance, void *worker, GtkWidget *widget )
+iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar )
 {
 	sWorker *sdata;
 
@@ -1056,25 +1076,34 @@ iprogress_progress_start( myIProgress *instance, void *worker, GtkWidget *widget
 		gtk_grid_attach( GTK_GRID( sdata->grid ), widget, 0, 0, 1, 1 );
 	}
 
-	sdata->bar = my_progress_bar_new();
-	gtk_grid_attach( GTK_GRID( sdata->grid ), GTK_WIDGET( sdata->bar ), 1, 0, 1, 1 );
+	if( with_bar ){
+		sdata->bar = my_progress_bar_new();
+		gtk_grid_attach( GTK_GRID( sdata->grid ), GTK_WIDGET( sdata->bar ), 1, 0, 1, 1 );
+	}
 
-	gtk_widget_show_all( GTK_WIDGET( instance ));
+	gtk_widget_show_all( sdata->grid );
 }
 
 static void
-iprogress_progress_pulse( myIProgress *instance, void *worker, gdouble progress, const gchar *text )
+iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total )
 {
 	sWorker *sdata;
+	gdouble progress;
+	gchar *str;
 
 	sdata = get_worker_data( OFA_CHECK_INTEGRITY_BIN( instance ), worker );
 
-	g_signal_emit_by_name( sdata->bar, "my-double", progress );
-	g_signal_emit_by_name( sdata->bar, "my-text", text );
+	if( sdata->bar ){
+		progress = total ? ( gdouble ) count / ( gdouble ) total : 0;
+		g_signal_emit_by_name( sdata->bar, "my-double", progress );
+
+		str = g_strdup_printf( "%lu/%lu", count, total );
+		g_signal_emit_by_name( sdata->bar, "my-text", str );
+	}
 }
 
 static void
-iprogress_progress_end( myIProgress *instance, void *worker, GtkWidget *widget, gulong errs_count )
+iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count )
 {
 	sWorker *sdata;
 	GtkWidget *label;
@@ -1102,7 +1131,7 @@ iprogress_progress_end( myIProgress *instance, void *worker, GtkWidget *widget, 
 }
 
 static void
-iprogress_text( myIProgress *instance, void *worker, const gchar *text )
+iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 	GtkWidget *view;
@@ -1125,22 +1154,8 @@ iprogress_text( myIProgress *instance, void *worker, const gchar *text )
 	g_free( str );
 }
 
-static void
-set_worker_progress( ofaCheckIntegrityBin *self, void *worker, gulong current, gulong total )
-{
-	gdouble progress;
-	gchar *text;
-
-	progress = ( total > 0 ) ? ( gdouble ) current / ( gdouble ) total : -1;
-	text = g_strdup_printf( "%lu/%lu", current, total );
-
-	my_iprogress_progress_pulse( MY_IPROGRESS( self ), worker, progress, text );
-
-	g_free( text );
-}
-
 static sWorker *
-get_worker_data( ofaCheckIntegrityBin *self, void *worker )
+get_worker_data( ofaCheckIntegrityBin *self, const void *worker )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 	GList *it;

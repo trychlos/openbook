@@ -30,6 +30,7 @@
  New features and improvements:
 
    - CheckDBMSIntegrity: now involves plugins (todo #1042).
+   - DDLUpdates: display OK + progression percent (todo #1047).
    - UserPreferences: check for balances and DBMS integrity on dossier opening (todo #744).
 
  Bug fixes:
