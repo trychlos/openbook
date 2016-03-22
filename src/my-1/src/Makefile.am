@@ -75,6 +75,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iassistant.c										\
 	my-idialog.c										\
 	my-igridlist.c										\
+	my-iprogress.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
 	my-progress-bar.c									\

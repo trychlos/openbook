@@ -51,6 +51,7 @@
    - myDateCombo: rename 'ofa-changed' signal to 'my-changed'.
    - myDecimalCombo: rename 'ofa-changed' signal to 'my-changed'.
    - myFieldCombo: rename 'ofa-changed' signal to 'my-changed'.
+   - myIProgress: new interface.
    - myProgressBar: ofa-double, ofa-text and ofa-pulse signals are renamed to my-xxx equivalents.
    - ofa_amount_xxx(): new functions.
    - ofa_counter_xxx(): new functions.

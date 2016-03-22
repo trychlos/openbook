@@ -412,6 +412,7 @@ my_include_HEADERS = \
 	my-iassistant.h										\
 	my-idialog.h										\
 	my-igridlist.h										\
+	my-iprogress.h										\
 	my-isettings.h										\
 	my-iwindow.h										\
 	my-progress-bar.h									\
