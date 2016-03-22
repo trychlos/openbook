@@ -599,7 +599,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 		}
 
 		ofo_bat_line_free_dataset( lines );
-		set_worker_progress( self, worker, ++i, count );
+		set_worker_progress( self, worker, i, count );
 	}
 
 	/* progress end */
@@ -676,7 +676,7 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 			}
 		}
 
-		set_worker_progress( self, worker, ++i, count );
+		set_worker_progress( self, worker, i, count );
 	}
 
 	/* progress end */
@@ -791,7 +791,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 			}
 		}
 
-		set_worker_progress( self, worker, ++i, count );
+		set_worker_progress( self, worker, i, count );
 	}
 
 	/* progress end */
@@ -857,7 +857,7 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 			}
 		}
 		g_list_free( currencies );
-		set_worker_progress( self, worker, ++i, count );
+		set_worker_progress( self, worker, i, count );
 	}
 
 	/* progress end */
@@ -926,7 +926,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 			}
 		}
 
-		set_worker_progress( self, worker, ++i, count );
+		set_worker_progress( self, worker, i, count );
 	}
 
 	/* progress end */
