@@ -446,6 +446,7 @@
 
 1045 2016- 3-21 DDL  open properties, display notes, check balances and
                      dbms integrity: may be per-dossier options
+     2016- 3-22 this is not DDL, but goes to dossier settings
 
 1048
 

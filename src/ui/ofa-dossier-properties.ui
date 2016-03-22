@@ -515,23 +515,41 @@
                         <property name="row_spacing">3</property>
                         <property name="column_spacing">4</property>
                         <child>
+                          <placeholder/>
+                        </child>
+                        <child>
+                          <placeholder/>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">3</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkGrid" id="grid3">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="row_spacing">3</property>
+                        <property name="column_spacing">4</property>
+                        <property name="column_homogeneous">True</property>
+                        <child>
                           <object class="GtkFrame" id="frame14">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="halign">start</property>
                             <property name="label_xalign">0</property>
                             <property name="shadow_type">in</property>
                             <child>
                               <object class="GtkGrid" id="grid14">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
-                                <property name="halign">start</property>
                                 <property name="margin_left">12</property>
                                 <property name="margin_right">4</property>
                                 <property name="margin_top">4</property>
                                 <property name="margin_bottom">4</property>
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
+                                <property name="column_homogeneous">True</property>
                                 <child>
                                   <object class="GtkLabel" id="label141">
                                     <property name="visible">True</property>
@@ -584,7 +602,6 @@
                                   <object class="GtkLabel" id="p4-last-bat">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -596,7 +613,6 @@
                                   <object class="GtkLabel" id="p4-last-batline">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -608,7 +624,6 @@
                                   <object class="GtkLabel" id="p4-last-entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -620,7 +635,6 @@
                                   <object class="GtkLabel" id="p4-last-settlement">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -644,7 +658,6 @@
                                   <object class="GtkLabel" id="p4-last-concil">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -684,11 +697,11 @@
                                 <property name="margin_bottom">4</property>
                                 <property name="row_spacing">3</property>
                                 <property name="column_spacing">4</property>
+                                <property name="column_homogeneous">True</property>
                                 <child>
                                   <object class="GtkLabel" id="p5-version">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                   </object>
                                   <packing>
@@ -727,7 +740,6 @@
                                   <object class="GtkLabel" id="p5-last-entry">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
-                                    <property name="width_chars">8</property>
                                     <property name="xalign">1</property>
                                     <property name="yalign">1</property>
                                   </object>
@@ -899,6 +911,11 @@
       <widget name="p1-exe-length-label"/>
       <widget name="p1-exe-begin-prompt"/>
       <widget name="label21"/>
+      <widget name="label141"/>
+      <widget name="label142"/>
+      <widget name="label143"/>
+      <widget name="label144"/>
+      <widget name="label145"/>
     </widgets>
   </object>
 </interface>
