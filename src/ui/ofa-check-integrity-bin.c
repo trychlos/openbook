@@ -639,6 +639,10 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
 
+	if( count == 0 ){
+		set_worker_progress( self, worker, 0, 0 );
+	}
+
 	for( i=1, it=accounts ; it && count ; ++i, it=it->next ){
 		account = OFO_ACCOUNT( it->data );
 		acc_num = ofo_account_get_number( account );
@@ -713,6 +717,10 @@ check_entries_run( ofaCheckIntegrityBin *self )
 	priv->entries_errs = 0;
 	entries = ofo_entry_get_dataset_by_account( priv->hub, NULL );
 	count = g_list_length( entries );
+
+	if( count == 0 ){
+		set_worker_progress( self, worker, 0, 0 );
+	}
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
 		entry = OFO_ENTRY( it->data );
@@ -822,6 +830,10 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
 
+	if( count == 0 ){
+		set_worker_progress( self, worker, 0, 0 );
+	}
+
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 		mnemo = ofo_ledger_get_mnemo( ledger );
@@ -883,6 +895,10 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 	priv->ope_templates_errs = 0;
 	ope_templates = ofo_ope_template_get_dataset( priv->hub );
 	count = g_list_length( ope_templates );
+
+	if( count == 0 ){
+		set_worker_progress( self, worker, 0, 0 );
+	}
 
 	for( i=1, it=ope_templates ; it && count ; ++i, it=it->next ){
 		ope_template = OFO_OPE_TEMPLATE( it->data );

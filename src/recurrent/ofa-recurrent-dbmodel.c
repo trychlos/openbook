@@ -453,6 +453,10 @@ check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 	records = ofo_recurrent_model_get_dataset( hub );
 	count = g_list_length( records );
 
+	if( count == 0 ){
+		my_iprogress_progress_pulse( progress, worker, 0, "0/0" );
+	}
+
 	for( i=1, it=records ; it ; ++i, it=it->next ){
 		model = OFO_RECURRENT_MODEL( it->data );
 		mnemo = ofo_recurrent_model_get_mnemo( model );
@@ -513,6 +517,10 @@ check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 	errs = 0;
 	records = ofo_recurrent_run_get_dataset( hub );
 	count = g_list_length( records );
+
+	if( count == 0 ){
+		my_iprogress_progress_pulse( progress, worker, 0, "0/0" );
+	}
 
 	for( i=1, it=records ; it ; ++i, it=it->next ){
 		obj = OFO_RECURRENT_RUN( it->data );
