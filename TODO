@@ -447,8 +447,6 @@
 1045 2016- 3-21 DDL  open properties, display notes, check balances and
                      dbms integrity: may be per-dossier options
 
-1046 2016- 3-21 BUG  close all opened dialogs when closing the dossier
-
 1048
 
 -----------------------------------------------------------------------
@@ -1005,6 +1003,9 @@
 1043 2016- 3-15 FEAT All core objects: before being deletable, must ask
                      the plugins
      2016- 3-17 done
+
+1046 2016- 3-21 BUG  close all opened dialogs when closing the dossier
+     2016- 3-22 fixed
 
 1047 2016- 3-21 FEAT when upgrading the db model, have a OK on the right
                      of the progress bar (as in check balances)

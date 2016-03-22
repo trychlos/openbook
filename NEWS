@@ -36,6 +36,7 @@
  Bug fixes:
 
    - ofaCheckBalances: get rid of rounding errors.
+   - ofaDossierClose: close all opened windows on dossier closing (todo #1046).
    - ofaDossierNewMini: fix dialog display at initialization time.
    - ofaExportAssistant: display the chosen string delimiter.
    - ofaExportAssistant: fix amounts export format.

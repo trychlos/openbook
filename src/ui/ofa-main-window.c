@@ -888,6 +888,8 @@ do_close_dossier( ofaMainWindow *self )
 	priv = ofa_main_window_get_instance_private( self );
 
 	if( GTK_IS_WINDOW( self )){
+		my_iwindow_close_all();
+
 		gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 		priv->pane = NULL;
 
@@ -946,6 +948,7 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
 static void
 set_menubar( ofaMainWindow *window, GMenuModel *model )
 {
+	static const gchar *thisfn = "ofa_main_window_set_menubar";
 	ofaMainWindowPrivate *priv;
 	GtkWidget *menubar;
 
@@ -971,9 +974,12 @@ set_menubar( ofaMainWindow *window, GMenuModel *model )
 	gtk_window_add_accel_group( GTK_WINDOW( window ), priv->accel_group );
 
 	menubar = gtk_menu_bar_new_from_model( model );
-	g_debug( "set_menubar: model=%p (%s), menubar=%p, grid=%p (%s)",
+
+	g_debug( "%s: model=%p (%s), menubar=%p, grid=%p (%s)",
+			thisfn,
 			( void * ) model, G_OBJECT_TYPE_NAME( model ), ( void * ) menubar,
 			( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
+
 	gtk_grid_attach( priv->grid, menubar, 0, 0, 1, 1 );
 	priv->menubar = GTK_MENU_BAR( menubar );
 	gtk_widget_show_all( GTK_WIDGET( window ));

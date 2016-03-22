@@ -529,6 +529,25 @@ my_iwindow_close( myIWindow *instance )
 	do_close( instance );
 }
 
+/**
+ * my_iwindow_close_all:
+ *
+ * Close all current #myIWindow windows.
+ */
+void
+my_iwindow_close_all( void )
+{
+	static const gchar *thisfn = "my_iwindow_close_all";
+	void *it;
+
+	while( st_live_list ){
+		it = st_live_list->data;
+		g_debug( "%s: closing iwindow=%p (%s)",
+				thisfn, ( void * ) it, G_OBJECT_TYPE_NAME( it ));
+		do_close( MY_IWINDOW( it ));
+	}
+}
+
 /*
  * iwindow_quit_on_escape:
  * @instance: this #myIWindow instance.
