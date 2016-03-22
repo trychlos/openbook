@@ -29,6 +29,7 @@
 
  New features and improvements:
 
+   - CheckDBMSIntegrity: now involves plugins (todo #1042).
    - UserPreferences: check for balances and DBMS integrity on dossier opening (todo #744).
 
  Bug fixes:

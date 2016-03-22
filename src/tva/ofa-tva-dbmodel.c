@@ -99,6 +99,7 @@ static void       set_bar_progression( sUpdate *update_data );
 static gboolean   exec_query( sUpdate *update_data, const gchar *query );
 static gboolean   version_begin( sUpdate *update_data, gint version );
 static gboolean   version_end( sUpdate *update_data, gint version );
+static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
 
 /*
  * #ofaIDBModel interface setup
@@ -116,6 +117,7 @@ ofa_tva_dbmodel_iface_init( ofaIDBModelInterface *iface )
 	iface->ddl_update = idbmodel_ddl_update;
 	iface->connect_handlers = idbmodel_connect_handlers;
 	iface->get_is_deletable = idbmodel_get_is_deletable;
+	iface->check_dbms_integrity = idbmodel_check_dbms_integrity;
 }
 
 /*
@@ -584,4 +586,13 @@ static gulong
 count_v4( sUpdate *update_data )
 {
 	return( 6 );
+}
+
+/*
+ * cannot check VAT forms integrity without interpreting the computing rules
+ */
+static gulong
+idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+{
+	return( 0 );
 }

@@ -35,6 +35,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-idbmodel.h"
+#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -65,6 +67,7 @@ struct _ofaCheckIntegrityBinPrivate {
 	gulong         entries_errs;
 	gulong         ledgers_errs;
 	gulong         ope_templates_errs;
+	gulong         others_errs;
 
 	gulong         total_errs;
 
@@ -152,6 +155,7 @@ check_integrity_bin_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
+	g_list_free_full( priv->workers, ( GDestroyNotify ) g_free );
 	g_free( priv->settings );
 
 	/* chain up to the parent class */
@@ -194,6 +198,7 @@ ofa_check_integrity_bin_init( ofaCheckIntegrityBin *self )
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->others_errs = 0;
 }
 
 static void
@@ -364,12 +369,23 @@ do_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 	gint i;
+	GList *plugins, *it;
+	ofaIDBModel *instance;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
 	for( i=0 ; st_fn[i] ; ++i ){
 		( *st_fn[i] )( self );
 	}
+
+	plugins = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+	for( it=plugins ; it ; it=it->next ){
+		instance = OFA_IDBMODEL( it->data );
+		if( OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity ){
+			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->hub, MY_IPROGRESS( self ));
+		}
+	}
+	ofa_plugin_free_extensions( plugins );
 
 	set_checks_result( self );
 
@@ -920,7 +936,8 @@ set_checks_result( ofaCheckIntegrityBin *self )
 			+ priv->accounts_errs
 			+ priv->entries_errs
 			+ priv->ledgers_errs
-			+ priv->ope_templates_errs;
+			+ priv->ope_templates_errs
+			+ priv->others_errs;
 
 	if( priv->total_errs > 0 ){
 		str = g_strdup_printf(

@@ -32,11 +32,14 @@
  * @include: openbook/ofa-idbmodel.h
  *
  * This #ofaIDBModel lets a plugin announces that it makes use of
- * the DBMS. More precisely, it lets the plugin update the DDL model.
+ * the DBMS. More precisely, it lets the plugin update and manage the
+ * DDL model.
+ *
  * In other words, this interface must be implemented by any code
  * which may want update the DB model through a suitable UI.
  */
 
+#include "my/my-iprogress.h"
 #include "my/my-iwindow.h"
 
 #include "api/ofa-hub-def.h"
@@ -62,6 +65,7 @@ typedef struct _ofaIDBModel                    ofaIDBModel;
  * @get_is_deletable: [may]: check if the object may be deleted.
  * @needs_update: [should]: returns whether the DB model needs an update.
  * @ddl_update: [should]: returns whether the DB model has been successfully updated.
+ * @check_dbms_integrity: [should]: check for DBMS integrity.
  *
  * This defines the interface that an #ofaIDBModel may/should implement.
  */
@@ -186,6 +190,20 @@ typedef struct {
 	gboolean      ( *ddl_update )           ( const ofaIDBModel *instance,
 													ofaHub *hub,
 													myIWindow *window );
+
+	/**
+	 * check_dbms_integrity:
+	 * @instance: the #ofaIDBModel provider.
+	 * @hub: the #ofaHub instance which manages the connection.
+	 * @progress: the #myIProgress implementation which handles the display.
+	 *
+	 * Returns: the count of errors.
+	 *
+	 * Since: version 1
+	 */
+	gulong        ( *check_dbms_integrity ) ( const ofaIDBModel *instance,
+													ofaHub *hub,
+													myIProgress *progress );
 }
 	ofaIDBModelInterface;
 

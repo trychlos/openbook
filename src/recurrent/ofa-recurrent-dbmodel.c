@@ -34,6 +34,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofo-ope-template.h"
 
 #include "ofa-recurrent.h"
 #include "ofa-recurrent-dbmodel.h"
@@ -91,6 +92,9 @@ static void       set_bar_progression( sUpdate *update_data );
 static gboolean   exec_query( sUpdate *update_data, const gchar *query );
 static gboolean   version_begin( sUpdate *update_data, gint version );
 static gboolean   version_end( sUpdate *update_data, gint version );
+static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
+static gulong     check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
+static gulong     check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
 
 /*
  * #ofaIDBModel interface setup
@@ -108,6 +112,7 @@ ofa_recurrent_dbmodel_iface_init( ofaIDBModelInterface *iface )
 	iface->ddl_update = idbmodel_ddl_update;
 	iface->connect_handlers = idbmodel_connect_handlers;
 	iface->get_is_deletable = idbmodel_get_is_deletable;
+	iface->check_dbms_integrity = idbmodel_check_dbms_integrity;
 }
 
 /*
@@ -407,4 +412,130 @@ static gulong
 count_v1( sUpdate *update_data )
 {
 	return( 4 );
+}
+
+static gulong
+idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+{
+	gulong errs;
+
+	errs = 0;
+	errs += check_model( instance, hub, progress );
+	errs += check_run( instance, hub, progress );
+
+	return( errs );
+}
+
+static gulong
+check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+{
+	gulong errs;
+	void *worker;
+	GtkWidget *label;
+	GList *records, *it;
+	gulong count, i;
+	ofoRecurrentModel *model;
+	gchar *str;
+	const gchar *mnemo, *ope_mnemo;
+	ofoOpeTemplate *ope_object;
+	gdouble percent;
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
+
+	/* start work */
+	label = gtk_label_new( _( " Check for recurrent models integrity " ));
+	my_iprogress_work_start( progress, worker, label );
+
+	/* start progress */
+	my_iprogress_progress_start( progress, worker, NULL );
+
+	errs = 0;
+	records = ofo_recurrent_model_get_dataset( hub );
+	count = g_list_length( records );
+
+	for( i=1, it=records ; it ; ++i, it=it->next ){
+		model = OFO_RECURRENT_MODEL( it->data );
+		mnemo = ofo_recurrent_model_get_mnemo( model );
+
+		/* operation template */
+		ope_mnemo = ofo_recurrent_model_get_ope_template( model );
+		if( !my_strlen( ope_mnemo )){
+			str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
+			my_iprogress_text( progress, worker, str );
+			g_free( str );
+			errs += 1;
+		} else {
+			ope_object = ofo_ope_template_get_by_mnemo( hub, ope_mnemo );
+			if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
+				str = g_strdup_printf(
+						_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
+				my_iprogress_text( progress, worker, str );
+				g_free( str );
+				errs += 1;
+			}
+		}
+
+		percent = ( gdouble ) i / ( gdouble ) count;
+		str = g_strdup_printf( "%lu/%lu", i, count );
+		my_iprogress_progress_pulse( progress, worker, percent, str );
+		g_free( str );
+	}
+
+	/* progress end */
+	my_iprogress_progress_end( progress, worker, NULL, errs );
+
+	return( errs );
+}
+
+static gulong
+check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
+{
+	gulong errs;
+	void *worker;
+	GtkWidget *label;
+	GList *records, *it;
+	gulong count, i;
+	ofoRecurrentRun *obj;
+	gchar *str;
+	const gchar *mnemo;
+	ofoRecurrentModel *model_object;
+	gdouble percent;
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
+
+	/* start work */
+	label = gtk_label_new( _( " Check for recurrent runs integrity " ));
+	my_iprogress_work_start( progress, worker, label );
+
+	/* start progress */
+	my_iprogress_progress_start( progress, worker, NULL );
+
+	errs = 0;
+	records = ofo_recurrent_run_get_dataset( hub );
+	count = g_list_length( records );
+
+	for( i=1, it=records ; it ; ++i, it=it->next ){
+		obj = OFO_RECURRENT_RUN( it->data );
+		mnemo = ofo_recurrent_run_get_mnemo( obj );
+
+		/* recurrent model */
+		model_object = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
+		if( !model_object || !OFO_IS_RECURRENT_MODEL( model_object )){
+			str = g_strdup_printf(
+					_( "Recurrent model %s doesn't exist" ), mnemo );
+			my_iprogress_text( progress, worker, str );
+			g_free( str );
+			errs += 1;
+		}
+
+		percent = ( gdouble ) i / ( gdouble ) count;
+		str = g_strdup_printf( "%lu/%lu", i, count );
+		my_iprogress_progress_pulse( progress, worker, percent, str );
+		g_free( str );
+	}
+
+	/* progress end */
+	my_iprogress_progress_end( progress, worker, NULL, errs );
+
+	return( errs );
 }

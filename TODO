@@ -440,8 +440,6 @@
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
-1042 2016- 3-15 FEAT CheckDBMSIntegrity: call plugins
-
 1044 2016- 3-20 FEAT do not close any period (exercice or intermediate)
                      or any ledger without first check for balance and
                      integrity
@@ -1003,6 +1001,9 @@
 
 1041 2016- 3-15 BUG  ofaTVA: connect handlers to hub signaling system
      2016- 3-16 fixed
+
+1042 2016- 3-15 FEAT CheckDBMSIntegrity: call plugins
+     2016- 3-22 done
 
 1043 2016- 3-15 FEAT All core objects: before being deletable, must ask
                      the plugins
