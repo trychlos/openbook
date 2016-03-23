@@ -353,8 +353,8 @@
                      signal (exe_dates_changed) sent on main window so
                      that it may automatically update window title
 
- 910 2015-11-30 FEAT let the user configure the main title as a
-                     preference
+ 910 2015-11-30 FEAT let the user configure the main title components as
+                     a preference
 
  915 2015-12- 4 ARCH a class object (say e.g. ofoClass) should
                      implement the ofaIExportable/ofaIImportable
@@ -395,6 +395,7 @@
  966 2016- 1-10 FEAT tva/ofoTVARecord: make it printable
 
  971 2016- 2- 3 FEAT have recently used dossiers
+     2016- 3-23 note that this list should go to dossier settings
 
  983 2016- 2-11 FEAT ImportAssistant: each type should be able to add its
                      own GtkBin, in order to take its own parameters
@@ -421,7 +422,11 @@
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
-1048
+1048 2016- 3-23 FEAT make ofaRecurrentModel exportable
+
+1049 2016- 3-23 FEAT make ofaRecurrentModel importable
+
+1050
 
 -----------------------------------------------------------------------
  DONE
