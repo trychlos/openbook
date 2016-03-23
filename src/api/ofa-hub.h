@@ -108,6 +108,7 @@
  *     the #GtkApplication to which the #ofaMainWindow is attached to.
  */
 
+#include "api/ofa-dossier-prefs.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect.h"
@@ -158,6 +159,8 @@ ofaHub              *ofa_hub_new_with_connect   ( const ofaIDBConnect *connect,
 const ofaIDBConnect *ofa_hub_get_connect        ( const ofaHub *hub );
 
 ofoDossier          *ofa_hub_get_dossier        ( const ofaHub *hub );
+
+ofaDossierPrefs     *ofa_hub_get_dossier_prefs  ( const ofaHub *hub );
 
 void                 ofa_hub_remediate_settings ( const ofaHub *hub );
 

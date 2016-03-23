@@ -31,6 +31,7 @@
 
    - CheckDBMSIntegrity: now involves plugins (todo #1042).
    - DDLUpdates: display OK + progression percent (todo #1047).
+   - DossierOpeningPreferences are set on a dossier basis (todo #1045).
    - UserPreferences: check for balances and DBMS integrity on dossier opening (todo #744).
 
  Bug fixes:

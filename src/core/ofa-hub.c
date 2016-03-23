@@ -31,6 +31,7 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbmeta.h"
@@ -57,6 +58,7 @@ struct _ofaHubPrivate {
 	 */
 	const ofaIDBConnect *connect;
 	ofoDossier          *dossier;
+	ofaDossierPrefs     *dossier_prefs;
 };
 
 /* signals defined here
@@ -120,6 +122,7 @@ hub_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->connect );
 		g_clear_object( &priv->dossier );
+		g_clear_object( &priv->dossier_prefs );
 	}
 
 	G_OBJECT_CLASS( ofa_hub_parent_class )->dispose( instance );
@@ -400,6 +403,7 @@ ofa_hub_new_with_connect( const ofaIDBConnect *connect, GtkWindow *parent )
 		priv->dossier = ofo_dossier_new_with_hub( hub );
 		if( priv->dossier ){
 			init_signaling_system( hub );
+			priv->dossier_prefs = ofa_dossier_prefs_new( hub );
 			ok = TRUE;
 		}
 	}
@@ -484,6 +488,29 @@ ofa_hub_get_dossier( const ofaHub *hub )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->dossier );
+}
+
+/*
+ * ofa_hub_get_dossier_prefs:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofaDossierPrefs object.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+ofaDossierPrefs *
+ofa_hub_get_dossier_prefs( const ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->dossier_prefs );
 }
 
 /*

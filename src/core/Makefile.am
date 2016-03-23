@@ -84,6 +84,7 @@ libofa_core_la_SOURCES = \
 	ofa-dbms-root-bin.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
+	ofa-dossier-prefs.c									\
 	ofa-file-dir.c										\
 	ofa-file-dir.h										\
 	ofa-file-format.c									\

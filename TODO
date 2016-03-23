@@ -444,10 +444,6 @@
                      or any ledger without first check for balance and
                      integrity
 
-1045 2016- 3-21 DDL  open properties, display notes, check balances and
-                     dbms integrity: may be per-dossier options
-     2016- 3-22 this is not DDL, but goes to dossier settings
-
 1048
 
 -----------------------------------------------------------------------
@@ -1004,6 +1000,11 @@
 1043 2016- 3-15 FEAT All core objects: before being deletable, must ask
                      the plugins
      2016- 3-17 done
+
+1045 2016- 3-21 DDL  open properties, display notes, check balances and
+                     dbms integrity: may be per-dossier options
+     2016- 3-22 this is not DDL, but goes to dossier settings
+     2016- 3-23 done
 
 1046 2016- 3-21 BUG  close all opened dialogs when closing the dossier
      2016- 3-22 fixed

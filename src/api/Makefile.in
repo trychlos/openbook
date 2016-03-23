@@ -387,6 +387,7 @@ api_include_HEADERS = \
 	ofa-buttons-box.h									\
 	ofa-counter.h										\
 	ofa-date-filter-hv-bin.h							\
+	ofa-dossier-prefs.h									\
 	ofa-file-format.h									\
 	ofa-hub.h											\
 	ofa-hub-def.h										\

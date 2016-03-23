@@ -119,7 +119,7 @@ static const gchar *st_assistant_confirm_on_cancel    = "AssistantConfirmOnCance
 static const gchar *st_appli_confirm_on_quit          = "ApplicationConfirmOnQuit";
 static const gchar *st_appli_confirm_on_altf4         = "ApplicationConfirmOnAltF4";
 static const gchar *st_dossier_open_notes             = "DossierOpenNotes";
-static const gchar *st_dossier_open_notes_if_empty    = "DossierOpenNotesIfEmpty";
+static const gchar *st_dossier_open_notes_if_empty    = "DossierOpenNotesIfNonEmpty";
 static const gchar *st_dossier_open_properties        = "DossierOpenProperties";
 static const gchar *st_dossier_open_balance           = "DossierOpenBalance";
 static const gchar *st_dossier_open_integrity         = "DossierOpenIntegrity";
@@ -393,7 +393,7 @@ init_dossier_page( ofaPreferences *self )
 			GTK_TOGGLE_BUTTON( priv->open_notes_btn ), ofa_prefs_dossier_open_notes());
 	on_open_notes_toggled( GTK_TOGGLE_BUTTON( priv->open_notes_btn ), self );
 	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn ), !ofa_prefs_dossier_open_notes_if_empty());
+			GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn ), ofa_prefs_dossier_open_notes_if_empty());
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->open_properties_btn ), ofa_prefs_dossier_open_properties());
 
@@ -933,7 +933,7 @@ do_update_dossier_page( ofaPreferences *self, gchar **msgerr )
 
 	ofa_settings_user_set_boolean(
 			st_dossier_open_notes_if_empty,
-			!gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn )));
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn )));
 
 	ofa_settings_user_set_boolean(
 			st_dossier_open_properties,

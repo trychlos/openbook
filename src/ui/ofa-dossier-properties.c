@@ -36,8 +36,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-counter.h"
+#include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
@@ -71,6 +73,7 @@ struct _ofaDossierPropertiesPrivate {
 	GDate               begin_init;
 	GDate               end_init;
 	GDate               min_end;
+	ofaDossierPrefs    *prefs;
 
 	/* data
 	 */
@@ -89,6 +92,11 @@ struct _ofaDossierPropertiesPrivate {
 	 */
 	GtkWidget          *siren_entry;
 	ofaClosingParmsBin *closing_parms;
+	GtkWidget          *prefs_notes;
+	GtkWidget          *prefs_nonempty;
+	GtkWidget          *prefs_properties;
+	GtkWidget          *prefs_balances;
+	GtkWidget          *prefs_integrity;
 	GtkWidget          *msgerr;
 	GtkWidget          *ok_btn;
 
@@ -115,6 +123,7 @@ static void      init_properties_page( ofaDossierProperties *self );
 static void      init_forward_page( ofaDossierProperties *self );
 static void      init_exe_notes_page( ofaDossierProperties *self );
 static void      init_counters_page( ofaDossierProperties *self );
+static void      init_preferences_page( ofaDossierProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
 static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self );
 static void      on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierProperties *self );
@@ -124,6 +133,8 @@ static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *se
 static void      on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
 static void      on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self );
 static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
+static void      on_prefs_notes_toggled( GtkToggleButton *button, ofaDossierProperties *self );
+static void      on_prefs_notes_toggled( GtkToggleButton *button, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
@@ -306,6 +317,7 @@ idialog_init( myIDialog *instance )
 	init_forward_page( OFA_DOSSIER_PROPERTIES( instance ));
 	init_exe_notes_page( OFA_DOSSIER_PROPERTIES( instance ));
 	init_counters_page( OFA_DOSSIER_PROPERTIES( instance ));
+	init_preferences_page( OFA_DOSSIER_PROPERTIES( instance ));
 
 	/* these are main notes of the dossier */
 	my_utils_container_notes_init( instance, dossier );
@@ -571,6 +583,54 @@ init_counters_page( ofaDossierProperties *self )
 	}
 }
 
+/*
+ * when set, these preferences for the dossier override those of the
+ * user preferences
+ */
+static void
+init_preferences_page( ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	GtkWidget *btn;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-notes" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	g_signal_connect( btn, "toggled", G_CALLBACK( on_prefs_notes_toggled ), self );
+	priv->prefs_notes = btn;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-nonempty" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->prefs_nonempty = btn;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-properties" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->prefs_properties = btn;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-balance" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->prefs_balances = btn;
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-integrity" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->prefs_integrity = btn;
+
+	priv->prefs = ofa_hub_get_dossier_prefs( priv->hub );
+
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->prefs_notes ), ofa_dossier_prefs_get_open_notes( priv->prefs ));
+	on_prefs_notes_toggled( GTK_TOGGLE_BUTTON( priv->prefs_notes ), self );
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->prefs_nonempty ), ofa_dossier_prefs_get_nonempty( priv->prefs ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->prefs_properties ), ofa_dossier_prefs_get_properties( priv->prefs ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->prefs_balances ), ofa_dossier_prefs_get_balances( priv->prefs ));
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->prefs_integrity ), ofa_dossier_prefs_get_integrity( priv->prefs ));
+}
+
 static void
 on_label_changed( GtkEntry *entry, ofaDossierProperties *self )
 {
@@ -691,6 +751,18 @@ on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
 	gtk_text_buffer_get_end_iter( buffer, &end );
 	g_free( priv->exe_notes );
 	priv->exe_notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+}
+
+static void
+on_prefs_notes_toggled( GtkToggleButton *button, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	gboolean active;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	active = gtk_toggle_button_get_active( button );
+	gtk_widget_set_sensitive( priv->prefs_nonempty, active );
 }
 
 static void
@@ -843,6 +915,18 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	g_signal_emit_by_name(
 			my_iwindow_get_main_window( MY_IWINDOW( self )),
 			OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
+
+	/* record settings */
+	ofa_dossier_prefs_set_open_notes( priv->prefs,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_notes )));
+	ofa_dossier_prefs_set_nonempty( priv->prefs,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_nonempty )));
+	ofa_dossier_prefs_set_properties( priv->prefs,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_properties )));
+	ofa_dossier_prefs_set_balances( priv->prefs,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_balances )));
+	ofa_dossier_prefs_set_integrity( priv->prefs,
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_integrity )));
 
 	return( ok );
 }

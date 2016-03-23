@@ -4,6 +4,7 @@
   <requires lib="gtk+" version="3.10"/>
   <template class="ofaDossierDisplayNotes" parent="GtkDialog">
     <property name="can_focus">False</property>
+    <property name="title" translatable="yes">Display the dossier notes</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">

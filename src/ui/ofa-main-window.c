@@ -35,6 +35,7 @@
 #include "my/my-tab.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-ihubber.h"
@@ -807,10 +808,13 @@ on_hub_new( ofaIHubber *hubber, ofaHub *hub, ofaMainWindow *main_window )
 static void
 do_open_dossier( ofaMainWindow *main_window )
 {
+	static const gchar *thisfn = "ofa_main_window_do_open_dossier";
 	ofaMainWindowPrivate *priv;
 	const GDate *exe_begin, *exe_end;
 	const gchar *main_notes, *exe_notes;
 	ofoDossier *dossier;
+	ofaDossierPrefs *prefs;
+	gboolean empty, user_prefs_non_empty, dossier_prefs_non_empty;
 
 	priv = ofa_main_window_get_instance_private( main_window );
 
@@ -832,27 +836,34 @@ do_open_dossier( ofaMainWindow *main_window )
 
 	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_CHANGED, dossier );
 
-	/* display dossier notes */
-	if( ofa_prefs_dossier_open_notes()){
+	prefs = ofa_hub_get_dossier_prefs( priv->hub );
+
+	/* display dossier notes ? */
+	if( ofa_prefs_dossier_open_notes() || ofa_dossier_prefs_get_open_notes( prefs )){
 		main_notes = ofo_dossier_get_notes( dossier );
 		exe_notes = ofo_dossier_get_exe_notes( dossier );
-		if( my_strlen( main_notes ) ||
-				my_strlen( exe_notes ) ||
-				ofa_prefs_dossier_open_notes_if_empty()){
+		empty = my_strlen( main_notes ) == 0 && my_strlen( exe_notes ) == 0;
+		user_prefs_non_empty = ofa_prefs_dossier_open_notes() && ofa_prefs_dossier_open_notes_if_empty();
+		dossier_prefs_non_empty = ofa_dossier_prefs_get_open_notes( prefs ) && ofa_dossier_prefs_get_nonempty( prefs );
+		g_debug( "%s: empty=%s, user_prefs_non_empty=%s, dossier_prefs_non_empty=%s",
+				thisfn, empty ? "True":"False",
+				user_prefs_non_empty ? "True":"False",
+				dossier_prefs_non_empty ? "True":"False" );
+		if( !empty || ( !user_prefs_non_empty && !dossier_prefs_non_empty )){
 			ofa_dossier_display_notes_run( main_window, main_notes, exe_notes );
 		}
 	}
 
 	/* check balances and DBMS integrity*/
-	if( ofa_prefs_dossier_open_balance()){
+	if( ofa_prefs_dossier_open_balance() || ofa_dossier_prefs_get_balances( prefs )){
 		ofa_check_balances_run( main_window );
 	}
-	if( ofa_prefs_dossier_open_integrity()){
+	if( ofa_prefs_dossier_open_integrity() || ofa_dossier_prefs_get_integrity( prefs )){
 		ofa_check_integrity_run( main_window );
 	}
 
 	/* display dossier properties */
-	if( ofa_prefs_dossier_open_properties()){
+	if( ofa_prefs_dossier_open_properties() || ofa_dossier_prefs_get_properties( prefs )){
 		g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_PROPERTIES );
 	}
 }

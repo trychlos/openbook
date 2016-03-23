@@ -168,13 +168,13 @@ am_libofa_core_la_OBJECTS = ofa-account-frame-bin.lo \
 	ofa-amount.lo ofa-box.lo ofa-buttons-box.lo ofa-counter.lo \
 	ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
-	ofa-dossier-delete-prefs-bin.lo ofa-file-dir.lo \
-	ofa-file-format.lo ofa-file-format-bin.lo ofa-guided-input.lo \
-	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
-	ofa-icollectionable.lo ofa-icollector.lo ofa-iconcil.lo \
-	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
-	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
-	ofa-idbprovider.lo ofa-ientry-account.lo \
+	ofa-dossier-delete-prefs-bin.lo ofa-dossier-prefs.lo \
+	ofa-file-dir.lo ofa-file-format.lo ofa-file-format-bin.lo \
+	ofa-guided-input.lo ofa-guided-input-bin.lo ofa-hub.lo \
+	ofa-iabout.lo ofa-icollectionable.lo ofa-icollector.lo \
+	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
+	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbmodel.lo \
+	ofa-idbperiod.lo ofa-idbprovider.lo ofa-ientry-account.lo \
 	ofa-ientry-ope-template.lo ofa-iexeclose-close.lo \
 	ofa-iexportable.lo ofa-ihubber.lo ofa-iimporter.lo \
 	ofa-iimportable.lo ofa-iprefs-page.lo ofa-iprefs-provider.lo \
@@ -490,6 +490,7 @@ libofa_core_la_SOURCES = \
 	ofa-dbms-root-bin.h									\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
+	ofa-dossier-prefs.c									\
 	ofa-file-dir.c										\
 	ofa-file-dir.h										\
 	ofa-file-format.c									\
@@ -676,6 +677,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-date-filter-hv-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-dir.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format.Plo@am__quote@
