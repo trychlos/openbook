@@ -1231,9 +1231,11 @@ account_set_header_balance( ofaReconcilPage *self )
 		g_return_if_fail( priv->acc_currency && OFO_IS_CURRENCY( priv->acc_currency ));
 
 		priv->acc_debit = ofo_account_get_val_debit( priv->account )
-				+ ofo_account_get_rough_debit( priv->account );
+				+ ofo_account_get_rough_debit( priv->account )
+				+ ofo_account_get_futur_debit( priv->account );
 		priv->acc_credit = ofo_account_get_val_credit( priv->account )
-				+ ofo_account_get_rough_credit( priv->account );
+				+ ofo_account_get_rough_credit( priv->account )
+				+ ofo_account_get_futur_credit( priv->account );
 
 		if( priv->acc_credit >= priv->acc_debit ){
 			sdiff = ofa_amount_to_str( priv->acc_credit - priv->acc_debit, priv->acc_currency );
@@ -3309,9 +3311,11 @@ set_reconciliated_balance( ofaReconcilPage *self )
 
 	if( priv->account ){
 		account_debit = ofo_account_get_val_debit( priv->account )
-				+ ofo_account_get_rough_debit( priv->account );
+				+ ofo_account_get_rough_debit( priv->account )
+				+ ofo_account_get_futur_debit( priv->account );
 		account_credit = ofo_account_get_val_credit( priv->account )
-				+ ofo_account_get_rough_credit( priv->account );
+				+ ofo_account_get_rough_credit( priv->account )
+				+ ofo_account_get_futur_credit( priv->account );
 		debit = account_credit;
 		credit = account_debit;
 		/*g_debug( "initial: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/

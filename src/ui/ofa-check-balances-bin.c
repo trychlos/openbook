@@ -259,8 +259,8 @@ do_run( ofaCheckBalancesBin *bin )
  * If beginning or ending dates of the exercice are not set, then
  * all found entries are checked.
  *
- * All entries (validated or rough, but not deleted) between the
- * beginning and ending dates are considered.
+ * All entries (validated, rough and future, but not deleted) starting
+ * with the beginning date of the exercice are considered.
  */
 static void
 check_entries_balance_run( ofaCheckBalancesBin *bin )
@@ -270,7 +270,7 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
 	GList *entries, *it;
-	const GDate *dbegin, *dend;
+	const GDate *dbegin;
 	gulong count, i;
 	ofoEntry *entry;
 	const gchar *currency;
@@ -286,8 +286,7 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 
 	priv->entries_list = NULL;
 	dbegin = ofo_dossier_get_exe_begin( dossier );
-	dend = ofo_dossier_get_exe_end( dossier );
-	entries = ofo_entry_get_dataset_for_print_general_books( priv->hub, NULL, NULL, dbegin, dend );
+	entries = ofo_entry_get_dataset_for_print_general_books( priv->hub, NULL, NULL, dbegin, NULL );
 	count = g_list_length( entries );
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
@@ -316,8 +315,8 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
  * If beginning or ending dates of the exercice are not set, then
  * all found ledgers are checked.
  *
- * All entries (validated or rough, but not deleted) between the
- * beginning and ending dates are considered.
+ * All entries (validated, rough and future, but not deleted) starting
+ * with the beginning date of the exercice are considered.
  */
 static void
 check_ledgers_balance_run( ofaCheckBalancesBin *bin )
@@ -353,8 +352,12 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 
 			sbal = ofs_currency_add_by_code(
 						&priv->ledgers_list, priv->hub, currency,
-						ofo_ledger_get_val_debit( ledger, currency ) + ofo_ledger_get_rough_debit( ledger, currency ),
-						ofo_ledger_get_val_credit( ledger, currency ) + ofo_ledger_get_rough_credit( ledger, currency ));
+						ofo_ledger_get_val_debit( ledger, currency )
+							+ ofo_ledger_get_rough_debit( ledger, currency )
+							+ ofo_ledger_get_futur_debit( ledger, currency ),
+						ofo_ledger_get_val_credit( ledger, currency )
+							+ ofo_ledger_get_rough_credit( ledger, currency )
+							+ ofo_ledger_get_futur_credit( ledger, currency ));
 
 			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		}
@@ -369,6 +372,8 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 
 /*
  * 3/ check that accounts are balanced per currency
+ *
+ * Validated, rough and future balances are considered.
  */
 static void
 check_accounts_balance_run( ofaCheckBalancesBin *bin )
@@ -401,8 +406,12 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 
 			sbal = ofs_currency_add_by_code(
 						&priv->accounts_list, priv->hub, currency,
-						ofo_account_get_val_debit( account ) + ofo_account_get_rough_debit( account ),
-						ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account ));
+						ofo_account_get_val_debit( account )
+							+ ofo_account_get_rough_debit( account )
+							+ ofo_account_get_futur_debit( account ),
+						ofo_account_get_val_credit( account )
+							+ ofo_account_get_rough_credit( account )
+							+ ofo_account_get_futur_credit( account ));
 
 			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
 		}
