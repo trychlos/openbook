@@ -108,7 +108,6 @@ libofa_core_la_SOURCES = \
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
-	ofa-ientry-ope-template.c							\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\
 	ofa-ihubber.c										\
@@ -124,6 +123,7 @@ libofa_core_la_SOURCES = \
 	ofa-ledger-store.h									\
 	ofa-list-store.c									\
 	ofa-main-window.h									\
+	ofa-ope-template-editable.c							\
 	ofa-ope-template-frame-bin.c						\
 	ofa-ope-template-frame-bin.h						\
 	ofa-ope-template-help.c								\

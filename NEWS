@@ -61,7 +61,8 @@
    - myProgressBar: ofa-double, ofa-text and ofa-pulse signals are renamed to my-xxx equivalents.
    - ofa_amount_xxx(): new functions.
    - ofa_counter_xxx(): new functions.
-   - ofaIAccountEntry: interface is removed and replaced with ofa_account_editable_xxx().
+   - ofaIEntryAccount: interface is removed and replaced with ofa_account_editable_xxx().
+   - ofaIEntryOpeTemplate: interface is removed and replaced with ofa_ope_template_editable_xxx().
    - ofaOpenPrefsBin: new UI composite widget.
    - ofs_currency_cmp(): new function.
 

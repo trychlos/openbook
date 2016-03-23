@@ -26,13 +26,13 @@
 #define __OPENBOOK_API_UI_OFA_ACCOUNT_EDITABLE_H__
 
 /**
- * SECTION: iaccount_entry
- * @title: ofaIEntryAccount
- * @short_description: The IEntryAccount interface
- * @include: ui/ofa-account-editable.h
+ * SECTION: account_editable
+ * @title: ofaAccountEditbale
+ * @short_description: The ofa_account_editable set of functions.
+ * @include: openbook/ofa-account-editable.h
  *
- * The #ofaIEntryAccount interface lets the user enter and select
- * accounts in the provided GtkEntry.
+ * The ofa_account_editable set of functions lets the user enter and
+ * select accounts in the provided GtkEntry.
  *
  * Just call #ofa_account_editable_init() with each GtkEntry you want
  * set, and the function will take care of setting an icon, triggering

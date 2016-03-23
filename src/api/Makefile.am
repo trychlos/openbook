@@ -47,7 +47,6 @@ api_include_HEADERS = \
 	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
-	ofa-ientry-ope-template.h							\
 	ofa-iexeclose-close.h								\
 	ofa-iexportable.h									\
 	ofa-ihubber.h										\
@@ -60,6 +59,7 @@ api_include_HEADERS = \
 	ofa-isingle-keeper.h								\
 	ofa-istore.h										\
 	ofa-list-store.h									\
+	ofa-ope-template-editable.h							\
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\

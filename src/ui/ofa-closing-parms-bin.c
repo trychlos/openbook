@@ -32,8 +32,8 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ientry-ope-template.h"
 #include "api/ofa-ihubber.h"
+#include "api/ofa-ope-template-editable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -99,7 +99,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing
 static void     setup_bin( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
 static void     setup_currency_accounts( ofaClosingParmsBin *bin );
-static void     ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *iface );
 static void     on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
 static void     on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
 static void     on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label );
@@ -118,8 +117,7 @@ static gboolean check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar
 static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaClosingParmsBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_OPE_TEMPLATE, ientry_ope_template_iface_init ))
+		G_ADD_PRIVATE( ofaClosingParmsBin ))
 
 static void
 closing_parms_bin_finalize( GObject *instance )
@@ -255,8 +253,8 @@ setup_bin( ofaClosingParmsBin *bin )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->sld_ope = entry;
-	ofa_ientry_ope_template_init(
-			OFA_IENTRY_OPE_TEMPLATE( bin ), OFA_MAIN_WINDOW( priv->main_window ), GTK_ENTRY( entry ));
+	ofa_ope_template_editable_init(
+			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( priv->main_window ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_sld_ope_changed ), bin );
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-prompt" );
@@ -271,8 +269,8 @@ setup_bin( ofaClosingParmsBin *bin )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->for_ope = entry;
-	ofa_ientry_ope_template_init(
-			OFA_IENTRY_OPE_TEMPLATE( bin ), OFA_MAIN_WINDOW( priv->main_window ), GTK_ENTRY( entry ));
+	ofa_ope_template_editable_init(
+			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( priv->main_window ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_for_ope_changed ), bin );
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-prompt" );
@@ -339,17 +337,6 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 		account = ofo_dossier_get_sld_account( priv->dossier, currency );
 		set_account( bin, currency, account );
 	}
-}
-
-/*
- * ofaIEntryOpeTemplate interface management
- */
-static void
-ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *iface )
-{
-	static const gchar *thisfn = "ofa_closing_parms_bin_ientry_ope_template_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void
