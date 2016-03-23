@@ -42,9 +42,6 @@ G_BEGIN_DECLS
 /**
  * ofsOpe:
  *
- * @dope_user_set: only for consistency as Openbook doesn't provide any
- *  default for operation date
- *
  * @detail: detail lines must be in the same order than in the operation
  *  template.
  */
@@ -86,11 +83,10 @@ typedef struct {
 }
 	ofsOpeDetail;
 
-
 /**
  * There are column identifiers in the UI grid view
  */
-enum {
+typedef enum {
 	OPE_COL_RANG = 0,
 	OPE_COL_ACCOUNT,
 	OPE_COL_LABEL,
@@ -99,7 +95,8 @@ enum {
 	OPE_COL_CURRENCY,
 	OPE_COL_VALID,
 	OPE_N_COLUMNS
-};
+}
+	ofeOpeColumns;
 
 ofsOpe  *ofs_ope_new             ( const ofoOpeTemplate *template );
 

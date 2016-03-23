@@ -82,7 +82,6 @@ struct _ofaGuidedInputBinPrivate {
 	GtkWidget            *dope_entry;
 	GtkWidget            *deffect_entry;
 	gboolean              deffect_has_focus;
-	gboolean              deffect_changed_while_focus;
 	GtkWidget            *ref_entry;
 	GtkGrid              *entries_grid;			/* entries grid container */
 	/* total count of rows = count of entries + 2 * count of currencies
@@ -313,7 +312,6 @@ ofa_guided_input_bin_init( ofaGuidedInputBin *self )
 
 	priv->dispose_has_run = FALSE;
 	my_date_clear( &priv->deffect_min );
-	priv->deffect_changed_while_focus = FALSE;
 	priv->currency_list = NULL;
 }
 
@@ -814,18 +812,21 @@ on_dope_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 			my_date_editable_get_date( GTK_EDITABLE( priv->dope_entry ), NULL ));
 
 	/* setup the effect date if it has not been manually changed */
-	if( my_date_is_valid( &ope->dope ) && !priv->deffect_changed_while_focus ){
+	if( my_date_is_valid( &ope->dope )){
+		ope->dope_user_set = TRUE;
 
-		if( my_date_is_valid( &priv->deffect_min ) &&
-			my_date_compare( &priv->deffect_min, &ope->dope ) > 0 ){
+		if( !ope->deffect_user_set ){
+			if( my_date_is_valid( &priv->deffect_min ) &&
+				my_date_compare( &priv->deffect_min, &ope->dope ) > 0 ){
 
-			my_date_set_from_date( &ope->deffect, &priv->deffect_min );
+				my_date_set_from_date( &ope->deffect, &priv->deffect_min );
 
-		} else {
-			my_date_set_from_date( &ope->deffect, &ope->dope );
+			} else {
+				my_date_set_from_date( &ope->deffect, &ope->dope );
+			}
+
+			my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &ope->deffect );
 		}
-
-		my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &ope->deffect );
 	}
 
 	check_for_enable_dlg( self );
@@ -876,11 +877,9 @@ on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 	ope = priv->ope;
 
 	if( priv->deffect_has_focus ){
-
 		my_date_set_from_date( &ope->deffect,
 				my_date_editable_get_date( GTK_EDITABLE( priv->deffect_entry ), NULL ));
-
-		priv->deffect_changed_while_focus = TRUE;
+		ope->deffect_user_set = TRUE;
 	}
 
 	check_for_enable_dlg( self );
@@ -1723,11 +1722,9 @@ do_reset_entries_rows( ofaGuidedInputBin *self )
 	ofaGuidedInputBinPrivate *priv;
 	gint i, model_count;
 	GtkWidget *entry;
+	ofsOpeDetail *detail;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
-
-	ofs_ope_free( priv->ope );
-	priv->ope = ofs_ope_new( priv->model );
 
 	model_count = ofo_ope_template_get_detail_count( priv->model );
 	for( i=priv->rows_count ; i>=1+model_count ; --i ){
@@ -1736,32 +1733,28 @@ do_reset_entries_rows( ofaGuidedInputBin *self )
 	priv->rows_count = model_count;
 
 	for( i=1 ; i<=priv->rows_count ; ++i ){
-		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_LABEL, i );
-		if( entry && GTK_IS_ENTRY( entry )){
-			if( ofo_ope_template_get_detail_label_locked( priv->model, i-1 )){
-				g_signal_handlers_block_by_func( entry, on_entry_changed, self );
-				gtk_entry_set_text( GTK_ENTRY( entry ), "" );
-				g_signal_handlers_unblock_by_func( entry, on_entry_changed, self );
-			}
-		}
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_DEBIT, i );
 		if( entry && GTK_IS_ENTRY( entry )){
-			if( ofo_ope_template_get_detail_debit_locked( priv->model, i-1 )){
-				g_signal_handlers_block_by_func( entry, on_entry_changed, self );
-				gtk_entry_set_text( GTK_ENTRY( entry ), "" );
-				g_signal_handlers_unblock_by_func( entry, on_entry_changed, self );
-			}
+			g_signal_handlers_block_by_func( entry, on_entry_changed, self );
+			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+			g_signal_handlers_unblock_by_func( entry, on_entry_changed, self );
 		}
 		entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, i );
 		if( entry && GTK_IS_ENTRY( entry )){
-			if( ofo_ope_template_get_detail_credit_locked( priv->model, i-1 )){
-				g_signal_handlers_block_by_func( entry, on_entry_changed, self );
-				gtk_entry_set_text( GTK_ENTRY( entry ), "" );
-				g_signal_handlers_unblock_by_func( entry, on_entry_changed, self );
-			}
+			g_signal_handlers_block_by_func( entry, on_entry_changed, self );
+			gtk_entry_set_text( GTK_ENTRY( entry ), "" );
+			g_signal_handlers_unblock_by_func( entry, on_entry_changed, self );
 		}
 		draw_valid_coche( self, i, FALSE );
+
+		detail = ( ofsOpeDetail * ) g_list_nth_data( priv->ope->detail, i-1 );
+		detail->debit = 0;
+		detail->debit_user_set = FALSE;
+		detail->credit = 0;
+		detail->credit_user_set = FALSE;
 	}
+
+	check_for_enable_dlg( self );
 }
 
 /*
