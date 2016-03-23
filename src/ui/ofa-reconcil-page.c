@@ -34,11 +34,11 @@
 #include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
-#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
@@ -260,8 +260,6 @@ static void         itreeview_display_iface_init( ofaITreeviewDisplayInterface *
 static guint        itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar       *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean     itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static void         iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
-static gchar       *iaccount_entry_on_pre_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed );
 static GtkWidget   *v_setup_view( ofaPage *page );
 static void         setup_treeview_header( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_treeview( ofaReconcilPage *self, GtkContainer *parent );
@@ -275,6 +273,7 @@ static void         setup_auto_rappro( ofaReconcilPage *self, GtkContainer *pare
 static void         setup_action_buttons( ofaReconcilPage *self, GtkContainer *parent );
 static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
 static void         account_on_entry_changed( GtkEntry *entry, ofaReconcilPage *self );
+static gchar       *account_on_preselect( GtkEditable *editable, ofeAccountAllowed allowed, ofaReconcilPage *self );
 static void         account_clear_content( ofaReconcilPage *self );
 static ofoAccount  *account_get_reconciliable( ofaReconcilPage *self );
 static void         account_set_header_balance( ofaReconcilPage *self );
@@ -349,7 +348,6 @@ static void         set_message( ofaReconcilPage *page, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaReconcilPage )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
 
@@ -477,32 +475,6 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 {
 	return( ofa_itreeview_column_get_def_visible(
 					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
-}
-
-/*
- * ofaIEntryAccount interface management
- */
-static void
-iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
-{
-	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->on_pre_select = iaccount_entry_on_pre_select;
-}
-
-static gchar *
-iaccount_entry_on_pre_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed )
-{
-	const gchar *text;
-
-	text = gtk_entry_get_text( entry );
-	if( !my_strlen( text )){
-		text = st_default_reconciliated_class;
-	}
-
-	return( g_strdup( text ));
 }
 
 /*
@@ -869,9 +841,11 @@ setup_account_selection( ofaReconcilPage *self, GtkContainer *parent )
 	priv->acc_id_entry = my_utils_container_get_child_by_name( parent, "account-number" );
 	g_return_if_fail( priv->acc_id_entry && GTK_IS_ENTRY( priv->acc_id_entry ));
 	g_signal_connect( priv->acc_id_entry, "changed", G_CALLBACK( account_on_entry_changed ), self );
-	ofa_ientry_account_init(
-			OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-			GTK_ENTRY( priv->acc_id_entry ), ACCOUNT_ALLOW_RECONCILIABLE );
+	ofa_account_editable_init(
+			GTK_EDITABLE( priv->acc_id_entry ),
+			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_RECONCILIABLE );
+	ofa_account_editable_set_preselect_cb(
+			GTK_EDITABLE( priv->acc_id_entry ), ( AccountPreSelectCb ) account_on_preselect, self );
 
 	priv->acc_label = my_utils_container_get_child_by_name( parent, "account-label" );
 	g_return_if_fail( priv->acc_label && GTK_IS_LABEL( priv->acc_label ));
@@ -1119,6 +1093,19 @@ account_on_entry_changed( GtkEntry *entry, ofaReconcilPage *self )
 
 	select = gtk_tree_view_get_selection( priv->tview );
 	on_tview_selection_changed( select, self );
+}
+
+static gchar *
+account_on_preselect( GtkEditable *editable, ofeAccountAllowed allowed, ofaReconcilPage *self )
+{
+	const gchar *text;
+
+	text = gtk_entry_get_text( GTK_ENTRY( editable ));
+	if( !my_strlen( text )){
+		text = st_default_reconciliated_class;
+	}
+
+	return( g_strdup( text ));
 }
 
 /*

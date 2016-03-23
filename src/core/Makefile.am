@@ -61,6 +61,7 @@ nodist_libofa_core_la_SOURCES = \
 	$(NULL)
 
 libofa_core_la_SOURCES = \
+	ofa-account-editable.c								\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
 	ofa-account-properties.c							\
@@ -107,7 +108,6 @@ libofa_core_la_SOURCES = \
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
-	ofa-ientry-account.c								\
 	ofa-ientry-ope-template.c							\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\

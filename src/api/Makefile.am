@@ -25,6 +25,7 @@ api_includedir = $(pkgincludedir)
 api_include_HEADERS = \
 	ofa-extension.h										\
 	\
+	ofa-account-editable.h								\
 	ofa-amount.h										\
 	ofa-box.h											\
 	ofa-buttons-box.h									\
@@ -46,7 +47,6 @@ api_include_HEADERS = \
 	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
-	ofa-ientry-account.h								\
 	ofa-ientry-ope-template.h							\
 	ofa-iexeclose-close.h								\
 	ofa-iexportable.h									\

@@ -162,24 +162,24 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_libofa_core_la_OBJECTS = ofa-account-frame-bin.lo \
-	ofa-account-properties.lo ofa-account-select.lo \
-	ofa-account-store.lo ofa-admin-credentials-bin.lo \
-	ofa-amount.lo ofa-box.lo ofa-buttons-box.lo ofa-counter.lo \
-	ofa-currency-combo.lo ofa-currency-store.lo \
-	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
-	ofa-dossier-delete-prefs-bin.lo ofa-dossier-prefs.lo \
-	ofa-file-dir.lo ofa-file-format.lo ofa-file-format-bin.lo \
-	ofa-guided-input.lo ofa-guided-input-bin.lo ofa-hub.lo \
-	ofa-iabout.lo ofa-icollectionable.lo ofa-icollector.lo \
-	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
-	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbmodel.lo \
-	ofa-idbperiod.lo ofa-idbprovider.lo ofa-ientry-account.lo \
-	ofa-ientry-ope-template.lo ofa-iexeclose-close.lo \
-	ofa-iexportable.lo ofa-ihubber.lo ofa-iimporter.lo \
-	ofa-iimportable.lo ofa-iprefs-page.lo ofa-iprefs-provider.lo \
-	ofa-isingle-keeper.lo ofa-istore.lo ofa-ledger-combo.lo \
-	ofa-ledger-store.lo ofa-list-store.lo \
+am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
+	ofa-account-frame-bin.lo ofa-account-properties.lo \
+	ofa-account-select.lo ofa-account-store.lo \
+	ofa-admin-credentials-bin.lo ofa-amount.lo ofa-box.lo \
+	ofa-buttons-box.lo ofa-counter.lo ofa-currency-combo.lo \
+	ofa-currency-store.lo ofa-date-filter-hv-bin.lo \
+	ofa-dbms-root-bin.lo ofa-dossier-delete-prefs-bin.lo \
+	ofa-dossier-prefs.lo ofa-file-dir.lo ofa-file-format.lo \
+	ofa-file-format-bin.lo ofa-guided-input.lo \
+	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
+	ofa-icollectionable.lo ofa-icollector.lo ofa-iconcil.lo \
+	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
+	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
+	ofa-idbprovider.lo ofa-ientry-ope-template.lo \
+	ofa-iexeclose-close.lo ofa-iexportable.lo ofa-ihubber.lo \
+	ofa-iimporter.lo ofa-iimportable.lo ofa-iprefs-page.lo \
+	ofa-iprefs-provider.lo ofa-isingle-keeper.lo ofa-istore.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
 	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
 	ofa-ope-template-store.lo ofa-open-prefs-bin.lo ofa-page.lo \
@@ -467,6 +467,7 @@ nodist_libofa_core_la_SOURCES = \
 	$(NULL)
 
 libofa_core_la_SOURCES = \
+	ofa-account-editable.c								\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\
 	ofa-account-properties.c							\
@@ -513,7 +514,6 @@ libofa_core_la_SOURCES = \
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
-	ofa-ientry-account.c								\
 	ofa-ientry-ope-template.c							\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\
@@ -665,6 +665,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-editable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-frame-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Plo@am__quote@
@@ -697,7 +698,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbperiod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ientry-account.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ientry-ope-template.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexeclose-close.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@

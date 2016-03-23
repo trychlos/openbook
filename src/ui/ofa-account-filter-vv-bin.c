@@ -26,8 +26,6 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-ientry-account.h"
-
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-filter-vv-bin.h"
@@ -43,11 +41,9 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-account
 
 static void  iaccount_filter_iface_init( ofaIAccountFilterInterface *iface );
 static guint iaccount_filter_get_interface_version( const ofaIAccountFilter *instance );
-static void  ientry_account_iface_init( ofaIEntryAccountInterface *iface );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountFilterVVBin, ofa_account_filter_vv_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaAccountFilterVVBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, ientry_account_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACCOUNT_FILTER, iaccount_filter_iface_init ))
 
 static void
@@ -145,15 +141,4 @@ static guint
 iaccount_filter_get_interface_version( const ofaIAccountFilter *instance )
 {
 	return( 1 );
-}
-
-/*
- * ofaIEntryAccount interface management
- */
-static void
-ientry_account_iface_init( ofaIEntryAccountInterface *iface )
-{
-	static const gchar *thisfn = "ofa_account_filter_vv_bin_ientry_account_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }

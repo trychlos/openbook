@@ -31,8 +31,8 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -309,9 +309,8 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->from_entry = entry;
-	ofa_ientry_account_init(
-			OFA_IENTRY_ACCOUNT( filter ), OFA_MAIN_WINDOW( sdata->main_window ),
-			GTK_ENTRY( entry ), ACCOUNT_ALLOW_ALL );
+	ofa_account_editable_init(
+			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( sdata->main_window ), ACCOUNT_ALLOW_ALL );
 
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
@@ -329,9 +328,8 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->to_entry = entry;
-	ofa_ientry_account_init(
-			OFA_IENTRY_ACCOUNT( filter ), OFA_MAIN_WINDOW( sdata->main_window ),
-			GTK_ENTRY( entry ), ACCOUNT_ALLOW_ALL );
+	ofa_account_editable_init(
+			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( sdata->main_window ), ACCOUNT_ALLOW_ALL );
 
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 

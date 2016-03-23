@@ -32,9 +32,9 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ientry-account.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -197,7 +197,6 @@ static void           itreeview_display_iface_init( ofaITreeviewDisplayInterface
 static guint          itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar         *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean       itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static void           iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
 static GtkWidget     *v_setup_view( ofaPage *page );
 static void           setup_footer( ofaSettlementPage *self, GtkContainer *parent );
 static void           setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent );
@@ -235,7 +234,6 @@ static gboolean       find_entry_by_number( ofaSettlementPage *self, GtkTreeMode
 
 G_DEFINE_TYPE_EXTENDED( ofaSettlementPage, ofa_settlement_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaSettlementPage )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
 
@@ -376,17 +374,6 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 			break;
 	}
 	return( visible );
-}
-
-/*
- * ofaIEntryAccount interface management
- */
-static void
-iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
-{
-	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static GtkWidget *
@@ -719,9 +706,9 @@ setup_account_selection( ofaSettlementPage *self, GtkContainer *parent )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	priv->account_entry = widget;
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
-	ofa_ientry_account_init(
-			OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-			GTK_ENTRY( widget ), ACCOUNT_ALLOW_SETTLEABLE );
+	ofa_account_editable_init(
+			GTK_EDITABLE( widget ),
+			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_SETTLEABLE );
 	if( my_strlen( priv->account_number )){
 		gtk_entry_set_text( GTK_ENTRY( widget ), priv->account_number );
 	}

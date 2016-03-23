@@ -30,8 +30,8 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ientry-account.h"
 #include "api/ofa-ientry-ope-template.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofo-account.h"
@@ -99,7 +99,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-closing
 static void     setup_bin( ofaClosingParmsBin *self );
 static void     setup_closing_opes( ofaClosingParmsBin *bin );
 static void     setup_currency_accounts( ofaClosingParmsBin *bin );
-static void     ientry_account_iface_init( ofaIEntryAccountInterface *iface );
 static void     ientry_ope_template_iface_init( ofaIEntryOpeTemplateInterface *iface );
 static void     on_sld_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
 static void     on_for_ope_changed( GtkEditable *editable, ofaClosingParmsBin *self );
@@ -120,7 +119,6 @@ static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaClosingParmsBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, ientry_account_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_OPE_TEMPLATE, ientry_ope_template_iface_init ))
 
 static void
@@ -341,17 +339,6 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 		account = ofo_dossier_get_sld_account( priv->dossier, currency );
 		set_account( bin, currency, account );
 	}
-}
-
-/*
- * ofaIEntryAccount interface management
- */
-static void
-ientry_account_iface_init( ofaIEntryAccountInterface *iface )
-{
-	static const gchar *thisfn = "ofa_closing_parms_bin_ientry_account_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /*
@@ -579,9 +566,8 @@ set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *accou
 	if( entry ){
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), account );
-		ofa_ientry_account_init(
-				OFA_IENTRY_ACCOUNT( self ), priv->main_window,
-				GTK_ENTRY( entry ), ACCOUNT_ALLOW_DETAIL );
+		ofa_account_editable_init(
+				GTK_EDITABLE( entry ), priv->main_window, ACCOUNT_ALLOW_DETAIL );
 	}
 }
 

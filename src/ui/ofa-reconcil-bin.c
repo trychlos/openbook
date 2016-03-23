@@ -31,8 +31,8 @@
 #include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -77,7 +77,6 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-reconcil-bin.ui";
 static const gchar *st_settings         = "RenderReconciliation";
 
-static void iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
 static void setup_bin( ofaReconcilBin *self );
 static void setup_account_selection( ofaReconcilBin *self );
 static void setup_date_selection( ofaReconcilBin *self );
@@ -88,8 +87,7 @@ static void load_settings( ofaReconcilBin *self );
 static void set_settings( ofaReconcilBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilBin, ofa_reconcil_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaReconcilBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init ))
+		G_ADD_PRIVATE( ofaReconcilBin ))
 
 static void
 reconcil_bin_finalize( GObject *instance )
@@ -206,17 +204,6 @@ ofa_reconcil_bin_new( const ofaMainWindow *main_window )
 	return( self );
 }
 
-/*
- * ofaIEntryAccount interface management
- */
-static void
-iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
-{
-	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-}
-
 static void
 setup_bin( ofaReconcilBin *self )
 {
@@ -245,9 +232,8 @@ setup_account_selection( ofaReconcilBin *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
 	priv->account_entry = entry;
-	ofa_ientry_account_init(
-			OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( priv->main_window ),
-			GTK_ENTRY( entry ), ACCOUNT_ALLOW_RECONCILIABLE );
+	ofa_account_editable_init(
+			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( priv->main_window ), ACCOUNT_ALLOW_RECONCILIABLE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "account-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

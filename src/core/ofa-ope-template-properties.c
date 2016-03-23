@@ -33,8 +33,8 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -137,7 +137,6 @@ static guint     igridlist_get_interface_version( const myIGridList *instance );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      set_detail_widgets( ofaOpeTemplateProperties *self, guint row );
 static void      set_detail_values( ofaOpeTemplateProperties *self, guint row );
-static void      iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
 static void      on_mnemo_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
@@ -152,7 +151,6 @@ static void      set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateProperties, ofa_ope_template_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateProperties )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IGRIDLIST, igridlist_iface_init ))
@@ -599,9 +597,8 @@ set_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_ACCOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
-	ofa_ientry_account_init(
-			OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))),
-			entry, ACCOUNT_ALLOW_DETAIL );
+	ofa_account_editable_init( GTK_EDITABLE( entry ),
+			OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))), ACCOUNT_ALLOW_DETAIL );
 
 	/* account locked */
 	toggle = gtk_check_button_new();
@@ -699,17 +696,6 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 
 	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT_LOCKED, row ));
 	gtk_toggle_button_set_active( toggle, ofo_ope_template_get_detail_credit_locked( priv->ope_template, row-1 ));
-}
-
-/*
- * ofaIEntryAccount interface management
- */
-static void
-iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
-{
-	static const gchar *thisfn = "ofa_account_filter_vv_bin_iaccount_entry_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 static void

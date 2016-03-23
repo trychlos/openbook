@@ -33,9 +33,9 @@
 #include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ientry-account.h"
 #include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -214,8 +214,6 @@ static const gchar *st_resource_ui          = "/org/trychlos/openbook/core/ofa-g
 
 static void              setup_main_window( ofaGuidedInputBin *self );
 static void              setup_dialog( ofaGuidedInputBin *self );
-static void              iaccount_entry_iface_init( ofaIEntryAccountInterface *iface );
-static gchar            *iaccount_entry_on_post_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id );
 static void              init_model_data( ofaGuidedInputBin *self );
 static void              add_entry_row( ofaGuidedInputBin *self, gint i );
 static void              add_entry_row_widget( ofaGuidedInputBin *self, gint col_id, gint row );
@@ -231,6 +229,7 @@ static void              on_deffect_changed( GtkEntry *entry, ofaGuidedInputBin 
 static void              on_piece_changed( GtkEditable *editable, ofaGuidedInputBin *self );
 static gboolean          on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedInputBin *self );
 static void              do_account_selection( ofaGuidedInputBin *self, GtkEntry *entry, gint row );
+static gchar            *on_account_postselect( GtkEditable *editable, ofeAccountAllowed allowed, const gchar *account_id, ofaGuidedInputBin *self );
 static void              check_for_account( ofaGuidedInputBin *self, GtkEntry *entry, gint row );
 static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self );
 static gboolean          on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self );
@@ -254,8 +253,7 @@ static void              on_hub_updated_object( const ofaHub *hub, const ofoBase
 static void              on_hub_deleted_object( const ofaHub *hub, const ofoBase *object, ofaGuidedInputBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedInputBin, ofa_guided_input_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaGuidedInputBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IENTRY_ACCOUNT, iaccount_entry_iface_init ))
+		G_ADD_PRIVATE( ofaGuidedInputBin ))
 
 static void
 guided_input_bin_finalize( GObject *instance )
@@ -509,36 +507,6 @@ setup_dialog( ofaGuidedInputBin *self )
 	gtk_widget_show_all( GTK_WIDGET( self ));
 }
 
-/*
- * ofaIEntryAccount interface management
- */
-static void
-iaccount_entry_iface_init( ofaIEntryAccountInterface *iface )
-{
-	static const gchar *thisfn = "ofa_guided_input_bin_iaccount_entry_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->on_post_select = iaccount_entry_on_post_select;
-}
-
-static gchar *
-iaccount_entry_on_post_select( ofaIEntryAccount *instance, GtkEntry *entry, GtkEntryIconPosition position, ofeAccountAllowed allowed, const gchar *account_id )
-{
-	ofaGuidedInputBinPrivate *priv;
-	sEntryData *sdata;
-
-	priv = ofa_guided_input_bin_get_instance_private( OFA_GUIDED_INPUT_BIN( instance ));
-
-	if( my_strlen( account_id )){
-		sdata = g_object_get_data( G_OBJECT( entry ), DATA_ENTRY_DATA );
-		priv->focused_row = sdata->row_id;
-		priv->focused_column = OPE_COL_ACCOUNT;
-	}
-
-	return( NULL );
-}
-
 /**
  * ofa_guided_input_bin_set_ope_template:
  *
@@ -755,9 +723,10 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 		}
 
 		if( col_def->column_id == OPE_COL_ACCOUNT && !locked ){
-			ofa_ientry_account_init(
-					OFA_IENTRY_ACCOUNT( self ), OFA_MAIN_WINDOW( priv->main_window ),
-					GTK_ENTRY( widget ), ACCOUNT_ALLOW_DETAIL );
+			ofa_account_editable_init(
+					GTK_EDITABLE( widget ), OFA_MAIN_WINDOW( priv->main_window ), ACCOUNT_ALLOW_DETAIL );
+			ofa_account_editable_set_postselect_cb(
+					GTK_EDITABLE( widget ), ( AccountPostSelectCb ) on_account_postselect, self );
 		}
 	}
 
@@ -990,6 +959,23 @@ do_account_selection( ofaGuidedInputBin *self, GtkEntry *entry, gint row )
 		gtk_entry_set_text( entry, number );
 	}
 	g_free( number );
+}
+
+static gchar *
+on_account_postselect( GtkEditable *editable, ofeAccountAllowed allowed, const gchar *account_id, ofaGuidedInputBin *self )
+{
+	ofaGuidedInputBinPrivate *priv;
+	sEntryData *sdata;
+
+	priv = ofa_guided_input_bin_get_instance_private( self );
+
+	if( my_strlen( account_id )){
+		sdata = g_object_get_data( G_OBJECT( editable ), DATA_ENTRY_DATA );
+		priv->focused_row = sdata->row_id;
+		priv->focused_column = OPE_COL_ACCOUNT;
+	}
+
+	return( NULL );
 }
 
 /*
