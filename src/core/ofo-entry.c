@@ -207,7 +207,7 @@ static void         entry_set_settlement_user( ofoEntry *entry, const gchar *use
 static void         entry_set_settlement_stamp( ofoEntry *entry, const GTimeVal *stamp );
 static void         entry_set_import_settled( ofoEntry *entry, gboolean settled );
 static gboolean     entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub );
-static gboolean     entry_do_insert( ofoEntry *entry, const ofaIDBConnect *connect );
+static gboolean     entry_do_insert( ofoEntry *entry, ofaHub *hub );
 static void         error_ledger( const gchar *ledger );
 static void         error_ope_template( const gchar *model );
 static void         error_currency( const gchar *currency );
@@ -215,7 +215,7 @@ static void         error_acc_number( void );
 static void         error_account( const gchar *number );
 static void         error_acc_currency( const gchar *currency, ofoAccount *account );
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
-static gboolean     entry_do_update( ofoEntry *entry, const ofaIDBConnect *connect );
+static gboolean     entry_do_update( ofoEntry *entry, ofaHub *hub );
 static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *connect );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
@@ -2165,7 +2165,7 @@ ofo_entry_insert( ofoEntry *entry, ofaHub *hub )
 	entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
 	entry_compute_status( entry, FALSE, hub );
 
-	if( entry_do_insert( entry, ofa_hub_get_connect( hub ))){
+	if( entry_do_insert( entry, hub )){
 		ofo_base_set_hub( OFO_BASE( entry ), hub );
 		if( ofo_entry_get_status( entry ) != ENT_STATUS_PAST ){
 			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, entry );
@@ -2177,7 +2177,7 @@ ofo_entry_insert( ofoEntry *entry, ofaHub *hub )
 }
 
 static gboolean
-entry_do_insert( ofoEntry *entry, const ofaIDBConnect *connect )
+entry_do_insert( ofoEntry *entry, ofaHub *hub )
 {
 	GString *query;
 	gchar *label, *ref;
@@ -2185,10 +2185,18 @@ entry_do_insert( ofoEntry *entry, const ofaIDBConnect *connect )
 	gboolean ok;
 	GTimeVal stamp;
 	gchar *stamp_str;
-	const gchar *model;
+	const gchar *model, *cur_code;
+	ofoCurrency *cur_obj;
+	const ofaIDBConnect *connect;
 
-	g_return_val_if_fail( OFO_IS_ENTRY( entry ), FALSE );
-	g_return_val_if_fail( OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+
+	cur_code = ofo_entry_get_currency( entry );
+	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
+
+	connect = ofa_hub_get_connect( hub );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_single( ofo_entry_get_label( entry ));
@@ -2220,7 +2228,7 @@ entry_do_insert( ofoEntry *entry, const ofaIDBConnect *connect )
 	g_string_append_printf( query,
 				"'%s','%s','%s',",
 				ofo_entry_get_account( entry ),
-				ofo_entry_get_currency( entry ),
+				cur_code,
 				ofo_entry_get_ledger( entry ));
 
 	model = ofo_entry_get_ope_template( entry );
@@ -2230,8 +2238,8 @@ entry_do_insert( ofoEntry *entry, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	sdebit = my_double_to_sql( ofo_entry_get_debit( entry ));
-	scredit = my_double_to_sql( ofo_entry_get_credit( entry ));
+	sdebit = ofa_amount_to_sql( ofo_entry_get_debit( entry ), cur_obj );
+	scredit = ofa_amount_to_sql( ofo_entry_get_credit( entry ), cur_obj );
 
 	g_string_append_printf( query,
 				"%s,%s,%d,'%s','%s')",
@@ -2378,7 +2386,7 @@ ofo_entry_update( ofoEntry *entry )
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( entry ));
 
-	if( entry_do_update( entry, ofa_hub_get_connect( hub ))){
+	if( entry_do_update( entry, hub )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );
 		ok = TRUE;
 	}
@@ -2387,7 +2395,7 @@ ofo_entry_update( ofoEntry *entry )
 }
 
 static gboolean
-entry_do_update( ofoEntry *entry, const ofaIDBConnect *connect )
+entry_do_update( ofoEntry *entry, ofaHub *hub )
 {
 	GString *query;
 	gchar *sdeff, *sdope, *sdeb, *scre, *userid;
@@ -2395,16 +2403,25 @@ entry_do_update( ofoEntry *entry, const ofaIDBConnect *connect )
 	GTimeVal stamp;
 	gboolean ok;
 	const gchar *model, *cstr;
+	const gchar *cur_code;
+	ofoCurrency *cur_obj;
+	const ofaIDBConnect *connect;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+
+	cur_code = ofo_entry_get_currency( entry );
+	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
+
+	connect = ofa_hub_get_connect( hub );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_single( ofo_entry_get_label( entry ));
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), MY_DATE_SQL );
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), MY_DATE_SQL );
-	sdeb = my_double_to_sql( ofo_entry_get_debit( entry ));
-	scre = my_double_to_sql( ofo_entry_get_credit( entry ));
+	sdeb = ofa_amount_to_sql( ofo_entry_get_debit( entry ), cur_obj );
+	scre = ofa_amount_to_sql( ofo_entry_get_credit( entry ), cur_obj );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -2426,7 +2443,7 @@ entry_do_update( ofoEntry *entry, const ofaIDBConnect *connect )
 	g_string_append_printf( query,
 			"	ENT_ACCOUNT='%s',ENT_CURRENCY='%s',ENT_LEDGER='%s',",
 			ofo_entry_get_account( entry ),
-			ofo_entry_get_currency( entry ),
+			cur_code,
 			ofo_entry_get_ledger( entry ));
 
 	model = ofo_entry_get_ope_template( entry );
@@ -3243,7 +3260,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		for( it=dataset ; it ; it=it->next ){
 			entry = OFO_ENTRY( it->data );
 			entry_set_number( entry, ofo_dossier_get_next_entry( dossier ));
-			if( entry_do_insert( entry, connect )){
+			if( entry_do_insert( entry, hub )){
 				ofo_base_set_hub( OFO_BASE( entry ), hub );
 
 				if( entry_get_import_settled( entry )){

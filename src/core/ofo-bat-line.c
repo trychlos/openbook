@@ -33,12 +33,14 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-iconcil.h"
@@ -61,8 +63,8 @@ struct _ofoBatLinePrivate {
 
 static GList       *bat_line_load_dataset( ofaHub *hub, const gchar *where );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
-static gboolean     bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *connect );
-static gboolean     bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect );
+static gboolean     bat_line_do_insert( ofoBatLine *bat, ofaHub *hub );
+static gboolean     bat_line_insert_main( ofoBatLine *bat, ofaHub *hub );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
@@ -571,7 +573,7 @@ ofo_bat_line_insert( ofoBatLine *bat_line, ofaHub *hub )
 	dossier = ofa_hub_get_dossier( hub );
 	bat_line_set_line_id( bat_line, ofo_dossier_get_next_batline( dossier ));
 
-	if( bat_line_do_insert( bat_line, ofa_hub_get_connect( hub ))){
+	if( bat_line_do_insert( bat_line, hub )){
 		ok = TRUE;
 	}
 
@@ -579,18 +581,27 @@ ofo_bat_line_insert( ofoBatLine *bat_line, ofaHub *hub )
 }
 
 static gboolean
-bat_line_do_insert( ofoBatLine *bat, const ofaIDBConnect *connect )
+bat_line_do_insert( ofoBatLine *bat, ofaHub *hub )
 {
-	return( bat_line_insert_main( bat, connect ));
+	return( bat_line_insert_main( bat, hub ));
 }
 
 static gboolean
-bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect )
+bat_line_insert_main( ofoBatLine *bat, ofaHub *hub )
 {
 	GString *query;
 	gchar *str;
 	const GDate *dope;
 	gboolean ok;
+	const gchar *cur_code;
+	ofoCurrency *cur_obj;
+	const ofaIDBConnect *connect;
+
+	cur_code = ofo_bat_line_get_currency( bat );
+	cur_obj = my_strlen( cur_code ) ? ofo_currency_get_by_code( hub, cur_code ) : NULL;
+	g_return_val_if_fail( !cur_obj || OFO_IS_CURRENCY( cur_obj ), FALSE );
+
+	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "INSERT INTO OFA_T_BAT_LINES" );
 
@@ -630,14 +641,13 @@ bat_line_insert_main( ofoBatLine *bat, const ofaIDBConnect *connect )
 	}
 	g_free( str );
 
-	str = ( gchar * ) ofo_bat_line_get_currency( bat );
-	if( my_strlen( str )){
-		g_string_append_printf( query, "'%s',", str );
+	if( my_strlen( cur_code )){
+		g_string_append_printf( query, "'%s',", cur_code );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = my_double_to_sql( ofo_bat_line_get_amount( bat ));
+	str = ofa_amount_to_sql( ofo_bat_line_get_amount( bat ), cur_obj );
 	g_string_append_printf( query, "%s", str );
 	g_free( str );
 

@@ -185,7 +185,7 @@ static void       ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
 static gboolean   ledger_do_insert( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnect *connect );
-static gboolean   ledger_do_update_balance( const ofoLedger *ledger, GList *balance, const ofaIDBConnect *connect );
+static gboolean   ledger_do_update_balance( const ofoLedger *ledger, GList *balance, ofaHub *hub );
 static gboolean   ledger_do_delete( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gint       ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint       ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
@@ -361,7 +361,7 @@ on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
 			g_return_if_reached();
 	}
 
-	if( ledger_do_update_balance( ledger, balance, ofa_hub_get_connect( hub ))){
+	if( ledger_do_update_balance( ledger, balance, hub )){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
 	}
 }
@@ -467,7 +467,7 @@ on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 
 	balance = ledger_find_balance_by_code( ledger, currency );
 
-	if( ledger_do_update_balance( ledger, balance, ofa_hub_get_connect( hub ))){
+	if( ledger_do_update_balance( ledger, balance, hub )){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
 	}
 }
@@ -1518,7 +1518,7 @@ ofo_ledger_update_balance( ofoLedger *ledger, const gchar *currency )
 	balance = ledger_find_balance_by_code( ledger, currency );
 	g_return_val_if_fail( balance, FALSE );
 
-	if( ledger_do_update_balance( ledger, balance, ofa_hub_get_connect( hub ))){
+	if( ledger_do_update_balance( ledger, balance, hub )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ledger, NULL );
 		ok = TRUE;
 	}
@@ -1527,14 +1527,20 @@ ofo_ledger_update_balance( ofoLedger *ledger, const gchar *currency )
 }
 
 static gboolean
-ledger_do_update_balance( const ofoLedger *ledger, GList *balance, const ofaIDBConnect *connect )
+ledger_do_update_balance( const ofoLedger *ledger, GList *balance, ofaHub *hub )
 {
 	gchar *query;
 	const gchar *currency;
 	gchar *sval_debit, *sval_credit, *srough_debit, *srough_credit, *sfutur_debit, *sfutur_credit;
 	gboolean ok;
+	ofoCurrency *cur_obj;
+	const ofaIDBConnect *connect;
+
+	connect = ofa_hub_get_connect( hub );
 
 	currency = ofa_box_get_string( balance, LED_CURRENCY );
+	cur_obj = ofo_currency_get_by_code( hub, currency );
+	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_LEDGERS_CUR "
@@ -1545,12 +1551,12 @@ ledger_do_update_balance( const ofoLedger *ledger, GList *balance, const ofaIDBC
 	ofa_idbconnect_query( connect, query, FALSE );
 	g_free( query );
 
-	sval_debit = my_double_to_sql( ofo_ledger_get_val_debit( ledger, currency ));
-	sval_credit = my_double_to_sql( ofo_ledger_get_val_credit( ledger, currency ));
-	srough_debit = my_double_to_sql( ofo_ledger_get_rough_debit( ledger, currency ));
-	srough_credit = my_double_to_sql( ofo_ledger_get_rough_credit( ledger, currency ));
-	sfutur_debit = my_double_to_sql( ofo_ledger_get_futur_debit( ledger, currency ));
-	sfutur_credit = my_double_to_sql( ofo_ledger_get_futur_credit( ledger, currency ));
+	sval_debit = ofa_amount_to_sql( ofo_ledger_get_val_debit( ledger, currency ), cur_obj );
+	sval_credit = ofa_amount_to_sql( ofo_ledger_get_val_credit( ledger, currency ), cur_obj );
+	srough_debit = ofa_amount_to_sql( ofo_ledger_get_rough_debit( ledger, currency ), cur_obj );
+	srough_credit = ofa_amount_to_sql( ofo_ledger_get_rough_credit( ledger, currency ), cur_obj );
+	sfutur_debit = ofa_amount_to_sql( ofo_ledger_get_futur_debit( ledger, currency ), cur_obj );
+	sfutur_credit = ofa_amount_to_sql( ofo_ledger_get_futur_credit( ledger, currency ), cur_obj );
 
 	query = g_strdup_printf(
 					"INSERT INTO OFA_T_LEDGERS_CUR "

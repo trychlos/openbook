@@ -208,14 +208,6 @@
                 - ofaReconciliation is a tree store with bat lines
                 so the usefulness has yet to be proved...
 
- 572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
-                them with integers ?
-     2015- 2-16 ofsCurrency makes use of a work-around when checking
-                the accounts/entries/ledgers balances
-     2015- 3-11 or move the currency to an arbitrary unit per account,
-                the currency being only a sort of unit (but may also
-                be a day count, etc.) 
-
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
                 settlement data groups if they are set in the object
                 (would prevent two updates when closing the exercice)
@@ -482,6 +474,15 @@
 
  472 2014-11-29 set dialogs readonly if not current exercice
      2015- 2- 5 done for properties
+
+ 572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
+                them with integers ?
+     2015- 2-16 ofsCurrency makes use of a work-around when checking
+                the accounts/entries/ledgers balances
+     2015- 3-11 or move the currency to an arbitrary unit per account,
+                the currency being only a sort of unit (but may also
+                be a day count, etc.)
+     2016- 3-23 fixed in dbms storage
 
  607 2015- 1-29 MainWindow on_dossier_open: homogeneize dossier_open and
                 dossier_login in order to mutualize some code if possible

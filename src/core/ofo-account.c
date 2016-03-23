@@ -202,14 +202,14 @@ static gint         account_count_for_like( const ofaIDBConnect *connect, const 
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static gboolean     do_archive_open_balances( ofoAccount *account, const ofaIDBConnect *connect );
+static gboolean     do_archive_open_balances( ofoAccount *account, ofaHub *hub );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
 static void         account_set_open_credit( ofoAccount *account, ofxAmount amount );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
 static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
-static gboolean     account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *connect );
+static gboolean     account_do_update_amounts( ofoAccount *account, ofaHub *hub );
 static gboolean     account_do_delete( ofoAccount *account, const ofaIDBConnect *connect );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
 static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
@@ -1412,31 +1412,40 @@ ofo_account_archive_open_balances( ofoAccount *account )
 
 	} else {
 		hub = ofo_base_get_hub( OFO_BASE( account ));
-		ok = do_archive_open_balances( account, ofa_hub_get_connect( hub ));
+		ok = do_archive_open_balances( account, hub );
 	}
 
 	return( ok );
 }
 
 static gboolean
-do_archive_open_balances( ofoAccount *account, const ofaIDBConnect *connect )
+do_archive_open_balances( ofoAccount *account, ofaHub *hub )
 {
 	GString *query;
 	gchar *samount;
 	ofxAmount amount;
 	gboolean ok;
+	const gchar *cur_code;
+	ofoCurrency *cur_obj;
+	const ofaIDBConnect *connect;
+
+	cur_code = ofo_account_get_currency( account );
+	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
+
+	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 
 	amount = ofo_account_get_rough_debit( account )+ofo_account_get_val_debit( account );
 	account_set_open_debit( account, amount );
-	samount = my_double_to_sql( amount );
+	samount = ofa_amount_to_sql( amount, cur_obj );
 	g_string_append_printf( query, "ACC_OPEN_DEBIT=%s,", samount );
 	g_free( samount );
 
 	amount = ofo_account_get_rough_credit( account )+ofo_account_get_val_credit( account );
 	account_set_open_credit( account, amount );
-	samount = my_double_to_sql( amount );
+	samount = ofa_amount_to_sql( amount, cur_obj );
 	g_string_append_printf( query, "ACC_OPEN_CREDIT=%s ", samount );
 	g_free( samount );
 
@@ -1880,7 +1889,7 @@ ofo_account_update_amounts( ofoAccount *account )
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
 
-	if( account_do_update_amounts( account, ofa_hub_get_connect( hub ))){
+	if( account_do_update_amounts( account, hub )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, account, NULL );
 		ok = TRUE;
 	}
@@ -1889,19 +1898,28 @@ ofo_account_update_amounts( ofoAccount *account )
 }
 
 static gboolean
-account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *connect )
+account_do_update_amounts( ofoAccount *account, ofaHub *hub )
 {
 	GString *query;
 	gboolean ok;
 	gchar *samount;
 	ofxAmount amount;
+	const gchar *cur_code;
+	ofoCurrency *cur_obj;
+	const ofaIDBConnect *connect;
+
+	cur_code = ofo_account_get_currency( account );
+	cur_obj = ofo_currency_get_by_code( hub, cur_code );
+	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
+
+	connect = ofa_hub_get_connect( hub );
 
 	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 
 	/* validated debit */
 	amount = ofo_account_get_val_debit( account );
 	if( amount ){
-		samount = my_double_to_sql( amount );
+		samount = ofa_amount_to_sql( amount, cur_obj );
 		g_string_append_printf( query, "ACC_VAL_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
@@ -1911,7 +1929,7 @@ account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *connect )
 	/* validated credit */
 	amount = ofo_account_get_val_credit( account );
 	if( amount ){
-		samount = my_double_to_sql( amount );
+		samount = ofa_amount_to_sql( amount, cur_obj );
 		g_string_append_printf( query, "ACC_VAL_CREDIT=%s,", samount );
 		g_free( samount );
 	} else {
@@ -1921,7 +1939,7 @@ account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *connect )
 	/* rough debit */
 	amount = ofo_account_get_rough_debit( account );
 	if( amount ){
-		samount = my_double_to_sql( amount );
+		samount = ofa_amount_to_sql( amount, cur_obj );
 		g_string_append_printf( query, "ACC_ROUGH_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
@@ -1931,7 +1949,7 @@ account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *connect )
 	/* rough credit */
 	amount = ofo_account_get_rough_credit( account );
 	if( amount ){
-		samount = my_double_to_sql( amount );
+		samount = ofa_amount_to_sql( amount, cur_obj );
 		g_string_append_printf( query, "ACC_ROUGH_CREDIT=%s,", samount );
 		g_free( samount );
 	} else {
@@ -1941,7 +1959,7 @@ account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *connect )
 	/* future debit */
 	amount = ofo_account_get_futur_debit( account );
 	if( amount ){
-		samount = my_double_to_sql( amount );
+		samount = ofa_amount_to_sql( amount, cur_obj );
 		g_string_append_printf( query, "ACC_FUT_DEBIT=%s,", samount );
 		g_free( samount );
 	} else {
@@ -1951,7 +1969,7 @@ account_do_update_amounts( ofoAccount *account, const ofaIDBConnect *connect )
 	/* future credit */
 	amount = ofo_account_get_futur_credit( account );
 	if( amount ){
-		samount = my_double_to_sql( amount );
+		samount = ofa_amount_to_sql( amount, cur_obj );
 		g_string_append_printf( query, "ACC_FUT_CREDIT=%s ", samount );
 		g_free( samount );
 	} else {

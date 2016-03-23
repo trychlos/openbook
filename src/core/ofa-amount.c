@@ -93,6 +93,28 @@ ofa_amount_to_csv( ofxAmount amount, ofoCurrency *currency, const ofaFileFormat 
 }
 
 /**
+ * ofa_amount_to_sql:
+ * @amount:
+ * @currency: [allow-none]:
+ *
+ * Returns: the amount as a sql-suitable newly
+ * allocated string, which should be g_free() by the caller.
+ */
+gchar *
+ofa_amount_to_sql( ofxAmount amount, ofoCurrency *currency )
+{
+	gchar *str;
+	guint digits;
+
+	digits = currency && OFO_IS_CURRENCY( currency ) ?
+					ofo_currency_get_digits( currency ) : CUR_DEFAULT_DIGITS;
+
+	str = my_double_to_sql_ex( amount, digits );
+
+	return( str );
+}
+
+/**
  * ofa_amount_to_str:
  * @amount:
  * @currency: [allow-none]:

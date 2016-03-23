@@ -41,6 +41,8 @@ ofxAmount ofa_amount_from_str( const gchar *str );
 
 gchar    *ofa_amount_to_csv  ( ofxAmount amount, ofoCurrency *currency, const ofaFileFormat *format );
 
+gchar    *ofa_amount_to_sql  ( ofxAmount amount, ofoCurrency *currency );
+
 gchar    *ofa_amount_to_str  ( ofxAmount amount, ofoCurrency *currency );
 
 gboolean  ofa_amount_is_zero ( ofxAmount amount, ofoCurrency *currency );

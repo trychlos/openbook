@@ -34,6 +34,7 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
@@ -41,6 +42,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-concil.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -72,8 +74,8 @@ static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );
 static void        bat_set_upd_user( ofoBat *bat, const gchar *upd_user );
 static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
-static gboolean    bat_do_insert( ofoBat *bat, const ofaIDBConnect *connect );
-static gboolean    bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_do_insert( ofoBat *bat, ofaHub *hub );
+static gboolean    bat_insert_main( ofoBat *bat, ofaHub *hub );
 static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect );
@@ -940,7 +942,7 @@ ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 	dossier = ofa_hub_get_dossier( hub );
 	priv->id = ofo_dossier_get_next_bat( dossier );
 
-	if( bat_do_insert( bat, ofa_hub_get_connect( hub ))){
+	if( bat_do_insert( bat, hub )){
 		ofo_base_set_hub( OFO_BASE( bat ), hub );
 		ofa_icollector_add_object(
 				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( bat ), ( GCompareFunc ) bat_cmp_by_ptr );
@@ -952,13 +954,13 @@ ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 }
 
 static gboolean
-bat_do_insert( ofoBat *bat, const ofaIDBConnect *connect )
+bat_do_insert( ofoBat *bat, ofaHub *hub )
 {
-	return( bat_insert_main( bat, connect ));
+	return( bat_insert_main( bat, hub ));
 }
 
 static gboolean
-bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
+bat_insert_main( ofoBat *bat, ofaHub *hub )
 {
 	GString *query;
 	gchar *suri, *str, *userid;
@@ -966,6 +968,15 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
 	gboolean ok;
 	gchar *stamp_str;
 	GTimeVal stamp;
+	const gchar *cur_code;
+	ofoCurrency *cur_obj;
+	const ofaIDBConnect *connect;
+
+	cur_code = ofo_bat_get_currency( bat );
+	cur_obj = my_strlen( cur_code ) ? ofo_currency_get_by_code( hub, cur_code ) : NULL;
+	g_return_val_if_fail( !cur_obj || OFO_IS_CURRENCY( cur_obj ), FALSE );
+
+	connect = ofa_hub_get_connect( hub );
 
 	ok = FALSE;
 	my_utils_stamp_set_now( &stamp );
@@ -1017,15 +1028,14 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = ( gchar * ) ofo_bat_get_currency( bat );
-	if( my_strlen( str )){
-		g_string_append_printf( query, "'%s',", str );
+	if( my_strlen( cur_code )){
+		g_string_append_printf( query, "'%s',", cur_code );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
 	if( ofo_bat_get_begin_solde_set( bat )){
-		str = my_double_to_sql( ofo_bat_get_begin_solde( bat ));
+		str = ofa_amount_to_sql( ofo_bat_get_begin_solde( bat ), cur_obj );
 		g_string_append_printf( query, "%s,", str );
 		g_free( str );
 	} else {
@@ -1033,7 +1043,7 @@ bat_insert_main( ofoBat *bat, const ofaIDBConnect *connect )
 	}
 
 	if( ofo_bat_get_end_solde_set( bat )){
-		str = my_double_to_sql( ofo_bat_get_end_solde( bat ));
+		str = ofa_amount_to_sql( ofo_bat_get_end_solde( bat ), cur_obj );
 		g_string_append_printf( query, "%s,", str );
 		g_free( str );
 	} else {
