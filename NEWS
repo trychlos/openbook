@@ -33,6 +33,7 @@
    - DBMS storage: get rid of rounding errors (todo #572).
    - DDLUpdates: display OK + progression percent (todo #1047).
    - DossierOpeningPreferences are set on a dossier basis (todo #1045).
+   - LedgersClosing: check balances and DBMS integrity (todo #1044).
    - UserPreferences: check for balances and DBMS integrity on dossier opening (todo #744).
 
  Bug fixes:

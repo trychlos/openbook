@@ -38,6 +38,7 @@
  * - current:    no
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
@@ -63,9 +64,11 @@ typedef struct {
 }
 	ofaCheckIntegrityClass;
 
-GType ofa_check_integrity_get_type( void ) G_GNUC_CONST;
+GType    ofa_check_integrity_get_type( void ) G_GNUC_CONST;
 
-void  ofa_check_integrity_run     ( ofaMainWindow *main_window );
+void     ofa_check_integrity_run     ( ofaMainWindow *main_window );
+
+gboolean ofa_check_integrity_check   ( ofaHub *hub );
 
 G_END_DECLS
 

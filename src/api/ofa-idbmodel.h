@@ -220,7 +220,8 @@ typedef struct {
 	 * check_dbms_integrity:
 	 * @instance: the #ofaIDBModel provider.
 	 * @hub: the #ofaHub instance which manages the connection.
-	 * @progress: the #myIProgress implementation which handles the display.
+	 * @progress: [alllow-none]: the #myIProgress implementation which
+	 *  handles the display; %NULL means no display.
 	 *
 	 * Returns: the count of errors.
 	 *

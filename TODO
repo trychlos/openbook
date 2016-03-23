@@ -432,10 +432,6 @@
 1018 2016- 2-27 BUG  it may happens a BAT file be displayed twice in the
                      BAT page (a restart fixes this)
 
-1044 2016- 3-20 FEAT do not close any period (exercice or intermediate)
-                     or any ledger without first check for balance and
-                     integrity
-
 1048
 
 -----------------------------------------------------------------------
@@ -1001,6 +997,11 @@
 1043 2016- 3-15 FEAT All core objects: before being deletable, must ask
                      the plugins
      2016- 3-17 done
+
+1044 2016- 3-20 FEAT do not close any period (exercice or intermediate)
+                     or any ledger without first check for balance and
+                     integrity
+     2016- 3-23 done
 
 1045 2016- 3-21 DDL  open properties, display notes, check balances and
                      dbms integrity: may be per-dossier options

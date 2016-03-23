@@ -388,19 +388,20 @@ check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_MODEL );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for recurrent models integrity " ));
-	my_iprogress_start_work( progress, worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( progress, worker, NULL, TRUE );
+	if( progress ){
+		label = gtk_label_new( _( " Check for recurrent models integrity " ));
+		my_iprogress_start_work( progress, worker, label );
+		my_iprogress_start_progress( progress, worker, NULL, TRUE );
+	}
 
 	errs = 0;
 	records = ofo_recurrent_model_get_dataset( hub );
 	count = g_list_length( records );
 
 	if( count == 0 ){
-		my_iprogress_pulse( progress, worker, 0, 0 );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, 0, 0 );
+		}
 	}
 
 	for( i=1, it=records ; it ; ++i, it=it->next ){
@@ -410,26 +411,34 @@ check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 		/* operation template */
 		ope_mnemo = ofo_recurrent_model_get_ope_template( model );
 		if( !my_strlen( ope_mnemo )){
-			str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
-			my_iprogress_set_text( progress, worker, str );
-			g_free( str );
+			if( progress ){
+				str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
 			errs += 1;
 		} else {
 			ope_object = ofo_ope_template_get_by_mnemo( hub, ope_mnemo );
 			if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
-				str = g_strdup_printf(
-						_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
-				my_iprogress_set_text( progress, worker, str );
-				g_free( str );
+				if( progress ){
+					str = g_strdup_printf(
+							_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
+					my_iprogress_set_text( progress, worker, str );
+					g_free( str );
+				}
 				errs += 1;
 			}
 		}
 
-		my_iprogress_pulse( progress, worker, i, count );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, i, count );
+		}
 	}
 
 	/* progress end */
-	my_iprogress_set_ok( progress, worker, NULL, errs );
+	if( progress ){
+		my_iprogress_set_ok( progress, worker, NULL, errs );
+	}
 
 	return( errs );
 }
@@ -449,19 +458,20 @@ check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_RECURRENT_RUN );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for recurrent runs integrity " ));
-	my_iprogress_start_work( progress, worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( progress, worker, NULL, TRUE );
+	if( progress ){
+		label = gtk_label_new( _( " Check for recurrent runs integrity " ));
+		my_iprogress_start_work( progress, worker, label );
+		my_iprogress_start_progress( progress, worker, NULL, TRUE );
+	}
 
 	errs = 0;
 	records = ofo_recurrent_run_get_dataset( hub );
 	count = g_list_length( records );
 
 	if( count == 0 ){
-		my_iprogress_pulse( progress, worker, 0, 0 );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, 0, 0 );
+		}
 	}
 
 	for( i=1, it=records ; it ; ++i, it=it->next ){
@@ -471,18 +481,24 @@ check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 		/* recurrent model */
 		model_object = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
 		if( !model_object || !OFO_IS_RECURRENT_MODEL( model_object )){
-			str = g_strdup_printf(
-					_( "Recurrent model %s doesn't exist" ), mnemo );
-			my_iprogress_set_text( progress, worker, str );
-			g_free( str );
+			if( progress ){
+				str = g_strdup_printf(
+						_( "Recurrent model %s doesn't exist" ), mnemo );
+				my_iprogress_set_text( progress, worker, str );
+				g_free( str );
+			}
 			errs += 1;
 		}
 
-		my_iprogress_pulse( progress, worker, i, count );
+		if( progress ){
+			my_iprogress_pulse( progress, worker, i, count );
+		}
 	}
 
 	/* progress end */
-	my_iprogress_set_ok( progress, worker, NULL, errs );
+	if( progress ){
+		my_iprogress_set_ok( progress, worker, NULL, errs );
+	}
 
 	return( errs );
 }

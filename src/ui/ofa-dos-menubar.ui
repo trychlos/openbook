@@ -86,7 +86,7 @@
       </item>
       <section>
         <item>
-          <attribute name="label" translatable="yes">Provisional _ledger closing...</attribute>
+          <attribute name="label" translatable="yes">Intermediate _ledgers closing...</attribute>
           <attribute name="action">win.ledclosing</attribute>
         </item>
         <item>

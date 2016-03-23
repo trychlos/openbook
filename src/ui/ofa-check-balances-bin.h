@@ -72,14 +72,17 @@ typedef struct {
 }
 	ofaCheckBalancesBinClass;
 
-GType                ofa_check_balances_bin_get_type  ( void ) G_GNUC_CONST;
+GType                ofa_check_balances_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaCheckBalancesBin *ofa_check_balances_bin_new       ( void );
+ofaCheckBalancesBin *ofa_check_balances_bin_new        ( void );
 
-void                 ofa_check_balances_bin_set_hub   ( ofaCheckBalancesBin *bin,
+void                 ofa_check_balances_bin_set_display( ofaCheckBalancesBin *bin,
+															gboolean display );
+
+void                 ofa_check_balances_bin_set_hub    ( ofaCheckBalancesBin *bin,
 															ofaHub *hub );
 
-gboolean             ofa_check_balances_bin_get_status( const ofaCheckBalancesBin *bin );
+gboolean             ofa_check_balances_bin_get_status ( const ofaCheckBalancesBin *bin );
 
 G_END_DECLS
 

@@ -217,3 +217,34 @@ on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self 
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
 }
+
+/**
+ * ofa_check_integrity_check:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Check the DBMS integrity without display.
+ *
+ * Returns: %TRUE if DBMS is safe, %FALSE else.
+ */
+gboolean
+ofa_check_integrity_check( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_check_integrity_check";
+	gboolean ok;
+	ofaCheckIntegrityBin *bin;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
+	bin = ofa_check_integrity_bin_new( "ofaCheckIntegrity" );
+
+	ofa_check_integrity_bin_set_display( bin, FALSE );
+	ofa_check_integrity_bin_set_hub( bin, hub );
+
+	ok = ofa_check_integrity_bin_get_status( bin );
+
+	g_debug( "%s: ok=%s", thisfn, ok ? "True":"False" );
+
+	gtk_widget_destroy( GTK_WIDGET( bin ));
+
+	return( ok );
+}

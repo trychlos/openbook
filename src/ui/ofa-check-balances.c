@@ -215,3 +215,34 @@ on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self )
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
 }
+
+/**
+ * ofa_check_balances_check:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Check the balances without display.
+ *
+ * Returns: %TRUE if balances are well balanced, %FALSE else.
+ */
+gboolean
+ofa_check_balances_check( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_check_balances_check";
+	gboolean ok;
+	ofaCheckBalancesBin *bin;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
+	bin = ofa_check_balances_bin_new();
+
+	ofa_check_balances_bin_set_display( bin, FALSE );
+	ofa_check_balances_bin_set_hub( bin, hub );
+
+	ok = ofa_check_balances_bin_get_status( bin );
+
+	g_debug( "%s: ok=%s", thisfn, ok ? "True":"False" );
+
+	gtk_widget_destroy( GTK_WIDGET( bin ));
+
+	return( ok );
+}

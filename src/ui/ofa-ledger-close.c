@@ -44,6 +44,8 @@
 
 #include "core/ofa-main-window.h"
 
+#include "ui/ofa-check-balances.h"
+#include "ui/ofa-check-integrity.h"
 #include "ui/ofa-ledger-close.h"
 #include "ui/ofa-ledger-treeview.h"
 
@@ -516,9 +518,25 @@ check_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo )
 static void
 on_ok_clicked( GtkButton *button, ofaLedgerClose *self )
 {
+	ofaLedgerClosePrivate *priv;
 	GtkWidget *close_btn;
 
-	if( do_close( self )){
+	priv = ofa_ledger_close_get_instance_private( self );
+
+	/* check balances and dbms integrity */
+	if( !ofa_check_balances_check( priv->hub )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING,
+				_( "We have detected losses of balance in your books.\n\n"
+					"In this current state, we will be unable to close any "
+					"ledger until you fix your balances." ));
+
+	} else if( !ofa_check_integrity_check( priv->hub )){
+		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING,
+				_( "Integrity check of the DBMS has failed.\\"
+					"In this current state, we will be unable to close any "
+					"ledger until you fix the errors." ));
+
+	} else if( do_close( self )){
 		gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 
 		close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( self ), GTK_RESPONSE_CANCEL );
@@ -549,6 +567,9 @@ do_close( ofaLedgerClose *self )
 					_( "_Close" ), GTK_RESPONSE_OK,
 					NULL );
 
+	my_utils_window_restore_position( GTK_WINDOW( dialog ),
+			ofa_settings_get_settings( SETTINGS_TARGET_USER ), "ofaLedgerClosing" );
+
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
 	g_return_val_if_fail( button && GTK_IS_BUTTON( button ), FALSE );
 	my_utils_widget_set_margins( button, 4, 4, 0, 8 );
@@ -558,6 +579,7 @@ do_close( ofaLedgerClose *self )
 	g_return_val_if_fail( content && GTK_IS_CONTAINER( content ), FALSE );
 
 	grid = gtk_grid_new();
+	my_utils_widget_set_margin_left( grid, 8 );
 	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
 	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
 	gtk_container_add( GTK_CONTAINER( content ), grid );
@@ -579,6 +601,10 @@ do_close( ofaLedgerClose *self )
 
 	gtk_widget_set_sensitive( button, TRUE );
 	gtk_dialog_run( GTK_DIALOG( dialog ));
+
+	my_utils_window_save_position( GTK_WINDOW( dialog ),
+			ofa_settings_get_settings( SETTINGS_TARGET_USER ), "ofaLedgerClosing" );
+
 	gtk_widget_destroy( dialog );
 
 	return( TRUE );
@@ -597,7 +623,8 @@ prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
 	str = g_strdup_printf( "%s :", mnemo );
 	label = gtk_label_new( str );
 	g_free( str );
-	my_utils_widget_set_xalign( label, 1.0 );
+	gtk_widget_set_halign( label, GTK_ALIGN_START );
+	gtk_widget_set_valign( label, GTK_ALIGN_END );
 	gtk_grid_attach( GTK_GRID( grid ), label, 0, priv->count, 1, 1 );
 
 	bar = my_progress_bar_new();

@@ -60,6 +60,7 @@ struct _ofaCheckIntegrityBinPrivate {
 	 */
 	gchar         *settings;
 	ofaHub        *hub;
+	gboolean       display;
 
 	gulong         dossier_errs;
 	gulong         bat_lines_errs;
@@ -199,6 +200,7 @@ ofa_check_integrity_bin_init( ofaCheckIntegrityBin *self )
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->display = TRUE;
 	priv->others_errs = 0;
 }
 
@@ -351,6 +353,23 @@ get_settings_key( ofaCheckIntegrityBin *self )
 }
 
 /**
+ * ofa_check_integrity_bin_set_display:
+ */
+void
+ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *bin, gboolean display )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_CHECK_INTEGRITY_BIN( bin ));
+
+	priv = ofa_check_integrity_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->display = display;
+}
+
+/**
  * ofa_check_integrity_bin_set_hub:
  */
 void
@@ -387,7 +406,7 @@ do_run( ofaCheckIntegrityBin *self )
 	for( it=plugins ; it ; it=it->next ){
 		instance = OFA_IDBMODEL( it->data );
 		if( OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity ){
-			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->hub, MY_IPROGRESS( self ));
+			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->hub, priv->display ? MY_IPROGRESS( self ) : NULL );
 		}
 	}
 	ofa_plugin_free_extensions( plugins );
@@ -422,12 +441,11 @@ check_dossier_run( ofaCheckIntegrityBin *self )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_DOSSIER );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for dossier integrity " ));
-	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for dossier integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
 
 	/* progress */
 	dossier = ofa_hub_get_dossier( priv->hub );
@@ -549,12 +567,11 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_BAT );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for BAT files and lines integrity " ));
-	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for BAT files and lines integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
 
 	priv->bat_lines_errs = 0;
 	bats = ofo_bat_get_dataset( priv->hub );
@@ -633,12 +650,11 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_ACCOUNT );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for accounts integrity " ));
-	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for accounts integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
 
 	priv->accounts_errs = 0;
 	accounts = ofo_account_get_dataset( priv->hub );
@@ -712,12 +728,11 @@ check_entries_run( ofaCheckIntegrityBin *self )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_ENTRY );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for entries integrity " ));
-	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for entries integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
 
 	priv->entries_errs = 0;
 	entries = ofo_entry_get_dataset_by_account( priv->hub, NULL );
@@ -824,12 +839,11 @@ check_ledgers_run( ofaCheckIntegrityBin *self )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_LEDGER );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for ledgers integrity " ));
-	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for ledgers integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
 
 	priv->ledgers_errs = 0;
 	ledgers = ofo_ledger_get_dataset( priv->hub );
@@ -890,12 +904,11 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 
 	worker = GUINT_TO_POINTER( OFO_TYPE_OPE_TEMPLATE );
 
-	/* start work */
-	label = gtk_label_new( _( " Check for operation templates integrity " ));
-	my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
-
-	/* start progress */
-	my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for operation templates integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
 
 	priv->ope_templates_errs = 0;
 	ope_templates = ofo_ope_template_get_dataset( priv->hub );
@@ -960,26 +973,28 @@ set_checks_result( ofaCheckIntegrityBin *self )
 			+ priv->ope_templates_errs
 			+ priv->others_errs;
 
-	if( priv->total_errs > 0 ){
-		str = g_strdup_printf(
-				_( "We have detected %lu integrity errors in the DBMS." ), priv->total_errs );
-		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
-		g_free( str );
-
-	} else {
-		label = my_utils_container_get_child_by_name(
-						GTK_CONTAINER( self ), "p4-label-end" );
-		g_return_if_fail( label && GTK_IS_LABEL( label ));
-
-		if( priv->total_errs == 0 ){
-			gtk_label_set_text( GTK_LABEL( label ),
-					_( "Your DBMS is right. Good !" ));
-			my_utils_widget_set_style( label, "labelinfo" );
+	if( priv->display ){
+		if( priv->total_errs > 0 ){
+			str = g_strdup_printf(
+					_( "We have detected %lu integrity errors in the DBMS." ), priv->total_errs );
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+			g_free( str );
 
 		} else {
-			gtk_label_set_text( GTK_LABEL( label ),
-					_( "Detected integrity errors have to be fixed." ));
-			my_utils_widget_set_style( label, "labelerror" );
+			label = my_utils_container_get_child_by_name(
+							GTK_CONTAINER( self ), "p4-label-end" );
+			g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+			if( priv->total_errs == 0 ){
+				gtk_label_set_text( GTK_LABEL( label ),
+						_( "Your DBMS is right. Good !" ));
+				my_utils_widget_set_style( label, "labelinfo" );
+
+			} else {
+				gtk_label_set_text( GTK_LABEL( label ),
+						_( "Detected integrity errors have to be fixed." ));
+				my_utils_widget_set_style( label, "labelerror" );
+			}
 		}
 	}
 }
@@ -1045,43 +1060,51 @@ iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widg
 
 	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
-	sdata = get_worker_data( OFA_CHECK_INTEGRITY_BIN( instance ), worker );
+	if( priv->display ){
+		sdata = get_worker_data( OFA_CHECK_INTEGRITY_BIN( instance ), worker );
 
-	frame = gtk_frame_new( NULL );
-	gtk_widget_set_hexpand( frame, TRUE );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+		frame = gtk_frame_new( NULL );
+		gtk_widget_set_hexpand( frame, TRUE );
+		my_utils_widget_set_margin_right( frame, 16 );
+		gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
-	if( widget ){
-		gtk_frame_set_label_widget( GTK_FRAME( frame ), widget );
+		if( widget ){
+			gtk_frame_set_label_widget( GTK_FRAME( frame ), widget );
+		}
+
+		sdata->grid = gtk_grid_new();
+		my_utils_widget_set_margins( sdata->grid, 4, 4, 12, 16 );
+		gtk_container_add( GTK_CONTAINER( frame ), sdata->grid );
+		gtk_grid_set_column_spacing( GTK_GRID( sdata->grid ), 12 );
+
+		gtk_grid_attach( GTK_GRID( priv->objects_grid ), frame, 0, priv->objects_row++, 1, 1 );
+
+		gtk_widget_show_all( priv->objects_grid );
 	}
-
-	sdata->grid = gtk_grid_new();
-	my_utils_widget_set_margins( sdata->grid, 4, 4, 12, 16 );
-	gtk_container_add( GTK_CONTAINER( frame ), sdata->grid );
-	gtk_grid_set_column_spacing( GTK_GRID( sdata->grid ), 12 );
-
-	gtk_grid_attach( GTK_GRID( priv->objects_grid ), frame, 0, priv->objects_row++, 1, 1 );
-
-	gtk_widget_show_all( priv->objects_grid );
 }
 
 static void
 iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar )
 {
+	ofaCheckIntegrityBinPrivate *priv;
 	sWorker *sdata;
 
-	sdata = get_worker_data( OFA_CHECK_INTEGRITY_BIN( instance ), worker );
+	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
-	if( widget ){
-		gtk_grid_attach( GTK_GRID( sdata->grid ), widget, 0, 0, 1, 1 );
+	if( priv->display ){
+		sdata = get_worker_data( OFA_CHECK_INTEGRITY_BIN( instance ), worker );
+
+		if( widget ){
+			gtk_grid_attach( GTK_GRID( sdata->grid ), widget, 0, 0, 1, 1 );
+		}
+
+		if( with_bar ){
+			sdata->bar = my_progress_bar_new();
+			gtk_grid_attach( GTK_GRID( sdata->grid ), GTK_WIDGET( sdata->bar ), 1, 0, 1, 1 );
+		}
+
+		gtk_widget_show_all( sdata->grid );
 	}
-
-	if( with_bar ){
-		sdata->bar = my_progress_bar_new();
-		gtk_grid_attach( GTK_GRID( sdata->grid ), GTK_WIDGET( sdata->bar ), 1, 0, 1, 1 );
-	}
-
-	gtk_widget_show_all( sdata->grid );
 }
 
 static void
@@ -1105,29 +1128,34 @@ iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong
 static void
 iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count )
 {
+	ofaCheckIntegrityBinPrivate *priv;
 	sWorker *sdata;
 	GtkWidget *label;
 	gchar *str;
 
-	sdata = get_worker_data( OFA_CHECK_INTEGRITY_BIN( instance ), worker );
+	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
-	label = gtk_label_new( "" );
+	if( priv->display ){
+		sdata = get_worker_data( OFA_CHECK_INTEGRITY_BIN( instance ), worker );
 
-	if( errs_count == 0 ){
-		gtk_label_set_text( GTK_LABEL( label ), _( "OK" ));
+		label = gtk_label_new( "" );
 
-	} else {
-		str = g_strdup_printf( _( "%lu error(s)" ), errs_count );
-		gtk_label_set_text( GTK_LABEL( label ), str );
-		g_free( str );
+		if( errs_count == 0 ){
+			gtk_label_set_text( GTK_LABEL( label ), _( "OK" ));
+
+		} else {
+			str = g_strdup_printf( _( "%lu error(s)" ), errs_count );
+			gtk_label_set_text( GTK_LABEL( label ), str );
+			g_free( str );
+		}
+
+		gtk_widget_set_valign( label, GTK_ALIGN_END );
+		my_utils_widget_set_style( label, errs_count == 0 ? "labelinfo" : "labelerror" );
+
+		gtk_grid_attach( GTK_GRID( sdata->grid ), label, 2, 0, 1, 1 );
+
+		gtk_widget_show_all( sdata->grid );
 	}
-
-	gtk_widget_set_valign( label, GTK_ALIGN_END );
-	my_utils_widget_set_style( label, errs_count == 0 ? "labelinfo" : "labelerror" );
-
-	gtk_grid_attach( GTK_GRID( sdata->grid ), label, 2, 0, 1, 1 );
-
-	gtk_widget_show_all( sdata->grid );
 }
 
 static void
@@ -1140,18 +1168,20 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 
 	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
-	if( !priv->text_buffer ){
-		view = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "textview" );
-		g_return_if_fail( view && GTK_IS_TEXT_VIEW( view ));
-		priv->text_buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( view ));
+	if( priv->display ){
+		if( !priv->text_buffer ){
+			view = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "textview" );
+			g_return_if_fail( view && GTK_IS_TEXT_VIEW( view ));
+			priv->text_buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( view ));
+		}
+		g_return_if_fail( priv->text_buffer && GTK_IS_TEXT_BUFFER( priv->text_buffer ));
+
+		gtk_text_buffer_get_end_iter( priv->text_buffer, &iter );
+
+		str = g_strdup_printf( "%s\n", text );
+		gtk_text_buffer_insert( priv->text_buffer, &iter, str, -1 );
+		g_free( str );
 	}
-	g_return_if_fail( priv->text_buffer && GTK_IS_TEXT_BUFFER( priv->text_buffer ));
-
-	gtk_text_buffer_get_end_iter( priv->text_buffer, &iter );
-
-	str = g_strdup_printf( "%s\n", text );
-	gtk_text_buffer_insert( priv->text_buffer, &iter, str, -1 );
-	g_free( str );
 }
 
 static sWorker *

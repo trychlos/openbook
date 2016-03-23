@@ -51,6 +51,7 @@ struct _ofaCheckBalancesBinPrivate {
 	/* runtime data
 	 */
 	ofaHub     *hub;
+	gboolean    display;
 
 	gboolean    entries_ok;
 	GList      *entries_list;
@@ -74,17 +75,17 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-check-balances-bin.ui";
 
 static void               setup_bin( ofaCheckBalancesBin *self );
-static gboolean           do_run( ofaCheckBalancesBin *bin );
-static void               check_entries_balance_run( ofaCheckBalancesBin *bin );
-static void               check_ledgers_balance_run( ofaCheckBalancesBin *bin );
-static void               check_accounts_balance_run( ofaCheckBalancesBin *bin );
-static gboolean           check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances );
-static void               set_balance_status( ofaCheckBalancesBin *bin, gboolean ok, const gchar *w_name );
-static myProgressBar     *get_new_bar( ofaCheckBalancesBin *bin, const gchar *w_name );
-static ofaBalanceGridBin *get_new_balance_grid_bin( ofaCheckBalancesBin *bin, const gchar *w_name );
-static void               set_bar_progression( myProgressBar *bar, gulong total, gulong current );
-static void               set_checks_result( ofaCheckBalancesBin *bin );
-static gboolean           cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b );
+static gboolean           do_run( ofaCheckBalancesBin *self );
+static void               check_entries_balance_run( ofaCheckBalancesBin *self );
+static void               check_ledgers_balance_run( ofaCheckBalancesBin *self );
+static void               check_accounts_balance_run( ofaCheckBalancesBin *self );
+static gboolean           check_balances_per_currency( ofaCheckBalancesBin *self, GList *balances );
+static void               set_balance_status( ofaCheckBalancesBin *self, gboolean ok, const gchar *w_name );
+static myProgressBar     *get_new_bar( ofaCheckBalancesBin *self, const gchar *w_name );
+static ofaBalanceGridBin *get_new_balance_grid_bin( ofaCheckBalancesBin *self, const gchar *w_name );
+static void               set_bar_progression( ofaCheckBalancesBin *self, myProgressBar *bar, gulong total, gulong current );
+static void               set_checks_result( ofaCheckBalancesBin *self );
+static gboolean           cmp_lists( ofaCheckBalancesBin *self, GList *list_a, GList *list_b );
 
 G_DEFINE_TYPE_EXTENDED( ofaCheckBalancesBin, ofa_check_balances_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaCheckBalancesBin ))
@@ -145,6 +146,7 @@ ofa_check_balances_bin_init( ofaCheckBalancesBin *self )
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->display = TRUE;
 }
 
 static void
@@ -188,17 +190,17 @@ ofa_check_balances_bin_class_init( ofaCheckBalancesBinClass *klass )
 ofaCheckBalancesBin *
 ofa_check_balances_bin_new( void )
 {
-	ofaCheckBalancesBin *self;
+	ofaCheckBalancesBin *bin;
 
-	self = g_object_new( OFA_TYPE_CHECK_BALANCES_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_CHECK_BALANCES_BIN, NULL );
 
-	setup_bin( self );
+	setup_bin( bin );
 
-	return( self );
+	return( bin );
 }
 
 static void
-setup_bin( ofaCheckBalancesBin *bin )
+setup_bin( ofaCheckBalancesBin *self )
 {
 	GtkBuilder *builder;
 	GObject *object;
@@ -210,10 +212,29 @@ setup_bin( ofaCheckBalancesBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
+}
+
+/**
+ * ofa_check_balances_bin_set_display:
+ * @bin: this #ofaCheckBalancesBin instance.
+ * @display: whether the check should be displayed.
+ */
+void
+ofa_check_balances_bin_set_display( ofaCheckBalancesBin *bin, gboolean display )
+{
+	ofaCheckBalancesBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_CHECK_BALANCES_BIN( bin ));
+
+	priv = ofa_check_balances_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->display = display;
 }
 
 /**
@@ -232,23 +253,28 @@ ofa_check_balances_bin_set_hub( ofaCheckBalancesBin *bin, ofaHub *hub )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->hub = hub;
-	g_idle_add(( GSourceFunc ) do_run, bin );
+
+	if( priv->display ){
+		g_idle_add(( GSourceFunc ) do_run, bin );
+	} else {
+		do_run( bin );
+	}
 }
 
 static gboolean
-do_run( ofaCheckBalancesBin *bin )
+do_run( ofaCheckBalancesBin *self )
 {
 	ofaCheckBalancesBinPrivate *priv;
 
-	priv = ofa_check_balances_bin_get_instance_private( bin );
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	check_entries_balance_run( bin );
-	check_ledgers_balance_run( bin );
-	check_accounts_balance_run( bin );
+	check_entries_balance_run( self );
+	check_ledgers_balance_run( self );
+	check_accounts_balance_run( self );
 
-	set_checks_result( bin );
+	set_checks_result( self );
 
-	g_signal_emit_by_name( bin, "ofa-done", priv->result );
+	g_signal_emit_by_name( self, "ofa-done", priv->result );
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
@@ -263,7 +289,7 @@ do_run( ofaCheckBalancesBin *bin )
  * with the beginning date of the exercice are considered.
  */
 static void
-check_entries_balance_run( ofaCheckBalancesBin *bin )
+check_entries_balance_run( ofaCheckBalancesBin *self )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	ofoDossier *dossier;
@@ -276,11 +302,14 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 	const gchar *currency;
 	ofsCurrency *sbal;
 
-	bar = get_new_bar( bin, "p4-entry-parent" );
-	grid = get_new_balance_grid_bin( bin, "p4-entry-bals" );
-	gtk_widget_show_all( GTK_WIDGET( bin ) );
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	priv = ofa_check_balances_bin_get_instance_private( bin );
+	bar = get_new_bar( self, "p4-entry-parent" );
+	grid = get_new_balance_grid_bin( self, "p4-entry-bals" );
+
+	if( priv->display ){
+		gtk_widget_show_all( GTK_WIDGET( self ) );
+	}
 
 	dossier = ofa_hub_get_dossier( priv->hub );
 
@@ -300,14 +329,16 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
 					&priv->entries_list, priv->hub, currency,
 					ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
 
-		g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
-		set_bar_progression( bar, count, i );
+		if( priv->display ){
+			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+		}
+		set_bar_progression( self, bar, count, i );
 	}
 
 	ofo_entry_free_dataset( entries );
 
-	priv->entries_ok = check_balances_per_currency( bin, priv->entries_list );
-	set_balance_status( bin, priv->entries_ok, "p4-entry-ok" );
+	priv->entries_ok = check_balances_per_currency( self, priv->entries_list );
+	set_balance_status( self, priv->entries_ok, "p4-entry-ok" );
 }
 
 /*
@@ -319,7 +350,7 @@ check_entries_balance_run( ofaCheckBalancesBin *bin )
  * with the beginning date of the exercice are considered.
  */
 static void
-check_ledgers_balance_run( ofaCheckBalancesBin *bin )
+check_ledgers_balance_run( ofaCheckBalancesBin *self )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
@@ -331,11 +362,14 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 	ofsCurrency *sbal;
 	const gchar *currency;
 
-	bar = get_new_bar( bin, "p4-ledger-parent" );
-	grid = get_new_balance_grid_bin( bin, "p4-ledger-bals" );
-	gtk_widget_show_all( GTK_WIDGET( bin ));
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	priv = ofa_check_balances_bin_get_instance_private( bin );
+	bar = get_new_bar( self, "p4-ledger-parent" );
+	grid = get_new_balance_grid_bin( self, "p4-ledger-bals" );
+
+	if( priv->display ){
+		gtk_widget_show_all( GTK_WIDGET( self ));
+	}
 
 	priv->ledgers_list = NULL;
 	ledgers = ofo_ledger_get_dataset( priv->hub );
@@ -359,15 +393,17 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
 							+ ofo_ledger_get_rough_credit( ledger, currency )
 							+ ofo_ledger_get_futur_credit( ledger, currency ));
 
-			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+			if( priv->display ){
+				g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+			}
 		}
-		g_list_free( currencies );
 
-		set_bar_progression( bar, count, i );
+		g_list_free( currencies );
+		set_bar_progression( self, bar, count, i );
 	}
 
-	priv->ledgers_ok = check_balances_per_currency( bin, priv->ledgers_list );
-	set_balance_status( bin, priv->ledgers_ok, "p4-ledger-ok" );
+	priv->ledgers_ok = check_balances_per_currency( self, priv->ledgers_list );
+	set_balance_status( self, priv->ledgers_ok, "p4-ledger-ok" );
 }
 
 /*
@@ -376,7 +412,7 @@ check_ledgers_balance_run( ofaCheckBalancesBin *bin )
  * Validated, rough and future balances are considered.
  */
 static void
-check_accounts_balance_run( ofaCheckBalancesBin *bin )
+check_accounts_balance_run( ofaCheckBalancesBin *self )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
@@ -387,11 +423,14 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 	const gchar *currency;
 	ofsCurrency *sbal;
 
-	bar = get_new_bar( bin, "p4-account-parent" );
-	grid = get_new_balance_grid_bin( bin, "p4-account-bals" );
-	gtk_widget_show_all( GTK_WIDGET( bin ));
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	priv = ofa_check_balances_bin_get_instance_private( bin );
+	bar = get_new_bar( self, "p4-account-parent" );
+	grid = get_new_balance_grid_bin( self, "p4-account-bals" );
+
+	if( priv->display ){
+		gtk_widget_show_all( GTK_WIDGET( self ));
+	}
 
 	priv->accounts_list = NULL;
 	accounts = ofo_account_get_dataset( priv->hub );
@@ -413,18 +452,20 @@ check_accounts_balance_run( ofaCheckBalancesBin *bin )
 							+ ofo_account_get_rough_credit( account )
 							+ ofo_account_get_futur_credit( account ));
 
-			g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+			if( priv->display ){
+				g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+			}
 		}
 
-		set_bar_progression( bar, count, i );
+		set_bar_progression( self, bar, count, i );
 	}
 
-	priv->accounts_ok = check_balances_per_currency( bin, priv->accounts_list );
-	set_balance_status( bin, priv->accounts_ok, "p4-account-ok" );
+	priv->accounts_ok = check_balances_per_currency( self, priv->accounts_list );
+	set_balance_status( self, priv->accounts_ok, "p4-account-ok" );
 }
 
 static gboolean
-check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances )
+check_balances_per_currency( ofaCheckBalancesBin *self, GList *balances )
 {
 	static const gchar *thisfn = "ofa_check_balances_bin_check_balances_per_currency";
 	gboolean ok;
@@ -447,59 +488,83 @@ check_balances_per_currency( ofaCheckBalancesBin *bin, GList *balances )
  * display OK/NOT OK for a single balance check
  */
 static void
-set_balance_status( ofaCheckBalancesBin *bin, gboolean ok, const gchar *w_name )
+set_balance_status( ofaCheckBalancesBin *self, gboolean ok, const gchar *w_name )
 {
+	ofaCheckBalancesBinPrivate *priv;
 	GtkWidget *label;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), w_name );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "OK" ) : _( "NOT OK" ));
-	my_utils_widget_set_style( label, ok ? "labelinfo" : "labelerror" );
+	if( priv->display ){
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), w_name );
+		g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+		gtk_label_set_text( GTK_LABEL( label ), ok ? _( "OK" ) : _( "NOT OK" ));
+		my_utils_widget_set_style( label, ok ? "labelinfo" : "labelerror" );
+	}
 }
 
 static myProgressBar *
-get_new_bar( ofaCheckBalancesBin *bin, const gchar *w_name )
+get_new_bar( ofaCheckBalancesBin *self, const gchar *w_name )
 {
+	ofaCheckBalancesBinPrivate *priv;
 	GtkWidget *parent;
 	myProgressBar *bar;
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), w_name );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
+	bar = NULL;
+
+	if( priv->display ){
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), w_name );
+		g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
+
+		bar = my_progress_bar_new();
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( bar ));
+	}
 
 	return( bar );
 }
 
 static ofaBalanceGridBin *
-get_new_balance_grid_bin( ofaCheckBalancesBin *bin, const gchar *w_name )
+get_new_balance_grid_bin( ofaCheckBalancesBin *self, const gchar *w_name )
 {
+	ofaCheckBalancesBinPrivate *priv;
 	GtkWidget *parent;
 	ofaBalanceGridBin *grid;
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), w_name );
-	g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	grid = ofa_balance_grid_bin_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
+	grid = NULL;
+
+	if( priv->display ){
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), w_name );
+		g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
+
+		grid = ofa_balance_grid_bin_new();
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
+	}
 
 	return( grid );
 }
 
 static void
-set_bar_progression( myProgressBar *bar, gulong total, gulong current )
+set_bar_progression( ofaCheckBalancesBin *self, myProgressBar *bar, gulong total, gulong current )
 {
+	ofaCheckBalancesBinPrivate *priv;
 	gdouble progress;
 	gchar *text;
 
-	progress = ( gdouble ) current / ( gdouble ) total;
-	g_signal_emit_by_name( bar, "my-double", progress );
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
-	text = g_strdup_printf( "%lu/%lu", current, total );
-	g_signal_emit_by_name( bar, "my-text", text );
-	g_free( text );
+	if( priv->display ){
+		progress = ( gdouble ) current / ( gdouble ) total;
+		g_signal_emit_by_name( bar, "my-double", progress );
+
+		text = g_strdup_printf( "%lu/%lu", current, total );
+		g_signal_emit_by_name( bar, "my-text", text );
+		g_free( text );
+	}
 }
 
 /*
@@ -507,27 +572,29 @@ set_bar_progression( myProgressBar *bar, gulong total, gulong current )
  * check that the balances are the sames
  */
 static void
-set_checks_result( ofaCheckBalancesBin *bin )
+set_checks_result( ofaCheckBalancesBin *self )
 {
 	ofaCheckBalancesBinPrivate *priv;
 	GtkWidget *label;
 
-	priv = ofa_check_balances_bin_get_instance_private( bin );
+	priv = ofa_check_balances_bin_get_instance_private( self );
 
 	priv->result = priv->entries_ok && priv->ledgers_ok && priv->accounts_ok;
 
 	if( !priv->result ){
-		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING,
-				_( "We have detected losses of balance in your books.\n\n"
-					"In this current state, we will be unable to close this "
-					"exercice until you fix your balances." ));
-
+		if( priv->display ){
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING,
+					_( "We have detected losses of balance in your books.\n\n"
+						"In this current state, we will be unable to close this "
+						"exercice until you fix your balances." ));
+		}
 	} else {
-		priv->result &= cmp_lists( bin, priv->entries_list, priv->ledgers_list );
-		priv->result &= cmp_lists( bin, priv->entries_list, priv->accounts_list );
+		priv->result &= cmp_lists( self, priv->entries_list, priv->ledgers_list );
+		priv->result &= cmp_lists( self, priv->entries_list, priv->accounts_list );
+	}
 
-		label = my_utils_container_get_child_by_name(
-						GTK_CONTAINER( bin ), "p4-label-end" );
+	if( priv->display ){
+		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-label-end" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 		if( priv->result ){
@@ -547,7 +614,7 @@ set_checks_result( ofaCheckBalancesBin *bin )
 }
 
 static gboolean
-cmp_lists( ofaCheckBalancesBin *bin, GList *list_a, GList *list_b )
+cmp_lists( ofaCheckBalancesBin *self, GList *list_a, GList *list_b )
 {
 	GList *it;
 	ofsCurrency *sbal_a, *sbal_b;
