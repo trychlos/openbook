@@ -60,6 +60,7 @@
    - ofa_amount_xxx(): new functions.
    - ofa_counter_xxx(): new functions.
    - ofs_currency_cmp(): new function.
+   - ofaOpenPrefsBin: new UI composite widget.
 
 -----------------------------------------------------------------------
  Version 0.51

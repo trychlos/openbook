@@ -42,6 +42,7 @@
 #include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 
+#include "ofa-open-prefs-bin.h"
 #include "ofa-dossier-delete-prefs-bin.h"
 #include "ofa-file-format-bin.h"
 
@@ -66,11 +67,7 @@ struct _ofaPreferencesPrivate {
 
 	/* UI - Dossier page
 	 */
-	GtkWidget                *open_notes_btn;
-	GtkWidget                *open_notes_empty_btn;
-	GtkWidget                *open_properties_btn;
-	GtkWidget                *open_balance_btn;
-	GtkWidget                *open_integrity_btn;
+	ofaOpenPrefsBin          *prefs_bin;
 	ofaDossierDeletePrefsBin *dd_prefs;
 
 	/* UI - Account delete page
@@ -150,7 +147,6 @@ static gboolean       enumerate_prefs_plugins( ofaPreferences *self, gchar **msg
 static gboolean       init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *plugin );
 //static void           activate_first_page( ofaPreferences *self );
 static void           on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void           on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void           on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
 static void           on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
 static void           on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
@@ -379,33 +375,18 @@ init_dossier_page( ofaPreferences *self )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	priv->open_notes_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pdo-opnotes" );
-	g_return_if_fail( priv->open_notes_btn && GTK_IS_CHECK_BUTTON( priv->open_notes_btn ));
-	g_signal_connect( priv->open_notes_btn, "clicked", G_CALLBACK( on_open_notes_toggled ), self );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "prefs-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->open_notes_empty_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pdo-opnotes-nonempty" );
-	g_return_if_fail( priv->open_notes_empty_btn && GTK_IS_CHECK_BUTTON( priv->open_notes_empty_btn ));
+	priv->prefs_bin = ofa_open_prefs_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs_bin ));
 
-	priv->open_properties_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pdo-opproperties" );
-	g_return_if_fail( priv->open_properties_btn && GTK_IS_CHECK_BUTTON( priv->open_properties_btn ));
-
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->open_notes_btn ), ofa_prefs_dossier_open_notes());
-	on_open_notes_toggled( GTK_TOGGLE_BUTTON( priv->open_notes_btn ), self );
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn ), ofa_prefs_dossier_open_notes_if_empty());
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->open_properties_btn ), ofa_prefs_dossier_open_properties());
-
-	priv->open_balance_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pdo-balance" );
-	g_return_if_fail( priv->open_balance_btn && GTK_IS_CHECK_BUTTON( priv->open_balance_btn ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->open_balance_btn ), ofa_prefs_dossier_open_balance());
-
-	priv->open_integrity_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pdo-integrity" );
-	g_return_if_fail( priv->open_integrity_btn && GTK_IS_CHECK_BUTTON( priv->open_integrity_btn ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->open_integrity_btn ), ofa_prefs_dossier_open_integrity());
+	ofa_open_prefs_bin_set_data( priv->prefs_bin,
+			ofa_prefs_dossier_open_notes(),
+			ofa_prefs_dossier_open_notes_if_empty(),
+			ofa_prefs_dossier_open_properties(),
+			ofa_prefs_dossier_open_balance(),
+			ofa_prefs_dossier_open_integrity());
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dossier-delete-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -711,17 +692,6 @@ on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self )
 }
 
 static void
-on_open_notes_toggled( GtkToggleButton *button, ofaPreferences *self )
-{
-	ofaPreferencesPrivate *priv;
-
-	priv = ofa_preferences_get_instance_private( self );
-
-	gtk_widget_set_sensitive(
-			priv->open_notes_empty_btn, gtk_toggle_button_get_active( button ));
-}
-
-static void
 on_display_date_changed( GtkComboBox *box, ofaPreferences *self )
 {
 	on_date_changed( self, box, "p4-display-sample" );
@@ -924,28 +894,17 @@ static gboolean
 do_update_dossier_page( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
+	gboolean notes, nonempty, props, bals, integ;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	ofa_settings_user_set_boolean(
-			st_dossier_open_notes,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_btn )));
+	ofa_open_prefs_bin_get_data( priv->prefs_bin, &notes, &nonempty, &props, &bals, &integ );
 
-	ofa_settings_user_set_boolean(
-			st_dossier_open_notes_if_empty,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_notes_empty_btn )));
-
-	ofa_settings_user_set_boolean(
-			st_dossier_open_properties,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_properties_btn )));
-
-	ofa_settings_user_set_boolean(
-			st_dossier_open_balance,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_balance_btn )));
-
-	ofa_settings_user_set_boolean(
-			st_dossier_open_integrity,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->open_integrity_btn )));
+	ofa_settings_user_set_boolean( st_dossier_open_notes, notes );
+	ofa_settings_user_set_boolean( st_dossier_open_notes_if_empty, nonempty );
+	ofa_settings_user_set_boolean( st_dossier_open_properties, props );
+	ofa_settings_user_set_boolean( st_dossier_open_balance, bals );
+	ofa_settings_user_set_boolean( st_dossier_open_integrity, integ );
 
 	ofa_dossier_delete_prefs_bin_set_settings( priv->dd_prefs );
 

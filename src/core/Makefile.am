@@ -134,6 +134,8 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
 	ofa-ope-template-store.h							\
+	ofa-open-prefs-bin.c								\
+	ofa-open-prefs-bin.h								\
 	ofa-page.c											\
 	ofa-periodicity.c									\
 	ofa-periodicity-bin.c								\

@@ -182,13 +182,13 @@ am_libofa_core_la_OBJECTS = ofa-account-frame-bin.lo \
 	ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
 	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
-	ofa-ope-template-store.lo ofa-page.lo ofa-periodicity.lo \
-	ofa-periodicity-bin.lo ofa-plugin.lo ofa-preferences.lo \
-	ofa-settings.lo ofo-account.lo ofo-base.lo ofo-bat.lo \
-	ofo-bat-line.lo ofo-class.lo ofo-concil.lo ofo-currency.lo \
-	ofo-dossier.lo ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo \
-	ofo-rate.lo ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
-	ofs-currency.lo ofs-ope.lo
+	ofa-ope-template-store.lo ofa-open-prefs-bin.lo ofa-page.lo \
+	ofa-periodicity.lo ofa-periodicity-bin.lo ofa-plugin.lo \
+	ofa-preferences.lo ofa-settings.lo ofo-account.lo ofo-base.lo \
+	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
+	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
+	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
+	ofs-bat.lo ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -540,6 +540,8 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
 	ofa-ope-template-store.h							\
+	ofa-open-prefs-bin.c								\
+	ofa-open-prefs-bin.h								\
 	ofa-page.c											\
 	ofa-periodicity.c									\
 	ofa-periodicity-bin.c								\
@@ -714,6 +716,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-store.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-open-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity.Plo@am__quote@

@@ -12,6 +12,7 @@ src/core/ofa-idbmodel.ui
 src/core/ofa-ope-template-help.ui
 src/core/ofa-ope-template-properties.ui
 src/core/ofa-ope-template-select.ui
+src/core/ofa-open-prefs-bin.ui
 src/core/ofa-preferences.ui
 src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui

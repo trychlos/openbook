@@ -49,6 +49,7 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 
+#include "core/ofa-open-prefs-bin.h"
 #include "core/ofa-currency-combo.h"
 #include "core/ofa-ledger-combo.h"
 #include "core/ofa-main-window.h"
@@ -92,11 +93,7 @@ struct _ofaDossierPropertiesPrivate {
 	 */
 	GtkWidget          *siren_entry;
 	ofaClosingParmsBin *closing_parms;
-	GtkWidget          *prefs_notes;
-	GtkWidget          *prefs_nonempty;
-	GtkWidget          *prefs_properties;
-	GtkWidget          *prefs_balances;
-	GtkWidget          *prefs_integrity;
+	ofaOpenPrefsBin    *prefs_bin;
 	GtkWidget          *msgerr;
 	GtkWidget          *ok_btn;
 
@@ -133,8 +130,6 @@ static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *se
 static void      on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
 static void      on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self );
 static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
-static void      on_prefs_notes_toggled( GtkToggleButton *button, ofaDossierProperties *self );
-static void      on_prefs_notes_toggled( GtkToggleButton *button, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
@@ -591,44 +586,26 @@ static void
 init_preferences_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GtkWidget *btn;
+	GtkWidget *parent;
+	gboolean notes, nonempty, props, bals, integ;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-notes" );
-	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
-	g_signal_connect( btn, "toggled", G_CALLBACK( on_prefs_notes_toggled ), self );
-	priv->prefs_notes = btn;
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "prefs-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-nonempty" );
-	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
-	priv->prefs_nonempty = btn;
-
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-properties" );
-	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
-	priv->prefs_properties = btn;
-
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-balance" );
-	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
-	priv->prefs_balances = btn;
-
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-integrity" );
-	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
-	priv->prefs_integrity = btn;
+	priv->prefs_bin = ofa_open_prefs_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs_bin ));
 
 	priv->prefs = ofa_hub_get_dossier_prefs( priv->hub );
 
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->prefs_notes ), ofa_dossier_prefs_get_open_notes( priv->prefs ));
-	on_prefs_notes_toggled( GTK_TOGGLE_BUTTON( priv->prefs_notes ), self );
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->prefs_nonempty ), ofa_dossier_prefs_get_nonempty( priv->prefs ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->prefs_properties ), ofa_dossier_prefs_get_properties( priv->prefs ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->prefs_balances ), ofa_dossier_prefs_get_balances( priv->prefs ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->prefs_integrity ), ofa_dossier_prefs_get_integrity( priv->prefs ));
+	notes = ofa_dossier_prefs_get_open_notes( priv->prefs );
+	nonempty = ofa_dossier_prefs_get_nonempty( priv->prefs );
+	props = ofa_dossier_prefs_get_properties( priv->prefs );
+	bals = ofa_dossier_prefs_get_balances( priv->prefs );
+	integ = ofa_dossier_prefs_get_integrity( priv->prefs );
+
+	ofa_open_prefs_bin_set_data( priv->prefs_bin, notes, nonempty, props, bals, integ );
 }
 
 static void
@@ -754,18 +731,6 @@ on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
 }
 
 static void
-on_prefs_notes_toggled( GtkToggleButton *button, ofaDossierProperties *self )
-{
-	ofaDossierPropertiesPrivate *priv;
-	gboolean active;
-
-	priv = ofa_dossier_properties_get_instance_private( self );
-
-	active = gtk_toggle_button_get_active( button );
-	gtk_widget_set_sensitive( priv->prefs_nonempty, active );
-}
-
-static void
 check_for_enable_dlg( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
@@ -851,6 +816,7 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	gboolean date_has_changed;
 	gint count;
 	gboolean ok;
+	gboolean prefs_notes, prefs_nonempty, prefs_props, prefs_bals, prefs_integ;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
@@ -917,16 +883,12 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 			OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
 	/* record settings */
-	ofa_dossier_prefs_set_open_notes( priv->prefs,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_notes )));
-	ofa_dossier_prefs_set_nonempty( priv->prefs,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_nonempty )));
-	ofa_dossier_prefs_set_properties( priv->prefs,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_properties )));
-	ofa_dossier_prefs_set_balances( priv->prefs,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_balances )));
-	ofa_dossier_prefs_set_integrity( priv->prefs,
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->prefs_integrity )));
+	ofa_open_prefs_bin_get_data( priv->prefs_bin, &prefs_notes, &prefs_nonempty, &prefs_props, &prefs_bals, &prefs_integ );
+	ofa_dossier_prefs_set_open_notes( priv->prefs, prefs_notes );
+	ofa_dossier_prefs_set_nonempty( priv->prefs, prefs_nonempty );
+	ofa_dossier_prefs_set_properties( priv->prefs, prefs_props );
+	ofa_dossier_prefs_set_balances( priv->prefs, prefs_bals );
+	ofa_dossier_prefs_set_integrity( priv->prefs, prefs_integ );
 
 	return( ok );
 }
