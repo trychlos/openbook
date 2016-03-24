@@ -50,8 +50,6 @@ G_BEGIN_DECLS
 #define OFA_IS_CHECK_BALANCES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CHECK_BALANCES ))
 #define OFA_CHECK_BALANCES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CHECK_BALANCES, ofaCheckBalancesClass ))
 
-typedef struct _ofaCheckBalancesPrivate        ofaCheckBalancesPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

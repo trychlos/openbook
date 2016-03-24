@@ -49,8 +49,6 @@ G_BEGIN_DECLS
 #define OFA_IS_EXERCICE_COMBO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXERCICE_COMBO ))
 #define OFA_EXERCICE_COMBO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXERCICE_COMBO, ofaExerciceComboClass ))
 
-typedef struct _ofaExerciceComboPrivate        ofaExerciceComboPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkComboBox      parent;

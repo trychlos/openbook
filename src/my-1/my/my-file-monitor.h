@@ -52,8 +52,6 @@ G_BEGIN_DECLS
 #define MY_IS_FILE_MONITOR_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_FILE_MONITOR ))
 #define MY_FILE_MONITOR_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_FILE_MONITOR, myFileMonitorClass ))
 
-typedef struct _myFileMonitorPrivate        myFileMonitorPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GObject      parent;

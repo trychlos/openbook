@@ -51,8 +51,6 @@ G_BEGIN_DECLS
 #define MY_IS_DATE_COMBO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_DATE_COMBO ))
 #define MY_DATE_COMBO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_DATE_COMBO, myDateComboClass ))
 
-typedef struct _myDateComboPrivate        myDateComboPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkComboBox      parent;

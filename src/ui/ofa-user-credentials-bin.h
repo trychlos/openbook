@@ -53,8 +53,6 @@ G_BEGIN_DECLS
 #define OFA_IS_USER_CREDENTIALS_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_USER_CREDENTIALS_BIN ))
 #define OFA_USER_CREDENTIALS_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_USER_CREDENTIALS_BIN, ofaUserCredentialsBinClass ))
 
-typedef struct _ofaUserCredentialsBinPrivate         ofaUserCredentialsBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

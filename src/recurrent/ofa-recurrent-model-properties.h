@@ -55,8 +55,6 @@ G_BEGIN_DECLS
 #define OFA_IS_RECURRENT_MODEL_PROPERTIES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_MODEL_PROPERTIES ))
 #define OFA_RECURRENT_MODEL_PROPERTIES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_MODEL_PROPERTIES, ofaRecurrentModelPropertiesClass ))
 
-typedef struct _ofaRecurrentModelPropertiesPrivate         ofaRecurrentModelPropertiesPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

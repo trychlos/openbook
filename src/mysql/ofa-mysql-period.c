@@ -37,13 +37,14 @@
 
 /* priv instance data
  */
-struct _ofaMySQLPeriodPrivate {
+typedef struct {
 	gboolean  dispose_has_run;
 
 	/* runtime data
 	 */
 	gchar    *database;
-};
+}
+	ofaMySQLPeriodPrivate;
 
 #define MYSQL_DATABASE_KEY_PREFIX       "mysql-db-"
 

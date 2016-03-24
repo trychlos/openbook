@@ -49,8 +49,6 @@ G_BEGIN_DECLS
 #define OFA_IS_RECURRENT_NEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_NEW ))
 #define OFA_RECURRENT_NEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_NEW, ofaRecurrentNewClass ))
 
-typedef struct _ofaRecurrentNewPrivate        ofaRecurrentNewPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

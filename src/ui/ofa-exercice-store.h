@@ -45,8 +45,6 @@ G_BEGIN_DECLS
 #define OFA_IS_EXERCICE_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXERCICE_STORE ))
 #define OFA_EXERCICE_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXERCICE_STORE, ofaExerciceStoreClass ))
 
-typedef struct _ofaExerciceStorePrivate        ofaExerciceStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkListStore      parent;

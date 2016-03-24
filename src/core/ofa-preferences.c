@@ -48,7 +48,7 @@
 
 /* private instance data
  */
-struct _ofaPreferencesPrivate {
+typedef struct {
 	gboolean                  dispose_has_run;
 
 	/* UI - General
@@ -94,7 +94,8 @@ struct _ofaPreferencesPrivate {
 	/* UI - Plugin pages
 	 */
 	GList                    *plugs;
-};
+}
+	ofaPreferencesPrivate;
 
 #define SETTINGS_AMOUNT                               "UserAmount"
 #define SETTINGS_DATE                                 "UserDate"

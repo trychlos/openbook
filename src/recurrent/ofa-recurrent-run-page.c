@@ -53,7 +53,7 @@
 
 /* priv instance data
  */
-struct _ofaRecurrentRunPagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -78,7 +78,8 @@ struct _ofaRecurrentRunPagePrivate {
 	gboolean                 cancelled_visible;
 	gboolean                 waiting_visible;
 	gboolean                 validated_visible;
-};
+}
+	ofaRecurrentRunPagePrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-run-page.ui";
 static const gchar *st_page_settings    = "ofaRecurrentRunPage-settings";

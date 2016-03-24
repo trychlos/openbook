@@ -104,9 +104,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-struct _ofoCurrencyPrivate {
+typedef struct {
 	void *empty;						/* so that gcc -pedantic is happy */
-};
+}
+	ofoCurrencyPrivate;
 
 static ofoCurrency *currency_find_by_code( GList *set, const gchar *code );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );

@@ -49,8 +49,6 @@ G_BEGIN_DECLS
 #define OFA_IS_DOSSIER_DISPLAY_NOTES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_DISPLAY_NOTES ))
 #define OFA_DOSSIER_DISPLAY_NOTES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_DISPLAY_NOTES, ofaDossierDisplayNotesClass ))
 
-typedef struct _ofaDossierDisplayNotesPrivate         ofaDossierDisplayNotesPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

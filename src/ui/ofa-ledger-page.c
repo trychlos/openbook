@@ -46,7 +46,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerPagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -60,7 +60,8 @@ struct _ofaLedgerPagePrivate {
 	GtkWidget          *update_btn;
 	GtkWidget          *delete_btn;
 	GtkWidget          *entries_btn;
-};
+}
+	ofaLedgerPagePrivate;
 
 /* column ordering in the selection listview
  */

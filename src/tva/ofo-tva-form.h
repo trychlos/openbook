@@ -74,8 +74,6 @@ G_BEGIN_DECLS
 #define OFO_IS_TVA_FORM_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_TVA_FORM ))
 #define OFO_TVA_FORM_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_TVA_FORM, ofoTVAFormClass ))
 
-typedef struct _ofoTVAFormPrivate        ofoTVAFormPrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofoBase      parent;

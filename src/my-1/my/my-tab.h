@@ -51,8 +51,6 @@ G_BEGIN_DECLS
 #define MY_IS_TAB_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_TAB ))
 #define MY_TAB_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_TAB, myTabClass ))
 
-typedef struct _myTabPrivate       myTabPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkGrid      parent;

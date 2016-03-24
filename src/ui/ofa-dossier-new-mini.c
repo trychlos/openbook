@@ -46,7 +46,7 @@
 
 /* private instance data
  */
-struct _ofaDossierNewMiniPrivate {
+typedef struct {
 	gboolean          dispose_has_run;
 
 	/* UI
@@ -58,7 +58,8 @@ struct _ofaDossierNewMiniPrivate {
 	/* result
 	 */
 	ofaIDBMeta       *meta;
-};
+}
+	ofaDossierNewMiniPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-new-mini.ui";
 

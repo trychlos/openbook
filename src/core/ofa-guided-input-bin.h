@@ -58,8 +58,6 @@ G_BEGIN_DECLS
 #define OFA_IS_GUIDED_INPUT_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_GUIDED_INPUT_BIN ))
 #define OFA_GUIDED_INPUT_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_GUIDED_INPUT_BIN, ofaGuidedInputBinClass ))
 
-typedef struct _ofaGuidedInputBinPrivate         ofaGuidedInputBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

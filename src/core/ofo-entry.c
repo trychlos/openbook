@@ -158,9 +158,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-struct _ofoEntryPrivate {
+typedef struct {
 	gboolean   import_settled;
-};
+}
+	ofoEntryPrivate;
 
 /* manage the abbreviated localized status
  */

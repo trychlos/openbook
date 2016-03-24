@@ -42,7 +42,7 @@
 
 /* private instance data
  */
-struct _ofaRecurrentRunTreeviewPrivate {
+typedef struct {
 	gboolean           dispose_has_run;
 
 	/* runtime
@@ -69,7 +69,8 @@ struct _ofaRecurrentRunTreeviewPrivate {
 	gint               sort_column_id;
 	gint               sort_sens;
 	GtkTreeViewColumn *sort_column;
-};
+}
+	ofaRecurrentRunTreeviewPrivate;
 
 /* columns in the operation store
  */

@@ -52,7 +52,7 @@
 
 /* private instance data
  */
-struct _ofaRecurrentModelPropertiesPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* internals
@@ -80,7 +80,8 @@ struct _ofaRecurrentModelPropertiesPrivate {
 	ofoOpeTemplate      *template_obj;
 	gchar               *periodicity;
 	gchar               *periodicity_detail;
-};
+}
+	ofaRecurrentModelPropertiesPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-model-properties.ui";
 

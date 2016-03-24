@@ -50,8 +50,6 @@ G_BEGIN_DECLS
 #define OFA_IS_LEDGER_CLOSE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_LEDGER_CLOSE ))
 #define OFA_LEDGER_CLOSE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_LEDGER_CLOSE, ofaLedgerCloseClass ))
 
-typedef struct _ofaLedgerClosePrivate        ofaLedgerClosePrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

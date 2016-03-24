@@ -50,7 +50,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoLedger              ofoLedger;
-typedef struct _ofoLedgerPrivate       ofoLedgerPrivate;
 #endif
 
 struct _ofoLedger {

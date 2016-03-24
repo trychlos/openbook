@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaClassPagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -58,7 +58,8 @@ struct _ofaClassPagePrivate {
 	GtkTreeView *tview;					/* the main treeview of the page */
 	GtkWidget   *update_btn;
 	GtkWidget   *delete_btn;
-};
+}
+	ofaClassPagePrivate;
 
 /* column ordering in the selection listview
  */

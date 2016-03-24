@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofaMainWindow               ofaMainWindow;
-typedef struct _ofaMainWindowPrivate        ofaMainWindowPrivate;
+typedef struct _ofaMainWindow           ofaMainWindow;
 
 G_END_DECLS
 

@@ -52,7 +52,7 @@
 
 /* private instance data
  */
-struct _ofaTVARecordPropertiesPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* initialization
@@ -89,7 +89,8 @@ struct _ofaTVARecordPropertiesPrivate {
 	/* computing the declaration
 	 */
 	GRegex       *regex_fn;
-};
+}
+	ofaTVARecordPropertiesPrivate;
 
 static gboolean st_debug                = FALSE;
 #define DEBUG                           if( st_debug ) g_debug

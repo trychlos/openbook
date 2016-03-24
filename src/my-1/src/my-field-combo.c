@@ -32,9 +32,10 @@
 
 /* private instance data
  */
-struct _myFieldComboPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
-};
+}
+	myFieldComboPrivate;
 
 /* column ordering in the date combobox
  */

@@ -57,8 +57,6 @@ G_BEGIN_DECLS
 #define OFA_IS_FILE_DIR_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_FILE_DIR ))
 #define OFA_FILE_DIR_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_FILE_DIR, ofaFileDirClass ))
 
-typedef struct _ofaFileDirPrivate        ofaFileDirPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GObject      parent;

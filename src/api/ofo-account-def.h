@@ -33,7 +33,6 @@
 G_BEGIN_DECLS
 
 typedef struct _ofoAccount              ofoAccount;
-typedef struct _ofoAccountPrivate       ofoAccountPrivate;
 
 G_END_DECLS
 

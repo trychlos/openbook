@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaGuidedExPrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -68,7 +68,8 @@ struct _ofaGuidedExPrivate {
 	 *      dialog box definition
 	 */
 	GtkWidget            *ok_btn;
-};
+}
+	ofaGuidedExPrivate;
 
 /* columns in the left tree view which handles the entry models
  */

@@ -66,7 +66,7 @@
 
 /* private instance data
  */
-struct _ofaExerciceCloseAssistantPrivate {
+typedef struct {
 	gboolean              dispose_has_run;
 
 	ofaHub               *hub;
@@ -118,7 +118,8 @@ struct _ofaExerciceCloseAssistantPrivate {
 	/* plugins for IExeClosexxx interfaces
 	 */
 	GList                *close_list;
-};
+}
+	ofaExerciceCloseAssistantPrivate;
 
 /* the pages of this assistant, counted froom zero
  */

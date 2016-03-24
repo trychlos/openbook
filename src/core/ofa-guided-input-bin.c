@@ -55,7 +55,7 @@
 
 /* private instance data
  */
-struct _ofaGuidedInputBinPrivate {
+typedef struct {
 	gboolean              dispose_has_run;
 
 	/* input parameters at initialization time
@@ -101,7 +101,8 @@ struct _ofaGuidedInputBinPrivate {
 
 	/* a list of ofsCurrency structs which keeps trace of used currencies */
 	GList                *currency_list;
-};
+}
+	ofaGuidedInputBinPrivate;
 
 #define RANG_WIDTH                      3
 #define LABEL_MAX_WIDTH               256

@@ -47,7 +47,7 @@
 
 /* priv instance data
  */
-struct _ofaTVADeclarePagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -59,7 +59,8 @@ struct _ofaTVADeclarePagePrivate {
 	GtkWidget    *record_treeview;
 	GtkWidget    *update_btn;
 	GtkWidget    *delete_btn;
-};
+}
+	ofaTVADeclarePagePrivate;
 
 static GtkWidget    *v_setup_view( ofaPage *page );
 static GtkWidget    *setup_record_treeview( ofaTVADeclarePage *self );

@@ -34,7 +34,7 @@
 
 /* private instance data
  */
-struct _ofaDossierPrefsPrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/* initialization
@@ -49,7 +49,8 @@ struct _ofaDossierPrefsPrivate {
 	gboolean    properties;
 	gboolean    balances;
 	gboolean    integrity;
-};
+}
+	ofaDossierPrefsPrivate;
 
 static const gchar *st_prefs_settings   = "ofa-UserPreferences-settings";
 

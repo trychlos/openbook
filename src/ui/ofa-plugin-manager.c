@@ -34,25 +34,26 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-iabout.h"
-#include "api/ofa-plugin.h"
+#include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-main-window.h"
 
+#include "ui/ofa-application.h"
 #include "ui/ofa-plugin-manager.h"
-#include "api/ofa-preferences.h"
 
 /* private instance data
  */
-struct _ofaPluginManagerPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
 
 	/* UI
 	 */
 	GtkTreeView   *tview;
 	GtkWidget     *properties_btn;
-};
+}
+	ofaPluginManagerPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-plugin-manager.ui";
 

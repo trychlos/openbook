@@ -157,12 +157,13 @@ static const ofsBoxDef st_balance_defs[] = {
 		{ 0 }
 };
 
-struct _ofoLedgerPrivate {
+typedef struct {
 
 	/* the balances per currency as a GList of GList fields
 	 */
 	GList *balances;
-};
+}
+	ofoLedgerPrivate;
 
 static void       on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void       on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );

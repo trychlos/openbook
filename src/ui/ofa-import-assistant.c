@@ -79,7 +79,7 @@ enum {
 
 /* private instance data
  */
-struct _ofaImportAssistantPrivate {
+typedef struct {
 	gboolean          dispose_has_run;
 
 	/* p0: introduction
@@ -121,7 +121,8 @@ struct _ofaImportAssistantPrivate {
 	GtkWidget        *p5_text;
 	ofaIImportable   *p5_object;
 	ofaIImportable   *p5_plugin;
-};
+}
+	ofaImportAssistantPrivate;
 
 /* management of the radio buttons group
  * types are defined in ofa-iimporter.h

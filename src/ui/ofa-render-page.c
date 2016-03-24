@@ -44,7 +44,7 @@
 
 /* private instance data
  */
-struct _ofaRenderPagePrivate {
+typedef struct {
 
 	/* UI
 	 */
@@ -63,7 +63,8 @@ struct _ofaRenderPagePrivate {
 	gdouble    render_height;
 	GList     *dataset;
 	GList     *pdf_crs;					/* one pdf cairo context per printed page */
-};
+}
+	ofaRenderPagePrivate;
 
 /*
  * A4 sheet size is 21.0 x 29.7 mm = 8.26772 x 11.69291 in

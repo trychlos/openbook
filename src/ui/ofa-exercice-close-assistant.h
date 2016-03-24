@@ -90,8 +90,6 @@ G_BEGIN_DECLS
 #define OFA_IS_EXERCICE_CLOSE_ASSISTANT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXERCICE_CLOSE_ASSISTANT ))
 #define OFA_EXERCICE_CLOSE_ASSISTANT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXERCICE_CLOSE_ASSISTANT, ofaExerciceCloseAssistantClass ))
 
-typedef struct _ofaExerciceCloseAssistantPrivate         ofaExerciceCloseAssistantPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkAssistant      parent;

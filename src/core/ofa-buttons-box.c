@@ -32,7 +32,7 @@
 
 /* private instance data
  */
-struct _ofaButtonsBoxPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* internals
@@ -40,7 +40,8 @@ struct _ofaButtonsBoxPrivate {
 	GtkGrid      *grid;
 	gint          rows;
 	gint          spacers;
-};
+}
+	ofaButtonsBoxPrivate;
 
 /* some styles layout
  */

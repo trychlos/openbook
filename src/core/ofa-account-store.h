@@ -57,8 +57,6 @@ G_BEGIN_DECLS
 #define OFA_IS_ACCOUNT_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_STORE ))
 #define OFA_ACCOUNT_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_STORE, ofaAccountStoreClass ))
 
-typedef struct _ofaAccountStorePrivate        ofaAccountStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaTreeStore      parent;

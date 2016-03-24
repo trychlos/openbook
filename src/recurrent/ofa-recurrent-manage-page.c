@@ -51,7 +51,7 @@
 
 /* priv instance data
  */
-struct _ofaRecurrentManagePagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -70,7 +70,8 @@ struct _ofaRecurrentManagePagePrivate {
 	gint               sort_column_id;
 	gint               sort_sens;
 	GtkTreeViewColumn *sort_column;
-};
+}
+	ofaRecurrentManagePagePrivate;
 
 /* the id of the column is set against sortable columns */
 #define DATA_COLUMN_ID                  "ofa-data-column-id"

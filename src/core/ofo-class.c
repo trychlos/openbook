@@ -90,9 +90,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 
 /* priv instance data
  */
-struct _ofoClassPrivate {
+typedef struct {
 	void *empty;						/* so that gcc -pedantic is happy */
-};
+}
+	ofoClassPrivate;
 
 static ofoClass  *class_find_by_number( GList *set, gint number );
 static void       class_set_upd_user( ofoClass *class, const gchar *user );

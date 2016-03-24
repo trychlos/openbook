@@ -50,10 +50,22 @@ G_BEGIN_DECLS
 #define OFO_BASE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BASE, ofoBaseClass ))
 
 #if 0
-typedef struct                       ofoBase;
-typedef struct                       ofoBaseClass;
-typedef struct _ofoBasePrivate       ofoBasePrivate;
 typedef struct _ofoBaseProtected     ofoBaseProtected;
+
+typedef struct {
+	/*< public members >*/
+	GObject           parent;
+
+	/*< protected members >*/
+	ofoBaseProtected *prot;
+}
+	ofoBase;
+
+typedef struct {
+	/*< public members >*/
+	GObjectClass      parent;
+}
+	ofoBaseClass;
 #endif
 
 /**

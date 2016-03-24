@@ -43,7 +43,7 @@
 
 /* private instance data
  */
-struct _ofaGuidedInputPrivate {
+typedef struct {
 	gboolean              dispose_has_run;
 
 	/* initialization
@@ -54,7 +54,8 @@ struct _ofaGuidedInputPrivate {
 	 */
 	ofaGuidedInputBin    *input_bin;
 	GtkWidget            *ok_btn;
-};
+}
+	ofaGuidedInputPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-guided-input.ui";
 

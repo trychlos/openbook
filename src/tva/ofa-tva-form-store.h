@@ -56,8 +56,6 @@ G_BEGIN_DECLS
 #define OFA_IS_TVA_FORM_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TVA_FORM_STORE ))
 #define OFA_TVA_FORM_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TVA_FORM_STORE, ofaTVAFormStoreClass ))
 
-typedef struct _ofaTVAFormStorePrivate         ofaTVAFormStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaListStore      parent;

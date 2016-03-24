@@ -56,7 +56,7 @@
 
 /* private instance data
  */
-struct _ofaBalanceRenderPrivate {
+typedef struct {
 
 	ofaHub        *hub;
 	ofaBalanceBin *args_bin;
@@ -94,7 +94,8 @@ struct _ofaBalanceRenderPrivate {
 	gint           class_num;
 	ofoClass      *class_object;
 	GList         *subtotals;			/* subtotals per currency for this class */
-};
+}
+	ofaBalanceRenderPrivate;
 
 typedef struct {
 	gchar  *currency;

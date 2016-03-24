@@ -47,8 +47,6 @@ G_BEGIN_DECLS
 #define OFA_IS_MYSQL_CONNECT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_CONNECT ))
 #define OFA_MYSQL_CONNECT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_CONNECT, ofaMySQLConnectClass ))
 
-typedef struct _ofaMySQLConnectPrivate        ofaMySQLConnectPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GObject      parent;

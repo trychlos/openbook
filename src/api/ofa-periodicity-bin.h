@@ -47,8 +47,6 @@ G_BEGIN_DECLS
 #define OFA_IS_PERIODICITY_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PERIODICITY_BIN ))
 #define OFA_PERIODICITY_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PERIODICITY_BIN, ofaPeriodicityBinClass ))
 
-typedef struct _ofaPeriodicityBinPrivate        ofaPeriodicityBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

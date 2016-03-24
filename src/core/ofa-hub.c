@@ -52,8 +52,8 @@
 
 /* private instance data
  */
-struct _ofaHubPrivate {
-	gboolean               dispose_has_run;
+typedef struct {
+	gboolean             dispose_has_run;
 
 	/* extenders
 	 */
@@ -64,7 +64,8 @@ struct _ofaHubPrivate {
 	const ofaIDBConnect *connect;
 	ofoDossier          *dossier;
 	ofaDossierPrefs     *dossier_prefs;
-};
+}
+	ofaHubPrivate;
 
 /* signals defined here
  */

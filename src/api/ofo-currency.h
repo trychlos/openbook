@@ -50,7 +50,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoCurrency              ofoCurrency;
-typedef struct _ofoCurrencyPrivate       ofoCurrencyPrivate;
 #endif
 
 struct _ofoCurrency {

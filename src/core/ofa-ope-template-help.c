@@ -42,7 +42,7 @@
  * 2/ managed through myIWindow interface
  * 3/ does not provide any other identifier than standard type name.
  */
-struct _ofaOpeTemplateHelpPrivate {
+typedef struct {
 	gboolean dispose_has_run;
 
 	/* initialization
@@ -51,7 +51,8 @@ struct _ofaOpeTemplateHelpPrivate {
 	/* runtime
 	 */
 	GList   *parents;
-};
+}
+	ofaOpeTemplateHelpPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-template-help.ui";
 

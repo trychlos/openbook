@@ -53,7 +53,7 @@
 
 /* priv instance data
  */
-struct _ofaTVAManagePagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -66,7 +66,8 @@ struct _ofaTVAManagePagePrivate {
 	GtkWidget           *update_btn;
 	GtkWidget           *delete_btn;
 	GtkWidget           *declare_btn;
-};
+}
+	ofaTVAManagePagePrivate;
 
 static GtkWidget  *v_setup_view( ofaPage *page );
 static GtkWidget  *setup_form_treeview( ofaTVAManagePage *self );

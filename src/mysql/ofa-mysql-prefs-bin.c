@@ -44,7 +44,7 @@
 
 /* private instance data
  */
-struct _ofaMySQLPrefsBinPrivate {
+typedef struct {
 	gboolean                 dispose_has_run;
 
 	/* initialization
@@ -60,7 +60,8 @@ struct _ofaMySQLPrefsBinPrivate {
 	const ofaIPrefsProvider *instance;
 	gchar                   *backup_cmdline;
 	gchar                   *restore_cmdline;
-};
+}
+	ofaMySQLPrefsBinPrivate;
 
 /* signals defined here
  */

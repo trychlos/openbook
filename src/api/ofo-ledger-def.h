@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoLedger              ofoLedger;
-typedef struct _ofoLedgerPrivate       ofoLedgerPrivate;
+typedef struct _ofoLedger               ofoLedger;
 
 G_END_DECLS
 

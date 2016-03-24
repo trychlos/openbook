@@ -50,7 +50,7 @@
 
 /* private instance data
  */
-struct _ofaAccountFrameBinPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -74,7 +74,8 @@ struct _ofaAccountFrameBinPrivate {
 	GtkWidget           *notebook;
 	ofaButtonsBox       *buttonsbox;
 	GList               *buttons;		/* list of sButton structs */
-};
+}
+	ofaAccountFrameBinPrivate;
 
 /* these are only default labels in the case where we were not able to
  * get the correct #ofoClass objects

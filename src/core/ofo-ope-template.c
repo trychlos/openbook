@@ -168,12 +168,13 @@ static const ofsBoxDef st_detail_defs[] = {
 		{ 0 }
 };
 
-struct _ofoOpeTemplatePrivate {
+typedef struct {
 
 	/* the details of the operation template as a GList of GList fields
 	 */
 	GList     *details;
-};
+}
+	ofoOpeTemplatePrivate;
 
 static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );

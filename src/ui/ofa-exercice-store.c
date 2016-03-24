@@ -37,12 +37,13 @@
 
 /* private instance data
  */
-struct _ofaExerciceStorePrivate {
+typedef struct {
 	gboolean         dispose_has_run;
 
 	/*
 	 */
-};
+}
+	ofaExerciceStorePrivate;
 
 static GType st_col_types[EXERCICE_N_COLUMNS] = {
 		G_TYPE_STRING,					/* localized status */

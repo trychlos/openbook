@@ -47,7 +47,7 @@
 
 /* private instance data
  */
-struct _ofaClosingParmsBinPrivate {
+typedef struct {
 	gboolean        dispose_has_run;
 
 	/* runtime data
@@ -69,7 +69,8 @@ struct _ofaClosingParmsBinPrivate {
 	 */
 	GtkGrid        *grid;
 	gint            count;				/* total count of rows in the grid */
-};
+}
+	ofaClosingParmsBinPrivate;
 
 #define DATA_COLUMN                     "ofa-data-column"
 #define DATA_ROW                        "ofa-data-row"

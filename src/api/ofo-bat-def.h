@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoBat              ofoBat;
-typedef struct _ofoBatPrivate       ofoBatPrivate;
+typedef struct _ofoBat                  ofoBat;
 
 G_END_DECLS
 

@@ -47,8 +47,6 @@ G_BEGIN_DECLS
 #define OFA_IS_MYSQL_PERIOD_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_PERIOD ))
 #define OFA_MYSQL_PERIOD_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_PERIOD, ofaMySQLPeriodClass ))
 
-typedef struct _ofaMySQLPeriodPrivate        ofaMySQLPeriodPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GObject      parent;

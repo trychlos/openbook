@@ -52,8 +52,6 @@ G_BEGIN_DECLS
 #define OFA_IS_FILE_FORMAT_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_FILE_FORMAT_BIN ))
 #define OFA_FILE_FORMAT_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_FILE_FORMAT_BIN, ofaFileFormatBinClass ))
 
-typedef struct _ofaFileFormatBinPrivate         ofaFileFormatBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

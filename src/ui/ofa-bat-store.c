@@ -46,13 +46,14 @@
 
 /* private instance data
  */
-struct _ofaBatStorePrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
 	ofaHub     *hub;
-};
+}
+	ofaBatStorePrivate;
 
 static GType st_col_types[BAT_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* id, uri, format */

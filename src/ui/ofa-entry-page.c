@@ -93,7 +93,7 @@ enum {
 
 /* priv instance data
  */
-struct _ofaEntryPagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -156,7 +156,8 @@ struct _ofaEntryPagePrivate {
 	 */
 	GtkLabel            *comment;
 	GList               *balances;
-};
+}
+	ofaEntryPagePrivate;
 
 /* the id of the column is set against each cell and each column
  * of the entry treeview

@@ -51,8 +51,6 @@ G_BEGIN_DECLS
 #define OFA_IS_DOSSIER_DELETE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_DELETE ))
 #define OFA_DOSSIER_DELETE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_DELETE, ofaDossierDeleteClass ))
 
-typedef struct _ofaDossierDeletePrivate        ofaDossierDeletePrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

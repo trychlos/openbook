@@ -44,8 +44,6 @@ G_BEGIN_DECLS
 #define OFA_IS_EXPORT_ASSISTANT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_EXPORT_ASSISTANT ))
 #define OFA_EXPORT_ASSISTANT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_EXPORT_ASSISTANT, ofaExportAssistantClass ))
 
-typedef struct _ofaExportAssistantPrivate        ofaExportAssistantPrivate;
-
 typedef struct {
 	/*< public memnbers >*/
 	GtkAssistant      parent;

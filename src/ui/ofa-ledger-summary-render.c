@@ -56,7 +56,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerSummaryRenderPrivate {
+typedef struct {
 
 	ofaHub              *hub;
 	ofaLedgerSummaryBin *args_bin;
@@ -85,7 +85,8 @@ struct _ofaLedgerSummaryRenderPrivate {
 	/* total general
 	 */
 	GList               *report_totals;		/* all totals per currency */
-};
+}
+	ofaLedgerSummaryRenderPrivate;
 
 #define THIS_PAGE_ORIENTATION            GTK_PAGE_ORIENTATION_LANDSCAPE
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4

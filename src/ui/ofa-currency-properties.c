@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaCurrencyPropertiesPrivate {
+typedef struct {
 	gboolean     dispose_has_run;
 
 	/* initialization
@@ -69,7 +69,8 @@ struct _ofaCurrencyPropertiesPrivate {
 	 */
 	GtkWidget   *ok_btn;
 	GtkWidget   *msg_label;
-};
+}
+	ofaCurrencyPropertiesPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-currency-properties.ui";
 

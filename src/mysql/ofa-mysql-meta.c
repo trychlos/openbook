@@ -39,7 +39,7 @@
 
 /* priv instance data
  */
-struct _ofaMySQLMetaPrivate {
+typedef struct {
 	gboolean dispose_has_run;
 
 	/* server connection infos
@@ -47,7 +47,8 @@ struct _ofaMySQLMetaPrivate {
 	gchar   *host;
 	gchar   *socket;
 	guint    port;
-};
+}
+	ofaMySQLMetaPrivate;
 
 #define MYSQL_HOST_KEY                  "mysql-host"
 #define MYSQL_SOCKET_KEY                "mysql-socket"

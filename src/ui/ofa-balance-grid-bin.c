@@ -34,13 +34,14 @@
 
 /* private instance data
  */
-struct _ofaBalanceGridBinPrivate {
+typedef struct {
 	gboolean dispose_has_run;
 
 	/* UI
 	 */
 	GtkGrid *grid;						/* top grid */
-};
+}
+	ofaBalanceGridBinPrivate;
 
 /* columns of the balance grid
  */

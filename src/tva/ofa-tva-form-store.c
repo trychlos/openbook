@@ -36,12 +36,13 @@
 
 /* private instance data
  */
-struct _ofaTVAFormStorePrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/*
 	 */
-};
+}
+	ofaTVAFormStorePrivate;
 
 static GType st_col_types[TVA_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */

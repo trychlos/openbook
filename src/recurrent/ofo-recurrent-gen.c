@@ -64,9 +64,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-struct _ofoRecurrentGenPrivate {
+typedef struct {
 	void *empty;						/* so that gcc -pedantic is happy */
-};
+}
+	ofoRecurrentGenPrivate;
 
 static ofoRecurrentGen *st_this         = NULL;
 

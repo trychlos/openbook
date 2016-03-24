@@ -77,7 +77,7 @@
 
 /* private instance data
  */
-struct _ofaMainWindowPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
 
 	/* internals
@@ -102,7 +102,8 @@ struct _ofaMainWindowPrivate {
 	GSimpleAction *action_close_ledger;
 	GSimpleAction *action_close_exercice;
 	GSimpleAction *action_import;
-};
+}
+	ofaMainWindowPrivate;
 
 /* signals defined here
  */

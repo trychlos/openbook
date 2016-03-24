@@ -44,7 +44,7 @@
 
 /* priv instance data
  */
-struct _ofoConcilPrivate {
+typedef struct {
 
 	/* OFA_T_CONCIL table content
 	 */
@@ -56,7 +56,8 @@ struct _ofoConcilPrivate {
 	/* OFA_T_CONCIL_IDS table content
 	 */
 	GList     *ids;						/* a list of ofsConcilId records */
-};
+}
+	ofoConcilPrivate;
 
 static ofoConcil *concil_get_by_query( const gchar *query, ofaHub *hub );
 static void       concil_set_id( ofoConcil *concil, ofxCounter id );

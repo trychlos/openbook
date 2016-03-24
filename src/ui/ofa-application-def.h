@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofaApplication              ofaApplication;
-typedef struct _ofaApplicationPrivate       ofaApplicationPrivate;
+typedef struct _ofaApplication          ofaApplication;
 
 G_END_DECLS
 

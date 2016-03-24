@@ -49,7 +49,7 @@
 
 /* private instance data
  */
-struct _ofaAccountPropertiesPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -95,7 +95,8 @@ struct _ofaAccountPropertiesPrivate {
 	gboolean             root;
 	gchar               *upd_user;
 	GTimeVal             upd_stamp;
-};
+}
+	ofaAccountPropertiesPrivate;
 
 typedef gdouble       ( *fnGetDouble )( const ofoAccount * );
 typedef gint          ( *fnGetInt )   ( const ofoAccount * );

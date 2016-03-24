@@ -49,7 +49,7 @@
 
 /* private instance data
  */
-struct _ofaDossierOpenPrivate {
+typedef struct {
 	gboolean            dispose_has_run;
 
 	/* data
@@ -67,7 +67,8 @@ struct _ofaDossierOpenPrivate {
 	ofaExerciceCombo   *exercice_combo;
 	GtkWidget          *message_label;
 	GtkWidget          *ok_btn;
-};
+}
+	ofaDossierOpenPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-open.ui";
 

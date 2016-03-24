@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaReconcilBinPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -63,7 +63,8 @@ struct _ofaReconcilBinPrivate {
 	 */
 	ofoAccount          *account;
 	GDate                date;
-};
+}
+	ofaReconcilBinPrivate;
 
 /* signals defined here
  */

@@ -32,7 +32,7 @@
 
 /* private instance data
  */
-struct _ofaOpenPrefsBinPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* UI
@@ -42,7 +42,8 @@ struct _ofaOpenPrefsBinPrivate {
 	GtkWidget    *properties_btn;
 	GtkWidget    *balances_btn;
 	GtkWidget    *integrity_btn;
-};
+}
+	ofaOpenPrefsBinPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-open-prefs-bin.ui";
 

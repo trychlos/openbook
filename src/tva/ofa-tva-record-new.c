@@ -47,7 +47,7 @@
 
 /* private instance data
  */
-struct _ofaTVARecordNewPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* internals
@@ -61,7 +61,8 @@ struct _ofaTVARecordNewPrivate {
 	GtkWidget    *end_date;
 	GtkWidget    *ok_btn;
 	GtkWidget    *msg_label;
-};
+}
+	ofaTVARecordNewPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-record-new.ui";
 

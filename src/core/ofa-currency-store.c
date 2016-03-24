@@ -36,12 +36,13 @@
 
 /* private instance data
  */
-struct _ofaCurrencyStorePrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/*
 	 */
-};
+}
+	ofaCurrencyStorePrivate;
 
 static GType st_col_types[CURRENCY_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* code, label, symbol */

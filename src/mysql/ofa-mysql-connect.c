@@ -43,7 +43,7 @@
 
 /* priv instance data
  */
-struct _ofaMySQLConnectPrivate {
+typedef struct {
 	gboolean dispose_has_run;
 
 	/* connection data
@@ -53,7 +53,8 @@ struct _ofaMySQLConnectPrivate {
 	gchar   *socket;
 	guint    port;
 	gchar   *database;
-};
+}
+	ofaMySQLConnectPrivate;
 
 static void     idbconnect_iface_init( ofaIDBConnectInterface *iface );
 static guint    idbconnect_get_interface_version( const ofaIDBConnect *instance );

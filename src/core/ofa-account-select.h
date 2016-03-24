@@ -49,8 +49,6 @@ G_BEGIN_DECLS
 #define OFA_IS_ACCOUNT_SELECT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_SELECT ))
 #define OFA_ACCOUNT_SELECT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_SELECT, ofaAccountSelectClass ))
 
-typedef struct _ofaAccountSelectPrivate        ofaAccountSelectPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

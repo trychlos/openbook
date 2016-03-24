@@ -136,7 +136,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofaHub              ofaHub;
-typedef struct _ofaHubPrivate       ofaHubPrivate;
 #endif
 
 struct _ofaHub {

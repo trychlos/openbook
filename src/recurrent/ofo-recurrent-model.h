@@ -47,8 +47,6 @@ G_BEGIN_DECLS
 #define OFO_IS_RECURRENT_MODEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_RECURRENT_MODEL ))
 #define OFO_RECURRENT_MODEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_RECURRENT_MODEL, ofoRecurrentModelClass ))
 
-typedef struct _ofoRecurrentModelPrivate        ofoRecurrentModelPrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofoBase      parent;

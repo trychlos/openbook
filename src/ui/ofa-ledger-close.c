@@ -51,7 +51,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerClosePrivate {
+typedef struct {
 	gboolean            dispose_has_run;
 
 	ofaHub             *hub;
@@ -75,7 +75,8 @@ struct _ofaLedgerClosePrivate {
 	guint               entries_count;	/* count of validated entries for the ledger */
 	guint               entries_num;
 	myProgressBar      *bar;
-};
+}
+	ofaLedgerClosePrivate;
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-ledger-close.ui";
 static const gchar  *st_settings        = "LedgerClose";

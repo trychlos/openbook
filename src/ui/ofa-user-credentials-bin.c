@@ -34,7 +34,7 @@
 
 /* private instance data
  */
-struct _ofaUserCredentialsBinPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* UI
@@ -47,7 +47,8 @@ struct _ofaUserCredentialsBinPrivate {
 	 */
 	gchar        *account;
 	gchar        *password;
-};
+}
+	ofaUserCredentialsBinPrivate;
 
 /* signals defined here
  */

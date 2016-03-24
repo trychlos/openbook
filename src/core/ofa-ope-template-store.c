@@ -37,12 +37,13 @@
 
 /* private instance data
  */
-struct _ofaOpeTemplateStorePrivate {
+typedef struct {
 	gboolean dispose_has_run;
 
 	/* runtime data
 	 */
-};
+}
+	ofaOpeTemplateStorePrivate;
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */

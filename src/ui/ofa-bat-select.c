@@ -47,7 +47,7 @@
 
 /* private instance data
  */
-struct _ofaBatSelectPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* UI
@@ -60,7 +60,8 @@ struct _ofaBatSelectPrivate {
 	/* preselected value/returned value
 	 */
 	ofxCounter           bat_id;
-};
+}
+	ofaBatSelectPrivate;
 
 static const gchar *st_settings         = "BatSelect-settings";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-select.ui";

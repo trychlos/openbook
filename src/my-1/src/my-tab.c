@@ -31,14 +31,15 @@
 
 /* priv instance data
  */
-struct _myTabPrivate {
+typedef struct {
 	gboolean   dispose_has_run;
 
 	gchar     *label;
 
 	GtkWidget *pin_btn;
 	GtkWidget *close_btn;
-};
+}
+	myTabPrivate;
 
 /* signals defined here
  */

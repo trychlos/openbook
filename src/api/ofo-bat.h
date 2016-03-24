@@ -53,7 +53,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoBat              ofoBat;
-typedef struct _ofoBatPrivate       ofoBatPrivate;
 #endif
 
 struct _ofoBat {

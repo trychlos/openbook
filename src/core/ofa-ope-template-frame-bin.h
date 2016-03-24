@@ -50,8 +50,6 @@ G_BEGIN_DECLS
 #define OFA_IS_OPE_TEMPLATE_FRAME_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATE_FRAME_BIN ))
 #define OFA_OPE_TEMPLATE_FRAME_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, ofaOpeTemplateFrameBinClass ))
 
-typedef struct _ofaOpeTemplateFrameBinPrivate          ofaOpeTemplateFrameBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

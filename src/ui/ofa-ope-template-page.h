@@ -46,8 +46,6 @@ G_BEGIN_DECLS
 #define OFA_IS_OPE_TEMPLATE_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATE_PAGE ))
 #define OFA_OPE_TEMPLATE_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATE_PAGE, ofaOpeTemplatePageClass ))
 
-typedef struct _ofaOpeTemplatePagePrivate         ofaOpeTemplatePagePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaPage      parent;

@@ -57,7 +57,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerBookRenderPrivate {
+typedef struct {
 
 	ofaHub              *hub;
 	ofaLedgerBookBin    *args_bin;
@@ -108,7 +108,8 @@ struct _ofaLedgerBookRenderPrivate {
 	/* total general
 	 */
 	GList               *report_totals;		/* all totals per currency */
-};
+}
+	ofaLedgerBookRenderPrivate;
 
 /*
  * Accounts balances print uses a portrait orientation

@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaCheckBalancesBinPrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/* runtime data
@@ -61,7 +61,8 @@ struct _ofaCheckBalancesBinPrivate {
 	GList      *accounts_list;
 
 	gboolean    result;
-};
+}
+	ofaCheckBalancesBinPrivate;
 
 /* signals defined here
  */

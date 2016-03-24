@@ -50,8 +50,6 @@ G_BEGIN_DECLS
 #define MY_IS_PROGRESS_BAR_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_PROGRESS_BAR ))
 #define MY_PROGRESS_BAR_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_PROGRESS_BAR, myProgressBarClass ))
 
-typedef struct _myProgressBarPrivate        myProgressBarPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkProgressBar      parent;

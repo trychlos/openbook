@@ -33,7 +33,6 @@
 G_BEGIN_DECLS
 
 typedef struct _ofoDossier              ofoDossier;
-typedef struct _ofoDossierPrivate       ofoDossierPrivate;
 
 G_END_DECLS
 

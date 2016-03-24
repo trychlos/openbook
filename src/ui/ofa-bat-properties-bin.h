@@ -54,8 +54,6 @@ G_BEGIN_DECLS
 #define OFA_IS_BAT_PROPERTIES_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BAT_PROPERTIES_BIN ))
 #define OFA_BAT_PROPERTIES_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BAT_PROPERTIES_BIN, ofaBatPropertiesBinClass ))
 
-typedef struct _ofaBatPropertiesBinPrivate         ofaBatPropertiesBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

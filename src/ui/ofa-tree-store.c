@@ -33,14 +33,15 @@
 
 /* private instance data
  */
-struct _ofaTreeStorePrivate {
+typedef struct {
 	gboolean  dispose_has_run;
 
 	/* properties
 	 */
 	ofaHub   *hub;
 	gboolean  dataset_loaded;
-};
+}
+	ofaTreeStorePrivate;
 
 /* class properties
  */

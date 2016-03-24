@@ -35,14 +35,15 @@
 
 /* private instance data
  */
-struct _ofaLedgerComboPrivate {
+typedef struct {
 	gboolean          dispose_has_run;
 
 	/* runtime data
 	 */
 	ofaLedgerColumns  columns;
 	ofaLedgerStore   *store;
-};
+}
+	ofaLedgerComboPrivate;
 
 /* signals defined here
  */

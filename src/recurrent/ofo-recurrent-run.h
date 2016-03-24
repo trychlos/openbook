@@ -48,8 +48,6 @@ G_BEGIN_DECLS
 #define OFO_IS_RECURRENT_RUN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_RECURRENT_RUN ))
 #define OFO_RECURRENT_RUN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_RECURRENT_RUN, ofoRecurrentRunClass ))
 
-typedef struct _ofoRecurrentRunPrivate        ofoRecurrentRunPrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofoBase      parent;

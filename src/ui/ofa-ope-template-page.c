@@ -46,12 +46,13 @@
 
 /* private instance data
  */
-struct _ofaOpeTemplatePagePrivate {
+typedef struct {
 
 	/* UI
 	 */
 	ofaOpeTemplateFrameBin *ope_frame;
-};
+}
+	ofaOpeTemplatePagePrivate;
 
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );

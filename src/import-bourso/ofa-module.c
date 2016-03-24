@@ -59,6 +59,7 @@ ofa_extension_startup( GTypeModule *module, GApplication *application )
  *
  * optional, defaults to 1.
  */
+#if 0
 guint
 ofa_extension_get_api_version( void )
 {
@@ -93,6 +94,7 @@ ofa_extension_get_version_number( void )
 {
 	return( PACKAGE_VERSION );
 }
+#endif
 
 /*
  * ofa_extension_list_types:

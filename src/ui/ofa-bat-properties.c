@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaBatPropertiesPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -62,7 +62,8 @@ struct _ofaBatPropertiesPrivate {
 	/* UI
 	 */
 	GtkWidget           *ok_btn;
-};
+}
+	ofaBatPropertiesPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-properties.ui";
 

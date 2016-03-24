@@ -37,7 +37,7 @@
 
 /* private instance data
  */
-struct _ofaFileFormatPrivate {
+typedef struct {
 	gboolean     dispose_has_run;
 
 	/* if serialized in user preferences
@@ -58,7 +58,8 @@ struct _ofaFileFormatPrivate {
 		gboolean with_headers;
 		gint     count_headers;
 	} h;
-};
+}
+	ofaFileFormatPrivate;
 
 typedef struct {
 	ofaFFtype      format;

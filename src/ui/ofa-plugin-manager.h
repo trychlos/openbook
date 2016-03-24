@@ -49,8 +49,6 @@ G_BEGIN_DECLS
 #define OFA_IS_PLUGIN_MANAGER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PLUGIN_MANAGER ))
 #define OFA_PLUGIN_MANAGER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PLUGIN_MANAGER, ofaPluginManagerClass ))
 
-typedef struct _ofaPluginManagerPrivate        ofaPluginManagerPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

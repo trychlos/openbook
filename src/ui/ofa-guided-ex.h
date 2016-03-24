@@ -42,8 +42,6 @@ G_BEGIN_DECLS
 #define OFA_IS_GUIDED_EX_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_GUIDED_EX ))
 #define OFA_GUIDED_EX_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_GUIDED_EX, ofaGuidedExClass ))
 
-typedef struct _ofaGuidedExPrivate        ofaGuidedExPrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaPage      parent;

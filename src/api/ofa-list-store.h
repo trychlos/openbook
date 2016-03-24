@@ -51,8 +51,6 @@ G_BEGIN_DECLS
 #define OFA_IS_LIST_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_LIST_STORE ))
 #define OFA_LIST_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_LIST_STORE, ofaListStoreClass ))
 
-typedef struct _ofaListStorePrivate        ofaListStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkListStore      parent;

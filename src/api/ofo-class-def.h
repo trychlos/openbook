@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoClass              ofoClass;
-typedef struct _ofoClassPrivate       ofoClassPrivate;
+typedef struct _ofoClass                ofoClass;
 
 G_END_DECLS
 

@@ -44,7 +44,7 @@
 
 /* private instance data
  */
-struct _ofaMySQLEditorEnterPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* setup
@@ -62,7 +62,8 @@ struct _ofaMySQLEditorEnterPrivate {
 	/* UI
 	 */
 	GtkSizeGroup *group0;
-};
+}
+	ofaMySQLEditorEnterPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-editor-enter.ui";
 

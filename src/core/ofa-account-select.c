@@ -44,7 +44,7 @@
 
 /* private instance data
  */
-struct _ofaAccountSelectPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* input data
@@ -60,7 +60,8 @@ struct _ofaAccountSelectPrivate {
 	/* returned value
 	 */
 	gchar               *account_number;
-};
+}
+	ofaAccountSelectPrivate;
 
 static const gchar      *st_resource_ui = "/org/trychlos/openbook/core/ofa-account-select.ui";
 static ofaAccountSelect *st_this        = NULL;

@@ -36,7 +36,7 @@
 
 /* private instance data
  */
-struct _ofaDossierDeletePrefsBinPrivate {
+typedef struct {
 	gboolean   dispose_has_run;
 
 	/* data
@@ -49,7 +49,8 @@ struct _ofaDossierDeletePrefsBinPrivate {
 	GtkWidget *p2_db_drop;
 	GtkWidget *p2_db_keep;
 	GtkWidget *p3_account;
-};
+}
+	ofaDossierDeletePrefsBinPrivate;
 
 /* signals defined here
  */

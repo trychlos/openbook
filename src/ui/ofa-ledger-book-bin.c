@@ -44,7 +44,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerBookBinPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -63,7 +63,8 @@ struct _ofaLedgerBookBinPrivate {
 	 */
 	gboolean             all_ledgers;
 	gboolean             new_page;
-};
+}
+	ofaLedgerBookBinPrivate;
 
 /* signals defined here
  */

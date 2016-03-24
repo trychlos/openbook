@@ -53,7 +53,7 @@
 
 /* private instance data
  */
-struct _ofaCheckIntegrityBinPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
 
 	/* runtime data
@@ -81,7 +81,8 @@ struct _ofaCheckIntegrityBinPrivate {
 	GtkWidget     *objects_grid;
 	gint           objects_row;
 	GtkTextBuffer *text_buffer;
-};
+}
+	ofaCheckIntegrityBinPrivate;
 
 /* a data structure defined for each worker
  */

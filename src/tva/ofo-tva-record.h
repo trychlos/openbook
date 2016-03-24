@@ -57,8 +57,6 @@ G_BEGIN_DECLS
 #define OFO_IS_TVA_RECORD_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_TVA_RECORD ))
 #define OFO_TVA_RECORD_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_TVA_RECORD, ofoTVARecordClass ))
 
-typedef struct _ofoTVARecordPrivate        ofoTVARecordPrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofoBase      parent;

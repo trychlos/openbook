@@ -42,12 +42,13 @@
 
 /* private instance data
  */
-struct _ofaAccountStorePrivate {
+typedef struct {
 	gboolean dispose_has_run;
 
 	/* runtime data
 	 */
-};
+}
+	ofaAccountStorePrivate;
 
 /* a structure used when moving a subtree to another place
  */

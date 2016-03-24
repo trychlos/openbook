@@ -46,7 +46,7 @@
 
 /* private instance data
  */
-struct _ofaOpeTemplateFrameBinPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -68,7 +68,8 @@ struct _ofaOpeTemplateFrameBinPrivate {
 	GtkWidget           *notebook;
 	ofaButtonsBox       *buttonsbox;
 	GList               *buttons;
-};
+}
+	ofaOpeTemplateFrameBinPrivate;
 
 /* a structure to descriibe each displayed button
  * @sensitive: if FALSE, the button is never sensitive, whatever be the

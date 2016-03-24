@@ -38,7 +38,7 @@
 
 /* private instance data
  */
-struct _ofaFileFormatBinPrivate {
+typedef struct {
 	gboolean        dispose_has_run;
 
 	/* initialization data
@@ -66,7 +66,8 @@ struct _ofaFileFormatBinPrivate {
 	/* runtime data
 	 */
 	ofaFFtype       format;
-};
+}
+	ofaFileFormatBinPrivate;
 
 /* column ordering in the file format combobox
  */

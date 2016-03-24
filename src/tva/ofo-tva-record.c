@@ -195,13 +195,14 @@ static const ofsBoxDef st_bools_defs[] = {
 		{ 0 }
 };
 
-struct _ofoTVARecordPrivate {
+typedef struct {
 
 	/* the details of the record as a GList of GList fields
 	 */
 	GList *bools;
 	GList *details;
-};
+}
+	ofoTVARecordPrivate;
 
 /* a structure to compare mnemos and end dates
  */

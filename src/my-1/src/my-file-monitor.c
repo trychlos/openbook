@@ -35,7 +35,7 @@
 
 /* private instance data
  */
-struct _myFileMonitorPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* runtime data
@@ -43,7 +43,8 @@ struct _myFileMonitorPrivate {
 	gchar        *filename;
 	GFileMonitor *monitor;
 	myTimeout    *timeout;
-};
+}
+	myFileMonitorPrivate;
 
 #define FILE_MONITOR_SIGNAL_CHANGED     "changed"
 #define FILE_MONITOR_RATE_LIMIT         250		/* ms */

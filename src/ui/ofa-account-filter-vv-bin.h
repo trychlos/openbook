@@ -70,8 +70,6 @@ G_BEGIN_DECLS
 #define OFA_IS_ACCOUNT_FILTER_VV_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_FILTER_VV_BIN ))
 #define OFA_ACCOUNT_FILTER_VV_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_FILTER_VV_BIN, ofaAccountFilterVVBinClass ))
 
-typedef struct _ofaAccountFilterVVBinPrivate          ofaAccountFilterVVBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

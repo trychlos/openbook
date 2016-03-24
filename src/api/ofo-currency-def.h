@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoCurrency              ofoCurrency;
-typedef struct _ofoCurrencyPrivate       ofoCurrencyPrivate;
+typedef struct _ofoCurrency             ofoCurrency;
 
 G_END_DECLS
 

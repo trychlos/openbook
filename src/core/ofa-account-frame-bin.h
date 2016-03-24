@@ -55,8 +55,6 @@ G_BEGIN_DECLS
 #define OFA_IS_ACCOUNT_FRAME_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_FRAME_BIN ))
 #define OFA_ACCOUNT_FRAME_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_FRAME_BIN, ofaAccountFrameBinClass ))
 
-typedef struct _ofaAccountFrameBinPrivate         ofaAccountFrameBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

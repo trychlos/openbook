@@ -46,7 +46,7 @@
 
 /* private instance data
  */
-struct _ofaDossierDeletePrivate {
+typedef struct {
 	gboolean                  dispose_has_run;
 
 	/* initialization
@@ -67,7 +67,8 @@ struct _ofaDossierDeletePrivate {
 	ofaIDBProvider           *provider;
 	gchar                    *root_account;
 	gchar                    *root_password;
-};
+}
+	ofaDossierDeletePrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-delete.ui";
 

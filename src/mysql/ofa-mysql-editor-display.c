@@ -39,13 +39,14 @@
 
 /* private instance data
  */
-struct _ofaMySQLEditorDisplayPrivate {
+typedef struct {
 	gboolean        dispose_has_run;
 
 	/* UI
 	 */
 	GtkSizeGroup   *group0;
-};
+}
+	ofaMySQLEditorDisplayPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-editor-display.ui";
 

@@ -34,8 +34,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoBaseProtected     ofoBaseProtected;
-typedef struct _ofoBasePrivate       ofoBasePrivate;
+typedef struct _ofoBaseProtected        ofoBaseProtected;
 
 typedef struct {
 	/*< public members >*/

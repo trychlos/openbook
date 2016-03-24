@@ -53,8 +53,6 @@ G_BEGIN_DECLS
 #define OFA_IS_GUIDED_INPUT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_GUIDED_INPUT ))
 #define OFA_GUIDED_INPUT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_GUIDED_INPUT, ofaGuidedInputClass ))
 
-typedef struct _ofaGuidedInputPrivate        ofaGuidedInputPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

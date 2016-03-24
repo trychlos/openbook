@@ -63,7 +63,7 @@ typedef enum {
 
 /* priv instance data
  */
-struct _ofaSettlementPagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -100,7 +100,8 @@ struct _ofaSettlementPagePrivate {
 	 */
 	GtkWidget         *settle_btn;
 	GtkWidget         *unsettle_btn;
-};
+}
+	ofaSettlementPagePrivate;
 
 /* columns in the combo box which let us select which type of entries
  * are displayed

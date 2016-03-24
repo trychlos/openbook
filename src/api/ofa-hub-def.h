@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofaHub              ofaHub;
-typedef struct _ofaHubPrivate       ofaHubPrivate;
+typedef struct _ofaHub                  ofaHub;
 
 G_END_DECLS
 

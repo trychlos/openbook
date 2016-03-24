@@ -31,9 +31,10 @@
 
 /* private instance data
  */
-struct _myProgressBarPrivate {
+typedef struct {
 	gboolean        dispose_has_run;
-};
+}
+	myProgressBarPrivate;
 
 /* signals defined here
  */

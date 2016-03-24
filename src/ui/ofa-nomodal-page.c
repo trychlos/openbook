@@ -38,14 +38,15 @@
 
 /* private instance data
  */
-struct _ofaNomodalPagePrivate {
+typedef struct {
 	gboolean   dispose_has_run;
 
 	/* initialization
 	 */
 	gchar     *title;
 	GtkWidget *top_widget;				/* is also an ofaPage */
-};
+}
+	ofaNomodalPagePrivate;
 
 static GList *st_list                   = NULL;
 

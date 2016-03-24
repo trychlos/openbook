@@ -48,8 +48,6 @@ G_BEGIN_DECLS
 #define OFA_IS_BAT_TREEVIEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BAT_TREEVIEW ))
 #define OFA_BAT_TREEVIEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BAT_TREEVIEW, ofaBatTreeviewClass ))
 
-typedef struct _ofaBatTreeviewPrivate        ofaBatTreeviewPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

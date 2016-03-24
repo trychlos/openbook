@@ -57,8 +57,6 @@ G_BEGIN_DECLS
 #define OFA_IS_DBMS_ROOT_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DBMS_ROOT_BIN ))
 #define OFA_DBMS_ROOT_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DBMS_ROOT_BIN, ofaDBMSRootBinClass ))
 
-typedef struct _ofaDBMSRootBinPrivate         ofaDBMSRootBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

@@ -56,8 +56,6 @@ G_BEGIN_DECLS
 #define OFA_IS_TVA_RECORD_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TVA_RECORD_STORE ))
 #define OFA_TVA_RECORD_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TVA_RECORD_STORE, ofaTVARecordStoreClass ))
 
-typedef struct _ofaTVARecordStorePrivate         ofaTVARecordStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaListStore      parent;

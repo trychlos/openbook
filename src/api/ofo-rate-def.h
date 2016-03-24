@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoRate              ofoRate;
-typedef struct _ofoRatePrivate       ofoRatePrivate;
+typedef struct _ofoRate                 ofoRate;
 
 G_END_DECLS
 

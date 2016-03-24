@@ -84,9 +84,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-struct _ofoRecurrentRunPrivate {
+typedef struct {
 	void *empty;						/* so that gcc -pedantic is happy */
-};
+}
+	ofoRecurrentRunPrivate;
 
 /* Status labels
  */

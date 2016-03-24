@@ -46,8 +46,6 @@ G_BEGIN_DECLS
 #define OFO_IS_BAT_LINE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFO_TYPE_BAT_LINE ))
 #define OFO_BAT_LINE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFO_TYPE_BAT_LINE, ofoBatLineClass ))
 
-typedef struct _ofoBatLinePrivate        ofoBatLinePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofoBase      parent;

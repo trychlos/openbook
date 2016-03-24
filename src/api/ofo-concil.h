@@ -54,7 +54,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoConcil              ofoConcil;
-typedef struct _ofoConcilPrivate       ofoConcilPrivate;
 #endif
 
 struct _ofoConcil {

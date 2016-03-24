@@ -63,7 +63,7 @@
  * - button down
  * - button remove
  */
-struct _ofaOpeTemplatePropertiesPrivate {
+typedef struct {
 	gboolean        dispose_has_run;
 
 	/* initialization
@@ -95,7 +95,8 @@ struct _ofaOpeTemplatePropertiesPrivate {
 	GtkWidget      *details_grid;
 	GtkWidget      *msg_label;
 	GtkWidget      *ok_btn;
-};
+}
+	ofaOpeTemplatePropertiesPrivate;
 
 /* columns in the detail treeview
  */

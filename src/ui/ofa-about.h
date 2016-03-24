@@ -46,8 +46,6 @@ G_BEGIN_DECLS
 #define OFA_IS_ABOUT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ABOUT ))
 #define OFA_ABOUT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ABOUT, ofaAboutClass ))
 
-typedef struct _ofaAboutPrivate       ofaAboutPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkAboutDialog      parent;

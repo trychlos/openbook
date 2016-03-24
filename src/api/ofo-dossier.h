@@ -60,7 +60,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoDossier              ofoDossier;
-typedef struct _ofoDossierPrivate       ofoDossierPrivate;
 #endif
 
 struct _ofoDossier {

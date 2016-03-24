@@ -45,8 +45,6 @@ G_BEGIN_DECLS
 #define OFA_IS_RECURRENT_RUN_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_RUN_PAGE ))
 #define OFA_RECURRENT_RUN_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_RUN_PAGE, ofaRecurrentRunPageClass ))
 
-typedef struct _ofaRecurrentRunPagePrivate         ofaRecurrentRunPagePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaPage      parent;

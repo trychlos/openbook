@@ -42,7 +42,7 @@
 
 /* private instance data
  */
-struct _ofaDossierNewBinPrivate {
+typedef struct {
 	gboolean        dispose_has_run;
 
 	/* UI
@@ -62,7 +62,8 @@ struct _ofaDossierNewBinPrivate {
 	 */
 	gchar          *dossier_name;
 	gulong          prov_handler;
-};
+}
+	ofaDossierNewBinPrivate;
 
 /* columns in DBMS provider combo box
  */

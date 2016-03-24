@@ -55,8 +55,6 @@ G_BEGIN_DECLS
 #define OFA_IS_DOSSIER_NEW_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_NEW_BIN ))
 #define OFA_DOSSIER_NEW_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_NEW_BIN, ofaDossierNewBinClass ))
 
-typedef struct _ofaDossierNewBinPrivate         ofaDossierNewBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

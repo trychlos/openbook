@@ -35,7 +35,7 @@
 
 /* private instance data
  */
-struct _ofaPeriodicityBinPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* UI
@@ -49,7 +49,8 @@ struct _ofaPeriodicityBinPrivate {
 	 */
 	gchar        *periodicity_code;
 	gchar        *detail_code;
-};
+}
+	ofaPeriodicityBinPrivate;
 
 /* columns in the Periodicity store
  */

@@ -54,8 +54,6 @@ G_BEGIN_DECLS
 #define OFA_IS_PREFERENCES_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_PREFERENCES ))
 #define OFA_PREFERENCES_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_PREFERENCES, ofaPreferencesClass ))
 
-typedef struct _ofaPreferencesPrivate        ofaPreferencesPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

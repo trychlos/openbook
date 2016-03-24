@@ -61,7 +61,7 @@
  * + one confirmation page (page '4)
  * + one result page (page '5')
  */
-struct _ofaExportAssistantPrivate {
+typedef struct {
 	gboolean          dispose_has_run;
 
 	ofaHub           *hub;
@@ -99,7 +99,8 @@ struct _ofaExportAssistantPrivate {
 	myProgressBar    *p5_bar;
 	ofaIExportable   *p5_base;
 	GtkWidget        *p5_page;
-};
+}
+	ofaExportAssistantPrivate;
 
 /* ExportAssistant Assistant
  *

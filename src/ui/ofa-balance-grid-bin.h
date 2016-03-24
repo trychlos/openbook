@@ -46,8 +46,6 @@ G_BEGIN_DECLS
 #define OFA_IS_BALANCE_GRID_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BALANCE_GRID_BIN ))
 #define OFA_BALANCE_GRID_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BALANCE_GRID_BIN, ofaBalanceGridBinClass ))
 
-typedef struct _ofaBalanceGridBinPrivate         ofaBalanceGridBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

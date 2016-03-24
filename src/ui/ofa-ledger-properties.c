@@ -48,7 +48,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerPropertiesPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* internals
@@ -71,7 +71,8 @@ struct _ofaLedgerPropertiesPrivate {
 	 */
 	GtkWidget           *ok_btn;
 	GtkWidget           *msg_label;
-};
+}
+	ofaLedgerPropertiesPrivate;
 
 /* columns displayed in the exercice combobox
  */

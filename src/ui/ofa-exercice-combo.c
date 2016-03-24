@@ -33,13 +33,14 @@
 
 /* private instance data
  */
-struct _ofaExerciceComboPrivate {
+typedef struct {
 	gboolean          dispose_has_run;
 
 	/* UI
 	 */
 	ofaExerciceStore *store;
-};
+}
+	ofaExerciceComboPrivate;
 
 /* signals defined here
  */

@@ -39,12 +39,13 @@
 
 /* private instance data
  */
-struct _ofaLedgerStorePrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/*
 	 */
-};
+}
+	ofaLedgerStorePrivate;
 
 static GType st_col_types[LEDGER_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, last_entry */

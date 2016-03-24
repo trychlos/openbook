@@ -52,7 +52,7 @@
 
 /* private instance data
  */
-struct _ofaDossierManagerPrivate {
+typedef struct {
 	gboolean            dispose_has_run;
 
 	/* UI
@@ -60,7 +60,8 @@ struct _ofaDossierManagerPrivate {
 	ofaDossierTreeview *tview;
 	GtkWidget          *open_btn;
 	GtkWidget          *delete_btn;
-};
+}
+	ofaDossierManagerPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-manager.ui";
 

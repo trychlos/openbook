@@ -46,7 +46,7 @@
 
 /* private instance data
  */
-struct _ofaCurrencyPagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -60,7 +60,8 @@ struct _ofaCurrencyPagePrivate {
 	GtkTreeView      *tview;			/* the main treeview of the page */
 	GtkWidget        *update_btn;
 	GtkWidget        *delete_btn;
-};
+}
+	ofaCurrencyPagePrivate;
 
 static GtkWidget   *v_setup_view( ofaPage *page );
 static GtkWidget   *setup_tree_view( ofaCurrencyPage *self );

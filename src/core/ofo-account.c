@@ -165,9 +165,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-struct _ofoAccountPrivate {
+typedef struct {
 	void *empty;						/* so that gcc -pedantic is happy */
-};
+}
+	ofoAccountPrivate;
 
 #define account_get_amount(I)           ofo_base_getter(ACCOUNT,account,amount,0,(I))
 #define account_get_counter(I)          ofo_base_getter(ACCOUNT,account,counter,0,(I))

@@ -129,12 +129,13 @@ static const ofsBoxDef st_validity_defs[] = {
 		{ 0 }
 };
 
-struct _ofoRatePrivate {
+typedef struct {
 
 	/* the validities of the rate as a GList of GList fields
 	 */
 	GList *validities;
-};
+}
+	ofoRatePrivate;
 
 static ofoRate  *rate_find_by_mnemo( GList *set, const gchar *mnemo );
 static void      rate_set_upd_user( ofoRate *rate, const gchar *user );

@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaBalanceBinPrivate {
+typedef struct {
 	gboolean                dispose_has_run;
 
 	/* initialization
@@ -67,7 +67,8 @@ struct _ofaBalanceBinPrivate {
 	 */
 	gboolean                per_class;
 	gboolean                new_page;
-};
+}
+	ofaBalanceBinPrivate;
 
 /* signals defined here
  */

@@ -93,7 +93,7 @@ typedef struct {
 
 /* private instance data
  */
-struct _ofaRestoreAssistantPrivate {
+typedef struct {
 	gboolean                dispose_has_run;
 
 	/* p1: select file to be imported
@@ -152,7 +152,8 @@ struct _ofaRestoreAssistantPrivate {
 	GtkWidget              *p6_page;
 	GtkWidget              *p6_label1;
 	GtkWidget              *p6_label2;
-};
+}
+	ofaRestoreAssistantPrivate;
 
 /* GtkFileChooser filters
  */

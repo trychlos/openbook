@@ -187,9 +187,10 @@ static const ofsBoxDef st_currency_defs[] = {
 		{ 0 }
 };
 
-struct _ofoDossierPrivate {
+typedef struct {
 	GList         *cur_details;			/* a list of details per currency */
-};
+}
+	ofoDossierPrivate;
 
 static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
 static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );

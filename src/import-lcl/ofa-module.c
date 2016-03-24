@@ -54,6 +54,7 @@ ofa_extension_startup( GTypeModule *module, GApplication *application )
 	return( TRUE );
 }
 
+#if 0
 /*
  * ofa_extension_get_api_version:
  *
@@ -93,6 +94,7 @@ ofa_extension_get_version_number( void )
 {
 	return( PACKAGE_VERSION );
 }
+#endif
 
 /*
  * ofa_extension_list_types:

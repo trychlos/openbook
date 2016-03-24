@@ -41,7 +41,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerSummaryBinPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -54,7 +54,8 @@ struct _ofaLedgerSummaryBinPrivate {
 
 	/* internals
 	 */
-};
+}
+	ofaLedgerSummaryBinPrivate;
 
 /* signals defined here
  */

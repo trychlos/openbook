@@ -40,7 +40,7 @@
 
 /* private instance data
  */
-struct _ofaCheckIntegrityPrivate {
+typedef struct {
 	gboolean              dispose_has_run;
 
 	ofaCheckIntegrityBin *bin;
@@ -48,7 +48,8 @@ struct _ofaCheckIntegrityPrivate {
 	/* UI
 	 */
 	GtkWidget            *close_btn;
-};
+}
+	ofaCheckIntegrityPrivate;
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-check-integrity.ui";
 

@@ -56,7 +56,7 @@
 
 /* private instance data
  */
-struct _ofaReconcilRenderPrivate {
+typedef struct {
 
 	ofaHub         *hub;
 	ofaReconcilBin *args_bin;
@@ -94,7 +94,8 @@ struct _ofaReconcilRenderPrivate {
 	gint           batline_num;			/* bat line number of the full report counted from 1 */
 	GDate          global_deffect;
 	gdouble        account_solde;
-};
+}
+	ofaReconcilRenderPrivate;
 
 /*
  * Accounts balances print uses a portrait orientation

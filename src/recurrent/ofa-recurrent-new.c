@@ -49,7 +49,7 @@
 
 /* private instance data
  */
-struct _ofaRecurrentNewPrivate {
+typedef struct {
 	gboolean                 dispose_has_run;
 
 	/* internals
@@ -69,7 +69,8 @@ struct _ofaRecurrentNewPrivate {
 	GtkWidget               *generate_btn;
 	GtkWidget               *reset_btn;
 	GtkWidget               *msg_label;
-};
+}
+	ofaRecurrentNewPrivate;
 
 /* a structure passed to #ofa_periodicity_enum_dates_between()
  */

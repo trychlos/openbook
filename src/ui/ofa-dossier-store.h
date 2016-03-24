@@ -60,8 +60,6 @@ G_BEGIN_DECLS
 #define OFA_IS_DOSSIER_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_STORE ))
 #define OFA_DOSSIER_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_STORE, ofaDossierStoreClass ))
 
-typedef struct _ofaDossierStorePrivate        ofaDossierStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkListStore      parent;

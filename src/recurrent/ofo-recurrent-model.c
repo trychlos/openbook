@@ -99,9 +99,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
-struct _ofoRecurrentModelPrivate {
+typedef struct {
 	void *empty;						/* so that gcc -pedantic is happy */
-};
+}
+	ofoRecurrentModelPrivate;
 
 static void               hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean           hub_update_ope_template_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );

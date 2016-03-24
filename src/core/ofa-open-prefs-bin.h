@@ -56,8 +56,6 @@ G_BEGIN_DECLS
 #define OFA_IS_OPEN_PREFS_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPEN_PREFS_BIN ))
 #define OFA_OPEN_PREFS_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPEN_PREFS_BIN, ofaOpenPrefsBinClass ))
 
-typedef struct _ofaOpenPrefsBinPrivate         ofaOpenPrefsBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

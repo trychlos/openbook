@@ -27,16 +27,51 @@
 
 /**
  * SECTION: extension
- * @title: Plugins
+ * @title: Extensions
  * @short_description: The application extension interface definition v 1
  * @include: openbook/ofa-extension.h
  *
  * &prodname; accepts extensions as dynamically loadable libraries
- * (aka plugins).
+ * (aka plugins, aka extenders).
  *
  * In order to be recognized as a valid &prodname; plugin, the library
  * must at least export the functions described as mandatory in this
  * extension API.
+ *
+ * This header describes the extension in the C sens rather than in the
+ * GObject one, that is there is no GType involved.
+ *
+ * From the application point of view, this extension API is managed
+ * through the #ofaExtenderCollection and the #ofaExtenderModule classes,
+ * where the #ofaExtenderCollection defines and manages a singleton,
+ * which itself maintains the list of #ofaExtenderModule loaded modules.
+ *
+ * From the loadable module point of view, defining such a plugin
+ * implies some rather simple steps:
+ * - define (at least) the mandatory functions described here;
+ * - returns on demand the list of primary GType defined by the module;
+ *   each module may define several primary GType;
+ *   note that a primary GType must be declared via
+ *   #g_type_module_register_type();
+ *   each primary GType may itself support other types through the use
+ *   of GInterface;
+ * - the application associates then each module with a newly allocated
+ *   #ofaExtenderModule object
+ * - each #ofaExtenderModule allocates a new GObject for each primary
+ *   GType advertized by the module.
+ *
+ * That is.
+ *
+ * When the application later wants a particular GObject type, it is
+ * enough to scan the #ofaExtenderCollection, which holds the list of
+ * #ofaExtenderModule, which themselves hold the list of defined primary
+ * GType, and asking this GObject if it knows such or such GType.
+ *
+ * See also #ofaExtenderModule documentation.
+ *
+ * It is suggested that loadable modules implement the #myExtenderId
+ * interface, in order to be able to provide some identification
+ * informations to the application.
  */
 
 #include <gio/gio.h>
@@ -95,35 +130,6 @@ G_BEGIN_DECLS
  * In this later case, the library is unloaded and no more considered.
  */
 gboolean     ofa_extension_startup           ( GTypeModule *module, GApplication *application );
-
-/**
- * ofa_extension_get_api_version:
- *
- * This function is called by the &prodname; program each time
- * it needs to know which version of this extension API the plugin
- * implements.
- *
- * If this function is not exported by the library,
- * the plugin manager considers that the library only implements the
- * version 1 of this extension API.
- *
- * Returns: the version of this API supported by the module.
- */
-guint        ofa_extension_get_api_version   ( void );
-
-/**
- * ofa_extension_get_name:
- *
- * Returns: the name of the library, or %NULL.
- */
-const gchar *ofa_extension_get_name          ( void );
-
-/**
- * ofa_extension_get_version_number:
- *
- * Returns: the version number of the library, or %NULL.
- */
-const gchar *ofa_extension_get_version_number( void );
 
 /**
  * ofa_extension_list_types:

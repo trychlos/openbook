@@ -49,7 +49,7 @@
 
 /* private instance data
  */
-struct _ofaBatPropertiesBinPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* UI
@@ -77,7 +77,8 @@ struct _ofaBatPropertiesBinPrivate {
 	/* currency: taken from bat or line
 	 */
 	ofoCurrency  *currency;
-};
+}
+	ofaBatPropertiesBinPrivate;
 
 /* columns in the lines treeview
  */

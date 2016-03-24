@@ -58,8 +58,6 @@ G_BEGIN_DECLS
 #define OFA_IS_OPE_TEMPLATE_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATE_STORE ))
 #define OFA_OPE_TEMPLATE_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATE_STORE, ofaOpeTemplateStoreClass ))
 
-typedef struct _ofaOpeTemplateStorePrivate         ofaOpeTemplateStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaListStore      parent;

@@ -68,7 +68,7 @@
 
 /* private instance data
  */
-struct _ofaReconcilPagePrivate {
+typedef struct {
 
 	/* UI - account
 	 */
@@ -142,7 +142,8 @@ struct _ofaReconcilPagePrivate {
 	ofaHub              *hub;
 	GList               *hub_handlers;
 	GList               *bats;			/* loaded ofoBat objects */
-};
+}
+	ofaReconcilPagePrivate;
 
 /* set against the COL_DRECONCIL column to be used in on_cell_data_func() */
 #define DATA_COLUMN_ID      "ofa-data-column-id"

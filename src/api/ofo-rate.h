@@ -50,7 +50,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoRate              ofoRate;
-typedef struct _ofoRatePrivate       ofoRatePrivate;
 #endif
 
 struct _ofoRate {

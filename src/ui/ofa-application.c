@@ -54,31 +54,33 @@
 
 /* private instance data
  */
-struct _ofaApplicationPrivate {
-	gboolean         dispose_has_run;
+typedef struct {
+	gboolean               dispose_has_run;
 
 	/* properties
 	 */
-	GOptionEntry    *options;
-	gchar           *application_name;
-	gchar           *description;
-	gchar           *icon_name;
-	ofaHub          *hub;
+	GOptionEntry          *options;
+	gchar                 *application_name;
+	gchar                 *description;
+	gchar                 *icon_name;
+	ofaHub                *hub;
 
 	/* internals
 	 */
-	int              argc;
-	GStrv            argv;
-	int              code;
-	ofaMainWindow   *main_window;
-	GMenuModel      *menu;
-	ofaFileDir      *file_dir;
-	ofaDossierStore *dos_store;
+	int                    argc;
+	GStrv                  argv;
+	int                    code;
+	ofaMainWindow         *main_window;
+	GMenuModel            *menu;
+	ofaFileDir            *file_dir;
+	ofaDossierStore       *dos_store;
+	ofaExtenderCollection *extenders;
 
 	/* menu items
 	 */
-	GSimpleAction   *action_open;
-};
+	GSimpleAction         *action_open;
+}
+	ofaApplicationPrivate;
 
 /* class properties
  */
@@ -218,7 +220,7 @@ application_dispose( GObject *instance )
 		g_clear_object( &priv->file_dir );
 		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->menu );
-		ofa_plugin_release_modules();
+		g_clear_object( &priv->extenders );
 		ofa_settings_free();
 		my_utils_css_provider_free();
 	}
@@ -514,6 +516,7 @@ ofa_application_new( void )
 	static const gchar *thisfn = "ofa_application_new";
 	ofaApplication *application;
 	ofaApplicationPrivate *priv;
+	ofaExtenderCollection *extenders;
 
 	application = g_object_new( OFA_TYPE_APPLICATION,
 
@@ -530,11 +533,12 @@ ofa_application_new( void )
 
 	priv = ofa_application_get_instance_private( application );
 
-	ofa_box_register_types();
-
 	priv->hub = ofa_hub_new();
 
-	ofa_hub_extenders_init( priv->hub, G_APPLICATION( application ), PKGLIBDIR );
+	extenders = ofa_extender_collection_new( G_APPLICATION( application ), PKGLIBDIR );
+	ofa_hub_set_extender_collection( priv->hub, extenders );
+
+	ofa_box_register_types();
 
 	return( application );
 }
@@ -1226,4 +1230,27 @@ ofa_application_get_file_dir( const ofaApplication *application )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->file_dir );
+}
+
+/**
+ * ofa_application_get_extender_collection:
+ * @application:
+ *
+ * Returns: the #ofaExtenderCollection collection.
+ *
+ * The returned reference is owned by the @application object, and
+ * should not be released by the caller.
+ */
+ofaExtenderCollection *
+ofa_application_get_extender_collection( const ofaApplication *application )
+{
+	ofaApplicationPrivate *priv;
+
+	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
+
+	priv = ofa_application_get_instance_private( application );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->extenders );
 }

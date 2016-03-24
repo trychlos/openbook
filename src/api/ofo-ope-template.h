@@ -127,7 +127,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoOpeTemplate               ofoOpeTemplate;
-typedef struct _ofoOpeTemplatePrivate        ofoOpeTemplatePrivate;
 #endif
 
 struct _ofoOpeTemplate {

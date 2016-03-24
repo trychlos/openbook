@@ -54,7 +54,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoClass              ofoClass;
-typedef struct _ofoClassPrivate       ofoClassPrivate;
 #endif
 
 struct _ofoClass {

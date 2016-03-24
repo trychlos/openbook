@@ -40,7 +40,7 @@
 
 /* private instance data
  */
-struct _ofaBatTreeviewPrivate {
+typedef struct {
 	gboolean     dispose_has_run;
 
 	/* runtime data
@@ -51,7 +51,8 @@ struct _ofaBatTreeviewPrivate {
 	 */
 	GtkTreeView *tview;
 	ofaBatStore *store;
-};
+}
+	ofaBatTreeviewPrivate;
 
 /* signals defined here
  */

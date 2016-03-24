@@ -41,7 +41,7 @@
 
 /* private instance data
  */
-struct _ofaLedgerTreeviewPrivate {
+typedef struct {
 	gboolean          dispose_has_run;
 
 	/* UI
@@ -49,7 +49,8 @@ struct _ofaLedgerTreeviewPrivate {
 	GtkTreeView      *tview;
 	ofaLedgerColumns  columns;
 	ofaLedgerStore   *store;
-};
+}
+	ofaLedgerTreeviewPrivate;
 
 /* signals defined here
  */

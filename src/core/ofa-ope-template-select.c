@@ -39,7 +39,7 @@
 
 /* private instance data
  */
-struct _ofaOpeTemplateSelectPrivate {
+typedef struct {
 	gboolean                dispose_has_run;
 
 	/* initialization
@@ -54,7 +54,8 @@ struct _ofaOpeTemplateSelectPrivate {
 	/* returned value
 	 */
 	gchar                  *ope_mnemo;
-};
+}
+	ofaOpeTemplateSelectPrivate;
 
 static const gchar          *st_resource_ui = "/org/trychlos/openbook/core/ofa-ope-template-select.ui";
 static ofaOpeTemplateSelect *st_this        = NULL;

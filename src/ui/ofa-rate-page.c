@@ -46,7 +46,7 @@
 
 /* private instance data
  */
-struct _ofaRatePagePrivate {
+typedef struct {
 
 	/* internals
 	 */
@@ -61,7 +61,8 @@ struct _ofaRatePagePrivate {
 	GtkWidget    *new_btn;
 	GtkWidget    *update_btn;
 	GtkWidget    *delete_btn;
-};
+}
+	ofaRatePagePrivate;
 
 /* column ordering in the selection listview
  */

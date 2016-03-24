@@ -52,8 +52,6 @@ G_BEGIN_DECLS
 #define OFA_IS_OPE_TEMPLATE_SELECT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATE_SELECT ))
 #define OFA_OPE_TEMPLATE_SELECT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATE_SELECT, ofaOpeTemplateSelectClass ))
 
-typedef struct _ofaOpeTemplateSelectPrivate         ofaOpeTemplateSelectPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

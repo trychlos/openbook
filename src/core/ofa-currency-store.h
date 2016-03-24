@@ -56,8 +56,6 @@ G_BEGIN_DECLS
 #define OFA_IS_CURRENCY_STORE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CURRENCY_STORE ))
 #define OFA_CURRENCY_STORE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CURRENCY_STORE, ofaCurrencyStoreClass ))
 
-typedef struct _ofaCurrencyStorePrivate        ofaCurrencyStorePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaListStore      parent;

@@ -40,7 +40,7 @@
 
 /* private instance data
  */
-struct _ofaCheckBalancesPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	ofaCheckBalancesBin *bin;
@@ -48,7 +48,8 @@ struct _ofaCheckBalancesPrivate {
 	/* UI
 	 */
 	GtkWidget           *close_btn;
-};
+}
+	ofaCheckBalancesPrivate;
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-check-balances.ui";
 

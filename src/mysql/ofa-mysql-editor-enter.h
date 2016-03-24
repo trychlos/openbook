@@ -54,8 +54,6 @@ G_BEGIN_DECLS
 #define OFA_IS_MYSQL_EDITOR_ENTER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_EDITOR_ENTER ))
 #define OFA_MYSQL_EDITOR_ENTER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_EDITOR_ENTER, ofaMySQLEditorEnterClass ))
 
-typedef struct _ofaMySQLEditorEnterPrivate         ofaMySQLEditorEnterPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

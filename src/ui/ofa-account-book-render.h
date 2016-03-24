@@ -45,8 +45,6 @@ G_BEGIN_DECLS
 #define OFA_IS_ACCOUNT_BOOK_RENDER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_BOOK_RENDER ))
 #define OFA_ACCOUNT_BOOK_RENDER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_BOOK_RENDER, ofaAccountBookRenderClass ))
 
-typedef struct _ofaAccountBookRenderPrivate         ofaAccountBookRenderPrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaRenderPage      parent;

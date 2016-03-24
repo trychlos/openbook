@@ -35,9 +35,10 @@
 
 /* private instance data
  */
-struct _ofaAboutPrivate {
+typedef struct {
 	gboolean dispose_has_run;
-};
+}
+	ofaAboutPrivate;
 
 static const gchar *st_icon_fname       = ICONFNAME;
 

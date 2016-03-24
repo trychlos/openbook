@@ -38,7 +38,7 @@
 
 /* private instance data
  */
-struct _ofaFileDirPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
 
 	/* runtime data
@@ -47,7 +47,8 @@ struct _ofaFileDirPrivate {
 	myFileMonitor *monitor;
 	GList         *list;
 	gboolean       ignore_next;
-};
+}
+	ofaFileDirPrivate;
 
 #define FILE_DIR_SIGNAL_CHANGED         "changed"
 #define FILE_DIR_DOSSIER_GROUP_PREFIX   "Dossier "

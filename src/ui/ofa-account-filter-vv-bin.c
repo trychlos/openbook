@@ -33,9 +33,10 @@
 
 /* private instance data
  */
-struct _ofaAccountFilterVVBinPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
-};
+}
+	ofaAccountFilterVVBinPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-account-filter-vv-bin.ui";
 

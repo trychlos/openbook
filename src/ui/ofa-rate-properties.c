@@ -50,7 +50,7 @@
 
 /* private instance data
  */
-struct _ofaRatePropertiesPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
 
 	/* internals
@@ -70,7 +70,8 @@ struct _ofaRatePropertiesPrivate {
 	 */
 	gchar         *mnemo;
 	gchar         *label;
-};
+}
+	ofaRatePropertiesPrivate;
 
 #define DATA_COLUMN                     "ofa-data-column"
 #define DATA_ROW                        "ofa-data-row"

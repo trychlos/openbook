@@ -40,7 +40,7 @@
 
 /* private instance data
  */
-struct _ofaDossierDisplayNotesPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
 
 	/* UI
@@ -53,7 +53,8 @@ struct _ofaDossierDisplayNotesPrivate {
 
 	/* result
 	 */
-};
+}
+	ofaDossierDisplayNotesPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-display-notes.ui";
 

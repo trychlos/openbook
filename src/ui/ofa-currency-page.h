@@ -47,8 +47,6 @@ G_BEGIN_DECLS
 #define OFA_IS_CURRENCY_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_CURRENCY_PAGE ))
 #define OFA_CURRENCY_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_CURRENCY_PAGE, ofaCurrencyPageClass ))
 
-typedef struct _ofaCurrencyPagePrivate        ofaCurrencyPagePrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaPage      parent;

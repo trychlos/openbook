@@ -78,7 +78,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofaMainWindow               ofaMainWindow;
-typedef struct _ofaMainWindowPrivate        ofaMainWindowPrivate;
 #endif
 
 struct _ofaMainWindow {

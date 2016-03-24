@@ -46,8 +46,6 @@ G_BEGIN_DECLS
 #define MY_IS_SETTINGS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_SETTINGS ))
 #define MY_SETTINGS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_SETTINGS, mySettingsClass ))
 
-typedef struct _mySettingsPrivate       mySettingsPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GObject      parent;

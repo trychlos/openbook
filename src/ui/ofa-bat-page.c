@@ -51,7 +51,7 @@
 
 /* private instance data
  */
-struct _ofaBatPagePrivate {
+typedef struct {
 
 	/* runtime data
 	 */
@@ -64,7 +64,8 @@ struct _ofaBatPagePrivate {
 	GtkWidget      *update_btn;
 	GtkWidget      *delete_btn;
 	GtkWidget      *import_btn;
-};
+}
+	ofaBatPagePrivate;
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );

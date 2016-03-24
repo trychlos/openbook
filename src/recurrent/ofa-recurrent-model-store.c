@@ -37,12 +37,13 @@
 
 /* private instance data
  */
-struct _ofaRecurrentModelStorePrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/*
 	 */
-};
+}
+	ofaRecurrentModelStorePrivate;
 
 static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */

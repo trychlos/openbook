@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoConcil              ofoConcil;
-typedef struct _ofoConcilPrivate       ofoConcilPrivate;
+typedef struct _ofoConcil               ofoConcil;
 
 G_END_DECLS
 

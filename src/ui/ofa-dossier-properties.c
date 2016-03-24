@@ -59,7 +59,7 @@
 
 /* private instance data
  */
-struct _ofaDossierPropertiesPrivate {
+typedef struct {
 	gboolean            dispose_has_run;
 
 	/* initialization
@@ -105,7 +105,8 @@ struct _ofaDossierPropertiesPrivate {
 	gulong              total;
 	gulong              count;
 	GList              *hub_handlers;
-};
+}
+	ofaDossierPropertiesPrivate;
 
 #define MSG_NORMAL                      "labelnormal"
 #define MSG_WARNING                     "labelwarning"

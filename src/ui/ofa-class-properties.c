@@ -45,7 +45,7 @@
 
 /* private instance data
  */
-struct _ofaClassPropertiesPrivate {
+typedef struct {
 	gboolean   dispose_has_run;
 
 	/* initialization
@@ -67,7 +67,8 @@ struct _ofaClassPropertiesPrivate {
 	 */
 	GtkWidget *ok_btn;
 	GtkWidget *msg_label;
-};
+}
+	ofaClassPropertiesPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-class-properties.ui";
 

@@ -32,8 +32,7 @@
 
 G_BEGIN_DECLS
 
-typedef struct _ofoOpeTemplate               ofoOpeTemplate;
-typedef struct _ofoOpeTemplatePrivate        ofoOpeTemplatePrivate;
+typedef struct _ofoOpeTemplate          ofoOpeTemplate;
 
 G_END_DECLS
 

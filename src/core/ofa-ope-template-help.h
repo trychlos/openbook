@@ -59,8 +59,6 @@ G_BEGIN_DECLS
 #define OFA_IS_OPE_TEMPLATE_HELP_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_OPE_TEMPLATE_HELP ))
 #define OFA_OPE_TEMPLATE_HELP_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_OPE_TEMPLATE_HELP, ofaOpeTemplateHelpClass ))
 
-typedef struct _ofaOpeTemplateHelpPrivate         ofaOpeTemplateHelpPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

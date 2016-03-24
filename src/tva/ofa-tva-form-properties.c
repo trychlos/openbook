@@ -50,7 +50,7 @@
 
 /* private instance data
  */
-struct _ofaTVAFormPropertiesPrivate {
+typedef struct {
 	gboolean       dispose_has_run;
 
 	/* internals
@@ -72,7 +72,8 @@ struct _ofaTVAFormPropertiesPrivate {
 	 */
 	gchar         *mnemo;
 	gchar         *label;
-};
+}
+	ofaTVAFormPropertiesPrivate;
 
 #define DATA_COLUMN                     "ofa-data-column"
 #define DATA_ROW                        "ofa-data-row"

@@ -47,7 +47,7 @@
 
 /* priv instance data
  */
-struct _ofoBatLinePrivate {
+typedef struct {
 
 	/* dbms data
 	 */
@@ -59,7 +59,8 @@ struct _ofoBatLinePrivate {
 	gchar     *label;
 	gchar     *currency;
 	ofxAmount  amount;
-};
+}
+	ofoBatLinePrivate;
 
 static GList       *bat_line_load_dataset( ofaHub *hub, const gchar *where );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );

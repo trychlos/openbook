@@ -43,7 +43,7 @@
 
 /* private instance data
  */
-struct _ofaAccountPagePrivate {
+typedef struct {
 
 	/* runtime
 	 */
@@ -52,7 +52,8 @@ struct _ofaAccountPagePrivate {
 	/* UI
 	 */
 	ofaAccountFrameBin  *account_bin;
-};
+}
+	ofaAccountPagePrivate;
 
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );

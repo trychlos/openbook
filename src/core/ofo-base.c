@@ -32,14 +32,15 @@
 
 /* private instance data
  */
-struct _ofoBasePrivate {
+typedef struct {
 
 	/* the current #ofaHub object which handles the connection this
 	 * #ofoBase -derived object comes from; it may be %NULL when the
 	 * object has just been instanciated.
 	 */
 	ofaHub  *hub;
-};
+}
+	ofoBasePrivate;
 
 G_DEFINE_TYPE_EXTENDED( ofoBase, ofo_base, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofoBase ))

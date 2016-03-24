@@ -38,7 +38,7 @@
 
 /* private instance data
  */
-struct _ofaDBMSRootBinPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
 
 	/* UI
@@ -53,7 +53,8 @@ struct _ofaDBMSRootBinPrivate {
 	ofaIDBMeta   *meta;
 	gchar        *account;
 	gchar        *password;
-};
+}
+	ofaDBMSRootBinPrivate;
 
 /* signals defined here
  */

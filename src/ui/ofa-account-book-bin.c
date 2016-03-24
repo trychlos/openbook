@@ -40,7 +40,7 @@
 
 /* private instance data
  */
-struct _ofaAccountBookBinPrivate {
+typedef struct {
 	gboolean               dispose_has_run;
 
 	/* initialization
@@ -56,7 +56,8 @@ struct _ofaAccountBookBinPrivate {
 	/* internals
 	 */
 	gboolean               new_page;
-};
+}
+	ofaAccountBookBinPrivate;
 
 /* signals defined here
  */

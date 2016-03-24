@@ -49,7 +49,7 @@
 
 /* priv instance data
  */
-struct _ofoBatPrivate {
+typedef struct {
 
 	/* dbms data
 	 */
@@ -68,7 +68,8 @@ struct _ofoBatPrivate {
 	gchar     *account;
 	gchar     *upd_user;
 	GTimeVal   upd_stamp;
-};
+}
+	ofoBatPrivate;
 
 static ofoBat     *bat_find_by_id( GList *set, ofxCounter id );
 static void        bat_set_id( ofoBat *bat, ofxCounter id );

@@ -34,14 +34,15 @@
 
 /* private instance data
  */
-struct _ofaListStorePrivate {
+typedef struct {
 	gboolean    dispose_has_run;
 
 	/* properties
 	 */
 	ofaHub     *hub;
 	gboolean    dataset_loaded;
-};
+}
+	ofaListStorePrivate;
 
 /* class properties
  */

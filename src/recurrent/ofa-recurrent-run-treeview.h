@@ -49,8 +49,6 @@ G_BEGIN_DECLS
 #define OFA_IS_RECURRENT_RUN_TREEVIEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_RUN_TREEVIEW ))
 #define OFA_RECURRENT_RUN_TREEVIEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_RUN_TREEVIEW, ofaRecurrentRunTreeviewClass ))
 
-typedef struct _ofaRecurrentRunTreeviewPrivate         ofaRecurrentRunTreeviewPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

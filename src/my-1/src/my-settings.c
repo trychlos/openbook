@@ -38,11 +38,13 @@
 
 /* private instance data
  */
-struct _mySettingsPrivate {
+typedef struct {
 	gboolean      dispose_has_run;
+
 	gchar        *fname;				/* configuration filename */
 	GKeyFile     *keyfile;				/* GKeyFile object */
-};
+}
+	mySettingsPrivate;
 
 static void       isettings_iface_init( myISettingsInterface *iface );
 static guint      isettings_get_interface_version( const myISettings *instance );

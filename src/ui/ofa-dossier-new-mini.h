@@ -62,8 +62,6 @@ G_BEGIN_DECLS
 #define OFA_IS_DOSSIER_NEW_MINI_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_DOSSIER_NEW_MINI ))
 #define OFA_DOSSIER_NEW_MINI_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_DOSSIER_NEW_MINI, ofaDossierNewMiniClass ))
 
-typedef struct _ofaDossierNewMiniPrivate         ofaDossierNewMiniPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;

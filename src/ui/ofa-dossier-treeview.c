@@ -37,7 +37,7 @@
 
 /* private instance data
  */
-struct _ofaDossierTreeviewPrivate {
+typedef struct {
 	gboolean         dispose_has_run;
 
 	/* UI
@@ -50,7 +50,8 @@ struct _ofaDossierTreeviewPrivate {
 	gboolean         show_headers;
 	ofaDossierShow   show_mode;
 	GtkTreeModel    *tfilter;
-};
+}
+	ofaDossierTreeviewPrivate;
 
 /* signals defined here
  */

@@ -50,8 +50,6 @@ G_BEGIN_DECLS
 #define MY_IS_FIELD_COMBO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_FIELD_COMBO ))
 #define MY_FIELD_COMBO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_FIELD_COMBO, myFieldComboClass ))
 
-typedef struct _myFieldComboPrivate        myFieldComboPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkComboBox      parent;

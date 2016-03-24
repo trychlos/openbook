@@ -64,8 +64,6 @@ G_BEGIN_DECLS
 #define OFA_IS_FILE_FORMAT_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_FILE_FORMAT ))
 #define OFA_FILE_FORMAT_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_FILE_FORMAT, ofaFileFormatClass ))
 
-typedef struct _ofaFileFormatPrivate        ofaFileFormatPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GObject      parent;

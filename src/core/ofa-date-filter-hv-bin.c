@@ -33,9 +33,10 @@
 
 /* private instance data
  */
-struct _ofaDateFilterHVBinPrivate {
+typedef struct {
 	gboolean dispose_has_run;
-};
+}
+	ofaDateFilterHVBinPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-date-filter-hv-bin.ui";
 

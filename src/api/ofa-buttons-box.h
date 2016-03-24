@@ -60,8 +60,6 @@ G_BEGIN_DECLS
 #define OFA_IS_BUTTONS_BOX_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BUTTONS_BOX ))
 #define OFA_BUTTONS_BOX_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BUTTONS_BOX, ofaButtonsBoxClass ))
 
-typedef struct _ofaButtonsBoxPrivate        ofaButtonsBoxPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

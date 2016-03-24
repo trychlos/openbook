@@ -47,7 +47,7 @@
 
 /* private instance data
  */
-struct _ofaBackupPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* initialization
@@ -63,7 +63,8 @@ struct _ofaBackupPrivate {
 	ofaHub              *hub;
 	const ofaIDBConnect *connect;		/* its user connection */
 	ofaIDBMeta          *meta;			/* its meta datas */
-};
+}
+	ofaBackupPrivate;
 
 static const gchar *st_dialog_name      = "BackupDlg";
 static const gchar *st_backup_folder    = "ofa-LastBackupFolder";

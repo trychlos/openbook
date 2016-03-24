@@ -44,8 +44,6 @@ G_BEGIN_DECLS
 #define OFA_IS_LEDGER_BOOK_RENDER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_LEDGER_BOOK_RENDER ))
 #define OFA_LEDGER_BOOK_RENDER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_LEDGER_BOOK_RENDER, ofaLedgerBookRenderClass ))
 
-typedef struct _ofaLedgerBookRenderPrivate         ofaLedgerBookRenderPrivate;
-
 typedef struct {
 	/*< public members >*/
 	ofaRenderPage      parent;

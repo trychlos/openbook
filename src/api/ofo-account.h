@@ -50,7 +50,6 @@ G_BEGIN_DECLS
 
 #if 0
 typedef struct _ofoAccount              ofoAccount;
-typedef struct _ofoAccountPrivate       ofoAccountPrivate;
 #endif
 
 struct _ofoAccount {

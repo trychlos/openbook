@@ -39,9 +39,10 @@
 
 /* private instance data
  */
-struct _ofaDossierStorePrivate {
-	gboolean            dispose_has_run;
-};
+typedef struct {
+	gboolean dispose_has_run;
+}
+	ofaDossierStorePrivate;
 
 static GType st_col_types[DOSSIER_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* dossier name */

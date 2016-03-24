@@ -75,8 +75,6 @@ G_BEGIN_DECLS
 #define OFA_IS_ACCOUNT_BOOK_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_BOOK_BIN ))
 #define OFA_ACCOUNT_BOOK_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_BOOK_BIN, ofaAccountBookBinClass ))
 
-typedef struct _ofaAccountBookBinPrivate         ofaAccountBookBinPrivate;
-
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;

@@ -38,14 +38,15 @@
 
 /* private instance data
  */
-struct _ofaCurrencyComboPrivate {
+typedef struct {
 	gboolean            dispose_has_run;
 
 	/* runtime
 	 */
 	ofaCurrencyColumns  columns;
 	ofaCurrencyStore   *store;
-};
+}
+	ofaCurrencyComboPrivate;
 
 /* signals defined here
  */

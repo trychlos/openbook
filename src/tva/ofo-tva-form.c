@@ -155,13 +155,14 @@ static const ofsBoxDef st_bools_defs[] = {
 		{ 0 }
 };
 
-struct _ofoTVAFormPrivate {
+typedef struct {
 
 	/* the details of the form as a GList of GList fields
 	 */
 	GList     *bools;
 	GList     *details;
-};
+}
+	ofoTVAFormPrivate;
 
 static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean    hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
