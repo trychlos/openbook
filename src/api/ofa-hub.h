@@ -31,6 +31,14 @@
  * @short_description: The #ofaHub Class Definition
  * @include: openbook/ofa-hub.h
  *
+ * The #ofaHub class manages and maintains all objects which are globally
+ * used by the application:
+ * - the extenders collection (aka plugins),
+ * - the opened dossier (if any),
+ * - etc.
+ *
+ * The #ofaHub object is instanciated at application_new() time.
+ *
  * The #ofaHub class manages the currently opened dossier/exercice.
  * Beginning with a valid connection, it points to the unique dossier
  * properties record, and maintains the different collections.
@@ -108,6 +116,8 @@
  *     the #GtkApplication to which the #ofaMainWindow is attached to.
  */
 
+#include <gio/gio.h>
+
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
@@ -152,6 +162,18 @@ typedef struct {
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
 
 GType                ofa_hub_get_type           ( void ) G_GNUC_CONST;
+
+ofaHub              *ofa_hub_new                ( void );
+
+void                 ofa_hub_extenders_init     ( ofaHub *hub,
+														GApplication *application,
+														const gchar *extension_dir );
+
+gboolean             ofa_hub_dossier_open       ( ofaHub *hub,
+														ofaIDBConnect *connect,
+														GtkWindow *parent );
+
+void                 ofa_hub_dossier_close      ( ofaHub *hub );
 
 ofaHub              *ofa_hub_new_with_connect   ( const ofaIDBConnect *connect,
 														GtkWindow *parent );

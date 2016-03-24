@@ -55,12 +55,14 @@
  *  +-> appli = ofa_application_new();
  *      |
  *      +-> ofa_application_class_init: klass=0xd884b0
- *          ofa_application_init: self=0xd8a120 (ofaApplication)
- *            ofa_plugin_load_modules:
- *            ofa_plugin_class_init:
- *              ofa_plugin_init: self=0xd93880 (ofaPlugin)
- *              ofa_plugin_init: self=0xd93920 (ofaPlugin)
- *              ofa_plugin_init: self=0xd93a60 (ofaPlugin)
+ *      |   ofa_application_init: self=0xd8a120 (ofaApplication)
+ *      |
+ *      +-> ofa_hub_new
+ *            ofa_extender_collection_new
+ *              ofa_extender_module_class_init:
+ *                ofa_extender_module_init: self=0xd93880 (ofaPlugin)
+ *                ofa_extender_module_init: self=0xd93920 (ofaPlugin)
+ *                ofa_extender_module_init: self=0xd93a60 (ofaPlugin)
  *  |
  *  +-> ret = ofa_application_run_with_args( appli, argc, argv );
  *      |

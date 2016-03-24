@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-dossier-prefs.h"
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbmeta.h"
@@ -52,10 +53,14 @@
 /* private instance data
  */
 struct _ofaHubPrivate {
-	gboolean             dispose_has_run;
+	gboolean               dispose_has_run;
 
-	/* initialization
+	/* extenders
 	 */
+	GApplication          *application;
+	ofaExtenderCollection *extenders;
+
+
 	const ofaIDBConnect *connect;
 	ofoDossier          *dossier;
 	ofaDossierPrefs     *dossier_prefs;
@@ -120,6 +125,8 @@ hub_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->extenders );
+
 		g_clear_object( &priv->connect );
 		g_clear_object( &priv->dossier );
 		g_clear_object( &priv->dossier_prefs );
@@ -368,6 +375,52 @@ isingle_keeper_iface_init( ofaISingleKeeperInterface *iface )
 	static const gchar *thisfn = "ofa_hub_isingle_keeper_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+}
+
+#if 0
+if( ofa_plugin_load_modules( G_APPLICATION( application )) == -1 ){
+-               g_error( "%s: unable to initialize application, aborting", thisfn );
+-               g_clear_object( &application );
+-       }
+
+#endif
+
+/**
+ * ofa_hub_new:
+ *
+ * Returns: a new #ofaHub object.
+ */
+ofaHub *
+ofa_hub_new( void )
+{
+	ofaHub *hub;
+
+	hub = g_object_new( OFA_TYPE_HUB, NULL );
+
+	return( hub );
+}
+
+/**
+ * ofa_hub_extenders_init:
+ * @hub: this #ofaHub instance.
+ * @application: the running #GApplication application.
+ * @extension_dir: the path to the directory where the modules are to
+ *  be searched for.
+ *
+ * Initialize the extenders collection.
+ */
+void
+ofa_hub_extenders_init( ofaHub *hub, GApplication *application, const gchar *extension_dir )
+{
+	ofaHubPrivate *priv;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->extenders = ofa_extender_collection_new( application, extension_dir );
 }
 
 /*

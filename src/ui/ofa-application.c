@@ -513,6 +513,7 @@ ofa_application_new( void )
 {
 	static const gchar *thisfn = "ofa_application_new";
 	ofaApplication *application;
+	ofaApplicationPrivate *priv;
 
 	application = g_object_new( OFA_TYPE_APPLICATION,
 
@@ -527,12 +528,13 @@ ofa_application_new( void )
 			OFA_PROP_ICON_NAME,        gettext( st_icon_name ),
 			NULL );
 
+	priv = ofa_application_get_instance_private( application );
+
 	ofa_box_register_types();
 
-	if( ofa_plugin_load_modules( G_APPLICATION( application )) == -1 ){
-		g_error( "%s: unable to initialize application, aborting", thisfn );
-		g_clear_object( &application );
-	}
+	priv->hub = ofa_hub_new();
+
+	ofa_hub_extenders_init( priv->hub, G_APPLICATION( application ), PKGLIBDIR );
 
 	return( application );
 }

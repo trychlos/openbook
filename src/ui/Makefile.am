@@ -40,6 +40,7 @@ AM_CPPFLAGS += \
 	-DGNOMELOCALEDIR=\""$(datadir)/locale"\"			\
 	-DG_LOG_DOMAIN=\"OFA\"								\
 	-DPKGCSSDIR=\"$(css_datadir)\"						\
+	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	-DICONFNAME=\"$(icondir)/$(icondata)\"				\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
