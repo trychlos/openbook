@@ -33,6 +33,7 @@ my_include_HEADERS = \
 	my-file-monitor.h									\
 	my-iassistant.h										\
 	my-idialog.h										\
+	my-iextender-id.h									\
 	my-igridlist.h										\
 	my-iprogress.h										\
 	my-isettings.h										\

@@ -187,9 +187,10 @@ am_liborgtrychlosmy1_la_OBJECTS = my-date.lo my-date-editable.lo \
 	my-date-renderer.lo my-date-combo.lo my-decimal-combo.lo \
 	my-double.lo my-double-editable.lo my-double-renderer.lo \
 	my-field-combo.lo my-file-monitor.lo my-iassistant.lo \
-	my-idialog.lo my-igridlist.lo my-iprogress.lo my-isettings.lo \
-	my-iwindow.lo my-progress-bar.lo my-settings.lo my-tab.lo \
-	my-timeout.lo my-utils.lo
+	my-idialog.lo my-iextender-id.lo my-igridlist.lo \
+	my-iprogress.lo my-isettings.lo my-iwindow.lo \
+	my-progress-bar.lo my-settings.lo my-tab.lo my-timeout.lo \
+	my-utils.lo
 liborgtrychlosmy1_la_OBJECTS = $(am_liborgtrychlosmy1_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -479,6 +480,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-file-monitor.c									\
 	my-iassistant.c										\
 	my-idialog.c										\
+	my-iextender-id.c									\
 	my-igridlist.c										\
 	my-iprogress.c										\
 	my-isettings.c										\
@@ -602,6 +604,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-file-monitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iassistant.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-idialog.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iextender-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-igridlist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iprogress.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-isettings.Plo@am__quote@

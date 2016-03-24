@@ -74,6 +74,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-file-monitor.c									\
 	my-iassistant.c										\
 	my-idialog.c										\
+	my-iextender-id.c									\
 	my-igridlist.c										\
 	my-iprogress.c										\
 	my-isettings.c										\

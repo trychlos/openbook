@@ -50,6 +50,7 @@
  Other changes:
 
    - Define a separated 'my' library.
+   - Remove typedef xxxPrivate declarations from the headers.
    - my_cell_renderer_date_xxx(): are renamed to my_date_renderer_xxx().
    - my_double_is_zero(): new function.
    - my_editable_date_xxx(): are renamed to my_date_editable_xxx().
@@ -57,6 +58,7 @@
    - my_editable_double_xxx(): are renamed to my_double_editable_xxx().
    - myDateCombo: rename 'ofa-changed' signal to 'my-changed'.
    - myDecimalCombo: rename 'ofa-changed' signal to 'my-changed'.
+   - myExtenderId: new interface.
    - myFieldCombo: rename 'ofa-changed' signal to 'my-changed'.
    - myIProgress: new interface.
    - myProgressBar: ofa-double, ofa-text and ofa-pulse signals are renamed to my-xxx equivalents.
