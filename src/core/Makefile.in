@@ -169,7 +169,8 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-buttons-box.lo ofa-counter.lo ofa-currency-combo.lo \
 	ofa-currency-store.lo ofa-date-filter-hv-bin.lo \
 	ofa-dbms-root-bin.lo ofa-dossier-delete-prefs-bin.lo \
-	ofa-dossier-prefs.lo ofa-file-dir.lo ofa-file-format.lo \
+	ofa-dossier-prefs.lo ofa-extender-collection.lo \
+	ofa-extender-module.lo ofa-file-dir.lo ofa-file-format.lo \
 	ofa-file-format-bin.lo ofa-guided-input.lo \
 	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
 	ofa-icollectionable.lo ofa-icollector.lo ofa-iconcil.lo \
@@ -493,6 +494,8 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-prefs.c									\
+	ofa-extender-collection.c							\
+	ofa-extender-module.c								\
 	ofa-file-dir.c										\
 	ofa-file-dir.h										\
 	ofa-file-format.c									\
@@ -682,6 +685,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-prefs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-collection.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-module.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-dir.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-file-format.Plo@am__quote@
