@@ -123,9 +123,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-extender-collection.h"
-
-#include "core/ofa-file-dir.h"
+#include "api/ofa-hub-def.h"
 
 #include "ofa-application-def.h"
 
@@ -189,21 +187,19 @@ typedef enum {
 }
 	ofaExitCode;
 
-GType                  ofa_application_get_type               ( void ) G_GNUC_CONST;
+GType           ofa_application_get_type      ( void ) G_GNUC_CONST;
 
-ofaApplication        *ofa_application_new                    ( void );
+ofaApplication *ofa_application_new           ( void );
 
-int                    ofa_application_run_with_args          ( ofaApplication *application,
+int             ofa_application_run_with_args ( ofaApplication *application,
 																	int argc,
 																	GStrv argv );
 
-GMenuModel            *ofa_application_get_menu_model         ( const ofaApplication *application );
+ofaHub         *ofa_application_get_hub       ( const ofaApplication *application );
 
-const gchar           *ofa_application_get_copyright          ( const ofaApplication *application );
+GMenuModel     *ofa_application_get_menu_model( const ofaApplication *application );
 
-ofaFileDir            *ofa_application_get_file_dir           ( const ofaApplication *application );
-
-ofaExtenderCollection *ofa_application_get_extender_collection( const ofaApplication *application );
+const gchar    *ofa_application_get_copyright ( const ofaApplication *application );
 
 G_END_DECLS
 

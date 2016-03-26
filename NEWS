@@ -25,7 +25,29 @@
  Version 0.52
  ============
 
- Released on 
+ Released on 2016-03-26
+
+ There is a triple review with this version:
+
+   1/ first, the ofaPlugins class, which held both list of plugins as a
+      static global variable, and the plugins management itself as a
+      standard class, is splitted into ofaExtenderCollection and
+      ofaExtenderModule classes.
+      Though these classes are rather standard, they must be kept in the
+      'ofa' namespace as they check for API extension which requires
+      'ofa_xxx' named functions.
+
+   2/ second, the need of an application-global object which would hold
+      all non-gui relative data, is provided by the ofaHub object.
+      As a consequence, the ofaHub object now maintains both global
+      application variables, such as the modules collection, and the
+      dossier varibales, such as the dossier itself, its connection
+      informations, and so on.
+
+   3/ last, the myIIdent interface is introduced as a standard
+      identification scheme.
+      This now implies that ofaIDBProvider and ofaIDBModel interfaces
+      must be implemented by distinct classes.
 
  New features and improvements:
 

@@ -89,7 +89,6 @@ libofa_core_la_SOURCES = \
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
 	ofa-file-dir.c										\
-	ofa-file-dir.h										\
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
 	ofa-file-format-bin.h								\
@@ -112,7 +111,6 @@ libofa_core_la_SOURCES = \
 	ofa-idbprovider.c									\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\
-	ofa-ihubber.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-iprefs-page.c									\
@@ -141,7 +139,6 @@ libofa_core_la_SOURCES = \
 	ofa-page.c											\
 	ofa-periodicity.c									\
 	ofa-periodicity-bin.c								\
-	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
 	ofo-account.c										\

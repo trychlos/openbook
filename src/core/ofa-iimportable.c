@@ -32,10 +32,10 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-plugin.h"
 #include "api/ofo-base.h"
 
 /* data set against the imported object
@@ -166,6 +166,7 @@ ofa_iimportable_get_interface_last_version( void )
 
 /**
  * ofa_iimportable_find_willing_to:
+ * @hub:
  * @uri:
  * @settings:
  *
@@ -174,14 +175,16 @@ ofa_iimportable_get_interface_last_version( void )
  * after import.
  */
 ofaIImportable *
-ofa_iimportable_find_willing_to( const gchar *uri, const ofaFileFormat *settings )
+ofa_iimportable_find_willing_to( ofaHub *hub, const gchar *uri, const ofaFileFormat *settings )
 {
 	static const gchar *thisfn = "ofa_iimportable_find_willing_to";
+	ofaExtenderCollection *extenders;
 	GList *modules, *it;
 	ofaIImportable *found;
 
 	found = NULL;
-	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IIMPORTABLE );
+	extenders = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IIMPORTABLE );
 	g_debug( "%s: uri=%s, settings=%p, modules=%p, count=%d",
 			thisfn, uri, ( void * ) settings, ( void * ) modules, g_list_length( modules ));
 
@@ -192,7 +195,7 @@ ofa_iimportable_find_willing_to( const gchar *uri, const ofaFileFormat *settings
 		}
 	}
 
-	ofa_plugin_free_extensions( modules );
+	ofa_extender_collection_free_types( modules );
 
 	return( found );
 }

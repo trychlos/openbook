@@ -51,7 +51,6 @@
 #include "api/ofa-iprefs-provider.h"
 #include "api/ofa-settings.h"
 
-#include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
 #include "ofa-mysql-iprefs-provider.h"

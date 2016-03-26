@@ -116,9 +116,9 @@
  *     the #GtkApplication to which the #ofaMainWindow is attached to.
  */
 
-#include <gio/gio.h>
-
 #include "api/ofa-dossier-prefs.h"
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-file-dir.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect.h"
@@ -156,26 +156,33 @@ typedef struct {
 #define SIGNAL_HUB_UPDATED              "hub-object-updated"
 #define SIGNAL_HUB_DELETED              "hub-object-deleted"
 #define SIGNAL_HUB_RELOAD               "hub-dataset-reload"
+#define SIGNAL_HUB_DOSSIER_OPENED       "hub-dossier-opened"
+#define SIGNAL_HUB_DOSSIER_CLOSED       "hub-dossier-closed"
 #define SIGNAL_HUB_STATUS_COUNT         "hub-status-count"
 #define SIGNAL_HUB_STATUS_CHANGE        "hub-status-change"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
 
-GType                ofa_hub_get_type           ( void ) G_GNUC_CONST;
+GType                  ofa_hub_get_type               ( void ) G_GNUC_CONST;
 
-ofaHub              *ofa_hub_new                ( void );
+ofaHub                *ofa_hub_new                    ( void );
 
-void                 ofa_hub_extenders_init     ( ofaHub *hub,
-														GApplication *application,
-														const gchar *extension_dir );
+ofaExtenderCollection *ofa_hub_get_extender_collection( const ofaHub *hub );
 
-gboolean             ofa_hub_dossier_open       ( ofaHub *hub,
-														ofaIDBConnect *connect,
-														GtkWindow *parent );
+void                   ofa_hub_set_extender_collection( ofaHub *hub,
+															ofaExtenderCollection *collection );
 
-void                 ofa_hub_dossier_close      ( ofaHub *hub );
+ofaFileDir            *ofa_hub_get_file_dir           ( const ofaHub *hub );
 
-ofaHub              *ofa_hub_new_with_connect   ( const ofaIDBConnect *connect,
-														GtkWindow *parent );
+void                   ofa_hub_set_file_dir           ( ofaHub *hub,
+															ofaFileDir *filedir );
+
+gboolean               ofa_hub_dossier_open           ( ofaHub *hub,
+															ofaIDBConnect *connect,
+															GtkWindow *parent );
+
+void                   ofa_hub_dossier_close          ( ofaHub *hub );
+
+/* ... */
 
 const ofaIDBConnect *ofa_hub_get_connect        ( const ofaHub *hub );
 

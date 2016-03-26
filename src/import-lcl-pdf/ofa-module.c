@@ -54,48 +54,6 @@ ofa_extension_startup( GTypeModule *module, GApplication *application )
 	return( TRUE );
 }
 
-#if 0
-/*
- * ofa_extension_get_api_version:
- *
- * optional, defaults to 1.
- */
-guint
-ofa_extension_get_api_version( void )
-{
-	static const gchar *thisfn = "import-lcl-pdf/ofa_module_ofa_extension_get_api_version";
-	guint version;
-
-	version = 1;
-
-	g_debug( "%s: version=%d", thisfn, version );
-
-	return( version );
-}
-
-/*
- * ofa_extension_get_name:
- *
- * optional, defaults to NULL.
- */
-const gchar *
-ofa_extension_get_name( void )
-{
-	return( "LCL PDF Importer #1" );
-}
-
-/*
- * ofa_extension_get_version_number:
- *
- * optional, defaults to NULL.
- */
-const gchar *
-ofa_extension_get_version_number( void )
-{
-	return( PACKAGE_VERSION );
-}
-#endif
-
 /*
  * ofa_extension_list_types:
  *

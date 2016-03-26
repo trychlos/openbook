@@ -30,14 +30,15 @@
 #include <stdlib.h>
 
 #include "my/my-idialog.h"
+#include "my/my-iident.h"
 #include "my/my-iprogress.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
-#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 
@@ -115,7 +116,7 @@ static GType    register_type( void );
 static void     interface_base_init( ofaIDBModelInterface *klass );
 static void     interface_base_finalize( ofaIDBModelInterface *klass );
 static gboolean idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static gboolean idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *dialog );
+static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *dialog );
 
 /* dialog management */
 static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
@@ -266,6 +267,7 @@ ofa_idbmodel_get_interface_version( const ofaIDBModel *instance )
 gboolean
 ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 {
+	ofaExtenderCollection *extenders;
 	GList *plugins_list, *it;
 	gboolean need_update, ok;
 	ofaDBModelWindow *window;
@@ -276,8 +278,9 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 
 	ok = TRUE;
 	need_update = FALSE;
-	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
 	connect = ofa_hub_get_connect( hub );
+	extenders = ofa_hub_get_extender_collection( hub );
+	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 
 	for( it=plugins_list ; it && !need_update ; it=it->next ){
 		need_update = idbmodel_get_needs_update( OFA_IDBMODEL( it->data ), connect );
@@ -303,7 +306,7 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 		}
 	}
 
-	ofa_plugin_free_extensions( plugins_list );
+	ofa_extender_collection_free_types( plugins_list );
 
 	return( ok );
 }
@@ -319,12 +322,14 @@ void
 ofa_idbmodel_init_hub_signaling_system( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_idbmodel_init_hub_signaling_system";
+	ofaExtenderCollection *extenders;
 	GList *plugins_list, *it;
 	ofaIDBModel *instance;
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+	extenders = ofa_hub_get_extender_collection( hub );
+	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 
 	for( it=plugins_list ; it ; it=it->next ){
 		instance = OFA_IDBMODEL( it->data );
@@ -336,7 +341,7 @@ ofa_idbmodel_init_hub_signaling_system( ofaHub *hub )
 		}
 	}
 
-	ofa_plugin_free_extensions( plugins_list );
+	ofa_extender_collection_free_types( plugins_list );
 }
 
 /**
@@ -349,13 +354,15 @@ gboolean
 ofa_idbmodel_get_is_deletable( const ofaHub *hub, const ofoBase *object )
 {
 	static const gchar *thisfn = "ofa_idbmodel_get_is_deletable";
+	ofaExtenderCollection *extenders;
 	GList *plugins_list, *it;
 	ofaIDBModel *instance;
 	gboolean ok;
 
 	g_return_val_if_fail( object && OFO_IS_BASE( object ), FALSE );
 
-	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+	extenders = ofa_hub_get_extender_collection( hub );
+	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 	ok = TRUE;
 
 	for( it=plugins_list ; it && ok ; it=it->next ){
@@ -368,49 +375,52 @@ ofa_idbmodel_get_is_deletable( const ofaHub *hub, const ofoBase *object )
 		}
 	}
 
-	ofa_plugin_free_extensions( plugins_list );
+	ofa_extender_collection_free_types( plugins_list );
 
 	return( ok );
 }
 
 /**
  * ofa_idbmodel_get_by_name:
+ * @hub: the #ofaHub object.
  * @name: the searched for identification name.
  *
- * Returns: a new reference to the #ofaIDBModel instance which delivers
- * this @name, or %NULL.
+ * Returns: the #ofaIDBModel instance which delivers this canonical
+ * @name, or %NULL.
  *
- * When non %NULL, the returned reference should be g_object_unref() by
- * the caller.
+ * This method relies on the #myIIdent interface being implemented by
+ * the #ofaIDBModel objects.
+ *
+ * The returned reference is owned by the application, and should not
+ * be unreffed by the caller.
  */
 ofaIDBModel *
-ofa_idbmodel_get_by_name( const gchar *name )
+ofa_idbmodel_get_by_name( const ofaHub *hub, const gchar *name )
 {
-	static const gchar *thisfn = "ofa_idbmodel_get_by_name";
+	ofaExtenderCollection *extenders;
 	GList *plugins_list, *it;
-	ofaIDBModel *instance, *found;
-	const gchar *cstr;
+	ofaIDBModel *found;
+	gchar *it_name;
+	gint cmp;
 
 	g_return_val_if_fail( my_strlen( name ), NULL );
 
 	found = NULL;
-	plugins_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+	extenders = ofa_hub_get_extender_collection( hub );
+	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 
 	for( it=plugins_list ; it ; it=it->next ){
-		instance = OFA_IDBMODEL( it->data );
-		if( OFA_IDBMODEL_GET_INTERFACE( instance )->get_name ){
-			cstr = OFA_IDBMODEL_GET_INTERFACE( instance )->get_name( instance );
-			if( !g_utf8_collate( cstr, name )){
-				found = g_object_ref( instance );
-				break;
-			}
-		} else {
-			g_info( "%s: ofaIDBModel instance %p does not provide 'get_name()' method",
-					thisfn, ( void * ) instance );
+		it_name = ofa_idbmodel_get_canon_name( OFA_IDBMODEL( it->data ));
+		cmp = my_collate( it_name, name );
+		g_free( it_name );
+		if( cmp == 0 ){
+			found = OFA_IDBMODEL( it->data );
+			break;
 		}
 	}
 
-	ofa_plugin_free_extensions( plugins_list );
+	ofa_extender_collection_free_types( plugins_list );
+
 	return( found );
 }
 
@@ -478,7 +488,7 @@ idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *con
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
+idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 {
 	static const gchar *thisfn = "ofa_idbmodel_ddl_update";
 
@@ -489,6 +499,43 @@ idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *wind
 	g_info( "%s: ofaIDBModel instance %p does not provide 'ddl_update()' method",
 			thisfn, ( void * ) instance );
 	return( TRUE );
+}
+
+/*
+ * ofa_idbmodel_get_canon_name:
+ * @instance: this #ofaIDBModel instance.
+ *
+ * Returns: the canonical name of the @instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the @instance class.
+ */
+gchar *
+ofa_idbmodel_get_canon_name( const ofaIDBModel *instance )
+{
+	g_return_val_if_fail( instance && OFA_IS_IDBMODEL( instance ), NULL );
+
+	return( MY_IS_IIDENT( instance ) ? my_iident_get_canon_name( MY_IIDENT( instance ), NULL ) : NULL );
+}
+
+/*
+ * ofa_idbmodel_get_version:
+ * @instance: this #ofaIDBModel instance.
+ * @connect: the #ofaIDBConnect object.
+ *
+ * Returns: the current version of the @instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the @instance class.
+ */
+gchar *
+ofa_idbmodel_get_version( const ofaIDBModel *instance, ofaIDBConnect *connect )
+{
+	g_return_val_if_fail( instance && OFA_IS_IDBMODEL( instance ), NULL );
+
+	return( MY_IS_IIDENT( instance ) ? my_iident_get_version( MY_IIDENT( instance ), connect ) : NULL );
 }
 
 static void
@@ -671,36 +718,29 @@ idialog_init( myIDialog *instance )
 }
 
 /*
- * First upgrade the DB provider which should itself implement the
- * IDBModel interface.
- * Only then upgrade other IDBModels.
+ * First upgrade the CORE DBModel; only then upgrade other IDBModels.
  */
 static gboolean
 do_run( ofaDBModelWindow *self )
 {
 	ofaDBModelWindowPrivate *priv;
-	const ofaIDBConnect *connect;
-	ofaIDBProvider *provider;
-	GList *it;
+	ofaIDBModel *core_model;
 	gboolean ok;
+	GList *it;
 	gchar *str;
 	GtkMessageType type;
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
-	connect = ofa_hub_get_connect( priv->hub );
-	provider = ofa_idbconnect_get_provider( connect );
-	g_return_val_if_fail( provider && OFA_IS_IDBMODEL( provider ), FALSE );
-
-	ok = idbmodel_ddl_update( OFA_IDBMODEL( provider ), priv->hub, MY_IPROGRESS( self ));
+	core_model = ofa_idbmodel_get_by_name( priv->hub, "CORE" );
+	ok = core_model ? idbmodel_ddl_update( core_model, priv->hub, MY_IPROGRESS( self )) : TRUE;
 
 	for( it=priv->plugins_list ; it && ok ; it=it->next ){
-		if( it->data != ( void * ) provider ){
+		if( it->data != ( void * ) core_model ){
 			ok &= idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_IPROGRESS( self ));
 		}
 	}
 
-	g_object_unref( provider );
 	priv->updated = ok;
 
 	if( ok ){

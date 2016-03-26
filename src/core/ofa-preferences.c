@@ -36,20 +36,26 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-iprefs-page.h"
 #include "api/ofa-iprefs-provider.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 
 #include "ofa-open-prefs-bin.h"
 #include "ofa-dossier-delete-prefs-bin.h"
 #include "ofa-file-format-bin.h"
+#include "ofa-main-window.h"
 
 /* private instance data
  */
 typedef struct {
 	gboolean                  dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub                   *hub;
 
 	/* UI - General
 	 */
@@ -58,7 +64,7 @@ typedef struct {
 
 	/* when opening the preferences from the plugin manager
 	 */
-	ofaPlugin                *plugin;
+	ofaExtenderModule        *plugin;
 	GtkWidget                *object_page;
 
 	/* UI - Quitting
@@ -245,13 +251,13 @@ ofa_preferences_class_init( ofaPreferencesClass *klass )
 /**
  * ofa_preferences_run:
  * @main: the main window of the application.
- * @plugin: [allow-null]: the #ofaPlugin object for which the properties
- *  are to be displayed.
+ * @plugin: [allow-null]: the #ofaExtenderModule object for which the
+ *  properties are to be displayed.
  *
  * Update the properties of a dossier.
  */
 void
-ofa_preferences_run( GtkApplicationWindow *main_window, ofaPlugin *plugin )
+ofa_preferences_run( GtkApplicationWindow *main_window, ofaExtenderModule *plugin )
 {
 	static const gchar *thisfn = "ofa_preferences_run";
 	ofaPreferences *self;
@@ -305,10 +311,16 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_preferences_idialog_init";
 	ofaPreferencesPrivate *priv;
+	GtkApplicationWindow *main_window;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_preferences_get_instance_private( OFA_PREFERENCES( instance ));
+
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
@@ -590,17 +602,22 @@ init_import_page( ofaPreferences *self )
 static gboolean
 enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 {
+	ofaPreferencesPrivate *priv;
+	ofaExtenderCollection *extenders;
 	GList *list, *it;
 	gboolean ok;
 
+	priv = ofa_preferences_get_instance_private( self );
+
 	ok = TRUE;
-	list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IPREFS_PROVIDER );
+	extenders = ofa_hub_get_extender_collection( priv->hub );
+	list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IPREFS_PROVIDER );
 
 	for( it=list ; it ; it=it->next ){
 		ok &= ( *pfn )( self, msgerr, OFA_IPREFS_PROVIDER( it->data ));
 	}
 
-	ofa_plugin_free_extensions( list );
+	ofa_extender_collection_free_types( list );
 
 	return( ok );
 }
@@ -650,7 +667,7 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 		/* try to identify if the plugin which implements this object is the
 		 * one which has been required */
 		if( priv->plugin && !priv->object_page ){
-			if( ofa_plugin_has_object( priv->plugin, G_OBJECT( instance ))){
+			if( ofa_extender_module_has_object( priv->plugin, G_OBJECT( instance ))){
 				priv->object_page = GTK_WIDGET( page );
 			}
 		}

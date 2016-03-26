@@ -90,7 +90,7 @@ static guint      idbmodel_get_current_version( const ofaIDBModel *instance, con
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static void       idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub );
 static gboolean   idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object );
-static gboolean   idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
+static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static gboolean   exec_query( sUpdate *update_data, const gchar *query );
 static gboolean   version_begin( sUpdate *update_data, gint version );
@@ -172,7 +172,7 @@ idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const
 }
 
 static gboolean
-idbmodel_ddl_update( const ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
+idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 {
 	sUpdate *update_data;
 	guint i, cur_version, last_version;

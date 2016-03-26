@@ -34,6 +34,7 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-file-dir.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
@@ -46,7 +47,6 @@
 
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
-#include "core/ofa-file-dir.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-application.h"

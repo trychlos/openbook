@@ -33,7 +33,6 @@
 
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -214,14 +213,10 @@ static void
 setup_hub( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
-	GtkApplication *application;
 
 	priv = ofa_balance_bin_get_instance_private( bin );
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 

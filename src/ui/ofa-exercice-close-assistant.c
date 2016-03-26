@@ -36,14 +36,13 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-iexeclose-close.h"
-#include "api/ofa-ihubber.h"
-#include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -269,7 +268,7 @@ exercice_close_assistant_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->meta );
-		ofa_plugin_free_extensions( priv->close_list );
+		ofa_extender_collection_free_types( priv->close_list );
 	}
 
 	/* chain up to the parent class */
@@ -382,6 +381,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p0_do_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
+	ofaExtenderCollection *extenders;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
@@ -400,7 +400,8 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 
-	priv->close_list = ofa_plugin_get_extensions_for_type( OFA_TYPE_IEXECLOSE_CLOSE );
+	extenders = ofa_hub_get_extender_collection( priv->hub );
+	priv->close_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IEXECLOSE_CLOSE );
 }
 
 static void
@@ -1349,7 +1350,6 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_do_archive_exercice";
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	GtkApplication *application;
 	ofaIDBConnect *cnx;
 	ofaIDBPeriod *period;
 	gboolean ok;
@@ -1410,10 +1410,10 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 		} else {
-			application = gtk_window_get_application( GTK_WINDOW( main_window ));
-			g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), FALSE );
-			hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), cnx );
-			if( hub ){
+			hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
+			if( ofa_hub_dossier_open( hub, cnx, GTK_WINDOW( main_window ))){
 				priv->hub = hub;
 				priv->dossier = ofa_hub_get_dossier( hub );
 				priv->connect = ofa_hub_get_connect( hub );

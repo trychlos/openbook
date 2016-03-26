@@ -927,7 +927,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	if( st_radios[priv->p2_idx].get_type ){
 		priv->p5_object = ( ofaIImportable * ) g_object_new( st_radios[priv->p2_idx].get_type(), NULL );
 	} else {
-		priv->p5_plugin = ofa_iimportable_find_willing_to( priv->p1_furi, priv->p3_import_settings );
+		priv->p5_plugin = ofa_iimportable_find_willing_to( priv->hub, priv->p1_furi, priv->p3_import_settings );
 	}
 	if( !priv->p5_object && !priv->p5_plugin ){
 		p5_error_no_interface( self );

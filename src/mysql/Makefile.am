@@ -46,10 +46,10 @@ AM_CPPFLAGS += \
 # They are distributed in the package, but not installed.
 resname = ofa_mysql
 resxml = $(srcdir)/resources.xml
-resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
-resources.c: $(resxml) $(resource_files)
+resfiles = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
+resources.c: $(resxml) $(resfiles)
 	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name $(resname) $(resxml)
-resources.h: $(resxml) $(resource_files)
+resources.h: $(resxml) $(resfiles)
 	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name $(resname) $(resxml)
 
 mysql_built_sources = \
@@ -67,24 +67,24 @@ nodist_libofa_mysql_la_SOURCES = \
 
 libofa_mysql_la_SOURCES = \
 	ofa-module.c										\
-	ofa-mysql.c											\
-	ofa-mysql.h											\
 	ofa-mysql-cmdline.c									\
 	ofa-mysql-cmdline.h									\
 	ofa-mysql-connect.c									\
 	ofa-mysql-connect.h									\
+	ofa-mysql-dbmodel.c									\
+	ofa-mysql-dbmodel.h									\
+	ofa-mysql-dbprovider.c								\
+	ofa-mysql-dbprovider.h								\
 	ofa-mysql-editor-display.c							\
 	ofa-mysql-editor-display.h							\
 	ofa-mysql-editor-enter.c							\
 	ofa-mysql-editor-enter.h							\
-	ofa-mysql-meta.c									\
-	ofa-mysql-meta.h									\
-	ofa-mysql-idbmodel.c								\
-	ofa-mysql-idbmodel.h								\
-	ofa-mysql-idbprovider.c								\
-	ofa-mysql-idbprovider.h								\
+	ofa-mysql-id.c										\
+	ofa-mysql-id.h										\
 	ofa-mysql-iprefs-provider.c							\
 	ofa-mysql-iprefs-provider.h							\
+	ofa-mysql-meta.c									\
+	ofa-mysql-meta.h									\
 	ofa-mysql-period.c									\
 	ofa-mysql-period.h									\
 	ofa-mysql-prefs-bin.c								\

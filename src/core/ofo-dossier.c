@@ -278,7 +278,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
 }
 
 /**
- * ofo_dossier_new_with_hub:
+ * ofo_dossier_new:
  * @hub: the #ofaHub object which will manage this dossier.
  *
  * Instanciates a new object, and initializes it with data read from
@@ -288,7 +288,7 @@ ofo_dossier_class_init( ofoDossierClass *klass )
  * has occured.
  */
 ofoDossier *
-ofo_dossier_new_with_hub( ofaHub *hub )
+ofo_dossier_new( ofaHub *hub )
 {
 	ofoDossier *dossier;
 

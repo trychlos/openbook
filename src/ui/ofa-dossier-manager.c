@@ -36,7 +36,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 

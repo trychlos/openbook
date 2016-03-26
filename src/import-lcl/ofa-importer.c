@@ -35,6 +35,7 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
+#include "my/my-iident.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-file-format.h"
@@ -59,31 +60,19 @@ struct _ofaLCLImporterPrivate {
 
 };
 
-/* a description of the import functions we are able to manage here
- */
-typedef struct {
-	const gchar *label;
-	gint         version;
-	gboolean   (*fnTest)  ( ofaLCLImporter * );
-	ofsBat *   (*fnImport)( ofaLCLImporter * );
-}
-	ImportFormat;
+#define IMPORTER_DISPLAY_NAME            "LCL tabulated BAT Importer"
+#define IMPORTER_VERSION                  PACKAGE_VERSION
 
-static gboolean lcl_tabulated_text_v1_check( ofaLCLImporter *lcl_importer );
-static ofsBat  *lcl_tabulated_text_v1_import( ofaLCLImporter *lcl_importer );
+static GType         st_module_type     = 0;
+static GObjectClass *st_parent_class    = NULL;
 
-static ImportFormat st_import_formats[] = {
-		{ "LCL - Excel (tabulated text)", 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_import },
-		{ 0 }
-};
-
-static GType         st_module_type = 0;
-static GObjectClass *st_parent_class = NULL;
-
-static void         class_init( ofaLCLImporterClass *klass );
+static void         importer_finalize( GObject *object );
+static void         importer_dispose( GObject *object );
 static void         instance_init( GTypeInstance *instance, gpointer klass );
-static void         instance_dispose( GObject *object );
-static void         instance_finalize( GObject *object );
+static void         class_init( ofaLCLImporterClass *klass );
+static void         iident_iface_init( myIIdentInterface *iface );
+static gchar       *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar       *iident_get_version( const myIIdent *instance, void *user_data );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *lcl_importer );
 static gboolean     iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
@@ -95,6 +84,21 @@ static ofsBat      *lcl_tabulated_text_v1_import( ofaLCLImporter *lcl_importer )
 static const gchar *lcl_get_ref_paiement( const gchar *str );
 static gchar       *lcl_concatenate_labels( gchar ***iter );
 static gdouble      get_double( const gchar *str );
+
+/* a description of the import functions we are able to manage here
+ */
+typedef struct {
+	const gchar *label;
+	gint         version;
+	gboolean   (*fnTest)  ( ofaLCLImporter * );
+	ofsBat *   (*fnImport)( ofaLCLImporter * );
+}
+	ImportFormat;
+
+static ImportFormat st_import_formats[] = {
+		{ "LCL - Excel (tabulated text)", 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_import },
+		{ 0 }
+};
 
 GType
 ofa_lcl_importer_get_type( void )
@@ -119,6 +123,12 @@ ofa_lcl_importer_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
+	static const GInterfaceInfo iident_iface_info = {
+		( GInterfaceInitFunc ) iident_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo iimportable_iface_info = {
 		( GInterfaceInitFunc ) iimportable_iface_init,
 		NULL,
@@ -129,22 +139,45 @@ ofa_lcl_importer_register_type( GTypeModule *module )
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaLCLImporter", &info, 0 );
 
+	g_type_module_add_interface( module, st_module_type, MY_TYPE_IIDENT, &iident_iface_info );
+
 	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
 }
 
 static void
-class_init( ofaLCLImporterClass *klass )
+importer_finalize( GObject *object )
 {
-	static const gchar *thisfn = "ofa_lcl_importer_class_init";
+	static const gchar *thisfn = "ofa_lcl_importer_finalize";
 
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+	g_return_if_fail( object && OFA_IS_LCL_IMPORTER( object ));
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	g_debug( "%s: object=%p (%s)",
+			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
-	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
-	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
+	/* free data members here */
 
-	g_type_class_add_private( klass, sizeof( ofaLCLImporterPrivate ));
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+}
+
+static void
+importer_dispose( GObject *object )
+{
+	ofaLCLImporterPrivate *priv;
+
+	g_return_if_fail( object && OFA_IS_LCL_IMPORTER( object ));
+
+	priv = OFA_LCL_IMPORTER( object )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( object );
 }
 
 static void
@@ -165,41 +198,49 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *object )
+class_init( ofaLCLImporterClass *klass )
 {
-	ofaLCLImporterPrivate *priv;
+	static const gchar *thisfn = "ofa_lcl_importer_class_init";
 
-	g_return_if_fail( object && OFA_IS_LCL_IMPORTER( object ));
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	priv = OFA_LCL_IMPORTER( object )->priv;
+	st_parent_class = g_type_class_peek_parent( klass );
 
-	if( !priv->dispose_has_run ){
+	G_OBJECT_CLASS( klass )->dispose = importer_dispose;
+	G_OBJECT_CLASS( klass )->finalize = importer_finalize;
 
-		priv->dispose_has_run = TRUE;
-
-		/* unref object members here */
-	}
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->dispose( object );
+	g_type_class_add_private( klass, sizeof( ofaLCLImporterPrivate ));
 }
 
+/*
+ * myIIdent interface management
+ */
 static void
-instance_finalize( GObject *object )
+iident_iface_init( myIIdentInterface *iface )
 {
-	static const gchar *thisfn = "ofa_lcl_importer_instance_finalize";
+	static const gchar *thisfn = "ofa_lcl_importer_iident_iface_init";
 
-	g_return_if_fail( object && OFA_IS_LCL_IMPORTER( object ));
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	g_debug( "%s: object=%p (%s)",
-			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-	/* free data members here */
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+	iface->get_display_name = iident_get_display_name;
+	iface->get_version = iident_get_version;
 }
 
+static gchar *
+iident_get_display_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IMPORTER_DISPLAY_NAME ));
+}
+
+static gchar *
+iident_get_version( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IMPORTER_VERSION ));
+}
+
+/*
+ * ofaIImportable interface management
+ */
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {

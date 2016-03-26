@@ -33,7 +33,6 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -214,7 +213,6 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *resource_
 {
 	static const gchar *thisfn = "ofa_iaccount_filter_setup_bin";
 	sIAccountFilter *sdata;
-	GtkApplication *application;
 
 	g_debug( "%s: filter=%p, resource_name=%s, main_window=%p",
 			thisfn, ( void * ) filter, resource_name, ( void * ) main_window );
@@ -226,10 +224,7 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *resource_
 	sdata->resource_name = g_strdup( resource_name );
 	sdata->main_window = main_window;
 
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	sdata->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	sdata->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( sdata->hub && OFA_IS_HUB( sdata->hub ));
 
 	sdata->dossier = ofa_hub_get_dossier( sdata->hub );

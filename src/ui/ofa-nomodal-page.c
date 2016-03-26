@@ -280,11 +280,10 @@ void
 ofa_nomodal_page_close_all( void )
 {
 	static const gchar *thisfn = "ofa_nomodal_page_close_all";
-	GList *it;
 
 	g_debug( "%s:", thisfn );
 
-	for( it=st_list ; it ; it=it->next ){
-		gtk_widget_destroy( GTK_WIDGET( it->data ));
+	while( st_list ){
+		gtk_widget_destroy( GTK_WIDGET( st_list->data ));
 	}
 }

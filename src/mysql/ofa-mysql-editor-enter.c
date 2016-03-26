@@ -37,10 +37,8 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 
-#include "ofa-mysql.h"
 #include "ofa-mysql-connect.h"
 #include "ofa-mysql-editor-enter.h"
-#include "ofa-mysql-idbprovider.h"
 
 /* private instance data
  */

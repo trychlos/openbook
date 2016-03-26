@@ -33,6 +33,9 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-extender-module.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-iabout.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -273,22 +276,32 @@ load_in_treeview( ofaPluginManager *self )
 	GtkTreeModel *tmodel;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
-	const GList *modules;
-	const GList *it;
-	ofaPlugin *plugin;
-	const gchar *name, *version;
+	GtkApplicationWindow *main_window;
+	ofaHub *hub;
+	ofaExtenderCollection *extenders;
+	const GList *modules, *it;
+	ofaExtenderModule *plugin;
+	gchar *name, *version;
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
 	tmodel = gtk_tree_view_get_model( priv->tview );
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
-	modules = ofa_plugin_get_modules();
+	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	extenders = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_modules( extenders );
 
 	for( it=modules ; it ; it=it->next ){
-		plugin = OFA_PLUGIN( it->data );
-		name = ofa_plugin_get_name( plugin );
-		version = ofa_plugin_get_version_number( plugin );
+		plugin = OFA_EXTENDER_MODULE( it->data );
+		name = ofa_extender_module_get_display_name( plugin );
+		version = ofa_extender_module_get_version( plugin );
+		//g_debug( "load_in_treeview: name=%s, version=%s", name, version );
 		gtk_list_store_insert_with_values(
 				GTK_LIST_STORE( tmodel ),
 				&iter,
@@ -297,6 +310,9 @@ load_in_treeview( ofaPluginManager *self )
 				COL_VERSION, version,
 				COL_PLUGIN,  plugin,
 				-1 );
+
+		g_free( version );
+		g_free( name );
 	}
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
@@ -314,7 +330,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer us
 	gtk_tree_model_get( tmodel, a, COL_NAME, &aname, -1 );
 	gtk_tree_model_get( tmodel, b, COL_NAME, &bname, -1 );
 
-	cmp = g_utf8_collate( aname, bname );
+	cmp = my_collate( aname, bname );
 
 	g_free( aname );
 	g_free( bname );
@@ -326,24 +342,26 @@ static void
 on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self )
 {
 	ofaPluginManagerPrivate *priv;
-	GObject *object;
+	GList *objects;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	ofaPlugin *plugin;
+	ofaExtenderModule *plugin;
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	object = NULL;
+	objects = NULL;
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 
 		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
 		g_object_unref( plugin );
 
-		object = ofa_plugin_get_object_for_type( plugin, OFA_TYPE_IABOUT );
+		objects = ofa_extender_module_get_for_type( plugin, OFA_TYPE_IABOUT );
 	}
 
-	gtk_widget_set_sensitive( priv->properties_btn, object != NULL );
+	gtk_widget_set_sensitive( priv->properties_btn, g_list_length( objects ) > 0 );
+
+	ofa_extender_collection_free_types( objects );
 }
 
 /*
@@ -358,8 +376,8 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 	GtkTreeSelection *selection;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	ofaPlugin *plugin;
-	GObject *object;
+	ofaExtenderModule *plugin;
+	GList *objects;
 	GtkWidget *page, *dialog, *content;
 
 	priv = ofa_plugin_manager_get_instance_private( self );
@@ -372,9 +390,9 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
 		g_object_unref( plugin );
 
-		object = ofa_plugin_get_object_for_type( plugin, OFA_TYPE_IABOUT );
-		g_return_if_fail( object && OFA_IS_IABOUT( object ));
-		page = ofa_iabout_do_init( OFA_IABOUT( object ));
+		objects = ofa_extender_module_get_for_type( plugin, OFA_TYPE_IABOUT );
+		g_return_if_fail( objects && g_list_length( objects ) > 0 );
+		page = ofa_iabout_do_init( OFA_IABOUT( objects->data ));
 
 		if( page && GTK_IS_WIDGET( page )){
 			dialog = gtk_dialog_new_with_buttons(
@@ -391,5 +409,7 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 					dialog, "response", G_CALLBACK( gtk_widget_destroy ), dialog );
 			gtk_widget_show_all( dialog );
 		}
+
+		ofa_extender_collection_free_types( objects );
 	}
 }

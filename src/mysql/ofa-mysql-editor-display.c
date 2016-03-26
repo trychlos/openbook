@@ -31,9 +31,7 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 
-#include "ofa-mysql.h"
 #include "ofa-mysql-editor-display.h"
-#include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 

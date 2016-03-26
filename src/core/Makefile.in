@@ -177,19 +177,18 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
 	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
 	ofa-idbprovider.lo ofa-iexeclose-close.lo ofa-iexportable.lo \
-	ofa-ihubber.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-iprefs-page.lo ofa-iprefs-provider.lo \
-	ofa-isingle-keeper.lo ofa-istore.lo ofa-ledger-combo.lo \
-	ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-iimporter.lo ofa-iimportable.lo ofa-iprefs-page.lo \
+	ofa-iprefs-provider.lo ofa-isingle-keeper.lo ofa-istore.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
 	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
 	ofa-open-prefs-bin.lo ofa-page.lo ofa-periodicity.lo \
-	ofa-periodicity-bin.lo ofa-plugin.lo ofa-preferences.lo \
-	ofa-settings.lo ofo-account.lo ofo-base.lo ofo-bat.lo \
-	ofo-bat-line.lo ofo-class.lo ofo-concil.lo ofo-currency.lo \
-	ofo-dossier.lo ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo \
-	ofo-rate.lo ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
+	ofa-periodicity-bin.lo ofa-preferences.lo ofa-settings.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
 	ofs-currency.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
@@ -497,7 +496,6 @@ libofa_core_la_SOURCES = \
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
 	ofa-file-dir.c										\
-	ofa-file-dir.h										\
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
 	ofa-file-format-bin.h								\
@@ -520,7 +518,6 @@ libofa_core_la_SOURCES = \
 	ofa-idbprovider.c									\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\
-	ofa-ihubber.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-iprefs-page.c									\
@@ -549,7 +546,6 @@ libofa_core_la_SOURCES = \
 	ofa-page.c											\
 	ofa-periodicity.c									\
 	ofa-periodicity-bin.c								\
-	ofa-plugin.c										\
 	ofa-preferences.c									\
 	ofa-settings.c										\
 	ofo-account.c										\
@@ -706,7 +702,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexeclose-close.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ihubber.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimporter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprefs-page.Plo@am__quote@
@@ -726,7 +721,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-account.Plo@am__quote@

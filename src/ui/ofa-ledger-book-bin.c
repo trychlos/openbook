@@ -33,7 +33,6 @@
 
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -227,7 +226,6 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
 	GtkWidget *widget, *toggle, *label;
-	GtkApplication *application;
 	ofaHub *hub;
 
 	priv = ofa_ledger_book_bin_get_instance_private( bin );
@@ -236,10 +234,7 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv->ledgers_tview = ofa_ledger_treeview_new();

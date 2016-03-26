@@ -34,9 +34,9 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
-#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -394,6 +394,7 @@ do_run( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 	gint i;
+	ofaExtenderCollection *extenders;
 	GList *plugins, *it;
 	ofaIDBModel *instance;
 
@@ -403,14 +404,15 @@ do_run( ofaCheckIntegrityBin *self )
 		( *st_fn[i] )( self );
 	}
 
-	plugins = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBMODEL );
+	extenders = ofa_hub_get_extender_collection( priv->hub );
+	plugins = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
 	for( it=plugins ; it ; it=it->next ){
 		instance = OFA_IDBMODEL( it->data );
 		if( OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity ){
 			priv->others_errs += OFA_IDBMODEL_GET_INTERFACE( instance )->check_dbms_integrity( instance, priv->hub, priv->display ? MY_IPROGRESS( self ) : NULL );
 		}
 	}
-	ofa_plugin_free_extensions( plugins );
+	ofa_extender_collection_free_types( plugins );
 
 	set_checks_result( self );
 

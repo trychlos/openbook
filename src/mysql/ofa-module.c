@@ -28,14 +28,16 @@
 
 #include "api/ofa-extension.h"
 
-#include "ofa-mysql.h"
+#include "mysql/ofa-mysql-dbmodel.h"
+#include "mysql/ofa-mysql-dbprovider.h"
+#include "mysql/ofa-mysql-id.h"
 
 /* the count of GType types provided by this extension
  * each new GType type must
  * - be registered from within ofa_extension_startup()
  * - be addressed in ofa_extension_list_types().
  */
-#define OFA_TYPES_COUNT	1
+#define OFA_TYPES_COUNT	                3
 
 /*
  * ofa_extension_startup:
@@ -49,52 +51,12 @@ ofa_extension_startup( GTypeModule *module, GApplication *application )
 
 	g_debug( "%s: module=%p, application=%p", thisfn, ( void * ) module, ( void * ) application  );
 
-	ofa_mysql_register_type( module );
+	ofa_mysql_dbmodel_register_type( module );
+	ofa_mysql_dbprovider_register_type( module );
+	ofa_mysql_id_register_type( module );
 
 	return( TRUE );
 }
-
-#if 0
-/*
- * ofa_extension_get_api_version:
- *
- * optional, defaults to 1.
- */
-guint
-ofa_extension_get_api_version( void )
-{
-	static const gchar *thisfn = "mysql/ofa_module_ofa_extension_get_api_version";
-	guint version;
-
-	version = 1;
-
-	g_debug( "%s: version=%d", thisfn, version );
-
-	return( version );
-}
-
-/*
- * ofa_extension_get_name:
- *
- * optional, defaults to NULL.
- */
-const gchar *
-ofa_extension_get_name( void )
-{
-	return( "MySQL Library" );
-}
-
-/*
- * ofa_extension_get_version_number:
- *
- * optional, defaults to NULL.
- */
-const gchar *
-ofa_extension_get_version_number( void )
-{
-	return( PACKAGE_VERSION );
-}
-#endif
 
 /*
  * ofa_extension_list_types:
@@ -106,12 +68,16 @@ ofa_extension_list_types( const GType **types )
 {
 	static const gchar *thisfn = "mysql/ofa_module_ofa_extension_list_types";
 	static GType types_list [1+OFA_TYPES_COUNT];
+	gint i = 0;
 
 	g_debug( "%s: types=%p", thisfn, ( void * ) types );
 
-	types_list[0] = OFA_TYPE_MYSQL;
+	types_list[i++] = OFA_TYPE_MYSQL_ID;
+	types_list[i++] = OFA_TYPE_MYSQL_DBMODEL;
+	types_list[i++] = OFA_TYPE_MYSQL_DBPROVIDER;
 
-	types_list[OFA_TYPES_COUNT] = 0;
+	g_return_val_if_fail( i == OFA_TYPES_COUNT, 0 );
+	types_list[i++] = 0;
 	*types = types_list;
 
 	return( OFA_TYPES_COUNT );

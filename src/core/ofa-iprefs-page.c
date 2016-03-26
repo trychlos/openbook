@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include "my/my-iident.h"
+
 #include "api/ofa-iprefs-page.h"
 #include "api/ofa-iprefs-provider.h"
 
@@ -264,7 +266,7 @@ ofa_iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **msgerr )
 
 /**
  * ofa_iprefs_page_apply:
- * @instance: this #ofaIPrefsPage instance.
+ * @instance: this # instance.
  * @msgerr: [allow-none][out]: an error message to be returned.
  *
  * Saves the user preferences.
@@ -289,6 +291,24 @@ ofa_iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr )
 	g_info( "%s: ofaIPrefsPage instance %p does not provide 'apply()' method",
 			thisfn, ( void * ) instance );
 	return( TRUE );
+}
+
+/*
+ * ofa_iprefs_page_get_display_name:
+ * @instance: this #ofaIPrefsPage instance.
+ *
+ * Returns: the displayable name of the @instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the @instance class.
+ */
+gchar *
+ofa_iprefs_page_get_display_name( const ofaIPrefsPage *instance )
+{
+	g_return_val_if_fail( instance && OFA_IS_IPREFS_PAGE( instance ), NULL );
+
+	return( MY_IS_IIDENT( instance ) ? my_iident_get_display_name( MY_IIDENT( instance ), NULL ) : NULL );
 }
 
 static sIPrefsPage *

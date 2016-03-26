@@ -33,14 +33,13 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-file-dir.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ihubber.h"
-#include "api/ofa-plugin.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-file-dir.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-about.h"
@@ -55,30 +54,28 @@
 /* private instance data
  */
 typedef struct {
-	gboolean               dispose_has_run;
+	gboolean         dispose_has_run;
 
 	/* properties
 	 */
-	GOptionEntry          *options;
-	gchar                 *application_name;
-	gchar                 *description;
-	gchar                 *icon_name;
-	ofaHub                *hub;
+	GOptionEntry    *options;
+	gchar           *application_name;
+	gchar           *description;
+	gchar           *icon_name;
+	ofaHub          *hub;
 
 	/* internals
 	 */
-	int                    argc;
-	GStrv                  argv;
-	int                    code;
-	ofaMainWindow         *main_window;
-	GMenuModel            *menu;
-	ofaFileDir            *file_dir;
-	ofaDossierStore       *dos_store;
-	ofaExtenderCollection *extenders;
+	int              argc;
+	GStrv            argv;
+	int              code;
+	ofaMainWindow   *main_window;
+	GMenuModel      *menu;
+	ofaDossierStore *dos_store;
 
 	/* menu items
 	 */
-	GSimpleAction         *action_open;
+	GSimpleAction   *action_open;
 }
 	ofaApplicationPrivate;
 
@@ -132,12 +129,6 @@ static       GOptionEntry st_option_entries[]   = {
 	{ NULL }
 };
 
-static void     ihubber_iface_init( ofaIHubberInterface *iface );
-static guint    ihubber_get_interface_version( const ofaIHubber *instance );
-static ofaHub  *ihubber_new_hub( ofaIHubber *instance, const ofaIDBConnect *connect );
-static ofaHub  *ihubber_get_hub( const ofaIHubber *instance );
-static void     ihubber_clear_hub( ofaIHubber *instance );
-
 static void     init_i18n( ofaApplication *application );
 static gboolean init_gtk_args( ofaApplication *application );
 static gboolean manage_options( ofaApplication *application );
@@ -148,7 +139,6 @@ static void     application_activate( GApplication *application );
 static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 static void     maintainer_test_function( void );
 
-static void     setup_actions_monitor( ofaApplication *application );
 static void     on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application );
 static void     enable_action_open( ofaApplication *application, gboolean enable );
 static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -162,8 +152,7 @@ static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer u
 static void     on_version( ofaApplication *application );
 
 G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0,
-		G_ADD_PRIVATE( ofaApplication )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IHUBBER, ihubber_iface_init ))
+		G_ADD_PRIVATE( ofaApplication ))
 
 static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
@@ -217,10 +206,8 @@ application_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->hub );
-		g_clear_object( &priv->file_dir );
 		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->menu );
-		g_clear_object( &priv->extenders );
 		ofa_settings_free();
 		my_utils_css_provider_free();
 	}
@@ -444,67 +431,6 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				G_TYPE_POINTER );
 }
 
-/*
- * ofaIHubber interface management
- */
-static void
-ihubber_iface_init( ofaIHubberInterface *iface )
-{
-	static const gchar *thisfn = "ofa_application_ihubber_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = ihubber_get_interface_version;
-	iface->new_hub = ihubber_new_hub;
-	iface->get_hub = ihubber_get_hub;
-	iface->clear_hub = ihubber_clear_hub;
-}
-
-static guint
-ihubber_get_interface_version( const ofaIHubber *instance )
-{
-	return( 1 );
-}
-
-static ofaHub *
-ihubber_new_hub( ofaIHubber *instance, const ofaIDBConnect *connect )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	g_clear_object( &priv->hub );
-	priv->hub = ofa_hub_new_with_connect( connect, priv->main_window ? GTK_WINDOW( priv->main_window ) : NULL );
-
-	return( priv->hub );
-}
-
-static ofaHub *
-ihubber_get_hub( const ofaIHubber *instance )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->hub );
-}
-
-static void
-ihubber_clear_hub( ofaIHubber *instance )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_clear_object( &priv->hub );
-}
-
 /**
  * ofa_application_new:
  *
@@ -513,7 +439,6 @@ ihubber_clear_hub( ofaIHubber *instance )
 ofaApplication *
 ofa_application_new( void )
 {
-	static const gchar *thisfn = "ofa_application_new";
 	ofaApplication *application;
 	ofaApplicationPrivate *priv;
 	ofaExtenderCollection *extenders;
@@ -754,6 +679,7 @@ application_startup( GApplication *application )
 	ofaApplicationPrivate *priv;
 	GtkBuilder *builder;
 	GMenuModel *menu;
+	ofaFileDir *file_dir;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -798,12 +724,16 @@ application_startup( GApplication *application )
 	/* let the plugins update these menu map/model */
 	g_signal_emit_by_name( application, "menu-defined", application );
 
-	/* setup the monitoring of action items */
-	setup_actions_monitor( OFA_APPLICATION( application ));
+	/* dossiers directory monitoring
+	 */
+	file_dir = ofa_file_dir_new( priv->hub );
+	g_signal_connect( file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
+	on_file_dir_changed( file_dir, ofa_file_dir_get_dossiers_count( file_dir ), NULL, appli );
+	ofa_hub_set_file_dir( priv->hub, file_dir );
 
 	/* takes the ownership on the dossier store so that we are sure
 	 * it will be available during the run */
-	priv->dos_store = ofa_dossier_store_new( priv->file_dir );
+	priv->dos_store = ofa_dossier_store_new( file_dir );
 }
 
 /*
@@ -856,6 +786,7 @@ application_activate( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_activate";
 	ofaApplicationPrivate *priv;
+	ofaFileDir *filedir;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 	GDate dbegin, dend;
@@ -879,7 +810,8 @@ application_activate( GApplication *application )
 	/* if a dossier is to be opened due to options specified in the
 	 * command-line */
 	if( st_dossier_name_opt ){
-		meta = ofa_file_dir_get_meta( priv->file_dir, st_dossier_name_opt );
+		filedir = ofa_hub_get_file_dir( priv->hub );
+		meta = ofa_file_dir_get_meta( filedir, st_dossier_name_opt );
 		period = NULL;
 		if( meta ){
 			if( !st_dossier_begin_opt && !st_dossier_end_opt ){
@@ -967,22 +899,6 @@ maintainer_test_function( void )
 /***** Starting here with functions which handle the menu options ****/
 /*                                                                   */
 /*                                                                   */
-static void
-setup_actions_monitor( ofaApplication *application )
-{
-	ofaApplicationPrivate *priv;
-
-	priv = ofa_application_get_instance_private( application );
-
-	/* dossiers directory monitoring
-	 */
-	priv->file_dir = ofa_file_dir_new();
-	g_signal_connect(
-			priv->file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
-	on_file_dir_changed(
-			priv->file_dir, ofa_file_dir_get_dossiers_count( priv->file_dir ), NULL, application );
-}
-
 static void
 on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application )
 {
@@ -1175,6 +1091,23 @@ on_version( ofaApplication *application )
 }
 
 /**
+ * ofa_application_get_hub:
+ */
+ofaHub *
+ofa_application_get_hub( const ofaApplication *application )
+{
+	ofaApplicationPrivate *priv;
+
+	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
+
+	priv = ofa_application_get_instance_private( application );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->hub );
+}
+
+/**
  * ofa_application_get_menu_model:
  */
 GMenuModel *
@@ -1207,50 +1140,4 @@ ofa_application_get_copyright( const ofaApplication *application )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( _( "Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)" ));
-}
-
-/**
- * ofa_application_get_file_dir:
- * @application:
- *
- * Returns: the #ofaFileDir object.
- *
- * The returned reference is owned by the @application object, and
- * should not be released by the caller.
- */
-ofaFileDir *
-ofa_application_get_file_dir( const ofaApplication *application )
-{
-	ofaApplicationPrivate *priv;
-
-	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
-
-	priv = ofa_application_get_instance_private( application );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->file_dir );
-}
-
-/**
- * ofa_application_get_extender_collection:
- * @application:
- *
- * Returns: the #ofaExtenderCollection collection.
- *
- * The returned reference is owned by the @application object, and
- * should not be released by the caller.
- */
-ofaExtenderCollection *
-ofa_application_get_extender_collection( const ofaApplication *application )
-{
-	ofaApplicationPrivate *priv;
-
-	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
-
-	priv = ofa_application_get_instance_private( application );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->extenders );
 }

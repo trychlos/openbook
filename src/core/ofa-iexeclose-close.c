@@ -33,7 +33,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-iexeclose-close.h"
-#include "api/ofa-plugin.h"
 #include "api/ofa-settings.h"
 
 #define IEXECLOSE_CLOSE_LAST_VERSION    1

@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include "my/my-iident.h"
+
 #include "ofa-recurrent.h"
 #include "ofa-recurrent-dbmodel.h"
 #include "ofa-recurrent-execlose.h"
@@ -36,13 +38,19 @@ struct _ofaRecurrentPrivate {
 	gboolean  dispose_has_run;
 };
 
+#define MODULE_DISPLAY_NAME              "Recurrent operations management"
+#define MODULE_VERSION                    PACKAGE_VERSION
+
 static GType         st_module_type     = 0;
 static GObjectClass *st_parent_class    = NULL;
 
-static void class_init( ofaRecurrentClass *klass );
-static void instance_init( GTypeInstance *instance, gpointer klass );
-static void instance_dispose( GObject *object );
-static void instance_finalize( GObject *object );
+static void   instance_finalize( GObject *object );
+static void   instance_dispose( GObject *object );
+static void   instance_init( GTypeInstance *instance, gpointer klass );
+static void   class_init( ofaRecurrentClass *klass );
+static void   iident_iface_init( myIIdentInterface *iface );
+static gchar *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar *iident_get_version( const myIIdent *instance, void *user_data );
 
 GType
 ofa_recurrent_get_type( void )
@@ -67,6 +75,12 @@ ofa_recurrent_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
+	static const GInterfaceInfo iident_iface_info = {
+		( GInterfaceInitFunc ) iident_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo idbmodel_iface_info = {
 		( GInterfaceInitFunc ) ofa_recurrent_dbmodel_iface_init,
 		NULL,
@@ -83,11 +97,11 @@ ofa_recurrent_register_type( GTypeModule *module )
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaRecurrent", &info, 0 );
 
-	g_type_module_add_interface(
-			module, st_module_type, OFA_TYPE_IDBMODEL, &idbmodel_iface_info );
+	g_type_module_add_interface( module, st_module_type, MY_TYPE_IIDENT, &iident_iface_info );
 
-	g_type_module_add_interface(
-			module, st_module_type, OFA_TYPE_IEXECLOSE_CLOSE, &iexeclose_iface_info );
+	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBMODEL, &idbmodel_iface_info );
+
+	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IEXECLOSE_CLOSE, &iexeclose_iface_info );
 }
 
 static void
@@ -158,4 +172,30 @@ instance_finalize( GObject *object )
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+}
+
+/*
+ * myIIdent interface management
+ */
+static void
+iident_iface_init( myIIdentInterface *iface )
+{
+	static const gchar *thisfn = "ofa_recurrent_iident_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_display_name = iident_get_display_name;
+	iface->get_version = iident_get_version;
+}
+
+static gchar *
+iident_get_display_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( MODULE_DISPLAY_NAME ));
+}
+
+static gchar *
+iident_get_version( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( MODULE_VERSION ));
 }

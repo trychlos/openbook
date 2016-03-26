@@ -31,7 +31,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-base.h"
@@ -472,7 +471,6 @@ ofaHub *
 ofa_page_get_hub( const ofaPage *page )
 {
 	ofaPagePrivate *priv;
-	GtkApplication *application;
 	ofaHub *hub;
 
 	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
@@ -480,10 +478,7 @@ ofa_page_get_hub( const ofaPage *page )
 
 	priv = ofa_page_get_instance_private( page );
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), NULL );
-
-	hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	return( hub );

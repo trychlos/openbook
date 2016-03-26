@@ -34,6 +34,7 @@
 #include <string.h>
 
 #include "my/my-date.h"
+#include "my/my-iident.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-file-format.h"
@@ -58,6 +59,34 @@ struct _ofaBoursoImporterPrivate {
 
 };
 
+#define IMPORTER_DISPLAY_NAME            "Boursorama tabulated BAT Importer"
+#define IMPORTER_VERSION                  PACKAGE_VERSION
+
+static GType         st_module_type     = 0;
+static GObjectClass *st_parent_class    = NULL;
+
+static void      importer_finalize( GObject *object );
+static void      importer_dispose( GObject *object );
+static void      instance_init( GTypeInstance *instance, gpointer klass );
+static void      class_init( ofaBoursoImporterClass *klass );
+static void      iident_iface_init( myIIdentInterface *iface );
+static gchar    *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar    *iident_get_version( const myIIdent *instance, void *user_data );
+static void      iimportable_iface_init( ofaIImportableInterface *iface );
+static guint     iimportable_get_interface_version( const ofaIImportable *bourso_importer );
+static gboolean  iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
+static guint     iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id );
+static GSList   *get_file_content( ofaIImportable *bourso_importer, const gchar *uri );
+static gboolean  bourso_excel95_v1_check( ofaBoursoImporter *bourso_importer );
+static ofsBat   *bourso_excel95_v1_import( ofaBoursoImporter *bourso_importer );
+static gboolean  bourso_excel2002_v1_check( ofaBoursoImporter *bourso_importer );
+static ofsBat   *bourso_excel2002_v1_import( ofaBoursoImporter *bourso_importer );
+static gboolean  bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar *thisfn );
+static ofsBat   *bourso_tabulated_text_v1_import( ofaBoursoImporter *importe, const gchar *thisfn );
+static gchar    *bourso_strip_field( gchar *str );
+static GDate    *scan_date_dmyy( GDate *date, const gchar *str );
+static gdouble   get_double( const gchar *str );
+
 /* a description of the import functions we are able to manage here
  */
 typedef struct {
@@ -68,34 +97,11 @@ typedef struct {
 }
 	ImportFormat;
 
-static gboolean bourso_excel95_v1_check( ofaBoursoImporter *bourso_importer );
-static ofsBat  *bourso_excel95_v1_import( ofaBoursoImporter *bourso_importer );
-static gboolean bourso_excel2002_v1_check( ofaBoursoImporter *bourso_importer );
-static ofsBat  *bourso_excel2002_v1_import( ofaBoursoImporter *bourso_importer );
-
 static ImportFormat st_import_formats[] = {
-		{ "Boursorama - Excel 95",        1, bourso_excel95_v1_check,     bourso_excel95_v1_import },
-		{ "Boursorama - Excel 2002",      1, bourso_excel2002_v1_check,   bourso_excel2002_v1_import },
+		{ "Boursorama - Excel 95",   1, bourso_excel95_v1_check,     bourso_excel95_v1_import },
+		{ "Boursorama - Excel 2002", 1, bourso_excel2002_v1_check,   bourso_excel2002_v1_import },
 		{ 0 }
 };
-
-static GType         st_module_type = 0;
-static GObjectClass *st_parent_class = NULL;
-
-static void         class_init( ofaBoursoImporterClass *klass );
-static void         instance_init( GTypeInstance *instance, gpointer klass );
-static void         instance_dispose( GObject *object );
-static void         instance_finalize( GObject *object );
-static void         iimportable_iface_init( ofaIImportableInterface *iface );
-static guint        iimportable_get_interface_version( const ofaIImportable *bourso_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id );
-static GSList      *get_file_content( ofaIImportable *bourso_importer, const gchar *uri );
-static gboolean     bourso_tabulated_text_v1_check( ofaBoursoImporter *bourso_importer, const gchar *thisfn );
-static ofsBat      *bourso_tabulated_text_v1_import( ofaBoursoImporter *importe, const gchar *thisfn );
-static gchar       *bourso_strip_field( gchar *str );
-static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
-static gdouble      get_double( const gchar *str );
 
 GType
 ofa_bourso_importer_get_type( void )
@@ -120,6 +126,12 @@ ofa_bourso_importer_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
+	static const GInterfaceInfo iident_iface_info = {
+		( GInterfaceInitFunc ) iident_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo iimportable_iface_info = {
 		( GInterfaceInitFunc ) iimportable_iface_init,
 		NULL,
@@ -130,22 +142,45 @@ ofa_bourso_importer_register_type( GTypeModule *module )
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaBoursoImporter", &info, 0 );
 
+	g_type_module_add_interface( module, st_module_type, MY_TYPE_IIDENT, &iident_iface_info );
+
 	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
 }
 
 static void
-class_init( ofaBoursoImporterClass *klass )
+importer_finalize( GObject *object )
 {
-	static const gchar *thisfn = "ofa_bourso_importer_class_init";
+	static const gchar *thisfn = "ofa_bourso_importer_finalize";
 
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+	g_return_if_fail( object && OFA_IS_BOURSO_IMPORTER( object ));
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	g_debug( "%s: object=%p (%s)",
+			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
-	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
-	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
+	/* free data members here */
 
-	g_type_class_add_private( klass, sizeof( ofaBoursoImporterPrivate ));
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+}
+
+static void
+importer_dispose( GObject *object )
+{
+	ofaBoursoImporterPrivate *priv;
+
+	g_return_if_fail( object && OFA_IS_BOURSO_IMPORTER( object ));
+
+	priv = OFA_BOURSO_IMPORTER( object )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( object );
 }
 
 static void
@@ -166,41 +201,49 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *object )
+class_init( ofaBoursoImporterClass *klass )
 {
-	ofaBoursoImporterPrivate *priv;
+	static const gchar *thisfn = "ofa_bourso_importer_class_init";
 
-	g_return_if_fail( object && OFA_IS_BOURSO_IMPORTER( object ));
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	priv = OFA_BOURSO_IMPORTER( object )->priv;
+	st_parent_class = g_type_class_peek_parent( klass );
 
-	if( !priv->dispose_has_run ){
+	G_OBJECT_CLASS( klass )->dispose = importer_dispose;
+	G_OBJECT_CLASS( klass )->finalize = importer_finalize;
 
-		priv->dispose_has_run = TRUE;
-
-		/* unref object members here */
-	}
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->dispose( object );
+	g_type_class_add_private( klass, sizeof( ofaBoursoImporterPrivate ));
 }
 
+/*
+ * myIIdent interface management
+ */
 static void
-instance_finalize( GObject *object )
+iident_iface_init( myIIdentInterface *iface )
 {
-	static const gchar *thisfn = "ofa_bourso_importer_instance_finalize";
+	static const gchar *thisfn = "ofa_bourso_importer_iident_iface_init";
 
-	g_return_if_fail( object && OFA_IS_BOURSO_IMPORTER( object ));
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	g_debug( "%s: object=%p (%s)",
-			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-	/* free data members here */
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+	iface->get_display_name = iident_get_display_name;
+	iface->get_version = iident_get_version;
 }
 
+static gchar *
+iident_get_display_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IMPORTER_DISPLAY_NAME ));
+}
+
+static gchar *
+iident_get_version( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IMPORTER_VERSION ));
+}
+
+/*
+ * ofaIImportable interface management
+ */
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {

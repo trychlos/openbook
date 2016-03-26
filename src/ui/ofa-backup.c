@@ -37,7 +37,6 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -183,16 +182,12 @@ static void
 init_dialog( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	GtkApplication *application;
 	gchar *last_folder, *def_name;
 	myISettings *settings;
 
 	priv = ofa_backup_get_instance_private( self );
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->connect = ofa_hub_get_connect( priv->hub );

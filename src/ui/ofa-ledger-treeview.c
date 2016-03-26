@@ -32,7 +32,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofo-ledger.h"
 
 #include "core/ofa-main-window.h"

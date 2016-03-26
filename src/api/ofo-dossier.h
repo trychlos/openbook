@@ -83,7 +83,7 @@ typedef struct {
 
 GType                ofo_dossier_get_type                  ( void ) G_GNUC_CONST;
 
-ofoDossier          *ofo_dossier_new_with_hub              ( ofaHub *hub );
+ofoDossier          *ofo_dossier_new                       ( ofaHub *hub );
 
 gboolean             ofo_dossier_use_account               ( const ofoDossier *dossier, const gchar *account );
 gboolean             ofo_dossier_use_currency              ( const ofoDossier *dossier, const gchar *currency );

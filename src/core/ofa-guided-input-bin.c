@@ -36,7 +36,6 @@
 #include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -382,16 +381,12 @@ static void
 setup_main_window( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
-	GtkApplication *application;
 	ofoDossier *dossier;
 	gulong handler;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_IHUBBER( application ));
-
-	priv->hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
+	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* setup from dossier

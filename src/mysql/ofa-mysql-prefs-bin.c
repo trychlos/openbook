@@ -30,14 +30,12 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-iident.h"
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-idbprovider.h"
 #include "api/ofa-iprefs-page.h"
 
-#include "ofa-mysql.h"
-#include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-prefs-bin.h"
 #include "ofa-mysql-user-prefs.h"
@@ -63,6 +61,8 @@ typedef struct {
 }
 	ofaMySQLPrefsBinPrivate;
 
+#define IPREFS_PAGE_CANON_NAME           "MySQL"
+
 /* signals defined here
  */
 enum {
@@ -74,6 +74,8 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-prefs-bin.ui";
 
+static void     iident_iface_init( myIIdentInterface *iface );
+static gchar   *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static void     iprefs_page_iface_init( ofaIPrefsPageInterface *iface );
 static guint    iprefs_page_get_interface_version( const ofaIPrefsPage *instance );
 static gboolean iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label, gchar **msgerr );
@@ -85,6 +87,7 @@ static void     on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMySQLPrefsBin )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPREFS_PAGE, iprefs_page_iface_init ))
 
 static void
@@ -180,6 +183,25 @@ ofa_mysql_prefs_bin_class_init( ofaMySQLPrefsBinClass *klass )
 }
 
 /*
+ * #myIIdent interface management
+ */
+static void
+iident_iface_init( myIIdentInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_prefs_bin_iident_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_canon_name = iident_get_canon_name;
+}
+
+static gchar *
+iident_get_canon_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IPREFS_PAGE_CANON_NAME ));
+}
+
+/*
  * ofaIPrefsPage interface management
  */
 static void
@@ -217,7 +239,7 @@ iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **
 	setup_bin( OFA_MYSQL_PREFS_BIN( instance ));
 
 	if( label ){
-		*label = g_strdup( ofa_mysql_idbprovider_get_provider_name());
+		*label = ofa_iprefs_page_get_display_name( instance );
 	}
 
 	return( TRUE );

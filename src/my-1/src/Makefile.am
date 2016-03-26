@@ -31,7 +31,6 @@ AM_CPPFLAGS += \
 	-I $(top_srcdir)/src								\
 	-DG_LOG_DOMAIN=\"MY\"								\
 	-DPKGCSSDIR=\"$(css_datadir)\"						\
-	-DPKGLIBDIR=\""$(pkglibdir)"\"						\
 	$(OPENBOOK_CFLAGS)									\
 	$(NULL)
 
@@ -60,28 +59,24 @@ nodist_liborgtrychlosmy1_la_OURCES = \
 
 liborgtrychlosmy1_la_SOURCES = \
 	my-date.c											\
+	my-date-combo.c										\
 	my-date-editable.c									\
 	my-date-renderer.c									\
-	my-date-combo.c										\
-	my-date-combo.h										\
 	my-decimal-combo.c									\
-	my-decimal-combo.h									\
 	my-double.c											\
 	my-double-editable.c								\
 	my-double-renderer.c								\
 	my-field-combo.c									\
-	my-field-combo.h									\
 	my-file-monitor.c									\
 	my-iassistant.c										\
 	my-idialog.c										\
-	my-iextender-id.c									\
+	my-iident.c											\
 	my-igridlist.c										\
 	my-iprogress.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
 	my-progress-bar.c									\
 	my-settings.c										\
-	my-settings.h										\
 	my-tab.c											\
 	my-timeout.c										\
 	my-utils.c											\

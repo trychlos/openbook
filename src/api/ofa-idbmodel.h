@@ -83,7 +83,6 @@ typedef struct _ofaIDBModel                    ofaIDBModel;
 /**
  * ofaIDBModelInterface:
  * @get_interface_version: [should]: returns the implemented version number.
- * @get_name: [should]: return an identification name.
  * @get_current_version: [should]: return the current version of the DB model.
  * @get_last_version: [should]: return the last version of the DB model.
  * @connect_handlers: [may]: let connect to the hub signaling system.
@@ -118,16 +117,6 @@ typedef struct {
 	 * Since: version 1
 	 */
 	guint         ( *get_interface_version )( const ofaIDBModel *instance );
-
-	/**
-	 * get_name:
-	 * @instance: the #ofaIDBModel provider.
-	 *
-	 * Returns: the identification name of the @instance.
-	 *
-	 * Since: version 1
-	 */
-	const gchar * ( *get_name )             ( const ofaIDBModel *instance );
 
 	/**
 	 * get_current_version:
@@ -212,7 +201,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean      ( *ddl_update )           ( const ofaIDBModel *instance,
+	gboolean      ( *ddl_update )           ( ofaIDBModel *instance,
 													ofaHub *hub,
 													myIProgress *window );
 
@@ -247,13 +236,19 @@ void         ofa_idbmodel_init_hub_signaling_system ( ofaHub *hub );
 gboolean     ofa_idbmodel_get_is_deletable          ( const ofaHub *hub,
 															const ofoBase *object );
 
-ofaIDBModel *ofa_idbmodel_get_by_name               ( const gchar *name );
+ofaIDBModel *ofa_idbmodel_get_by_name               ( const ofaHub *hub,
+															const gchar *name );
 
 guint        ofa_idbmodel_get_current_version       ( const ofaIDBModel *instance,
 															const ofaIDBConnect *connect );
 
 guint        ofa_idbmodel_get_last_version          ( const ofaIDBModel *instance,
 															const ofaIDBConnect *connect );
+
+gchar       *ofa_idbmodel_get_canon_name            ( const ofaIDBModel *instance );
+
+gchar       *ofa_idbmodel_get_version               ( const ofaIDBModel *instance,
+															ofaIDBConnect *connect );
 
 G_END_DECLS
 

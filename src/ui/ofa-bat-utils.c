@@ -32,7 +32,6 @@
 
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 
@@ -58,7 +57,6 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 	GtkWidget *file_chooser;
 	ofaFileFormat *settings;
 	ofaIImportable *importable;
-	GtkApplication *application;
 	ofaHub *hub;
 	gchar *uri, *str;
 
@@ -81,15 +79,12 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 		/* take the uri before clearing bat lines */
 		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));
 
-		importable = ofa_iimportable_find_willing_to( uri, settings );
+		hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
+
+		importable = ofa_iimportable_find_willing_to( hub, uri, settings );
 
 		if( importable ){
-			application = gtk_window_get_application( GTK_WINDOW( main_window ));
-			g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), 0 );
-
-			hub = ofa_ihubber_get_hub( OFA_IHUBBER( application ));
-			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
-
 			if( ofa_iimportable_import_uri( importable, hub, NULL, &imported_id ) > 0 ){
 				imported_id = 0;
 			}

@@ -45,6 +45,7 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta-def.h"
 
@@ -71,7 +72,7 @@ typedef struct {
 
 GType         ofa_file_dir_get_type            ( void ) G_GNUC_CONST;
 
-ofaFileDir   *ofa_file_dir_new                 ( void );
+ofaFileDir   *ofa_file_dir_new                 ( ofaHub *hub );
 
 GList        *ofa_file_dir_get_dossiers        ( ofaFileDir *dir );
 

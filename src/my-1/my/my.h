@@ -24,19 +24,21 @@
 #ifndef __MY_API_MY_H__
 #define __MY_API_MY_H__
 
-#include <my/my-cell-renderer-amount.h>
-#include <my/my-cell-renderer-date.h>
-#include <my/my-date-combo.h>
 #include <my/my-date.h>
+#include <my/my-date-combo.h>
+#include <my/my-date-editable.h>
+#include <my/my-date-renderer.h>
 #include <my/my-decimal-combo.h>
 #include <my/my-double.h>
-#include <my/my-editable-amount.h>
-#include <my/my-editable-date.h>
+#include <my/my-double-editable.h>
+#include <my/my-double-renderer.h>
 #include <my/my-field-combo.h>
 #include <my/my-file-monitor.h>
 #include <my/my-iassistant.h>
 #include <my/my-idialog.h>
 #include <my/my-igridlist.h>
+#include <my/my-iident.h>
+#include <my/my-iprogress.h>
 #include <my/my-isettings.h>
 #include <my/my-iwindow.h>
 #include <my/my-progress-bar.h>

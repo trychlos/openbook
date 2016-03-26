@@ -25,20 +25,24 @@ include ../make.inc
 my_include_HEADERS = \
 	my.h												\
 	my-date.h											\
+	my-date-combo.h										\
 	my-date-editable.h									\
 	my-date-renderer.h									\
+	my-decimal-combo.h									\
 	my-double.h											\
 	my-double-editable.h								\
 	my-double-renderer.h								\
+	my-field-combo.h									\
 	my-file-monitor.h									\
 	my-iassistant.h										\
 	my-idialog.h										\
-	my-iextender-id.h									\
+	my-iident.h											\
 	my-igridlist.h										\
 	my-iprogress.h										\
 	my-isettings.h										\
 	my-iwindow.h										\
 	my-progress-bar.h									\
+	my-settings.h										\
 	my-tab.h											\
 	my-timeout.h										\
 	my-utils.h											\

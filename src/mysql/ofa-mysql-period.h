@@ -36,8 +36,6 @@
 
 #include "my/my-isettings.h"
 
-#include "ofa-mysql-idbprovider.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_PERIOD                ( ofa_mysql_period_get_type())

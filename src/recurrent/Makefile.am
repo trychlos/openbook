@@ -39,10 +39,10 @@ AM_CPPFLAGS += \
 # They are distributed in the package, but not installed.
 resname = ofa_recurrent
 resxml = $(srcdir)/resources.xml
-resource_files = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
-resources.c: $(resxml) $(resource_files)
+resfiles = $(shell glib-compile-resources --sourcedir=$(srcdir) --generate-dependencies $(resxml))
+resources.c: $(resxml) $(resfiles)
 	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-source --c-name $(resname) $(resxml)
-resources.h: $(resxml) $(resource_files)
+resources.h: $(resxml) $(resfiles)
 	glib-compile-resources --target=$@ --sourcedir=$(srcdir) --generate-header --c-name $(resname) $(resxml)
 
 recurrent_built_sources = \

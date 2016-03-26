@@ -30,16 +30,21 @@
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-file-dir.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-settings.h"
-
-#include "ofa-file-dir.h"
 
 /* private instance data
  */
 typedef struct {
 	gboolean       dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub        *hub;
 
 	/* runtime data
 	 */
@@ -163,16 +168,23 @@ ofa_file_dir_class_init( ofaFileDirClass *klass )
 
 /**
  * ofa_file_dir_new:
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: a new reference to an #ofaFileDir object which should be
  * #g_object_unref() by the caller.
  */
 ofaFileDir *
-ofa_file_dir_new( void )
+ofa_file_dir_new( ofaHub *hub )
 {
 	ofaFileDir *dir;
+	ofaFileDirPrivate *priv;
 
 	dir = g_object_new( OFA_TYPE_FILE_DIR, NULL );
+
+	priv = ofa_file_dir_get_instance_private( dir );
+
+	priv->hub = hub;
+
 	setup_settings( dir );
 
 	return( dir );
@@ -270,6 +282,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 	ofaIDBMeta *meta;
 
 	priv = ofa_file_dir_get_instance_private( dir );
+
 	outlist = NULL;
 	prefix_len = my_strlen( FILE_DIR_DOSSIER_GROUP_PREFIX );
 	inlist = my_isettings_get_groups( priv->settings );
@@ -297,10 +310,11 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 				continue;
 			}
 			g_debug( "%s: dossier_name=%s is new, provider=%s", thisfn, dos_name, prov_name );
-			idbprovider = ofa_idbprovider_get_instance_by_name( prov_name );
-			meta = ofa_idbprovider_new_meta( idbprovider );
-			ofa_idbmeta_set_dossier_name( meta, dos_name );
-			g_object_unref( idbprovider );
+			idbprovider = ofa_idbprovider_get_by_name( priv->hub, prov_name );
+			if( idbprovider ){
+				meta = ofa_idbprovider_new_meta( idbprovider );
+				ofa_idbmeta_set_dossier_name( meta, dos_name );
+			}
 			g_free( prov_name );
 		}
 		ofa_idbmeta_set_from_settings( meta, MY_ISETTINGS( priv->settings ), cstr );
@@ -402,7 +416,7 @@ ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaI
 	ofaFileDirPrivate *priv;
 	gchar *group, *dossier_name;
 	ofaIDBProvider *prov_instance;
-	const gchar *prov_name;
+	gchar *prov_name;
 
 	g_debug( "%s: dir=%p, meta=%p, editor=%p",
 			thisfn, ( void * ) dir, ( void * ) meta, ( void * ) editor );
@@ -417,12 +431,15 @@ ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaI
 
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
+
 	prov_instance = ofa_idbeditor_get_provider( editor );
-	prov_name = ofa_idbprovider_get_name( prov_instance );
+	prov_name = ofa_idbprovider_get_canon_name( prov_instance );
+
 	my_isettings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
 
 	ofa_idbmeta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
 
+	g_free( prov_name );
 	g_object_unref( prov_instance );
 	g_free( group );
 	g_free( dossier_name );

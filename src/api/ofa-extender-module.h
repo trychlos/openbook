@@ -56,13 +56,22 @@ typedef struct {
 }
 	ofaExtenderModuleClass;
 
-GType              ofa_extender_module_get_type    ( void ) G_GNUC_CONST;
+GType              ofa_extender_module_get_type        ( void ) G_GNUC_CONST;
 
-ofaExtenderModule *ofa_extender_module_new         ( GApplication *application,
-															const gchar *filename );
+ofaExtenderModule *ofa_extender_module_new             ( GApplication *application,
+																const gchar *filename );
 
-GList             *ofa_extender_module_get_for_type( ofaExtenderModule *module,
+GList             *ofa_extender_module_get_for_type    ( ofaExtenderModule *module,
 															GType type );
+
+gchar             *ofa_extender_module_get_canon_name  ( const ofaExtenderModule *module );
+
+gchar             *ofa_extender_module_get_display_name( const ofaExtenderModule *module );
+
+gchar             *ofa_extender_module_get_version     ( const ofaExtenderModule *module );
+
+gboolean           ofa_extender_module_has_object      ( const ofaExtenderModule *module,
+																GObject *instance );
 
 G_END_DECLS
 

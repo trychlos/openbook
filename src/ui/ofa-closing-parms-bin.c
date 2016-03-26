@@ -32,7 +32,6 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"

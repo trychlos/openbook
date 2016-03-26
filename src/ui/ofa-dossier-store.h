@@ -49,7 +49,7 @@
  * always available during the run.
  */
 
-#include "core/ofa-file-dir.h"
+#include "api/ofa-file-dir.h"
 
 G_BEGIN_DECLS
 

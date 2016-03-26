@@ -30,10 +30,12 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-file-dir.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
 
-#include "core/ofa-file-dir.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-application.h"
@@ -56,6 +58,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaMainWindow  *main_window;
+	ofaHub         *hub;
 	ofaFileDir     *dir;
 
 	/* runtime data
@@ -68,7 +71,8 @@ typedef struct {
 /* columns in DBMS provider combo box
  */
 enum {
-	DBMS_COL_PROVIDER = 0,
+	DBMS_COL_NAME = 0,
+	DBMS_COL_PROVIDER,
 	DBMS_N_COLUMNS
 };
 
@@ -225,9 +229,15 @@ setup_bin( ofaDossierNewBin *self )
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *entry, *label;
-	GtkApplication *application;
 
 	priv = ofa_dossier_new_bin_get_instance_private( self );
+
+	/* setup file directory */
+	priv->hub = ofa_main_window_get_hub( priv->main_window );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->dir = ofa_hub_get_file_dir( priv->hub );
+	g_return_if_fail( priv->dir && OFA_IS_FILE_DIR( priv->dir ));
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -254,24 +264,19 @@ setup_bin( ofaDossierNewBin *self )
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
-
-	/* setup file directory */
-	application = gtk_window_get_application( GTK_WINDOW( priv->main_window ));
-	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
-
-	priv->dir = ofa_application_get_file_dir( OFA_APPLICATION( application ));
-	g_return_if_fail( priv->dir && OFA_IS_FILE_DIR( priv->dir ));
 }
 
 static void
 setup_dbms_provider( ofaDossierNewBin *self )
 {
 	ofaDossierNewBinPrivate *priv;
+	ofaExtenderCollection *extenders;
+	GList *modules, *it;
+	gchar *it_name;
 	GtkWidget *combo, *label;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeIter iter;
-	GList *prov_list, *ip;
 
 	priv = ofa_dossier_new_bin_get_instance_private( self );
 
@@ -281,28 +286,32 @@ setup_dbms_provider( ofaDossierNewBin *self )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			DBMS_N_COLUMNS,
-			G_TYPE_STRING ));
+			G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), tmodel );
 	g_object_unref( tmodel );
 
-	gtk_combo_box_set_id_column( GTK_COMBO_BOX( combo ), DBMS_COL_PROVIDER );
-
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DBMS_COL_PROVIDER );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DBMS_COL_NAME );
 
-	prov_list = ofa_idbprovider_get_list();
+	extenders = ofa_hub_get_extender_collection( priv->hub );
+	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBPROVIDER );
 
-	for( ip=prov_list ; ip ; ip=ip->next ){
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ),
-				&iter,
-				-1,
-				DBMS_COL_PROVIDER, ip->data,
-				-1 );
+	for( it=modules ; it ; it=it->next ){
+		it_name = ofa_idbprovider_get_display_name( OFA_IDBPROVIDER( it->data ));
+		if( my_strlen( it_name )){
+			gtk_list_store_insert_with_values(
+					GTK_LIST_STORE( tmodel ),
+					&iter,
+					-1,
+					DBMS_COL_NAME,     it_name,
+					DBMS_COL_PROVIDER, it->data,
+					-1 );
+		}
+		g_free( it_name );
 	}
 
-	ofa_idbprovider_free_list( prov_list );
+	ofa_extender_collection_free_types( modules );
 
 	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_dbms_provider_changed ), self );
 
@@ -385,8 +394,7 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 	ofaDossierNewBinPrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
-	GtkWidget *child, *label;
-	gchar *str, *prov_name;
+	GtkWidget *child;
 	ofaIDBProvider *prov_instance;
 
 	g_debug( "%s: combo=%p, self=%p", thisfn, ( void * ) combo, ( void * ) self );
@@ -414,31 +422,20 @@ on_dbms_provider_changed( GtkComboBox *combo, ofaDossierNewBin *self )
 		if( gtk_combo_box_get_active_iter( combo, &iter )){
 			tmodel = gtk_combo_box_get_model( combo );
 			gtk_tree_model_get( tmodel, &iter,
-					DBMS_COL_PROVIDER, &prov_name,
+					DBMS_COL_PROVIDER, &prov_instance,
 					-1 );
+			g_return_if_fail( prov_instance && OFA_IS_IDBPROVIDER( prov_instance ));
 
-			prov_instance = ofa_idbprovider_get_instance_by_name( prov_name );
-
-			if( prov_instance ){
-				/* let the DBMS initialize its own part */
-				priv->connect_infos = ofa_idbprovider_new_editor( prov_instance, TRUE );
-				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), GTK_WIDGET( priv->connect_infos ));
-				my_utils_size_group_add_size_group(
-						priv->group0, ofa_idbeditor_get_size_group( priv->connect_infos, 0 ));
-				priv->prov_handler =
-						g_signal_connect( priv->connect_infos,
-								"ofa-changed" , G_CALLBACK( on_connect_infos_changed ), self );
-
-			} else {
-				str = g_strdup_printf( _( "Unable to handle %s DBMS provider" ), prov_name );
-				label = gtk_label_new( str );
-				g_free( str );
-				gtk_label_set_line_wrap( GTK_LABEL( label ), TRUE );
-				gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), label );
-			}
+			/* let the DBMS initialize its own part */
+			priv->connect_infos = ofa_idbprovider_new_editor( prov_instance, TRUE );
+			gtk_container_add( GTK_CONTAINER( priv->connect_infos_parent ), GTK_WIDGET( priv->connect_infos ));
+			my_utils_size_group_add_size_group(
+					priv->group0, ofa_idbeditor_get_size_group( priv->connect_infos, 0 ));
+			priv->prov_handler =
+					g_signal_connect( priv->connect_infos,
+							"ofa-changed" , G_CALLBACK( on_connect_infos_changed ), self );
 
 			g_clear_object( &prov_instance );
-			g_free( prov_name );
 		}
 
 		changed_composite( self );
@@ -481,6 +478,7 @@ changed_composite( ofaDossierNewBin *self )
 gboolean
 ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_message )
 {
+	static const gchar *thisfn = "ofa_dossier_new_bin_get_valid";
 	ofaDossierNewBinPrivate *priv;
 	gboolean ok;
 	gchar *str;
@@ -520,6 +518,8 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
 	} else {
 		g_free( str );
 	}
+
+	g_debug( "%s: returns ok=%s, message=%s", thisfn, ok ? "True":"False", *error_message );
 
 	return( ok );
 }

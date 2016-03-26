@@ -235,3 +235,26 @@ ofa_extender_collection_free_types( GList *list )
 	g_list_foreach( list, ( GFunc ) g_object_unref, NULL );
 	g_list_free( list );
 }
+
+/*
+ * ofa_extender_collection_get_modules:
+ * @collection: this #ofaExtenderCollection instance.
+ *
+ * Returns: the list of currently loaded #ofaExtenderModule objects.
+ *
+ * The returned list is owned by the @collection instance, and should
+ * not be modified nor freed.
+ */
+const GList *
+ofa_extender_collection_get_modules( const ofaExtenderCollection *collection )
+{
+	ofaExtenderCollectionPrivate *priv;
+
+	g_return_val_if_fail( collection && OFA_IS_EXTENDER_COLLECTION( collection ), NULL );
+
+	priv = ofa_extender_collection_get_instance_private( collection );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const GList * ) priv->modules );
+}

@@ -35,7 +35,6 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-currency.h"

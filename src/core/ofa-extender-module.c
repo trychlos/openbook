@@ -29,6 +29,8 @@
 #include <glib.h>
 #include <gmodule.h>
 
+#include "my/my-iident.h"
+
 #include "api/ofa-extender-module.h"
 
 /* private instance data
@@ -377,4 +379,138 @@ ofa_extender_module_get_for_type( ofaExtenderModule *module, GType type )
 	}
 
 	return( objects );
+}
+
+/*
+ * ofa_extender_module_get_canon_name:
+ * @module: this #ofaExtenderModule instance.
+ *
+ * Returns: the canonical name of the @module instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the loadable library.
+ *
+ * If the library implements and advertizes several primary GType, we
+ * return here the name as provided by the first GObject which
+ * implements the interface.
+ */
+gchar *
+ofa_extender_module_get_canon_name( const ofaExtenderModule *module )
+{
+	ofaExtenderModulePrivate *priv;
+	GList *it;
+
+	g_return_val_if_fail( module && OFA_IS_EXTENDER_MODULE( module ), NULL );
+
+	priv = ofa_extender_module_get_instance_private( module );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	for( it=priv->objects ; it ; it=it->next ){
+		if( MY_IS_IIDENT( it->data )){
+			return( my_iident_get_canon_name( MY_IIDENT( it->data ), NULL ));
+		}
+	}
+
+	return( NULL );
+}
+
+/*
+ * ofa_extender_module_get_display_name:
+ * @module: this #ofaExtenderModule instance.
+ *
+ * Returns: the displayable name of the @module instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * The displayable name finally defaults to the basename of the library.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the loadable library.
+ *
+ * If the library implements and advertizes several primary GType, we
+ * return here the full name as provided by the first GObject which
+ * implements the interface.
+ */
+gchar *
+ofa_extender_module_get_display_name( const ofaExtenderModule *module )
+{
+	ofaExtenderModulePrivate *priv;
+	GList *it;
+
+	g_return_val_if_fail( module && OFA_IS_EXTENDER_MODULE( module ), NULL );
+
+	priv = ofa_extender_module_get_instance_private( module );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	for( it=priv->objects ; it ; it=it->next ){
+		if( MY_IS_IIDENT( it->data )){
+			return( my_iident_get_display_name( MY_IIDENT( it->data ), NULL ));
+		}
+	}
+
+	return( g_path_get_basename( priv->filename ));
+}
+
+/*
+ * ofa_extender_module_get_version:
+ * @module: this #ofaExtenderModule instance.
+ *
+ * Returns: the version string of the @module instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the loadable library.
+ *
+ * If the library implements and advertizes several primary GType, we
+ * return here the version string as provided by the first GObject which
+ * implements the interface.
+ */
+gchar *
+ofa_extender_module_get_version( const ofaExtenderModule *module )
+{
+	ofaExtenderModulePrivate *priv;
+	GList *it;
+
+	g_return_val_if_fail( module && OFA_IS_EXTENDER_MODULE( module ), NULL );
+
+	priv = ofa_extender_module_get_instance_private( module );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	for( it=priv->objects ; it ; it=it->next ){
+		if( MY_IS_IIDENT( it->data )){
+			return( my_iident_get_version( MY_IIDENT( it->data ), NULL ));
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofa_extender_module_has_object:
+ * @module:
+ * @instance: an instanciated object, for which we are searching for
+ *  its host plugin
+ */
+gboolean
+ofa_extender_module_has_object( const ofaExtenderModule *module, GObject *instance )
+{
+	ofaExtenderModulePrivate *priv;
+	GList *it;
+
+	g_return_val_if_fail( module && OFA_IS_EXTENDER_MODULE( module ), FALSE );
+
+	priv = ofa_extender_module_get_instance_private( module );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	for( it=priv->objects ; it ; it=it->next ){
+		if( G_OBJECT( it->data ) == instance ){
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
 }

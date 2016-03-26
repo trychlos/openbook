@@ -426,7 +426,18 @@
 
 1049 2016- 3-23 FEAT make ofaRecurrentModel importable
 
-1050
+1050 2016- 3-25 CODE merge the importers
+
+1051 2016- 3-26 FEAT add account import on dossier creation
+
+1052 2016- 3-26 CODE rename ofaFileDir to ofaPortfolioCollection
+                      ofaDossierStore to ofaPortfolioStore
+                      ofaIDBMeta to ofaPortfolioMeta
+                      ofaIDBPeriod to ofaPortfolioPeriod
+
+1053 2016- 3-26 CODE review the menu distribution
+
+1054
 
 -----------------------------------------------------------------------
  DONE

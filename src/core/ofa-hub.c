@@ -31,8 +31,6 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-dossier-prefs.h"
-#include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbmeta.h"
@@ -55,15 +53,12 @@
 typedef struct {
 	gboolean             dispose_has_run;
 
-	/* extenders
-	 */
-	GApplication          *application;
 	ofaExtenderCollection *extenders;
+	ofaFileDir            *filedir;
 
-
-	const ofaIDBConnect *connect;
-	ofoDossier          *dossier;
-	ofaDossierPrefs     *dossier_prefs;
+	ofaIDBConnect         *connect;
+	ofoDossier            *dossier;
+	ofaDossierPrefs       *dossier_prefs;
 }
 	ofaHubPrivate;
 
@@ -74,6 +69,8 @@ enum {
 	UPDATED_OBJECT,
 	DELETED_OBJECT,
 	RELOAD_DATASET,
+	DOSSIER_OPENED,
+	DOSSIER_CLOSED,
 	ENTRY_STATUS_COUNT,
 	ENTRY_STATUS_CHANGE,
 	EXE_DATES_CHANGED,
@@ -85,6 +82,7 @@ static gint st_signals[ N_SIGNALS ]     = { 0 };
 static void    icollector_iface_init( ofaICollectorInterface *iface );
 static guint   icollector_get_interface_version( const ofaICollector *instance );
 static void    isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
+static void    dossier_do_close( ofaHub *hub );
 static void    init_signaling_system( ofaHub *hub );
 static void    check_db_vs_settings( const ofaHub *hub );
 static GSList *get_lines_from_content( const gchar *content, const ofaFileFormat *settings, guint *errors );
@@ -126,11 +124,11 @@ hub_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->extenders );
 
-		g_clear_object( &priv->connect );
-		g_clear_object( &priv->dossier );
-		g_clear_object( &priv->dossier_prefs );
+		g_clear_object( &priv->extenders );
+		g_clear_object( &priv->filedir );
+
+		dossier_do_close( OFA_HUB( instance ));
 	}
 
 	G_OBJECT_CLASS( ofa_hub_parent_class )->dispose( instance );
@@ -268,6 +266,49 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_GTYPE );
 
 	/**
+	 * ofaHub::hub-dossier-opened:
+	 *
+	 * This signal is sent on the hub after it has opened a dossier.
+	 *
+	 * Handler is of type:
+	 * 		void user_handler( ofaHub   *hub,
+	 * 							gpointer user_data );
+	 */
+	st_signals[ DOSSIER_OPENED ] = g_signal_new_class_handler(
+				SIGNAL_HUB_DOSSIER_OPENED,
+				OFA_TYPE_HUB,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
+
+	/**
+	 * ofaHub::hub-dossier-closed:
+	 *
+	 * This signal is sent on the hub when it is about to close a
+	 * dossier.
+	 *
+	 * Handler is of type:
+	 * 		void user_handler( ofaHub   *hub,
+	 * 							gpointer user_data );
+	 */
+	st_signals[ DOSSIER_CLOSED ] = g_signal_new_class_handler(
+				SIGNAL_HUB_DOSSIER_CLOSED,
+				OFA_TYPE_HUB,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
+
+	/**
 	 * ofaHub::hub-status-count:
 	 *
 	 * This signal is sent on the hub before each batch of entry status
@@ -378,14 +419,6 @@ isingle_keeper_iface_init( ofaISingleKeeperInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
-#if 0
-if( ofa_plugin_load_modules( G_APPLICATION( application )) == -1 ){
--               g_error( "%s: unable to initialize application, aborting", thisfn );
--               g_clear_object( &application );
--       }
-
-#endif
-
 /**
  * ofa_hub_new:
  *
@@ -402,16 +435,37 @@ ofa_hub_new( void )
 }
 
 /**
- * ofa_hub_extenders_init:
+ * ofa_hub_get_extender_collection:
  * @hub: this #ofaHub instance.
- * @application: the running #GApplication application.
- * @extension_dir: the path to the directory where the modules are to
- *  be searched for.
  *
- * Initialize the extenders collection.
+ * Returns: the extenders collection.
+ *
+ * The returned reference is owned by the @hub instance, and should not
+ * be unreffed by the caller.
+ */
+ofaExtenderCollection *
+ofa_hub_get_extender_collection( const ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->extenders );
+}
+
+/**
+ * ofa_hub_set_extender_collection:
+ * @hub: this #ofaHub instance.
+ * @collection: the extender collection.
+ *
+ * Set the extender collection.
  */
 void
-ofa_hub_extenders_init( ofaHub *hub, GApplication *application, const gchar *extension_dir )
+ofa_hub_set_extender_collection( ofaHub *hub, ofaExtenderCollection *collection )
 {
 	ofaHubPrivate *priv;
 
@@ -421,40 +475,89 @@ ofa_hub_extenders_init( ofaHub *hub, GApplication *application, const gchar *ext
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->extenders = ofa_extender_collection_new( application, extension_dir );
+	priv->extenders = collection;
 }
 
-/*
- * ofa_hub_new_with_connect:
+/**
+ * ofa_hub_get_file_dir:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofaFileDir object which manages the collection of
+ * dossiers.
+ *
+ * The returned reference is owned by the @hub instance, and should not
+ * be unreffed by the caller.
+ */
+ofaFileDir *
+ofa_hub_get_file_dir( const ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->filedir );
+}
+
+/**
+ * ofa_hub_set_file_dir:
+ * @hub: this #ofaHub instance.
+ * @collection: the dossier collection.
+ *
+ * Set the extender collection.
+ */
+void
+ofa_hub_set_file_dir( ofaHub *hub, ofaFileDir *filedir )
+{
+	ofaHubPrivate *priv;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->filedir = filedir;
+}
+
+/**
+ * ofa_hub_dossier_open:
+ * @hub: this #ofaHub instance.
  * @connect: a valid connection to the targeted database.
  * @parent: the #GtkWindow parent window.
  *
- * Opens the dossier and exercice pointed to by the @connect connection.
- * On success, the new #ofaHub takes a reference on this @connect
+ * Open the dossier and exercice pointed to by the @connect connection.
+ * On success, the @hub object takes a reference on this @connect
  * connection, which thus may be then released by the caller.
  *
- * Returns: a new #ofaHub object, if the @connect connection was
- * eventually valid, %NULL else.
+ * This method is the canonical way of opening a dossier.
  *
- * This method is expected to be only called from #ofaIHubber::new_hub()
- * implementation.
+ * Returns: %TRUE if the dossier has been successully opened, %FALSE
+ * else.
  */
-ofaHub *
-ofa_hub_new_with_connect( const ofaIDBConnect *connect, GtkWindow *parent )
+gboolean
+ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent )
 {
-	ofaHub *hub;
 	ofaHubPrivate *priv;
 	gboolean ok;
 
-	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
-	hub = g_object_new( OFA_TYPE_HUB, NULL );
 	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	ofa_hub_dossier_close( hub );
+
 	priv->connect = g_object_ref(( gpointer ) connect );
 	ok = FALSE;
 
 	if( ofa_idbmodel_update( hub, parent )){
-		priv->dossier = ofo_dossier_new_with_hub( hub );
+		priv->dossier = ofo_dossier_new( hub );
 		if( priv->dossier ){
 			init_signaling_system( hub );
 			priv->dossier_prefs = ofa_dossier_prefs_new( hub );
@@ -463,10 +566,48 @@ ofa_hub_new_with_connect( const ofaIDBConnect *connect, GtkWindow *parent )
 	}
 
 	if( !ok ){
-		g_clear_object( &hub );
+		dossier_do_close( hub );
+	} else {
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_OPENED );
 	}
 
-	return( hub );
+	return( ok );
+}
+
+/**
+ * ofa_hub_dossier_close:
+ * @hub: this #ofaHub instance.
+ *
+ * Close the currently opened dossier if any.
+ *
+ * This method is the canonical way of closing a dossier.
+ */
+void
+ofa_hub_dossier_close( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CLOSED );
+
+	dossier_do_close( hub );
+}
+
+static void
+dossier_do_close( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_clear_object( &priv->connect );
+	g_clear_object( &priv->dossier );
+	g_clear_object( &priv->dossier_prefs );
 }
 
 /*

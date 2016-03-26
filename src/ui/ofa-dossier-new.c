@@ -34,17 +34,16 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-file-dir.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-admin-credentials-bin.h"
 #include "core/ofa-dbms-root-bin.h"
-#include "core/ofa-file-dir.h"
 #include "core/ofa-main-window.h"
 
 #include "ui/ofa-application.h"
@@ -502,7 +501,6 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	gchar *account, *password;
 	ofaIDBEditor *editor;
 	GtkApplicationWindow *main_window;
-	GtkApplication *application;
 	ofaHub *hub;
 
 	priv = ofa_dossier_new_get_instance_private( self );
@@ -570,18 +568,17 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 		g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		g_return_val_if_fail( application && GTK_IS_APPLICATION( application ), FALSE );
+		hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-		hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), connect );
-		if( hub ){
+		if( ofa_hub_dossier_open( hub, connect, GTK_WINDOW( main_window ))){
 			ofa_hub_remediate_settings( hub );
 			if( priv->b_properties ){
 				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_PROPERTIES );
 			}
 		} else {
 			ok = FALSE;
-			*msgerr = g_strdup( _( "Unable to get a hub on the newly created dossier" ));
+			*msgerr = g_strdup( _( "Unable to create the dossier" ));
 		}
 	}
 

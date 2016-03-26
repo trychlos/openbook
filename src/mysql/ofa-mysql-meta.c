@@ -30,10 +30,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-idbprovider.h"
 
 #include "ofa-mysql-editor-enter.h"
-#include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 

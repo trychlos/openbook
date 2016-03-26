@@ -28,11 +28,13 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-iident.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-plugin.h"
 
 #define IDBPROVIDER_LAST_VERSION        1
 
@@ -42,7 +44,6 @@ static GType           register_type( void );
 static void            interface_base_init( ofaIDBProviderInterface *klass );
 static void            interface_base_finalize( ofaIDBProviderInterface *klass );
 static ofaIDBProvider *get_provider_by_name( GList *modules, const gchar *name );
-static GList          *get_providers_list( GList *modules );
 
 /**
  * ofa_idbprovider_get_type:
@@ -250,51 +251,33 @@ ofa_idbprovider_new_editor( const ofaIDBProvider *instance, gboolean editable )
 }
 
 /**
- * ofa_idbprovider_get_name:
- * @instance: this #ofaIDBProvider instance.
- *
- * Returns: the name of this @instance.
- *
- * The returned string is owned by the #ofaIDBProvider instance, and
- * should not be released by the caller.
- */
-const gchar *
-ofa_idbprovider_get_name( const ofaIDBProvider *instance )
-{
-	static const gchar *thisfn = "ofa_idbprovider_get_name";
-
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
-
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name ){
-		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_provider_name( instance ));
-	}
-
-	g_info( "%s: ofaIDBProvider instance %p does not provide 'get_provider_name()' method",
-			thisfn, ( void * ) instance );
-	return( NULL );
-}
-
-/**
- * ofa_idbprovider_get_instance_by_name:
+ * ofa_idbprovider_get_by_name:
+ * @gub: the main #ofaHub object of the application.
  * @provider_name: the name of the provider as published in the
  *  settings.
  *
- * Returns: a new reference to the #ofaIDBProvider module instance
- * which publishes this name. This new reference should be
- * g_object_unref() by the caller.
+ * Returns: the #ofaIDBProvider module instance which publishes this
+ * canonical name.
+ *
+ * The returned reference is owned by the provider, and should not be
+ * unreffed by the caller.
  */
 ofaIDBProvider *
-ofa_idbprovider_get_instance_by_name( const gchar *provider_name )
+ofa_idbprovider_get_by_name( ofaHub *hub, const gchar *provider_name )
 {
-	static const gchar *thisfn = "ofa_idbprovider_get_instance_by_name";
+	static const gchar *thisfn = "ofa_idbprovider_get_by_name";
+	ofaExtenderCollection *extenders;
 	GList *modules;
 	ofaIDBProvider *module;
 
 	g_debug( "%s: provider_name=%s", thisfn, provider_name );
 
-	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBPROVIDER );
+	extenders = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBPROVIDER );
+
 	module = get_provider_by_name( modules, provider_name );
-	ofa_plugin_free_extensions( modules );
+
+	ofa_extender_collection_free_types( modules );
 
 	return( module );
 }
@@ -302,58 +285,54 @@ ofa_idbprovider_get_instance_by_name( const gchar *provider_name )
 static ofaIDBProvider *
 get_provider_by_name( GList *modules, const gchar *name )
 {
-	GList *im;
-	ofaIDBProvider *instance;
-	const gchar *provider_name;
+	GList *it;
+	gchar *it_name;
+	gint cmp;
 
-	instance = NULL;
-
-	for( im=modules ; im ; im=im->next ){
-		provider_name = ofa_idbprovider_get_name( OFA_IDBPROVIDER( im->data ));
-		if( !g_utf8_collate( provider_name, name )){
-			instance = g_object_ref( OFA_IDBPROVIDER( im->data ));
-			break;
+	for( it=modules ; it ; it=it->next ){
+		it_name = ofa_idbprovider_get_canon_name( OFA_IDBPROVIDER( it->data ));
+		cmp = my_collate( it_name, name );
+		g_free( it_name );
+		if( cmp == 0 ){
+			return( OFA_IDBPROVIDER( it->data ));
 		}
 	}
 
-	return( instance );
+	return( NULL );
 }
 
-/**
- * ofa_idbprovider_get_list:
+/*
+ * ofa_idbprovider_get_canon_name:
+ * @instance: this #ofaIDBProvider instance.
  *
- * Returns: the #GList of #ofaIDBProvider names, as a newly allocated
- *  list of newly allocated strings. The returned list should be
- *  #ofa_idbprovider_free_list() by the caller.
+ * Returns: the canonical name of the @instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the @instance class.
  */
-GList *
-ofa_idbprovider_get_list( void )
+gchar *
+ofa_idbprovider_get_canon_name( const ofaIDBProvider *instance )
 {
-	static const gchar *thisfn = "ofa_idbprovider_get_list";
-	GList *modules, *names;
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
-	g_debug( "%s:", thisfn );
-
-	modules = ofa_plugin_get_extensions_for_type( OFA_TYPE_IDBPROVIDER );
-	names = get_providers_list( modules );
-	ofa_plugin_free_extensions( modules );
-
-	return( names );
+	return( MY_IS_IIDENT( instance ) ? my_iident_get_canon_name( MY_IIDENT( instance ), NULL ) : NULL );
 }
 
-static GList *
-get_providers_list( GList *modules )
+/*
+ * ofa_idbprovider_get_display_name:
+ * @instance: this #ofaIDBProvider instance.
+ *
+ * Returns: the displayable name of the @instance, as a newly
+ * allocated string which should be g_free() by the caller, or %NULL.
+ *
+ * This method relies on the #myIIdent identification interface,
+ * which is expected to be implemented by the @instance class.
+ */
+gchar *
+ofa_idbprovider_get_display_name( const ofaIDBProvider *instance )
 {
-	GList *im;
-	GList *names;
-	const gchar *provider_name;
+	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
-	names = NULL;
-
-	for( im=modules ; im ; im=im->next ){
-		provider_name = ofa_idbprovider_get_name( OFA_IDBPROVIDER( im->data ));
-		names = g_list_prepend( names, g_strdup( provider_name ));
-	}
-
-	return( names );
+	return( MY_IS_IIDENT( instance ) ? my_iident_get_display_name( MY_IIDENT( instance ), NULL ) : NULL );
 }

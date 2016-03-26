@@ -38,7 +38,6 @@
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -78,30 +77,33 @@
 /* private instance data
  */
 typedef struct {
-	gboolean       dispose_has_run;
+	gboolean        dispose_has_run;
+
+	/* initialization
+	 */
+	ofaApplication *application;
 
 	/* internals
 	 */
-	gchar         *orig_title;
-	GtkGrid       *grid;
-	GtkMenuBar    *menubar;
-	GtkAccelGroup *accel_group;
-	GMenuModel    *menu;				/* the menu model when a dossier is opened */
-	GtkPaned      *pane;
-	GList         *themes;
-	guint          last_theme;
-	ofaHub        *hub;
+	gchar          *orig_title;
+	GtkGrid        *grid;
+	GtkMenuBar     *menubar;
+	GtkAccelGroup  *accel_group;
+	GMenuModel     *menu;				/* the menu model when a dossier is opened */
+	GtkPaned       *pane;
+	GList          *themes;
+	guint           last_theme;
 
 	/* menu items enabled status
 	 */
-	gboolean       dossier_begin;		/* whether the exercice beginning date is valid */
+	gboolean        dossier_begin;		/* whether the exercice beginning date is valid */
 
-	GSimpleAction *action_guided_input;
-	GSimpleAction *action_settlement;
-	GSimpleAction *action_reconciliation;
-	GSimpleAction *action_close_ledger;
-	GSimpleAction *action_close_exercice;
-	GSimpleAction *action_import;
+	GSimpleAction  *action_guided_input;
+	GSimpleAction  *action_settlement;
+	GSimpleAction  *action_reconciliation;
+	GSimpleAction  *action_close_ledger;
+	GSimpleAction  *action_close_exercice;
+	GSimpleAction  *action_import;
 }
 	ofaMainWindowPrivate;
 
@@ -318,11 +320,11 @@ static void             theme_defs_free( GList *themes );
 static void             theme_free( sThemeDef *def );
 static void             pane_save_position( GtkPaned *pane );
 static void             window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder );
+static void             hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *main_window );
+static void             hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window );
 static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void             on_hub_new( ofaIHubber *hubber, ofaHub *hub, ofaMainWindow *main_window );
-static void             do_open_dossier( ofaMainWindow *main_window );
-static void             on_hub_closed( ofaIHubber *hubber, ofaMainWindow *main_window );
-static void             do_close_dossier( ofaMainWindow *self );
+static void             do_open_dossier( ofaMainWindow *main_window, ofaHub *hub );
+static void             do_close_dossier( ofaMainWindow *self, ofaHub *hub );
 static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
 static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void             set_window_title( const ofaMainWindow *window );
@@ -404,7 +406,6 @@ main_window_dispose( GObject *instance )
 		close_all_pages( OFA_MAIN_WINDOW( instance ));
 
 		/* unref object members here */
-		g_clear_object( &priv->hub );
 		g_clear_object( &priv->menu );
 		theme_defs_free( priv->themes );
 	}
@@ -721,14 +722,14 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
  * Returns a newly allocated ofaMainWindow object.
  */
 ofaMainWindow *
-ofa_main_window_new( const ofaApplication *application )
+ofa_main_window_new( ofaApplication *application )
 {
 	static const gchar *thisfn = "ofa_main_window_new";
 	ofaMainWindow *window;
 	ofaMainWindowPrivate *priv;
+	ofaHub *hub;
 
 	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
-	g_return_val_if_fail( OFA_IS_IHUBBER( application ), NULL );
 
 	g_debug( "%s: application=%p", thisfn, application );
 
@@ -738,14 +739,16 @@ ofa_main_window_new( const ofaApplication *application )
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
 					"application", application,
 					NULL );
+
 	priv = ofa_main_window_get_instance_private( window );
 
-	/* connect to the ofaIHubber (ofaHub holder) signals
+	priv->application = application;
+
+	/* connect to the ofaHub signals
 	 */
-	g_signal_connect(
-			G_OBJECT( application ), SIGNAL_HUBBER_NEW, G_CALLBACK( on_hub_new ), window );
-	g_signal_connect(
-			G_OBJECT( application ), SIGNAL_HUBBER_CLOSED, G_CALLBACK( on_hub_closed ), window );
+	hub = ofa_main_window_get_hub( window );
+	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_OPENED, G_CALLBACK( hub_on_dossier_opened ), window );
+	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CLOSED, G_CALLBACK( hub_on_dossier_closed ), window );
 
 	/* let the plugins update these menu map/model
 	 * (here because application is not yet set in constructed() */
@@ -759,6 +762,18 @@ ofa_main_window_new( const ofaApplication *application )
 	set_menubar( window, ofa_application_get_menu_model( application ));
 
 	return( window );
+}
+
+static void
+hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *main_window )
+{
+	do_open_dossier( main_window, hub );
+}
+
+static void
+hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window )
+{
+	do_close_dossier( main_window, hub );
 }
 
 /*
@@ -790,24 +805,8 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 	return( !ok_to_quit );
 }
 
-/*
- * SIGNAL_HUBBER_NEW signal handler
- */
 static void
-on_hub_new( ofaIHubber *hubber, ofaHub *hub, ofaMainWindow *main_window )
-{
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	g_clear_object( &priv->hub );
-	priv->hub = g_object_ref( hub );
-
-	do_open_dossier( main_window );
-}
-
-static void
-do_open_dossier( ofaMainWindow *main_window )
+do_open_dossier( ofaMainWindow *main_window, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_main_window_do_open_dossier";
 	ofaMainWindowPrivate *priv;
@@ -828,7 +827,7 @@ do_open_dossier( ofaMainWindow *main_window )
 	set_menubar( main_window, priv->menu );
 
 	/* warns if begin or end of exercice is not set */
-	dossier = ofa_hub_get_dossier( priv->hub );
+	dossier = ofa_hub_get_dossier( hub );
 	exe_begin = ofo_dossier_get_exe_begin( dossier );
 	exe_end = ofo_dossier_get_exe_end( dossier );
 	if( !my_date_is_valid( exe_begin ) || !my_date_is_valid( exe_end )){
@@ -837,7 +836,7 @@ do_open_dossier( ofaMainWindow *main_window )
 
 	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_CHANGED, dossier );
 
-	prefs = ofa_hub_get_dossier_prefs( priv->hub );
+	prefs = ofa_hub_get_dossier_prefs( hub );
 
 	/* display dossier notes ? */
 	if( ofa_prefs_dossier_open_notes() || ofa_dossier_prefs_get_open_notes( prefs )){
@@ -870,43 +869,24 @@ do_open_dossier( ofaMainWindow *main_window )
 }
 
 /*
- * SIGNAL_HUBBER_CLOSED signal handler
- *
- * The signal is sent after hub finalization.
- */
-static void
-on_hub_closed( ofaIHubber *hubber, ofaMainWindow *main_window )
-{
-	static const gchar *thisfn = "ofa_main_window_on_hub_closed";
-	ofaMainWindowPrivate *priv;
-
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	g_debug( "%s: priv->hub=%p", thisfn, ( void * ) priv->hub );
-
-	do_close_dossier( main_window );
-}
-
-/*
  * this function may be executed after delete_event handler,
  * so after the main window has actually been destroyed
  */
 static void
-do_close_dossier( ofaMainWindow *self )
+do_close_dossier( ofaMainWindow *self, ofaHub *hub )
 {
-	ofaApplication *appli;
 	ofaMainWindowPrivate *priv;
-
 	priv = ofa_main_window_get_instance_private( self );
 
-	if( GTK_IS_WINDOW( self )){
+	if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( hub )){
+
+		close_all_pages( self );
 		my_iwindow_close_all();
 
 		gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 		priv->pane = NULL;
 
-		appli = OFA_APPLICATION( gtk_window_get_application( GTK_WINDOW( self )));
-		set_menubar( self, ofa_application_get_menu_model( appli ));
+		set_menubar( self, ofa_application_get_menu_model( priv->application ));
 		set_window_title( self );
 	}
 }
@@ -923,7 +903,7 @@ ofa_main_window_close_dossier( ofaMainWindow *main_window )
 {
 	static const gchar *thisfn = "ofa_main_window_close_dossier";
 	ofaMainWindowPrivate *priv;
-	GtkApplication *application;
+	ofaHub *hub;
 
 	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
 
@@ -933,12 +913,9 @@ ofa_main_window_close_dossier( ofaMainWindow *main_window )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	if( priv->hub ){
-		close_all_pages( main_window );
-		g_clear_object( &priv->hub );
-		application = gtk_window_get_application( GTK_WINDOW( main_window ));
-		ofa_ihubber_clear_hub( OFA_IHUBBER( application ));
-	}
+	hub = ofa_main_window_get_hub( main_window );
+
+	do_close_dossier( main_window, hub );
 }
 
 /**
@@ -1056,18 +1033,23 @@ extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *acc
 }
 
 static void
-set_window_title( const ofaMainWindow *window )
+set_window_title( const ofaMainWindow *self )
 {
 	ofaMainWindowPrivate *priv;
+	ofaHub *hub;
+	ofoDossier *dossier;
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 	gchar *title, *dos_name, *period_label, *period_name;
 
-	priv = ofa_main_window_get_instance_private( window );
+	priv = ofa_main_window_get_instance_private( self );
 
-	if( priv->hub ){
-		connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_main_window_get_hub( self );
+	dossier = ofa_hub_get_dossier( hub );
+
+	if( dossier ){
+		connect = ofa_hub_get_connect( hub );
 		meta = ofa_idbconnect_get_meta( connect );
 		period = ofa_idbconnect_get_period( connect );
 		dos_name = ofa_idbmeta_get_dossier_name( meta );
@@ -1090,7 +1072,7 @@ set_window_title( const ofaMainWindow *window )
 		title = g_strdup( priv->orig_title );
 	}
 
-	gtk_window_set_title( GTK_WINDOW( window ), title );
+	gtk_window_set_title( GTK_WINDOW( self ), title );
 	g_free( title );
 }
 
@@ -1306,23 +1288,22 @@ on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty )
 }
 
 static void
-do_update_menubar_items( ofaMainWindow *main_window )
+do_update_menubar_items( ofaMainWindow *self )
 {
-	ofaMainWindowPrivate *priv;
-	gboolean is_current;
+	ofaHub *hub;
 	ofoDossier *dossier;
+	gboolean is_current;
 
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	dossier = priv->hub ? ofa_hub_get_dossier( priv->hub ) : NULL;
+	hub = ofa_main_window_get_hub( self );
+	dossier = ofa_hub_get_dossier( hub );
 	is_current = dossier ? ofo_dossier_is_current( dossier ) : FALSE;
 
-	enable_action_guided_input( main_window, is_current );
-	enable_action_settlement( main_window, is_current );
-	enable_action_reconciliation( main_window, is_current );
-	enable_action_close_ledger( main_window, is_current );
-	enable_action_close_exercice( main_window, is_current );
-	enable_action_import( main_window, is_current );
+	enable_action_guided_input( self, is_current );
+	enable_action_settlement( self, is_current );
+	enable_action_reconciliation( self, is_current );
+	enable_action_close_ledger( self, is_current );
+	enable_action_close_exercice( self, is_current );
+	enable_action_import( self, is_current );
 }
 
 static void
@@ -1392,14 +1373,9 @@ static void
 on_dossier_properties( ofaMainWindow *window, void *empty )
 {
 	static const gchar *thisfn = "ofa_main_window_on_dossier_properties";
-	ofaMainWindowPrivate *priv;
 
 	g_debug( "%s: window=%p, empty=%p",
 			thisfn, ( void * ) window, ( void * ) empty );
-
-	priv = ofa_main_window_get_instance_private( window );
-
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	do_dossier_properties( window );
 }
@@ -1771,6 +1747,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 {
 	static const gchar *thisfn = "ofa_main_window_activate_theme";
 	ofaMainWindowPrivate *priv;
+	ofaHub *hub;
 	GtkNotebook *main_book;
 	ofaPage *page;
 	const sThemeDef *theme_def;
@@ -1786,6 +1763,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	page = NULL;
+	hub = ofa_main_window_get_hub( main_window );
 	main_book = main_get_book( main_window );
 	g_return_val_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ), NULL );
 
@@ -1794,7 +1772,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	g_return_val_if_fail( theme_def->fn_get_type, NULL );
 
 	if( theme_def->if_entries_allowed ){
-		dossier = ofa_hub_get_dossier( priv->hub );
+		dossier = ofa_hub_get_dossier( hub );
 		if( !ofo_dossier_is_current( dossier )){
 			warning_archived_dossier( main_window );
 			return( NULL );
@@ -2045,5 +2023,5 @@ ofa_main_window_get_hub( const ofaMainWindow *main_window )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->hub );
+	return( ofa_application_get_hub( priv->application ));
 }

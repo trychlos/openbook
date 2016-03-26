@@ -173,7 +173,9 @@ guint           ofa_iimportable_get_interface_last_version( void );
 
 /* an importer-oriented API
  */
-ofaIImportable *ofa_iimportable_find_willing_to   ( const gchar *uri, const ofaFileFormat *settings );
+ofaIImportable *ofa_iimportable_find_willing_to   ( ofaHub *hub,
+															const gchar *uri,
+															const ofaFileFormat *settings );
 
 gint            ofa_iimportable_import            ( ofaIImportable *importable,
 															GSList *lines,

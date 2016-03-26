@@ -319,6 +319,10 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 	entries = ofo_entry_get_dataset_for_print_general_books( priv->hub, NULL, NULL, dbegin, NULL );
 	count = g_list_length( entries );
 
+	if( count == 0 ){
+		set_bar_progression( self, bar, 0, 0 );
+	}
+
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
 		/* just slow a bit, else it is too fast */
 		/*g_usleep( 0.005*G_USEC_PER_SEC );*/
@@ -375,6 +379,10 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 	priv->ledgers_list = NULL;
 	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
+
+	if( count == 0 ){
+		set_bar_progression( self, bar, 0, 0 );
+	}
 
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
 		/*g_usleep( 0.005*G_USEC_PER_SEC );*/
@@ -436,6 +444,10 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 	priv->accounts_list = NULL;
 	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
+
+	if( count == 0 ){
+		set_bar_progression( self, bar, 0, 0 );
+	}
 
 	for( i=1, it=accounts ; it && count ; ++i, it=it->next ){
 		/*g_usleep( 0.005*G_USEC_PER_SEC );*/
@@ -559,9 +571,10 @@ set_bar_progression( ofaCheckBalancesBin *self, myProgressBar *bar, gulong total
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
 	if( priv->display ){
-		progress = ( gdouble ) current / ( gdouble ) total;
-		g_signal_emit_by_name( bar, "my-double", progress );
-
+		if( total ){
+			progress = ( gdouble ) current / ( gdouble ) total;
+			g_signal_emit_by_name( bar, "my-double", progress );
+		}
 		text = g_strdup_printf( "%lu/%lu", current, total );
 		g_signal_emit_by_name( bar, "my-text", text );
 		g_free( text );

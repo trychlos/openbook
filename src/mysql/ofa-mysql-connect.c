@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <mysql/mysql.h>
 #include <stdlib.h>
 
 #include "my/my-utils.h"
@@ -36,7 +37,6 @@
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
 
-#include "ofa-mysql.h"
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
 #include "ofa-mysql-editor-enter.h"

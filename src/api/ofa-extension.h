@@ -69,7 +69,7 @@
  *
  * See also #ofaExtenderModule documentation.
  *
- * It is suggested that loadable modules implement the #myExtenderId
+ * It is suggested that loadable modules implement the #myIIdent
  * interface, in order to be able to provide some identification
  * informations to the application.
  */

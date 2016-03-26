@@ -138,7 +138,7 @@ enum {
 
 GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
 
-ofaMainWindow *ofa_main_window_new               ( const ofaApplication *application );
+ofaMainWindow *ofa_main_window_new               ( ofaApplication *application );
 
 ofaPage       *ofa_main_window_activate_theme    ( const ofaMainWindow *window, gint theme_id );
 

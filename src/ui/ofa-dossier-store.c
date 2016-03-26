@@ -293,13 +293,12 @@ insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *
 static void
 set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter )
 {
-	gchar *dosname, *begin, *end, *status, *pername;
-	const gchar *provname;
+	gchar *dosname, *begin, *end, *status, *pername, *provname;
 	ofaIDBProvider *provider;
 
 	dosname = ofa_idbmeta_get_dossier_name( meta );
 	provider = ofa_idbmeta_get_provider( meta );
-	provname = ofa_idbprovider_get_name( provider );
+	provname = ofa_idbprovider_get_canon_name( provider );
 	g_object_unref( provider );
 
 	begin = my_date_to_str( ofa_idbperiod_get_begin_date( period ), ofa_prefs_date_display());
@@ -320,6 +319,7 @@ set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *per
 			DOSSIER_COL_PERIOD,   period,
 			-1 );
 
+	g_free( provname );
 	g_free( pername );
 	g_free( begin );
 	g_free( end );

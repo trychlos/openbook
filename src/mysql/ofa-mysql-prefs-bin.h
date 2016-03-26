@@ -40,8 +40,6 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-iprefs-provider-def.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_PREFS_BIN                ( ofa_mysql_prefs_bin_get_type())

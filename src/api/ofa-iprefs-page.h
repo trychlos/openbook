@@ -168,6 +168,8 @@ gboolean           ofa_iprefs_page_get_valid                 ( const ofaIPrefsPa
 gboolean           ofa_iprefs_page_apply                     ( const ofaIPrefsPage *instance,
 																	gchar **msgerr);
 
+gchar             *ofa_iprefs_page_get_display_name          ( const ofaIPrefsPage *instance );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_IPREFS_PAGE_H__ */

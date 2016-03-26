@@ -33,7 +33,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-settings.h"
@@ -554,7 +553,6 @@ do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 	GtkApplicationWindow *main_window;
-	GtkApplication *application;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -565,11 +563,10 @@ do_open_dossier( ofaDossierOpen *self )
 	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
 	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
 
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
-	g_return_val_if_fail( application && OFA_IS_IHUBBER( application ), FALSE );
+	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	hub = ofa_ihubber_new_hub( OFA_IHUBBER( application ), priv->connect );
-	if( hub ){
+	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( main_window ))){
 		ofa_hub_remediate_settings( hub );
 		ok = TRUE;
 	}

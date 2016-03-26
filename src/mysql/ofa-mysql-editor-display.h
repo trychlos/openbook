@@ -41,11 +41,6 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbeditor.h"
-#include "api/ofa-idbmeta-def.h"
-#include "api/ofa-idbperiod.h"
-#include "api/ofa-idbprovider-def.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_EDITOR_DISPLAY                ( ofa_mysql_editor_display_get_type())

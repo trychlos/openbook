@@ -30,9 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbperiod.h"
-#include "api/ofa-idbprovider.h"
 
-#include "ofa-mysql-idbprovider.h"
 #include "ofa-mysql-period.h"
 
 /* priv instance data

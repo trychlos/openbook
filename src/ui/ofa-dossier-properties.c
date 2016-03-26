@@ -41,7 +41,6 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
-#include "api/ofa-ihubber.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -526,8 +525,8 @@ init_counters_page( ofaDossierProperties *self )
 	ofaDossierPropertiesPrivate *priv;
 	GtkWidget *label;
 	ofaIDBModel *model;
-	const ofaIDBConnect *connect;
 	gchar *str;
+	const ofaIDBConnect *connect;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
@@ -569,13 +568,14 @@ init_counters_page( ofaDossierProperties *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-version" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	model = ofa_idbmodel_get_by_name( "CORE" );
+	model = ofa_idbmodel_get_by_name( priv->hub, "CORE" );
 	if( model ){
 		connect = ofa_hub_get_connect( priv->hub );
-		str = g_strdup_printf( "%u", ( ofa_idbmodel_get_current_version( model, connect )));
-		gtk_label_set_text( GTK_LABEL( label ), str );
+		str = ofa_idbmodel_get_version( model, OFA_IDBCONNECT( connect ));
+		if( my_strlen( str )){
+			gtk_label_set_text( GTK_LABEL( label ), str );
+		}
 		g_free( str );
-		g_object_unref( model );
 	}
 }
 

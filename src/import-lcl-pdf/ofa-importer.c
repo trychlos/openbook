@@ -35,6 +35,7 @@
 #include <string.h>
 
 #include "my/my-date.h"
+#include "my/my-iident.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -62,6 +63,9 @@ struct _ofaLclPdfImporterPrivate {
 
 };
 
+#define IMPORTER_DISPLAY_NAME            "LCL PDF Importer"
+#define IMPORTER_VERSION                  PACKAGE_VERSION
+
 typedef struct {
 	PopplerRectangle *rc;
 	gchar            *text;
@@ -78,24 +82,6 @@ typedef struct {
 }
 	sLine;
 
-/* a description of the import functions we are able to manage here
- */
-typedef struct {
-	const gchar *label;
-	gint         version;
-	gboolean   (*fnTest)  ( ofaLclPdfImporter *, const gchar * );
-	ofsBat *   (*fnImport)( ofaLclPdfImporter *, const gchar * );
-}
-	ImportFormat;
-
-static gboolean lcl_pdf_v1_check( ofaLclPdfImporter *importer, const gchar *uri );
-static ofsBat  *lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri );
-
-static ImportFormat st_import_formats[] = {
-		{ "LCL-PDF v1.2014", 1, lcl_pdf_v1_check, lcl_pdf_v1_import },
-		{ 0 }
-};
-
 /*static gdouble       st_date_min_x      = 35;*/
 static gdouble       st_label_min_x     = 70;
 static gdouble       st_valeur_min_x    = 360;
@@ -107,23 +93,43 @@ static gdouble       st_diff            = 1.5;		/* acceptable diff */
 static GType         st_module_type     = 0;
 static GObjectClass *st_parent_class    = NULL;
 
-static void         class_init( ofaLclPdfImporterClass *klass );
-static void         instance_init( GTypeInstance *instance, gpointer klass );
-static void         instance_dispose( GObject *object );
-static void         instance_finalize( GObject *object );
-static void         iimportable_iface_init( ofaIImportableInterface *iface );
-static guint        iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id );
-static ofsBat      *read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list );
-static void         read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint page_i, GList *rc_list );
-static GList       *get_ordered_layout_list( ofaLclPdfImporter *importer, PopplerPage *page );
-static gint         cmp_rectangles( sRC *a, sRC *b );
-static gboolean     get_dot_dmyy( GDate *date, const gchar *sdate );
-static void         get_dope_from_str( GDate *date, ofsBat *bat, const gchar *sdate );
-static sLine       *find_line( GList **lines, gdouble y );
-static void         free_rc( sRC *src );
-static void         free_line( sLine *line );
+static void      importer_finalize( GObject *object );
+static void      importer_dispose( GObject *object );
+static void      instance_init( GTypeInstance *instance, gpointer klass );
+static void      class_init( ofaLclPdfImporterClass *klass );
+static void      iident_iface_init( myIIdentInterface *iface );
+static gchar    *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar    *iident_get_version( const myIIdent *instance, void *user_data );
+static void      iimportable_iface_init( ofaIImportableInterface *iface );
+static guint     iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer );
+static gboolean  iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
+static guint     iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id );
+static gboolean  lcl_pdf_v1_check( ofaLclPdfImporter *importer, const gchar *uri );
+static ofsBat   *lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri );
+static ofsBat   *read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list );
+static void      read_lines( ofaLclPdfImporter *importer, ofsBat *bat, PopplerPage *page, gint page_i, GList *rc_list );
+static GList    *get_ordered_layout_list( ofaLclPdfImporter *importer, PopplerPage *page );
+static gint      cmp_rectangles( sRC *a, sRC *b );
+static gboolean  get_dot_dmyy( GDate *date, const gchar *sdate );
+static void      get_dope_from_str( GDate *date, ofsBat *bat, const gchar *sdate );
+static sLine    *find_line( GList **lines, gdouble y );
+static void      free_rc( sRC *src );
+static void      free_line( sLine *line );
+
+/* a description of the import functions we are able to manage here
+ */
+typedef struct {
+	const gchar *label;
+	gint         version;
+	gboolean   (*fnTest)  ( ofaLclPdfImporter *, const gchar * );
+	ofsBat *   (*fnImport)( ofaLclPdfImporter *, const gchar * );
+}
+	ImportFormat;
+
+static ImportFormat st_import_formats[] = {
+		{ "LCL-PDF v1.2014", 1, lcl_pdf_v1_check, lcl_pdf_v1_import },
+		{ 0 }
+};
 
 GType
 ofa_lcl_pdf_importer_get_type( void )
@@ -148,6 +154,12 @@ ofa_lcl_pdf_importer_register_type( GTypeModule *module )
 		( GInstanceInitFunc ) instance_init
 	};
 
+	static const GInterfaceInfo iident_iface_info = {
+		( GInterfaceInitFunc ) iident_iface_init,
+		NULL,
+		NULL
+	};
+
 	static const GInterfaceInfo iimportable_iface_info = {
 		( GInterfaceInitFunc ) iimportable_iface_init,
 		NULL,
@@ -158,22 +170,45 @@ ofa_lcl_pdf_importer_register_type( GTypeModule *module )
 
 	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaLclPdfImporter", &info, 0 );
 
+	g_type_module_add_interface( module, st_module_type, MY_TYPE_IIDENT, &iident_iface_info );
+
 	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IIMPORTABLE, &iimportable_iface_info );
 }
 
 static void
-class_init( ofaLclPdfImporterClass *klass )
+importer_finalize( GObject *object )
 {
-	static const gchar *thisfn = "ofa_lcl_pdf_importer_class_init";
+	static const gchar *thisfn = "ofa_lcl_pdf_importer_finalize";
 
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+	g_return_if_fail( object && OFA_IS_LCL_PDF_IMPORTER( object ));
 
-	st_parent_class = g_type_class_peek_parent( klass );
+	g_debug( "%s: object=%p (%s)",
+			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
-	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
-	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
+	/* free data members here */
 
-	g_type_class_add_private( klass, sizeof( ofaLclPdfImporterPrivate ));
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+}
+
+static void
+importer_dispose( GObject *object )
+{
+	ofaLclPdfImporterPrivate *priv;
+
+	g_return_if_fail( object && OFA_IS_LCL_PDF_IMPORTER( object ));
+
+	priv = OFA_LCL_PDF_IMPORTER( object )->priv;
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( st_parent_class )->dispose( object );
 }
 
 static void
@@ -194,41 +229,49 @@ instance_init( GTypeInstance *instance, gpointer klass )
 }
 
 static void
-instance_dispose( GObject *object )
+class_init( ofaLclPdfImporterClass *klass )
 {
-	ofaLclPdfImporterPrivate *priv;
+	static const gchar *thisfn = "ofa_lcl_pdf_importer_class_init";
 
-	g_return_if_fail( object && OFA_IS_LCL_PDF_IMPORTER( object ));
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	priv = OFA_LCL_PDF_IMPORTER( object )->priv;
+	st_parent_class = g_type_class_peek_parent( klass );
 
-	if( !priv->dispose_has_run ){
+	G_OBJECT_CLASS( klass )->dispose = importer_dispose;
+	G_OBJECT_CLASS( klass )->finalize = importer_finalize;
 
-		priv->dispose_has_run = TRUE;
-
-		/* unref object members here */
-	}
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->dispose( object );
+	g_type_class_add_private( klass, sizeof( ofaLclPdfImporterPrivate ));
 }
 
+/*
+ * myIIdent interface management
+ */
 static void
-instance_finalize( GObject *object )
+iident_iface_init( myIIdentInterface *iface )
 {
-	static const gchar *thisfn = "ofa_lcl_pdf_importer_instance_finalize";
+	static const gchar *thisfn = "ofa_lcl_pdf_importer_iident_iface_init";
 
-	g_return_if_fail( object && OFA_IS_LCL_PDF_IMPORTER( object ));
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	g_debug( "%s: object=%p (%s)",
-			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
-
-	/* free data members here */
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+	iface->get_display_name = iident_get_display_name;
+	iface->get_version = iident_get_version;
 }
 
+static gchar *
+iident_get_display_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IMPORTER_DISPLAY_NAME ));
+}
+
+static gchar *
+iident_get_version( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IMPORTER_VERSION ));
+}
+
+/*
+ * ofaIImportable interface management
+ */
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {

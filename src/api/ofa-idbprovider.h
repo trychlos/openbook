@@ -36,17 +36,22 @@
  *
  * This #ofaIDBProvider is dedicated to instance management.
  *
- * The #ofaIDBProvider instance should most probably also implement
- * the #ofaIDBModel interface (as it is its responsability to create
- * the underlying DB model).
+ * The module which provides an #ofaIDBProvider instance should most
+ * probably also provide an #ofaIDBModel implementation, as it is the
+ * IDBProvider responsability to create the underlying DB model.
  *
- * The application expects that #ofaIDBModel and #ofaIDBProvider
- * implementations both points to the same #GObject.
+ * As the two #ofaIDBProvider and #ofaIDBmodel must each provides their
+ * own identification, and because this identification relies on the
+ * myIIdent interface implementation, the #ofaIDBProvider and
+ * #ofaIDBmodel must be provided by distinct classes.
  *
  * This is an Openbook software suite choice to store most of the
  * meta data a dossier may require in a dedicated settings file.
  */
 
+#include <glib-object.h>
+
+#include "ofa-hub-def.h"
 #include "ofa-idbconnect.h"
 #include "ofa-idbeditor.h"
 #include "ofa-idbmeta-def.h"
@@ -67,7 +72,6 @@ typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
 /**
  * ofaIDBProviderInterface:
  * @get_interface_version: [should]: returns the implemented version number.
- * @get_provider_name: [must]: returns the identifier name of the DBMS provider.
  * @new_meta: [should]: returns a new ofaIDBMeta object.
  * @new_connect: [should]: returns a new ofaIDBConnect object.
  * @new_editor: [should]: returns a new ofaIDBEditor object.
@@ -98,25 +102,6 @@ struct _ofaIDBProviderInterface {
 	 * Since: version 1
 	 */
 	guint           ( *get_interface_version )( const ofaIDBProvider *instance );
-
-	/**
-	 * get_provider_name:
-	 * @instance: the #ofaIDBProvider provider.
-	 *
-	 * Returns the name of this DBMS provider.
-	 *
-	 * This name acts as an identifier for the DBMS provider, and is
-	 * not localized. It is recorded in the user configuration file as
-	 * an access key to the dossier external properties.
-	 *
-	 * Returns: the name of this DBMS provider.
-	 *
-	 * The returned value is owned by the DBMS provider, and should not
-	 * be released by the caller.
-	 *
-	 * Since: version 1
-	 */
-	const gchar *   ( *get_provider_name )    ( const ofaIDBProvider *instance );
 
 	/**
 	 * new_meta:
@@ -161,16 +146,14 @@ ofaIDBMeta     *ofa_idbprovider_new_meta                  ( const ofaIDBProvider
 ofaIDBConnect  *ofa_idbprovider_new_connect               ( const ofaIDBProvider *instance );
 
 ofaIDBEditor   *ofa_idbprovider_new_editor                ( const ofaIDBProvider *instance,
-																	gboolean editable );
+																gboolean editable );
 
-const gchar    *ofa_idbprovider_get_name                  ( const ofaIDBProvider *instance );
+ofaIDBProvider *ofa_idbprovider_get_by_name               ( ofaHub *hub,
+																const gchar *provider_name );
 
-ofaIDBProvider *ofa_idbprovider_get_instance_by_name      ( const gchar *provider_name );
+gchar          *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *instance );
 
-GList          *ofa_idbprovider_get_list                  ( void );
-
-#define         ofa_idbprovider_free_list( L )            g_debug( "ofa_idbprovider_free_list: list=%p, count=%d", ( void * )( L ), g_list_length( L )); \
-																	g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+gchar          *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *instance );
 
 G_END_DECLS
 
