@@ -99,13 +99,13 @@ G_BEGIN_DECLS
 #if 0
 typedef struct                        ofaPage;
 typedef struct                        ofaPageClass;
-typedef struct _ofaPagePrivate        ofaPagePrivate;
 typedef struct _ofaPageProtected      ofaPageProtected;
 #endif
 
 /**
  * Properties set against this base class at instanciation time
  */
+#define PAGE_PROP_GETTER                "page-prop-getter"
 #define PAGE_PROP_MAIN_WINDOW           "page-prop-main-window"
 #define PAGE_PROP_THEME                 "page-prop-theme"
 

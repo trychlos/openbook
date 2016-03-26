@@ -38,12 +38,11 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "tva/ofa-tva-form-properties.h"
 #include "tva/ofo-tva-form.h"
@@ -55,7 +54,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub        *hub;
+	ofaIGetter    *getter;
 	gboolean       is_current;
 	ofoTVAForm    *tva_form;
 	gboolean       is_new;
@@ -220,28 +219,31 @@ ofa_tva_form_properties_class_init( ofaTVAFormPropertiesClass *klass )
 
 /**
  * ofa_tva_form_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the parent window.
  * @form: the #ofoTVAForm to be displayed/updated.
  *
  * Update the properties of a tva_form.
  */
 void
-ofa_tva_form_properties_run( const ofaMainWindow *main_window, ofoTVAForm *form )
+ofa_tva_form_properties_run( ofaIGetter *getter, GtkWidget *parent, ofoTVAForm *form )
 {
 	static const gchar *thisfn = "ofa_tva_form_properties_run";
 	ofaTVAFormProperties *self;
 	ofaTVAFormPropertiesPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
-	g_debug( "%s: main_window=%p, form=%p",
-			thisfn, ( void * ) main_window, ( void * ) form );
+	g_debug( "%s: getter=%p, parent=%p, form=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) form );
 
 	self = g_object_new( OFA_TYPE_TVA_FORM_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent ? GTK_WINDOW( parent ) : NULL );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->tva_form = form;
 
 	/* after this call, @self may be invalid */
@@ -303,13 +305,13 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_tva_form_properties_idialog_init";
 	ofaTVAFormPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
 	guint count, idx;
 	gchar *title;
 	const gchar *mnemo;
 	GtkEntry *entry;
 	GtkWidget *label;
+	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -319,13 +321,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -739,15 +736,17 @@ is_dialog_validable( ofaTVAFormProperties *self )
 	ofaTVAFormPropertiesPrivate *priv;
 	gboolean ok, exists, subok;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	msgerr = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	ok = ofo_tva_form_is_valid_data( priv->mnemo, &msgerr );
-	//g_debug( "is_dialog_validable: is_valid=%s", ok ? "True":"False" );
 
 	if( ok ){
-		exists = ( ofo_tva_form_get_by_mnemo( priv->hub, priv->mnemo ) != NULL );
+		exists = ( ofo_tva_form_get_by_mnemo( hub, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_tva_form_get_mnemo( priv->tva_form ));
 		ok = !exists || subok;
@@ -776,10 +775,13 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	gchar *prev_mnemo;
 	guint rows_count, level;
 	gboolean ok;
+	ofaHub *hub;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_tva_form_get_mnemo( priv->tva_form ));
 
@@ -831,7 +833,7 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	}
 
 	if( priv->is_new ){
-		ok = ofo_tva_form_insert( priv->tva_form, priv->hub );
+		ok = ofo_tva_form_insert( priv->tva_form, hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new VAT form" ));
 		}

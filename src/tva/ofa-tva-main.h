@@ -40,8 +40,6 @@ G_BEGIN_DECLS
 
 void  ofa_tva_main_signal_connect( ofaIGetter *getter );
 
-guint ofa_tva_main_get_theme     ( const gchar *action_name );
-
 G_END_DECLS
 
 #endif /* __OFA_TVA_MAIN_H__ */

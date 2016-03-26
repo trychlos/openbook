@@ -45,7 +45,7 @@
  * - current:    yes
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 #include "tva/ofo-tva-form.h"
 
@@ -72,7 +72,8 @@ typedef struct {
 
 GType ofa_tva_form_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_tva_form_properties_run     ( const ofaMainWindow *main_window,
+void  ofa_tva_form_properties_run     ( ofaIGetter *getter,
+											GtkWidget *parent,
 											ofoTVAForm *form );
 
 G_END_DECLS

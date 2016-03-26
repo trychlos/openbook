@@ -66,27 +66,27 @@ static void on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer 
 /* all the actions added for the TVA modules
  */
 static const GActionEntry st_win_entries[] = {
-		{ "declare",  on_tva_declare,  NULL, NULL, NULL },
-		{ "manage",  on_tva_manage,  NULL, NULL, NULL },
+		{ "vat-declare",  on_tva_declare,  NULL, NULL, NULL },
+		{ "vat-manage",  on_tva_manage,  NULL, NULL, NULL },
 };
 
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "declare", N_( "VAT _declarations..." ) },
+		{ "vat-declare", N_( "VAT _declarations..." ) },
 		{ 0 }
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "manage", N_( "VAT _forms management..." ) },
+		{ "vat-manage", N_( "VAT _forms management..." ) },
 		{ 0 }
 };
 
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "declare",  N_( "VAT _declarations" ),  ofa_tva_declare_page_get_type },
-		{ "manage",  N_( "VAT _forms management" ),  ofa_tva_manage_page_get_type },
+		{ "vat-declare",  N_( "VAT _declarations" ),  ofa_tva_declare_page_get_type },
+		{ "vat-manage",  N_( "VAT _forms management" ),  ofa_tva_manage_page_get_type },
 		{ 0 }
 };
 
@@ -207,22 +207,4 @@ on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
 	ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_MANAGE_PAGE );
-}
-
-/**
- * ofa_tva_module_get_theme:
- */
-guint
-ofa_tva_main_get_theme( const gchar *action_name )
-{
-	guint i;
-
-	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
-		if( !g_utf8_collate( st_theme_defs[i].action_name, action_name )){
-			//return( st_theme_defs[i].theme_id );
-			return( 0 );
-		}
-	}
-
-	return( 0 );
 }

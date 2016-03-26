@@ -372,8 +372,6 @@ static void              do_close( ofaPage *page );
 static void              on_tab_pin_clicked( myTab *tab, ofaPage *page );
 static void              on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
 static void              close_all_pages( ofaMainWindow *main_window );
-static guint             on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
-static void              on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
 static void              do_dossier_properties( ofaMainWindow *main_window );
 static void              igetter_iface_init( ofaIGetterInterface *iface );
 static GApplication     *igetter_get_application( const ofaIGetter *instance );
@@ -1844,7 +1842,7 @@ notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sTheme
 	GtkWidget *label;
 
 	/* the top child of the notebook page */
-	page = g_object_new( def->type, PAGE_PROP_MAIN_WINDOW, main, NULL );
+	page = g_object_new( def->type, PAGE_PROP_GETTER, main, NULL );
 
 	/* the tab widget */
 	tab = my_tab_new( NULL, gettext( def->label ));
@@ -1965,35 +1963,6 @@ close_all_pages( ofaMainWindow *main_window )
 		}
 	}
 	ofa_nomodal_page_close_all();
-}
-
-static guint
-on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty )
-{
-	static const gchar *thisfn = "ofa_main_window_on_add_theme";
-	ofaMainWindowPrivate *priv;
-	sThemeOldDef *def;
-
-	g_debug( "%s: main_window=%p, theme_name=%s, fntype=%p, with_entries=%s, empty=%p",
-			thisfn,( void * ) main_window, theme_name, fntype, with_entries ? "True":"False", empty );
-
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	def = g_new0( sThemeOldDef, 1 );
-	def->label = g_strdup( theme_name );
-	def->fn_get_type = fntype;
-	def->if_entries_allowed = with_entries;
-	priv->last_theme += 1;
-	def->theme_id = priv->last_theme;
-	priv->themes = g_list_prepend( priv->themes, def );
-
-	return( def->theme_id );
-}
-
-static void
-on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty )
-{
-	ofa_main_window_activate_theme( main_window, theme_id );
 }
 
 static void

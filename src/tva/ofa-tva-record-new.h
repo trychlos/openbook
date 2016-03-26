@@ -42,7 +42,9 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 
 #include "tva/ofo-tva-record.h"
 
@@ -69,7 +71,8 @@ typedef struct {
 
 GType ofa_tva_record_new_get_type( void ) G_GNUC_CONST;
 
-void  ofa_tva_record_new_run     ( const ofaMainWindow *main_window,
+void  ofa_tva_record_new_run     ( ofaIGetter *getter,
+										GtkWidget *parent,
 										ofoTVARecord *record );
 
 G_END_DECLS

@@ -33,12 +33,11 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "tva/ofa-tva-declare-page.h"
 #include "tva/ofa-tva-record-properties.h"
@@ -51,7 +50,6 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub       *hub;
 	gboolean      is_current;
 
 	/* UI
@@ -143,15 +141,14 @@ v_setup_view( ofaPage *page )
 	ofaTVADeclarePagePrivate *priv;
 	ofoDossier *dossier;
 	GtkWidget *grid, *widget;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_tva_declare_page_get_instance_private( OFA_TVA_DECLARE_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -176,6 +173,7 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	ofaTVARecordStore *store;
+	ofaHub *hub;
 
 	priv = ofa_tva_declare_page_get_instance_private( self );
 
@@ -194,7 +192,8 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_treeview_key_pressed ), self );
 	gtk_container_add( GTK_CONTAINER( scrolled ), tview );
 
-	store = ofa_tva_record_store_new( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	store = ofa_tva_record_store_new( hub );
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), GTK_TREE_MODEL( store ));
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -364,11 +363,13 @@ on_update_clicked( GtkButton *button, ofaTVADeclarePage *page )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVARecord *record;
+	GtkWidget *toplevel;
 
 	record = treeview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
-	ofa_tva_record_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), record );
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( page ));
+	ofa_tva_record_properties_run( OFA_IGETTER( page ), toplevel, record );
 	/* update is taken into account by dossier signaling system */
 
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));

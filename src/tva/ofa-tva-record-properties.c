@@ -38,14 +38,13 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofs-account-balance.h"
-
-#include "core/ofa-main-window.h"
 
 #include "tva/ofa-tva-record-properties.h"
 #include "tva/ofo-tva-record.h"
@@ -57,11 +56,11 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIGetter   *getter;
 	ofoTVARecord *tva_record;
 
 	/* internals
 	 */
-	ofaHub       *hub;
 	gboolean      is_current;
 
 	/* UI
@@ -216,28 +215,31 @@ ofa_tva_record_properties_class_init( ofaTVARecordPropertiesClass *klass )
 
 /**
  * ofa_tva_record_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the parent window.
  * @record: the #ofoTVARecord to be displayed/updated.
  *
  * Update the properties of a tva_form.
  */
 void
-ofa_tva_record_properties_run( const ofaMainWindow *main_window, ofoTVARecord *record )
+ofa_tva_record_properties_run( ofaIGetter *getter, GtkWidget *parent, ofoTVARecord *record )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_run";
 	ofaTVARecordProperties *self;
 	ofaTVARecordPropertiesPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
-	g_debug( "%s: main_window=%p, record=%p",
-			thisfn, ( void * ) main_window, ( void * ) record );
+	g_debug( "%s: getter=%p, parent=%p, record=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) record );
 
 	self = g_object_new( OFA_TYPE_TVA_RECORD_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent ? GTK_WINDOW( parent ) : NULL );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->tva_record = record;
 
 	/* after this call, @self may be invalid */
@@ -299,8 +301,8 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofoDossier *dossier;
+	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -318,13 +320,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
 	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->is_current = ofo_dossier_is_current( dossier );
 
@@ -647,10 +644,12 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	const gchar *mnemo;
 	const GDate *dend;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	msgerr = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	if( priv->is_current ){
 
@@ -663,7 +662,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 				end_date_has_changed = my_date_compare( &priv->init_end_date, dend ) != 0;
 				if( end_date_has_changed ){
 					mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-					exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
+					exists = ( ofo_tva_record_get_by_key( hub, mnemo, dend ) != NULL );
 					if( exists ){
 						set_msgerr( self, _( "Same declaration is already defined" ));
 						is_valid = FALSE;
@@ -983,6 +982,7 @@ get_account_balance( ofaTVARecordProperties *self, const gchar *content )
 	ofxAmount amount;
 	gchar *begin_id, *end_id;
 	gchar **array;
+	ofaHub *hub;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
@@ -996,8 +996,10 @@ get_account_balance( ofaTVARecordProperties *self, const gchar *content )
 	}
 	DEBUG( "%s: begin_id=%s, endid=%s", thisfn, begin_id, end_id );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	list = ofo_entry_get_dataset_balance_rough_validated(
-				priv->hub, begin_id, end_id, &priv->begin_date, &priv->end_date );
+				hub, begin_id, end_id, &priv->begin_date, &priv->end_date );
 	amount = 0;
 	for( it=list ; it ; it=it->next ){
 		sbal = ( ofsAccountBalance * ) it->data;

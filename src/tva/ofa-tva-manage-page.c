@@ -34,13 +34,12 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "tva/ofa-tva-declare-page.h"
 #include "tva/ofa-tva-form-properties.h"
@@ -57,7 +56,6 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub              *hub;
 	gboolean             is_current;
 
 	/* UI
@@ -151,15 +149,14 @@ v_setup_view( ofaPage *page )
 	ofaTVAManagePagePrivate *priv;
 	ofoDossier *dossier;
 	GtkWidget *grid, *widget;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_tva_manage_page_get_instance_private( OFA_TVA_MANAGE_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -184,6 +181,7 @@ setup_form_treeview( ofaTVAManagePage *self )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	ofaTVAFormStore *store;
+	ofaHub *hub;
 
 	priv = ofa_tva_manage_page_get_instance_private( self );
 
@@ -202,7 +200,8 @@ setup_form_treeview( ofaTVAManagePage *self )
 	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_treeview_key_pressed ), self );
 	gtk_container_add( GTK_CONTAINER( scrolled ), tview );
 
-	store = ofa_tva_form_store_new( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	store = ofa_tva_form_store_new( hub );
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), GTK_TREE_MODEL( store ));
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -362,9 +361,11 @@ static void
 on_new_clicked( GtkButton *button, ofaTVAManagePage *self )
 {
 	ofoTVAForm *form;
+	GtkWidget *toplevel;
 
 	form = ofo_tva_form_new();
-	ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), form );
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_tva_form_properties_run( OFA_IGETTER( self ), toplevel, form );
 }
 
 static void
@@ -373,11 +374,13 @@ on_update_clicked( GtkButton *button, ofaTVAManagePage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
+	GtkWidget *toplevel;
 
 	form = treeview_get_selected( self, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
-	ofa_tva_form_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), form );
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_tva_form_properties_run( OFA_IGETTER( self ), toplevel, form );
 }
 
 static void
@@ -451,6 +454,7 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *self )
 	GtkTreeIter iter;
 	ofoTVAForm *form;
 	ofoTVARecord *record;
+	GtkWidget *toplevel;
 
 	form = treeview_get_selected( self, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
@@ -458,5 +462,6 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *self )
 	record = ofo_tva_record_new_from_form( form );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
-	ofa_tva_record_new_run( ofa_page_get_main_window( OFA_PAGE( self )), record );
+	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_tva_record_new_run( OFA_IGETTER( self ), toplevel, record );
 }

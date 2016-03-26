@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-base.h"
@@ -39,19 +40,22 @@
 
 /* private instance data
  */
-struct _ofaPagePrivate {
+typedef struct {
 
 	/* properties set at instanciation time
 	 */
 	const ofaMainWindow *main_window;
 	gint                 theme;
-};
+	ofaIGetter *getter;
+}
+	ofaPagePrivate;
 
 /* class properties
  */
 enum {
 	PROP_MAIN_WINDOW_ID = 1,
 	PROP_THEME_ID,
+	PROP_GETTER_ID,
 };
 
 /* signals defined here
@@ -63,16 +67,21 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void       do_setup_page( ofaPage *page );
-static void       v_setup_page( ofaPage *page );
-static GtkWidget *do_setup_view( ofaPage *page );
-static GtkWidget *do_setup_buttons( ofaPage *page );
-static void       do_init_view( ofaPage *page );
-static void       v_init_view( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void              igetter_iface_init( ofaIGetterInterface *iface );
+static GApplication     *igetter_get_application( const ofaIGetter *instance );
+static ofaHub           *igetter_get_hub( const ofaIGetter *instance );
+static ofaIThemeManager *igetter_get_theme_manager( const ofaIGetter *instance );
+static void              do_setup_page( ofaPage *page );
+static void              v_setup_page( ofaPage *page );
+static GtkWidget        *do_setup_view( ofaPage *page );
+static GtkWidget        *do_setup_buttons( ofaPage *page );
+static void              do_init_view( ofaPage *page );
+static void              v_init_view( ofaPage *page );
+static GtkWidget        *v_get_top_focusable_widget( const ofaPage *page );
 
 G_DEFINE_TYPE_EXTENDED( ofaPage, ofa_page, GTK_TYPE_GRID, 0,
-		G_ADD_PRIVATE( ofaPage ))
+		G_ADD_PRIVATE( ofaPage )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init ))
 
 static void
 page_finalize( GObject *instance )
@@ -140,6 +149,10 @@ page_get_property( GObject *instance, guint property_id, GValue *value, GParamSp
 				g_value_set_int( value, priv->theme );
 				break;
 
+			case PROP_GETTER_ID:
+				g_value_set_pointer( value, priv->getter );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -174,6 +187,10 @@ page_set_property( GObject *instance, guint property_id, const GValue *value, GP
 				priv->theme = g_value_get_int( value );
 				break;
 
+			case PROP_GETTER_ID:
+				priv->getter = g_value_get_pointer( value );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -199,6 +216,7 @@ page_constructed( GObject *instance )
 	}
 
 	self = OFA_PAGE( instance );
+
 	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 	g_debug( "%s: instance=%p (%s), main_window=%p, theme=%d",
@@ -298,6 +316,57 @@ ofa_page_class_init( ofaPageClass *klass )
 				G_TYPE_NONE,
 				2,
 				G_TYPE_POINTER, G_TYPE_UINT );
+}
+
+/*
+ * ofaIGetter interface management
+ */
+static void
+igetter_iface_init( ofaIGetterInterface *iface )
+{
+	static const gchar *thisfn = "ofa_page_igetter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_application = igetter_get_application;
+	iface->get_hub = igetter_get_hub;
+	iface->get_theme_manager = igetter_get_theme_manager;
+}
+
+static GApplication *
+igetter_get_application( const ofaIGetter *instance )
+{
+	ofaPagePrivate *priv;
+
+	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
+
+	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
+
+	return( ofa_igetter_get_application( priv->getter ));
+}
+
+static ofaHub *
+igetter_get_hub( const ofaIGetter *instance )
+{
+	ofaPagePrivate *priv;
+
+	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
+
+	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
+
+	return( ofa_igetter_get_hub( priv->getter ));
+}
+
+static ofaIThemeManager *
+igetter_get_theme_manager( const ofaIGetter *instance )
+{
+	ofaPagePrivate *priv;
+
+	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
+
+	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
+
+	return( ofa_igetter_get_theme_manager( priv->getter ));
 }
 
 static void

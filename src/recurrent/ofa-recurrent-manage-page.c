@@ -34,6 +34,8 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-itheme-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
@@ -717,12 +719,10 @@ action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 static void
 action_on_view_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 {
-	gint theme;
+	ofaIThemeManager *manager;
 
-	theme = ofa_recurrent_main_get_theme( "recurrentrun" );
-	if( theme > 0 ){
-		ofa_main_window_activate_theme( OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), theme );
-	}
+	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
+	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }
 
 /*

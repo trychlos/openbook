@@ -34,13 +34,14 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-itheme-manager.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-main-window.h"
-
 #include "tva/ofa-tva-main.h"
+#include "tva/ofa-tva-declare-page.h"
 #include "tva/ofa-tva-record-new.h"
 #include "tva/ofo-tva-record.h"
 #include "tva/ofa-tva-record-properties.h"
@@ -52,7 +53,7 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub       *hub;
+	ofaIGetter   *getter;
 	ofoTVARecord *tva_record;
 	gboolean      is_current;
 
@@ -150,28 +151,31 @@ ofa_tva_record_new_class_init( ofaTVARecordNewClass *klass )
 
 /**
  * ofa_tva_record_new_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the parent window.
  * @record: the new #ofoTVARecord.
  *
  * Let the user enter the end date of the declaration.
  */
 void
-ofa_tva_record_new_run( const ofaMainWindow *main_window, ofoTVARecord *record )
+ofa_tva_record_new_run( ofaIGetter *getter, GtkWidget *parent, ofoTVARecord *record )
 {
 	static const gchar *thisfn = "ofa_tva_record_new_run";
 	ofaTVARecordNew *self;
 	ofaTVARecordNewPrivate *priv;
 
-	g_debug( "%s: main_window=%p, record=%p",
-			thisfn, ( void * ) main_window, ( void * ) record );
+	g_debug( "%s: getter=%p, parent=%p, record=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) record );
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	self = g_object_new( OFA_TYPE_TVA_RECORD_NEW, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent ? GTK_WINDOW( parent ) : NULL );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_record_new_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->tva_record = record;
 
 	/* after this call, @self may be invalid */
@@ -233,7 +237,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_tva_record_new_idialog_init";
 	ofaTVARecordNewPrivate *priv;
-	GtkApplicationWindow *main_window;
 	gchar *title;
 	const gchar *mnemo;
 
@@ -244,12 +247,6 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
-
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 	title = g_strdup_printf( _( "New declaration from « %s » TVA form" ), mnemo );
@@ -338,18 +335,20 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 	const gchar *mnemo;
 	gboolean ok_valid, exists;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
 	msgerr = NULL;
 	ok_valid = FALSE;
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	dend = ofo_tva_record_get_end( priv->tva_record );
 	if( !my_date_is_valid( dend )){
 		msgerr = g_strdup( _( "End date is not valid" ));
 	} else {
 		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-		exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
+		exists = ( ofo_tva_record_get_by_key( hub, mnemo, dend ) != NULL );
 		if( exists ){
 			msgerr = g_strdup( _( "Same declaration is already defined" ));
 		} else {
@@ -377,23 +376,27 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 {
 	ofaTVARecordNewPrivate *priv;
 	gboolean ok;
-	guint theme;
-	GtkApplicationWindow *main_window;
+	ofaHub *hub;
+	ofaIThemeManager *manager;
+	ofaPage *page;
+	GtkWidget *toplevel;
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
-	ok = ofo_tva_record_insert( priv->tva_record, priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	manager = ofa_igetter_get_theme_manager( priv->getter );
+
+	ok = ofo_tva_record_insert( priv->tva_record, hub );
 	if( !ok ){
 		*msgerr = g_strdup( _( "Unable to create this new VAT declaration" ));
 	}
 
 	if( ok ){
-		/* activate the declarations page */
-		theme = ofa_tva_main_get_theme( "tvadeclare" );
-		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-		ofa_main_window_activate_theme( OFA_MAIN_WINDOW( main_window ), theme );
+		/* activate the page */
+		page = ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_DECLARE_PAGE );
+		toplevel = gtk_widget_get_toplevel( GTK_WIDGET( page ));
 		/* edit the declaration */
-		ofa_tva_record_properties_run( OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))), priv->tva_record );
+		ofa_tva_record_properties_run( priv->getter, toplevel, priv->tva_record );
 	}
 
 	return( ok );

@@ -67,27 +67,27 @@ static void on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpo
 /* all the actions added for the TVA modules
  */
 static const GActionEntry st_win_entries[] = {
-		{ "run",  on_recurrent_run,  NULL, NULL, NULL },
-		{ "define",  on_recurrent_manage,  NULL, NULL, NULL },
+		{ "recurrent-run",  on_recurrent_run,  NULL, NULL, NULL },
+		{ "recurrent-define",  on_recurrent_manage,  NULL, NULL, NULL },
 };
 
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "run", N_( "_Recurrent operations validation..." ) },
+		{ "recurrent-run", N_( "_Recurrent operations validation..." ) },
 		{ 0 }
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "define", N_( "_Recurrent operations management..." ) },
+		{ "recurrent-define", N_( "_Recurrent operations management..." ) },
 		{ 0 }
 };
 
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "run",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type },
-		{ "define",  N_( "_Recurrent operations management" ),  ofa_recurrent_manage_page_get_type },
+		{ "recurrent-run",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type },
+		{ "recurrent-define",  N_( "_Recurrent operations management" ),  ofa_recurrent_manage_page_get_type },
 		{ 0 }
 };
 
@@ -208,21 +208,4 @@ on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_d
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
 	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_MANAGE_PAGE );
-}
-
-/**
- * ofa_recurrent_module_get_theme:
- */
-guint
-ofa_recurrent_main_get_theme( const gchar *action_name )
-{
-	guint i;
-
-	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
-		if( !my_collate( st_theme_defs[i].action_name, action_name )){
-			return(( *st_theme_defs[i].fntype )());
-		}
-	}
-
-	return( 0 );
 }

@@ -45,6 +45,7 @@
    - ofa_nomodal_page_present_by_type(): new method.
    - ofaIGetter: new interface.
    - ofaIThemeManager: new interface.
+   - ofaPage: implements new ofaIGetter interface.
 
 -----------------------------------------------------------------------
  Version 0.52

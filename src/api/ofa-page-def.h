@@ -35,7 +35,6 @@
 G_BEGIN_DECLS
 
 typedef struct _ofaPageProtected        ofaPageProtected;
-typedef struct _ofaPagePrivate          ofaPagePrivate;
 
 typedef struct {
 	/*< public members >*/
