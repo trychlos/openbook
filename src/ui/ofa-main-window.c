@@ -557,13 +557,6 @@ main_window_constructed( GObject *instance )
 		g_signal_connect( instance,
 				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
 
-		/* connect the theme signals
-		 */
-		g_signal_connect( instance,
-				"add-theme", G_CALLBACK( on_add_theme ), NULL );
-		g_signal_connect( instance,
-				"activate-theme", G_CALLBACK( on_activate_theme ), NULL );
-
 		/* set the default icon for all windows of the application */
 		error = NULL;
 		gtk_window_set_default_icon_from_file( st_icon_fname, &error );
@@ -672,78 +665,6 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				G_TYPE_NONE,
 				1,
 				G_TYPE_OBJECT );
-
-	/**
-	 * ofaMainWindow::my-dialog-init:
-	 *
-	 * This signal is sent on the main window at the end of the
-	 * initialization of a MyDialog
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 *                      const gchar *dialog_name,
-	 *                      GtkWindow   *toplevel,
-	 * 						gpointer     user_data );
-	 */
-	st_signals[ DIALOG_INIT ] = g_signal_new_class_handler(
-				"my-dialog-init",
-				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_STRING, G_TYPE_POINTER );
-
-	/**
-	 * ofaMainWindow::add-theme:
-	 *
-	 * This signal is to be sent to the main window to define a new
-	 * theme. The signal handler returns the new theme identifier.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 *                      const gchar *theme_name,
-	 *                      gpointer     fntype,
-	 *                      gboolean     with_entries,
-	 * 						gpointer     user_data );
-	 */
-	st_signals[ ADD_THEME ] = g_signal_new_class_handler(
-				"add-theme",
-				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_ACTION,
-				NULL,
-				g_signal_accumulator_first_wins,	/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_UINT,
-				3,
-				G_TYPE_STRING, G_TYPE_POINTER, G_TYPE_BOOLEAN );
-
-	/**
-	 * ofaMainWindow::activate-theme:
-	 *
-	 * This signal is to be sent to the main window to activate a
-	 * previously defined theme.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 *                      guint        theme_id,
-	 * 						gpointer     user_data );
-	 */
-	st_signals[ ACTIVATE_THEME ] = g_signal_new_class_handler(
-				"activate-theme",
-				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_ACTION,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_UINT );
 }
 
 /**

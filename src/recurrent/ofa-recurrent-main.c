@@ -210,19 +210,6 @@ on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_d
 	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_MANAGE_PAGE );
 }
 
-#if 0
-static void
-activate_theme( GtkApplicationWindow *window, const gchar *action_name )
-{
-	guint theme_id;
-
-	theme_id = ofa_recurrent_main_get_theme( action_name );
-	if( theme_id ){
-		g_signal_emit_by_name( window, "activate-theme", theme_id );
-	}
-}
-#endif
-
 /**
  * ofa_recurrent_module_get_theme:
  */
