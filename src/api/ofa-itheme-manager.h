@@ -83,16 +83,16 @@ typedef struct {
 	/**
 	 * define:
 	 * @instance: the #ofaIThemeManager instance.
+	 * @type: the GType of the page (and identifier of the theme).
 	 * @label: the tab notebook label.
-	 * @type: the GType of the page.
 	 *
-	 * Returns: the new theme identifier.
+	 * Defines a new theme.
 	 *
 	 * Since: version 1.
 	 */
-	guint     ( *define )               ( ofaIThemeManager *instance,
-												const gchar *label,
-												GType type );
+	void      ( *define )               ( ofaIThemeManager *instance,
+												GType type,
+												const gchar *label );
 
 	/**
 	 * activate:
@@ -104,7 +104,7 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	ofaPage * ( *activate )             ( ofaIThemeManager *instance,
-												guint theme_id );
+												GType type );
 }
 	ofaIThemeManagerInterface;
 
@@ -114,12 +114,12 @@ guint    ofa_itheme_manager_get_interface_last_version( void );
 
 guint    ofa_itheme_manager_get_interface_version     ( const ofaIThemeManager *instance );
 
-guint    ofa_itheme_manager_define                    ( ofaIThemeManager *instance,
-															const gchar *label,
-															GType type );
+void     ofa_itheme_manager_define                    ( ofaIThemeManager *instance,
+															GType type,
+															const gchar *label );
 
 ofaPage *ofa_itheme_manager_activate                  ( ofaIThemeManager *instance,
-															guint theme_id );
+															GType type );
 
 G_END_DECLS
 

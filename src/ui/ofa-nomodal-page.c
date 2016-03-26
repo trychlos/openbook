@@ -272,6 +272,36 @@ ofa_nomodal_page_get_by_theme( gint theme )
 }
 
 /**
+ * ofa_nomodal_page_present_by_type:
+ * @type: the GType of the searched page.
+ *
+ * Returns: %TRUE if the page has been found.
+ */
+gboolean
+ofa_nomodal_page_present_by_type( GType type )
+{
+	static const gchar *thisfn = "ofa_nomodal_page_present_by_type";
+	ofaNomodalPage *page;
+	ofaNomodalPagePrivate *priv;
+	GList *it;
+
+	g_debug( "%s: type=%lu", thisfn, type );
+
+	for( it=st_list ; it ; it=it->next ){
+		page = OFA_NOMODAL_PAGE( it->data );
+		priv = ofa_nomodal_page_get_instance_private( page );
+		if( G_OBJECT_TYPE( OFA_PAGE( priv->top_widget )) == type ){
+			g_debug( "%s: found page=%p (ofaPage=%p (%s))",
+					thisfn, ( void * ) page, ( void * ) priv->top_widget, G_OBJECT_TYPE_NAME( priv->top_widget ));
+			my_iwindow_present( MY_IWINDOW( page ));
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofa_nomodal_page_close_all:
  *
  * Close all opened pages.

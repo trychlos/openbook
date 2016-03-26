@@ -38,7 +38,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager-def.h"
+#include "api/ofa-itheme-manager.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
@@ -1173,8 +1173,15 @@ igetter_get_hub( const ofaIGetter *instance )
 	return( priv->hub );
 }
 
+/*
+ * the themes are managed by the main window
+ */
 static ofaIThemeManager *
 igetter_get_theme_manager( const ofaIGetter *instance )
 {
-	return( NULL );
+	ofaApplicationPrivate *priv;
+
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
+
+	return( OFA_ITHEME_MANAGER( priv->main_window ));
 }

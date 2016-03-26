@@ -28,13 +28,13 @@
 
 #include "api/ofa-itheme-manager.h"
 
-#define ITHEME_MANAGER_LAST_VERSION      1
+#define ITHEME_MANAGER_LAST_VERSION       1
 
-static guint st_initializations = 0;	/* interface initialization count */
+static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType           register_type( void );
-static void            interface_base_init( ofaIThemeManagerInterface *klass );
-static void            interface_base_finalize( ofaIThemeManagerInterface *klass );
+static GType register_type( void );
+static void  interface_base_init( ofaIThemeManagerInterface *klass );
+static void  interface_base_finalize( ofaIThemeManagerInterface *klass );
 
 /**
  * ofa_itheme_manager_get_type:
@@ -153,44 +153,47 @@ ofa_itheme_manager_get_interface_version( const ofaIThemeManager *instance )
 /**
  * ofa_itheme_manager_define:
  * @instance: the #ofaIThemeManager instance.
+ * @type: the desired GType type which happens to be used as the theme
+ *  identifier.
  * @label: the tab title of the corresponding notebook page.
- * @type: the desired GType type.
  *
  * Returns: the new theme identifier, strictly greater than zero.
  */
-guint
-ofa_itheme_manager_define( ofaIThemeManager *instance, const gchar *label, GType type )
+void
+ofa_itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label )
 {
 	static const gchar *thisfn = "ofa_itheme_manager_define";
 
-	g_return_val_if_fail( instance && OFA_IS_ITHEME_MANAGER( instance ), 0 );
+	g_return_if_fail( instance && OFA_IS_ITHEME_MANAGER( instance ));
 
 	if( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->define ){
-		return( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->define( instance, label, type ));
+		OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->define( instance, type, label );
+		return;
 	}
 
 	g_info( "%s: ofaIThemeManager instance %p does not provide 'define()' method",
 			thisfn, ( void * ) instance );
-	return( 0 );
 }
 
 /**
  * ofa_itheme_manager_activate:
  * @instance: the #ofaIThemeManager instance.
- * @label: the tab title of the corresponding notebook page.
- * @theme_id: the identifier of the theme.
+ * @type: the desired GType type which happens to be used as the theme
+ *  identifier.
  *
- * Returns: the @theme_id theme's page.
+ * Activates the page, creating it if needed.
+ *
+ * Returns: the theme's page.
  */
 ofaPage *
-ofa_itheme_manager_activate( ofaIThemeManager *instance, guint theme_id )
+ofa_itheme_manager_activate( ofaIThemeManager *instance, GType type )
 {
 	static const gchar *thisfn = "ofa_itheme_manager_activate";
 
 	g_return_val_if_fail( instance && OFA_IS_ITHEME_MANAGER( instance ), NULL );
 
 	if( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->activate ){
-		return( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->activate( instance, theme_id ));
+		return( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->activate( instance, type ));
 	}
 
 	g_info( "%s: ofaIThemeManager instance %p does not provide 'activate()' method",

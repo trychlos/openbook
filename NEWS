@@ -39,6 +39,9 @@
 
  Other changes:
 
+   - ofaApplication: implements new ofaIGetter interface.
+   - ofaMainWindow: implements new ofaIThemeManager interface.
+   - ofa_nomodal_page_present_by_type(): new method.
    - ofaIGetter: new interface.
    - ofaIThemeManager: new interface.
 

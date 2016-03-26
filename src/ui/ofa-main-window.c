@@ -38,6 +38,7 @@
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-itheme-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -91,7 +92,6 @@ typedef struct {
 	GtkAccelGroup  *accel_group;
 	GMenuModel     *menu;				/* the menu model when a dossier is opened */
 	GtkPaned       *pane;
-	GList          *themes;
 	guint           last_theme;
 
 	/* menu items enabled status
@@ -104,8 +104,23 @@ typedef struct {
 	GSimpleAction  *action_close_ledger;
 	GSimpleAction  *action_close_exercice;
 	GSimpleAction  *action_import;
+
+	/* ofaIThemeManager interface
+	 */
+	GList          *themes;					/* registered themes */
 }
 	ofaMainWindowPrivate;
+
+/* This structure handles the data needed to manage the themes.
+ * @type: the GType of the corresponding ofaPage, which also acts as the
+ *  theme identifier.
+ * @label: the theme label, used as the notebook tab title
+ */
+typedef struct {
+	GType   type;
+	gchar  *label;
+}
+	sThemeDef;
 
 /* signals defined here
  */
@@ -191,9 +206,9 @@ typedef struct {
 	GType    (*fn_get_type)( void );
 	gboolean   if_entries_allowed;
 }
-	sThemeDef;
+	sThemeOldDef;
 
-static sThemeDef st_theme_defs[] = {
+static sThemeOldDef st_theme_defs[] = {
 
 		{ THM_ACCOUNTS,
 				N_( "Chart of accounts" ),
@@ -317,7 +332,7 @@ static const gchar *st_icon_fname       = ICONFNAME;
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 static void             theme_defs_free( GList *themes );
-static void             theme_free( sThemeDef *def );
+static void             theme_free( sThemeOldDef *def );
 static void             pane_save_position( GtkPaned *pane );
 static void             window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder );
 static void             hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *main_window );
@@ -334,7 +349,7 @@ static void             on_dossier_properties( ofaMainWindow *window, gpointer u
 static void             pane_restore_position( GtkPaned *pane );
 static void             add_treeview_to_pane_left( ofaMainWindow *window );
 static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
-static const sThemeDef *get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id );
+static const sThemeOldDef *get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id );
 static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
 static void             on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
 static void             do_update_menubar_items( ofaMainWindow *main_window );
@@ -345,10 +360,12 @@ static void             enable_action_close_ledger( ofaMainWindow *window, gbool
 static void             enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
 static void             enable_action_import( ofaMainWindow *window, gboolean enable );
 static void             do_backup( ofaMainWindow *main_window );
-static GtkNotebook     *main_get_book( const ofaMainWindow *window );
-static ofaPage         *main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
-static ofaPage         *main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def );
-static void             main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
+static GtkNotebook     *notebook_get_book( const ofaMainWindow *window );
+static ofaPage         *notebook_old_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
+static ofaPage         *notebook_old_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeOldDef *theme_def );
+static ofaPage         *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
+static ofaPage         *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
+static void             notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
 static void             on_tab_close_clicked( myTab *tab, ofaPage *page );
 static void             do_close( ofaPage *page );
 static void             on_tab_pin_clicked( myTab *tab, ofaPage *page );
@@ -357,9 +374,14 @@ static void             close_all_pages( ofaMainWindow *main_window );
 static guint            on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
 static void             on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
 static void             do_dossier_properties( ofaMainWindow *main_window );
+static void             itheme_manager_iface_init( ofaIThemeManagerInterface *iface );
+static void             itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label );
+static ofaPage         *itheme_manager_activate( ofaIThemeManager *instance, GType type );
+static sThemeDef       *theme_get_by_type( GList **list, GType type );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
-		G_ADD_PRIVATE( ofaMainWindow ))
+		G_ADD_PRIVATE( ofaMainWindow )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITHEME_MANAGER, itheme_manager_iface_init ))
 
 static void
 main_window_finalize( GObject *instance )
@@ -421,7 +443,7 @@ theme_defs_free( GList *themes )
 }
 
 static void
-theme_free( sThemeDef *def )
+theme_free( sThemeOldDef *def )
 {
 	g_free( def->label );
 	g_free( def );
@@ -1228,26 +1250,26 @@ on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col
 /*
  * return NULL if not found
  */
-static const sThemeDef *
+static const sThemeOldDef *
 get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id )
 {
 	static const gchar *thisfn = "ofa_main_window_get_theme_def_from_id";
 	ofaMainWindowPrivate *priv;
 	gint i;
 	GList *it;
-	sThemeDef *def;
+	sThemeOldDef *def;
 
 	priv = ofa_main_window_get_instance_private( main_window );
 
 	if( theme_id < THM_LAST_THEME ){
 		for( i=0 ; st_theme_defs[i].label ; ++i ){
 			if( st_theme_defs[i].theme_id == theme_id ){
-				return(( sThemeDef * ) &st_theme_defs[i] );
+				return(( sThemeOldDef * ) &st_theme_defs[i] );
 			}
 		}
 	} else if( theme_id > THM_LAST_THEME ){
 		for( it=priv->themes ; it ; it=it->next ){
-			def = ( sThemeDef * ) it->data;
+			def = ( sThemeOldDef * ) it->data;
 			if( def->theme_id == theme_id ){
 				return( def );
 			}
@@ -1750,7 +1772,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	ofaHub *hub;
 	GtkNotebook *main_book;
 	ofaPage *page;
-	const sThemeDef *theme_def;
+	const sThemeOldDef *theme_def;
 	ofoDossier *dossier;
 	ofaNomodalPage *nomodal;
 
@@ -1764,7 +1786,7 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 
 	page = NULL;
 	hub = ofa_main_window_get_hub( main_window );
-	main_book = main_get_book( main_window );
+	main_book = notebook_get_book( main_window );
 	g_return_val_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ), NULL );
 
 	theme_def = get_theme_def_from_id( main_window, theme );
@@ -1783,19 +1805,19 @@ ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
 	if( nomodal ){
 		my_iwindow_present( MY_IWINDOW( nomodal ));
 	} else {
-		page = main_book_get_page( main_window, main_book, theme );
+		page = notebook_old_get_page( main_window, main_book, theme );
 		if( !page ){
-			page = main_book_create_page( main_window, main_book, theme_def );
+			page = notebook_old_create_page( main_window, main_book, theme_def );
 		}
 		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-		main_book_activate_page( main_window, main_book, page );
+		notebook_activate_page( main_window, main_book, page );
 	}
 
 	return( page );
 }
 
 static GtkNotebook *
-main_get_book( const ofaMainWindow *window )
+notebook_get_book( const ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 	GtkWidget *book;
@@ -1814,7 +1836,7 @@ main_get_book( const ofaMainWindow *window )
 }
 
 static ofaPage *
-main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
+notebook_old_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
 {
 	GtkWidget *page;
 	gint count, i, page_thm;
@@ -1837,7 +1859,7 @@ main_book_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
  * so, create it here
  */
 static ofaPage *
-main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *theme_def )
+notebook_old_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeOldDef *theme_def )
 {
 	ofaPage *page;
 	myTab *tab;
@@ -1865,14 +1887,61 @@ main_book_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThem
 	return( page );
 }
 
+static ofaPage *
+notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def )
+{
+	GtkWidget *page;
+	gint count, i;
+
+	count = gtk_notebook_get_n_pages( book );
+	for( i=0 ; i<count ; ++i ){
+		page = gtk_notebook_get_nth_page( book, i );
+		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+		if( G_OBJECT_TYPE( page ) == def->type ){
+			return( OFA_PAGE( page ));
+		}
+	}
+
+	return( NULL );
+}
+
 /*
- * ofa_main_book_activate_page:
+ * the page for this theme has not been found
+ * so, create it here
+ */
+static ofaPage *
+notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def )
+{
+	ofaPage *page;
+	myTab *tab;
+	GtkWidget *label;
+
+	/* the top child of the notebook page */
+	page = g_object_new( def->type, PAGE_PROP_MAIN_WINDOW, main, NULL );
+
+	/* the tab widget */
+	tab = my_tab_new( NULL, gettext( def->label ));
+	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
+	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
+
+	/* the menu widget */
+	label = gtk_label_new( gettext( def->label ));
+	my_utils_widget_set_xalign( label, 0 );
+
+	gtk_notebook_append_page_menu( book, GTK_WIDGET( page ), GTK_WIDGET( tab ), label );
+	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( page ), TRUE );
+
+	return( page );
+}
+
+/*
+ * ofa_notebook_activate_page:
  *
  * Activating the page mainly consists in giving the focus to the first
  * embedded treeview.
  */
 static void
-main_book_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page )
+notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page )
 {
 	gint page_num;
 	GtkWidget *widget;
@@ -1913,7 +1982,7 @@ do_close( ofaPage *page )
 	main_window = ofa_page_get_main_window( page );
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	book = main_get_book( main_window );
+	book = notebook_get_book( main_window );
 	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 
 	page_num = gtk_notebook_page_num( book, GTK_WIDGET( page ));
@@ -1962,7 +2031,7 @@ close_all_pages( ofaMainWindow *main_window )
 	GtkNotebook *book;
 	gint count;
 
-	book = main_get_book( main_window );
+	book = notebook_get_book( main_window );
 	if( book ){
 		while(( count = gtk_notebook_get_n_pages( book )) > 0 ){
 			gtk_notebook_remove_page( book, count-1 );
@@ -1976,14 +2045,14 @@ on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fnty
 {
 	static const gchar *thisfn = "ofa_main_window_on_add_theme";
 	ofaMainWindowPrivate *priv;
-	sThemeDef *def;
+	sThemeOldDef *def;
 
 	g_debug( "%s: main_window=%p, theme_name=%s, fntype=%p, with_entries=%s, empty=%p",
 			thisfn,( void * ) main_window, theme_name, fntype, with_entries ? "True":"False", empty );
 
 	priv = ofa_main_window_get_instance_private( main_window );
 
-	def = g_new0( sThemeDef, 1 );
+	def = g_new0( sThemeOldDef, 1 );
 	def->label = g_strdup( theme_name );
 	def->fn_get_type = fntype;
 	def->if_entries_allowed = with_entries;
@@ -2024,4 +2093,93 @@ ofa_main_window_get_hub( const ofaMainWindow *main_window )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( ofa_application_get_hub( priv->application ));
+}
+
+/*
+ * ofaIThemeManager interface management
+ */
+static void
+itheme_manager_iface_init( ofaIThemeManagerInterface *iface )
+{
+	static const gchar *thisfn = "ofa_main_window_itheme_manager_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->define = itheme_manager_define;
+	iface->activate = itheme_manager_activate;
+}
+
+static void
+itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label )
+{
+	static const gchar *thisfn = "ofa_itheme_manager_define";
+	ofaMainWindowPrivate *priv;
+	sThemeDef *sdata;
+
+	g_debug( "%s: instance=%p (%s), type=%lu, label=%s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), type, label );
+
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	sdata = theme_get_by_type( &priv->themes, type );
+
+	g_free( sdata->label );
+	sdata->label = g_strdup( label );
+}
+
+static ofaPage *
+itheme_manager_activate( ofaIThemeManager *instance, GType type )
+{
+	static const gchar *thisfn = "ofa_itheme_manager_activate";
+	ofaMainWindowPrivate *priv;
+	GtkNotebook *book;
+	ofaPage *page;
+	sThemeDef *theme_def;
+
+	g_debug( "%s: instance=%p (%s), type=%lu",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), type );
+
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	page = NULL;
+	book = notebook_get_book( OFA_MAIN_WINDOW( instance ));
+	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
+
+	theme_def = theme_get_by_type( &priv->themes, type );
+
+	if( !ofa_nomodal_page_present_by_type( type )){
+		page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+		if( !page ){
+			page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
+		}
+		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
+		notebook_activate_page( OFA_MAIN_WINDOW( instance ), book, page );
+	}
+
+	return( page );
+}
+
+static sThemeDef *
+theme_get_by_type( GList **list, GType type )
+{
+	sThemeDef *sdata;
+	GList *it;
+
+	for( it=*list ; it ; it=it->next ){
+		sdata = ( sThemeDef * ) it->data;
+		if( sdata->type == type ){
+			return( sdata );
+		}
+	}
+
+	sdata = g_new0( sThemeDef, 1 );
+	sdata->type = type;
+
+	*list = g_list_prepend( *list, sdata );
+
+	return( sdata );
 }

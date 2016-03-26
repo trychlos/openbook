@@ -32,9 +32,9 @@
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType        register_type( void );
-static void         interface_base_init( ofaIGetterInterface *klass );
-static void         interface_base_finalize( ofaIGetterInterface *klass );
+static GType register_type( void );
+static void  interface_base_init( ofaIGetterInterface *klass );
+static void  interface_base_finalize( ofaIGetterInterface *klass );
 
 /**
  * ofa_igetter_get_type:
