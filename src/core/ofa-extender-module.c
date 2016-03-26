@@ -32,6 +32,7 @@
 #include "my/my-iident.h"
 
 #include "api/ofa-extender-module.h"
+#include "api/ofa-igetter.h"
 
 /* private instance data
  */

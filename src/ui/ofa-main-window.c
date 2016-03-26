@@ -376,6 +376,7 @@ static guint             on_add_theme( ofaMainWindow *main_window, const gchar *
 static void              on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
 static void              do_dossier_properties( ofaMainWindow *main_window );
 static void              igetter_iface_init( ofaIGetterInterface *iface );
+static GApplication     *igetter_get_application( const ofaIGetter *instance );
 static ofaHub           *igetter_get_hub( const ofaIGetter *instance );
 static ofaIThemeManager *igetter_get_theme_manager( const ofaIGetter *instance );
 static void              itheme_manager_iface_init( ofaIThemeManagerInterface *iface );
@@ -779,10 +780,10 @@ ofa_main_window_new( ofaApplication *application )
 
 	/* let the plugins update these menu map/model
 	 * (here because application is not yet set in constructed() */
-	g_signal_emit_by_name(( gpointer ) application, "menu-defined", window );
+	g_signal_emit_by_name(( gpointer ) application, "menu-available", window, "win" );
 
 	/* let the plugins update the managed themes */
-	g_signal_emit_by_name(( gpointer ) application, "main-window-created", window );
+	g_signal_emit_by_name(( gpointer ) application, "theme-available", window );
 
 	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
 
@@ -2110,8 +2111,21 @@ igetter_iface_init( ofaIGetterInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->get_application = igetter_get_application;
 	iface->get_hub = igetter_get_hub;
 	iface->get_theme_manager = igetter_get_theme_manager;
+}
+
+static GApplication *
+igetter_get_application( const ofaIGetter *instance )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( G_APPLICATION( priv->application ));
 }
 
 static ofaHub *

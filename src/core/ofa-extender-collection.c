@@ -30,6 +30,7 @@
 
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-extender-module.h"
+#include "api/ofa-igetter.h"
 
 /* private instance data
  */

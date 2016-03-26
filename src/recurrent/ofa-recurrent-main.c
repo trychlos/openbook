@@ -30,63 +30,64 @@
 #include <glib/gi18n.h>
 #include <gtk/gtk.h>
 
+#include "my/my-utils.h"
+
+#include "api/ofa-igetter.h"
+#include "api/ofa-itheme-manager.h"
+
 #include "recurrent/ofa-recurrent-main.h"
 #include "recurrent/ofa-recurrent-manage-page.h"
 #include "recurrent/ofa-recurrent-run-page.h"
 
 /* a structure which defines the menu items
- * menu items are identified by item_name, which must be linked
+ * menu items are identified by action_name, which must be linked
  * with action_name.
  */
 typedef struct {
-	const gchar *item_name;
+	const gchar *action_name;
 	const gchar *item_label;
 }
 	sItemDef;
 
 /* a structure which defines the themes
- * theme identifier is returned by the interface implementer
  */
 typedef struct {
 	const gchar *action_name;
-	const gchar *theme_name;
+	const gchar *theme_label;
 	GType      (*fntype)( void );
-	gboolean     with_entries;
-	guint        theme_id;
 }
 	sThemeDef;
 
-static void on_menu_defined( GApplication *application, GActionMap *map, void *empty );
+static void on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty );
 static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
-static void on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty );
+static void on_theme_available( ofaIGetter *getter, ofaIThemeManager *manager, void *empty );
 static void on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void activate_theme( GtkApplicationWindow *window, const gchar *action_name );
 
 /* all the actions added for the TVA modules
  */
 static const GActionEntry st_win_entries[] = {
-		{ "recurrentrun",  on_recurrent_run,  NULL, NULL, NULL },
-		{ "recurrentmanage",  on_recurrent_manage,  NULL, NULL, NULL },
+		{ "run",  on_recurrent_run,  NULL, NULL, NULL },
+		{ "define",  on_recurrent_manage,  NULL, NULL, NULL },
 };
 
 /* the items respectively added to Operations[2] and References menus
  */
 static const sItemDef st_items_ope2[] = {
-		{ "recurrentrun", N_( "_Recurrent operations validation..." ) },
+		{ "run", N_( "_Recurrent operations validation..." ) },
 		{ 0 }
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "recurrentmanage", N_( "_Recurrent operations management..." ) },
+		{ "define", N_( "_Recurrent operations management..." ) },
 		{ 0 }
 };
 
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "recurrentrun",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type, FALSE, 0 },
-		{ "recurrentmanage",  N_( "_Recurrent operations management" ),  ofa_recurrent_manage_page_get_type, FALSE, 0 },
+		{ "run",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type },
+		{ "define",  N_( "_Recurrent operations management" ),  ofa_recurrent_manage_page_get_type },
 		{ 0 }
 };
 
@@ -94,16 +95,18 @@ static sThemeDef st_theme_defs[] = {
  * ofa_recurrent_main_signal_connect:
  * @getter: the main #ofaIGetter of the application.
  *
- * Connect to the application signals.
+ * Connect to the ofaIGetter signals.
  * This will in particular let us update the application menubar.
  */
 void
 ofa_recurrent_main_signal_connect( ofaIGetter *getter )
 {
-	if( 0 ){
-	g_signal_connect( getter, "menu-defined", G_CALLBACK( on_menu_defined ), NULL );
-	g_signal_connect( getter, "main-window-created", G_CALLBACK( on_main_window_created ), NULL );
-	}
+	GApplication *application;
+
+	application = ofa_igetter_get_application( getter );
+
+	g_signal_connect( application, "theme-available", G_CALLBACK( on_theme_available ), NULL );
+	g_signal_connect( application, "menu-available", G_CALLBACK( on_menu_available ), NULL );
 }
 
 /*
@@ -112,14 +115,14 @@ ofa_recurrent_main_signal_connect( ofaIGetter *getter )
  * actions
  */
 static void
-on_menu_defined( GApplication *application, GActionMap *map, void *empty )
+on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty )
 {
-	static const gchar *thisfn = "recurrent/ofa-module/on_menu_defined";
+	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_menu_available";
 
-	g_debug( "%s: application=%p, map=%p, empty=%p",
-			thisfn, ( void * ) application, ( void * ) map, ( void * ) empty );
+	g_debug( "%s: application=%p, map=%p, prefix=%s, empty=%p",
+			thisfn, ( void * ) application, ( void * ) map, prefix, ( void * ) empty );
 
-	if( GTK_IS_APPLICATION_WINDOW( map )){
+	if( !my_collate( prefix, "win" )){
 		g_action_map_add_action_entries(
 				map, st_win_entries, G_N_ELEMENTS( st_win_entries ), map );
 
@@ -131,7 +134,7 @@ on_menu_defined( GApplication *application, GActionMap *map, void *empty )
 static void
 menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder )
 {
-	static const gchar *thisfn = "recurrent/ofa-module/menu_add_section";
+	static const gchar *thisfn = "recurrent/ofa_recurrent_main_menu_add_section";
 	GMenuModel *menu_model;
     GMenu *section;
     GMenuItem *item;
@@ -148,14 +151,14 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 
 	if( menu_model ){
 		section = g_menu_new();
-		for( i=0 ; sitems[i].item_name ; ++i ){
+		for( i=0 ; sitems[i].action_name ; ++i ){
 			label = g_strdup( sitems[i].item_label );
-			action_name = g_strconcat( "win.", sitems[i].item_name, NULL );
+			action_name = g_strconcat( "win.", sitems[i].action_name, NULL );
 			g_menu_insert( section, 0, label, action_name );
 			g_free( label );
 			g_free( action_name );
 			item = g_menu_item_new_section( NULL, G_MENU_MODEL( section ));
-			g_menu_item_set_attribute( item, "id", "s", sitems[i].item_name );
+			g_menu_item_set_attribute( item, "id", "s", sitems[i].action_name );
 			g_menu_append_item( G_MENU( menu_model ), item );
 			g_object_unref( item );
 		}
@@ -164,50 +167,50 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 }
 
 static void
-on_main_window_created( GApplication *application, GtkApplicationWindow *window, void *empty )
+on_theme_available( ofaIGetter *getter, ofaIThemeManager *manager, void *empty )
 {
-	static const gchar *thisfn = "recurrent/ofa-module/on_main_window_created";
+	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_theme_available";
 	guint i;
 
-	g_debug( "%s: application=%p, window=%p, empty=%p",
-			thisfn, ( void * ) application, ( void * ) window, empty );
+	g_debug( "%s: getter=%p, manager=%p, empty=%p",
+			thisfn, ( void * ) getter, ( void * ) manager, empty );
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
-		g_signal_emit_by_name( window, "add-theme",
-				st_theme_defs[i].theme_name,
-				st_theme_defs[i].fntype,
-				st_theme_defs[i].with_entries,
-				&st_theme_defs[i].theme_id );
-		g_debug( "%s: theme_id=%u", thisfn, st_theme_defs[i].theme_id );
+		ofa_itheme_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );
 	}
 }
 
 static void
 on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "recurrent/ofa-recurrent-main/on_recurrent_run";
+	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_recurrent_run";
+	ofaIThemeManager *manager;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
-	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
+	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
-	activate_theme( GTK_APPLICATION_WINDOW( user_data ), "recurrentrun" );
+	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
+	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }
 
 static void
 on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "recurrent/ofa-recurrent-main/on_recurrent_manage";
+	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_recurrent_manage";
+	ofaIThemeManager *manager;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
-	g_return_if_fail( user_data && GTK_IS_APPLICATION_WINDOW( user_data ));
+	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
-	activate_theme( GTK_APPLICATION_WINDOW( user_data ), "recurrentmanage" );
+	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
+	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_MANAGE_PAGE );
 }
 
+#if 0
 static void
 activate_theme( GtkApplicationWindow *window, const gchar *action_name )
 {
@@ -218,6 +221,7 @@ activate_theme( GtkApplicationWindow *window, const gchar *action_name )
 		g_signal_emit_by_name( window, "activate-theme", theme_id );
 	}
 }
+#endif
 
 /**
  * ofa_recurrent_module_get_theme:
@@ -228,8 +232,8 @@ ofa_recurrent_main_get_theme( const gchar *action_name )
 	guint i;
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
-		if( !g_utf8_collate( st_theme_defs[i].action_name, action_name )){
-			return( st_theme_defs[i].theme_id );
+		if( !my_collate( st_theme_defs[i].action_name, action_name )){
+			return(( *st_theme_defs[i].fntype )());
 		}
 	}
 

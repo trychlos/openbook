@@ -53,6 +53,7 @@ api_include_HEADERS = \
 	ofa-iexeclose-close.h								\
 	ofa-iexportable.h									\
 	ofa-igetter.h										\
+	ofa-igetter-def.h									\
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
 	ofa-iprefs-page.h									\

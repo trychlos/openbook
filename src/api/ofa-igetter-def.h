@@ -22,26 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_RECURRENT_MAIN_H__
-#define __OFA_RECURRENT_MAIN_H__
-
-/**
- * SECTION: ofarecurrentmain
- * @include: recurrent/ofa-recurrent-main.h
- *
- * Main window interface.
- */
-
-#include <glib.h>
-
-#include "api/ofa-igetter-def.h"
+#ifndef __OPENBOOK_API_OFA_IGETTER_DEF_H__
+#define __OPENBOOK_API_OFA_IGETTER_DEF_H__
 
 G_BEGIN_DECLS
 
-void  ofa_recurrent_main_signal_connect( ofaIGetter *getter );
-
-guint ofa_recurrent_main_get_theme     ( const gchar *action_name );
+typedef struct _ofaIGetter              ofaIGetter;
 
 G_END_DECLS
 
-#endif /* __OFA_RECURRENT_MAIN_H__ */
+#endif /* __OPENBOOK_API_OFA_IGETTER_DEF_H__ */

@@ -83,8 +83,8 @@
  *              ...
  *            ofa_application_activate: main window instanciated at 0xfe43d0
  *
- *   The application sends a 'main-window-created' signal on the
- *   GApplication object right after main window creation.
+ *   The application sends a 'theme-available' signal on the
+ *   GApplication object right after theme manager availability.
  *
  * Letting the plugins update the menus
  * ------------------------------------
@@ -106,7 +106,7 @@
  * and initialized in the ad-hoc function (ofa_application_startup/
  * ofa_main_window_constructed).
  *
- * Right after menus definition, the application sends a 'menu-definition'
+ * Right after menus definition, the application sends a 'menu-available'
  * signal on the GApplication object. This signal may be handled by the
  * plugins in order to update the menus.
  *

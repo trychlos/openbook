@@ -147,6 +147,30 @@ ofa_igetter_get_interface_version( const ofaIGetter *instance )
 }
 
 /**
+ * ofa_igetter_get_application:
+ * @instance: this #ofaIGetter instance.
+ *
+ * Returns: the #GApplication.
+ */
+GApplication *
+ofa_igetter_get_application( const ofaIGetter *instance )
+{
+	static const gchar *thisfn = "ofa_igetter_get_application";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
+
+	if( OFA_IGETTER_GET_INTERFACE( instance )->get_application ){
+		return( OFA_IGETTER_GET_INTERFACE( instance )->get_application( instance ));
+	}
+
+	g_info( "%s: ofaIGetter instance %p does not provide 'get_application()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
  * ofa_igetter_get_hub:
  * @instance: this #ofaIGetter instance.
  *

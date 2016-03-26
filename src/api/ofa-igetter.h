@@ -43,9 +43,11 @@
  * main window, which displays pages as tabs of a main notebook.
  */
 
+#include <gio/gio.h>
 #include <glib-object.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-itheme-manager-def.h"
 
 G_BEGIN_DECLS
@@ -55,11 +57,14 @@ G_BEGIN_DECLS
 #define OFA_IS_IGETTER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IGETTER ))
 #define OFA_IGETTER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IGETTER, ofaIGetterInterface ))
 
+#if 0
 typedef struct _ofaIGetter                    ofaIGetter;
+#endif
 
 /**
  * ofaIGetterInterface:
  * @get_interface_version: [should]: returns the implemented version number.
+ * @get_application: [should]: return the #GApplication instance.
  * @get_hub: [should]: return the #ofaHub instance.
  * @get_theme_manager: [should]: return the #ofaIThemeManager instance.
  *
@@ -89,6 +94,16 @@ typedef struct {
 	guint              ( *get_interface_version )( const ofaIGetter *instance );
 
 	/**
+	 * get_application:
+	 * @instance: this #ofaIGetter instance.
+	 *
+	 * Returns: the GApplication.
+	 *
+	 * Since: version 1
+	 */
+	GApplication *     ( *get_application )      ( const ofaIGetter *instance );
+
+	/**
 	 * get_hub:
 	 * @instance: this #ofaIGetter instance.
 	 *
@@ -115,6 +130,8 @@ GType             ofa_igetter_get_type                  ( void );
 guint             ofa_igetter_get_interface_last_version( void );
 
 guint             ofa_igetter_get_interface_version     ( const ofaIGetter *connect );
+
+GApplication     *ofa_igetter_get_application           ( const ofaIGetter *connect );
 
 ofaHub           *ofa_igetter_get_hub                   ( const ofaIGetter *connect );
 

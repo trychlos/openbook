@@ -94,8 +94,8 @@ enum {
 /* signals defined here
  */
 enum {
-	MAIN_WINDOW_CREATED = 0,
-	MENU_DEFINITION,
+	THM_AVAILABLE = 0,
+	MENU_AVAILABLE,
 	N_SIGNALS
 };
 
@@ -154,6 +154,7 @@ static void              on_about( GSimpleAction *action, GVariant *parameter, g
 static void              on_version( ofaApplication *application );
 
 static void              igetter_iface_init( ofaIGetterInterface *iface );
+static GApplication     *igetter_get_application( const ofaIGetter *instance );
 static ofaHub           *igetter_get_hub( const ofaIGetter *instance );
 static ofaIThemeManager *igetter_get_theme_manager( const ofaIGetter *instance );
 
@@ -385,18 +386,18 @@ ofa_application_class_init( ofaApplicationClass *klass )
 					G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	/**
-	 * ofaApplication::main-window-created:
+	 * ofaApplication::theme-available:
 	 *
-	 * This signal is sent on the application when the main window has
-	 * been created.
+	 * This signal is sent on the application by the theme manager when
+	 * it becomes available, and is able to accept new definition requests.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaApplication  *application,
-	 * 						ofaMainWindow *main_window,
-	 * 						gpointer user_data );
+	 * void ( *handler )( ofaApplication     *application,
+	 * 						ofaIThemeManager *manager,
+	 * 						gpointer          user_data );
 	 */
-	st_signals[ MAIN_WINDOW_CREATED ] = g_signal_new_class_handler(
-				"main-window-created",
+	st_signals[ THM_AVAILABLE ] = g_signal_new_class_handler(
+				"theme-available",
 				OFA_TYPE_APPLICATION,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -408,7 +409,7 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				G_TYPE_POINTER );
 
 	/**
-	 * ofaApplication::menu-defined:
+	 * ofaApplication::menu-available:
 	 *
 	 * This signal is sent on the application after having defined the
 	 * actions map and loaded the menu definition. As our application
@@ -418,15 +419,14 @@ ofa_application_class_init( ofaApplicationClass *klass )
 	 * The plugins may take advantage of this signal for updating the
 	 * provided menus and actions maps.
 	 *
-	 * @main_window: %NULL when dealing with application menu.
-	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaApplication  *application,
 	 * 						GActionMap    *map,
+	 * 						const gchar   *prefix,
 	 * 						gpointer       user_data );
 	 */
-	st_signals[ MENU_DEFINITION ] = g_signal_new_class_handler(
-				"menu-defined",
+	st_signals[ MENU_AVAILABLE ] = g_signal_new_class_handler(
+				"menu-available",
 				OFA_TYPE_APPLICATION,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -434,8 +434,8 @@ ofa_application_class_init( ofaApplicationClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				1,
-				G_TYPE_POINTER );
+				2,
+				G_TYPE_POINTER, G_TYPE_STRING );
 }
 
 /**
@@ -711,6 +711,8 @@ application_startup( GApplication *application )
 	/* define a traditional menubar
 	 * the program will abort if GtkBuilder is not able to be parsed
 	 * from the given file
+	 * + store the references to the plugins placeholders
+	 * + let the plugins update these menu map/model
 	 */
 	builder = gtk_builder_new_from_resource( st_resource_appmenu );
 	menu = G_MENU_MODEL( gtk_builder_get_object( builder, st_appmenu_id ));
@@ -719,7 +721,6 @@ application_startup( GApplication *application )
 		g_debug( "%s: menu successfully loaded from %s at %p: items=%d",
 				thisfn, st_resource_appmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
-		/* store the references to the plugins placeholders */
 		appli_store_ref( appli, builder, "plugins_app_dossier" );
 		appli_store_ref( appli, builder, "plugins_app_misc" );
 
@@ -728,8 +729,7 @@ application_startup( GApplication *application )
 	}
 	g_object_unref( builder );
 
-	/* let the plugins update these menu map/model */
-	g_signal_emit_by_name( application, "menu-defined", application );
+	g_signal_emit_by_name( application, "menu-available", application, "app" );
 
 	/* dossiers directory monitoring
 	 */
@@ -1159,8 +1159,15 @@ igetter_iface_init( ofaIGetterInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->get_application = igetter_get_application;
 	iface->get_hub = igetter_get_hub;
 	iface->get_theme_manager = igetter_get_theme_manager;
+}
+
+static GApplication *
+igetter_get_application( const ofaIGetter *instance )
+{
+	return( G_APPLICATION( instance ));
 }
 
 static ofaHub *

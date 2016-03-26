@@ -77,7 +77,7 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
-#include "api/ofa-igetter.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 

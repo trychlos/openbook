@@ -34,7 +34,7 @@
 
 #include <glib.h>
 
-#include "api/ofa-igetter.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
