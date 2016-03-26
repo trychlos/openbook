@@ -38,6 +38,7 @@
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-itheme-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
@@ -331,56 +332,60 @@ static const gchar *st_icon_fname       = ICONFNAME;
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static void             theme_defs_free( GList *themes );
-static void             theme_free( sThemeOldDef *def );
-static void             pane_save_position( GtkPaned *pane );
-static void             window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder );
-static void             hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *main_window );
-static void             hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window );
-static gboolean         on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void             do_open_dossier( ofaMainWindow *main_window, ofaHub *hub );
-static void             do_close_dossier( ofaMainWindow *self, ofaHub *hub );
-static void             set_menubar( ofaMainWindow *window, GMenuModel *model );
-static void             extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
-static void             set_window_title( const ofaMainWindow *window );
-static void             warning_exercice_unset( const ofaMainWindow *window );
-static void             warning_archived_dossier( const ofaMainWindow *window );
-static void             on_dossier_properties( ofaMainWindow *window, gpointer user_data );
-static void             pane_restore_position( GtkPaned *pane );
-static void             add_treeview_to_pane_left( ofaMainWindow *window );
-static void             on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
+static void              theme_defs_free( GList *themes );
+static void              theme_free( sThemeOldDef *def );
+static void              pane_save_position( GtkPaned *pane );
+static void              window_store_ref( ofaMainWindow *main_window, GtkBuilder *builder, const gchar *placeholder );
+static void              hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *main_window );
+static void              hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window );
+static gboolean          on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
+static void              do_open_dossier( ofaMainWindow *main_window, ofaHub *hub );
+static void              do_close_dossier( ofaMainWindow *self, ofaHub *hub );
+static void              set_menubar( ofaMainWindow *window, GMenuModel *model );
+static void              extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
+static void              set_window_title( const ofaMainWindow *window );
+static void              warning_exercice_unset( const ofaMainWindow *window );
+static void              warning_archived_dossier( const ofaMainWindow *window );
+static void              on_dossier_properties( ofaMainWindow *window, gpointer user_data );
+static void              pane_restore_position( GtkPaned *pane );
+static void              add_treeview_to_pane_left( ofaMainWindow *window );
+static void              on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static const sThemeOldDef *get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id );
-static void             add_empty_notebook_to_pane_right( ofaMainWindow *window );
-static void             on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
-static void             do_update_menubar_items( ofaMainWindow *main_window );
-static void             enable_action_guided_input( ofaMainWindow *window, gboolean enable );
-static void             enable_action_settlement( ofaMainWindow *window, gboolean enable );
-static void             enable_action_reconciliation( ofaMainWindow *window, gboolean enable );
-static void             enable_action_close_ledger( ofaMainWindow *window, gboolean enable );
-static void             enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
-static void             enable_action_import( ofaMainWindow *window, gboolean enable );
-static void             do_backup( ofaMainWindow *main_window );
-static GtkNotebook     *notebook_get_book( const ofaMainWindow *window );
-static ofaPage         *notebook_old_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
-static ofaPage         *notebook_old_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeOldDef *theme_def );
-static ofaPage         *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
-static ofaPage         *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
-static void             notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
-static void             on_tab_close_clicked( myTab *tab, ofaPage *page );
-static void             do_close( ofaPage *page );
-static void             on_tab_pin_clicked( myTab *tab, ofaPage *page );
-static void             on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
-static void             close_all_pages( ofaMainWindow *main_window );
-static guint            on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
-static void             on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
-static void             do_dossier_properties( ofaMainWindow *main_window );
-static void             itheme_manager_iface_init( ofaIThemeManagerInterface *iface );
-static void             itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label );
-static ofaPage         *itheme_manager_activate( ofaIThemeManager *instance, GType type );
-static sThemeDef       *theme_get_by_type( GList **list, GType type );
+static void              add_empty_notebook_to_pane_right( ofaMainWindow *window );
+static void              on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
+static void              do_update_menubar_items( ofaMainWindow *main_window );
+static void              enable_action_guided_input( ofaMainWindow *window, gboolean enable );
+static void              enable_action_settlement( ofaMainWindow *window, gboolean enable );
+static void              enable_action_reconciliation( ofaMainWindow *window, gboolean enable );
+static void              enable_action_close_ledger( ofaMainWindow *window, gboolean enable );
+static void              enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
+static void              enable_action_import( ofaMainWindow *window, gboolean enable );
+static void              do_backup( ofaMainWindow *main_window );
+static GtkNotebook      *notebook_get_book( const ofaMainWindow *window );
+static ofaPage          *notebook_old_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
+static ofaPage          *notebook_old_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeOldDef *theme_def );
+static ofaPage          *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
+static ofaPage          *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
+static void              notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
+static void              on_tab_close_clicked( myTab *tab, ofaPage *page );
+static void              do_close( ofaPage *page );
+static void              on_tab_pin_clicked( myTab *tab, ofaPage *page );
+static void              on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *main_window );
+static void              close_all_pages( ofaMainWindow *main_window );
+static guint             on_add_theme( ofaMainWindow *main_window, const gchar *theme_name, gpointer fntype, gboolean with_entries, void *empty );
+static void              on_activate_theme( ofaMainWindow *main_window, guint theme_id, void *empty );
+static void              do_dossier_properties( ofaMainWindow *main_window );
+static void              igetter_iface_init( ofaIGetterInterface *iface );
+static ofaHub           *igetter_get_hub( const ofaIGetter *instance );
+static ofaIThemeManager *igetter_get_theme_manager( const ofaIGetter *instance );
+static void              itheme_manager_iface_init( ofaIThemeManagerInterface *iface );
+static void              itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label );
+static ofaPage          *itheme_manager_activate( ofaIThemeManager *instance, GType type );
+static sThemeDef        *theme_get_by_type( GList **list, GType type );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITHEME_MANAGER, itheme_manager_iface_init ))
 
 static void
@@ -2093,6 +2098,41 @@ ofa_main_window_get_hub( const ofaMainWindow *main_window )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( ofa_application_get_hub( priv->application ));
+}
+
+/*
+ * ofaIGetter interface management
+ */
+static void
+igetter_iface_init( ofaIGetterInterface *iface )
+{
+	static const gchar *thisfn = "ofa_main_window_igetter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_hub = igetter_get_hub;
+	iface->get_theme_manager = igetter_get_theme_manager;
+}
+
+static ofaHub *
+igetter_get_hub( const ofaIGetter *instance )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( ofa_application_get_hub( priv->application ));
+}
+
+/*
+ * the themes are managed by the main window
+ */
+static ofaIThemeManager *
+igetter_get_theme_manager( const ofaIGetter *instance )
+{
+	return( OFA_ITHEME_MANAGER( instance ));
 }
 
 /*
