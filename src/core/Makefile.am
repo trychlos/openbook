@@ -111,12 +111,14 @@ libofa_core_la_SOURCES = \
 	ofa-idbprovider.c									\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\
+	ofa-igetter.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-iprefs-page.c									\
 	ofa-iprefs-provider.c								\
 	ofa-isingle-keeper.c								\
 	ofa-istore.c										\
+	ofa-itheme-manager.c								\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-store.c									\

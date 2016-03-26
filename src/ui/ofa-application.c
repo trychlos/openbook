@@ -37,6 +37,8 @@
 #include "api/ofa-file-dir.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-itheme-manager-def.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
@@ -129,30 +131,35 @@ static       GOptionEntry st_option_entries[]   = {
 	{ NULL }
 };
 
-static void     init_i18n( ofaApplication *application );
-static gboolean init_gtk_args( ofaApplication *application );
-static gboolean manage_options( ofaApplication *application );
+static void              init_i18n( ofaApplication *application );
+static gboolean          init_gtk_args( ofaApplication *application );
+static gboolean          manage_options( ofaApplication *application );
 
-static void     application_startup( GApplication *application );
-static void     appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
-static void     application_activate( GApplication *application );
-static void     application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
-static void     maintainer_test_function( void );
+static void              application_startup( GApplication *application );
+static void              appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
+static void              application_activate( GApplication *application );
+static void              application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
+static void              maintainer_test_function( void );
 
-static void     on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application );
-static void     enable_action_open( ofaApplication *application, gboolean enable );
-static void     on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void     on_version( ofaApplication *application );
+static void              on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application );
+static void              enable_action_open( ofaApplication *application, gboolean enable );
+static void              on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void              on_version( ofaApplication *application );
+
+static void              igetter_iface_init( ofaIGetterInterface *iface );
+static ofaHub           *igetter_get_hub( const ofaIGetter *instance );
+static ofaIThemeManager *igetter_get_theme_manager( const ofaIGetter *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0,
-		G_ADD_PRIVATE( ofaApplication ))
+		G_ADD_PRIVATE( ofaApplication )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init ))
 
 static const GActionEntry st_app_entries[] = {
 		{ "manage",        on_manage,        NULL, NULL, NULL },
@@ -1140,4 +1147,34 @@ ofa_application_get_copyright( const ofaApplication *application )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( _( "Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)" ));
+}
+
+/*
+ * ofaIGetter interface management
+ */
+static void
+igetter_iface_init( ofaIGetterInterface *iface )
+{
+	static const gchar *thisfn = "ofa_application_igetter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_hub = igetter_get_hub;
+	iface->get_theme_manager = igetter_get_theme_manager;
+}
+
+static ofaHub *
+igetter_get_hub( const ofaIGetter *instance )
+{
+	ofaApplicationPrivate *priv;
+
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
+
+	return( priv->hub );
+}
+
+static ofaIThemeManager *
+igetter_get_theme_manager( const ofaIGetter *instance )
+{
+	return( NULL );
 }

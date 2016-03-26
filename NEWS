@@ -39,7 +39,8 @@
 
  Other changes:
 
-   - 
+   - ofaIGetter: new interface.
+   - ofaIThemeManager: new interface.
 
 -----------------------------------------------------------------------
  Version 0.52
