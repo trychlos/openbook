@@ -467,7 +467,7 @@ ofa_application_new( void )
 
 	priv->hub = ofa_hub_new();
 
-	extenders = ofa_extender_collection_new( G_APPLICATION( application ), PKGLIBDIR );
+	extenders = ofa_extender_collection_new( OFA_IGETTER( application ), PKGLIBDIR );
 	ofa_hub_set_extender_collection( priv->hub, extenders );
 
 	ofa_box_register_types();

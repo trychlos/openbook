@@ -36,23 +36,23 @@
 /* private instance data
  */
 typedef struct {
-	gboolean      dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	GApplication *application;
-	gchar        *filename;
+	ofaIGetter *getter;
+	gchar      *filename;
 
 	/* runtime
 	 */
-	GModule      *library;
-	GList        *objects;
+	GModule    *library;
+	GList      *objects;
 
 	/* api                                                             v1
 	 */
-	gboolean     ( *startup )           ( GTypeModule *module, GApplication *application );
-	gint         ( *list_types )        ( const GType **types );	/* mandatory */
-	void         ( *shutdown )          ( void );					/* opt. */
+	gboolean   ( *startup )           ( GTypeModule *module, ofaIGetter *getter );
+	gint       ( *list_types )        ( const GType **types );	/* mandatory */
+	void       ( *shutdown )          ( void );					/* opt. */
 }
 	ofaExtenderModulePrivate;
 
@@ -195,7 +195,7 @@ module_v_unload( GTypeModule *module )
 
 /**
  * ofa_extender_module_new:
- * @application: the #GApplication caller.
+ * @getter: the global #ofaIGetter of the application.
  * @filename: the full path to the module file.
  *
  * Returns: a new reference to a #ofaExtenderModule object, or %NULL if
@@ -203,7 +203,7 @@ module_v_unload( GTypeModule *module )
  * compatible with the defined extendion API.
  */
 ofaExtenderModule *
-ofa_extender_module_new( GApplication *application, const gchar *filename )
+ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
 {
 	ofaExtenderModule *module;
 	ofaExtenderModulePrivate *priv;
@@ -212,7 +212,7 @@ ofa_extender_module_new( GApplication *application, const gchar *filename )
 
 	priv = ofa_extender_module_get_instance_private( module );
 
-	priv->application = application;
+	priv->getter = getter;
 	priv->filename = g_strdup( filename );
 
 	if( !g_type_module_use( G_TYPE_MODULE( module )) || !plugin_is_valid( module )){
@@ -251,7 +251,7 @@ plugin_is_valid( ofaExtenderModule *self )
 	ok =
 		plugin_check( self, "ofa_extension_startup" , ( gpointer * ) &priv->startup ) &&
 		plugin_check( self, "ofa_extension_list_types" , ( gpointer * ) &priv->list_types ) &&
-		priv->startup( G_TYPE_MODULE( self ), priv->application );
+		priv->startup( G_TYPE_MODULE( self ), priv->getter );
 
 	if( ok ){
 		g_debug( "%s: %s: ok", thisfn, priv->filename );

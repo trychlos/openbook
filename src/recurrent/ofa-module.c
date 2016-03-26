@@ -46,14 +46,14 @@
  * mandatory starting with API v. 1.
  */
 gboolean
-ofa_extension_startup( GTypeModule *module, GApplication *application )
+ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "recurrent/ofa_module_ofa_extension_startup";
 
-	g_debug( "%s: module=%p, application=%p", thisfn, ( void * ) module, ( void * ) application );
+	g_debug( "%s: module=%p, getter=%p", thisfn, ( void * ) module, ( void * ) getter );
 
 	ofa_recurrent_register_type( module );
-	ofa_recurrent_main_signal_connect( application );
+	ofa_recurrent_main_signal_connect( getter );
 
 	return( TRUE );
 }

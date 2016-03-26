@@ -34,16 +34,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean      dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	GApplication *application;
-	gchar        *extension_dir;
+	ofaIGetter *getter;
+	gchar      *extension_dir;
 
 	/* runtime
 	 */
-	GList        *modules;
+	GList      *modules;
 }
 	ofaExtenderCollectionPrivate;
 
@@ -123,14 +123,14 @@ ofa_extender_collection_class_init( ofaExtenderCollectionClass *klass )
 
 /**
  * ofa_extender_collection_new:
- * @application: the #GApplication caller.
+ * @getter: the global #ofaIGetter of the application.
  * @extension_dir: the path of the directory where the extension modules
  *  are to be loaded from.
  *
  * Returns: the collection of loaded modules.
  */
 ofaExtenderCollection *
-ofa_extender_collection_new( GApplication *application, const gchar *extension_dir )
+ofa_extender_collection_new( ofaIGetter *getter, const gchar *extension_dir )
 {
 	ofaExtenderCollection *collection;
 	ofaExtenderCollectionPrivate *priv;
@@ -139,7 +139,7 @@ ofa_extender_collection_new( GApplication *application, const gchar *extension_d
 
 	priv = ofa_extender_collection_get_instance_private( collection );
 
-	priv->application = application;
+	priv->getter = getter;
 	priv->extension_dir = g_strdup( extension_dir );
 	priv->modules = load_modules( collection );
 
@@ -174,7 +174,7 @@ load_modules( ofaExtenderCollection *self )
 		if( g_str_has_suffix( entry, EXTENDER_COLLECTION_SUFFIX )){
 			fname = g_build_filename( priv->extension_dir, entry, NULL );
 
-			plugin = ofa_extender_module_new( priv->application, fname );
+			plugin = ofa_extender_module_new( priv->getter, fname );
 
 			if( plugin ){
 				plugins = g_list_append( plugins, plugin );

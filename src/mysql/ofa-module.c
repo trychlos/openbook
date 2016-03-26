@@ -45,11 +45,11 @@
  * mandatory starting with API v. 1.
  */
 gboolean
-ofa_extension_startup( GTypeModule *module, GApplication *application )
+ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "mysql/ofa_module_ofa_extension_startup";
 
-	g_debug( "%s: module=%p, application=%p", thisfn, ( void * ) module, ( void * ) application  );
+	g_debug( "%s: module=%p, getter=%p", thisfn, ( void * ) module, ( void * ) getter  );
 
 	ofa_mysql_dbmodel_register_type( module );
 	ofa_mysql_dbprovider_register_type( module );

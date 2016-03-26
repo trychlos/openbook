@@ -40,6 +40,7 @@
  Other changes:
 
    - ofaApplication: implements new ofaIGetter interface.
+   - ofaExtension: now passes the ofaIGetter instead of the GApplication.
    - ofaMainWindow: implements new ofaIThemeManager interface.
    - ofa_nomodal_page_present_by_type(): new method.
    - ofaIGetter: new interface.

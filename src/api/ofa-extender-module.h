@@ -35,6 +35,8 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include "api/ofa-igetter.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_EXTENDER_MODULE                ( ofa_extender_module_get_type())
@@ -58,7 +60,7 @@ typedef struct {
 
 GType              ofa_extender_module_get_type        ( void ) G_GNUC_CONST;
 
-ofaExtenderModule *ofa_extender_module_new             ( GApplication *application,
+ofaExtenderModule *ofa_extender_module_new             ( ofaIGetter *getter,
 																const gchar *filename );
 
 GList             *ofa_extender_module_get_for_type    ( ofaExtenderModule *module,

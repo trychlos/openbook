@@ -92,16 +92,18 @@ static sThemeDef st_theme_defs[] = {
 
 /**
  * ofa_recurrent_main_signal_connect:
- * @application: the #GApplication provided at extension startup time.
+ * @getter: the main #ofaIGetter of the application.
  *
  * Connect to the application signals.
  * This will in particular let us update the application menubar.
  */
 void
-ofa_recurrent_main_signal_connect( GApplication *application )
+ofa_recurrent_main_signal_connect( ofaIGetter *getter )
 {
-	g_signal_connect( application, "menu-defined", G_CALLBACK( on_menu_defined ), NULL );
-	g_signal_connect( application, "main-window-created", G_CALLBACK( on_main_window_created ), NULL );
+	if( 0 ){
+	g_signal_connect( getter, "menu-defined", G_CALLBACK( on_menu_defined ), NULL );
+	g_signal_connect( getter, "main-window-created", G_CALLBACK( on_main_window_created ), NULL );
+	}
 }
 
 /*

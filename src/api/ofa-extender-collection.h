@@ -36,6 +36,8 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include "api/ofa-igetter.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_EXTENDER_COLLECTION                ( ofa_extender_collection_get_type())
@@ -59,7 +61,7 @@ typedef struct {
 
 GType                  ofa_extender_collection_get_type    ( void ) G_GNUC_CONST;
 
-ofaExtenderCollection *ofa_extender_collection_new         ( GApplication *application,
+ofaExtenderCollection *ofa_extender_collection_new         ( ofaIGetter *getter,
 																	const gchar *extension_dir );
 
 GList                 *ofa_extender_collection_get_for_type( ofaExtenderCollection *collection,

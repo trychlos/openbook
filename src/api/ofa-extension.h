@@ -77,12 +77,14 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
+#include "api/ofa-igetter.h"
+
 G_BEGIN_DECLS
 
 /**
  * ofa_extension_startup:
  * @module: the #GTypeModule of the plugin library being loaded.
- * @application: [allow-none]: the calling #GApplication.
+ * @getter: [allow-none]: the main #ofaIGetter of the application.
  *
  * This function is called by the plugin manager when
  * the plugin library is first loaded in memory. The library may so take
@@ -129,7 +131,7 @@ G_BEGIN_DECLS
  * Returns: %TRUE if the initialization is successful, %FALSE else.
  * In this later case, the library is unloaded and no more considered.
  */
-gboolean     ofa_extension_startup           ( GTypeModule *module, GApplication *application );
+gboolean     ofa_extension_startup           ( GTypeModule *module, ofaIGetter *getter );
 
 /**
  * ofa_extension_list_types:
