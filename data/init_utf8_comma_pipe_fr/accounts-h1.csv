@@ -1,0 +1,163 @@
+AccNumber|AccLabel|AccCurrency|AccRoot|AccSettleable|AccReconciliable|AccForwardable|AccClosed|AccNotes|AccUpdUser|AccUpdStamp|AccValDebit|AccValCredit|AccRoughDebit|AccRoughCredit|AccOpenDebit|AccOpenCredit|AccFutDebit|AccFutCredit
+1082|Prêts consentis par l'exploitant||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10821|D. Friour|EUR|N|N|N|Y|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10822|Paulette Wieser|EUR|N|N|N|Y|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10823|Boris|EUR|N|N|N|Y|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1083|Prêts reçus par l'exploitant||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10831|LCL Travaux - Réfection allée Latresne - Ech. 08/2018|EUR|N|N|N|Y|N|Total (capital+intérêts) restant à rembourser|ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10832|LCL Immo - Acquisition Avron - Ech. 01/2029|EUR|N|N|N|Y|N|Total (capital+intérêts) restant à rembourser|ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084|LMNP||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10841|LMNP - Avron||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+108411|LMNP - Avron - Report des déficits antérieurs|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+108414|LMNP - Avron - Dépenses d'aménagement||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084141|Avron - Travaux Adenov|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084142|Avron - Aménagements et petits matériels|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084143|Avron - Mobilier|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+108415|LMNP - Avron - Dépenses d'entretien||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084151|Avron - Charges de copropriété|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084152|Avron - Accès Internet|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084153|Avron - EdF|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084154|Avron - Nettoyage et autres services|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084158|Avron - Assurance|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+108416|Avron - Impôts et taxes|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+108417|Avron - Autres frais|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+108418|LMNP - Avron - Recettes||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1084181|Avron - Loyers PWI Consultants|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+1086|Prélèvements personnels de l'exploitant||Y|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10861|Boris - Pension alimentaire|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10862|Boris - Autres dépenses|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:57|0|0|0|0|0|0|0|0
+10863|Zoé|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10864|Frais de santé|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10865|Vins et spiritueux|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10866|Impôts|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10867|Régularisation quote-part de l'exploitant|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10868|Dépenses diverses de l'exploitant|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10869|Autres prélèvements de l'exploitant|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+1087|Apports de l'exploitant||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10877|Recettes de l'exploitant (drafts)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10878|Recettes diverses de l'exploitant|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+10879|Autres apports de l'exploitant (prêts reçus)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+1088|Comptes de passage||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+108811|Drafts émis|EUR|N|Y|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+108812|Drafts reçus|EUR|N|Y|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+108819|Compte de passage|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+121|Bénéfice de l'exercice||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+121EUR|Bénéfice de l'exercice - EUR|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+129|Perte de l'exercice|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+2141|Matériels informatiques immobilisés|EUR|N|N|N|Y|N|Montant d'acquisition HT des matériels informatiques immobilisés :\
+- incrémenté du montant HT à l'entrée d'une immobilisation\
+- décrémenté du montant HT à la sortie d'une immobilisation.\
+Ce compte n'est pas impacté par les amortissements.|ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+2148|Amortissement des matériels informatiques|EUR|N|N|N|Y|N|Ce compte est crédité chaque année des amortissements effectués sur les matériels immobilisés. Son solde doit donc \"tendre\" vers le solde du compte 2141 \"Matériels informatiques immobilisés\" (à l'arrondi fiscal près).\
+Le compte est débité des immobilisations cédées.|ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+4119|Quantic||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+41191|Factures émises - HT|EUR|N|Y|N|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+41194|Factures émises - TVA 20.0|EUR|N|Y|N|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+41198|Factures en attente d'encaissement - TTC|EUR|N|Y|N|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445|Comptes de TVA||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+44561|TVA Latresne - Siège social||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445611|Latresne - Siège social - TVA 5.5% payée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445612|Latresne - Siège social - TVA 10% payée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445613|Latresne - Siège social - TVA 20% payée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+44562|TVA Latresne - Télécoms||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445621|Latresne - Télécoms - TVA 5.5% payée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445622|Latresne - Télécoms - TVA 10% payée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445623|Latresne - Télécoms - TVA 20% payée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+44563|TVA véhicule||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445633|Véhicule - Frais d'usage et d'entretien - TVA 20% payée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445634|Véhicule - Frais hors forfait km - TVA 20%|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+44565|TVA - Avron (LMNP)||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445651|TVA LMNP Avron taux super-réduit 5,5%|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445652|TVA LMNP Avron taux réduit 10%|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445653|TVA LMNP Avron taux normal 20%|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+44567|TVA sur autres biens et services||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445671|TVA 5.5% payée sur autres biens et services|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445672|TVA 10% payée sur autres biens et services|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445673|TVA 20% payée sur autres biens et services|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445683|TVA 20% payée sur immobilisations|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+445713|TVA 20% collectée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+44582|TVA payée pour un exercice précédent|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+44583|TVA payée pour l'exercice courant|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51|Banques||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+511|BNP - Paribas||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51141|BNP - Compte courant 5144806 (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51142|BNP - Livret de Développement Durable (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+512|LCL - Le Crédit Lyonnais||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51241|LCL - Compte courant|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51242|LCL - Compte sur livret 493889W (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51243|LCL - Compte Cerise 493012R (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51244|LCL - Codevi 956548N (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51245|LCL - PEA Espèces (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51246|LCL - PEA Titres (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51247|LCL - Plan d'Epargne Logement 897056S (perso)|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51248|LCL - Compte titres|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51249|LCL - Assurance Vie Corinthe|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+513|Caisse d'Epargne||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51351|CE IDF - Livret A|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+514|La Poste||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51441|La Poste - Compte joint|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+515|Boursorama||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+51541|Boursorama - Compte courant|EUR|N|N|Y|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+53|Caisse||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+531|Caisse|EUR|N|N|N|Y|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+62|Impôts et taxes||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6211|Contribution Economique Territoriale|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6212|Cotisation Foncière des Entreprises|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6215|Latresne - Impôts et taxes (mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6216|Arcueil - Impôts et taxes|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6219|Autres impôts ou taxes|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+63|Travaux, fournitures et services extérieurs||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6311|Petits matériels et outillages|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6312|Frais d'entretien et de réparations|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6313|Redevances domaines DNS|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6321|Latresne - Eau (HT, mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6322|Latresne - Electricité (HT, mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6323|Latresne - Gaz (HT, mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6324|Latresne - Entretien et petits aménagements (HT, mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6329|Latresne - Autres dépenses (HT, mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6334|Arcueil - Entretien et petits aménagements|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6338|Arcueil - Loyers|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6348|Avron - Loyers|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6371|Honoraires ne constituant pas des rétrocessions|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6372|Adhésion à une association de gestion agréée|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6382|Avron - Assurance|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6383|Filia-Maif - Assurance PACS (mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6384|Latresne - Assurance (mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6385|Arcueil - Assurance|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6386|Véhicule - Assurance (mixte, forfait km)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+64|Frais de transport et de déplacements||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6411|Véhicule - Usage et entretien (mixte, forfait km)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6412|Véhicule - Parking, péage (mixte, hors forfait)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6413|Véhicule - Autres frais (mixte, hors forfait km)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6418|Véhicule - Forfait kilométrique BNC|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6451|SNCF Paris-Bordeaux|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6452|Effia Stationnement Bordeaux Le Roy|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6488|Autres frais de déplacements|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+65|Charges sociales personnelles||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6521|RAM - Assurance maladie|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6522|CIPAV - Assurance vieillesse|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6523|URSSAF - Allocations familiales|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6528|CSG non déductible|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6541|MGEN-Filia (ex-Mocen) - Mutuelle maladie|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+66|Frais divers de gestion||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6611|Frais de réception et de représentation|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6621|Fournitures de bureau|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6622|Documentation générale|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6623|Frais d'affranchissement|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6641|Frais de télécoms - GSM||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+66411|Accès internet ADSL Arcueil|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+66412|Accès Internet fibre Avron|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+66413|Abonnement GSM|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+66414|Abonnement GSM Free|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6642|Latresne - Télécoms (mixte)|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6643|Arcueil - Télécoms|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6661|Cotisations syndicales et professionnelles|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+67|Frais financiers||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+671|Frais bancaires||Y|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6712|Frais financiers LCL|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6714|Frais financiers La Poste|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6715|Frais financiers Boursorama|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+6884|Amortissements des matériels informatiques|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+701|Honoraires encaissées|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+702|Remboursements de frais|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0
+709|Produits financiers|EUR|N|N|N|N|N||ofat|2016-03-04 12:01:56|0|0|0|0|0|0|0|0

@@ -23,6 +23,7 @@
 init_datadir = $(pkgdatadir)/init_utf8_comma_pipe_fr
 
 init_files = \
+	accounts-h1.csv										\
 	classes-h1.csv										\
 	currencies-h1.csv									\
 	ledgers-h1.csv										\

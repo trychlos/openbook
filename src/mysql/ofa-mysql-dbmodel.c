@@ -40,6 +40,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -101,6 +102,8 @@ static sImport st_imports[] = {
 				"OFA_T_CLASSES",       "classes-h1.csv",       1, ofo_class_get_type },
 		{ N_( "Currencies" ),
 				"OFA_T_CURRENCIES",    "currencies-h1.csv",    1, ofo_currency_get_type },
+		{ N_( "Accounts" ),
+				"OFA_T_ACCOUNTS",      "accounts-h1.csv",      1, ofo_account_get_type },
 		{ N_( "Ledgers" ),
 				"OFA_T_LEDGERS",       "ledgers-h1.csv",       1, ofo_ledger_get_type },
 		{ N_( "Operation templates" ),

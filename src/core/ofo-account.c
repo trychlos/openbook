@@ -2238,12 +2238,15 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	ofoClass *class_obj;
 	gchar *str;
 	const ofaIDBConnect *connect;
+	gboolean is_root;
 
 	line = 0;
 	errors = 0;
 	dataset = NULL;
+	/* may be NULL
+	 * eg. when importing accounts on dossier creation */
 	dossier = ofa_hub_get_dossier( hub );
-	def_dev_code = ofo_dossier_get_default_currency( dossier );
+	def_dev_code = dossier ? ofo_dossier_get_default_currency( dossier ) : NULL;
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
@@ -2286,25 +2289,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 		ofo_account_set_label( account, str );
 
 		/* currency code */
-		str = ofa_iimportable_get_string( &itf, settings );
-		if( str ){
-			dev_code = g_strdup( str );
-		} else {
-			dev_code = g_strdup( def_dev_code );
-		}
-		g_free( str );
-		currency = ofo_currency_get_by_code( hub, dev_code );
-		if( !currency ){
-			msg = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, msg );
-			g_free( msg );
-			g_free( dev_code );
-			errors += 1;
-			continue;
-		}
-		ofo_account_set_currency( account, dev_code );
-		g_free( dev_code );
+		dev_code = ofa_iimportable_get_string( &itf, settings );
 
 		/* root account
 		 * previous to DB model v27, root/detail accounts were marked with R/D
@@ -2324,9 +2309,36 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 			errors += 1;
 			continue;
 		}
-		ofo_account_set_root( account,
-				!my_collate( str, ACCOUNT_TYPE_ROOT ) || !my_collate( str, "Y" ));
+		is_root = !my_collate( str, ACCOUNT_TYPE_ROOT ) || !my_collate( str, "Y" );
+		ofo_account_set_root( account, is_root );
 		g_free( str );
+
+		/* check the currency code if a detail account */
+		if( !is_root ){
+			if( !my_strlen( dev_code )){
+				dev_code = g_strdup( def_dev_code );
+			}
+			if( !my_strlen( dev_code )){
+				msg = g_strdup( _( "no currency set, and unable to get a default currency" ));
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				errors += 1;
+				continue;
+			}
+			currency = ofo_currency_get_by_code( hub, dev_code );
+			if( !currency ){
+				msg = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				g_free( dev_code );
+				errors += 1;
+				continue;
+			}
+			ofo_account_set_currency( account, dev_code );
+		}
+		g_free( dev_code );
 
 		/* settleable ? */
 		str = ofa_iimportable_get_string( &itf, settings );
