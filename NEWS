@@ -45,9 +45,12 @@
    - ofaIGetter: new interface.
    - ofaIThemeManager: new interface.
    - ofaMainWindow: implements new ofaIGetter and ofaIThemeManager interfaces.
+   - ofa_main_window_activate_theme(): removed method.
+   - ofa_nomodal_page_get_by_theme(): removed method.
    - ofa_nomodal_page_present_by_type(): new method.
    - ofaPage: implements new ofaIGetter interface.
    - ofa_page_get_main_window(): removed method.
+   - ofa_page_get_theme(): removed method.
 
 -----------------------------------------------------------------------
  Version 0.52

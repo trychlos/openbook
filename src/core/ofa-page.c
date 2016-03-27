@@ -489,25 +489,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 /**
- * ofa_page_get_theme:
- *
- * Returns -1 if theme is not set.
- * If theme is set, it is strictly greater than zero (start with 1).
- */
-gint
-ofa_page_get_theme( const ofaPage *page )
-{
-	ofaPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), -1 );
-	g_return_val_if_fail( !page->prot->dispose_has_run, -1 );
-
-	priv = ofa_page_get_instance_private( page );
-
-	return( priv->theme );
-}
-
-/**
  * ofa_page_get_top_focusable_widget:
  *
  * This virtual function should return the top focusable widget of

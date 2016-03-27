@@ -70,8 +70,6 @@ void            ofa_nomodal_page_run            ( ofaIGetter *getter,
 														const gchar *title,
 														GtkWidget *page );
 
-ofaNomodalPage *ofa_nomodal_page_get_by_theme   ( gint theme );
-
 gboolean        ofa_nomodal_page_present_by_type( GType type );
 
 void            ofa_nomodal_page_close_all      ( void );

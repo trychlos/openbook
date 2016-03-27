@@ -247,35 +247,6 @@ on_finalized_page( void *empty, GObject *finalized_page )
 }
 
 /**
- * ofa_nomodal_page_get_by_theme:
- * @theme: the searched theme identifier.
- *
- * Returns: the #ofaNomodalPage which displays this @theme, or %NULL.
- */
-ofaNomodalPage *
-ofa_nomodal_page_get_by_theme( gint theme )
-{
-	static const gchar *thisfn = "ofa_nomodal_page_get_by_theme";
-	ofaNomodalPage *page;
-	ofaNomodalPagePrivate *priv;
-	GList *it;
-
-	g_debug( "%s: theme=%d", thisfn, theme );
-
-	for( it=st_list ; it ; it=it->next ){
-		page = OFA_NOMODAL_PAGE( it->data );
-		priv = ofa_nomodal_page_get_instance_private( page );
-		if( ofa_page_get_theme( OFA_PAGE( priv->top_widget )) == theme ){
-			g_debug( "%s: found page=%p (ofaPage=%p (%s))",
-					thisfn, ( void * ) page, ( void * ) priv->top_widget, G_OBJECT_TYPE_NAME( priv->top_widget ));
-			return( page );
-		}
-	}
-
-	return( NULL );
-}
-
-/**
  * ofa_nomodal_page_present_by_type:
  * @type: the GType of the searched page.
  *

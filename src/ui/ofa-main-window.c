@@ -112,17 +112,6 @@ typedef struct {
 }
 	ofaMainWindowPrivate;
 
-/* This structure handles the data needed to manage the themes.
- * @type: the GType of the corresponding ofaPage, which also acts as the
- *  theme identifier.
- * @label: the theme label, used as the notebook tab title
- */
-typedef struct {
-	GType   type;
-	gchar  *label;
-}
-	sThemeDef;
-
 /* signals defined here
  */
 enum {
@@ -188,120 +177,65 @@ static const GActionEntry st_dos_entries[] = {
 		{ "integrity",              on_check_integrity,        NULL, NULL, NULL },
 };
 
-/* This structure handles the functions which manage the pages of the
- * main notebook:
- * - the label which is displayed in the tab of the page of the main book
- * - the GObject get_type() function of the ofaPage-derived class
- *   which handles the page
+/* This structure handles the data needed to manage the themes.
  *
- * There must be here one theme per type of main notebook's page.
+ * @type: the GType of the corresponding ofaPage,
+ *  aka the theme identifier.
  *
- * Each main notebook's page may be reached either from a menubar action,
- * or from an activation of an item in the left treeview (though several
- * menubar actions and/or several items in the left treeview may lead
- * to a same theme, or do not appear at all)
+ * @label: the theme label,
+ *  aka the notebook tab title,
+ *  aka the non modal window title.
+ *
+ * This structure is allocated in #theme_manager_define() method, but
+ * cannot be used to initialize our themes (because GType is not a
+ * compilation constant).
+ *
+ * This structure is part of ofaIThemeManager implementation.
  */
 typedef struct {
-	gint       theme_id;
+	GType   type;
+	gchar  *label;
+}
+	sThemeDef;
+
+/* The structure used to initialize our themes
+ * This structure is only part of ofaMainWindow initialization.
+ * List is ordered by get_type() function name just for reference.
+ */
+typedef struct {
 	gchar     *label;
 	GType    (*fn_get_type)( void );
-	gboolean   if_entries_allowed;
 }
-	sThemeOldDef;
+	sThemeInit;
 
-static sThemeOldDef st_theme_defs[] = {
-
-		{ THM_ACCOUNTS,
-				N_( "Chart of accounts" ),
-				ofa_account_page_get_type,
-				FALSE
-		},
-		{ THM_BATFILES,
-				N_( "Imported BAT files" ),
-				ofa_bat_page_get_type,
-				FALSE
-		},
-
-		{ THM_CLASSES,
-				N_( "Account classes" ),
-				ofa_class_page_get_type,
-				FALSE
-		},
-		{ THM_CURRENCIES,
-				N_( "Currencies" ),
-				ofa_currency_page_get_type,
-				FALSE
-		},
-		{ THM_GUIDED_INPUT,
-				N_( "Guided input" ),
-				ofa_guided_ex_get_type,
-				TRUE
-		},
-		{ THM_LEDGERS,
-				N_( "Ledgers" ),
-				ofa_ledger_page_get_type,
-				FALSE
-		},
-		{ THM_OPE_TEMPLATES,
-				N_( "Operation templates" ),
-				ofa_ope_template_page_get_type,
-				FALSE
-		},
-		{ THM_RATES,
-				N_( "Rates" ),
-				ofa_rate_page_get_type,
-				FALSE
-		},
-		{ THM_RECONCIL,
-				N_( "Reconciliation" ),
-				ofa_reconcil_page_get_type,
-				FALSE
-		},
-		{ THM_RENDER_BALANCES,
-				N_( "Entries balance" ),
-				ofa_balance_render_get_type,
-				FALSE
-		},
-		{ THM_RENDER_ACCOUNTS_BOOK,
-				N_( "Accounts book" ),
-				ofa_account_book_render_get_type,
-				FALSE
-		},
-		{ THM_RENDER_LEDGERS_BOOK,
-				N_( "Ledgers book" ),
-				ofa_ledger_book_render_get_type,
-				FALSE
-		},
-		{ THM_RENDER_LEDGERS_SUMMARY,
-				N_( "Ledgers summary" ),
-				ofa_ledger_summary_render_get_type,
-				FALSE
-		},
-		{ THM_RENDER_RECONCIL,
-				N_( "Reconciliation Sumary" ),
-				ofa_reconcil_render_get_type,
-				FALSE
-		},
-		{ THM_SETTLEMENT,
-				N_( "Settlement" ),
-				ofa_settlement_page_get_type,
-				FALSE
-		},
-		{ THM_ENTRIES,
-				N_( "View entries" ),
-				ofa_entry_page_get_type,
-				FALSE
-		},
+static sThemeInit st_theme_defs[] = {
+		{ N_( "Accounts book" ),         ofa_account_book_render_get_type },
+		{ N_( "Chart of accounts" ),     ofa_account_page_get_type },
+		{ N_( "Entries balance" ),       ofa_balance_render_get_type },
+		{ N_( "Imported BAT files" ),    ofa_bat_page_get_type },
+		{ N_( "Account classes" ),       ofa_class_page_get_type },
+		{ N_( "Currencies" ),            ofa_currency_page_get_type },
+		{ N_( "View entries" ),          ofa_entry_page_get_type },
+		{ N_( "Guided input" ),          ofa_guided_ex_get_type },
+		{ N_( "Ledgers book" ),          ofa_ledger_book_render_get_type },
+		{ N_( "Ledgers" ),               ofa_ledger_page_get_type },
+		{ N_( "Ledgers summary" ),       ofa_ledger_summary_render_get_type },
+		{ N_( "Operation templates" ),   ofa_ope_template_page_get_type },
+		{ N_( "Rates" ),                 ofa_rate_page_get_type },
+		{ N_( "Reconciliation" ),        ofa_reconcil_page_get_type },
+		{ N_( "Reconciliation Sumary" ), ofa_reconcil_render_get_type },
+		{ N_( "Settlement" ),            ofa_settlement_page_get_type },
 		{ 0 }
 };
 
 /* Left treeview definition.
  * For ergonomy reason, we may have here several items which points
- * to the same theme
+ * to the same theme.
+ * In display order.
  */
 typedef struct {
 	const gchar *label;
-	gint         theme_id;
+	GType     ( *fntype )( void );		/* must be a theme-registered GType */
 }
 	sTreeDef;
 
@@ -313,15 +247,15 @@ enum {
 
 static sTreeDef st_tree_defs[] = {
 
-		{ N_( "Guided input" ),        THM_GUIDED_INPUT },
-		{ N_( "Reconciliation" ),      THM_RECONCIL },
-		{ N_( "Chart of accounts" ),   THM_ACCOUNTS },
-		{ N_( "Ledgers" ),             THM_LEDGERS },
-		{ N_( "Operation templates" ), THM_OPE_TEMPLATES },
-		{ N_( "Currencies" ),          THM_CURRENCIES },
-		{ N_( "Rates" ),               THM_RATES },
-		{ N_( "Account classes" ),     THM_CLASSES },
-		{ N_( "Imported BAT files" ),  THM_BATFILES },
+		{ N_( "Guided input" ),        ofa_guided_ex_get_type },
+		{ N_( "Reconciliation" ),      ofa_reconcil_page_get_type },
+		{ N_( "Chart of accounts" ),   ofa_account_page_get_type },
+		{ N_( "Ledgers" ),             ofa_ledger_page_get_type },
+		{ N_( "Operation templates" ), ofa_ope_template_page_get_type },
+		{ N_( "Currencies" ),          ofa_currency_page_get_type },
+		{ N_( "Rates" ),               ofa_rate_page_get_type },
+		{ N_( "Account classes" ),     ofa_class_page_get_type },
+		{ N_( "Imported BAT files" ),  ofa_bat_page_get_type },
 		{ 0 }
 };
 
@@ -332,10 +266,9 @@ static const gchar *st_icon_fname       = ICONFNAME;
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static void                  theme_defs_free( GList *themes );
-static void                  theme_free( sThemeOldDef *def );
 static void                  pane_save_position( GtkPaned *pane );
 static void                  window_store_ref( ofaMainWindow *self, GtkBuilder *builder, const gchar *placeholder );
+static void                  init_themes( ofaMainWindow *self );
 static void                  hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
 static void                  hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
@@ -345,13 +278,11 @@ static void                  set_menubar( ofaMainWindow *window, GMenuModel *mod
 static void                  extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void                  set_window_title( const ofaMainWindow *window );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
-static void                  warning_archived_dossier( const ofaMainWindow *window );
 static void                  on_dossier_properties( ofaMainWindow *window, gpointer user_data );
 static void                  pane_restore_position( GtkPaned *pane );
-static void                  add_treeview_to_pane_left( ofaMainWindow *window );
-static void                  on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
-static const sThemeOldDef *get_theme_def_from_id( const ofaMainWindow *self, gint theme_id );
-static void                  add_empty_notebook_to_pane_right( ofaMainWindow *window );
+static void                  pane_left_add_treeview( ofaMainWindow *window );
+static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
+static void                  pane_right_add_empty_notebook( ofaMainWindow *window );
 static void                  on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
 static void                  do_update_menubar_items( ofaMainWindow *self );
 static void                  enable_action_guided_input( ofaMainWindow *window, gboolean enable );
@@ -362,8 +293,6 @@ static void                  enable_action_close_exercice( ofaMainWindow *window
 static void                  enable_action_import( ofaMainWindow *window, gboolean enable );
 static void                  do_backup( ofaMainWindow *self );
 static GtkNotebook          *notebook_get_book( const ofaMainWindow *window );
-static ofaPage              *notebook_old_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme );
-static ofaPage              *notebook_old_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeOldDef *theme_def );
 static ofaPage              *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
 static ofaPage              *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
 static void                  notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
@@ -382,6 +311,7 @@ static void                  itheme_manager_iface_init( ofaIThemeManagerInterfac
 static void                  itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label );
 static ofaPage              *itheme_manager_activate( ofaIThemeManager *instance, GType type );
 static sThemeDef            *theme_get_by_type( GList **list, GType type );
+static void                  theme_free( sThemeDef *def );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
@@ -434,24 +364,11 @@ main_window_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->menu );
-		theme_defs_free( priv->themes );
+		g_list_free_full( priv->themes, ( GDestroyNotify ) theme_free );
 	}
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_main_window_parent_class )->dispose( instance );
-}
-
-static void
-theme_defs_free( GList *themes )
-{
-	g_list_free_full( themes, ( GDestroyNotify ) theme_free );
-}
-
-static void
-theme_free( sThemeOldDef *def )
-{
-	g_free( def->label );
-	g_free( def );
 }
 
 static void
@@ -682,11 +599,9 @@ ofa_main_window_new( ofaApplication *application )
 	g_debug( "%s: application=%p", thisfn, application );
 
 	/* 'application' is a GtkWindow property
-	 * because 'application' is not a construction property, it is only
-	 * available after g_object_new() has returned */
-	window = g_object_new( OFA_TYPE_MAIN_WINDOW,
-					"application", application,
-					NULL );
+	 *  because it is not defined as a construction property, it is only
+	 *  available after g_object_new() has returned */
+	window = g_object_new( OFA_TYPE_MAIN_WINDOW, "application", application, NULL );
 
 	priv = ofa_main_window_get_instance_private( window );
 
@@ -703,13 +618,37 @@ ofa_main_window_new( ofaApplication *application )
 	g_signal_emit_by_name(( gpointer ) application, "menu-available", window, "win" );
 
 	/* let the plugins update the managed themes */
-	g_signal_emit_by_name(( gpointer ) application, "theme-available", window );
+	init_themes( window );
 
 	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
 
 	set_menubar( window, ofa_application_get_menu_model( application ));
 
 	return( window );
+}
+
+/*
+ * the main window initialization of theme manager:
+ * - define the themes for the main window
+ * - then declare the theme manager general availability
+ */
+static void
+init_themes( ofaMainWindow *self )
+{
+	gint i;
+	GtkApplication *application;
+
+	/* define the themes for the main window */
+	for( i=0 ; st_theme_defs[i].label ; ++i ){
+		ofa_itheme_manager_define(
+				OFA_ITHEME_MANAGER( self ),
+				( *st_theme_defs[i].fn_get_type )(), gettext( st_theme_defs[i].label ));
+	}
+
+	/* declare then the theme manager general availability */
+	application = gtk_window_get_application( GTK_WINDOW( self ));
+	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
+	g_signal_emit_by_name( application, "theme-available", self );
 }
 
 static void
@@ -769,8 +708,8 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
 	pane_restore_position( priv->pane );
-	add_treeview_to_pane_left( self );
-	add_empty_notebook_to_pane_right( self );
+	pane_left_add_treeview( self );
+	pane_right_add_empty_notebook( self );
 
 	set_menubar( self, priv->menu );
 
@@ -1063,23 +1002,6 @@ warning_exercice_unset( const ofaMainWindow *window )
 	}
 }
 
-/*
- * warning_archived_dossier:
- */
-static void
-warning_archived_dossier( const ofaMainWindow *self )
-{
-	gchar *str;
-
-	str = g_strdup_printf(
-				_( "Warning: this exercice has been archived.\n\n"
-					"No new entry is allowed on an archived exercice." ));
-
-	my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING, str );
-
-	g_free( str );
-}
-
 static void
 pane_restore_position( GtkPaned *pane )
 {
@@ -1096,7 +1018,7 @@ pane_restore_position( GtkPaned *pane )
 }
 
 static void
-add_treeview_to_pane_left( ofaMainWindow *window )
+pane_left_add_treeview( ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 	GtkFrame *frame;
@@ -1120,7 +1042,7 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	gtk_widget_set_vexpand( GTK_WIDGET( view ), TRUE );
 	gtk_tree_view_set_headers_visible( view, FALSE );
 	gtk_tree_view_set_activate_on_single_click( view, FALSE );
-	g_signal_connect(G_OBJECT( view ), "row-activated", G_CALLBACK( on_theme_activated ), window );
+	g_signal_connect(G_OBJECT( view ), "row-activated", G_CALLBACK( pane_left_on_item_activated ), window );
 
 	model = GTK_TREE_MODEL( gtk_list_store_new( N_COLUMNS, G_TYPE_INT, G_TYPE_STRING ));
 	gtk_tree_view_set_model( view, model );
@@ -1153,13 +1075,10 @@ add_treeview_to_pane_left( ofaMainWindow *window )
 	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( view ));
 }
 
-/*
- * the theme is activated from the left treeview pane
- */
 static void
-on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window )
+pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window )
 {
-	static const gchar *thisfn = "ofa_main_window_on_theme_activated";
+	static const gchar *thisfn = "ofa_main_window_pane_left_on_item_activated";
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 	gint idx;
@@ -1172,45 +1091,12 @@ on_theme_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *col
 	if( gtk_tree_model_get_iter( model, &iter, path )){
 		gtk_tree_model_get( model, &iter, COL_TREE_IDX, &idx, -1 );
 
-		ofa_main_window_activate_theme( window, st_tree_defs[idx].theme_id );
+		ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( window ), ( *st_tree_defs[idx].fntype )());
 	}
-}
-
-/*
- * return NULL if not found
- */
-static const sThemeOldDef *
-get_theme_def_from_id( const ofaMainWindow *main_window, gint theme_id )
-{
-	static const gchar *thisfn = "ofa_main_window_get_theme_def_from_id";
-	ofaMainWindowPrivate *priv;
-	gint i;
-	GList *it;
-	sThemeOldDef *def;
-
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	if( theme_id < THM_LAST_THEME ){
-		for( i=0 ; st_theme_defs[i].label ; ++i ){
-			if( st_theme_defs[i].theme_id == theme_id ){
-				return(( sThemeOldDef * ) &st_theme_defs[i] );
-			}
-		}
-	} else if( theme_id > THM_LAST_THEME ){
-		for( it=priv->themes ; it ; it=it->next ){
-			def = ( sThemeOldDef * ) it->data;
-			if( def->theme_id == theme_id ){
-				return( def );
-			}
-		}
-	}
-
-	g_warning( "%s: unable to find theme definition for id=%d", thisfn, theme_id );
-	return( NULL );
 }
 
 static void
-add_empty_notebook_to_pane_right( ofaMainWindow *window )
+pane_right_add_empty_notebook( ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 	GtkNotebook *book;
@@ -1413,7 +1299,7 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_OPE_TEMPLATES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_OPE_TEMPLATE_PAGE );
 }
 
 static void
@@ -1426,7 +1312,7 @@ on_ope_entry_page( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_ENTRIES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_ENTRY_PAGE );
 }
 
 static void
@@ -1439,7 +1325,7 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RECONCIL );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_RECONCIL_PAGE );
 }
 
 static void
@@ -1452,7 +1338,7 @@ on_ope_settlement( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_SETTLEMENT );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_SETTLEMENT_PAGE );
 }
 
 static void
@@ -1517,7 +1403,7 @@ on_render_balances( GSimpleAction *action, GVariant *parameter, gpointer user_da
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_BALANCES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_BALANCE_RENDER );
 }
 
 static void
@@ -1530,7 +1416,7 @@ on_render_accounts_book( GSimpleAction *action, GVariant *parameter, gpointer us
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_ACCOUNTS_BOOK );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_ACCOUNT_BOOK_RENDER );
 }
 
 static void
@@ -1543,7 +1429,7 @@ on_render_ledgers_book( GSimpleAction *action, GVariant *parameter, gpointer use
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_LEDGERS_BOOK );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_LEDGER_BOOK_RENDER );
 }
 
 static void
@@ -1556,7 +1442,7 @@ on_render_ledgers_summary( GSimpleAction *action, GVariant *parameter, gpointer 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_LEDGERS_SUMMARY );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_LEDGER_SUMMARY_RENDER );
 }
 
 static void
@@ -1569,7 +1455,7 @@ on_render_reconcil( GSimpleAction *action, GVariant *parameter, gpointer user_da
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RENDER_RECONCIL );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_RECONCIL_RENDER );
 }
 
 static void
@@ -1582,7 +1468,7 @@ on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_ACCOUNTS );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_ACCOUNT_PAGE );
 }
 
 static void
@@ -1595,7 +1481,7 @@ on_ref_ledgers( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_LEDGERS );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_LEDGER_PAGE );
 }
 
 static void
@@ -1608,7 +1494,7 @@ on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_OPE_TEMPLATES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_OPE_TEMPLATE_PAGE );
 }
 
 static void
@@ -1621,7 +1507,7 @@ on_ref_currencies( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CURRENCIES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_CURRENCY_PAGE );
 }
 
 static void
@@ -1634,7 +1520,7 @@ on_ref_rates( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_RATES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_RATE_PAGE );
 }
 
 static void
@@ -1647,20 +1533,20 @@ on_ref_classes( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_CLASSES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_CLASS_PAGE );
 }
 
 static void
 on_ref_batfiles( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
-	static const gchar *thisfn = "ofa_main_window_on_ref_classes";
+	static const gchar *thisfn = "ofa_main_window_on_ref_batfiles";
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_activate_theme( OFA_MAIN_WINDOW( user_data ), THM_BATFILES );
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_BAT_PAGE );
 }
 
 static void
@@ -1689,68 +1575,6 @@ on_check_integrity( GSimpleAction *action, GVariant *parameter, gpointer user_da
 	ofa_check_integrity_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
 }
 
-/**
- * ofa_main_window_activate_theme:
- * @main_window: the #ofaMainWindow main window.
- * @theme: the theme identifier as defined in ofa-main-window.h.
- *
- * Activate the specified theme, creating the corresponding page if it
- * didn't exist.
- *
- * Returns: the #ofaPage corresponding to the theme.
- */
-ofaPage *
-ofa_main_window_activate_theme( const ofaMainWindow *main_window, gint theme )
-{
-	static const gchar *thisfn = "ofa_main_window_activate_theme";
-	ofaMainWindowPrivate *priv;
-	ofaHub *hub;
-	GtkNotebook *main_book;
-	ofaPage *page;
-	const sThemeOldDef *theme_def;
-	ofoDossier *dossier;
-	ofaNomodalPage *nomodal;
-
-	g_debug( "%s: main_window=%p, theme=%d", thisfn, ( void * ) main_window, theme );
-
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	page = NULL;
-	hub = ofa_main_window_get_hub( main_window );
-	main_book = notebook_get_book( main_window );
-	g_return_val_if_fail( main_book && GTK_IS_NOTEBOOK( main_book ), NULL );
-
-	theme_def = get_theme_def_from_id( main_window, theme );
-	g_return_val_if_fail( theme_def, NULL );
-	g_return_val_if_fail( theme_def->fn_get_type, NULL );
-
-	if( theme_def->if_entries_allowed ){
-		dossier = ofa_hub_get_dossier( hub );
-		if( !ofo_dossier_is_current( dossier )){
-			warning_archived_dossier( main_window );
-			return( NULL );
-		}
-	}
-
-	nomodal = ofa_nomodal_page_get_by_theme( theme );
-	if( nomodal ){
-		my_iwindow_present( MY_IWINDOW( nomodal ));
-	} else {
-		page = notebook_old_get_page( main_window, main_book, theme );
-		if( !page ){
-			page = notebook_old_create_page( main_window, main_book, theme_def );
-		}
-		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-		notebook_activate_page( main_window, main_book, page );
-	}
-
-	return( page );
-}
-
 static GtkNotebook *
 notebook_get_book( const ofaMainWindow *window )
 {
@@ -1768,58 +1592,6 @@ notebook_get_book( const ofaMainWindow *window )
 	}
 
 	return( NULL );
-}
-
-static ofaPage *
-notebook_old_get_page( const ofaMainWindow *window, GtkNotebook *book, gint theme )
-{
-	GtkWidget *page;
-	gint count, i, page_thm;
-
-	count = gtk_notebook_get_n_pages( book );
-	for( i=0 ; i<count ; ++i ){
-		page = gtk_notebook_get_nth_page( book, i );
-		g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-		page_thm = ofa_page_get_theme( OFA_PAGE( page ));
-		if( page_thm == theme ){
-			return( OFA_PAGE( page ));
-		}
-	}
-
-	return( NULL );
-}
-
-/*
- * the page for this theme has not been found
- * so, create it here
- */
-static ofaPage *
-notebook_old_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeOldDef *theme_def )
-{
-	ofaPage *page;
-	myTab *tab;
-	GtkWidget *label;
-
-	/* the top child of the notebook page */
-	page = g_object_new(( *theme_def->fn_get_type )(),
-					PAGE_PROP_MAIN_WINDOW, main,
-					PAGE_PROP_THEME,       theme_def->theme_id,
-					NULL );
-
-
-	/* the tab widget */
-	tab = my_tab_new( NULL, gettext( theme_def->label ));
-	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
-	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
-
-	/* the menu widget */
-	label = gtk_label_new( gettext( theme_def->label ));
-	my_utils_widget_set_xalign( label, 0 );
-
-	gtk_notebook_append_page_menu( book, GTK_WIDGET( page ), GTK_WIDGET( tab ), label );
-	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( page ), TRUE );
-
-	return( page );
 }
 
 static ofaPage *
@@ -2139,4 +1911,11 @@ theme_get_by_type( GList **list, GType type )
 	*list = g_list_prepend( *list, sdata );
 
 	return( sdata );
+}
+
+static void
+theme_free( sThemeDef *def )
+{
+	g_free( def->label );
+	g_free( def );
 }

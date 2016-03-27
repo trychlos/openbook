@@ -140,8 +140,6 @@ GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
 
 ofaMainWindow *ofa_main_window_new               ( ofaApplication *application );
 
-ofaPage       *ofa_main_window_activate_theme    ( const ofaMainWindow *window, gint theme_id );
-
 gboolean       ofa_main_window_is_willing_to_quit( const ofaMainWindow *window );
 
 void           ofa_main_window_backup_dossier    ( ofaMainWindow *window );
