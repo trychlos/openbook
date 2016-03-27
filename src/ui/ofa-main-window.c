@@ -1701,19 +1701,22 @@ static void
 on_tab_pin_clicked( myTab *tab, ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_main_window_on_tab_pin_clicked";
-	gchar *title;
+	gchar *title, *title2;
 	GtkWindow *toplevel;
 
 	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
 
 	title = my_tab_get_label( tab );
+	title2 = my_utils_str_remove_underlines( title );
+
+	g_free( title );
 	g_object_ref( G_OBJECT( page ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
 	do_close( page );
-	ofa_nomodal_page_run( OFA_IGETTER( page ), toplevel, title, GTK_WIDGET( page ));
+	ofa_nomodal_page_run( OFA_IGETTER( page ), toplevel, title2, GTK_WIDGET( page ));
 
-	g_free( title );
+	g_free( title2 );
 	g_object_unref( G_OBJECT( page ));
 }
 
