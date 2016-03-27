@@ -32,12 +32,12 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-itheme-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-ledger-properties.h"
@@ -312,36 +312,42 @@ on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaLedgerPage *page )
+on_new_clicked( GtkButton *button, ofaLedgerPage *self )
 {
 	ofoLedger *ledger;
+	GtkWindow *toplevel;
 
 	ledger = ofo_ledger_new();
-	ofa_ledger_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), ledger );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_ledger_properties_run( OFA_IGETTER( self ), toplevel, ledger );
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaLedgerPage *page )
+on_update_clicked( GtkButton *button, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
 	GList *selected;
 	ofoLedger *ledger;
 
-	priv = ofa_ledger_page_get_instance_private( page );
+	priv = ofa_ledger_page_get_instance_private( self );
 
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
 	ofa_ledger_treeview_free_selected( selected );
 
-	do_update( page, ledger );
+	do_update( self, ledger );
 }
 
 static void
 do_update( ofaLedgerPage *self, ofoLedger *ledger )
 {
+	GtkWindow *toplevel;
+
 	if( ledger ){
-		ofa_ledger_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), ledger );
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_ledger_properties_run( OFA_IGETTER( self ), toplevel, ledger );
 	}
 }
 
@@ -402,6 +408,7 @@ on_entry_page( GtkButton *button, ofaLedgerPage *self )
 	ofaPage *page;
 	const gchar *mnemo;
 	ofoLedger *ledger;
+	ofaIThemeManager *manager;
 
 	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
 
@@ -413,16 +420,11 @@ on_entry_page( GtkButton *button, ofaLedgerPage *self )
 	ofa_ledger_treeview_free_selected( list );
 
 	if( ledger ){
-		page = ofa_main_window_activate_theme(
-						ofa_page_get_main_window( OFA_PAGE( self )),
-						THM_ENTRIES );
+		manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
+		page = ofa_itheme_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
 		if( page ){
-			ofa_entry_page_display_entries(
-							OFA_ENTRY_PAGE( page ),
-							OFO_TYPE_LEDGER,
-							ofo_ledger_get_mnemo( ledger ),
-							NULL,
-							NULL );
+			ofa_entry_page_display_entries( OFA_ENTRY_PAGE( page ),
+							OFO_TYPE_LEDGER, ofo_ledger_get_mnemo( ledger ), NULL, NULL );
 		}
 	}
 }

@@ -788,17 +788,20 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 
 	/* display dossier notes ? */
 	if( ofa_prefs_dossier_open_notes() || ofa_dossier_prefs_get_open_notes( prefs )){
+
 		main_notes = ofo_dossier_get_notes( dossier );
 		exe_notes = ofo_dossier_get_exe_notes( dossier );
 		empty = my_strlen( main_notes ) == 0 && my_strlen( exe_notes ) == 0;
 		user_prefs_non_empty = ofa_prefs_dossier_open_notes() && ofa_prefs_dossier_open_notes_if_empty();
 		dossier_prefs_non_empty = ofa_dossier_prefs_get_open_notes( prefs ) && ofa_dossier_prefs_get_nonempty( prefs );
+
 		g_debug( "%s: empty=%s, user_prefs_non_empty=%s, dossier_prefs_non_empty=%s",
 				thisfn, empty ? "True":"False",
 				user_prefs_non_empty ? "True":"False",
 				dossier_prefs_non_empty ? "True":"False" );
+
 		if( !empty || ( !user_prefs_non_empty && !dossier_prefs_non_empty )){
-			ofa_dossier_display_notes_run( self, main_notes, exe_notes );
+			ofa_dossier_display_notes_run( OFA_IGETTER( self ), GTK_WINDOW( self ), main_notes, exe_notes );
 		}
 	}
 
@@ -1462,7 +1465,7 @@ on_ope_ledger_close( GSimpleAction *action, GVariant *parameter, gpointer user_d
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_ledger_close_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_ledger_close_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
 }
 
 static void
@@ -1488,7 +1491,7 @@ on_ope_import( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_import_assistant_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_import_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
 }
 
 static void
@@ -1501,7 +1504,7 @@ on_ope_export( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_export_assistant_run( OFA_MAIN_WINDOW( user_data ));
+	ofa_export_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
 }
 
 static void

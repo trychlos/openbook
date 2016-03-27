@@ -38,7 +38,9 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-ledger-def.h"
 
 G_BEGIN_DECLS
@@ -64,7 +66,8 @@ typedef struct {
 
 GType    ofa_ledger_close_get_type( void ) G_GNUC_CONST;
 
-void     ofa_ledger_close_run     ( ofaMainWindow *parent );
+void     ofa_ledger_close_run     ( ofaIGetter *getter,
+										GtkWindow *parent );
 
 G_END_DECLS
 

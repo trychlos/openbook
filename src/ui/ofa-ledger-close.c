@@ -35,13 +35,12 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-check-balances.h"
 #include "ui/ofa-check-integrity.h"
@@ -53,6 +52,7 @@
 typedef struct {
 	gboolean            dispose_has_run;
 
+	ofaIGetter         *getter;
 	ofaHub             *hub;
 	GList              *hub_handlers;
 	gboolean            done;			/* whether we have actually done something */
@@ -179,23 +179,30 @@ ofa_ledger_close_class_init( ofaLedgerCloseClass *klass )
 
 /**
  * ofa_ledger_close_run:
- * @main: the main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
  * Run an intermediate closing on selected ledgers
  */
 void
-ofa_ledger_close_run( ofaMainWindow *main_window )
+ofa_ledger_close_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_ledger_close_run";
 	ofaLedgerClose *self;
+	ofaLedgerClosePrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_LEDGER_CLOSE, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_ledger_close_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -235,17 +242,13 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_close_idialog_init";
 	ofaLedgerClosePrivate *priv;
-	GtkApplicationWindow *main_window;
 	gulong handler;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	setup_ledgers_treeview( OFA_LEDGER_CLOSE( instance ));

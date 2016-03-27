@@ -34,6 +34,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -49,11 +50,11 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIGetter  *getter;
 	ofoCurrency *currency;
 
 	/* internals
 	 */
-	ofaHub      *hub;
 	gboolean     is_current;
 	gboolean     is_new;
 
@@ -167,28 +168,32 @@ ofa_currency_properties_class_init( ofaCurrencyPropertiesClass *klass )
 
 /**
  * ofa_currency_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @currency: the #ofoCurrency to be displayed/updated.
  *
  * Update the properties of an currency
  */
 void
-ofa_currency_properties_run( const ofaMainWindow *main_window, ofoCurrency *currency )
+ofa_currency_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoCurrency *currency )
 {
 	static const gchar *thisfn = "ofa_currency_properties_run";
 	ofaCurrencyProperties *self;
 	ofaCurrencyPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p, currency=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) currency );
 
-	g_debug( "%s: main_window=%p, currency=%p",
-			thisfn, ( void * ) main_window, ( void * ) currency );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_CURRENCY_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_currency_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->currency = currency;
 
 	/* after this call, @self may be invalid */
@@ -250,7 +255,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_currency_properties_idialog_init";
 	ofaCurrencyPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gchar *title;
 	const gchar *code;
@@ -266,13 +271,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	code = ofo_currency_get_code( priv->currency );
@@ -421,14 +421,16 @@ is_dialog_validable( ofaCurrencyProperties *self )
 	gboolean ok;
 	ofoCurrency *exists;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_currency_properties_get_instance_private( self );
 
 	msgerr = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	ok = ofo_currency_is_valid_data( priv->code, priv->label, priv->symbol, priv->digits, &msgerr );
 	if( ok ){
-		exists = ofo_currency_get_by_code( priv->hub, priv->code );
+		exists = ofo_currency_get_by_code( hub, priv->code );
 		ok = !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->code, ofo_currency_get_code( priv->currency )));
 		if( !ok ){
@@ -448,10 +450,13 @@ do_update( ofaCurrencyProperties *self, gchar **msgerr )
 	ofaCurrencyPropertiesPrivate *priv;
 	gchar *prev_code;
 	gboolean ok;
+	ofaHub *hub;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_currency_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_code = g_strdup( ofo_currency_get_code( priv->currency ));
 
@@ -462,7 +467,7 @@ do_update( ofaCurrencyProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, currency );
 
 	if( priv->is_new ){
-		ok = ofo_currency_insert( priv->currency, priv->hub );
+		ok = ofo_currency_insert( priv->currency, hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new currency" ));
 		}

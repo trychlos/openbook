@@ -37,6 +37,7 @@
 
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-preferences.h"
@@ -52,7 +53,6 @@
 #include "api/ofo-rate.h"
 
 #include "core/ofa-file-format-bin.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-import-assistant.h"
 
@@ -82,9 +82,12 @@ enum {
 typedef struct {
 	gboolean          dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter       *getter;
+
 	/* p0: introduction
 	 */
-	ofaHub           *hub;
 
 	/* p1: select file to be imported
 	 */
@@ -312,23 +315,31 @@ ofa_import_assistant_class_init( ofaImportAssistantClass *klass )
 }
 
 /**
- * Run the assistant.
+ * ofa_import_assistant_run:
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
- * @main: the main window of the application.
+ * Run the assistant.
  */
 void
-ofa_import_assistant_run( ofaMainWindow *main_window )
+ofa_import_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_import_assistant_run";
 	ofaImportAssistant *self;
+	ofaImportAssistantPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_IMPORT_ASSISTANT, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -457,19 +468,9 @@ static void
 p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p0_do_forward";
-	ofaImportAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
-
-	priv = ofa_import_assistant_get_instance_private( self );
-
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 /*
@@ -897,6 +898,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_import_assistant_p5_do_display";
 	ofaImportAssistantPrivate *priv;
 	GtkWidget *parent;
+	ofaHub *hub;
 
 	g_return_if_fail( OFA_IS_IMPORT_ASSISTANT( self ));
 
@@ -907,6 +909,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
 	priv->p5_page = page;
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar-parent" );
@@ -927,7 +930,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	if( st_radios[priv->p2_idx].get_type ){
 		priv->p5_object = ( ofaIImportable * ) g_object_new( st_radios[priv->p2_idx].get_type(), NULL );
 	} else {
-		priv->p5_plugin = ofa_iimportable_find_willing_to( priv->hub, priv->p1_furi, priv->p3_import_settings );
+		priv->p5_plugin = ofa_iimportable_find_willing_to( hub, priv->p1_furi, priv->p3_import_settings );
 	}
 	if( !priv->p5_object && !priv->p5_plugin ){
 		p5_error_no_interface( self );
@@ -1058,11 +1061,14 @@ p5_do_import_csv( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
 	guint count;
+	ofaHub *hub;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	count = ofa_hub_import_csv(
-					priv->hub, priv->p5_object, priv->p1_furi, priv->p3_import_settings, self, errors );
+					hub, priv->p5_object, priv->p1_furi, priv->p3_import_settings, self, errors );
 
 	return( count );
 }
@@ -1072,10 +1078,13 @@ p5_do_import_other( ofaImportAssistant *self, guint *errors )
 {
 	ofaImportAssistantPrivate *priv;
 	guint count;
+	ofaHub *hub;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	*errors = ofa_iimportable_import_uri( priv->p5_plugin, priv->hub, self, NULL );
+	hub = ofa_igetter_get_hub( priv->getter );
+
+	*errors = ofa_iimportable_import_uri( priv->p5_plugin, hub, self, NULL );
 	count = ofa_iimportable_get_count( priv->p5_plugin );
 
 	return( count );

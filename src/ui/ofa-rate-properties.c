@@ -37,13 +37,12 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-rate-properties.h"
 
@@ -52,11 +51,14 @@
 typedef struct {
 	gboolean       dispose_has_run;
 
-	/* internals
+	/* initialization
 	 */
-	ofaHub        *hub;
-	gboolean       is_current;
+	ofaIGetter    *getter;
 	ofoRate       *rate;
+
+	/* runtime
+	 */
+	gboolean       is_current;
 	gboolean       is_new;
 
 	/* UI
@@ -190,28 +192,32 @@ ofa_rate_properties_class_init( ofaRatePropertiesClass *klass )
 
 /**
  * ofa_rate_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @rate: the #ofoRate to be displayed/updated.
  *
  * Update the properties of a rate.
  */
 void
-ofa_rate_properties_run( const ofaMainWindow *main_window, ofoRate *rate )
+ofa_rate_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRate *rate )
 {
 	static const gchar *thisfn = "ofa_rate_properties_run";
 	ofaRateProperties *self;
 	ofaRatePropertiesPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p, rate=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) rate );
 
-	g_debug( "%s: main_window=%p, rate=%p",
-			thisfn, ( void * ) main_window, ( void * ) rate );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_RATE_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_rate_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->rate = rate;
 
 	/* after this call, @self may be invalid */
@@ -273,7 +279,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_rate_properties_get_instance_private";
 	ofaRatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gint count, idx;
 	gchar *title;
@@ -289,13 +295,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -580,8 +581,11 @@ is_dialog_validable( ofaRateProperties *self )
 	const GDate *dbegin, *dend;
 	guint count;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_rate_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->grid ));
 	for( i=1, valids=NULL ; i<=count ; ++i ){
@@ -607,7 +611,7 @@ is_dialog_validable( ofaRateProperties *self )
 	g_list_free_full( valids, ( GDestroyNotify ) g_free );
 
 	if( ok ){
-		exists = ofo_rate_get_by_mnemo( priv->hub, priv->mnemo );
+		exists = ofo_rate_get_by_mnemo( hub, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_rate_get_mnemo( priv->rate )));
@@ -637,10 +641,13 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 	gchar *prev_mnemo, *str;
 	gdouble rate;
 	gboolean ok;
+	ofaHub *hub;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_rate_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_rate_get_mnemo( priv->rate ));
 
@@ -669,7 +676,7 @@ do_update( ofaRateProperties *self, gchar **msgerr )
 	}
 
 	if( priv->is_new ){
-		ok = ofo_rate_insert( priv->rate, priv->hub );
+		ok = ofo_rate_insert( priv->rate, hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new rate" ));
 		}

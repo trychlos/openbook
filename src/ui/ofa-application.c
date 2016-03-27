@@ -1065,7 +1065,7 @@ on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_plugin_manager_run( priv->main_window );
+	ofa_plugin_manager_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
 }
 
 static void

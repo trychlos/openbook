@@ -35,6 +35,7 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -51,6 +52,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIGetter               *getter;
 	ofaIDBMeta               *meta;
 	ofaIDBPeriod             *period;
 
@@ -161,32 +163,35 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
 
 /**
  * ofa_dossier_delete_run:
- * @main_window: the main window of the application.
- * @meta:
- * @period:
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
+ * @meta: the meta data for the dossier.
+ * @period: the period to be deleted.
  *
  * Run the selection dialog to delete a dossier.
  */
 void
-ofa_dossier_delete_run( ofaMainWindow *main_window, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
+ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_run";
 	ofaDossierDelete *self;
 	ofaDossierDeletePrivate *priv;
 
-	g_debug( "%s: main_window=%p, meta=%p, period=%p",
-				thisfn, main_window, ( void * ) meta, ( void * ) period );
+	g_debug( "%s: getter=%p, parent=%p, meta=%p, period=%p",
+				thisfn, ( void * ) getter, ( void * ) parent, ( void * ) meta, ( void * ) period );
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DELETE, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_dossier_delete_get_instance_private( self );
 
+	priv->getter = getter;
 	priv->meta = g_object_ref(( gpointer ) meta );
 	priv->period = g_object_ref(( gpointer ) period );
 

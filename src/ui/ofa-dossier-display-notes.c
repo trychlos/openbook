@@ -31,25 +31,25 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-dossier-display-notes.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean       dispose_has_run;
+	gboolean     dispose_has_run;
 
-	/* UI
+	/* initialization
 	 */
+	ofaIGetter  *getter;
 
 	/* runtime data
 	 */
-	const gchar   *main_notes;
-	const gchar   *exe_notes;
+	const gchar *main_notes;
+	const gchar *exe_notes;
 
 	/* result
 	 */
@@ -137,25 +137,28 @@ ofa_dossier_display_notes_class_init( ofaDossierDisplayNotesClass *klass )
 
 /**
  * ofa_dossier_display_notes_run:
- * @main: the main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  */
 void
-ofa_dossier_display_notes_run( ofaMainWindow *main_window, const gchar *main_notes, const gchar *exe_notes )
+ofa_dossier_display_notes_run( ofaIGetter *getter, GtkWindow *parent, const gchar *main_notes, const gchar *exe_notes )
 {
 	static const gchar *thisfn = "ofa_dossier_display_notes_run";
 	ofaDossierDisplayNotes *self;
 	ofaDossierDisplayNotesPrivate *priv;
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DISPLAY_NOTES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_dossier_display_notes_get_instance_private( self );
 
+	priv->getter = getter;
 	priv->main_notes = main_notes;
 	priv->exe_notes = exe_notes;
 
@@ -192,7 +195,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_display_notes_idialog_init";
 	ofaDossierDisplayNotesPrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofaHub *hub;
 	ofoDossier *dossier;
 
@@ -203,12 +205,7 @@ idialog_init( myIDialog *instance )
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "main-label", "main-text", priv->main_notes );
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "exe-label", "exe-text", priv->exe_notes );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
+	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 

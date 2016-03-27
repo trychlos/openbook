@@ -56,6 +56,9 @@
  * - current:    yes
  */
 
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-rate-def.h"
 
 G_BEGIN_DECLS
@@ -81,7 +84,8 @@ typedef struct {
 
 GType ofa_rate_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_rate_properties_run     ( const ofaMainWindow *main_window,
+void  ofa_rate_properties_run     ( ofaIGetter *getter,
+										GtkWindow *parent,
 										ofoRate *rate );
 
 G_END_DECLS

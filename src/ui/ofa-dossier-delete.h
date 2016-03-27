@@ -38,9 +38,11 @@
  * - current:    no
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -65,7 +67,8 @@ typedef struct {
 
 GType ofa_dossier_delete_get_type( void ) G_GNUC_CONST;
 
-void  ofa_dossier_delete_run     ( ofaMainWindow *parent,
+void  ofa_dossier_delete_run     ( ofaIGetter *getter,
+										GtkWindow *parent,
 										const ofaIDBMeta *meta,
 										const ofaIDBPeriod *period );
 

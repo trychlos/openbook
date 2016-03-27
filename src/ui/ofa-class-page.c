@@ -33,12 +33,11 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-class-page.h"
@@ -480,42 +479,46 @@ on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaClassPage *page )
+on_new_clicked( GtkButton *button, ofaClassPage *self )
 {
 	static const gchar *thisfn = "ofa_class_page_on_new_clicked";
 	ofoClass *class;
+	GtkWindow *toplevel;
 
-	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	class = ofo_class_new();
-	ofa_class_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), class );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_class_properties_run( OFA_IGETTER( self ), toplevel, class );
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaClassPage *page )
+on_update_clicked( GtkButton *button, ofaClassPage *self )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoClass *class;
+	GtkWindow *toplevel;
+
+	class = tview_get_selected( self, &tmodel, &iter );
+	if( class ){
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_class_properties_run( OFA_IGETTER( self ), toplevel, class );
+	}
+}
+
+static void
+on_delete_clicked( GtkButton *button, ofaClassPage *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoClass *class;
 
-	class = tview_get_selected( page, &tmodel, &iter );
+	class = tview_get_selected( self, &tmodel, &iter );
 	if( class ){
-		ofa_class_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), class );
+		do_delete( self, class, tmodel, &iter );
 	}
-}
-
-static void
-on_delete_clicked( GtkButton *button, ofaClassPage *page )
-{
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoClass *class;
-
-	class = tview_get_selected( page, &tmodel, &iter );
-	if( class ){
-		do_delete( page, class, tmodel, &iter );
-	}
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static void
@@ -548,14 +551,14 @@ delete_confirmed( ofaClassPage *self, ofoClass *class )
 }
 
 static void
-do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
+do_delete( ofaClassPage *self, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gboolean deletable;
 
 	deletable = ofo_class_is_deletable( class );
 	g_return_if_fail( deletable );
 
-	if( delete_confirmed( page, class )){
+	if( delete_confirmed( self, class )){
 		ofo_class_delete( class );
 
 		/* remove the row from the tmodel

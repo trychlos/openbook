@@ -34,38 +34,37 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-class-properties.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean   dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaHub    *hub;
+	ofaIGetter *getter;
 
 	/* internals
 	 */
-	ofoClass  *class;
-	gboolean   is_current;
-	gboolean   is_new;
+	ofoClass   *class;
+	gboolean    is_current;
+	gboolean    is_new;
 
 	/* data
 	 */
-	gint       number;
-	gchar     *label;
+	gint        number;
+	gchar      *label;
 
 	/* UI
 	 */
-	GtkWidget *ok_btn;
-	GtkWidget *msg_label;
+	GtkWidget  *ok_btn;
+	GtkWidget  *msg_label;
 }
 	ofaClassPropertiesPrivate;
 
@@ -161,28 +160,32 @@ ofa_class_properties_class_init( ofaClassPropertiesClass *klass )
 
 /**
  * ofa_class_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @class: the #ofoClass to be displayed/updated.
  *
  * Update the properties of an class
  */
 void
-ofa_class_properties_run( const ofaMainWindow *main_window, ofoClass *class )
+ofa_class_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoClass *class )
 {
 	static const gchar *thisfn = "ofa_class_properties_run";
 	ofaClassProperties *self;
 	ofaClassPropertiesPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p, class=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) class );
 
-	g_debug( "%s: main_window=%p, class=%p",
-			thisfn, ( void * ) main_window, ( void * ) class );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_CLASS_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_class_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->class = class;
 
 	/* after this call, @self may be invalid */
@@ -244,7 +247,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_class_properties_idialog_init";
 	ofaClassPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gchar *title;
 	gint number;
@@ -260,13 +263,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->is_current = ofo_dossier_is_current( dossier );
 
@@ -364,13 +362,16 @@ is_dialog_validable( ofaClassProperties *self )
 	ofaClassPropertiesPrivate *priv;
 	gboolean ok;
 	ofoClass *exists;
+	ofaHub *hub;
 	gchar *msgerr;
 
 	priv = ofa_class_properties_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	ok = ofo_class_is_valid_data( priv->number, priv->label, &msgerr );
 	if( ok ){
-		exists = ofo_class_get_by_number( priv->hub, priv->number );
+		exists = ofo_class_get_by_number( hub, priv->number );
 		ok &= !exists ||
 				( ofo_class_get_number( exists ) == ofo_class_get_number( priv->class ));
 		if( !ok ){
@@ -390,10 +391,13 @@ do_update( ofaClassProperties *self, gchar **msgerr )
 	ofaClassPropertiesPrivate *priv;
 	gint prev_id;
 	gboolean ok;
+	ofaHub *hub;
 
 	priv = ofa_class_properties_get_instance_private( self );
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_id = ofo_class_get_number( priv->class );
 
@@ -402,7 +406,7 @@ do_update( ofaClassProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, class );
 
 	if( priv->is_new ){
-		ok = ofo_class_insert( priv->class, priv->hub );
+		ok = ofo_class_insert( priv->class, hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new account class" ));
 		}

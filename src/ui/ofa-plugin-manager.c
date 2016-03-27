@@ -37,11 +37,10 @@
 #include "api/ofa-extender-module.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iabout.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-plugin-manager.h"
@@ -50,6 +49,10 @@
  */
 typedef struct {
 	gboolean       dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter    *getter;
 
 	/* UI
 	 */
@@ -152,23 +155,30 @@ ofa_plugin_manager_class_init( ofaPluginManagerClass *klass )
 
 /**
  * ofa_plugin_manager_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
  * Run the dialog to manage the plugins
  */
 void
-ofa_plugin_manager_run( ofaMainWindow *main_window )
+ofa_plugin_manager_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_plugin_manager_run";
 	ofaPluginManager *self;
+	ofaPluginManagerPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_PLUGIN_MANAGER, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_plugin_manager_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -276,7 +286,6 @@ load_in_treeview( ofaPluginManager *self )
 	GtkTreeModel *tmodel;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
-	GtkApplicationWindow *main_window;
 	ofaHub *hub;
 	ofaExtenderCollection *extenders;
 	const GList *modules, *it;
@@ -288,12 +297,7 @@ load_in_treeview( ofaPluginManager *self )
 	tmodel = gtk_tree_view_get_model( priv->tview );
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
+	hub = ofa_igetter_get_hub( priv->getter );
 	extenders = ofa_hub_get_extender_collection( hub );
 	modules = ofa_extender_collection_get_modules( extenders );
 
@@ -372,7 +376,6 @@ static void
 on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 {
 	ofaPluginManagerPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkTreeSelection *selection;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -381,9 +384,6 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 	GtkWidget *page, *dialog, *content;
 
 	priv = ofa_plugin_manager_get_instance_private( self );
-
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	selection = gtk_tree_view_get_selection( priv->tview );
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
@@ -397,7 +397,7 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 		if( page && GTK_IS_WIDGET( page )){
 			dialog = gtk_dialog_new_with_buttons(
 					_( "Properties" ),
-					GTK_WINDOW( main_window ),
+					GTK_WINDOW( self ),
 					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
 					_( "Close" ),
 					GTK_RESPONSE_ACCEPT,

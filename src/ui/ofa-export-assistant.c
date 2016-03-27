@@ -38,6 +38,7 @@
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-class.h"
@@ -50,7 +51,6 @@
 #include "api/ofo-rate.h"
 
 #include "core/ofa-file-format-bin.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-export-assistant.h"
 
@@ -64,7 +64,9 @@
 typedef struct {
 	gboolean          dispose_has_run;
 
-	ofaHub           *hub;
+	/* initialization
+	 */
+	ofaIGetter       *getter;
 
 	/* p0: introduction
 	 */
@@ -312,23 +314,31 @@ ofa_export_assistant_class_init( ofaExportAssistantClass *klass )
 }
 
 /**
- * Run the assistant.
+ * ofa_export_assistant_run:
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
- * @main: the main window of the application.
+ * Run the assistant.
  */
 void
-ofa_export_assistant_run( ofaMainWindow *main_window )
+ofa_export_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_export_assistant_run";
 	ofaExportAssistant *self;
+	ofaExportAssistantPrivate *priv;;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_EXPORT_ASSISTANT, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_export_assistant_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -436,19 +446,9 @@ static void
 p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p0_do_forward";
-	ofaExportAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
-
-	priv = ofa_export_assistant_get_instance_private( self );
-
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 /*
@@ -1052,12 +1052,15 @@ export_data( ofaExportAssistant *self )
 	GtkWidget *label;
 	gchar *str, *text;
 	gboolean ok;
+	ofaHub *hub;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	/* first, export */
 	ok = ofa_iexportable_export_to_path(
-			priv->p5_base, priv->p3_furi, priv->p2_export_settings, priv->hub, self );
+			priv->p5_base, priv->p3_furi, priv->p2_export_settings, hub, self );
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );

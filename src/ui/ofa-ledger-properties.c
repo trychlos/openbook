@@ -35,13 +35,12 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-ledger-properties.h"
 
@@ -50,10 +49,12 @@
 typedef struct {
 	gboolean             dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter          *getter;
+
 	/* internals
 	 */
-	ofaHub              *hub;
-	ofoDossier          *dossier;
 	gboolean             is_current;
 	ofoLedger           *ledger;
 	gboolean             is_new;
@@ -177,28 +178,32 @@ ofa_ledger_properties_class_init( ofaLedgerPropertiesClass *klass )
 
 /**
  * ofa_ledger_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @ledger: the #ofoLedger to be displayed/updated.
  *
  * Update the properties of an ledger
  */
 void
-ofa_ledger_properties_run( const ofaMainWindow *main_window, ofoLedger *ledger )
+ofa_ledger_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoLedger *ledger )
 {
 	static const gchar *thisfn = "ofa_ledger_properties_run";
 	ofaLedgerProperties *self;
 	ofaLedgerPropertiesPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p, ledger=%p",
+				thisfn, ( void * ) getter, ( void * ) parent, ( void * ) ledger );
 
-	g_debug( "%s: main_window=%p, ledger=%p",
-				thisfn, ( void * ) main_window, ( void * ) ledger );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_LEDGER_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_ledger_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->ledger = ledger;
 
 	/* after this call, @self may be invalid */
@@ -260,10 +265,11 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_properties_idialog_init";
 	ofaLedgerPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
 	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkWidget *entry, *label, *last_close_entry;
+	ofaHub *hub;
+	ofoDossier *dossier;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -273,16 +279,11 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
+	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-
-	priv->is_current = ofo_dossier_is_current( priv->dossier );
+	priv->is_current = ofo_dossier_is_current( dossier );
 
 	jou_mnemo = ofo_ledger_get_mnemo( priv->ledger );
 	if( !jou_mnemo ){
@@ -363,8 +364,11 @@ init_balances_page( ofaLedgerProperties *self )
 	gint i, count;
 	gchar *str;
 	ofxAmount amount, tot_debit, tot_credit;
+	ofaHub *hub;
 
 	priv = ofa_ledger_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-grid" );
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));
@@ -376,7 +380,7 @@ init_balances_page( ofaLedgerProperties *self )
 
 	for( i=0, it=currencies ; it ; ++i, it=it->next ){
 		code = ( const gchar * ) it->data;
-		currency = ofo_currency_get_by_code( priv->hub, code );
+		currency = ofo_currency_get_by_code( hub, code );
 		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 		symbol = ofo_currency_get_symbol( currency );
@@ -560,13 +564,16 @@ is_dialog_validable( ofaLedgerProperties *self )
 	ofoLedger *exists;
 	gboolean ok;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_ledger_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	ok = ofo_ledger_is_valid_data( priv->mnemo, priv->label, &msgerr );
 
 	if( ok ){
-		exists = ofo_ledger_get_by_mnemo( priv->hub, priv->mnemo );
+		exists = ofo_ledger_get_by_mnemo( hub, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ledger_get_mnemo( priv->ledger )));
 		if( !ok ){
@@ -590,10 +597,13 @@ do_update( ofaLedgerProperties *self, gchar **msgerr )
 	ofaLedgerPropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	gboolean ok;
+	ofaHub *hub;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_ledger_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_ledger_get_mnemo( priv->ledger ));
 
@@ -605,7 +615,7 @@ do_update( ofaLedgerProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, ledger );
 
 	if( priv->is_new ){
-		ok = ofo_ledger_insert( priv->ledger, priv->hub );
+		ok = ofo_ledger_insert( priv->ledger, hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new ledger" ));
 		}

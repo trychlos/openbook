@@ -33,13 +33,12 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-rate-properties.h"
 #include "ui/ofa-rate-page.h"
@@ -590,12 +589,14 @@ on_row_selected( GtkTreeSelection *selection, ofaRatePage *self )
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaRatePage *page )
+on_new_clicked( GtkButton *button, ofaRatePage *self )
 {
 	ofoRate *rate;
+	GtkWindow *toplevel;
 
 	rate = ofo_rate_new();
-	ofa_rate_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), rate );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
 }
 
 /*
@@ -624,6 +625,7 @@ on_update_clicked( GtkButton *button, ofaRatePage *self )
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
 	ofoRate *rate;
+	GtkWindow *toplevel;
 
 	priv = ofa_rate_page_get_instance_private( self );
 
@@ -633,7 +635,8 @@ on_update_clicked( GtkButton *button, ofaRatePage *self )
 
 		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
 		g_object_unref( rate );
-		ofa_rate_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), rate );
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
 	}
 }
 

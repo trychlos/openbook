@@ -32,6 +32,7 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-currency.h"
@@ -39,7 +40,6 @@
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-currency-store.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-currency-properties.h"
 #include "ui/ofa-currency-page.h"
@@ -411,12 +411,14 @@ on_currency_selected( GtkTreeSelection *selection, ofaCurrencyPage *self )
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaCurrencyPage *page )
+on_new_clicked( GtkButton *button, ofaCurrencyPage *self )
 {
 	ofoCurrency *currency;
+	GtkWindow *toplevel;
 
 	currency = ofo_currency_new();
-	ofa_currency_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), currency );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_currency_properties_run( OFA_IGETTER( self ), toplevel, currency );
 }
 
 #if 0
@@ -463,49 +465,51 @@ find_row_by_code( ofaCurrencyPage *page, const gchar *code, GtkTreeIter *iter )
 #endif
 
 static void
-on_update_clicked( GtkButton *button, ofaCurrencyPage *page )
+on_update_clicked( GtkButton *button, ofaCurrencyPage *self )
 {
 	ofaCurrencyPagePrivate *priv;
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoCurrency *currency;
+	GtkWindow *toplevel;
 
-	priv = ofa_currency_page_get_instance_private( page );
+	priv = ofa_currency_page_get_instance_private( self );
 
 	select = gtk_tree_view_get_selection( priv->tview );
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, CURRENCY_COL_OBJECT, &currency, -1 );
 		g_object_unref( currency );
-		ofa_currency_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), currency );
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_currency_properties_run( OFA_IGETTER( self ), toplevel, currency );
 	}
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaCurrencyPage *page )
+on_delete_clicked( GtkButton *button, ofaCurrencyPage *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
-	currency = tview_get_selected( page, &tmodel, &iter );
+	currency = tview_get_selected( self, &tmodel, &iter );
 	if( currency ){
-		do_delete( page, currency, tmodel, &iter );
+		do_delete( self, currency, tmodel, &iter );
 	}
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static void
-try_to_delete_current_row( ofaCurrencyPage *page )
+try_to_delete_current_row( ofaCurrencyPage *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoCurrency *currency;
 
-	currency = tview_get_selected( page, &tmodel, &iter );
+	currency = tview_get_selected( self, &tmodel, &iter );
 	if( currency && ofo_currency_is_deletable( currency )){
-		do_delete( page, currency, tmodel, &iter );
+		do_delete( self, currency, tmodel, &iter );
 	}
 }
 
@@ -527,18 +531,18 @@ delete_confirmed( ofaCurrencyPage *self, ofoCurrency *currency )
 }
 
 static void
-do_delete( ofaCurrencyPage *page, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter )
+do_delete( ofaCurrencyPage *self, ofoCurrency *currency, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaCurrencyPagePrivate *priv;
 	gboolean deletable;
 
-	priv = ofa_currency_page_get_instance_private( page );
+	priv = ofa_currency_page_get_instance_private( self );
 
 	deletable = ofo_currency_is_deletable( currency );
 	g_return_if_fail( deletable );
 	g_return_if_fail( !priv->is_current );
 
-	if( delete_confirmed( page, currency ) &&
+	if( delete_confirmed( self, currency ) &&
 			ofo_currency_delete( currency )){
 
 		/* take into account by dossier signaling system */
