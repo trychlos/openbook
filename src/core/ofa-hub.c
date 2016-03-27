@@ -51,14 +51,14 @@
 /* private instance data
  */
 typedef struct {
-	gboolean             dispose_has_run;
+	gboolean                dispose_has_run;
 
-	ofaExtenderCollection *extenders;
-	ofaFileDir            *filedir;
+	ofaExtenderCollection  *extenders;
+	ofaPortfolioCollection *portfolios;
 
-	ofaIDBConnect         *connect;
-	ofoDossier            *dossier;
-	ofaDossierPrefs       *dossier_prefs;
+	ofaIDBConnect          *connect;
+	ofoDossier             *dossier;
+	ofaDossierPrefs        *dossier_prefs;
 }
 	ofaHubPrivate;
 
@@ -126,7 +126,7 @@ hub_dispose( GObject *instance )
 		/* unref object members here */
 
 		g_clear_object( &priv->extenders );
-		g_clear_object( &priv->filedir );
+		g_clear_object( &priv->portfolios );
 
 		dossier_do_close( OFA_HUB( instance ));
 	}
@@ -479,17 +479,18 @@ ofa_hub_set_extender_collection( ofaHub *hub, ofaExtenderCollection *collection 
 }
 
 /**
- * ofa_hub_get_file_dir:
+ * ofa_hub_get_portfolio_collection:
  * @hub: this #ofaHub instance.
  *
- * Returns: the #ofaFileDir object which manages the collection of
- * dossiers.
+ * Returns: the #ofaPortfolioCollection object which manages the
+ * collection of dossiers (aka portfolio) from the settings point of
+ * view.
  *
  * The returned reference is owned by the @hub instance, and should not
  * be unreffed by the caller.
  */
-ofaFileDir *
-ofa_hub_get_file_dir( const ofaHub *hub )
+ofaPortfolioCollection *
+ofa_hub_get_portfolio_collection( const ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -499,18 +500,18 @@ ofa_hub_get_file_dir( const ofaHub *hub )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->filedir );
+	return( priv->portfolios );
 }
 
 /**
- * ofa_hub_set_file_dir:
+ * ofa_hub_set_portfolio_collection:
  * @hub: this #ofaHub instance.
  * @collection: the dossier collection.
  *
- * Set the extender collection.
+ * Set the portfolio collection.
  */
 void
-ofa_hub_set_file_dir( ofaHub *hub, ofaFileDir *filedir )
+ofa_hub_set_portfolio_collection( ofaHub *hub, ofaPortfolioCollection *collection )
 {
 	ofaHubPrivate *priv;
 
@@ -520,7 +521,7 @@ ofa_hub_set_file_dir( ofaHub *hub, ofaFileDir *filedir )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->filedir = filedir;
+	priv->portfolios = collection;
 }
 
 /**

@@ -40,7 +40,7 @@
  * first).
  *
  * The #ofaDossierStore maintains itself up-to-date by connecting to
- * the #ofaFileDir 'changed' signal.
+ * the #ofaPortfolioCollection 'changed' signal.
  *
  * The #ofaDossierStore is managed as a singleton: the first
  * instanciation actually builds the store, while next only returns a
@@ -49,7 +49,7 @@
  * always available during the run.
  */
 
-#include "api/ofa-file-dir.h"
+#include "api/ofa-portfolio-collection.h"
 
 G_BEGIN_DECLS
 
@@ -125,7 +125,7 @@ typedef enum {
 
 GType            ofa_dossier_store_get_type       ( void );
 
-ofaDossierStore *ofa_dossier_store_new            ( ofaFileDir *dir );
+ofaDossierStore *ofa_dossier_store_new            ( ofaPortfolioCollection *dir );
 
 G_END_DECLS
 

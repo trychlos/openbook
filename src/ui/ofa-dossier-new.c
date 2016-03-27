@@ -34,7 +34,7 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-file-dir.h"
+#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
@@ -483,7 +483,7 @@ root_credentials_get_valid( ofaDossierNew *self, gchar **message )
 
 /*
  * this function will return FALSE in all cases
- * only the ofaFileDir::changed signal handler will terminate the dialog
+ * only the ofaPortfolioCollection::changed signal handler will terminate the dialog
  */
 static gboolean
 do_create( ofaDossierNew *self, gchar **msgerr )

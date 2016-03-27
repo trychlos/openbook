@@ -31,7 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-file-dir.h"
+#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
@@ -50,7 +50,7 @@ typedef struct {
 	 */
 	ofaIGetter     *getter;
 	ofaHub         *hub;
-	ofaFileDir     *dir;
+	ofaPortfolioCollection     *dir;
 
 	/* UI
 	 */
@@ -238,8 +238,8 @@ setup_bin( ofaDossierNewBin *self )
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	priv->dir = ofa_hub_get_file_dir( priv->hub );
-	g_return_if_fail( priv->dir && OFA_IS_FILE_DIR( priv->dir ));
+	priv->dir = ofa_hub_get_portfolio_collection( priv->hub );
+	g_return_if_fail( priv->dir && OFA_IS_PORTFOLIO_COLLECTION( priv->dir ));
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -500,7 +500,7 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
 		str = g_strdup( _( "Dossier name is not set" ));
 
 	} else {
-		meta = ofa_file_dir_get_meta( priv->dir, priv->dossier_name );
+		meta = ofa_portfolio_collection_get_meta( priv->dir, priv->dossier_name );
 		if( meta ){
 			str = g_strdup_printf( _( "%s is already defined" ), priv->dossier_name );
 			g_clear_object( &meta );
@@ -550,7 +550,7 @@ ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
 	provider = ofa_idbeditor_get_provider( priv->connect_infos );
 	meta = ofa_idbprovider_new_meta( provider );
 	ofa_idbmeta_set_dossier_name( meta, priv->dossier_name );
-	ofa_file_dir_set_meta_from_editor( priv->dir, meta, priv->connect_infos );
+	ofa_portfolio_collection_set_meta_from_editor( priv->dir, meta, priv->connect_infos );
 	g_object_unref( provider );
 
 	return( meta );

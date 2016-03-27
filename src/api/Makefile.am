@@ -34,7 +34,6 @@ api_include_HEADERS = \
 	ofa-dossier-prefs.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-module.h								\
-	ofa-file-dir.h										\
 	ofa-file-format.h									\
 	ofa-hub.h											\
 	ofa-hub-def.h										\
@@ -71,6 +70,7 @@ api_include_HEADERS = \
 	ofa-page-prot.h										\
 	ofa-periodicity.h									\
 	ofa-periodicity-bin.h								\
+	ofa-portfolio-collection.h							\
 	ofa-preferences.h									\
 	ofa-settings.h										\
 	\

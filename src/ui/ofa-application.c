@@ -34,11 +34,11 @@
 
 #include "api/ofa-box.h"
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-file-dir.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itheme-manager.h"
+#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
@@ -140,7 +140,7 @@ static void                  application_activate( GApplication *application );
 static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 static void                  maintainer_test_function( void );
 
-static void                  on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application );
+static void                  on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaApplication *application );
 static void                  enable_action_open( ofaApplication *application, gboolean enable );
 static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -686,7 +686,7 @@ application_startup( GApplication *application )
 	ofaApplicationPrivate *priv;
 	GtkBuilder *builder;
 	GMenuModel *menu;
-	ofaFileDir *file_dir;
+	ofaPortfolioCollection *collection;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -733,14 +733,14 @@ application_startup( GApplication *application )
 
 	/* dossiers directory monitoring
 	 */
-	file_dir = ofa_file_dir_new( priv->hub );
-	g_signal_connect( file_dir, "changed", G_CALLBACK( on_file_dir_changed ), application );
-	on_file_dir_changed( file_dir, ofa_file_dir_get_dossiers_count( file_dir ), NULL, appli );
-	ofa_hub_set_file_dir( priv->hub, file_dir );
+	collection = ofa_portfolio_collection_new( priv->hub );
+	g_signal_connect( collection, "changed", G_CALLBACK( on_file_dir_changed ), application );
+	on_file_dir_changed( collection, ofa_portfolio_collection_get_dossiers_count( collection ), NULL, appli );
+	ofa_hub_set_portfolio_collection( priv->hub, collection );
 
 	/* takes the ownership on the dossier store so that we are sure
 	 * it will be available during the run */
-	priv->dos_store = ofa_dossier_store_new( file_dir );
+	priv->dos_store = ofa_dossier_store_new( collection );
 }
 
 /*
@@ -793,7 +793,7 @@ application_activate( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_activate";
 	ofaApplicationPrivate *priv;
-	ofaFileDir *filedir;
+	ofaPortfolioCollection *filedir;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 	GDate dbegin, dend;
@@ -817,8 +817,8 @@ application_activate( GApplication *application )
 	/* if a dossier is to be opened due to options specified in the
 	 * command-line */
 	if( st_dossier_name_opt ){
-		filedir = ofa_hub_get_file_dir( priv->hub );
-		meta = ofa_file_dir_get_meta( filedir, st_dossier_name_opt );
+		filedir = ofa_hub_get_portfolio_collection( priv->hub );
+		meta = ofa_portfolio_collection_get_meta( filedir, st_dossier_name_opt );
 		period = NULL;
 		if( meta ){
 			if( !st_dossier_begin_opt && !st_dossier_end_opt ){
@@ -908,7 +908,7 @@ maintainer_test_function( void )
 /*                                                                   */
 /*                                                                   */
 static void
-on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application )
+on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_on_filed_dir_changed";
 

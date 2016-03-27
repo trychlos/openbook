@@ -41,7 +41,7 @@
  * This is an Openbook software suite decision to have all these meta
  * properties stored in a single dedicated ini file, said dossiers
  * settings. This dossiers settings file is mainly managed through
- * the #ofaFileDir singleton.
+ * the #ofaPortfolioCollection singleton.
  */
 
 #include "my/my-isettings.h"

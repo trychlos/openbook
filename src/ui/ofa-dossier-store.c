@@ -66,8 +66,8 @@ static ofaDossierStore *st_store                = NULL;
 static guint            st_signals[ N_SIGNALS ] = { 0 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
-static void     on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaDossierStore *store );
-static void     load_dataset( ofaDossierStore *store, ofaFileDir *dir );
+static void     on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaDossierStore *store );
+static void     load_dataset( ofaDossierStore *store, ofaPortfolioCollection *dir );
 static void     insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
 static void     set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
 
@@ -161,7 +161,7 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 
 /**
  * ofa_dossier_store_new:
- * @dir: [allow-none]: the #ofaFileDir instance which centralize the
+ * @dir: [allow-none]: the #ofaPortfolioCollection instance which centralize the
  *  list of defined dossiers. This must be non-null at first call
  *  (instanciation time), while is not used on successive calls.
  *
@@ -174,7 +174,7 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
  * must be g_object_unref() by the caller.
  */
 ofaDossierStore *
-ofa_dossier_store_new( ofaFileDir *dir )
+ofa_dossier_store_new( ofaPortfolioCollection *dir )
 {
 	ofaDossierStore *store;
 
@@ -241,7 +241,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 }
 
 static void
-on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaDossierStore *store )
+on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaDossierStore *store )
 {
 	gtk_list_store_clear( GTK_LIST_STORE( store ));
 	load_dataset( store, dir );
@@ -251,14 +251,14 @@ on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaDos
  * load the dataset
  */
 static void
-load_dataset( ofaDossierStore *store, ofaFileDir *dir )
+load_dataset( ofaDossierStore *store, ofaPortfolioCollection *dir )
 {
 	GList *dossier_list, *itd;
 	ofaIDBMeta *meta;
 	GList *period_list, *itp;
 	ofaIDBPeriod *period;
 
-	dossier_list = ofa_file_dir_get_dossiers( dir );
+	dossier_list = ofa_portfolio_collection_get_dossiers( dir );
 
 	for( itd=dossier_list ; itd ; itd=itd->next ){
 		meta = ( ofaIDBMeta * ) itd->data;
@@ -274,7 +274,7 @@ load_dataset( ofaDossierStore *store, ofaFileDir *dir )
 		ofa_idbmeta_free_periods( period_list );
 	}
 
-	ofa_file_dir_free_dossiers( dossier_list );
+	ofa_portfolio_collection_free_dossiers( dossier_list );
 }
 
 static void

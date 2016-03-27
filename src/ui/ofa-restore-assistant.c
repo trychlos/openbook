@@ -34,7 +34,7 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-file-dir.h"
+#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"

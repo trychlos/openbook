@@ -31,7 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-file-dir.h"
+#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-idbmeta.h"
@@ -53,11 +53,11 @@ typedef struct {
 	GList         *list;
 	gboolean       ignore_next;
 }
-	ofaFileDirPrivate;
+	ofaPortfolioCollectionPrivate;
 
-#define FILE_DIR_SIGNAL_CHANGED         "changed"
-#define FILE_DIR_DOSSIER_GROUP_PREFIX   "Dossier "
-#define FILE_DIR_PROVIDER_KEY           "ofa-DBMSProvider"
+#define PORTFOLIO_COLLECTION_SIGNAL_CHANGED       "changed"
+#define PORTFOLIO_COLLECTION_DOSSIER_GROUP_PREFIX "Dossier "
+#define PORTFOLIO_COLLECTION_PROVIDER_KEY         "ofa-DBMSProvider"
 
 /* signals defined here
  */
@@ -68,38 +68,38 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void        setup_settings( ofaFileDir *dir );
-static void        on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir );
-static GList      *load_dossiers( ofaFileDir *dir, GList *previous_list );
+static void        setup_settings( ofaPortfolioCollection *dir );
+static void        on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaPortfolioCollection *dir );
+static GList      *load_dossiers( ofaPortfolioCollection *dir, GList *previous_list );
 static ofaIDBMeta *file_dir_get_meta( const gchar *dossier_name, GList *list );
 
-G_DEFINE_TYPE_EXTENDED( ofaFileDir, ofa_file_dir, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE( ofaFileDir ))
+G_DEFINE_TYPE_EXTENDED( ofaPortfolioCollection, ofa_portfolio_collection, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaPortfolioCollection ))
 
 static void
-file_dir_finalize( GObject *instance )
+portfolio_collection_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_file_dir_finalize";
+	static const gchar *thisfn = "ofa_portfolio_collection_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_FILE_DIR( instance ));
+	g_return_if_fail( instance && OFA_IS_PORTFOLIO_COLLECTION( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_dir_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_portfolio_collection_parent_class )->finalize( instance );
 }
 
 static void
-file_dir_dispose( GObject *instance )
+portfolio_collection_dispose( GObject *instance )
 {
-	ofaFileDirPrivate *priv;
+	ofaPortfolioCollectionPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_FILE_DIR( instance ));
+	g_return_if_fail( instance && OFA_IS_PORTFOLIO_COLLECTION( instance ));
 
-	priv = ofa_file_dir_get_instance_private( OFA_FILE_DIR( instance ));
+	priv = ofa_portfolio_collection_get_instance_private( OFA_PORTFOLIO_COLLECTION( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -108,38 +108,38 @@ file_dir_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->settings );
 		g_clear_object( &priv->monitor );
-		ofa_file_dir_free_dossiers( priv->list );
+		ofa_portfolio_collection_free_dossiers( priv->list );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_dir_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_portfolio_collection_parent_class )->dispose( instance );
 }
 
 static void
-ofa_file_dir_init( ofaFileDir *self )
+ofa_portfolio_collection_init( ofaPortfolioCollection *self )
 {
-	static const gchar *thisfn = "ofa_file_dir_init";
-	ofaFileDirPrivate *priv;
+	static const gchar *thisfn = "ofa_portfolio_collection_init";
+	ofaPortfolioCollectionPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_FILE_DIR( self ));
+	g_return_if_fail( self && OFA_IS_PORTFOLIO_COLLECTION( self ));
 
-	priv = ofa_file_dir_get_instance_private( self );
+	priv = ofa_portfolio_collection_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_file_dir_class_init( ofaFileDirClass *klass )
+ofa_portfolio_collection_class_init( ofaPortfolioCollectionClass *klass )
 {
-	static const gchar *thisfn = "ofa_file_dir_class_init";
+	static const gchar *thisfn = "ofa_portfolio_collection_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = file_dir_dispose;
-	G_OBJECT_CLASS( klass )->finalize = file_dir_finalize;
+	G_OBJECT_CLASS( klass )->dispose = portfolio_collection_dispose;
+	G_OBJECT_CLASS( klass )->finalize = portfolio_collection_finalize;
 
 	/**
 	 * ofaFiledir::changed:
@@ -154,8 +154,8 @@ ofa_file_dir_class_init( ofaFileDirClass *klass )
 	 * 						gpointer     user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				FILE_DIR_SIGNAL_CHANGED,
-				OFA_TYPE_FILE_DIR,
+				PORTFOLIO_COLLECTION_SIGNAL_CHANGED,
+				OFA_TYPE_PORTFOLIO_COLLECTION,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -167,21 +167,21 @@ ofa_file_dir_class_init( ofaFileDirClass *klass )
 }
 
 /**
- * ofa_file_dir_new:
+ * ofa_portfolio_collection_new:
  * @hub: the #ofaHub object of the application.
  *
- * Returns: a new reference to an #ofaFileDir object which should be
+ * Returns: a new reference to an #ofaPortfolioCollection object which should be
  * #g_object_unref() by the caller.
  */
-ofaFileDir *
-ofa_file_dir_new( ofaHub *hub )
+ofaPortfolioCollection *
+ofa_portfolio_collection_new( ofaHub *hub )
 {
-	ofaFileDir *dir;
-	ofaFileDirPrivate *priv;
+	ofaPortfolioCollection *dir;
+	ofaPortfolioCollectionPrivate *priv;
 
-	dir = g_object_new( OFA_TYPE_FILE_DIR, NULL );
+	dir = g_object_new( OFA_TYPE_PORTFOLIO_COLLECTION, NULL );
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	priv->hub = hub;
 
@@ -191,12 +191,12 @@ ofa_file_dir_new( ofaHub *hub )
 }
 
 static void
-setup_settings( ofaFileDir *dir )
+setup_settings( ofaPortfolioCollection *dir )
 {
-	ofaFileDirPrivate *priv;
+	ofaPortfolioCollectionPrivate *priv;
 	gchar *filename;
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	priv->settings = g_object_ref( ofa_settings_get_settings( SETTINGS_TARGET_DOSSIER ));
 
@@ -209,25 +209,25 @@ setup_settings( ofaFileDir *dir )
 }
 
 /**
- * ofa_file_dir_get_dossiers:
- * @dir: this #ofaFileDir instance.
+ * ofa_portfolio_collection_get_dossiers:
+ * @dir: this #ofaPortfolioCollection instance.
  *
  * Returns: a list of defined dossiers as a #GList of GObject -derived
  * objects which implement the #ofaIDBMeta interface.
  *
  * The returned list should be
  *  #g_list_free_full( <list>, ( GDestroyNotify ) g_object_unref ) by
- * the caller. The macro #ofa_file_dir_free_dossiers() may also be used.
+ * the caller. The macro #ofa_portfolio_collection_free_dossiers() may also be used.
  */
 GList *
-ofa_file_dir_get_dossiers( ofaFileDir *dir )
+ofa_portfolio_collection_get_dossiers( ofaPortfolioCollection *dir )
 {
-	ofaFileDirPrivate *priv;
+	ofaPortfolioCollectionPrivate *priv;
 	GList *list;
 
-	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
+	g_return_val_if_fail( dir && OFA_IS_PORTFOLIO_COLLECTION( dir ), NULL );
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -241,13 +241,13 @@ ofa_file_dir_get_dossiers( ofaFileDir *dir )
  * (and typically just after signal connection)
  */
 static void
-on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *dir )
+on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaPortfolioCollection *dir )
 {
-	ofaFileDirPrivate *priv;
+	ofaPortfolioCollectionPrivate *priv;
 	GList *prev_list;
 	gchar *fname;
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	/* we ignore next update signal emitted by the monitor when we
 	 * update the settings ourselves (so that the store may be
@@ -258,9 +258,9 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
 	} else {
 		prev_list = priv->list;
 		priv->list = load_dossiers( dir, prev_list );
-		ofa_file_dir_free_dossiers( prev_list );
+		ofa_portfolio_collection_free_dossiers( prev_list );
 		fname = my_isettings_get_filename( priv->settings );
-		g_signal_emit_by_name( dir, FILE_DIR_SIGNAL_CHANGED, g_list_length( priv->list ), fname );
+		g_signal_emit_by_name( dir, PORTFOLIO_COLLECTION_SIGNAL_CHANGED, g_list_length( priv->list ), fname );
 		g_free( fname );
 	}
 }
@@ -269,10 +269,10 @@ on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaFileDir *
  * @prev_list: the list before reloading the dossiers
  */
 static GList *
-load_dossiers( ofaFileDir *dir, GList *prev_list )
+load_dossiers( ofaPortfolioCollection *dir, GList *prev_list )
 {
-	static const gchar *thisfn = "ofa_file_dir_load_dossiers";
-	ofaFileDirPrivate *priv;
+	static const gchar *thisfn = "ofa_portfolio_collection_load_dossiers";
+	ofaPortfolioCollectionPrivate *priv;
 	GList *outlist;
 	GList *inlist, *it;
 	gulong prefix_len;
@@ -281,16 +281,16 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 	ofaIDBProvider *idbprovider;
 	ofaIDBMeta *meta;
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	outlist = NULL;
-	prefix_len = my_strlen( FILE_DIR_DOSSIER_GROUP_PREFIX );
+	prefix_len = my_strlen( PORTFOLIO_COLLECTION_DOSSIER_GROUP_PREFIX );
 	inlist = my_isettings_get_groups( priv->settings );
 
 	for( it=inlist ; it ; it=it->next ){
 		cstr = ( const gchar * ) it->data;
 		g_debug( "%s: group=%s", thisfn, cstr );
-		if( !g_str_has_prefix( cstr, FILE_DIR_DOSSIER_GROUP_PREFIX )){
+		if( !g_str_has_prefix( cstr, PORTFOLIO_COLLECTION_DOSSIER_GROUP_PREFIX )){
 			continue;
 		}
 		dos_name = g_strstrip( g_strdup( cstr+prefix_len ));
@@ -303,7 +303,7 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 			g_debug( "%s: dossier_name=%s already exists with meta=%p, reusing it",
 					thisfn, dos_name, ( void * ) meta );
 		} else {
-			prov_name = my_isettings_get_string( priv->settings, cstr, FILE_DIR_PROVIDER_KEY );
+			prov_name = my_isettings_get_string( priv->settings, cstr, PORTFOLIO_COLLECTION_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
 				g_info( "%s: found empty DBMS provider name in group '%s', skipping", thisfn, cstr );
 				g_free( dos_name );
@@ -329,20 +329,20 @@ load_dossiers( ofaFileDir *dir, GList *prev_list )
 }
 
 /**
- * ofa_file_dir_get_dossiers_count:
- * @dir: this #ofaFileDir instance.
+ * ofa_portfolio_collection_get_dossiers_count:
+ * @dir: this #ofaPortfolioCollection instance.
  *
  * Returns: the count of loaded dossiers.
  */
 guint
-ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
+ofa_portfolio_collection_get_dossiers_count( const ofaPortfolioCollection *dir )
 {
-	ofaFileDirPrivate *priv;
+	ofaPortfolioCollectionPrivate *priv;
 	guint count;
 
-	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), 0 );
+	g_return_val_if_fail( dir && OFA_IS_PORTFOLIO_COLLECTION( dir ), 0 );
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -352,8 +352,8 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
 }
 
 /**
- * ofa_file_dir_get_meta:
- * @dir: this #ofaFileDir instance.
+ * ofa_portfolio_collection_get_meta:
+ * @dir: this #ofaPortfolioCollection instance.
  * @dossier_name: the named of the searched dossier.
  *
  * Returns: a new reference to the #ofaIDBMeta instance which holds
@@ -363,14 +363,14 @@ ofa_file_dir_get_dossiers_count( const ofaFileDir *dir )
  * The returned reference should be g_object_unref() by the caller.
  */
 ofaIDBMeta *
-ofa_file_dir_get_meta( const ofaFileDir *dir, const gchar *dossier_name )
+ofa_portfolio_collection_get_meta( const ofaPortfolioCollection *dir, const gchar *dossier_name )
 {
-	ofaFileDirPrivate *priv;
+	ofaPortfolioCollectionPrivate *priv;
 	ofaIDBMeta *meta;
 
-	g_return_val_if_fail( dir && OFA_IS_FILE_DIR( dir ), NULL );
+	g_return_val_if_fail( dir && OFA_IS_PORTFOLIO_COLLECTION( dir ), NULL );
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -402,18 +402,18 @@ file_dir_get_meta( const gchar *dossier_name, GList *list )
 }
 
 /**
- * ofa_file_dir_set_meta_from_editor:
- * @dir: this #ofaFileDir instance.
+ * ofa_portfolio_collection_set_meta_from_editor:
+ * @dir: this #ofaPortfolioCollection instance.
  * @meta: the #ofaIDBMeta to be set.
  * @editor: a #ofaIDBEditor instance which holds connection informations.
  *
  * Setup the @meta instance, writing informations to settings file.
  */
 void
-ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaIDBEditor *editor )
+ofa_portfolio_collection_set_meta_from_editor( ofaPortfolioCollection *dir, ofaIDBMeta *meta, const ofaIDBEditor *editor )
 {
-	static const gchar *thisfn = "ofa_file_dir_set_meta_from_editor";
-	ofaFileDirPrivate *priv;
+	static const gchar *thisfn = "ofa_portfolio_collection_set_meta_from_editor";
+	ofaPortfolioCollectionPrivate *priv;
 	gchar *group, *dossier_name;
 	ofaIDBProvider *prov_instance;
 	gchar *prov_name;
@@ -421,21 +421,21 @@ ofa_file_dir_set_meta_from_editor( ofaFileDir *dir, ofaIDBMeta *meta, const ofaI
 	g_debug( "%s: dir=%p, meta=%p, editor=%p",
 			thisfn, ( void * ) dir, ( void * ) meta, ( void * ) editor );
 
-	g_return_if_fail( dir && OFA_IS_FILE_DIR( dir ));
+	g_return_if_fail( dir && OFA_IS_PORTFOLIO_COLLECTION( dir ));
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
 	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
 
-	priv = ofa_file_dir_get_instance_private( dir );
+	priv = ofa_portfolio_collection_get_instance_private( dir );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
-	group = g_strdup_printf( "%s%s", FILE_DIR_DOSSIER_GROUP_PREFIX, dossier_name );
+	group = g_strdup_printf( "%s%s", PORTFOLIO_COLLECTION_DOSSIER_GROUP_PREFIX, dossier_name );
 
 	prov_instance = ofa_idbeditor_get_provider( editor );
 	prov_name = ofa_idbprovider_get_canon_name( prov_instance );
 
-	my_isettings_set_string( priv->settings, group, FILE_DIR_PROVIDER_KEY, prov_name );
+	my_isettings_set_string( priv->settings, group, PORTFOLIO_COLLECTION_PROVIDER_KEY, prov_name );
 
 	ofa_idbmeta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
 

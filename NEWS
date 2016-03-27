@@ -42,6 +42,7 @@
    - myIWindow: remove all references to main window.
    - ofaApplication: implements new ofaIGetter interface.
    - ofaExtension: now passes the ofaIGetter (instead of the GApplication).
+   - ofaFileDir: renamed as ofaPortfolioCollection (todo #1052).
    - ofaIGetter: new interface.
    - ofaIThemeManager: new interface.
    - ofaMainWindow: implements new ofaIGetter and ofaIThemeManager interfaces.
@@ -461,7 +462,7 @@
      - RAT_VAL_BEG is renamed as RAT_VAL_BEGIN (todo #819).
      - OTE_xxx_LOCKED are changed to CHAR(1).
      - Force default database charset to utf8.
-   - ofa_application_get_file_dir(): new method.
+   - ofa_application_get_portfolio_collection(): new method.
    - ofaDossierLogin: removed obsolete class (todo #925).
    - ofa_dossier_misc_get_current_dbname(): removed function.
    - ofa_dossier_misc_get_dossiers(): removed function (todo #893).

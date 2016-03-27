@@ -88,7 +88,6 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-prefs.c									\
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
-	ofa-file-dir.c										\
 	ofa-file-format.c									\
 	ofa-file-format-bin.c								\
 	ofa-file-format-bin.h								\
@@ -140,6 +139,7 @@ libofa_core_la_SOURCES = \
 	ofa-page.c											\
 	ofa-periodicity.c									\
 	ofa-periodicity-bin.c								\
+	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
 	ofa-settings.c										\
 	ofo-account.c										\
