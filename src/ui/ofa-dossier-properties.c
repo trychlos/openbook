@@ -896,8 +896,7 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	}
 
 	g_signal_emit_by_name(
-			my_iwindow_get_main_window( MY_IWINDOW( self )),
-			OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
+			ofa_igetter_get_main_window( priv->getter ), OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
 	/* record settings */
 	ofa_open_prefs_bin_get_data( priv->prefs_bin, &prefs_notes, &prefs_nonempty, &prefs_props, &prefs_bals, &prefs_integ );

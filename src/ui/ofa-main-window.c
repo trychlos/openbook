@@ -1931,14 +1931,16 @@ on_tab_pin_clicked( myTab *tab, ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_main_window_on_tab_pin_clicked";
 	gchar *title;
+	GtkWindow *toplevel;
 
 	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
 
 	title = my_tab_get_label( tab );
 	g_object_ref( G_OBJECT( page ));
 
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
 	do_close( page );
-	ofa_nomodal_page_run( ofa_page_get_main_window( page ), title, GTK_WIDGET( page ));
+	ofa_nomodal_page_run( OFA_IGETTER( page ), toplevel, title, GTK_WIDGET( page ));
 
 	g_free( title );
 	g_object_unref( G_OBJECT( page ));

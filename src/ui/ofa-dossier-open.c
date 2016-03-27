@@ -536,7 +536,6 @@ static gboolean
 do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofaHub *hub;
 	gboolean ok;
 
@@ -544,13 +543,10 @@ do_open_dossier( ofaDossierOpen *self )
 
 	ok = FALSE;
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-
-	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( main_window ))){
+	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ))){
 		ofa_hub_remediate_settings( hub );
 		ok = TRUE;
 	}

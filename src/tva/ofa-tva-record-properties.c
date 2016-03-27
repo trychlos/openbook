@@ -781,7 +781,6 @@ static void
 on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWidget *dialog, *entry;
 	gint resp;
 	guint idx, row, count;
@@ -790,10 +789,8 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-
 	dialog = gtk_message_dialog_new(
-					GTK_WINDOW( main_window ),
+					GTK_WINDOW( self ),
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_WARNING,
 					GTK_BUTTONS_NONE,

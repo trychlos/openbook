@@ -29,22 +29,22 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-settings.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-nomodal-page.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean   dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	gchar     *title;
-	GtkWidget *top_widget;				/* is also an ofaPage */
+	ofaIGetter *getter;
+	gchar      *title;
+	GtkWidget  *top_widget;				/* is also an ofaPage */
 }
 	ofaNomodalPagePrivate;
 
@@ -129,31 +129,35 @@ ofa_nomodal_page_class_init( ofaNomodalPageClass *klass )
 
 /**
  * ofa_nomodal_page_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @title: the title of the window.
  * @page: the #GtkWidget top widget.
  *
  * Creates or represents a #ofaNomodalPage non-modal window.
  */
 void
-ofa_nomodal_page_run( const ofaMainWindow *main_window, const gchar *title, GtkWidget *page )
+ofa_nomodal_page_run( ofaIGetter *getter, GtkWindow *parent, const gchar *title, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_nomodal_page_run";
 	ofaNomodalPage *self;
 	ofaNomodalPagePrivate *priv;
 
-	g_debug( "%s: main_window=%p, title=%s, page=%p",
-			thisfn, ( void * ) main_window, title, ( void * ) page );
+	g_debug( "%s: getter=%p, parent=%p, title=%s, page=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, title, ( void * ) page );
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 	g_return_if_fail( my_strlen( title ));
 	g_return_if_fail( page && GTK_IS_WIDGET( page ));
 
 	self = g_object_new( OFA_TYPE_NOMODAL_PAGE, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_nomodal_page_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->title = g_strdup( title );
 	priv->top_widget = page;
 
@@ -214,17 +218,17 @@ iwindow_init( myIWindow *instance )
 static void
 iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy )
 {
-	GtkApplicationWindow *main_window;
+	GtkWindow *parent;
 	gint mw_x, mw_y, mw_width, mw_height;
 
 	*x = 0;
 	*y = 0;
 	*cx = 0;
 	*cy = 0;
-	main_window = my_iwindow_get_main_window( instance );
-	if( GTK_IS_WINDOW( main_window )){
-		gtk_window_get_position( GTK_WINDOW( main_window ), &mw_x, &mw_y );
-		gtk_window_get_size( GTK_WINDOW( main_window ), &mw_width, &mw_height );
+	parent = my_iwindow_get_parent( instance );
+	if( parent && GTK_IS_WINDOW( parent )){
+		gtk_window_get_position( parent, &mw_x, &mw_y );
+		gtk_window_get_size( parent, &mw_width, &mw_height );
 		*x = mw_x + 100;
 		*y = mw_y + 100;
 		*cx = mw_width - 150;

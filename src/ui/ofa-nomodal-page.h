@@ -40,6 +40,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-igetter-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_NOMODAL_PAGE                ( ofa_nomodal_page_get_type())
@@ -63,7 +65,8 @@ typedef struct {
 
 GType           ofa_nomodal_page_get_type       ( void ) G_GNUC_CONST;
 
-void            ofa_nomodal_page_run            ( const ofaMainWindow *parent,
+void            ofa_nomodal_page_run            ( ofaIGetter *getter,
+														GtkWindow *parent,
 														const gchar *title,
 														GtkWidget *page );
 

@@ -39,6 +39,7 @@
 
  Other changes:
 
+   - myIWindow: remove all references to main window.
    - ofaApplication: implements new ofaIGetter interface.
    - ofaExtension: now passes the ofaIGetter (instead of the GApplication).
    - ofaMainWindow: implements new ofaIGetter and ofaIThemeManager interfaces.

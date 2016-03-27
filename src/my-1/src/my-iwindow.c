@@ -42,12 +42,11 @@ static GList   *st_live_list            = NULL;		/* list of IWindow instances */
 /* a data structure attached to each instance
  */
 typedef struct {
-	GtkApplicationWindow *main_window;
-	GtkWindow            *parent;
-	myISettings          *settings;
-	gchar                *key_prefix;
-	gboolean              initialized;
-	gboolean              hide_on_close;
+	GtkWindow   *parent;
+	myISettings *settings;
+	gchar       *key_prefix;
+	gboolean     initialized;
+	gboolean     hide_on_close;
 }
 	sIWindow;
 
@@ -62,7 +61,6 @@ static gboolean   iwindow_quit_on_escape( const myIWindow *instance );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance );
 static gchar     *iwindow_get_identifier( const myIWindow *instance );
-static GtkWindow *iwindow_get_parent( const myIWindow *instance, sIWindow *sdata );
 static gchar     *iwindow_get_key_prefix( const myIWindow *instance );
 static void       iwindow_set_default_size( myIWindow *instance );
 static void       iwindow_set_transient_for( myIWindow *instance );
@@ -182,52 +180,6 @@ my_iwindow_get_interface_version( const myIWindow *instance )
 }
 
 /**
- * my_iwindow_get_main_window:
- * @instance: this #myIWindow instance.
- *
- * Returns: the #GtkApplicationWindow which has been previously set as
- * the main window.
- *
- * The returned reference is owned by the implementation, and should
- * not be released by the caller.
- */
-GtkApplicationWindow *
-my_iwindow_get_main_window( const myIWindow *instance )
-{
-	sIWindow *sdata;
-
-	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
-
-	sdata = get_iwindow_data( instance );
-
-	return( sdata->main_window );
-}
-
-/**
- * my_iwindow_set_main_window:
- * @instance: this #myIWindow instance.
- * @main_window: [allow-none]: the #GtkApplicationWindow main window of
- *  the application.
- *
- * Sets the main window, which happens to be the default parent.
- *
- * This method should be called by the implementation right after the
- * instanciation of the window, and at latest before presenting (if
- * non-modal) or running (if modal) the window.
- */
-void
-my_iwindow_set_main_window( myIWindow *instance, GtkApplicationWindow *main_window )
-{
-	sIWindow *sdata;
-
-	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-	g_return_if_fail( !main_window || GTK_IS_APPLICATION_WINDOW( main_window ));
-
-	sdata = get_iwindow_data( instance );
-	sdata->main_window = main_window;
-}
-
-/**
  * my_iwindow_get_parent:
  * @instance: this #myIWindow instance.
  *
@@ -246,7 +198,7 @@ my_iwindow_get_parent( const myIWindow *instance )
 
 	sdata = get_iwindow_data( instance );
 
-	return( iwindow_get_parent( instance, sdata ));
+	return( sdata->parent );
 }
 
 /**
@@ -642,16 +594,6 @@ iwindow_get_identifier( const myIWindow *instance )
 	return( identifier );
 }
 
-static GtkWindow *
-iwindow_get_parent( const myIWindow *instance, sIWindow *sdata )
-{
-	if( !sdata->parent && sdata->main_window ){
-		sdata->parent = GTK_WINDOW( sdata->main_window );
-	}
-
-	return( sdata->parent );
-}
-
 /*
  * Returns: the settings key as a newly allocated string which should
  * be g_free() by the caller.
@@ -708,7 +650,7 @@ iwindow_set_transient_for( myIWindow *instance )
 	GtkWindow *parent;
 
 	sdata = get_iwindow_data( instance );
-	parent = iwindow_get_parent( instance, sdata );
+	parent = sdata->parent;
 
 	if( parent ){
 		gtk_window_set_transient_for( GTK_WINDOW( instance ), parent );
@@ -726,13 +668,10 @@ iwindow_set_transient_for( myIWindow *instance )
 void
 my_iwindow_msg_dialog( myIWindow *instance, GtkMessageType type, const gchar *msg )
 {
-	sIWindow *sdata;
-
 	g_return_if_fail( instance && MY_IWINDOW( instance ));
 	g_return_if_fail( my_strlen( msg ));
 
-	sdata = get_iwindow_data( instance );
-	my_utils_msg_dialog( iwindow_get_parent( instance, sdata ), type, msg );
+	my_utils_msg_dialog( GTK_WINDOW( instance ), type, msg );
 }
 
 static sIWindow *
@@ -747,7 +686,6 @@ get_iwindow_data( const myIWindow *instance )
 		g_object_set_data( G_OBJECT( instance ), IWINDOW_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_iwindow_finalized, sdata );
 
-		sdata->main_window = NULL;
 		sdata->parent = NULL;
 		sdata->key_prefix = NULL;
 		sdata->initialized = FALSE;
