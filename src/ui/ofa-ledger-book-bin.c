@@ -33,10 +33,9 @@
 
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-ledger-treeview.h"
 #include "ui/ofa-ledger-book-bin.h"
@@ -48,7 +47,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
+	ofaIGetter          *getter;
 
 	/* UI
 	 */
@@ -177,20 +176,22 @@ ofa_ledger_book_bin_class_init( ofaLedgerBookBinClass *klass )
 
 /**
  * ofa_ledger_book_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a newly allocated #ofaLedgerBookBin object.
  */
 ofaLedgerBookBin *
-ofa_ledger_book_bin_new( const ofaMainWindow *main_window )
+ofa_ledger_book_bin_new( ofaIGetter *getter )
 {
 	ofaLedgerBookBin *self;
 	ofaLedgerBookBinPrivate *priv;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
 	self = g_object_new( OFA_TYPE_LEDGER_BOOK_BIN, NULL );
 
 	priv = ofa_ledger_book_bin_get_instance_private( self );
-	priv->main_window = main_window;
+	priv->getter = getter;
 
 	setup_bin( self );
 	setup_ledger_selection( self );
@@ -234,7 +235,7 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
-	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
+	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv->ledgers_tview = ofa_ledger_treeview_new();

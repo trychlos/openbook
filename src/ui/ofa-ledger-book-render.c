@@ -36,6 +36,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -273,7 +274,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
-	bin = ofa_ledger_book_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
+	bin = ofa_ledger_book_bin_new( OFA_IGETTER( page ));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 

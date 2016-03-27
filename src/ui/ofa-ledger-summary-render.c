@@ -36,6 +36,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -46,8 +47,6 @@
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
 #include "api/ofs-currency.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-irenderable.h"
@@ -231,7 +230,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( page ));
 
-	bin = ofa_ledger_summary_bin_new( ofa_page_get_main_window( OFA_PAGE( page )));
+	bin = ofa_ledger_summary_bin_new( OFA_IGETTER( page ));
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 

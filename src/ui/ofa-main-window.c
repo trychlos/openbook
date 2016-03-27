@@ -1910,14 +1910,14 @@ on_tab_close_clicked( myTab *tab, ofaPage *page )
 static void
 do_close( ofaPage *page )
 {
-	const ofaMainWindow *main_window;
+	GtkApplicationWindow *main_window;
 	GtkNotebook *book;
 	gint page_num;
 
-	main_window = ofa_page_get_main_window( page );
+	main_window = ofa_igetter_get_main_window( OFA_IGETTER( page ));
 	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	book = notebook_get_book( main_window );
+	book = notebook_get_book( OFA_MAIN_WINDOW( main_window ));
 	g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 
 	page_num = gtk_notebook_page_num( book, GTK_WIDGET( page ));

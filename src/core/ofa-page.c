@@ -489,22 +489,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 /**
- * ofa_page_get_main_window:
- */
-const ofaMainWindow *
-ofa_page_get_main_window( const ofaPage *page )
-{
-	ofaPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-	g_return_val_if_fail( !page->prot->dispose_has_run, NULL );
-
-	priv = ofa_page_get_instance_private( page );
-
-	return( priv->main_window );
-}
-
-/**
  * ofa_page_get_theme:
  *
  * Returns -1 if theme is not set.

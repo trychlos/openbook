@@ -32,10 +32,9 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-ledger-summary-bin.h"
 
@@ -46,7 +45,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
+	ofaIGetter          *getter;
 
 	/* UI
 	 */
@@ -164,20 +163,23 @@ ofa_ledger_summary_bin_class_init( ofaLedgerSummaryBinClass *klass )
 
 /**
  * ofa_ledger_summary_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a newly allocated #ofaLedgerSummaryBin object.
  */
 ofaLedgerSummaryBin *
-ofa_ledger_summary_bin_new( const ofaMainWindow *main_window )
+ofa_ledger_summary_bin_new( ofaIGetter *getter )
 {
 	ofaLedgerSummaryBin *self;
 	ofaLedgerSummaryBinPrivate *priv;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
 	self = g_object_new( OFA_TYPE_LEDGER_SUMMARY_BIN, NULL );
 
 	priv = ofa_ledger_summary_bin_get_instance_private( self );
-	priv->main_window = main_window;
+
+	priv->getter = getter;
 
 	setup_bin( self );
 	setup_date_selection( self );

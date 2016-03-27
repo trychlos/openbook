@@ -111,8 +111,6 @@ typedef struct _ofaPageProtected      ofaPageProtected;
 
 GType                ofa_page_get_type                ( void ) G_GNUC_CONST;
 
-const ofaMainWindow *ofa_page_get_main_window         ( const ofaPage *page );
-
 gint                 ofa_page_get_theme               ( const ofaPage *page );
 
 GtkWidget           *ofa_page_get_top_focusable_widget( const ofaPage *page );

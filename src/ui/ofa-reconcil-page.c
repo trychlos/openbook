@@ -41,6 +41,7 @@
 #include "api/ofa-idate-filter.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-itheme-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -56,7 +57,6 @@
 #include "api/ofs-concil-id.h"
 
 #include "core/ofa-iconcil.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
@@ -3971,14 +3971,14 @@ on_print_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	const gchar *acc_number;
-	const ofaMainWindow *main_window;
+	ofaIThemeManager *manager;
 	ofaPage *page;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	acc_number = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
-	main_window = ofa_page_get_main_window( OFA_PAGE( self ));
-	page = ofa_main_window_activate_theme( main_window, THM_RENDER_RECONCIL );
+	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
+	page = ofa_itheme_manager_activate( manager, OFA_TYPE_RECONCIL_RENDER );
 	ofa_reconcil_render_set_account( OFA_RECONCIL_RENDER( page ), acc_number );
 }
 

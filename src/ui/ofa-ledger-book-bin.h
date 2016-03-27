@@ -41,7 +41,7 @@
  */
 
 #include "api/ofa-idate-filter.h"
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 #include "ui/ofa-ledger-treeview.h"
 
@@ -68,7 +68,7 @@ typedef struct {
 
 GType              ofa_ledger_book_bin_get_type               ( void ) G_GNUC_CONST;
 
-ofaLedgerBookBin  *ofa_ledger_book_bin_new                    ( const ofaMainWindow *main_window );
+ofaLedgerBookBin  *ofa_ledger_book_bin_new                    ( ofaIGetter *getter );
 
 gboolean           ofa_ledger_book_bin_is_valid               ( ofaLedgerBookBin *bin,
 																		gchar **message );
