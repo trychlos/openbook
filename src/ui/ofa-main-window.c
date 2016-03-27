@@ -609,7 +609,7 @@ ofa_main_window_new( ofaApplication *application )
 
 	/* connect to the ofaHub signals
 	 */
-	hub = ofa_main_window_get_hub( window );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( window ));
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_OPENED, G_CALLBACK( hub_on_dossier_opened ), window );
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CLOSED, G_CALLBACK( hub_on_dossier_closed ), window );
 
@@ -803,8 +803,7 @@ ofa_main_window_close_dossier( ofaMainWindow *main_window )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	hub = ofa_main_window_get_hub( main_window );
-
+	hub = ofa_igetter_get_hub( OFA_IGETTER( main_window ));
 	do_close_dossier( main_window, hub );
 }
 
@@ -935,7 +934,7 @@ set_window_title( const ofaMainWindow *self )
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	hub = ofa_main_window_get_hub( self );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	dossier = ofa_hub_get_dossier( hub );
 
 	if( dossier ){
@@ -1131,7 +1130,7 @@ do_update_menubar_items( ofaMainWindow *self )
 	ofoDossier *dossier;
 	gboolean is_current;
 
-	hub = ofa_main_window_get_hub( self );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	dossier = ofa_hub_get_dossier( hub );
 	is_current = dossier ? ofo_dossier_is_current( dossier ) : FALSE;
 
@@ -1747,26 +1746,6 @@ close_all_pages( ofaMainWindow *main_window )
 		}
 	}
 	ofa_nomodal_page_close_all();
-}
-
-/**
- * ofa_main_window_get_hub:
- * @main_window: this #ofaMainWindow instance.
- *
- * Returns: the current #ofaHub object, which may be %NULL.
- */
-ofaHub *
-ofa_main_window_get_hub( const ofaMainWindow *main_window )
-{
-	ofaMainWindowPrivate *priv;
-
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
-
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( ofa_application_get_hub( priv->application ));
 }
 
 /*

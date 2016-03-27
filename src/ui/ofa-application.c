@@ -1103,6 +1103,12 @@ on_version( ofaApplication *application )
 
 /**
  * ofa_application_get_hub:
+ * @application: this #ofaApplication instance.
+ *
+ * Returns: the #ofaHub object of the application.
+ *
+ * This method should not be called by normal code. It is only meant to
+ * be used by the ofaMainWindow implementatin of the ofaIGetter interface.
  */
 ofaHub *
 ofa_application_get_hub( const ofaApplication *application )

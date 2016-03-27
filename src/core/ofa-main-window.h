@@ -148,8 +148,6 @@ void           ofa_main_window_close_dossier     ( ofaMainWindow *window );
 
 void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
 
-ofaHub        *ofa_main_window_get_hub           ( const ofaMainWindow *window );
-
 G_END_DECLS
 
 #endif /* __OFA_MAIN_WINDOW_H__ */
