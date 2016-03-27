@@ -36,8 +36,6 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-iprintable.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-render-page.h"

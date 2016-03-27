@@ -42,14 +42,13 @@
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-store.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-restore-assistant.h"
 
@@ -1083,7 +1082,7 @@ on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_about_run( priv->main_window );
+	ofa_about_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
 }
 
 static void

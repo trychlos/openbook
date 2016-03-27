@@ -28,7 +28,7 @@
 
 #include <glib/gi18n.h>
 
-#include "core/ofa-main-window.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
@@ -112,20 +112,24 @@ ofa_about_class_init( ofaAboutClass *klass )
 
 /**
  * ofa_about_run:
- * @main_window: the main window.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
  * Display the About... dialog box.
  */
 void
-ofa_about_run( const ofaMainWindow *main_window )
+ofa_about_run( ofaIGetter *getter, GtkWindow *parent )
 {
-	const GtkApplication *application;
+	GApplication *application;
 	ofaAbout *about;
 	GdkPixbuf *pixbuf;
 	GtkWidget *button;
 	gchar *version;
 
-	application = gtk_window_get_application( GTK_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
+
+	application = ofa_igetter_get_application( getter );
 	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
 
 	static const gchar *authors[] = {

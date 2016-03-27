@@ -532,7 +532,6 @@ libofa_core_la_SOURCES = \
 	ofa-ledger-store.c									\
 	ofa-ledger-store.h									\
 	ofa-list-store.c									\
-	ofa-main-window.h									\
 	ofa-ope-template-editable.c							\
 	ofa-ope-template-frame-bin.c						\
 	ofa-ope-template-frame-bin.h						\

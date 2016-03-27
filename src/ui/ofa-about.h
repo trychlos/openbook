@@ -30,12 +30,12 @@
  * @short_description: #ofaAbout class definition.
  * @include: ui/ofa-about.h
  *
- * A convenience class to manage a balance grid.
- * It defines one "update" action signal to let the user update a
- * balance row in the grid.
+ * Display the About dialog.
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -60,7 +60,8 @@ typedef struct {
 
 GType ofa_about_get_type ( void ) G_GNUC_CONST;
 
-void  ofa_about_run      ( const ofaMainWindow *main_window );
+void  ofa_about_run      ( ofaIGetter *getter,
+								GtkWindow *parent );
 
 G_END_DECLS
 

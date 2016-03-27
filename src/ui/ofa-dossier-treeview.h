@@ -40,7 +40,6 @@
 
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"
-#include "api/ofa-main-window-def.h"
 
 #include "ui/ofa-dossier-store.h"
 

@@ -37,7 +37,6 @@
  * embedded in a GtkScrolledWindow.
  */
 
-#include "api/ofa-main-window-def.h"
 #include "api/ofo-dossier-def.h"
 
 #include "core/ofa-ledger-store.h"

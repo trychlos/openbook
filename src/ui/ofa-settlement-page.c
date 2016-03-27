@@ -45,8 +45,6 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-itreeview-column.h"
 #include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-settlement-page.h"

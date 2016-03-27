@@ -46,7 +46,6 @@
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-guided-input.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-book-render.h"
 #include "ui/ofa-account-page.h"
@@ -69,6 +68,7 @@
 #include "ui/ofa-ledger-book-render.h"
 #include "ui/ofa-ledger-page.h"
 #include "ui/ofa-ledger-summary-render.h"
+#include "ui/ofa-main-window.h"
 #include "ui/ofa-nomodal-page.h"
 #include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-rate-page.h"

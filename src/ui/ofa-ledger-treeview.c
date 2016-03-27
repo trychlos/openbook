@@ -34,8 +34,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofo-ledger.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-ledger-treeview.h"
 
 /* private instance data
@@ -351,7 +349,7 @@ create_treeview_columns( ofaLedgerTreeview *view )
 /**
  * ofa_ledger_treeview_set_hub:
  * @view: this #ofaLedgerTreeview instance.
- * @main_window: the #ofaMainWindow main window of the application.
+ * @hub: the #ofaHub object of the application.
  *
  * This is required in order to get the dossier which will permit to
  * create the underlying tree store.

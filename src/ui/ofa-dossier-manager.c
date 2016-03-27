@@ -40,8 +40,6 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-dossier-delete.h"
 #include "ui/ofa-dossier-manager.h"
 #include "ui/ofa-dossier-new.h"
@@ -49,6 +47,7 @@
 #include "ui/ofa-dossier-properties.h"
 #include "ui/ofa-dossier-store.h"
 #include "ui/ofa-dossier-treeview.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

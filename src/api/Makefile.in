@@ -431,8 +431,6 @@ api_include_HEADERS = \
 	ofa-preferences.h									\
 	ofa-settings.h										\
 	\
-	ofa-main-window-def.h								\
-	\
 	ofo-account.h										\
 	ofo-account-def.h									\
 	ofo-base.h											\

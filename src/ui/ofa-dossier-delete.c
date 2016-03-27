@@ -41,9 +41,9 @@
 
 #include "core/ofa-dbms-root-bin.h"
 #include "core/ofa-dossier-delete-prefs-bin.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-dossier-delete.h"
+#include "ui/ofa-main-window.h"
 
 /* private instance data
  */

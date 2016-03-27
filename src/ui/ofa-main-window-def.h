@@ -22,8 +22,8 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_MAIN_WINDOW_DEF_H__
-#define __OPENBOOK_API_OFA_MAIN_WINDOW_DEF_H__
+#ifndef __OFA_MAIN_WINDOW_DEF_H__
+#define __OFA_MAIN_WINDOW_DEF_H__
 
 /**
  * SECTION: main-window
@@ -36,4 +36,4 @@ typedef struct _ofaMainWindow           ofaMainWindow;
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_MAIN_WINDOW_DEF_H__ */
+#endif /* __OFA_MAIN_WINDOW_DEF_H__ */

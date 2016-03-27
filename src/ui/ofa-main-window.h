@@ -29,7 +29,7 @@
  * SECTION: main-window
  * @title: ofaMainWindow
  * @short_description: The Main Window class definition
- * @include: core/ofa-main-window.h
+ * @include: ui/ofa-main-window.h
  *
  * This class manages the main window.
  *
@@ -61,11 +61,11 @@
 
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-hub-def.h"
-#include "api/ofa-main-window-def.h"
 #include "api/ofa-page-def.h"
 #include "api/ofo-dossier-def.h"
 
 #include "ui/ofa-application-def.h"
+#include "ui/ofa-main-window-def.h"
 
 G_BEGIN_DECLS
 
