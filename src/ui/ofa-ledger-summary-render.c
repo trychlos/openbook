@@ -57,7 +57,6 @@
  */
 typedef struct {
 
-	ofaHub              *hub;
 	ofaLedgerSummaryBin *args_bin;
 
 	/* internals
@@ -212,8 +211,6 @@ page_init_view( ofaPage *page )
 
 	on_args_changed( priv->args_bin, OFA_LEDGER_SUMMARY_RENDER( page ));
 	get_settings( OFA_LEDGER_SUMMARY_RENDER( page ));
-
-	priv->hub = ofa_page_get_hub( page );
 }
 
 static GtkWidget *
@@ -265,14 +262,17 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofaLedgerSummaryRenderPrivate *priv;
 	GList *dataset;
 	ofaIDateFilter *date_filter;
+	ofaHub *hub;
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( page ));
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	date_filter = ofa_ledger_summary_bin_get_date_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
-	dataset = ofo_ledger_get_dataset( priv->hub );
+	dataset = ofo_ledger_get_dataset( hub );
 
 	return( dataset );
 }
@@ -360,14 +360,13 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaLedgerSummaryRenderPrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( instance ));
-
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
+	connect = ofa_hub_get_connect( hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	g_object_unref( meta );
@@ -466,9 +465,11 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	gdouble y, line_height;
 	gboolean first;
 	gchar *str;
+	ofaHub *hub;
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( instance ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	is_paginating = ofa_irenderable_is_paginating( instance );
 
 	/* take ledger properties */
@@ -479,7 +480,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	/* take the entries for this ledger */
 	entries = ofo_entry_get_dataset_for_print_ledgers(
-						priv->hub, mnemos_list,
+						hub, mnemos_list,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
 						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
 
@@ -495,7 +496,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 		credit = ofo_entry_get_credit( entry );
 
 		ofs_currency_add_by_code(
-				&ledger_currencies, priv->hub, ccuriso,
+				&ledger_currencies, hub, ccuriso,
 				is_paginating ? 0 : debit, is_paginating ? 0 : credit );
 
 		priv->count += 1;

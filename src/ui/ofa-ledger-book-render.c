@@ -49,7 +49,6 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-irenderable.h"
@@ -60,7 +59,6 @@
  */
 typedef struct {
 
-	ofaHub              *hub;
 	ofaLedgerBookBin    *args_bin;
 
 	/* internals
@@ -256,8 +254,6 @@ page_init_view( ofaPage *page )
 
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
 	get_settings( OFA_LEDGER_BOOK_RENDER( page ));
-
-	priv->hub = ofa_page_get_hub( page );
 }
 
 static GtkWidget *
@@ -313,19 +309,21 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofoLedger *ledger;
 	GList *dataset;
 	ofaIDateFilter *date_filter;
+	ofaHub *hub;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
 	priv->all_ledgers = ofa_ledger_book_bin_get_all_ledgers( priv->args_bin );
 	tview = ofa_ledger_book_bin_get_treeview( priv->args_bin );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	if( priv->all_ledgers ){
-		priv->selected = ofo_ledger_get_dataset( priv->hub );
+		priv->selected = ofo_ledger_get_dataset( hub );
 	} else {
 		list = ofa_ledger_treeview_get_selected( tview );
 		priv->selected = NULL;
 		for( it=list ; it ; it=it->next ){
-			ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) it->data );
+			ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) it->data );
 			g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 			priv->selected = g_list_append( priv->selected, ledger );
 		}
@@ -340,7 +338,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
 	dataset = ofo_entry_get_dataset_for_print_ledgers(
-						priv->hub, mnemos,
+						hub, mnemos,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
 						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
 
@@ -479,14 +477,13 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaLedgerBookRenderPrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
-
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
+	connect = ofa_hub_get_connect( hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	g_object_unref( meta );
@@ -641,16 +638,18 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	ofaLedgerBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
 	gdouble y, height;
+	ofaHub *hub;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	y = ofa_irenderable_get_last_y( instance );
 
 	/* setup the ledger properties */
 	g_free( priv->ledger_mnemo );
 	priv->ledger_mnemo = g_strdup( ofo_entry_get_ledger( OFO_ENTRY( current->data )));
 
-	priv->ledger_object = ofo_ledger_get_by_mnemo( priv->hub, priv->ledger_mnemo );
+	priv->ledger_object = ofo_ledger_get_by_mnemo( hub, priv->ledger_mnemo );
 	g_return_if_fail( priv->ledger_object && OFO_IS_LEDGER( priv->ledger_object ));
 
 	ofs_currency_list_free( &priv->ledger_totals );
@@ -689,15 +688,17 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	ofoCurrency *currency;
 	ofoConcil *concil;
 	gboolean is_paginating;
+	ofaHub *hub;
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	y = ofa_irenderable_get_last_y( instance );
 	entry = OFO_ENTRY( current->data );
 
 	/* get currency properties */
 	code = ofo_entry_get_currency( entry );
-	currency = ofo_currency_get_by_code( priv->hub, code );
+	currency = ofo_currency_get_by_code( hub, code );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 
 	/* operation date */
@@ -773,7 +774,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	is_paginating = ofa_irenderable_is_paginating( instance );
 	ofs_currency_add_by_code(
-			&priv->ledger_totals, priv->hub, code,
+			&priv->ledger_totals, hub, code,
 			is_paginating ? 0 : debit, is_paginating ? 0 : credit );
 }
 

@@ -41,6 +41,10 @@
  *
  * The Openbook GUI also provides a theme manager, implemented by the
  * main window, which displays pages as tabs of a main notebook.
+ *
+ * It happens that both the ofaApplication, the ofaMainWindow and all
+ * the ofaPage-derived objects all implement this ofaIGetter interface.
+ * This let rather all code get an easy access to global variables.
  */
 
 #include <gio/gio.h>

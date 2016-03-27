@@ -50,7 +50,6 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub             *hub;
 	gboolean            is_current;
 	gint                exe_id;			/* internal identifier of the current exercice */
 
@@ -153,16 +152,15 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_ledger_page_v_setup_view";
 	ofaLedgerPagePrivate *priv;
 	GtkWidget *frame;
+	ofaHub *hub;
 	ofoDossier *dossier;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 	priv->is_current = ofo_dossier_is_current( dossier );
 
@@ -176,8 +174,11 @@ setup_tree_view( ofaPage *page )
 {
 	ofaLedgerPagePrivate *priv;
 	GtkWidget *parent;
+	ofaHub *hub;
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	my_utils_widget_set_margins( parent, 4, 4, 4, 0 );
@@ -186,7 +187,7 @@ setup_tree_view( ofaPage *page )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_columns( priv->tview,
 			LEDGER_DISP_MNEMO | LEDGER_DISP_LABEL | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
-	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
+	ofa_ledger_treeview_set_hub( priv->tview, hub );
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_BROWSE );
 
 	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_row_selected ), page );
@@ -250,13 +251,12 @@ v_get_top_focusable_widget( const ofaPage *page )
 static void
 on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 {
-	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
-
-	priv = ofa_ledger_page_get_instance_private( self );
+	ofaHub *hub;
 
 	if( selected ){
-		ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
+		hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+		ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) selected->data );
 		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 		do_update( self, ledger );
@@ -272,13 +272,15 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 	gboolean is_ledger;
+	ofaHub *hub;
 
 	priv = ofa_ledger_page_get_instance_private( self );
 
 	ledger = NULL;
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 
 	if( selected ){
-		ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
+		ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) selected->data );
 		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	}
 
@@ -328,11 +330,13 @@ on_update_clicked( GtkButton *button, ofaLedgerPage *self )
 	ofaLedgerPagePrivate *priv;
 	GList *selected;
 	ofoLedger *ledger;
+	ofaHub *hub;
 
 	priv = ofa_ledger_page_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
-	ledger = ofo_ledger_get_by_mnemo( priv->hub, ( const gchar * ) selected->data );
+	ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) selected->data );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	ofa_ledger_treeview_free_selected( selected );
@@ -356,31 +360,33 @@ do_update( ofaLedgerPage *self, ofoLedger *ledger )
  * enregistrée, et après confirmation de l'utilisateur
  */
 static void
-on_delete_clicked( GtkButton *button, ofaLedgerPage *page )
+on_delete_clicked( GtkButton *button, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 	GList *selected;
 	const gchar *mnemo;
+	ofaHub *hub;
 
-	priv = ofa_ledger_page_get_instance_private( page );
+	priv = ofa_ledger_page_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
 	mnemo = selected->data;
-	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
 	ofa_ledger_treeview_free_selected( selected );
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	g_return_if_fail( ofo_ledger_is_deletable( ledger ));
 
-	if( delete_confirmed( page, ledger ) &&
+	if( delete_confirmed( self, ledger ) &&
 			ofo_ledger_delete( ledger )){
 
 		/* this is managed by the ofaLedgerTreeview convenience
 		 * class, graceful to the dossier signaling system */
 	}
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static gboolean
@@ -409,22 +415,26 @@ on_entry_page( GtkButton *button, ofaLedgerPage *self )
 	const gchar *mnemo;
 	ofoLedger *ledger;
 	ofaIThemeManager *manager;
+	ofaHub *hub;
 
 	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
 
 	priv = ofa_ledger_page_get_instance_private( self );
 
 	list = ofa_ledger_treeview_get_selected( priv->tview );
+	g_return_if_fail( list && list->data );
+
 	mnemo = ( const gchar * ) list->data;
-	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
 	ofa_ledger_treeview_free_selected( list );
 
-	if( ledger ){
-		manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
-		page = ofa_itheme_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
-		if( page ){
-			ofa_entry_page_display_entries( OFA_ENTRY_PAGE( page ),
-							OFO_TYPE_LEDGER, ofo_ledger_get_mnemo( ledger ), NULL, NULL );
-		}
-	}
+	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
+	page = ofa_itheme_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
+	g_return_if_fail( page && OFA_IS_ENTRY_PAGE( page ));
+
+	ofa_entry_page_display_entries(
+			OFA_ENTRY_PAGE( page ), OFO_TYPE_LEDGER, ofo_ledger_get_mnemo( ledger ), NULL, NULL );
 }

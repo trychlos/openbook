@@ -508,26 +508,3 @@ ofa_page_get_top_focusable_widget( const ofaPage *page )
 
 	return( NULL );
 }
-
-/**
- * ofa_page_get_hub:
- * @page: this #ofaPage page.
- *
- * Returns: the current #ofaHub object.
- */
-ofaHub *
-ofa_page_get_hub( const ofaPage *page )
-{
-	ofaPagePrivate *priv;
-	ofaHub *hub;
-
-	g_return_val_if_fail( page && OFA_IS_PAGE( page ), NULL );
-	g_return_val_if_fail( !page->prot->dispose_has_run, NULL );
-
-	priv = ofa_page_get_instance_private( page );
-
-	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	return( hub );
-}

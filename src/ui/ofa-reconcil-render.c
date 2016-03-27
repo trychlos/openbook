@@ -49,8 +49,6 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-reconcil-bin.h"
 #include "ui/ofa-reconcil-render.h"
@@ -59,7 +57,6 @@
  */
 typedef struct {
 
-	ofaHub         *hub;
 	ofaReconcilBin *args_bin;
 
 	/* internals
@@ -251,9 +248,6 @@ page_init_view( ofaPage *page )
 
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));
 	get_settings( OFA_RECONCIL_RENDER( page ));
-
-	priv->hub = ofa_page_get_hub( page );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static GtkWidget *
@@ -305,32 +299,35 @@ render_page_get_dataset( ofaRenderPage *page )
 	ofaReconcilRenderPrivate *priv;
 	GList *dataset, *batlist;
 	const gchar *cur_code;
+	ofaHub *hub;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
+
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	g_free( priv->account_number );
 	priv->account_number = g_strdup( ofa_reconcil_bin_get_account( priv->args_bin ));
 	/*g_debug( "irenderable_get_dataset: account_number=%s", priv->account_number );*/
 	g_return_val_if_fail( my_strlen( priv->account_number ), NULL );
 
-	priv->account = ofo_account_get_by_number( priv->hub, priv->account_number );
+	priv->account = ofo_account_get_by_number( hub, priv->account_number );
 	g_return_val_if_fail( priv->account && OFO_IS_ACCOUNT( priv->account ), NULL );
 
 	cur_code = ofo_account_get_currency( priv->account );
 	g_return_val_if_fail( my_strlen( cur_code ), NULL );
 
-	priv->currency = ofo_currency_get_by_code( priv->hub, cur_code );
+	priv->currency = ofo_currency_get_by_code( hub, cur_code );
 	g_return_val_if_fail( priv->currency && OFO_IS_CURRENCY( priv->currency ), NULL );
 
 	my_date_set_from_date( &priv->date, ofa_reconcil_bin_get_date( priv->args_bin ));
 
 	dataset = ofo_entry_get_dataset_for_print_reconcil(
-					priv->hub,
+					hub,
 					priv->account_number,
 					&priv->date );
 
 	batlist = ofo_bat_line_get_dataset_for_print_reconcil(
-					priv->hub,
+					hub,
 					priv->account_number );
 
 	if( batlist && g_list_length( batlist ) > 0 ){
@@ -502,14 +499,13 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaReconcilRenderPrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
-
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
+	connect = ofa_hub_get_connect( hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	g_object_unref( meta );
@@ -825,11 +821,13 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	const GDate *bat_end;
 	const gchar *bat_currency;
 	GString *bat_str;
+	ofaHub *hub;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
 	g_return_if_fail( my_date_is_valid( &priv->date ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	y = ofa_irenderable_get_last_y( instance );
 	line_height = ofa_irenderable_get_line_height( instance );
 
@@ -863,7 +861,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 					"by your bank, are present in your account extraction, but are not "
 					"found in your books." ), PANGO_ALIGN_LEFT );
 
-	bat = ofo_bat_get_most_recent_for_account( priv->hub, priv->account_number );
+	bat = ofo_bat_get_most_recent_for_account( hub, priv->account_number );
 	if( bat ){
 		ofa_irenderable_set_summary_font( instance );
 

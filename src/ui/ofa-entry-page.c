@@ -57,7 +57,6 @@
 #include "core/ofa-account-select.h"
 #include "core/ofa-iconcil.h"
 #include "core/ofa-ledger-combo.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-itreeview-column.h"
@@ -470,7 +469,7 @@ v_setup_view( ofaPage *page )
 
 	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
+	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );

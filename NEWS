@@ -50,6 +50,7 @@
    - ofa_nomodal_page_present_by_type(): new method.
    - ofaPage: implements new ofaIGetter interface.
    - ofa_page_get_main_window(): removed method.
+   - ofa_page_get_hub(): removed method.
    - ofa_page_get_theme(): removed method.
 
 -----------------------------------------------------------------------

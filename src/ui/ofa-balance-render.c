@@ -48,8 +48,6 @@
 #include "api/ofo-entry.h"
 #include "api/ofs-account-balance.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-irenderable.h"
 #include "ui/ofa-balance-bin.h"
@@ -59,7 +57,6 @@
  */
 typedef struct {
 
-	ofaHub        *hub;
 	ofaBalanceBin *args_bin;
 
 	/* internals
@@ -260,9 +257,6 @@ page_init_view( ofaPage *page )
 
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));
 	get_settings( OFA_BALANCE_RENDER( page ));
-
-	priv->hub = ofa_page_get_hub( page );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static GtkWidget *
@@ -315,6 +309,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	GList *dataset;
 	ofaIAccountFilter *account_filter;
 	ofaIDateFilter *date_filter;
+	ofaHub *hub;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
@@ -331,8 +326,10 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+
 	dataset = ofo_entry_get_dataset_for_print_balance(
-						priv->hub,
+						hub,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
@@ -477,14 +474,13 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaBalanceRenderPrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
-
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
+	connect = ofa_hub_get_connect( hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	g_object_unref( meta );
@@ -713,16 +709,18 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	ofsAccountBalance *sbal;
 	gdouble height, y;
 	gchar *str;
+	ofaHub *hub;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	y = ofa_irenderable_get_last_y( instance );
 
 	/* setup the class properties */
 	sbal = ( ofsAccountBalance * ) current->data;
 	priv->class_num = ofo_account_get_class_from_number( sbal->account );
 
-	priv->class_object = ofo_class_get_by_number( priv->hub, priv->class_num );
+	priv->class_object = ofo_class_get_by_number( hub, priv->class_num );
 
 	g_list_free_full( priv->subtotals, ( GDestroyNotify ) free_currency );
 	priv->subtotals = NULL;
@@ -763,23 +761,25 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	gdouble solde;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
+	ofaHub *hub;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	y = ofa_irenderable_get_last_y( instance );
 	/*g_debug( "irenderable_draw_line: y=%lf, current=%p", y, ( void * ) current );*/
 
 	sbal = ( ofsAccountBalance * ) current->data;
 	g_return_if_fail( my_strlen( sbal->account ));
 
-	account = ofo_account_get_by_number( priv->hub, sbal->account );
+	account = ofo_account_get_by_number( hub, sbal->account );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 	/*g_debug( "irenderable_draw_line: account=%s %s", sbal->account, ofo_account_get_label( account ));*/
 
 	cur_code = ofo_account_get_currency( account );
 	g_return_if_fail( my_strlen( cur_code ));
 
-	cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+	cur_obj = ofo_currency_get_by_code( hub, cur_code );
 	g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
 
 	solde = 0;
@@ -924,9 +924,11 @@ draw_account_balance( ofaIRenderable *instance,
 	gchar *str;
 	gdouble height;
 	ofoCurrency *cur_obj;
+	ofaHub *hub;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	height = 0;
 
 	for( it=list, first=TRUE ; it ; it=it->next ){
@@ -940,7 +942,7 @@ draw_account_balance( ofaIRenderable *instance,
 		scur = ( sCurrency * ) it->data;
 		g_return_if_fail( scur && my_strlen( scur->currency ));
 
-		cur_obj = ofo_currency_get_by_code( priv->hub, scur->currency );
+		cur_obj = ofo_currency_get_by_code( hub, scur->currency );
 		g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
 
 		str = ofa_amount_to_str( scur->period_d, cur_obj );

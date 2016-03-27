@@ -389,7 +389,7 @@ v_setup_view( ofaPage *page )
 
 	priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
+	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );

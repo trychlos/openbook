@@ -48,7 +48,6 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-iaccount-filter.h"
 #include "ui/ofa-irenderable.h"
@@ -59,7 +58,6 @@
  */
 typedef struct {
 
-	ofaHub            *hub;
 	ofaAccountBookBin *args_bin;
 
 	/* internals
@@ -269,9 +267,6 @@ page_init_view( ofaPage *page )
 
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
 	get_settings( OFA_ACCOUNT_BOOK_RENDER( page ));
-
-	priv->hub = ofa_page_get_hub( page );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static GtkWidget *
@@ -338,6 +333,7 @@ render_page_get_dataset( ofaRenderPage *page )
 	GList *dataset;
 	ofaIAccountFilter *account_filter;
 	ofaIDateFilter *date_filter;
+	ofaHub *hub;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( page ));
 
@@ -352,8 +348,10 @@ render_page_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+
 	dataset = ofo_entry_get_dataset_for_print_general_books(
-						priv->hub,
+						hub,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
@@ -481,14 +479,13 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaAccountBookRenderPrivate *priv;
+	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	gchar *dossier_name;
 
-	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
-
-	connect = ofa_hub_get_connect( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
+	connect = ofa_hub_get_connect( hub );
 	meta = ofa_idbconnect_get_meta( connect );
 	dossier_name = ofa_idbmeta_get_dossier_name( meta );
 	g_object_unref( meta );
@@ -640,9 +637,11 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	ofaAccountBookRenderPrivate *priv;
 	static const gdouble st_vspace_rate = 0.4;
 	gdouble y, height;
+	ofaHub *hub;
 
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
+	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	y = ofa_irenderable_get_last_y( instance );
 
 	/* setup the account properties */
@@ -652,12 +651,12 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	priv->account_debit = 0;
 	priv->account_credit = 0;
 
-	priv->account_object = ofo_account_get_by_number( priv->hub, priv->account_number );
+	priv->account_object = ofo_account_get_by_number( hub, priv->account_number );
 	g_return_if_fail( priv->account_object && OFO_IS_ACCOUNT( priv->account_object ));
 
 	priv->currency_code = g_strdup( ofo_account_get_currency( priv->account_object ));
 
-	priv->currency_object = ofo_currency_get_by_code( priv->hub, priv->currency_code );
+	priv->currency_object = ofo_currency_get_by_code( hub, priv->currency_code );
 	g_return_if_fail( priv->currency_object && OFO_IS_CURRENCY( priv->currency_object ));
 
 	priv->currency_digits = ofo_currency_get_digits( priv->currency_object );

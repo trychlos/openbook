@@ -40,7 +40,6 @@
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-guided-input-bin.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-guided-ex.h"
 
@@ -193,7 +192,7 @@ v_setup_view( ofaPage *page )
 
 	priv = ofa_guided_ex_get_instance_private( OFA_GUIDED_EX( page ));
 
-	priv->hub = ofa_page_get_hub( page );
+	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
 	child = setup_view_left( OFA_GUIDED_EX( page ));

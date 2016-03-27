@@ -113,8 +113,6 @@ GType                ofa_page_get_type                ( void ) G_GNUC_CONST;
 
 GtkWidget           *ofa_page_get_top_focusable_widget( const ofaPage *page );
 
-ofaHub              *ofa_page_get_hub                 ( const ofaPage *page );
-
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_PAGE_H__ */

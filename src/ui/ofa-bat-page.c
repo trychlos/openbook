@@ -43,8 +43,6 @@
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ui/ofa-bat-page.h"
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-treeview.h"
@@ -56,7 +54,6 @@ typedef struct {
 
 	/* runtime data
 	 */
-	ofaHub         *hub;
 	gboolean        is_current;			/* whether the dossier is current */
 
 	/* UI
@@ -141,6 +138,7 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	static ofaBatColumns st_columns [] = {
 			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END,
@@ -155,10 +153,8 @@ v_setup_view( ofaPage *page )
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -166,7 +162,7 @@ v_setup_view( ofaPage *page )
 	priv->tview = ofa_bat_treeview_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 4, 4, 4, 0 );
 	ofa_bat_treeview_set_columns( priv->tview, st_columns );
-	ofa_bat_treeview_set_hub( priv->tview, priv->hub );
+	ofa_bat_treeview_set_hub( priv->tview, hub );
 
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), page );
