@@ -82,10 +82,10 @@
  *                     list store
  */
 
-#include "api/ofa-hub-def.h"
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
 #include "api/ofa-page-def.h"
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-page-prot.h"
 
 G_BEGIN_DECLS
 
@@ -105,13 +105,11 @@ typedef struct _ofaPageProtected      ofaPageProtected;
 /**
  * Properties set against this base class at instanciation time
  */
-#define PAGE_PROP_GETTER                "page-prop-getter"
-#define PAGE_PROP_MAIN_WINDOW           "page-prop-main-window"
-#define PAGE_PROP_THEME                 "page-prop-theme"
+#define PAGE_PROP_GETTER                     "page-prop-getter"
 
-GType                ofa_page_get_type                ( void ) G_GNUC_CONST;
+GType      ofa_page_get_type                ( void ) G_GNUC_CONST;
 
-GtkWidget           *ofa_page_get_top_focusable_widget( const ofaPage *page );
+GtkWidget *ofa_page_get_top_focusable_widget( const ofaPage *page );
 
 G_END_DECLS
 

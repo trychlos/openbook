@@ -30,13 +30,10 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-base.h"
-
-#include "core/ofa-main-window.h"
 
 /* private instance data
  */
@@ -44,8 +41,6 @@ typedef struct {
 
 	/* properties set at instanciation time
 	 */
-	const ofaMainWindow *main_window;
-	gint                 theme;
 	ofaIGetter *getter;
 }
 	ofaPagePrivate;
@@ -53,9 +48,7 @@ typedef struct {
 /* class properties
  */
 enum {
-	PROP_MAIN_WINDOW_ID = 1,
-	PROP_THEME_ID,
-	PROP_GETTER_ID,
+	PROP_GETTER_ID = 1,
 };
 
 /* signals defined here
@@ -142,14 +135,6 @@ page_get_property( GObject *instance, guint property_id, GValue *value, GParamSp
 		priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 		switch( property_id ){
-			case PROP_MAIN_WINDOW_ID:
-				g_value_set_pointer( value, ( gpointer ) priv->main_window );
-				break;
-
-			case PROP_THEME_ID:
-				g_value_set_int( value, priv->theme );
-				break;
-
 			case PROP_GETTER_ID:
 				g_value_set_pointer( value, priv->getter );
 				break;
@@ -180,14 +165,6 @@ page_set_property( GObject *instance, guint property_id, const GValue *value, GP
 		priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 		switch( property_id ){
-			case PROP_MAIN_WINDOW_ID:
-				priv->main_window = g_value_get_pointer( value );
-				break;
-
-			case PROP_THEME_ID:
-				priv->theme = g_value_get_int( value );
-				break;
-
 			case PROP_GETTER_ID:
 				priv->getter = g_value_get_pointer( value );
 				break;
@@ -220,11 +197,10 @@ page_constructed( GObject *instance )
 
 	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
-	g_debug( "%s: instance=%p (%s), main_window=%p, theme=%d",
+	g_debug( "%s: instance=%p (%s), getter=%p (%s)",
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) priv->main_window,
-			priv->theme );
+			( void * ) priv->getter, G_OBJECT_TYPE_NAME( priv->getter ));
 
 	/* let the child class setup its page before showing it */
 	do_setup_page( self );
@@ -247,8 +223,7 @@ ofa_page_init( ofaPage *self )
 	self->prot->dispose_has_run = FALSE;
 
 	priv = ofa_page_get_instance_private( self );
-	priv->main_window = NULL;
-	priv->theme = -1;
+	priv->getter = NULL;
 }
 
 static void
@@ -266,23 +241,11 @@ ofa_page_class_init( ofaPageClass *klass )
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
-			PROP_MAIN_WINDOW_ID,
+			PROP_GETTER_ID,
 			g_param_spec_pointer(
-					PAGE_PROP_MAIN_WINDOW,
-					"Main window",
-					"The main window (ofaMainWindow *)",
-					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
-
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			PROP_THEME_ID,
-			g_param_spec_int(
-					PAGE_PROP_THEME,
-					"Theme",
-					"The theme handled by this class (gint)",
-					-1,
-					INT_MAX,
-					-1,
+					PAGE_PROP_GETTER,
+					"Getter",
+					"A ofaIGetter instance, to be provided by the instantiator",
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	klass->setup_page = v_setup_page;
