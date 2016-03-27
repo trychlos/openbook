@@ -33,11 +33,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-bat-properties.h"
 #include "ui/ofa-bat-properties-bin.h"
@@ -49,11 +48,11 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIGetter          *getter;
 
 	/* internals
 	 */
 	ofoBat              *bat;
-	ofaHub              *hub;
 	gboolean             is_current;
 	gboolean             is_new;		/* always FALSE here */
 	ofaBatPropertiesBin *bat_bin;
@@ -149,29 +148,34 @@ ofa_bat_properties_class_init( ofaBatPropertiesClass *klass )
 
 /**
  * ofa_bat_properties_run:
- * @main_window: the main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @bat: the #ofoBat to be displayed.
  *
  * Display the properties of a bat file.
  * Let update the notes if the dossier is not an archive.
  */
 void
-ofa_bat_properties_run( const ofaMainWindow *main_window, ofoBat *bat )
+ofa_bat_properties_run( ofaIGetter *getter, GtkWindow *parent , ofoBat *bat )
 {
 	static const gchar *thisfn = "ofa_bat_properties_run";
 	ofaBatProperties *self;
 	ofaBatPropertiesPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p, bat=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) bat );
 
-	g_debug( "%s: main_window=%p, bat=%p",
-			thisfn, ( void * ) main_window, ( void * ) bat );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
+	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	self = g_object_new( OFA_TYPE_BAT_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_bat_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->bat = bat;
 
 	/* after this call, @self may be invalid */
@@ -233,7 +237,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_bat_properties_idialog_init";
 	ofaBatPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	gchar *title;
 	GtkWidget *parent;
@@ -246,13 +250,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->is_current = ofo_dossier_is_current( dossier );
 

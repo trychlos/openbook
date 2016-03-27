@@ -520,18 +520,21 @@ on_ok_clicked( GtkButton *button, ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
 	GtkWidget *close_btn;
+	GtkWindow *toplevel;
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+
 	/* check balances and dbms integrity */
 	if( !ofa_check_balances_check( priv->hub )){
-		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING,
+		my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
 				_( "We have detected losses of balance in your books.\n\n"
 					"In this current state, we will be unable to close any "
 					"ledger until you fix your balances." ));
 
 	} else if( !ofa_check_integrity_check( priv->hub )){
-		my_utils_msg_dialog( GTK_WINDOW( self ), GTK_MESSAGE_WARNING,
+		my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
 				_( "Integrity check of the DBMS has failed.\\"
 					"In this current state, we will be unable to close any "
 					"ledger until you fix the errors." ));

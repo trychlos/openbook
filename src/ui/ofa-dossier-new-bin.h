@@ -44,7 +44,7 @@
 
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta-def.h"
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -69,7 +69,7 @@ typedef struct {
 
 GType             ofa_dossier_new_bin_get_type             ( void ) G_GNUC_CONST;
 
-ofaDossierNewBin *ofa_dossier_new_bin_new                  ( ofaMainWindow *main_window );
+ofaDossierNewBin *ofa_dossier_new_bin_new                  ( ofaIGetter *getter );
 
 GtkSizeGroup     *ofa_dossier_new_bin_get_size_group       ( const ofaDossierNewBin *bin,
 																	guint column );

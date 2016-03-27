@@ -73,7 +73,7 @@ typedef struct {
 GType ofa_tva_form_properties_get_type( void ) G_GNUC_CONST;
 
 void  ofa_tva_form_properties_run     ( ofaIGetter *getter,
-											GtkWidget *parent,
+											GtkWindow *parent,
 											ofoTVAForm *form );
 
 G_END_DECLS

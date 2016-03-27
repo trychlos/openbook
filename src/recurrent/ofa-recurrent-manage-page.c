@@ -41,8 +41,6 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ofa-recurrent-main.h"
 #include "ofa-recurrent-manage-page.h"
 #include "ofa-recurrent-model-properties.h"
@@ -57,7 +55,6 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub            *hub;
 	gboolean           is_current;
 
 	/* UI
@@ -183,6 +180,7 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_manage_page_v_setup_view";
 	ofaRecurrentManagePagePrivate *priv;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	GtkWidget *widget;
 
@@ -190,10 +188,8 @@ v_setup_view( ofaPage *page )
 
 	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -218,6 +214,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	ofaRecurrentModelStore *store;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
@@ -240,7 +237,8 @@ setup_treeview( ofaRecurrentManagePage *self )
 	g_signal_connect( tview, "row-activated", G_CALLBACK( tview_on_row_activated ), self );
 	g_signal_connect( tview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
 
-	store = ofa_recurrent_model_store_new( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	store = ofa_recurrent_model_store_new( hub );
 
 	g_signal_connect( store, "ofa-inserted", G_CALLBACK( store_on_row_inserted_or_removed ), self );
 	g_signal_connect( store, "ofa-inserted", G_CALLBACK( store_on_row_inserted_or_removed ), self );
@@ -602,10 +600,12 @@ store_on_row_inserted_or_removed( ofaRecurrentModelStore *store, ofaRecurrentMan
 	ofaRecurrentManagePagePrivate *priv;
 	GList *dataset;
 	guint count;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	dataset = ofo_recurrent_model_get_dataset( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	dataset = ofo_recurrent_model_get_dataset( hub );
 	count = g_list_length( dataset );
 
 	gtk_widget_set_sensitive( priv->generate_btn, count > 0 );
@@ -619,9 +619,11 @@ static void
 action_on_new_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 {
 	ofoRecurrentModel *model;
+	GtkWindow *toplevel;
 
 	model = ofo_recurrent_model_new();
-	ofa_recurrent_model_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), model );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
 }
 
 static void
@@ -630,11 +632,13 @@ action_on_update_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoRecurrentModel *model;
+	GtkWindow *toplevel;
 
 	model = tview_get_selected( self, &tmodel, &iter );
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
-	ofa_recurrent_model_properties_run( ofa_page_get_main_window( OFA_PAGE( self )), model );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
 }
 
 static void
@@ -704,13 +708,11 @@ action_delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model 
 static void
 action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 {
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
-	ofa_recurrent_new_run(
-			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL );
+	ofa_recurrent_new_run( OFA_IGETTER( self ), toplevel );
 }
 
 /*

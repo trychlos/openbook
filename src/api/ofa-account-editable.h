@@ -41,7 +41,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-account.h"
 
 G_BEGIN_DECLS
@@ -50,7 +50,7 @@ typedef char * ( *AccountPreSelectCb )( GtkEditable *editable, ofeAccountAllowed
 typedef char * ( *AccountPostSelectCb )( GtkEditable *editable, ofeAccountAllowed allowed, const gchar *selected, void *user_data );
 
 void  ofa_account_editable_init             ( GtkEditable *editable,
-													ofaMainWindow *main_window,
+													ofaIGetter *getter,
 													ofeAccountAllowed allowed );
 
 void  ofa_account_editable_set_preselect_cb ( GtkEditable *editable,

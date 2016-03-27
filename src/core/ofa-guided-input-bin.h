@@ -46,7 +46,7 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
@@ -72,7 +72,7 @@ typedef struct {
 
 GType              ofa_guided_input_bin_get_type        ( void ) G_GNUC_CONST;
 
-ofaGuidedInputBin *ofa_guided_input_bin_new             ( const ofaMainWindow *main_window );
+ofaGuidedInputBin *ofa_guided_input_bin_new             ( ofaIGetter *getter );
 
 void               ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin,
 																const ofoOpeTemplate *template );

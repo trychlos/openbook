@@ -41,7 +41,9 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -66,7 +68,7 @@ typedef struct {
 
 GType  ofa_ope_template_select_get_type( void ) G_GNUC_CONST;
 
-gchar *ofa_ope_template_select_run     ( ofaMainWindow *main_window,
+gchar *ofa_ope_template_select_run     ( ofaIGetter *getter,
 												GtkWindow *parent,
 												const gchar *asked_mnemo );
 

@@ -35,11 +35,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-periodicity.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ofa-recurrent-new.h"
 #include "ofa-recurrent-run-treeview.h"
@@ -52,9 +51,12 @@
 typedef struct {
 	gboolean                 dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter              *getter;
+
 	/* internals
 	 */
-	ofaHub                  *hub;
 	GDate                    begin_date;
 	GDate                    end_date;
 	GList                   *dataset;
@@ -182,25 +184,29 @@ ofa_recurrent_new_class_init( ofaRecurrentNewClass *klass )
 
 /**
  * ofa_recurrent_new_run:
- * @main_window: the #ofaMainWindow main window of the application.
- * @parent: [allow-none]: the #GtkWindow parent of this dialog.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the parent window.
  */
 void
-ofa_recurrent_new_run( ofaMainWindow *main_window, GtkWindow *parent )
+ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_recurrent_new_run";
 	ofaRecurrentNew *self;
+	ofaRecurrentNewPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
-	g_debug( "%s: main_window=%p, parent=%p",
-			thisfn, ( void * ) main_window, ( void * ) parent );
+	g_debug( "%s: getter=%p, parent=%p",
+			thisfn, ( void * ) getter, ( void * ) parent );
 
 	self = g_object_new( OFA_TYPE_RECURRENT_NEW, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_recurrent_new_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -235,7 +241,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_recurrent_new_idialog_init";
 	ofaRecurrentNewPrivate *priv;
-	GtkApplicationWindow *main_window;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -248,12 +253,6 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 	gtk_widget_set_sensitive( priv->ok_btn, FALSE );
-
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	init_treeview( OFA_RECURRENT_NEW( instance ));
 	init_dates( OFA_RECURRENT_NEW( instance ));
@@ -271,13 +270,16 @@ init_treeview( ofaRecurrentNew *self )
 {
 	ofaRecurrentNewPrivate *priv;
 	GtkWidget *parent;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+
+	priv->tview = ofa_recurrent_run_treeview_new( hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 
 	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_WAITING, TRUE );
@@ -296,8 +298,11 @@ init_dates( ofaRecurrentNew *self )
 	GtkWidget *prompt, *entry, *label, *btn;
 	const GDate *last_date;
 	gchar *str;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_new_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-generate-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -312,7 +317,7 @@ init_dates( ofaRecurrentNew *self )
 	g_signal_connect( btn, "clicked", G_CALLBACK( generate_on_reset_clicked ), self );
 
 	/* previous date */
-	last_date = ofo_recurrent_gen_get_last_run_date( priv->hub );
+	last_date = ofo_recurrent_gen_get_last_run_date( hub );
 
 	if( my_date_is_valid( last_date )){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p22-last-date" );
@@ -459,10 +464,12 @@ generate_do( ofaRecurrentNew *self )
 	GList *models_dataset, *it, *opes;
 	gchar *str;
 	gint count;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
-	models_dataset = ofo_recurrent_model_get_dataset( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	models_dataset = ofo_recurrent_model_get_dataset( hub );
 
 	opes = NULL;
 
@@ -530,11 +537,13 @@ generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 	ofaRecurrentNewPrivate *priv;
 	ofoRecurrentRun *ope;
 	const gchar *mnemo;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_new_get_instance_private( data->self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
 	mnemo = ofo_recurrent_model_get_mnemo( data->model );
-	ope = ofo_recurrent_run_get_by_id( priv->hub, mnemo, date );
+	ope = ofo_recurrent_run_get_by_id( hub, mnemo, date );
 
 	if( !ope ){
 		ope = ofo_recurrent_run_new();
@@ -552,12 +561,15 @@ do_update( ofaRecurrentNew *self, gchar **msgerr )
 	GList *it;
 	gchar *str;
 	gint count;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	for( it=priv->dataset ; it ; it=it->next ){
 		object = OFO_RECURRENT_RUN( it->data );
-		if( !ofo_recurrent_run_insert( object, priv->hub )){
+		if( !ofo_recurrent_run_insert( object, hub )){
 			if( msgerr ){
 				*msgerr = g_strdup( _( "Unable to insert a new operation" ));
 			}
@@ -568,7 +580,7 @@ do_update( ofaRecurrentNew *self, gchar **msgerr )
 	}
 
 	count = g_list_length( priv->dataset );
-	ofo_recurrent_gen_set_last_run_date( priv->hub, &priv->end_date );
+	ofo_recurrent_gen_set_last_run_date( hub, &priv->end_date );
 
 	if( count == 1 ){
 		str = g_strdup( _( "One successfully inserted operation" ));

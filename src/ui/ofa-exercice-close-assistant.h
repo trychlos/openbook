@@ -81,6 +81,10 @@
  *        consulting a closed exercice
  */
 
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_EXERCICE_CLOSE_ASSISTANT                ( ofa_exercice_close_assistant_get_type())
@@ -104,7 +108,8 @@ typedef struct {
 
 GType  ofa_exercice_close_assistant_get_type( void ) G_GNUC_CONST;
 
-void   ofa_exercice_close_assistant_run     ( ofaMainWindow *parent );
+void   ofa_exercice_close_assistant_run     ( ofaIGetter *getter,
+													GtkWindow *parent);
 
 G_END_DECLS
 

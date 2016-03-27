@@ -38,7 +38,9 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -63,7 +65,8 @@ typedef struct {
 
 GType      ofa_bat_select_get_type( void ) G_GNUC_CONST;
 
-ofxCounter ofa_bat_select_run     ( const ofaMainWindow *main_window,
+ofxCounter ofa_bat_select_run     ( ofaIGetter *getter,
+										GtkWindow *parent,
 										ofxCounter id );
 
 G_END_DECLS

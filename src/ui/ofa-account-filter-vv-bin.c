@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include "core/ofa-main-window.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-account-filter-vv-bin.h"
 #include "ui/ofa-iaccount-filter.h"
@@ -34,14 +34,17 @@
 /* private instance data
  */
 typedef struct {
-	gboolean       dispose_has_run;
+	gboolean    dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter *getter;
 }
 	ofaAccountFilterVVBinPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-account-filter-vv-bin.ui";
 
 static void  iaccount_filter_iface_init( ofaIAccountFilterInterface *iface );
-static guint iaccount_filter_get_interface_version( const ofaIAccountFilter *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountFilterVVBin, ofa_account_filter_vv_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaAccountFilterVVBin )
@@ -112,18 +115,25 @@ ofa_account_filter_vv_bin_class_init( ofaAccountFilterVVBinClass *klass )
 
 /**
  * ofa_account_filter_vv_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a newly allocated #ofaAccountFilterVVBin object.
  */
 ofaAccountFilterVVBin *
-ofa_account_filter_vv_bin_new( const ofaMainWindow *main_window )
+ofa_account_filter_vv_bin_new( ofaIGetter *getter )
 {
 	ofaAccountFilterVVBin *bin;
+	ofaAccountFilterVVBinPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_ACCOUNT_FILTER_VV_BIN, NULL );
 
-	ofa_iaccount_filter_setup_bin( OFA_IACCOUNT_FILTER( bin ), st_resource_ui, main_window );
+	priv = ofa_account_filter_vv_bin_get_instance_private( bin );
+
+	priv->getter = getter;
+
+	ofa_iaccount_filter_setup_bin( OFA_IACCOUNT_FILTER( bin ), getter, st_resource_ui );
 
 	return( bin );
 }
@@ -134,12 +144,4 @@ iaccount_filter_iface_init( ofaIAccountFilterInterface *iface )
 	static const gchar *thisfn = "ofa_date_filter_iaccount_filter_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iaccount_filter_get_interface_version;
-}
-
-static guint
-iaccount_filter_get_interface_version( const ofaIAccountFilter *instance )
-{
-	return( 1 );
 }

@@ -118,7 +118,7 @@ void          my_utils_container_updstamp_setup_full  ( GtkContainer *container,
 
 void          my_utils_size_group_add_size_group      ( GtkSizeGroup *target, GtkSizeGroup *source );
 
-GtkWindow    *my_utils_widget_get_toplevel_window     ( GtkWidget *widget );
+GtkWindow    *my_utils_widget_get_toplevel            ( GtkWidget *widget );
 void          my_utils_widget_set_editable            ( GtkWidget *widget, gboolean editable );
 void          my_utils_widget_remove_style            ( GtkWidget *widget, const gchar *style );
 void          my_utils_widget_set_style               ( GtkWidget *widget, const gchar *style );

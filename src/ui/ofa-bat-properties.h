@@ -39,7 +39,9 @@
  * - current:    yes
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-bat-def.h"
 
 G_BEGIN_DECLS
@@ -65,7 +67,8 @@ typedef struct {
 
 GType ofa_bat_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_bat_properties_run     ( const ofaMainWindow *parent,
+void  ofa_bat_properties_run     ( ofaIGetter *getter,
+										GtkWindow *parent,
 										ofoBat *bat );
 
 G_END_DECLS

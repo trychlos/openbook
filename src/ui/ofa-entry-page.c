@@ -39,6 +39,7 @@
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -602,8 +603,7 @@ setup_account_selection( ofaEntryPage *self )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	g_signal_connect( G_OBJECT( widget ), "changed", G_CALLBACK( on_account_changed ), self );
 	priv->account_entry = GTK_ENTRY( widget );
-	ofa_account_editable_init( GTK_EDITABLE( widget ),
-			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_DETAIL );
+	ofa_account_editable_init( GTK_EDITABLE( widget ), OFA_IGETTER( self ), ACCOUNT_ALLOW_DETAIL );
 
 	g_signal_connect(
 			G_OBJECT( widget ), "key-press-event", G_CALLBACK( on_account_entry_key_pressed ), self );
@@ -1573,15 +1573,14 @@ on_account_select( GtkButton *button, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	gchar *acc_number;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( button ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( button ));
 
 	acc_number = ofa_account_select_run(
-							OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-							GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
+							OFA_IGETTER( self ), toplevel,
 							gtk_entry_get_text( priv->account_entry ),
 							ACCOUNT_ALLOW_DETAIL );
 	if( acc_number ){

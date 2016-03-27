@@ -34,8 +34,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 
-#include "core/ofa-main-window.h"
-
 #include "ofa-recurrent-run-treeview.h"
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"

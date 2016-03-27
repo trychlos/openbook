@@ -35,7 +35,9 @@
  * class. It implements all needed methods to manage the composite widget.
  */
 
-#include "api/ofa-main-window-def.h"
+#include <glib-object.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -84,37 +86,38 @@ enum {
 	IACCOUNT_FILTER_TO
 };
 
-GType        ofa_iaccount_filter_get_type        ( void );
+GType        ofa_iaccount_filter_get_type                  ( void );
 
-guint        ofa_iaccount_filter_get_interface_last_version
-                                                  ( const ofaIAccountFilter *filter );
+guint        ofa_iaccount_filter_get_interface_last_version( void );
 
-void         ofa_iaccount_filter_setup_bin       ( ofaIAccountFilter *filter,
-															const gchar *resource_name,
-															const ofaMainWindow *main_window );
+guint        ofa_iaccount_filter_get_interface_version     ( const ofaIAccountFilter *filter );
 
-void         ofa_iaccount_filter_set_prefs       ( ofaIAccountFilter *filter,
-															const gchar *prefs_key );
+void         ofa_iaccount_filter_setup_bin                 ( ofaIAccountFilter *filter,
+																ofaIGetter *getter,
+																const gchar *resource_name );
 
-const gchar *ofa_iaccount_filter_get_account     ( ofaIAccountFilter *filter,
-															gint who );
+void         ofa_iaccount_filter_set_prefs                 ( ofaIAccountFilter *filter,
+																const gchar *prefs_key );
 
-void         ofa_iaccount_filter_set_account     ( ofaIAccountFilter *filter,
-															gint who,
-															const gchar *account );
+const gchar *ofa_iaccount_filter_get_account               ( const ofaIAccountFilter *filter,
+																gint who );
 
-gboolean     ofa_iaccount_filter_get_all_accounts( ofaIAccountFilter *filter );
+void         ofa_iaccount_filter_set_account               ( ofaIAccountFilter *filter,
+																gint who,
+																const gchar *account );
 
-void         ofa_iaccount_filter_set_all_accounts( ofaIAccountFilter *filter,
-															gboolean all_accounts );
+gboolean     ofa_iaccount_filter_get_all_accounts          ( const ofaIAccountFilter *filter );
 
-gboolean     ofa_iaccount_filter_is_valid        ( ofaIAccountFilter *filter,
-															gint who,
-															gchar **message );
+void         ofa_iaccount_filter_set_all_accounts          ( ofaIAccountFilter *filter,
+																gboolean all_accounts );
 
-GtkWidget   *ofa_iaccount_filter_get_frame_label ( ofaIAccountFilter *filter );
+gboolean     ofa_iaccount_filter_is_valid                  ( const ofaIAccountFilter *filter,
+																gint who,
+																gchar **message );
 
-GtkWidget   *ofa_iaccount_filter_get_from_prompt ( ofaIAccountFilter *filter );
+GtkWidget   *ofa_iaccount_filter_get_frame_label           ( const ofaIAccountFilter *filter );
+
+GtkWidget   *ofa_iaccount_filter_get_from_prompt           ( const ofaIAccountFilter *filter );
 
 G_END_DECLS
 

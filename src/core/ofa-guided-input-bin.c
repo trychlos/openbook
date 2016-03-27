@@ -36,6 +36,7 @@
 #include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -49,7 +50,6 @@
 
 #include "core/ofa-account-select.h"
 #include "core/ofa-ledger-combo.h"
-#include "core/ofa-main-window.h"
 #include "core/ofa-guided-input-bin.h"
 
 /* private instance data
@@ -59,7 +59,7 @@ typedef struct {
 
 	/* input parameters at initialization time
 	 */
-	const ofaMainWindow  *main_window;
+	ofaIGetter           *getter;
 	ofaHub               *hub;
 	GList                *hub_handlers;
 
@@ -354,21 +354,23 @@ ofa_guided_input_bin_class_init( ofaGuidedInputBinClass *klass )
 
 /**
  * ofa_guided_input_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a new #ofaGuidedInputBin instance.
  */
 ofaGuidedInputBin *
-ofa_guided_input_bin_new( const ofaMainWindow *main_window )
+ofa_guided_input_bin_new( ofaIGetter *getter )
 {
 	ofaGuidedInputBin *self;
 	ofaGuidedInputBinPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_GUIDED_INPUT_BIN, NULL );
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	priv->main_window = main_window;
+	priv->getter = getter;
 
 	my_utils_container_attach_from_resource( GTK_CONTAINER( self ), st_resource_ui, "gib-window", "top" );
 	setup_main_window( self );
@@ -386,7 +388,7 @@ setup_main_window( ofaGuidedInputBin *self )
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* setup from dossier
@@ -517,7 +519,7 @@ ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin, const ofoOpeTempl
 	g_return_if_fail( template && OFO_IS_OPE_TEMPLATE( template ));
 
 	priv = ofa_guided_input_bin_get_instance_private( bin );
-	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
+
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->check_allowed = FALSE;
@@ -718,7 +720,7 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 
 		if( col_def->column_id == OPE_COL_ACCOUNT && !locked ){
 			ofa_account_editable_init(
-					GTK_EDITABLE( widget ), OFA_MAIN_WINDOW( priv->main_window ), ACCOUNT_ALLOW_DETAIL );
+					GTK_EDITABLE( widget ), priv->getter, ACCOUNT_ALLOW_DETAIL );
 			ofa_account_editable_set_postselect_cb(
 					GTK_EDITABLE( widget ), ( AccountPostSelectCb ) on_account_postselect, self );
 		}
@@ -937,16 +939,13 @@ do_account_selection( ofaGuidedInputBin *self, GtkEntry *entry, gint row )
 {
 	ofaGuidedInputBinPrivate *priv;
 	gchar *number;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( entry ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( entry ));
 
-	number = ofa_account_select_run(
-					OFA_MAIN_WINDOW( priv->main_window ),
-					toplevel ? GTK_WINDOW( toplevel ) : NULL,
-					gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
+	number = ofa_account_select_run( priv->getter, toplevel, gtk_entry_get_text( entry ), ACCOUNT_ALLOW_DETAIL );
 
 	if( my_strlen( number )){
 		priv->focused_row = row;
@@ -1676,14 +1675,12 @@ do_validate( ofaGuidedInputBin *self )
 static void
 display_ok_message( ofaGuidedInputBin *self, gint count )
 {
-	ofaGuidedInputBinPrivate *priv;
 	gchar *message;
+	GtkWindow *toplevel;
 
-	priv = ofa_guided_input_bin_get_instance_private( self );
-
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	message = g_strdup_printf( _( "%d entries have been successfully created" ), count );
-
-	my_utils_msg_dialog( GTK_WINDOW( priv->main_window ), GTK_MESSAGE_INFO, message );
+	my_utils_msg_dialog( toplevel, GTK_MESSAGE_INFO, message );
 
 	g_free( message );
 }

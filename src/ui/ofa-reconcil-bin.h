@@ -40,7 +40,7 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -65,7 +65,7 @@ typedef struct {
 
 GType           ofa_reconcil_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaReconcilBin *ofa_reconcil_bin_new        ( const ofaMainWindow *main_window );
+ofaReconcilBin *ofa_reconcil_bin_new        ( ofaIGetter *getter );
 
 gboolean        ofa_reconcil_bin_is_valid   ( ofaReconcilBin *bin,
 													gchar **msgerr );

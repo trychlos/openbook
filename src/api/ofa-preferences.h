@@ -43,6 +43,7 @@
 
 #include "my/my-date.h"
 
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-extender-module.h"
 
 G_BEGIN_DECLS
@@ -68,7 +69,9 @@ typedef struct {
 
 GType        ofa_preferences_get_type( void ) G_GNUC_CONST;
 
-void         ofa_preferences_run     ( GtkApplicationWindow *parent, ofaExtenderModule *plugin );
+void         ofa_preferences_run     ( ofaIGetter *getter,
+											GtkWindow *parent,
+											ofaExtenderModule *plugin );
 
 /* these are helpers available to the rest of the application
  */

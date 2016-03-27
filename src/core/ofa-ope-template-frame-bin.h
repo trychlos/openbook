@@ -39,7 +39,9 @@
  * See api/ofo-ope-template.h for a full description of the model language.
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -81,7 +83,7 @@ typedef enum {
 
 GType                   ofa_ope_template_frame_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                 ( const ofaMainWindow *main_window );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                 ( ofaIGetter *getter );
 
 GtkWidget              *ofa_ope_template_frame_bin_add_button          ( ofaOpeTemplateFrameBin *bin,
 																				ofeOpeTemplateFrameBtn id,

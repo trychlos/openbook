@@ -39,6 +39,7 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -54,6 +55,10 @@
  */
 typedef struct {
 	gboolean                dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter             *getter;
 
 	/* UI
 	 */
@@ -86,7 +91,6 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-new.ui";
 
-static void      dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent );
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
@@ -188,35 +192,30 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
 
 /**
  * ofa_dossier_new_run:
- * @main_window: the main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: the parent window.
+ *
  */
 void
-ofa_dossier_new_run( ofaMainWindow *main_window )
-{
-	dossier_new_run_with_parent( main_window, GTK_WINDOW( main_window ));
-}
-
-/*
- * ofa_dossier_new_run_with_parent:
- * @main_window: the main window of the application.
- * @parent: the parent window.
- */
-static void
-dossier_new_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent )
+ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_dossier_new_run_with_parent";
 	ofaDossierNew *self;
+	ofaDossierNewPrivate *priv;
 
-	g_debug( "%s: main_window=%p, parent=%p",
-			thisfn, ( void * ) main_window, ( void * ) parent );
+	g_debug( "%s: getter=%p, parent=%p",
+			thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_dossier_new_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -263,7 +262,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_new_idialog_init";
 	ofaDossierNewPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkSizeGroup *group0, *group1;
 	GtkWidget *parent, *toggle, *label;
 
@@ -273,9 +271,6 @@ idialog_init( myIDialog *instance )
 
 	get_settings( OFA_DOSSIER_NEW( instance ));
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
 	/* define the size groups */
 	group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
@@ -283,7 +278,7 @@ idialog_init( myIDialog *instance )
 	/* create the composite widget and attach it to the dialog */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "new-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->new_bin = ofa_dossier_new_bin_new( OFA_MAIN_WINDOW( main_window ));
+	priv->new_bin = ofa_dossier_new_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
 	my_utils_size_group_add_size_group(
 			group0, ofa_dossier_new_bin_get_size_group( priv->new_bin, 0 ));
@@ -500,8 +495,8 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	ofaIDBConnect *connect;
 	gchar *account, *password;
 	ofaIDBEditor *editor;
-	GtkApplicationWindow *main_window;
 	ofaHub *hub;
+	GtkApplicationWindow *main_window;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
@@ -565,15 +560,14 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	}
 
 	if( ok && priv->b_open ){
-		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-		g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-
-		hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+		hub = ofa_igetter_get_hub( priv->getter );
 		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-		if( ofa_hub_dossier_open( hub, connect, GTK_WINDOW( main_window ))){
+		if( ofa_hub_dossier_open( hub, connect, GTK_WINDOW( self ))){
 			ofa_hub_remediate_settings( hub );
+
 			if( priv->b_properties ){
+				main_window = ofa_igetter_get_main_window( priv->getter );
 				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_PROPERTIES );
 			}
 		} else {

@@ -62,7 +62,7 @@
  */
 
 #include "api/ofa-idate-filter.h"
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 #include "ui/ofa-iaccount-filter.h"
 
@@ -87,21 +87,18 @@ typedef struct {
 }
 	ofaAccountBookBinClass;
 
-GType               ofa_account_book_bin_get_type( void ) G_GNUC_CONST;
+GType              ofa_account_book_bin_get_type                ( void ) G_GNUC_CONST;
 
-ofaAccountBookBin  *ofa_account_book_bin_new     ( const ofaMainWindow *main_window );
+ofaAccountBookBin *ofa_account_book_bin_new                     ( ofaIGetter *getter );
 
-gboolean            ofa_account_book_bin_is_valid( ofaAccountBookBin *bin,
-															gchar **message );
+gboolean           ofa_account_book_bin_is_valid                ( ofaAccountBookBin *bin,
+																		gchar **message );
 
-gboolean            ofa_account_book_bin_get_new_page_per_account
-                                                  ( const ofaAccountBookBin *bin );
+gboolean           ofa_account_book_bin_get_new_page_per_account( const ofaAccountBookBin *bin );
 
-ofaIAccountFilter *ofa_account_book_bin_get_account_filter
-                                                  ( const ofaAccountBookBin *bin );
+ofaIAccountFilter *ofa_account_book_bin_get_account_filter      ( const ofaAccountBookBin *bin );
 
-ofaIDateFilter    *ofa_account_book_bin_get_date_filter
-                                                  ( const ofaAccountBookBin *bin );
+ofaIDateFilter    *ofa_account_book_bin_get_date_filter         ( const ofaAccountBookBin *bin );
 
 G_END_DECLS
 

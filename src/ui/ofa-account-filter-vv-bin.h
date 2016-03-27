@@ -59,7 +59,7 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -84,7 +84,7 @@ typedef struct {
 
 GType                  ofa_account_filter_vv_bin_get_type( void ) G_GNUC_CONST;
 
-ofaAccountFilterVVBin *ofa_account_filter_vv_bin_new     ( const ofaMainWindow *main_window );
+ofaAccountFilterVVBin *ofa_account_filter_vv_bin_new     ( ofaIGetter *getter );
 
 G_END_DECLS
 

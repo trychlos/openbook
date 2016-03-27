@@ -554,6 +554,8 @@ my_utils_msg_dialog( GtkWindow *parent, GtkMessageType type, const gchar *msg )
 {
 	GtkWidget *dialog;
 
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
+
 	dialog = gtk_message_dialog_new(
 					parent,
 					GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
@@ -1088,21 +1090,21 @@ my_utils_size_group_add_size_group( GtkSizeGroup *target, GtkSizeGroup *source )
 }
 
 /**
- * my_utils_widget_get_toplevel_window:
+ * my_utils_widget_get_toplevel:
  * @widget:
  *
- * Returns: the toplevel #GtkWindow parent of the @widget.
+ * Returns: the toplevel #GtkWindow parent of the @widget, or %NULL.
  */
 GtkWindow *
-my_utils_widget_get_toplevel_window( GtkWidget *widget )
+my_utils_widget_get_toplevel( GtkWidget *widget )
 {
 	GtkWidget *parent;
 
-	parent = gtk_widget_get_parent( widget );
-	if( GTK_IS_WINDOW( parent )){
-		return( GTK_WINDOW( parent ));
+	parent = NULL;
+	if( widget ){
+		parent = gtk_widget_get_toplevel( widget );
 	}
-	return( my_utils_widget_get_toplevel_window( parent ));
+	return( parent ? GTK_WINDOW( parent ) : NULL );
 }
 
 /**

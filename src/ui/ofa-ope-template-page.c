@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-base.h"
@@ -38,10 +39,9 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-ledger.h"
 
-#include "core/ofa-main-window.h"
+#include "core/ofa-ope-template-properties.h"
+#include "core/ofa-ope-template-frame-bin.h"
 
-#include <core/ofa-ope-template-properties.h>
-#include <core/ofa-ope-template-frame-bin.h>
 #include "ui/ofa-ope-template-page.h"
 
 /* private instance data
@@ -127,7 +127,7 @@ v_setup_page( ofaPage *page )
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	priv->ope_frame = ofa_ope_template_frame_bin_new( ofa_page_get_main_window( page ));
+	priv->ope_frame = ofa_ope_template_frame_bin_new( OFA_IGETTER( page ));
 	my_utils_widget_set_margins( GTK_WIDGET( priv->ope_frame ), 4, 4, 4, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->ope_frame ), 0, 0, 1, 1 );
 
@@ -166,17 +166,19 @@ on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTempl
 {
 	ofoOpeTemplate *ope;
 	ofaHub *hub;
+	GtkWindow *toplevel;
 
 	if( my_strlen( mnemo )){
 
-		hub = ofa_page_get_hub( OFA_PAGE( self ));
+		hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 		g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 		ope = ofo_ope_template_get_by_mnemo( hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
-		ofa_ope_template_properties_run(
-				OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), NULL, ope, NULL );
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+
+		ofa_ope_template_properties_run( OFA_IGETTER( self ), toplevel, ope, NULL );
 	}
 }
 static void

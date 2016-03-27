@@ -222,7 +222,7 @@ ofa_tva_record_properties_class_init( ofaTVARecordPropertiesClass *klass )
  * Update the properties of a tva_form.
  */
 void
-ofa_tva_record_properties_run( ofaIGetter *getter, GtkWidget *parent, ofoTVARecord *record )
+ofa_tva_record_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoTVARecord *record )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_run";
 	ofaTVARecordProperties *self;
@@ -234,7 +234,7 @@ ofa_tva_record_properties_run( ofaIGetter *getter, GtkWidget *parent, ofoTVAReco
 			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) record );
 
 	self = g_object_new( OFA_TYPE_TVA_RECORD_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent ? GTK_WINDOW( parent ) : NULL );
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_record_properties_get_instance_private( self );

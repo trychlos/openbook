@@ -42,7 +42,7 @@
  * - current:    yes
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 #include "ofo-recurrent-model.h"
 
@@ -69,7 +69,8 @@ typedef struct {
 
 GType ofa_recurrent_model_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_recurrent_model_properties_run     ( const ofaMainWindow *main_window,
+void  ofa_recurrent_model_properties_run     ( ofaIGetter *getter,
+													GtkWindow *parent,
 													ofoRecurrentModel *model );
 
 G_END_DECLS

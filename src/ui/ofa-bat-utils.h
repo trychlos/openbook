@@ -31,12 +31,14 @@
  * @include: ui/ofa-bat-utils.h
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-box.h"
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
-ofxCounter ofa_bat_utils_import( const ofaMainWindow *main_window );
+ofxCounter ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent );
 
 G_END_DECLS
 

@@ -32,6 +32,8 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
+#include "api/ofa-itheme-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -42,7 +44,6 @@
 #include "core/ofa-account-properties.h"
 #include "core/ofa-account-frame-bin.h"
 #include "core/ofa-account-store.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-reconcil-page.h"
@@ -55,7 +56,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
+	ofaIGetter          *getter;
 
 	/* runtime
 	 */
@@ -301,6 +302,7 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
 
 /**
  * ofa_account_frame_bin_new:
+ * @getter: a #ofaIGetter instance.
  *
  * Creates the structured content, i.e. The accounts notebook on the
  * left column, the buttons box on the right one.
@@ -317,16 +319,18 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaAccountFrameBin *
-ofa_account_frame_bin_new( const ofaMainWindow *main_window  )
+ofa_account_frame_bin_new( ofaIGetter *getter  )
 {
 	ofaAccountFrameBin *self;
 	ofaAccountFrameBinPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_FRAME_BIN, NULL );
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	priv->main_window = main_window;
+	priv->getter = getter;
 
 	setup_bin( self );
 
@@ -365,7 +369,7 @@ setup_bin( ofaAccountFrameBin *self )
 	gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( priv->buttonsbox ), 1, 0, 1, 1 );
 
 	/* account store */
-	priv->hub = ofa_main_window_get_hub( priv->main_window );
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->store = ofa_account_store_new( priv->hub );
@@ -1441,13 +1445,15 @@ static void
 button_on_view_entries_clicked( GtkButton *button, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
+	ofaIThemeManager *manager;
 	gchar *number;
 	ofaPage *page;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	number = ofa_account_frame_bin_get_selected( self );
-	page = ofa_main_window_activate_theme( priv->main_window, THM_ENTRIES );
+	manager = ofa_igetter_get_theme_manager( priv->getter );
+	page = ofa_itheme_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
 	ofa_entry_page_display_entries( OFA_ENTRY_PAGE( page ), OFO_TYPE_ACCOUNT, number, NULL, NULL );
 	g_free( number );
 }
@@ -1456,13 +1462,15 @@ static void
 button_on_settlement_clicked( GtkButton *button, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
+	ofaIThemeManager *manager;
 	gchar *number;
 	ofaPage *page;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	number = ofa_account_frame_bin_get_selected( self );
-	page = ofa_main_window_activate_theme( priv->main_window, THM_SETTLEMENT );
+	manager = ofa_igetter_get_theme_manager( priv->getter );
+	page = ofa_itheme_manager_activate( manager, OFA_TYPE_SETTLEMENT_PAGE );
 	ofa_settlement_page_set_account( OFA_SETTLEMENT_PAGE( page ), number );
 	g_free( number );
 }
@@ -1471,13 +1479,15 @@ static void
 button_on_reconciliation_clicked( GtkButton *button, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
+	ofaIThemeManager *manager;
 	gchar *number;
 	ofaPage *page;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	number = ofa_account_frame_bin_get_selected( self );
-	page = ofa_main_window_activate_theme( priv->main_window, THM_RECONCIL );
+	manager = ofa_igetter_get_theme_manager( priv->getter );
+	page = ofa_itheme_manager_activate( manager, OFA_TYPE_RECONCIL_PAGE );
 	ofa_reconcil_page_set_account( OFA_RECONCIL_PAGE( page ), number );
 	g_free( number );
 }
@@ -1513,18 +1523,15 @@ do_insert_account( ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
 	ofoAccount *account_obj;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	account_obj = ofo_account_new();
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
-	ofa_account_properties_run(
-			OFA_MAIN_WINDOW( priv->main_window ),
-			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
-			account_obj );
+	ofa_account_properties_run( priv->getter, toplevel, account_obj );
 }
 
 static void
@@ -1532,19 +1539,16 @@ do_update_account( ofaAccountFrameBin *self, const gchar *account_id )
 {
 	ofaAccountFrameBinPrivate *priv;
 	ofoAccount *account_obj;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	account_obj = ofo_account_get_by_number( priv->hub, account_id );
 	g_return_if_fail( account_obj && OFO_IS_ACCOUNT( account_obj ));
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
-	ofa_account_properties_run(
-			OFA_MAIN_WINDOW( priv->main_window ),
-			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
-			account_obj );
+	ofa_account_properties_run(priv->getter, toplevel, account_obj );
 }
 
 static void

@@ -363,12 +363,12 @@ on_update_clicked( GtkButton *button, ofaTVADeclarePage *page )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVARecord *record;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	record = treeview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( page ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
 	ofa_tva_record_properties_run( OFA_IGETTER( page ), toplevel, record );
 	/* update is taken into account by dossier signaling system */
 

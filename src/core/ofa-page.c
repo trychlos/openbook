@@ -67,17 +67,18 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void              igetter_iface_init( ofaIGetterInterface *iface );
-static GApplication     *igetter_get_application( const ofaIGetter *instance );
-static ofaHub           *igetter_get_hub( const ofaIGetter *instance );
-static ofaIThemeManager *igetter_get_theme_manager( const ofaIGetter *instance );
-static void              do_setup_page( ofaPage *page );
-static void              v_setup_page( ofaPage *page );
-static GtkWidget        *do_setup_view( ofaPage *page );
-static GtkWidget        *do_setup_buttons( ofaPage *page );
-static void              do_init_view( ofaPage *page );
-static void              v_init_view( ofaPage *page );
-static GtkWidget        *v_get_top_focusable_widget( const ofaPage *page );
+static void                  igetter_iface_init( ofaIGetterInterface *iface );
+static GApplication         *igetter_get_application( const ofaIGetter *instance );
+static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
+static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
+static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
+static void                  do_setup_page( ofaPage *page );
+static void                  v_setup_page( ofaPage *page );
+static GtkWidget            *do_setup_view( ofaPage *page );
+static GtkWidget            *do_setup_buttons( ofaPage *page );
+static void                  do_init_view( ofaPage *page );
+static void                  v_init_view( ofaPage *page );
+static GtkWidget            *v_get_top_focusable_widget( const ofaPage *page );
 
 G_DEFINE_TYPE_EXTENDED( ofaPage, ofa_page, GTK_TYPE_GRID, 0,
 		G_ADD_PRIVATE( ofaPage )
@@ -330,6 +331,7 @@ igetter_iface_init( ofaIGetterInterface *iface )
 
 	iface->get_application = igetter_get_application;
 	iface->get_hub = igetter_get_hub;
+	iface->get_main_window = igetter_get_main_window;
 	iface->get_theme_manager = igetter_get_theme_manager;
 }
 
@@ -355,6 +357,18 @@ igetter_get_hub( const ofaIGetter *instance )
 	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 	return( ofa_igetter_get_hub( priv->getter ));
+}
+
+static GtkApplicationWindow *
+igetter_get_main_window( const ofaIGetter *instance )
+{
+	ofaPagePrivate *priv;
+
+	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
+
+	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
+
+	return( ofa_igetter_get_main_window( priv->getter ));
 }
 
 static ofaIThemeManager *

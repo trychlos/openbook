@@ -52,9 +52,12 @@
 typedef struct {
 	gboolean       dispose_has_run;
 
-	/* internals
+	/* initialization
 	 */
 	ofaIGetter    *getter;
+
+	/* internals
+	 */
 	gboolean       is_current;
 	ofoTVAForm    *tva_form;
 	gboolean       is_new;
@@ -226,7 +229,7 @@ ofa_tva_form_properties_class_init( ofaTVAFormPropertiesClass *klass )
  * Update the properties of a tva_form.
  */
 void
-ofa_tva_form_properties_run( ofaIGetter *getter, GtkWidget *parent, ofoTVAForm *form )
+ofa_tva_form_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoTVAForm *form )
 {
 	static const gchar *thisfn = "ofa_tva_form_properties_run";
 	ofaTVAFormProperties *self;
@@ -238,7 +241,7 @@ ofa_tva_form_properties_run( ofaIGetter *getter, GtkWidget *parent, ofoTVAForm *
 			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) form );
 
 	self = g_object_new( OFA_TYPE_TVA_FORM_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent ? GTK_WINDOW( parent ) : NULL );
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_form_properties_get_instance_private( self );

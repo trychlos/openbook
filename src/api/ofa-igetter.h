@@ -45,6 +45,7 @@
 
 #include <gio/gio.h>
 #include <glib-object.h>
+#include <gtk/gtk.h>
 
 #include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
@@ -91,7 +92,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 */
-	guint              ( *get_interface_version )( const ofaIGetter *instance );
+	guint                  ( *get_interface_version )( const ofaIGetter *instance );
 
 	/**
 	 * get_application:
@@ -101,7 +102,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	GApplication *     ( *get_application )      ( const ofaIGetter *instance );
+	GApplication *         ( *get_application )      ( const ofaIGetter *instance );
 
 	/**
 	 * get_hub:
@@ -111,7 +112,17 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	ofaHub *           ( *get_hub )              ( const ofaIGetter *instance );
+	ofaHub *               ( *get_hub )              ( const ofaIGetter *instance );
+
+	/**
+	 * get_main_window:
+	 * @instance: this #ofaIGetter instance.
+	 *
+	 * Returns: the main window of the application, or %NULL.
+	 *
+	 * Since: version 1
+	 */
+	GtkApplicationWindow * ( *get_main_window )      ( const ofaIGetter *instance );
 
 	/**
 	 * get_theme_manager:
@@ -121,21 +132,23 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	ofaIThemeManager * ( *get_theme_manager )    ( const ofaIGetter *instance );
+	ofaIThemeManager *     ( *get_theme_manager )    ( const ofaIGetter *instance );
 }
 	ofaIGetterInterface;
 
-GType             ofa_igetter_get_type                  ( void );
+GType                 ofa_igetter_get_type                  ( void );
 
-guint             ofa_igetter_get_interface_last_version( void );
+guint                 ofa_igetter_get_interface_last_version( void );
 
-guint             ofa_igetter_get_interface_version     ( const ofaIGetter *connect );
+guint                 ofa_igetter_get_interface_version     ( const ofaIGetter *instance );
 
-GApplication     *ofa_igetter_get_application           ( const ofaIGetter *connect );
+GApplication         *ofa_igetter_get_application           ( const ofaIGetter *instance );
 
-ofaHub           *ofa_igetter_get_hub                   ( const ofaIGetter *connect );
+ofaHub               *ofa_igetter_get_hub                   ( const ofaIGetter *instance );
 
-ofaIThemeManager *ofa_igetter_get_theme_manager         ( const ofaIGetter *connect );
+GtkApplicationWindow *ofa_igetter_get_main_window           ( const ofaIGetter *instance );
+
+ofaIThemeManager     *ofa_igetter_get_theme_manager         ( const ofaIGetter *instance );
 
 G_END_DECLS
 

@@ -41,7 +41,9 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
@@ -67,7 +69,8 @@ typedef struct {
 
 GType ofa_guided_input_get_type( void ) G_GNUC_CONST;
 
-void  ofa_guided_input_run     ( const ofaMainWindow *main_window,
+void  ofa_guided_input_run     ( ofaIGetter *getter,
+										GtkWindow *parent,
 										const ofoOpeTemplate *model );
 
 G_END_DECLS

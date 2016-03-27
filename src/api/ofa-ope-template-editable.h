@@ -41,12 +41,12 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
-void  ofa_ope_template_editable_init                      ( GtkEditable *editable,
-																ofaMainWindow *main_window );
+void  ofa_ope_template_editable_init( GtkEditable *editable,
+											ofaIGetter *getter );
 
 G_END_DECLS
 

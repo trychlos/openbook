@@ -42,6 +42,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
@@ -67,10 +68,10 @@ typedef struct {
 
 GType ofa_ope_template_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_ope_template_properties_run     ( ofaMainWindow *main_window,
-													GtkWindow *parent,
-													ofoOpeTemplate *template,
-													const gchar *ledger );
+void  ofa_ope_template_properties_run     ( ofaIGetter *getter,
+												GtkWindow *parent,
+												ofoOpeTemplate *template,
+												const gchar *ledger );
 
 G_END_DECLS
 

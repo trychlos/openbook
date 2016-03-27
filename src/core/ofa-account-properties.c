@@ -35,6 +35,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -45,7 +46,6 @@
 
 #include "core/ofa-account-properties.h"
 #include "core/ofa-currency-combo.h"
-#include "core/ofa-main-window.h"
 
 /* private instance data
  */
@@ -54,6 +54,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIGetter          *getter;
 	ofoAccount          *account;
 
 	/* runtime data
@@ -206,31 +207,33 @@ ofa_account_properties_class_init( ofaAccountPropertiesClass *klass )
 
 /**
  * ofa_account_properties_run:
- * @main_window: the main window of the application.
+ * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent of this dialog.
  * @account: the account.
  *
  * Update the properties of an account.
  */
 void
-ofa_account_properties_run( ofaMainWindow *main_window, GtkWindow *parent, ofoAccount *account )
+ofa_account_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoAccount *account )
 {
 	static const gchar *thisfn = "ofa_account_properties_run";
 	ofaAccountProperties *self;
 	ofaAccountPropertiesPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-	g_debug( "%s: main_window=%p, parent=%p, account=%p",
-			thisfn, ( void * ) main_window, ( void * ) parent, ( void * ) account );
+	g_debug( "%s: getter=%p, parent=%p, account=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) account );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_account_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->account = account;
 
 	/* run modal or non-modal depending of the parent */
@@ -292,7 +295,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_account_properties_idialog_init";
 	ofaAccountPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
 	gchar *title;
 	const gchar *acc_number;
 
@@ -304,10 +306,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* dialog title */

@@ -33,12 +33,11 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-reconcil-bin.h"
 
@@ -49,8 +48,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
-	ofaHub              *hub;
+	ofaIGetter          *getter;
 
 	/* UI
 	 */
@@ -175,12 +173,12 @@ ofa_reconcil_bin_class_init( ofaReconcilBinClass *klass )
 
 /**
  * ofa_reconcil_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a newly allocated #ofaReconcilBin object.
  */
 ofaReconcilBin *
-ofa_reconcil_bin_new( const ofaMainWindow *main_window )
+ofa_reconcil_bin_new( ofaIGetter *getter )
 {
 	ofaReconcilBin *self;
 	ofaReconcilBinPrivate *priv;
@@ -189,10 +187,7 @@ ofa_reconcil_bin_new( const ofaMainWindow *main_window )
 
 	priv = ofa_reconcil_bin_get_instance_private( self );
 
-	priv->main_window = main_window;
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	priv->getter = getter;
 
 	setup_bin( self );
 	setup_account_selection( self );
@@ -232,8 +227,7 @@ setup_account_selection( ofaReconcilBin *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_account_changed ), self );
 	priv->account_entry = entry;
-	ofa_account_editable_init(
-			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( priv->main_window ), ACCOUNT_ALLOW_RECONCILIABLE );
+	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_RECONCILIABLE );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "account-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -281,6 +275,7 @@ on_account_changed( GtkEntry *entry, ofaReconcilBin *self )
 {
 	ofaReconcilBinPrivate *priv;
 	const gchar *cstr;
+	ofaHub *hub;
 
 	priv = ofa_reconcil_bin_get_instance_private( self );
 
@@ -289,7 +284,8 @@ on_account_changed( GtkEntry *entry, ofaReconcilBin *self )
 
 	cstr = gtk_entry_get_text( entry );
 	if( my_strlen( cstr )){
-		priv->account = ofo_account_get_by_number( priv->hub, cstr );
+		hub = ofa_igetter_get_hub( priv->getter );
+		priv->account = ofo_account_get_by_number( hub, cstr );
 		if( priv->account ){
 			gtk_label_set_text(
 					GTK_LABEL( priv->account_label ), ofo_account_get_label( priv->account ));

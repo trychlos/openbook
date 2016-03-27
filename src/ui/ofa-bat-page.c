@@ -35,6 +35,7 @@
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -70,11 +71,11 @@ typedef struct {
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page );
-static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page );
-static void       on_update_clicked( GtkButton *button, ofaBatPage *page );
-static void       on_delete_clicked( GtkButton *button, ofaBatPage *page );
-static void       on_import_clicked( GtkButton *button, ofaBatPage *page );
+static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
+static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
+static void       on_update_clicked( GtkButton *button, ofaBatPage *self );
+static void       on_delete_clicked( GtkButton *button, ofaBatPage *self );
+static void       on_import_clicked( GtkButton *button, ofaBatPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaBatPage ))
@@ -207,18 +208,18 @@ v_setup_buttons( ofaPage *page )
 }
 
 static void
-on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page )
+on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 {
-	on_update_clicked( NULL, OFA_BAT_PAGE( page ));
+	on_update_clicked( NULL, OFA_BAT_PAGE( self ));
 }
 
 static void
-on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *page )
+on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 {
 	ofaBatPagePrivate *priv;
 	gboolean is_bat;
 
-	priv = ofa_bat_page_get_instance_private( page );
+	priv = ofa_bat_page_get_instance_private( self );
 
 	is_bat = bat && OFO_IS_BAT( bat );
 
@@ -245,28 +246,30 @@ v_get_top_focusable_widget( const ofaPage *page )
  * only notes can be updated
  */
 static void
-on_update_clicked( GtkButton *button, ofaBatPage *page )
+on_update_clicked( GtkButton *button, ofaBatPage *self )
 {
 	ofaBatPagePrivate *priv;
 	ofoBat *bat;
+	GtkWindow *toplevel;
 
-	priv = ofa_bat_page_get_instance_private( page );
+	priv = ofa_bat_page_get_instance_private( self );
 
 	bat = ofa_bat_treeview_get_selected( priv->tview );
 	if( bat ){
-		ofa_bat_properties_run( ofa_page_get_main_window( OFA_PAGE( page )), bat );
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_bat_properties_run( OFA_IGETTER( self ), toplevel, bat );
 	}
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaBatPage *page )
+on_delete_clicked( GtkButton *button, ofaBatPage *self )
 {
 	ofaBatPagePrivate *priv;
 	ofoBat *bat;
 
-	priv = ofa_bat_page_get_instance_private( page );
+	priv = ofa_bat_page_get_instance_private( self );
 
 	bat = ofa_bat_treeview_get_selected( priv->tview );
 	if( bat ){
@@ -274,7 +277,7 @@ on_delete_clicked( GtkButton *button, ofaBatPage *page )
 		ofa_bat_treeview_delete_bat( priv->tview, bat );
 	}
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 /*
@@ -282,17 +285,19 @@ on_delete_clicked( GtkButton *button, ofaBatPage *page )
  * imported and import it
  */
 static void
-on_import_clicked( GtkButton *button, ofaBatPage *page )
+on_import_clicked( GtkButton *button, ofaBatPage *self )
 {
 	ofaBatPagePrivate *priv;
 	ofxCounter bat_id;
+	GtkWindow *toplevel;
 
-	priv = ofa_bat_page_get_instance_private( page );
+	priv = ofa_bat_page_get_instance_private( self );
 
-	bat_id = ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( page )));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	bat_id = ofa_bat_utils_import( OFA_IGETTER( self ), toplevel );
 	if( bat_id > 0 ){
 		ofa_bat_treeview_set_selected( priv->tview, bat_id );
 	}
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( page )));
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }

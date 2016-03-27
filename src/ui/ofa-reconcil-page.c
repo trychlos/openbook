@@ -39,6 +39,7 @@
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -841,8 +842,7 @@ setup_account_selection( ofaReconcilPage *self, GtkContainer *parent )
 	g_return_if_fail( priv->acc_id_entry && GTK_IS_ENTRY( priv->acc_id_entry ));
 	g_signal_connect( priv->acc_id_entry, "changed", G_CALLBACK( account_on_entry_changed ), self );
 	ofa_account_editable_init(
-			GTK_EDITABLE( priv->acc_id_entry ),
-			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_RECONCILIABLE );
+			GTK_EDITABLE( priv->acc_id_entry ), OFA_IGETTER( self ), ACCOUNT_ALLOW_RECONCILIABLE );
 	ofa_account_editable_set_preselect_cb(
 			GTK_EDITABLE( priv->acc_id_entry ), ( AccountPreSelectCb ) account_on_preselect, self );
 
@@ -1464,11 +1464,13 @@ do_select_bat( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	ofxCounter prev_id, bat_id;
+	GtkWindow *toplevel;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	prev_id = priv->bats ? ofo_bat_get_id( OFO_BAT( priv->bats->data )) : -1;
-	bat_id = ofa_bat_select_run( ofa_page_get_main_window( OFA_PAGE( self )), prev_id );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	bat_id = ofa_bat_select_run( OFA_IGETTER( self ), toplevel, prev_id );
 	if( bat_id > 0 ){
 		display_bat_by_id( self, bat_id );
 	}
@@ -1481,8 +1483,10 @@ static void
 bat_on_import_clicked( GtkButton *button, ofaReconcilPage *self )
 {
 	ofxCounter imported_id;
+	GtkWindow *toplevel;
 
-	imported_id = ofa_bat_utils_import( ofa_page_get_main_window( OFA_PAGE( self )));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	imported_id = ofa_bat_utils_import( OFA_IGETTER( self ), toplevel );
 	if( imported_id > 0 ){
 		display_bat_by_id( self, imported_id );
 	}
@@ -1559,9 +1563,12 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 	GList *it;
 	const gchar *bat_prev, *account_id, *bat_account;
 	gchar *msg;
+	GtkWindow *toplevel;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
+
 	bat_prev = NULL;
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
 	for( it=priv->bats ; it ; it=it->next ){
 		bat = ( ofoBat * ) it->data;
@@ -1570,8 +1577,7 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 		}
 		if( ofo_bat_get_id( bat ) == bat_id ){
 			my_utils_msg_dialog(
-					GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-					GTK_MESSAGE_WARNING,
+					toplevel, GTK_MESSAGE_WARNING,
 					_( "The selected BAT file is already loaded" ));
 			return;
 		}
@@ -1587,9 +1593,7 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 				msg = g_strdup_printf(
 						_( "Selected BAT file is associated with %s account, while current account is %s" ),
 						bat_account, account_id );
-				my_utils_msg_dialog(
-						GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-						GTK_MESSAGE_WARNING, msg );
+				my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, msg );
 				g_free( msg );
 				return;
 			}
@@ -1599,9 +1603,7 @@ display_bat_by_id( ofaReconcilPage *self, ofxCounter bat_id )
 			msg = g_strdup_printf(
 					_( "Selected BAT file is associated with %s account which is not compatible with previously loaded BAT files (account=%s)" ),
 					bat_account, bat_prev );
-			my_utils_msg_dialog(
-					GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-					GTK_MESSAGE_WARNING, msg );
+			my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING, msg );
 			g_free( msg );
 		}
 		priv->bats = g_list_prepend( priv->bats, bat );
@@ -2822,6 +2824,7 @@ do_reconciliate( ofaReconcilPage *self )
 	gint depth;
 	GtkTreePath *sort_path, *store_path, *filter_path, *parent_path;
 	const gchar *ent_account;
+	GtkWindow *toplevel;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -2837,12 +2840,12 @@ do_reconciliate( ofaReconcilPage *self )
 		}
 	}
 
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+
 	/* compute effect date of a new concil group */
 	if( !concil ){
 		if( !my_date_is_valid( get_date_for_new_concil( self, &dval ))){
-			my_utils_msg_dialog(
-					GTK_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))),
-					GTK_MESSAGE_WARNING,
+			my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
 					_( "Conciliation is cancelled because unable to get a valid conciliation effect date" ));
 			return;
 		}

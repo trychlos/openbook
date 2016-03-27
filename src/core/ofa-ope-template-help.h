@@ -48,7 +48,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -73,7 +73,7 @@ typedef struct {
 
 GType ofa_ope_template_help_get_type( void ) G_GNUC_CONST;
 
-void  ofa_ope_template_help_run     ( const ofaMainWindow *main_window,
+void  ofa_ope_template_help_run     ( ofaIGetter *getter,
 											GtkWindow *parent );
 
 G_END_DECLS

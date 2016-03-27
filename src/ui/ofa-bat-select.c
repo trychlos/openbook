@@ -34,11 +34,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-bat-properties-bin.h"
 #include "ui/ofa-bat-select.h"
@@ -48,6 +47,10 @@
  */
 typedef struct {
 	gboolean             dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter          *getter;
 
 	/* UI
 	 */
@@ -155,29 +158,33 @@ ofa_bat_select_class_init( ofaBatSelectClass *klass )
 
 /**
  * ofa_bat_select_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  * @id: [allow-none]: the initially selected BAT identifier.
  *
  * Returns the selected Bank Account Transaction list (BAT) identifier,
  * or -1.
  */
 ofxCounter
-ofa_bat_select_run( const ofaMainWindow *main_window, ofxCounter id )
+ofa_bat_select_run( ofaIGetter *getter, GtkWindow *parent, ofxCounter id )
 {
 	static const gchar *thisfn = "ofa_bat_select_run";
 	ofaBatSelect *self;
 	ofaBatSelectPrivate *priv;
 	ofxCounter bat_id;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), 0 );
+	g_debug( "%s: getter=%p, parent=%p, id=%ld", thisfn, ( void * ) getter, ( void * ) parent, id );
 
-	g_debug( "%s: main_window=%p, id=%ld", thisfn, ( void * ) main_window, id );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), 0 );
 
 	self = g_object_new( OFA_TYPE_BAT_SELECT, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_bat_select_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->bat_id = id;
 	bat_id = -1;
 
@@ -251,7 +258,6 @@ setup_treeview( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	static ofaBatColumns st_columns[] = { BAT_DISP_URI, BAT_DISP_UNUSED, BAT_DISP_ACCOUNT, 0 };
-	GtkApplicationWindow *main_window;
 	ofaHub *hub;
 	GtkWidget *widget;
 
@@ -268,10 +274,7 @@ setup_treeview( ofaBatSelect *self )
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	ofa_bat_treeview_set_hub( priv->tview, hub );

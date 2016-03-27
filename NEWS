@@ -28,7 +28,7 @@
  ============
 
  Released on 
-
+  
  New features and improvements:
 
    - 
@@ -72,8 +72,8 @@
 
    3/ last, the myIIdent interface is introduced as a standard
       identification scheme.
-      This now implies that ofaIDBProvider and ofaIDBModel interfaces
-      must be implemented by distinct classes.
+      This implies that ofaIDBProvider and ofaIDBModel interfaces must
+      now be implemented by distinct classes.
 
  New features and improvements:
 

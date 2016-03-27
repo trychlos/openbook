@@ -32,6 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 
@@ -45,7 +46,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaMainWindow   *main_window;
+	ofaIGetter            *getter;
 
 	/* UI
 	 */
@@ -170,20 +171,23 @@ ofa_account_book_bin_class_init( ofaAccountBookBinClass *klass )
 
 /**
  * ofa_account_book_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a newly allocated #ofaAccountBookBin object.
  */
 ofaAccountBookBin *
-ofa_account_book_bin_new( const ofaMainWindow *main_window )
+ofa_account_book_bin_new( ofaIGetter *getter )
 {
 	ofaAccountBookBin *self;
 	ofaAccountBookBinPrivate *priv;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
 	self = g_object_new( OFA_TYPE_ACCOUNT_BOOK_BIN, NULL );
 
 	priv = ofa_account_book_bin_get_instance_private( self );
-	priv->main_window = main_window;
+
+	priv->getter = getter;
 
 	setup_bin( self );
 	setup_account_selection( self );
@@ -226,7 +230,7 @@ setup_account_selection( ofaAccountBookBin *bin )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_account_filter_vv_bin_new( priv->main_window );
+	filter = ofa_account_filter_vv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 	priv->account_filter = filter;
 

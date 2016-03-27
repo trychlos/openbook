@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -40,7 +41,6 @@
 #include "core/ofa-account-select.h"
 #include "core/ofa-account-store.h"
 #include "core/ofa-account-frame-bin.h"
-#include "core/ofa-main-window.h"
 
 /* private instance data
  */
@@ -49,7 +49,7 @@ typedef struct {
 
 	/* input data
 	 */
-	ofaHub              *hub;
+	ofaIGetter          *getter;
 	ofeAccountAllowed    allowed;
 
 	/* UI
@@ -155,7 +155,7 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 
 /**
  * ofa_account_select_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
  * @asked_number: [allow-none]: the initially selected account identifier.
  * @allowed: flags which qualifies the allowed selection (see ofoAccount.h).
@@ -164,33 +164,32 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
  * that must be g_free() by the caller.
  */
 gchar *
-ofa_account_select_run( ofaMainWindow *main_window, GtkWindow *parent, const gchar *asked_number, ofeAccountAllowed allowed )
+ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_number, ofeAccountAllowed allowed )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
 	ofaAccountSelectPrivate *priv;
 	gchar *selected_id;
+	ofaHub *hub;
 
-	g_debug( "%s: main_window=%p, parent=%p, asked_number=%s, allowed=%u",
-			thisfn, ( void * ) main_window, ( void * ) parent, asked_number, allowed );
+	g_debug( "%s: getter=%p, parent=%p, asked_number=%s, allowed=%u",
+			thisfn, ( void * ) getter, ( void * ) parent, asked_number, allowed );
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	if( !st_this ){
 		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
-		my_iwindow_set_main_window( MY_IWINDOW( st_this ), GTK_APPLICATION_WINDOW( main_window ));
 		my_iwindow_set_parent( MY_IWINDOW( st_this ), parent );
 		my_iwindow_set_settings( MY_IWINDOW( st_this ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 		priv = ofa_account_select_get_instance_private( st_this );
-
-		priv->hub = ofa_main_window_get_hub( main_window );
-		g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+		priv->getter = getter;
 
 		my_iwindow_init( MY_IWINDOW( st_this ));
 		my_iwindow_set_hide_on_close( MY_IWINDOW( st_this ), TRUE );
 
 		/* setup a weak reference on the hub to auto-unref */
-		g_object_weak_ref( G_OBJECT( priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
+		hub = ofa_igetter_get_hub( getter );
+		g_object_weak_ref( G_OBJECT( hub ), ( GWeakNotify ) on_hub_finalized, NULL );
 	}
 
 	priv = ofa_account_select_get_instance_private( st_this );
@@ -242,7 +241,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_account_select_idialog_init";
 	ofaAccountSelectPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -252,13 +250,10 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->account_bin = ofa_account_frame_bin_new( OFA_MAIN_WINDOW( main_window ));
+	priv->account_bin = ofa_account_frame_bin_new( priv->getter );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 0 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
 	ofa_account_frame_bin_set_cell_data_func(
@@ -328,13 +323,15 @@ is_selection_valid( ofaAccountSelect *self, const gchar *number )
 	ofaAccountSelectPrivate *priv;
 	gboolean ok;
 	ofoAccount *account;
+	ofaHub *hub;
 
 	priv = ofa_account_select_get_instance_private( self );
 
 	ok = FALSE;
 
 	if( my_strlen( number )){
-		account = ofo_account_get_by_number( priv->hub, number );
+		hub = ofa_igetter_get_hub( priv->getter );
+		account = ofo_account_get_by_number( hub, number );
 		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 
 		ok = ofo_account_is_allowed( account, priv->allowed );

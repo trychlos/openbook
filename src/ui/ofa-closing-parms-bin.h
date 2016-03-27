@@ -40,7 +40,7 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -65,7 +65,7 @@ typedef struct {
 
 GType               ofa_closing_parms_bin_get_type( void ) G_GNUC_CONST;
 
-ofaClosingParmsBin *ofa_closing_parms_bin_new     ( ofaMainWindow *main_window );
+ofaClosingParmsBin *ofa_closing_parms_bin_new     ( ofaIGetter *getter );
 
 gboolean            ofa_closing_parms_bin_is_valid( ofaClosingParmsBin *bin,
 															gchar **msg );

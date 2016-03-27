@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-periodicity.h"
@@ -43,8 +44,6 @@
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofs-ope.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ofa-recurrent-run-page.h"
 #include "ofa-recurrent-run-treeview.h"
@@ -57,7 +56,6 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub                  *hub;
 	gboolean                 is_current;
 
 	/* UI
@@ -172,15 +170,14 @@ v_setup_view( ofaPage *page )
 	ofaRecurrentRunPagePrivate *priv;
 	ofoDossier *dossier;
 	GtkWidget *page_widget, *widget;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
 
-	priv->hub = ofa_page_get_hub( page );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -209,13 +206,15 @@ setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	GtkWidget *tview_parent;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
 	tview_parent = my_utils_container_get_child_by_name( parent, "tview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	priv->tview = ofa_recurrent_run_treeview_new( hub );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 
 	ofa_recurrent_run_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
@@ -402,7 +401,7 @@ action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 {
 	guint count;
 	gchar *str;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	count = 0;
 	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_VALIDATED, ( RecurrentValidCb ) action_on_object_validated, &count );
@@ -413,12 +412,8 @@ action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 		str = g_strdup_printf( _( "%u inserted entries" ), count );
 	}
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
-
-	my_utils_msg_dialog(
-			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
-			GTK_MESSAGE_INFO,
-			str );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	my_utils_msg_dialog( toplevel, GTK_MESSAGE_INFO, str );
 
 	g_free( str );
 }
@@ -452,7 +447,6 @@ action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, co
 static void
 action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj, guint *count )
 {
-	ofaRecurrentRunPagePrivate *priv;
 	const gchar *rec_id, *tmpl_id, *ledger_id;
 	ofoDossier *dossier;
 	ofoRecurrentModel *model;
@@ -461,22 +455,22 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj,
 	ofsOpe *ope;
 	GList *entries, *it;
 	GDate dmin;
+	ofaHub *hub;
 
-	priv = ofa_recurrent_run_page_get_instance_private( self );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	rec_id = ofo_recurrent_run_get_mnemo( run_obj );
-	model = ofo_recurrent_model_get_by_mnemo( priv->hub, rec_id );
+	model = ofo_recurrent_model_get_by_mnemo( hub, rec_id );
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
 	tmpl_id = ofo_recurrent_model_get_ope_template( model );
-	template_obj = ofo_ope_template_get_by_mnemo( priv->hub, tmpl_id );
+	template_obj = ofo_ope_template_get_by_mnemo( hub, tmpl_id );
 	g_return_if_fail( template_obj && OFO_IS_OPE_TEMPLATE( template_obj ));
 
 	ledger_id = ofo_ope_template_get_ledger( template_obj );
-	ledger_obj = ofo_ledger_get_by_mnemo( priv->hub, ledger_id );
+	ledger_obj = ofo_ledger_get_by_mnemo( hub, ledger_id );
 	g_return_if_fail( ledger_obj && OFO_IS_LEDGER( ledger_obj ));
 
 	ope = ofs_ope_new( template_obj );
@@ -488,7 +482,7 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj,
 	entries = ofs_ope_generate_entries( ope );
 
 	for( it=entries ; it ; it=it->next ){
-		ofo_entry_insert( OFO_ENTRY( it->data ), priv->hub );
+		ofo_entry_insert( OFO_ENTRY( it->data ), hub );
 		*count += 1;
 	}
 }

@@ -361,10 +361,10 @@ static void
 on_new_clicked( GtkButton *button, ofaTVAManagePage *self )
 {
 	ofoTVAForm *form;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	form = ofo_tva_form_new();
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_form_properties_run( OFA_IGETTER( self ), toplevel, form );
 }
 
@@ -374,12 +374,12 @@ on_update_clicked( GtkButton *button, ofaTVAManagePage *self )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoTVAForm *form;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	form = treeview_get_selected( self, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_form_properties_run( OFA_IGETTER( self ), toplevel, form );
 }
 
@@ -454,7 +454,7 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *self )
 	GtkTreeIter iter;
 	ofoTVAForm *form;
 	ofoTVARecord *record;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	form = treeview_get_selected( self, &tmodel, &iter );
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
@@ -462,6 +462,6 @@ on_declare_clicked( GtkButton *button, ofaTVAManagePage *self )
 	record = ofo_tva_record_new_from_form( form );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_tva_record_new_run( OFA_IGETTER( self ), toplevel, record );
 }

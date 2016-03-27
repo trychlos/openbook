@@ -32,6 +32,7 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -39,7 +40,6 @@
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-currency-combo.h"
-#include "core/ofa-main-window.h"
 #include "core/ofa-ope-template-select.h"
 
 #include "ui/ofa-closing-parms-bin.h"
@@ -49,11 +49,13 @@
 typedef struct {
 	gboolean        dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter     *getter;
+
 	/* runtime data
 	 */
 	GtkWidget      *forward;
-	ofaMainWindow  *main_window;
-	ofaHub         *hub;
 	ofoDossier     *dossier;
 	GSList         *currencies;			/* used currencies, from entries */
 
@@ -204,23 +206,25 @@ ofa_closing_parms_bin_class_init( ofaClosingParmsBinClass *klass )
 
 /**
  * ofa_closing_parms_bin_new:
+ * @getter: a #ofaIGetter instance.
  */
 ofaClosingParmsBin *
-ofa_closing_parms_bin_new( ofaMainWindow *main_window )
+ofa_closing_parms_bin_new( ofaIGetter *getter )
 {
 	ofaClosingParmsBin *bin;
-	ofaClosingParmsBinPrivate *priv;;
+	ofaClosingParmsBinPrivate *priv;
+	ofaHub *hub;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	bin = g_object_new( OFA_TYPE_CLOSING_PARMS_BIN, NULL );
 
 	priv = ofa_closing_parms_bin_get_instance_private( bin );
 
-	priv->main_window = main_window;
+	priv->getter = getter;
 
-	priv->hub = ofa_main_window_get_hub( main_window );
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	priv->dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( getter );
+	priv->dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ), NULL );
 
 	setup_bin( bin );
@@ -253,8 +257,7 @@ setup_bin( ofaClosingParmsBin *bin )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->sld_ope = entry;
-	ofa_ope_template_editable_init(
-			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( priv->main_window ));
+	ofa_ope_template_editable_init( GTK_EDITABLE( entry ), priv->getter );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_sld_ope_changed ), bin );
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-bope-prompt" );
@@ -269,8 +272,7 @@ setup_bin( ofaClosingParmsBin *bin )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->for_ope = entry;
-	ofa_ope_template_editable_init(
-			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( priv->main_window ));
+	ofa_ope_template_editable_init( GTK_EDITABLE( entry ), priv->getter );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_for_ope_changed ), bin );
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-fope-prompt" );
@@ -314,8 +316,11 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 	gint i;
 	GSList *currencies, *it;
 	const gchar *currency, *account;
+	ofaHub *hub;
 
 	priv = ofa_closing_parms_bin_get_instance_private( bin );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	priv->grid = GTK_GRID( my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-grid" ));
 	priv->count = 1;
@@ -323,7 +328,7 @@ setup_currency_accounts( ofaClosingParmsBin *bin )
 
 	/* display all used currencies (from entries)
 	 * then display the corresponding account number (if set) */
-	priv->currencies = ofo_entry_get_currencies( priv->hub );
+	priv->currencies = ofo_entry_get_currencies( hub );
 	for( i=1, it=priv->currencies ; it ; ++i, it=it->next ){
 		add_empty_row( bin );
 		set_currency( bin, i, ( const gchar * ) it->data );
@@ -368,7 +373,7 @@ on_ope_changed( ofaClosingParmsBin *self, GtkWidget *entry, GtkWidget *label )
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
-	hub = ofa_main_window_get_hub( priv->main_window );
+	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	template = ofo_ope_template_get_by_mnemo( hub, gtk_entry_get_text( GTK_ENTRY( entry )));
@@ -389,10 +394,12 @@ add_empty_row( ofaClosingParmsBin *self )
 	GtkWidget *widget;
 	ofaCurrencyCombo *combo;
 	gint row;
+	ofaHub *hub;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	row = priv->count;
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	gtk_widget_destroy( gtk_grid_get_child_at( priv->grid, COL_ADD, row ));
 
@@ -402,7 +409,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
-	ofa_currency_combo_set_hub( combo, priv->hub );
+	ofa_currency_combo_set_hub( combo, hub );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
 	g_object_set_data( G_OBJECT( widget ), DATA_COMBO, combo);
@@ -553,8 +560,7 @@ set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *accou
 	if( entry ){
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), account );
-		ofa_account_editable_init(
-				GTK_EDITABLE( entry ), priv->main_window, ACCOUNT_ALLOW_DETAIL );
+		ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_DETAIL );
 	}
 }
 
@@ -649,8 +655,11 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
 	ofoOpeTemplate *ope;
+	ofaHub *hub;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( entry ));
 	if( !my_strlen( cstr )){
@@ -659,7 +668,7 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 		}
 		return( FALSE );
 	}
-	ope = ofo_ope_template_get_by_mnemo( priv->hub, cstr );
+	ope = ofo_ope_template_get_by_mnemo( hub, cstr );
 	if( !ope ){
 		if( msg ){
 			*msg = g_strdup_printf( _( "Operation template not found: %s" ), cstr );
@@ -684,11 +693,13 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 	gchar *code;
 	GSList *cursets, *find;
 	gboolean ok;
+	ofaHub *hub;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	ok = TRUE;
 	cursets = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	for( row=1 ; row<priv->count ; ++row ){
 		combo = get_currency_combo_at( self, row );
@@ -709,7 +720,7 @@ check_for_accounts( ofaClosingParmsBin *self, gchar **msg )
 				break;
 			}
 
-			account = ofo_account_get_by_number( priv->hub, acc_number );
+			account = ofo_account_get_by_number( hub, acc_number );
 			if( !account ){
 				if( msg ){
 					*msg = g_strdup_printf(

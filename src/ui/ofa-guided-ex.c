@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
@@ -297,7 +298,7 @@ setup_view_right( ofaGuidedEx *self )
 
 	grid = gtk_grid_new();
 
-	priv->input_bin = ofa_guided_input_bin_new( ofa_page_get_main_window( OFA_PAGE( self )));
+	priv->input_bin = ofa_guided_input_bin_new( OFA_IGETTER( self ));
 	my_utils_widget_set_margins( GTK_WIDGET( priv->input_bin ), 0, 0, 2, 4 );
 	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->input_bin ), 0, 0, 1, 1 );
 

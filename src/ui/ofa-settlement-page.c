@@ -35,6 +35,7 @@
 #include "api/ofa-account-editable.h"
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -707,9 +708,7 @@ setup_account_selection( ofaSettlementPage *self, GtkContainer *parent )
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
 	priv->account_entry = widget;
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
-	ofa_account_editable_init(
-			GTK_EDITABLE( widget ),
-			OFA_MAIN_WINDOW( ofa_page_get_main_window( OFA_PAGE( self ))), ACCOUNT_ALLOW_SETTLEABLE );
+	ofa_account_editable_init( GTK_EDITABLE( widget ), OFA_IGETTER( self ), ACCOUNT_ALLOW_SETTLEABLE );
 	if( my_strlen( priv->account_number )){
 		gtk_entry_set_text( GTK_ENTRY( widget ), priv->account_number );
 	}

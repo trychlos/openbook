@@ -31,13 +31,13 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-account.h"
 
 #include "core/ofa-account-properties.h"
 #include "core/ofa-account-frame-bin.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-page.h"
 
@@ -45,13 +45,9 @@
  */
 typedef struct {
 
-	/* runtime
-	 */
-	ofaHub              *hub;
-
 	/* UI
 	 */
-	ofaAccountFrameBin  *account_bin;
+	ofaAccountFrameBin *account_bin;
 }
 	ofaAccountPagePrivate;
 
@@ -122,18 +118,12 @@ v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_account_page_v_setup_page";
 	ofaAccountPagePrivate *priv;
-	const ofaMainWindow *main_window;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
-	main_window = ofa_page_get_main_window( page );
-
-	priv->hub = ofa_main_window_get_hub( main_window );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->account_bin = ofa_account_frame_bin_new( main_window );
+	priv->account_bin = ofa_account_frame_bin_new( OFA_IGETTER( page ));
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
 
@@ -166,24 +156,16 @@ v_get_top_focusable_widget( const ofaPage *page )
 static void
 on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self )
 {
-	ofaAccountPagePrivate *priv;
 	ofoAccount *account;
-	const ofaMainWindow *main_window;
-	GtkWidget *toplevel;
-
-	priv = ofa_account_page_get_instance_private( self );
+	ofaHub *hub;
+	GtkWindow *toplevel;
 
 	if( my_strlen( number )){
-		account = ofo_account_get_by_number( priv->hub, number );
+		hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
+		account = ofo_account_get_by_number( hub, number );
 		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-		main_window = ofa_page_get_main_window( OFA_PAGE( self ));
-
-		toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
-
-		ofa_account_properties_run(
-				OFA_MAIN_WINDOW( main_window ),
-				GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
-				account );
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_account_properties_run( OFA_IGETTER( self ), toplevel, account );
 	}
 }

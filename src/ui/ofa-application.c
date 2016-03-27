@@ -131,32 +131,33 @@ static       GOptionEntry st_option_entries[]   = {
 	{ NULL }
 };
 
-static void              init_i18n( ofaApplication *application );
-static gboolean          init_gtk_args( ofaApplication *application );
-static gboolean          manage_options( ofaApplication *application );
+static void                  init_i18n( ofaApplication *application );
+static gboolean              init_gtk_args( ofaApplication *application );
+static gboolean              manage_options( ofaApplication *application );
 
-static void              application_startup( GApplication *application );
-static void              appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
-static void              application_activate( GApplication *application );
-static void              application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
-static void              maintainer_test_function( void );
+static void                  application_startup( GApplication *application );
+static void                  appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
+static void                  application_activate( GApplication *application );
+static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
+static void                  maintainer_test_function( void );
 
-static void              on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application );
-static void              enable_action_open( ofaApplication *application, gboolean enable );
-static void              on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
-static void              on_version( ofaApplication *application );
+static void                  on_file_dir_changed( ofaFileDir *dir, guint count, const gchar *filename, ofaApplication *application );
+static void                  enable_action_open( ofaApplication *application, gboolean enable );
+static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void                  on_version( ofaApplication *application );
 
-static void              igetter_iface_init( ofaIGetterInterface *iface );
-static GApplication     *igetter_get_application( const ofaIGetter *instance );
-static ofaHub           *igetter_get_hub( const ofaIGetter *instance );
-static ofaIThemeManager *igetter_get_theme_manager( const ofaIGetter *instance );
+static void                  igetter_iface_init( ofaIGetterInterface *iface );
+static GApplication         *igetter_get_application( const ofaIGetter *instance );
+static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
+static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
+static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0,
 		G_ADD_PRIVATE( ofaApplication )
@@ -842,7 +843,8 @@ application_activate( GApplication *application )
 		}
 		if( meta && period ){
 			ofa_dossier_open_run(
-					priv->main_window, meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
+					OFA_IGETTER( application ), GTK_WINDOW( priv->main_window ),
+					meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
 		}
 		g_clear_object( &period );
 		g_clear_object( &meta );
@@ -942,7 +944,7 @@ on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_dossier_manager_run( priv->main_window );
+	ofa_dossier_manager_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
 }
 
 static void
@@ -960,7 +962,7 @@ on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_dossier_new_run( priv->main_window );
+	ofa_dossier_new_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ));
 }
 
 static void
@@ -978,7 +980,7 @@ on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_dossier_open_run( priv->main_window, NULL, NULL, NULL, NULL );
+	ofa_dossier_open_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ), NULL, NULL, NULL, NULL );
 }
 
 static void
@@ -996,7 +998,7 @@ on_restore( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_restore_assistant_run( priv->main_window );
+	ofa_restore_assistant_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ) );
 }
 
 static void
@@ -1014,7 +1016,9 @@ on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( priv->main_window && OFA_IS_MAIN_WINDOW( priv->main_window ));
 
-	ofa_preferences_run( GTK_APPLICATION_WINDOW( priv->main_window ), NULL );
+	/* passing a ofaIGetter could be the application as well as the
+	 * main window */
+	ofa_preferences_run( OFA_IGETTER( user_data ), GTK_WINDOW( priv->main_window ), NULL );
 }
 
 /*
@@ -1161,6 +1165,7 @@ igetter_iface_init( ofaIGetterInterface *iface )
 
 	iface->get_application = igetter_get_application;
 	iface->get_hub = igetter_get_hub;
+	iface->get_main_window = igetter_get_main_window;
 	iface->get_theme_manager = igetter_get_theme_manager;
 }
 
@@ -1178,6 +1183,16 @@ igetter_get_hub( const ofaIGetter *instance )
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
 
 	return( priv->hub );
+}
+
+static GtkApplicationWindow *
+igetter_get_main_window( const ofaIGetter *instance )
+{
+	ofaApplicationPrivate *priv;
+
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
+
+	return( GTK_APPLICATION_WINDOW( priv->main_window ));
 }
 
 /*

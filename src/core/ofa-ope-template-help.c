@@ -30,9 +30,9 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-main-window.h"
 #include "core/ofa-ope-template-help.h"
 
 /* private instance data
@@ -141,7 +141,7 @@ ofa_ope_template_help_class_init( ofaOpeTemplateHelpClass *klass )
 
 /**
  * ofa_ope_template_help_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  * @parent: the #GtkWindow (usually a #ofaOpeTemplateProperties) parent.
  *
  * Creates if needed and presents this OpeTemplate help dialog.
@@ -149,16 +149,16 @@ ofa_ope_template_help_class_init( ofaOpeTemplateHelpClass *klass )
  * close itself on last parent finalization.
  */
 void
-ofa_ope_template_help_run( const ofaMainWindow *main_window, GtkWindow *parent )
+ofa_ope_template_help_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	ofaOpeTemplateHelp *self;
 	myIWindow *shown;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_HELP, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	/* after this call, @self may be invalid */

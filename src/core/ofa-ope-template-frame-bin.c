@@ -33,13 +33,13 @@
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-guided-input.h"
-#include "core/ofa-main-window.h"
 #include "core/ofa-ope-template-frame-bin.h"
 #include "core/ofa-ope-template-properties.h"
 #include "core/ofa-ope-template-store.h"
@@ -51,7 +51,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaMainWindow *main_window;
+	ofaIGetter          *getter;
 
 	/* runtime
 	 */
@@ -287,7 +287,7 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 
 /**
  * ofa_ope_template_frame_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Creates the structured content, i.e. The accounts notebook on the
  * left column, the buttons box on the right one.
@@ -308,16 +308,18 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaOpeTemplateFrameBin *
-ofa_ope_template_frame_bin_new( const ofaMainWindow *main_window  )
+ofa_ope_template_frame_bin_new( ofaIGetter *getter  )
 {
 	ofaOpeTemplateFrameBin *self;
 	ofaOpeTemplateFrameBinPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
-	priv->main_window = main_window;
+	priv->getter = getter;
 
 	setup_bin( self );
 
@@ -353,7 +355,7 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 	gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( priv->buttonsbox ), 1, 0, 1, 1 );
 
 	/* ope template store */
-	priv->hub = ofa_main_window_get_hub( priv->main_window );
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->store = ofa_ope_template_store_new( priv->hub );
@@ -1156,7 +1158,8 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
 	gint page_n;
-	GtkWidget *page_w, *toplevel;
+	GtkWidget *page_w;
+	GtkWindow *toplevel;
 	const gchar *ledger;
 	sPageData *sdata;
 
@@ -1174,13 +1177,8 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 	}
 
 	ope = ofo_ope_template_new();
-
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
-
-	ofa_ope_template_properties_run(
-			OFA_MAIN_WINDOW( priv->main_window ),
-			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
-			ope, ledger );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_ope_template_properties_run( priv->getter, toplevel, ope, ledger );
 }
 
 static void
@@ -1188,19 +1186,15 @@ do_update_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( self ));
-
-	ofa_ope_template_properties_run(
-			OFA_MAIN_WINDOW( priv->main_window ),
-			GTK_IS_WINDOW( toplevel ) ? GTK_WINDOW( toplevel ) : NULL,
-			ope, NULL );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_ope_template_properties_run( priv->getter, toplevel, ope, NULL );
 }
 
 static void
@@ -1290,13 +1284,15 @@ do_guided_input( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	ofoOpeTemplate *ope;
+	GtkWindow *toplevel;
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 
-	ofa_guided_input_run( priv->main_window, ope );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_guided_input_run( priv->getter, toplevel, ope );
 }
 
 /*

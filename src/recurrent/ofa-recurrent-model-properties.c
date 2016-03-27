@@ -38,14 +38,13 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofa-periodicity-bin.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
-
-#include "core/ofa-main-window.h"
 
 #include "recurrent/ofa-recurrent-model-properties.h"
 #include "recurrent/ofo-recurrent-model.h"
@@ -55,9 +54,12 @@
 typedef struct {
 	gboolean             dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter          *getter;
+
 	/* internals
 	 */
-	ofaHub              *hub;
 	gboolean             is_current;
 	ofoRecurrentModel   *recurrent_model;
 	gboolean             is_new;
@@ -183,28 +185,31 @@ ofa_recurrent_model_properties_class_init( ofaRecurrentModelPropertiesClass *kla
 
 /**
  * ofa_recurrent_model_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the parent window.
  * @model: the #ofoRecurrentModel to be displayed/updated.
  *
  * Update the properties of a recurrent model.
  */
 void
-ofa_recurrent_model_properties_run( const ofaMainWindow *main_window, ofoRecurrentModel *model )
+ofa_recurrent_model_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRecurrentModel *model )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_properties_run";
 	ofaRecurrentModelProperties *self;
 	ofaRecurrentModelPropertiesPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
-	g_debug( "%s: main_window=%p, model=%p",
-			thisfn, ( void * ) main_window, ( void * ) model );
+	g_debug( "%s: getter=%p, parent=%p, model=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) model );
 
 	self = g_object_new( OFA_TYPE_RECURRENT_MODEL_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->recurrent_model = model;
 
 	/* after this call, @self may be invalid */
@@ -266,7 +271,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_properties_idialog_init";
 	ofaRecurrentModelPropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
+	ofaHub *hub;
 	ofoDossier *dossier;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -277,13 +282,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	priv->is_current = ofo_dossier_is_current( dossier );
@@ -361,8 +361,7 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_ope_template_changed ), self );
 	priv->ope_template_entry = entry;
-	ofa_ope_template_editable_init(
-			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))));
+	ofa_ope_template_editable_init( GTK_EDITABLE( entry ), priv->getter );
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ope-template-prompt" );
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
@@ -437,13 +436,16 @@ static void
 on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	g_free( priv->ope_template );
 	priv->ope_template = g_strdup( gtk_entry_get_text( entry ));
 
-	priv->template_obj = ofo_ope_template_get_by_mnemo( priv->hub, priv->ope_template );
+	priv->template_obj = ofo_ope_template_get_by_mnemo( hub, priv->ope_template );
 	gtk_label_set_text(
 			GTK_LABEL( priv->ope_template_label ),
 			priv->template_obj ? ofo_ope_template_get_label( priv->template_obj ) : "" );
@@ -493,10 +495,13 @@ is_dialog_validable( ofaRecurrentModelProperties *self )
 	ofaRecurrentModelPropertiesPrivate *priv;
 	gboolean ok, exists, subok;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
 	msgerr = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
+
 	ok = ofo_recurrent_model_is_valid_data( priv->mnemo, priv->label, priv->ope_template, priv->periodicity, &msgerr );
 
 	if( ok && !priv->template_obj ){
@@ -505,7 +510,7 @@ is_dialog_validable( ofaRecurrentModelProperties *self )
 	}
 
 	if( ok ){
-		exists = ( ofo_recurrent_model_get_by_mnemo( priv->hub, priv->mnemo ) != NULL );
+		exists = ( ofo_recurrent_model_get_by_mnemo( hub, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
 		ok = !exists || subok;
@@ -530,10 +535,13 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	ofaRecurrentModelPropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	gboolean ok;
+	ofaHub *hub;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
 
@@ -552,7 +560,7 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 			*/
 
 	if( priv->is_new ){
-		ok = ofo_recurrent_model_insert( priv->recurrent_model, priv->hub );
+		ok = ofo_recurrent_model_insert( priv->recurrent_model, hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new recurrent model" ));
 		}

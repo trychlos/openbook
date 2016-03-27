@@ -33,19 +33,18 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-iaccount-filter.h"
 
 /* data associated to each implementor object
  */
 typedef struct {
+	ofaIGetter          *getter;
 	gchar               *resource_name;
-	const ofaMainWindow *main_window;
 	ofaHub              *hub;
 	ofoDossier          *dossier;
 	gchar               *prefs_key;
@@ -83,14 +82,14 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType            register_type( void );
 static void             interface_base_init( ofaIAccountFilterInterface *klass );
 static void             interface_base_finalize( ofaIAccountFilterInterface *klass );
-static sIAccountFilter *get_iaccount_filter_data( ofaIAccountFilter *filter );
+static sIAccountFilter *get_iaccount_filter_data( const ofaIAccountFilter *filter );
 static void             on_widget_finalized( ofaIAccountFilter *iaccount_filter, void *finalized_widget );
 static void             setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata );
 static void             on_from_changed( GtkEntry *entry, ofaIAccountFilter *filter );
 static void             on_to_changed( GtkEntry *entry, ofaIAccountFilter *filter );
 static void             on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
 static void             on_all_accounts_toggled( GtkToggleButton *button, ofaIAccountFilter *filter );
-static gboolean         is_account_valid( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
+static gboolean         is_account_valid( const ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
 static void             load_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
 static void             set_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
 
@@ -190,41 +189,65 @@ interface_base_finalize( ofaIAccountFilterInterface *klass )
 
 /**
  * ofa_iaccount_filter_get_interface_last_version:
- * @instance: this #ofaIAccountFilter instance.
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_iaccount_filter_get_interface_last_version( const ofaIAccountFilter *instance )
+ofa_iaccount_filter_get_interface_last_version( void )
 {
 	return( IACCOUNT_FILTER_LAST_VERSION );
 }
 
 /**
+ * ofa_iaccount_filter_get_interface_version:
+ * @instance: this #ofaIAccountFilter instance.
+ *
+ * Returns: the version number of this interface that the implementation
+ * implements.
+ */
+guint
+ofa_iaccount_filter_get_interface_version( const ofaIAccountFilter *instance )
+{
+	static const gchar *thisfn = "ofa_iaccount_filter_get_interface_version";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && OFA_IS_IACCOUNT_FILTER( instance ), 0 );
+
+	if( OFA_IACCOUNT_FILTER_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_IACCOUNT_FILTER_GET_INTERFACE( instance )->get_interface_version( instance ));
+	}
+
+	g_info( "%s: ofaIAccountFilter instance %p does not provide 'get_interface_version()' method",
+			thisfn, ( void * ) instance );
+	return( 1 );
+}
+
+/**
  * ofa_iaccount_filter_setup_bin:
  * @filter: this #ofaIAccountFilter instance.
+ * @getter: a #ofaIGetter instance.
  * @resource_name: the UI .xml definition resource path.
- * @main_window: the #ofaMainWindow main window of the application.
  *
  * Initialize the composite widget which implements this interface.
  */
 void
-ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *resource_name, const ofaMainWindow *main_window )
+ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, ofaIGetter *getter, const gchar *resource_name )
 {
 	static const gchar *thisfn = "ofa_iaccount_filter_setup_bin";
 	sIAccountFilter *sdata;
 
-	g_debug( "%s: filter=%p, resource_name=%s, main_window=%p",
-			thisfn, ( void * ) filter, resource_name, ( void * ) main_window );
+	g_debug( "%s: filter=%p, getter=%p, resource_name=%s",
+			thisfn, ( void * ) filter, ( void * ) getter, resource_name );
 
 	g_return_if_fail( filter && G_IS_OBJECT( filter ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	sdata = get_iaccount_filter_data( filter );
+	sdata->getter = getter;
 	sdata->resource_name = g_strdup( resource_name );
-	sdata->main_window = main_window;
 
-	sdata->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	sdata->hub = ofa_igetter_get_hub( getter );
 	g_return_if_fail( sdata->hub && OFA_IS_HUB( sdata->hub ));
 
 	sdata->dossier = ofa_hub_get_dossier( sdata->hub );
@@ -234,7 +257,7 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, const gchar *resource_
 }
 
 static sIAccountFilter *
-get_iaccount_filter_data( ofaIAccountFilter *filter )
+get_iaccount_filter_data( const ofaIAccountFilter *filter )
 {
 	sIAccountFilter *sdata;
 
@@ -243,7 +266,7 @@ get_iaccount_filter_data( ofaIAccountFilter *filter )
 	if( !sdata ){
 		sdata = g_new0( sIAccountFilter, 1 );
 		g_object_set_data( G_OBJECT( filter ), IACCOUNT_FILTER_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( filter ), ( GWeakNotify ) on_widget_finalized, filter );
+		g_object_weak_ref( G_OBJECT( filter ), ( GWeakNotify ) on_widget_finalized, ( gpointer ) filter );
 	}
 
 	return( sdata );
@@ -304,8 +327,7 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->from_entry = entry;
-	ofa_account_editable_init(
-			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( sdata->main_window ), ACCOUNT_ALLOW_ALL );
+	ofa_account_editable_init( GTK_EDITABLE( entry ), sdata->getter, ACCOUNT_ALLOW_ALL );
 
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
@@ -323,8 +345,7 @@ setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "to-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	sdata->to_entry = entry;
-	ofa_account_editable_init(
-			GTK_EDITABLE( entry ), OFA_MAIN_WINDOW( sdata->main_window ), ACCOUNT_ALLOW_ALL );
+	ofa_account_editable_init( GTK_EDITABLE( entry ), sdata->getter, ACCOUNT_ALLOW_ALL );
 
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
@@ -420,7 +441,7 @@ ofa_iaccount_filter_set_prefs( ofaIAccountFilter *filter, const gchar *prefs_key
  * Returns: The specified account number.
  */
 const gchar *
-ofa_iaccount_filter_get_account( ofaIAccountFilter *filter, gint who )
+ofa_iaccount_filter_get_account( const ofaIAccountFilter *filter, gint who )
 {
 	static const gchar *thisfn = "ofa_iaccount_filter_get_account";
 	sIAccountFilter *sdata;
@@ -480,7 +501,7 @@ ofa_iaccount_filter_set_account( ofaIAccountFilter *filter, gint who, const gcha
  * Returns: Whether the "All accounts" checkbox is selected.
  */
 gboolean
-ofa_iaccount_filter_get_all_accounts( ofaIAccountFilter *filter )
+ofa_iaccount_filter_get_all_accounts( const ofaIAccountFilter *filter )
 {
 	sIAccountFilter *sdata;
 
@@ -517,7 +538,7 @@ ofa_iaccount_filter_set_all_accounts( ofaIAccountFilter *filter, gboolean all_ac
  * Returns: %TRUE is the specified account is valid.
  */
 gboolean
-ofa_iaccount_filter_is_valid( ofaIAccountFilter *filter, gint who, gchar **message )
+ofa_iaccount_filter_is_valid( const ofaIAccountFilter *filter, gint who, gchar **message )
 {
 	static const gchar *thisfn = "ofa_iaccount_filter_is_valid";
 	sIAccountFilter *sdata;
@@ -574,7 +595,7 @@ ofa_iaccount_filter_is_valid( ofaIAccountFilter *filter, gint who, gchar **messa
 }
 
 static gboolean
-is_account_valid( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata )
+is_account_valid( const ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata )
 {
 	gboolean valid;
 	const gchar *cstr;
@@ -605,7 +626,7 @@ is_account_valid( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidge
  * Returns: a pointer to the GtkWidget which is used as the frame label.
  */
 GtkWidget *
-ofa_iaccount_filter_get_frame_label( ofaIAccountFilter *filter )
+ofa_iaccount_filter_get_frame_label( const ofaIAccountFilter *filter )
 {
 	g_return_val_if_fail( filter && OFA_IS_IACCOUNT_FILTER( filter ), NULL );
 
@@ -619,7 +640,7 @@ ofa_iaccount_filter_get_frame_label( ofaIAccountFilter *filter )
  * Returns: a pointer to the GtkWidget which is used as the "From" prompt.
  */
 GtkWidget *
-ofa_iaccount_filter_get_from_prompt( ofaIAccountFilter *filter )
+ofa_iaccount_filter_get_from_prompt( const ofaIAccountFilter *filter )
 {
 	g_return_val_if_fail( filter && OFA_IS_IACCOUNT_FILTER( filter ), NULL );
 

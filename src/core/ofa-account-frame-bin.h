@@ -43,8 +43,10 @@
  * #ofaAccountPage page and by #ofaAccountSelect selection dialog box.
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-buttons-box.h"
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -87,7 +89,7 @@ typedef enum {
 
 GType               ofa_account_frame_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaAccountFrameBin *ofa_account_frame_bin_new                 ( const ofaMainWindow *main_window );
+ofaAccountFrameBin *ofa_account_frame_bin_new                 ( ofaIGetter *getter );
 
 GtkWidget          *ofa_account_frame_bin_add_button          ( ofaAccountFrameBin *bin,
 																	ofeAccountFrameBtn id,

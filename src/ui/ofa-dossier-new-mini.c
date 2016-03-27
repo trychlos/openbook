@@ -35,11 +35,11 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-dbms-root-bin.h"
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-dossier-new-bin.h"
 #include "ui/ofa-dossier-new-mini.h"
@@ -48,6 +48,10 @@
  */
 typedef struct {
 	gboolean          dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter       *getter;
 
 	/* UI
 	 */
@@ -148,7 +152,7 @@ ofa_dossier_new_mini_class_init( ofaDossierNewMiniClass *klass )
 
 /**
  * ofa_dossier_new_mini_run:
- * @main_window: the main window of the application.
+ * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the window parent; defaults to the @main_window.
  * @meta: [out]: an #ofaIDBMeta object which defines the newly created
  *  dossier.
@@ -156,29 +160,31 @@ ofa_dossier_new_mini_class_init( ofaDossierNewMiniClass *klass )
  * Returns: %TRUE if a new dossier has been defined in the settings.
  */
 gboolean
-ofa_dossier_new_mini_run( ofaMainWindow *main_window, GtkWindow *parent, ofaIDBMeta **meta )
+ofa_dossier_new_mini_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBMeta **meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_mini_run";
 	ofaDossierNewMini *self;
 	ofaDossierNewMiniPrivate *priv;
 	gboolean dossier_defined;
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
+	g_debug( "%s: getter=%p, parent=%p, meta=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) meta );
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 	g_return_val_if_fail( meta, FALSE );
 
-	g_debug( "%s: main_window=%p, parent=%p, meta=%p",
-			thisfn, ( void * ) main_window, ( void * ) parent, ( void * ) meta );
-
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW_MINI, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_dossier_new_mini_get_instance_private( self );
+
+	priv->getter = getter;
 
 	dossier_defined = FALSE;
 
 	if( my_idialog_run( MY_IDIALOG( self )) == GTK_RESPONSE_OK ){
-		priv = ofa_dossier_new_mini_get_instance_private( self );
 		if( priv->meta ){
 			dossier_defined = TRUE;
 			*meta = g_object_ref( priv->meta );
@@ -219,7 +225,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_new_mini_idialog_init";
 	ofaDossierNewMiniPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWidget *parent, *label;
 	GtkSizeGroup *group;
 
@@ -227,12 +232,9 @@ idialog_init( myIDialog *instance )
 
 	priv = ofa_dossier_new_mini_get_instance_private( OFA_DOSSIER_NEW_MINI( instance ));
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "new-bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->new_bin = ofa_dossier_new_bin_new( OFA_MAIN_WINDOW( main_window ));
+	priv->new_bin = ofa_dossier_new_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->new_bin ));
 	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	my_utils_size_group_add_size_group(

@@ -38,7 +38,9 @@
  * - current:    yes
  */
 
-#include "api/ofo-dossier-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -63,7 +65,8 @@ typedef struct {
 
 GType ofa_dossier_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_dossier_properties_run     ( ofaMainWindow *parent );
+void  ofa_dossier_properties_run     ( ofaIGetter *getter,
+											GtkWindow *parent );
 
 G_END_DECLS
 

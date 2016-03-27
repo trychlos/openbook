@@ -41,6 +41,7 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -78,23 +79,14 @@ enum {
 	ASSIST_PAGE_DONE
 };
 
-/* a structure to store the data needed to open the dossier
- * after the assistant has ran
- */
-typedef struct {
-	gboolean       open;
-	ofaMainWindow *main_window;
-	ofaIDBMeta    *meta;
-	ofaIDBPeriod  *period;
-	gchar         *account;
-	gchar         *password;
-}
-	sOpenData;
-
 /* private instance data
  */
 typedef struct {
 	gboolean                dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter             *getter;
 
 	/* p1: select file to be imported
 	 */
@@ -339,23 +331,31 @@ ofa_restore_assistant_class_init( ofaRestoreAssistantClass *klass )
 }
 
 /**
- * Run the assistant.
+ * ofa_restore_assistant_run:
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
- * @main: the main window of the application.
+ * Run the assistant.
  */
 void
-ofa_restore_assistant_run( ofaMainWindow *main_window )
+ofa_restore_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_run";
 	ofaRestoreAssistant *self;
+	ofaRestoreAssistantPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_RESTORE_ASSISTANT, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -681,7 +681,6 @@ static void
 p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 {
 	ofaRestoreAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
 	gchar *dossier_name;
 	ofaIDBMeta *meta;
 
@@ -689,10 +688,7 @@ p2_on_dossier_new( GtkButton *button, ofaRestoreAssistant *assistant )
 
 	meta = NULL;
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( assistant ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	if( ofa_dossier_new_mini_run( OFA_MAIN_WINDOW( main_window ), GTK_WINDOW( assistant ), &meta )){
+	if( ofa_dossier_new_mini_run( priv->getter, GTK_WINDOW( assistant ), &meta )){
 
 		g_clear_object( &priv->p2_meta );
 		priv->p2_meta = meta;
@@ -1189,7 +1185,6 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
-	ofaHub *hub;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1207,17 +1202,10 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
-		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
+		main_window = ofa_igetter_get_main_window( priv->getter );
 		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-		/* may be NULL */
-		hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-
-		/* first close the currently opened dossier */
-		if( hub ){
-			g_return_if_fail( OFA_IS_HUB( hub ));
-			ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
-		}
+		ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
 	}
@@ -1304,7 +1292,6 @@ p6_do_open( ofaRestoreAssistant *self )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_open";
 	ofaRestoreAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
@@ -1312,11 +1299,8 @@ p6_do_open( ofaRestoreAssistant *self )
 			thisfn, ( void * ) self, ( void * ) priv->p2_meta, ( void * ) priv->p2_period, priv->p4_account );
 
 	if( priv->p4_open ){
-		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-		g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), G_SOURCE_REMOVE );
-
 		ofa_dossier_open_run(
-				OFA_MAIN_WINDOW( main_window ),
+				priv->getter, GTK_WINDOW( self ),
 				priv->p2_meta, priv->p2_period, priv->p4_account, priv->p4_password );
 
 		g_debug( "%s: return from ofa_dossier_open_run", thisfn );

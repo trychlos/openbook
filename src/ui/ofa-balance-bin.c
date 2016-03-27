@@ -33,11 +33,10 @@
 
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-account-filter-vv-bin.h"
 #include "ui/ofa-balance-bin.h"
@@ -49,8 +48,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaMainWindow    *main_window;
-	ofaHub                 *hub;
+	ofaIGetter            *getter;
 
 	/* UI
 	 */
@@ -81,7 +79,6 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-balance-bin.ui";
 static const gchar *st_settings         = "RenderBalances";
 
-static void setup_hub( ofaBalanceBin *bin );
 static void setup_bin( ofaBalanceBin *bin );
 static void setup_account_selection( ofaBalanceBin *bin );
 static void setup_date_selection( ofaBalanceBin *bin );
@@ -183,22 +180,24 @@ ofa_balance_bin_class_init( ofaBalanceBinClass *klass )
 
 /**
  * ofa_balance_bin_new:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a newly allocated #ofaBalanceBin object.
  */
 ofaBalanceBin *
-ofa_balance_bin_new( const ofaMainWindow *main_window )
+ofa_balance_bin_new( ofaIGetter *getter )
 {
 	ofaBalanceBin *self;
 	ofaBalanceBinPrivate *priv;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
 	self = g_object_new( OFA_TYPE_BALANCE_BIN, NULL );
 
 	priv = ofa_balance_bin_get_instance_private( self );
-	priv->main_window = main_window;
 
-	setup_hub( self );
+	priv->getter = getter;
+
 	setup_bin( self );
 	setup_account_selection( self );
 	setup_date_selection( self );
@@ -207,17 +206,6 @@ ofa_balance_bin_new( const ofaMainWindow *main_window )
 	load_settings( self );
 
 	return( self );
-}
-
-static void
-setup_hub( ofaBalanceBin *bin )
-{
-	ofaBalanceBinPrivate *priv;
-
-	priv = ofa_balance_bin_get_instance_private( bin );
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static void
@@ -251,7 +239,7 @@ setup_account_selection( ofaBalanceBin *bin )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_account_filter_vv_bin_new( priv->main_window );
+	filter = ofa_account_filter_vv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_account_filter_changed ), bin );
@@ -355,13 +343,15 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 	ofaBalanceBinPrivate *priv;
 	gboolean active;
 	const GDate *begin;
+	ofaHub *hub;
 	ofoDossier *dossier;
 
 	priv = ofa_balance_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( button );
 	if( active ){
-		dossier = ofa_hub_get_dossier( priv->hub );
+		hub = ofa_igetter_get_hub( priv->getter );
+		dossier = ofa_hub_get_dossier( hub );
 		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 		begin = ofo_dossier_get_exe_begin( dossier );

@@ -43,6 +43,7 @@
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-iexeclose-close.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
@@ -57,6 +58,7 @@
 #include "core/ofa-iconcil.h"
 #include "core/ofa-main-window.h"
 
+#include "ui/ofa-application.h"
 #include "ui/ofa-balance-grid-bin.h"
 #include "ui/ofa-check-balances-bin.h"
 #include "ui/ofa-check-integrity-bin.h"
@@ -68,6 +70,9 @@
 typedef struct {
 	gboolean              dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter           *getter;
 	ofaHub               *hub;
 
 	/* dossier
@@ -308,23 +313,30 @@ ofa_exercice_close_assistant_class_init( ofaExerciceCloseAssistantClass *klass )
 
 /**
  * ofa_exercice_close_assistant_run:
- * @main: the main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
  * Run an intermediate closing on selected ledgers
  */
 void
-ofa_exercice_close_assistant_run( ofaMainWindow *main_window )
+ofa_exercice_close_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_run";
 	ofaExerciceCloseAssistant *self;
+	ofaExerciceCloseAssistantPrivate *priv;;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_EXERCICE_CLOSE_ASSISTANT, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_exercice_close_assistant_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -380,7 +392,6 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_p0_do_forward";
 	ofaExerciceCloseAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofaExtenderCollection *extenders;
 
 	g_debug( "%s: self=%p, page_num=%d, page_widget=%p (%s)",
@@ -388,10 +399,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
@@ -408,16 +416,12 @@ static void
 p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWidget *parent, *label, *prompt;
 	const GDate *begin_cur, *end_cur;
 	GDate begin, end;
 	gint exe_length;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
-
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
 	exe_length = ofo_dossier_get_exe_length( priv->dossier );
 
@@ -528,7 +532,7 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p1-forward-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p1_closing_parms = ofa_closing_parms_bin_new( OFA_MAIN_WINDOW( main_window ));
+	priv->p1_closing_parms = ofa_closing_parms_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p1_closing_parms ));
 	g_signal_connect( priv->p1_closing_parms, "ofa-changed", G_CALLBACK( p1_on_closing_parms_changed ), self );
 
@@ -623,7 +627,7 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	ofo_dossier_set_exe_end( priv->dossier, end_cur );
 	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_EXE_DATES_CHANGED, begin_cur, end_cur );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
+	main_window = ofa_igetter_get_main_window( priv->getter );
 	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
 	ofa_closing_parms_bin_apply( priv->p1_closing_parms );
@@ -856,9 +860,7 @@ p5_on_backup_clicked( GtkButton *button, ofaExerciceCloseAssistant *self )
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
+	main_window = ofa_igetter_get_main_window( priv->getter );
 	ofa_main_window_backup_dossier( OFA_MAIN_WINDOW( main_window ));
 	priv->p5_backuped = TRUE;
 
@@ -1357,13 +1359,12 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	const GDate *begin_next, *end_next;
 	gchar *cur_account, *cur_password;
 	ofaIDBProvider *provider;
-	ofaHub *hub;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
+	main_window = ofa_igetter_get_main_window( priv->getter );
 
 	ofo_dossier_set_current( priv->dossier, FALSE );
 	ofo_dossier_update( priv->dossier );
@@ -1410,13 +1411,9 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 		} else {
-			hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-			if( ofa_hub_dossier_open( hub, cnx, GTK_WINDOW( main_window ))){
-				priv->hub = hub;
-				priv->dossier = ofa_hub_get_dossier( hub );
-				priv->connect = ofa_hub_get_connect( hub );
+			if( ofa_hub_dossier_open( priv->hub, cnx, GTK_WINDOW( main_window ))){
+				priv->dossier = ofa_hub_get_dossier( priv->hub );
+				priv->connect = ofa_hub_get_connect( priv->hub );
 				ofo_dossier_set_current( priv->dossier, TRUE );
 				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 				ofo_dossier_set_exe_end( priv->dossier, end_next );

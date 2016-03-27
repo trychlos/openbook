@@ -202,13 +202,37 @@ ofa_igetter_get_hub( const ofaIGetter *instance )
 }
 
 /**
+ * ofa_igetter_get_main_window:
+ * @instance: this #ofaIGetter instance.
+ *
+ * Returns: the main window of the application, if any, or %NULL.
+ */
+GtkApplicationWindow *
+ofa_igetter_get_main_window( const ofaIGetter *instance )
+{
+	static const gchar *thisfn = "ofa_igetter_get_main_window";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
+
+	if( OFA_IGETTER_GET_INTERFACE( instance )->get_main_window ){
+		return( OFA_IGETTER_GET_INTERFACE( instance )->get_main_window( instance ));
+	}
+
+	g_info( "%s: ofaIGetter instance %p does not provide 'get_main_window()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
+}
+
+/**
  * ofa_igetter_get_theme_manager:
  * @instance: this #ofaIGetter instance.
  *
  * Returns: the #ofaIThemeManager instance of the application, if any,
  * or %NULL.
  *
- * Only a GUI application has a ThemeManage usage.
+ * Only a GUI application has a ThemeManager usage.
  */
 ofaIThemeManager *
 ofa_igetter_get_theme_manager( const ofaIGetter *instance )

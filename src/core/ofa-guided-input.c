@@ -33,11 +33,11 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
-#include "core/ofa-main-window.h"
 #include "core/ofa-guided-input.h"
 #include "core/ofa-guided-input-bin.h"
 
@@ -48,6 +48,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIGetter           *getter;
 	const ofoOpeTemplate *model;
 
 	/* UI
@@ -141,29 +142,33 @@ ofa_guided_input_class_init( ofaGuidedInputClass *klass )
 
 /**
  * ofa_guided_input_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent of this dialog.
  * @model: the #ofoOpeTemplate instance to be used as a template for
  *  the guided input.
  *
  * Let the user enter a new operation based on the @model template.
  */
 void
-ofa_guided_input_run( const ofaMainWindow *main_window, const ofoOpeTemplate *model )
+ofa_guided_input_run( ofaIGetter *getter, GtkWindow *parent, const ofoOpeTemplate *model )
 {
 	static const gchar *thisfn = "ofa_guided_input_run";
 	ofaGuidedInput *self;
 	ofaGuidedInputPrivate *priv;
 
-	g_debug( "%s: main_window=%p, model=%p",
-			thisfn, ( void * ) main_window, ( void * ) model );
+	g_debug( "%s: getter=%p, parent=%p, model=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) model );
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_GUIDED_INPUT, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_guided_input_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->model = model;
 
 	/* after this call, @self may be invalid */
@@ -219,7 +224,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_guided_input_idialog_init";
 	ofaGuidedInputPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -234,9 +238,7 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-	priv->input_bin = ofa_guided_input_bin_new( OFA_MAIN_WINDOW( main_window ));
+	priv->input_bin = ofa_guided_input_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->input_bin ));
 	ofa_guided_input_bin_set_ope_template( priv->input_bin, priv->model );
 

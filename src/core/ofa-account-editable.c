@@ -26,15 +26,17 @@
 #include <config.h>
 #endif
 
+#include "my/my-utils.h"
+
 #include "api/ofa-account-editable.h"
+#include "api/ofa-igetter.h"
 
 #include "core/ofa-account-select.h"
-#include "core/ofa-main-window.h"
 
 /* a data structure attached to each managed GtkEditable
  */
 typedef struct {
-	ofaMainWindow       *main_window;
+	ofaIGetter          *getter;
 	ofeAccountAllowed    allowed;
 	AccountPreSelectCb   preselect_cb;
 	void                *preselect_user_data;
@@ -54,24 +56,24 @@ static void      on_editable_finalized( sAccount *sdata, GObject *finalized_edit
 /**
  * ofa_account_editable_init:
  * @editable: the #GtkEditable entry.
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  * @allowed: the allowed selection.
  *
  * Initialize the GtkEntry to setup an icon.
  * When this icon is pressed, an account selection dialog is triggered.
  */
 void
-ofa_account_editable_init( GtkEditable *editable, ofaMainWindow *main_window, ofeAccountAllowed allowed )
+ofa_account_editable_init( GtkEditable *editable, ofaIGetter *getter, ofeAccountAllowed allowed )
 {
 	sAccount *sdata;
 	GtkWidget *image;
 	GdkPixbuf *pixbuf;
 
 	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	sdata = get_editable_data( editable );
-	sdata->main_window = main_window;
+	sdata->getter = getter;
 	sdata->allowed = allowed;
 
 	if( GTK_IS_ENTRY( editable )){
@@ -116,7 +118,7 @@ on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event
 {
 	sAccount *sdata;
 	gchar *initial_selection, *account_id, *tmp;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	sdata = get_editable_data( GTK_EDITABLE( entry ));
 
@@ -126,9 +128,8 @@ on_icon_pressed( GtkEntry *entry, GtkEntryIconPosition icon_pos, GdkEvent *event
 		initial_selection = g_strdup( gtk_entry_get_text( entry ));
 	}
 
-	toplevel = gtk_widget_get_toplevel( GTK_WIDGET( entry ));
-	account_id = ofa_account_select_run(
-			sdata->main_window, toplevel ? GTK_WINDOW( toplevel ) : NULL, initial_selection, sdata->allowed );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( entry ));
+	account_id = ofa_account_select_run( sdata->getter, toplevel, initial_selection, sdata->allowed );
 
 	if( account_id ){
 		if( sdata->postselect_cb ){

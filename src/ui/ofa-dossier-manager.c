@@ -36,6 +36,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -53,6 +54,10 @@
  */
 typedef struct {
 	gboolean            dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter         *getter;
 
 	/* UI
 	 */
@@ -150,23 +155,30 @@ ofa_dossier_manager_class_init( ofaDossierManagerClass *klass )
 
 /**
  * ofa_dossier_manager_run:
- * @main: the main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: the parent #GtkWindow.
  *
  * Run the dialog to manage the dossiers
  */
 void
-ofa_dossier_manager_run( ofaMainWindow *main_window )
+ofa_dossier_manager_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_run";
 	ofaDossierManager *self;
+	ofaDossierManagerPrivate *priv;
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_MANAGER, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+	priv = ofa_dossier_manager_get_instance_private( self );
+
+	priv->getter = getter;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -278,12 +290,14 @@ on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *p
 static void
 on_new_clicked( GtkButton *button, ofaDossierManager *self )
 {
-	GtkApplicationWindow *main_window;
+	ofaDossierManagerPrivate *priv;
+	GtkWindow *toplevel;
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	priv = ofa_dossier_manager_get_instance_private( self );
 
-	ofa_dossier_new_run( OFA_MAIN_WINDOW( main_window ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+
+	ofa_dossier_new_run( priv->getter, toplevel );
 }
 
 static void
@@ -311,13 +325,12 @@ on_open_clicked( GtkButton *button, ofaDossierManager *self )
 static void
 do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
 {
-	GtkApplicationWindow *main_window;
+	ofaDossierManagerPrivate *priv;
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	priv = ofa_dossier_manager_get_instance_private( self );
 
-	if( ofa_dossier_open_run_with_parent(
-			OFA_MAIN_WINDOW( main_window ), GTK_WINDOW( self ), meta, period, NULL, NULL )){
+	if( ofa_dossier_open_run(
+			priv->getter, GTK_WINDOW( self ), meta, period, NULL, NULL )){
 
 		gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_CLOSE );
 	}
@@ -328,7 +341,6 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
 	ofaDossierManagerPrivate *priv;
-	GtkApplicationWindow *main_window;
 	ofaHub *hub;
 	const ofaIDBConnect *dossier_connect;
 	ofaIDBMeta *meta, *dossier_meta;
@@ -345,15 +357,10 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 
 		/* close the currently opened dossier/exercice if we are about
 		 * to delete it */
-		main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-		hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-		if( hub ){
-			g_return_if_fail( OFA_IS_HUB( hub ));
-
-			dossier = ofa_hub_get_dossier( hub );
-			g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+		hub = ofa_igetter_get_hub( priv->getter );
+		dossier = ofa_hub_get_dossier( hub );
+		if( dossier ){
+			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
 
 			dossier_connect = ofa_hub_get_connect( hub );
 			g_return_if_fail( dossier_connect && OFA_IS_IDBCONNECT( dossier_connect ));
@@ -368,7 +375,8 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 			}
 			g_object_unref( dossier_meta );
 			if( cmp == 0 ){
-				ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
+				ofa_main_window_close_dossier(
+						OFA_MAIN_WINDOW( ofa_igetter_get_main_window( priv->getter )));
 			}
 		}
 		ofa_idbmeta_remove_period( meta, period );

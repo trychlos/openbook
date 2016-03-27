@@ -38,7 +38,7 @@
  * - current:    no
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -63,7 +63,7 @@ typedef struct {
 
 GType ofa_recurrent_new_get_type( void ) G_GNUC_CONST;
 
-void  ofa_recurrent_new_run     ( ofaMainWindow *main_window,
+void  ofa_recurrent_new_run     ( ofaIGetter *getter,
 										GtkWindow *parent );
 
 G_END_DECLS

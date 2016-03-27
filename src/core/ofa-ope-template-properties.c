@@ -35,12 +35,12 @@
 
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-account.h"
 #include "api/ofo-ope-template.h"
 
-#include "core/ofa-main-window.h"
 #include "core/ofa-ledger-combo.h"
 #include "core/ofa-ope-template-help.h"
 #include "core/ofa-ope-template-properties.h"
@@ -67,12 +67,12 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaIGetter     *getter;
 	ofoOpeTemplate *ope_template;
 	gchar          *ledger;				/* ledger mnemo */
 
 	/* internals
 	 */
-	ofaHub         *hub;
 	gboolean        is_current;
 	gboolean        is_new;
 
@@ -232,7 +232,7 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
 
 /**
  * ofa_ope_template_properties_run:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent of this dialog.
  * @template: [allow-none]: a #ofoOpeTemplate to be edited.
  * @ledger: [allow-none]: a #ofoLedger to be attached to @template.
@@ -242,25 +242,26 @@ ofa_ope_template_properties_class_init( ofaOpeTemplatePropertiesClass *klass )
  */
 void
 ofa_ope_template_properties_run(
-		ofaMainWindow *main_window, GtkWindow *parent, ofoOpeTemplate *template, const gchar *ledger )
+		ofaIGetter *getter, GtkWindow *parent, ofoOpeTemplate *template, const gchar *ledger )
 {
 	static const gchar *thisfn = "ofa_ope_template_properties_run";
 	ofaOpeTemplateProperties *self;
 	ofaOpeTemplatePropertiesPrivate *priv;
 
-	g_debug( "%s: main_window=%p, parent=%p, template=%p, ledger=%s",
-			thisfn, ( void * ) main_window, ( void * ) parent, ( void * ) template, ledger );
+	g_debug( "%s: getter=%p, parent=%p, template=%p, ledger=%s",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) template, ledger );
 
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 	g_return_if_fail( !template || OFO_IS_OPE_TEMPLATE( template ));
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_PROPERTIES, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
+
+	priv->getter = getter;
 	priv->ope_template = template;
 	priv->ledger = g_strdup( ledger );
 
@@ -317,7 +318,7 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ope_template_properties_idialog_init";
 	ofaOpeTemplatePropertiesPrivate *priv;
-	GtkApplicationWindow *main_window;
+	ofaHub *hub;
 	ofoDossier *dossier;
 	GtkWidget *button;
 
@@ -329,13 +330,10 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	dossier = ofa_hub_get_dossier( priv->hub );
+	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 	priv->is_current = ofo_dossier_is_current( dossier );
 	//priv->is_current = FALSE;
@@ -444,8 +442,11 @@ init_ledger( ofaOpeTemplateProperties *self )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkWidget *label;
+	ofaHub *hub;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
@@ -453,7 +454,7 @@ init_ledger( ofaOpeTemplateProperties *self )
 	priv->ledger_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
 	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
-	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
+	ofa_ledger_combo_set_hub( priv->ledger_combo, hub );
 
 	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
 
@@ -597,8 +598,7 @@ set_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_grid_attach( GTK_GRID( priv->details_grid ), GTK_WIDGET( entry ), 1+DET_COL_ACCOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
-	ofa_account_editable_init( GTK_EDITABLE( entry ),
-			OFA_MAIN_WINDOW( my_iwindow_get_main_window( MY_IWINDOW( self ))), ACCOUNT_ALLOW_DETAIL );
+	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_DETAIL );
 
 	/* account locked */
 	toggle = gtk_check_button_new();
@@ -764,12 +764,11 @@ on_ref_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 static void
 on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self )
 {
-	GtkApplicationWindow *main_window;
+	ofaOpeTemplatePropertiesPrivate *priv;
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( self ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	ofa_ope_template_help_run( OFA_MAIN_WINDOW( main_window ), GTK_WINDOW( self ));
+	ofa_ope_template_help_run( priv->getter, GTK_WINDOW( self ));
 }
 
 /*
@@ -797,14 +796,16 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	ofoOpeTemplate *exists;
 	gboolean ok;
 	gchar *msgerr;
+	ofaHub *hub;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
 	msgerr = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	ok = ofo_ope_template_is_valid_data( priv->mnemo, priv->label, priv->ledger, &msgerr );
 	if( ok ){
-		exists = ofo_ope_template_get_by_mnemo( priv->hub, priv->mnemo );
+		exists = ofo_ope_template_get_by_mnemo( hub, priv->mnemo );
 		ok = !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ope_template_get_mnemo( priv->ope_template )));
 		if( !ok ){
@@ -825,8 +826,11 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 	gchar *prev_mnemo;
 	guint i, count;
 	gboolean ok;
+	ofaHub *hub;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_ope_template_get_mnemo( priv->ope_template ));
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
@@ -849,7 +853,7 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 	}
 
 	if( !prev_mnemo ){
-		ok = ofo_ope_template_insert( priv->ope_template, priv->hub );
+		ok = ofo_ope_template_insert( priv->ope_template, hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new operation template" ));
 		}

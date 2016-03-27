@@ -46,7 +46,7 @@
  */
 
 #include "api/ofa-idate-filter.h"
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-igetter-def.h"
 
 #include "ui/ofa-iaccount-filter.h"
 
@@ -73,7 +73,7 @@ typedef struct {
 
 GType              ofa_balance_bin_get_type              ( void ) G_GNUC_CONST;
 
-ofaBalanceBin     *ofa_balance_bin_new                   ( const ofaMainWindow *main_window );
+ofaBalanceBin     *ofa_balance_bin_new                   ( ofaIGetter *getter );
 
 gboolean           ofa_balance_bin_is_valid              ( ofaBalanceBin *bin,
 																gchar **message );

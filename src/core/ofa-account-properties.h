@@ -38,7 +38,9 @@
  * - current:    yes
  */
 
-#include "api/ofa-main-window-def.h"
+#include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-account-def.h"
 
 G_BEGIN_DECLS
@@ -64,7 +66,7 @@ typedef struct {
 
 GType ofa_account_properties_get_type( void ) G_GNUC_CONST;
 
-void  ofa_account_properties_run     ( ofaMainWindow *main_window,
+void  ofa_account_properties_run     ( ofaIGetter *getter,
 											GtkWindow *parent,
 											ofoAccount *account );
 

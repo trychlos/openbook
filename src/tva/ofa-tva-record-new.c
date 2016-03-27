@@ -158,7 +158,7 @@ ofa_tva_record_new_class_init( ofaTVARecordNewClass *klass )
  * Let the user enter the end date of the declaration.
  */
 void
-ofa_tva_record_new_run( ofaIGetter *getter, GtkWidget *parent, ofoTVARecord *record )
+ofa_tva_record_new_run( ofaIGetter *getter, GtkWindow *parent, ofoTVARecord *record )
 {
 	static const gchar *thisfn = "ofa_tva_record_new_run";
 	ofaTVARecordNew *self;
@@ -170,7 +170,7 @@ ofa_tva_record_new_run( ofaIGetter *getter, GtkWidget *parent, ofoTVARecord *rec
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	self = g_object_new( OFA_TYPE_TVA_RECORD_NEW, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent ? GTK_WINDOW( parent ) : NULL );
+	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_record_new_get_instance_private( self );
@@ -379,7 +379,7 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 	ofaHub *hub;
 	ofaIThemeManager *manager;
 	ofaPage *page;
-	GtkWidget *toplevel;
+	GtkWindow *toplevel;
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
@@ -394,7 +394,7 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 	if( ok ){
 		/* activate the page */
 		page = ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_DECLARE_PAGE );
-		toplevel = gtk_widget_get_toplevel( GTK_WIDGET( page ));
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
 		/* edit the declaration */
 		ofa_tva_record_properties_run( priv->getter, toplevel, priv->tva_record );
 	}

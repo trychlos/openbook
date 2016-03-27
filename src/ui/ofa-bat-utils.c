@@ -32,25 +32,25 @@
 
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-bat-utils.h"
 
 /**
  * ofa_bat_utils_import:
- * @main_window: the #ofaMainWindow main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
- * open GtkFileChooser dialog to let the user select the file to be
- * imported and import it
+ * Open a GtkFileChooser dialog to let the user select the file to be
+ * imported (and import it).
  *
  * Returns: the identifier of the newly imported BAT file, or zero if
  * an error has happened.
  */
 ofxCounter
-ofa_bat_utils_import( const ofaMainWindow *main_window )
+ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_bat_utils_import";
 	ofxCounter imported_id;
@@ -59,6 +59,9 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 	ofaIImportable *importable;
 	ofaHub *hub;
 	gchar *uri, *str;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), 0 );
 
 	imported_id = 0;
 
@@ -79,7 +82,7 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 		/* take the uri before clearing bat lines */
 		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));
 
-		hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( main_window ));
+		hub = ofa_igetter_get_hub( getter );
 		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 
 		importable = ofa_iimportable_find_willing_to( hub, uri, settings );
@@ -99,7 +102,7 @@ ofa_bat_utils_import( const ofaMainWindow *main_window )
 			str = g_strdup_printf(
 					_( "Unable to find a module willing to import '%s' URI.\n\n"
 						"The operation will be cancelled." ), uri );
-			my_utils_msg_dialog( GTK_WINDOW( main_window ), GTK_MESSAGE_WARNING, str );
+			my_utils_msg_dialog( parent, GTK_MESSAGE_WARNING, str );
 			g_free( str );
 		}
 

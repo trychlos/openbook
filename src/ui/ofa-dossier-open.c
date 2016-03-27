@@ -35,6 +35,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
@@ -50,6 +51,10 @@
  */
 typedef struct {
 	gboolean            dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter         *getter;
 
 	/* data
 	 */
@@ -167,29 +172,7 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
 
 /**
  * ofa_dossier_open_run:
- * @main_window: the main window of the application.
- * @meta: [allow-none]: the dossier to be opened.
- * @period: [allow-none]: the exercice to be opened.
- * @account: [allow-none]: the user account.
- * @password: [allow-none]: the user password.
- *
- * Open the specified dossier, requiring the missing informations
- * if needed.
- *
- * Returns: %TRUE if the dossier has been opened, %FALSE else.
- */
-gboolean
-ofa_dossier_open_run( ofaMainWindow *main_window,
-							ofaIDBMeta *meta, ofaIDBPeriod *period,
-							const gchar *account, const gchar *password )
-{
-	return( ofa_dossier_open_run_with_parent(
-				main_window, GTK_WINDOW( main_window ), meta, period, account, password ));
-}
-
-/**
- * ofa_dossier_open_run_with_parent:
- * @main_window: the main window of the application.
+ * @getter: a #ofaIGetter instance.
  * @parent: the parent #GtkWindow.
  * @meta: [allow-none]: the dossier to be opened.
  * @period: [allow-none]: the exercice to be opened.
@@ -202,7 +185,7 @@ ofa_dossier_open_run( ofaMainWindow *main_window,
  * Returns: %TRUE if the dossier has been opened, %FALSE else.
  */
 gboolean
-ofa_dossier_open_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent,
+ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 										ofaIDBMeta *meta, ofaIDBPeriod *period,
 										const gchar *account, const gchar *password )
 {
@@ -212,19 +195,20 @@ ofa_dossier_open_run_with_parent( ofaMainWindow *main_window, GtkWindow *parent,
 	gboolean opened;
 	gchar *msg;
 
-	g_debug( "%s: main_window=%p, parent=%p, meta=%p, period=%p, account=%s, password=%s",
-			thisfn, ( void * ) main_window, ( void * ) parent,
+	g_debug( "%s: getter=%p, parent=%p, meta=%p, period=%p, account=%s, password=%s",
+			thisfn, ( void * ) getter, ( void * ) parent,
 			( void * ) meta, ( void * ) period, account, password ? "******" : "(null)" );
 
-	g_return_val_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ), FALSE );
-	g_return_val_if_fail( parent && GTK_IS_WINDOW( parent ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 
 	self = g_object_new( OFA_TYPE_DOSSIER_OPEN, NULL );
-	my_iwindow_set_main_window( MY_IWINDOW( self ), GTK_APPLICATION_WINDOW( main_window ));
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_dossier_open_get_instance_private( self );
+
+	priv->getter = getter;
 
 	if( meta ){
 		priv->meta = g_object_ref( meta );

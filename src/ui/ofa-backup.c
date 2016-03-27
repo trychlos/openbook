@@ -37,10 +37,9 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
-
-#include "core/ofa-main-window.h"
 
 #include "ui/ofa-backup.h"
 
@@ -51,7 +50,8 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaMainWindow       *main_window;
+	ofaIGetter          *getter;
+	GtkWindow           *parent;
 
 	/* UI
 	 */
@@ -147,26 +147,29 @@ ofa_backup_class_init( ofaBackupClass *klass )
 
 /**
  * ofa_backup_run:
- * @main: the main window of the application.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
  *
  * Backup a dossier.
  */
 void
-ofa_backup_run( ofaMainWindow *main_window )
+ofa_backup_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_backup_run";
 	ofaBackup *self;
 	ofaBackupPrivate *priv;
 
-	g_return_if_fail( OFA_IS_MAIN_WINDOW( main_window ));
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_BACKUP, NULL );
 
 	priv = ofa_backup_get_instance_private( self );
 
-	priv->main_window = main_window;
+	priv->getter = getter;
+	priv->parent = parent;
 
 	init_dialog( self );
 
@@ -187,7 +190,7 @@ init_dialog( ofaBackup *self )
 
 	priv = ofa_backup_get_instance_private( self );
 
-	priv->hub = ofa_main_window_get_hub( OFA_MAIN_WINDOW( priv->main_window ));
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
@@ -195,7 +198,7 @@ init_dialog( ofaBackup *self )
 
 	priv->dialog = gtk_file_chooser_dialog_new(
 							_( "Backup the dossier" ),
-							GTK_WINDOW( priv->main_window ),
+							priv->parent,
 							GTK_FILE_CHOOSER_ACTION_SAVE,
 							_( "_Cancel" ), GTK_RESPONSE_CANCEL,
 							_( "_Save" ), GTK_RESPONSE_OK,

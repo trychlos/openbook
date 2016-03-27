@@ -35,8 +35,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
-
-#include "core/ofa-main-window.h"
+#include "api/ofa-igetter.h"
 
 #include "ui/ofa-application.h"
 #include "ui/ofa-dossier-new-bin.h"
@@ -47,6 +46,12 @@
 typedef struct {
 	gboolean        dispose_has_run;
 
+	/* initialization
+	 */
+	ofaIGetter     *getter;
+	ofaHub         *hub;
+	ofaFileDir     *dir;
+
 	/* UI
 	 */
 	GtkSizeGroup   *group0;
@@ -54,12 +59,6 @@ typedef struct {
 	GtkWidget      *connect_infos_parent;
 	ofaIDBEditor   *connect_infos;
 	GtkWidget      *msg_label;
-
-	/* initialization
-	 */
-	ofaMainWindow  *main_window;
-	ofaHub         *hub;
-	ofaFileDir     *dir;
 
 	/* runtime data
 	 */
@@ -196,21 +195,24 @@ ofa_dossier_new_bin_class_init( ofaDossierNewBinClass *klass )
 
 /**
  * ofa_dossier_new_bin_new:
- * @main_window: the #ofaMainWindow main window.
+ * @getter: a #ofaIGetter instance.
  *
  * Returns: a newly defined composite widget which aggregates dossier
  * name, DBMS provider, connection informations and root credentials.
  */
 ofaDossierNewBin *
-ofa_dossier_new_bin_new( ofaMainWindow *main_window )
+ofa_dossier_new_bin_new( ofaIGetter *getter )
 {
 	ofaDossierNewBin *self;
 	ofaDossierNewBinPrivate *priv;
 
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW_BIN, NULL );
 
 	priv = ofa_dossier_new_bin_get_instance_private( self );
-	priv->main_window = main_window;
+
+	priv->getter = getter;
 
 	setup_bin( self );
 
@@ -233,7 +235,7 @@ setup_bin( ofaDossierNewBin *self )
 	priv = ofa_dossier_new_bin_get_instance_private( self );
 
 	/* setup file directory */
-	priv->hub = ofa_main_window_get_hub( priv->main_window );
+	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->dir = ofa_hub_get_file_dir( priv->hub );

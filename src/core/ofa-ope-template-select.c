@@ -31,9 +31,9 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 
-#include "core/ofa-main-window.h"
 #include "core/ofa-ope-template-select.h"
 #include "core/ofa-ope-template-frame-bin.h"
 
@@ -44,7 +44,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub                 *hub;
+	ofaIGetter             *getter;
 
 	/* UI
 	 */
@@ -148,41 +148,42 @@ ofa_ope_template_select_class_init( ofaOpeTemplateSelectClass *klass )
 
 /**
  * ofa_ope_template_select_run:
- * @main_window: the #ofaMainWindow main window of the application.
- * @parent: [allow-none]: the #GtkWindow parent.
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the parent window.
  * @asked_mnemo: [allow-none]: the initially selected operation template identifier.
  *
  * Returns: the selected operation template mnemo, as a newly allocated
  * string that must be g_free() by the caller
  */
 gchar *
-ofa_ope_template_select_run( ofaMainWindow *main_window, GtkWindow *parent, const gchar *asked_mnemo )
+ofa_ope_template_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_mnemo )
 {
 	static const gchar *thisfn = "ofa_ope_template_select_run";
 	ofaOpeTemplateSelectPrivate *priv;
 	gchar *selected_mnemo;
+	ofaHub *hub;
 
-	g_debug( "%s: main_window=%p, parent=%p, asked_mnemo=%s",
-			thisfn, ( void * ) main_window, ( void * ) parent, asked_mnemo );
+	g_debug( "%s: getter=%p, parent=%p, asked_mnemo=%s",
+			thisfn, ( void * ) getter, ( void * ) parent, asked_mnemo );
 
-	g_return_val_if_fail( parent && MY_IS_IWINDOW( parent ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), NULL );
 
 	if( !st_this ){
 		st_this = g_object_new( OFA_TYPE_OPE_TEMPLATE_SELECT, NULL );
-		my_iwindow_set_main_window( MY_IWINDOW( st_this ), GTK_APPLICATION_WINDOW( main_window ));
 		my_iwindow_set_parent( MY_IWINDOW( st_this ), parent );
 		my_iwindow_set_settings( MY_IWINDOW( st_this ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 		priv = ofa_ope_template_select_get_instance_private( st_this );
 
-		priv->hub = ofa_main_window_get_hub( main_window );
-		g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+		priv->getter = getter;
 
 		my_iwindow_init( MY_IWINDOW( st_this ));
 		my_iwindow_set_hide_on_close( MY_IWINDOW( st_this ), TRUE );
 
 		/* setup a weak reference on the hub to auto-unref */
-		g_object_weak_ref( G_OBJECT( priv->hub ), ( GWeakNotify ) on_hub_finalized, NULL );
+		hub = ofa_igetter_get_hub( getter );
+		g_object_weak_ref( G_OBJECT( hub ), ( GWeakNotify ) on_hub_finalized, NULL );
 	}
 
 	priv = ofa_ope_template_select_get_instance_private( st_this );
@@ -232,7 +233,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ope_template_select_idialog_init";
 	ofaOpeTemplateSelectPrivate *priv;
-	GtkApplicationWindow *main_window;
 	GtkWidget *parent;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -242,13 +242,10 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
-	main_window = my_iwindow_get_main_window( MY_IWINDOW( instance ));
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ope-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( OFA_MAIN_WINDOW( main_window ));
+	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
 
 	g_signal_connect( priv->ope_templates_frame, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );

@@ -38,7 +38,7 @@
  * - ofa-activated: when the selection is activated.
  */
 
-#include "api/ofa-main-window-def.h"
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
