@@ -81,10 +81,6 @@
 typedef struct {
 	gboolean        dispose_has_run;
 
-	/* initialization
-	 */
-	ofaApplication *application;
-
 	/* internals
 	 */
 	gchar          *orig_title;
@@ -605,8 +601,6 @@ ofa_main_window_new( ofaApplication *application )
 
 	priv = ofa_main_window_get_instance_private( window );
 
-	priv->application = application;
-
 	/* connect to the ofaHub signals
 	 */
 	hub = ofa_igetter_get_hub( OFA_IGETTER( window ));
@@ -766,17 +760,20 @@ static void
 do_close_dossier( ofaMainWindow *self, ofaHub *hub )
 {
 	ofaMainWindowPrivate *priv;
-	priv = ofa_main_window_get_instance_private( self );
+	GtkApplication *application;
 
 	if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( hub )){
 
 		close_all_pages( self );
 		my_iwindow_close_all();
 
+		priv = ofa_main_window_get_instance_private( self );
+
 		gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 		priv->pane = NULL;
 
-		set_menubar( self, ofa_application_get_menu_model( priv->application ));
+		application = gtk_window_get_application( GTK_WINDOW( self ));
+		set_menubar( self, ofa_application_get_menu_model( OFA_APPLICATION( application )));
 		set_window_title( self );
 	}
 }
@@ -1770,25 +1767,21 @@ igetter_iface_init( ofaIGetterInterface *iface )
 static GApplication *
 igetter_get_application( const ofaIGetter *instance )
 {
-	ofaMainWindowPrivate *priv;
+	GtkApplication *application;
 
-	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
+	application = gtk_window_get_application( GTK_WINDOW( instance ));
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( G_APPLICATION( priv->application ));
+	return( G_APPLICATION( application ));
 }
 
 static ofaHub *
 igetter_get_hub( const ofaIGetter *instance )
 {
-	ofaMainWindowPrivate *priv;
+	GtkApplication *application;
 
-	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
+	application = gtk_window_get_application( GTK_WINDOW( instance ));
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( ofa_application_get_hub( priv->application ));
+	return( ofa_application_get_hub( OFA_APPLICATION( application )));
 }
 
 static GtkApplicationWindow *
