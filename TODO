@@ -370,15 +370,6 @@
                      ofa-ipreferences) while these are rather shortcuts
                      to user preferences
 
- 937 2015-12-21 ARCH either move ofa-main-window.h to api/ (because it
-                     is needed by ofa-page.h) or say that api/ should
-                     only contain the actual public API, and thus remove
-                     from api/ some files which were only pulled up for
-                     compilation reasons
-     2016- 1-24      this would pull up ofaApplication, ofaFileDir and
-                     ofaMainWindow to src/core/, which itself would pull
-                     up almost all pages..
-
  938 2015-12-21 ARCH distinguish a core api with core objects (eg. for
                      command-line only tools) and a ui api which contains
                      some base classes and interfaces which would be useful
@@ -614,6 +605,17 @@
  935 2015-12-17 DDLUpdate: does not show remediation when creating a
                 new dossier ?
      2016- 1-24 cancelled
+
+ 937 2015-12-21 ARCH either move ofa-main-window.h to api/ (because it
+                     is needed by ofa-page.h) or say that api/ should
+                     only contain the actual public API, and thus remove
+                     from api/ some files which were only pulled up for
+                     compilation reasons
+     2016- 1-24      this would pull up ofaApplication, ofaFileDir and
+                     ofaMainWindow to src/core/, which itself would pull
+                     up almost all pages..
+     2016- 1-27 done: headers are moved back to ui/ directory, thanks to
+                the new ofaIGetter and ofaIThemeManager interfaces.
 
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)

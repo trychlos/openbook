@@ -45,6 +45,7 @@
    - ofaIGetter: new interface.
    - ofaIThemeManager: new interface.
    - ofaMainWindow: implements new ofaIGetter and ofaIThemeManager interfaces.
+   - ofaMainWindow: headers are moved back to ui/ (todo #937).
    - ofa_main_window_activate_theme(): removed method.
    - ofa_main_window_get_hub(): removed method.
    - ofa_nomodal_page_get_by_theme(): removed method.
