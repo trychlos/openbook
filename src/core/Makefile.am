@@ -110,6 +110,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbprovider.c									\
 	ofa-iexeclose-close.c								\
 	ofa-iexportable.c									\
+	ofa-iexporter.c										\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
