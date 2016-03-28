@@ -43,6 +43,8 @@
    - ofaApplication: implements new ofaIGetter interface.
    - ofaExtension: now passes the ofaIGetter (instead of the GApplication).
    - ofaFileDir: renamed as ofaPortfolioCollection (todo #1052).
+   - ofa_hub_register_types(): new method.
+   - ofaIExporter: new interface.
    - ofaIGetter: new interface.
    - ofaIThemeManager: new interface.
    - ofaMainWindow: implements new ofaIGetter and ofaIThemeManager interfaces.

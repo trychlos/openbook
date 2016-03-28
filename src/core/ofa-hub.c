@@ -53,9 +53,14 @@
 typedef struct {
 	gboolean                dispose_has_run;
 
+	/* global data
+	 */
 	ofaExtenderCollection  *extenders;
 	ofaPortfolioCollection *portfolios;
+	GList                  *objtypes;
 
+	/* dossier
+	 */
 	ofaIDBConnect          *connect;
 	ofoDossier             *dossier;
 	ofaDossierPrefs        *dossier_prefs;
@@ -148,6 +153,9 @@ ofa_hub_init( ofaHub *self )
 	priv = ofa_hub_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	priv->extenders = NULL;
+	priv->portfolios = NULL;
 }
 
 static void
@@ -476,6 +484,36 @@ ofa_hub_set_extender_collection( ofaHub *hub, ofaExtenderCollection *collection 
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->extenders = collection;
+}
+
+/**
+ * ofa_hub_register_types:
+ * @hub: this #ofaHub instance.
+ *
+ * Registers all #ofoBase derived types provided by the core library.
+ */
+void
+ofa_hub_register_types( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->objtypes = NULL;
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_ACCOUNT );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_BAT );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_CLASS );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_CONCIL );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_CURRENCY );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_DOSSIER );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_ENTRY );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_LEDGER );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_OPE_TEMPLATE );
+	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_RATE );
 }
 
 /**

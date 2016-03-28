@@ -101,6 +101,8 @@ ofaExtenderCollection  *ofa_hub_get_extender_collection ( const ofaHub *hub );
 void                    ofa_hub_set_extender_collection ( ofaHub *hub,
 																ofaExtenderCollection *collection );
 
+void                    ofa_hub_register_types          ( ofaHub *hub );
+
 ofaPortfolioCollection *ofa_hub_get_portfolio_collection( const ofaHub *hub );
 
 void                    ofa_hub_set_portfolio_collection( ofaHub *hub,
