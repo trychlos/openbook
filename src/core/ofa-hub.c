@@ -36,6 +36,8 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-iexportable.h"
+#include "api/ofa-iexporter.h"
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -57,7 +59,7 @@ typedef struct {
 	 */
 	ofaExtenderCollection  *extenders;
 	ofaPortfolioCollection *portfolios;
-	GList                  *objtypes;
+	GList                  *ofofakes;
 
 	/* dossier
 	 */
@@ -84,6 +86,8 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
+static void    iexporter_iface_init( ofaIExporterInterface *iface );
+static GList  *iexporter_get_exportables( ofaIExporter *instance );
 static void    icollector_iface_init( ofaICollectorInterface *iface );
 static guint   icollector_get_interface_version( const ofaICollector *instance );
 static void    isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
@@ -96,6 +100,7 @@ static void    free_lines( GSList *lines );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTER, iexporter_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTOR, icollector_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISINGLE_KEEPER, isingle_keeper_iface_init ))
 
@@ -132,6 +137,7 @@ hub_dispose( GObject *instance )
 
 		g_clear_object( &priv->extenders );
 		g_clear_object( &priv->portfolios );
+		g_list_free_full( priv->ofofakes, ( GDestroyNotify ) g_object_unref );
 
 		dossier_do_close( OFA_HUB( instance ));
 	}
@@ -398,6 +404,38 @@ ofa_hub_class_init( ofaHubClass *klass )
 }
 
 /*
+ * ofaIExporter interface management
+ */
+static void
+iexporter_iface_init( ofaIExporterInterface *iface )
+{
+	static const gchar *thisfn = "ofa_hub_iexporter_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_exportables = iexporter_get_exportables;
+}
+
+static GList *
+iexporter_get_exportables( ofaIExporter *instance )
+{
+	ofaHubPrivate *priv;
+	GList *list, *it;
+
+	priv = ofa_hub_get_instance_private( OFA_HUB( instance ));
+
+	list = NULL;
+
+	for( it=priv->ofofakes ; it ; it=it->next ){
+		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), OFA_TYPE_IEXPORTABLE )){
+			list = g_list_prepend( list, g_object_ref( it->data ));
+		}
+	}
+
+	return( list );
+}
+
+/*
  * ofaICollector interface management
  */
 static void
@@ -503,17 +541,17 @@ ofa_hub_register_types( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->objtypes = NULL;
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_ACCOUNT );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_BAT );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_CLASS );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_CONCIL );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_CURRENCY );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_DOSSIER );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_ENTRY );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_LEDGER );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_OPE_TEMPLATE );
-	priv->objtypes = g_list_prepend( priv->objtypes, ( gpointer ) OFO_TYPE_RATE );
+	priv->ofofakes = NULL;
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_BAT, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CLASS, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CONCIL, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CURRENCY, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_DOSSIER, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_ENTRY, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_LEDGER, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_RATE, NULL ));
 }
 
 /**

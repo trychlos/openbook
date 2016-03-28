@@ -175,7 +175,6 @@ interface_base_finalize( ofaIExportableInterface *klass )
 
 /**
  * ofa_iexportable_get_interface_last_version:
- * @instance: this #ofaIExportable instance.
  *
  * Returns: the last version number of this interface.
  */
@@ -183,6 +182,63 @@ guint
 ofa_iexportable_get_interface_last_version( void )
 {
 	return( IEXPORTABLE_LAST_VERSION );
+}
+
+/**
+ * ofa_iexporter_get_interface_version:
+ * @instance: this #ofaIExportable instance.
+ *
+ * Returns: the version number of this interface implemented by the
+ * application.
+ */
+guint
+ofa_iexportable_get_interface_version( const ofaIExportable *instance )
+{
+	static const gchar *thisfn = "ofa_iexportable_get_interface_version";
+
+	g_return_val_if_fail( instance && OFA_IS_IEXPORTABLE( instance ), 0 );
+
+	if( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_interface_version( instance ));
+	}
+
+	g_info( "%s: ofaIExportable instance %p does not provide 'get_interface_version()' method",
+			thisfn, ( void * ) instance );
+	return( 1 );
+}
+
+/**
+ * ofa_iexporter_get_label:
+ * @instance: this #ofaIExportable instance.
+ *
+ * Returns: the displayable label to be associated with @instance, as a
+ * newly allocated string which should be g_free() by the caller.
+ *
+ * The returned string may contain one '_' underline, to be used as a
+ * keyboard shortcut. This underline will be automatically removed when
+ * the target display does not manage them.
+ *
+ * As this label is to be used as a selection label among a list
+ * provided by the user interface, a #ofaIExportable class which would
+ * not implement this method, would just not be proposed for export to
+ * the user.
+ *
+ * It is so a strong suggestion to implement this method.
+ */
+gchar *
+ofa_iexportable_get_label( const ofaIExportable *instance )
+{
+	static const gchar *thisfn = "ofa_iexportable_get_label";
+
+	g_return_val_if_fail( instance && OFA_IS_IEXPORTABLE( instance ), NULL );
+
+	if( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_label ){
+		return( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_label( instance ));
+	}
+
+	g_info( "%s: ofaIExportable instance %p does not provide 'get_label()' method",
+			thisfn, ( void * ) instance );
+	return( NULL );
 }
 
 /**

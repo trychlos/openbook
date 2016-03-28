@@ -32,11 +32,15 @@
  * @include: openbook/ofa-iexporter.h
  *
  * The #ofaIExporter interface exports items to the outside world.
+ * It should be implemented by the code which exports the item
+ * (cf. eg. #ofaExportAssistant), or by any code which interfaces to
+ * an #ofaIExportable item.
+ *
+ * The #ofaIEXporter interface expects that exportable items all
+ * implement the #ofaIExportable interface.
  */
 
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -75,18 +79,12 @@ typedef struct {
 	guint    ( *get_interface_version )( const ofaIExporter *instance );
 
 	/**
-	 * export:
+	 * get_exportables:
 	 * @instance: the #ofaIExporter provider.
-	 * @settings: the current export settings for the operation.
-	 * @hub: the current #ofaHub object.
 	 *
-	 * Export the dataset to the named file.
-	 *
-	 * Return: %TRUE if the dataset has been successfully exported.
+	 * Return: a list of newly allocated #ofaIExportable objects.
 	 */
-	gboolean ( *export )               ( ofaIExporter *instance,
-												const ofaFileFormat *settings,
-												ofaHub *hub );
+	GList *  ( *get_exportables )      ( ofaIExporter *instance );
 }
 	ofaIExporterInterface;
 
@@ -94,19 +92,11 @@ GType    ofa_iexporter_get_type                  ( void );
 
 guint    ofa_iexporter_get_interface_last_version( void );
 
-gboolean ofa_iexporter_export_to_path            ( ofaIExporter *exportable,
-															const gchar *uri,
-															const ofaFileFormat *settings,
-															ofaHub *hub,
-															const void *instance );
+guint    ofa_iexporter_get_interface_version     ( const ofaIExporter *instance );
 
-gulong   ofa_iexporter_get_count                 ( ofaIExporter *exportable );
+GList   *ofa_iexporter_get_exportables           ( ofaIExporter *instance );
 
-void     ofa_iexporter_set_count                 ( ofaIExporter *exportable,
-															gulong count );
-
-gboolean ofa_iexporter_export_lines              ( ofaIExporter *exportable,
-															GSList *lines );
+GList   *ofa_iexporter_get_exportables_all       ( ofaHub *hub );
 
 G_END_DECLS
 
