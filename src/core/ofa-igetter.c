@@ -141,8 +141,8 @@ ofa_igetter_get_interface_version( const ofaIGetter *instance )
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIGetter instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -165,8 +165,8 @@ ofa_igetter_get_application( const ofaIGetter *instance )
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_application( instance ));
 	}
 
-	g_info( "%s: ofaIGetter instance %p does not provide 'get_application()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_application()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -196,8 +196,8 @@ ofa_igetter_get_hub( const ofaIGetter *instance )
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_hub( instance ));
 	}
 
-	g_info( "%s: ofaIGetter instance %p does not provide 'get_hub()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_hub()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -220,8 +220,8 @@ ofa_igetter_get_main_window( const ofaIGetter *instance )
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_main_window( instance ));
 	}
 
-	g_info( "%s: ofaIGetter instance %p does not provide 'get_main_window()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_main_window()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -247,7 +247,7 @@ ofa_igetter_get_theme_manager( const ofaIGetter *instance )
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_theme_manager( instance ));
 	}
 
-	g_info( "%s: ofaIGetter instance %p does not provide 'get_theme_manager()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_theme_manager()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

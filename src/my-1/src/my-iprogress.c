@@ -141,8 +141,8 @@ my_iprogress_get_interface_version( const myIProgress *instance )
 		return( MY_IPROGRESS_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIProgress's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -170,8 +170,8 @@ my_iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *w
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'start_work()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIProgress's %s implementation does not provide 'start_work()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -201,8 +201,8 @@ my_iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidge
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'start_progress()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIProgress's %s implementation does not provide 'start_progress()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -229,8 +229,8 @@ my_iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gul
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'pulse()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIProgress's %s implementation does not provide 'pulse()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -257,8 +257,8 @@ my_iprogress_set_row( myIProgress *instance, const void *worker, GtkWidget *widg
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'set_row()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIProgress's %s implementation does not provide 'set_row()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -287,8 +287,8 @@ my_iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widge
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'set_ok()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIProgress's %s implementation does not provide 'set_ok()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -314,6 +314,6 @@ my_iprogress_set_text( myIProgress *instance, const void *worker, const gchar *t
 		return;
 	}
 
-	g_info( "%s: myIProgress instance %p does not provide 'set_text()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIProgress's %s implementation does not provide 'set_text()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }

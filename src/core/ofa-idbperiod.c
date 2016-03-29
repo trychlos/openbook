@@ -160,8 +160,8 @@ ofa_idbperiod_get_interface_version( const ofaIDBPeriod *period )
 		return( OFA_IDBPERIOD_GET_INTERFACE( period )->get_interface_version( period ));
 	}
 
-	g_info( "%s: ofaIDBPeriod instance %p does not provide 'get_interface_version() method",
-			thisfn, ( void * ) period );
+	g_info( "%s: ofaIDBPeriod's %s implementation does not provide 'get_interface_version() method",
+			thisfn, G_OBJECT_TYPE_NAME( period ));
 	return( 1 );
 }
 
@@ -349,8 +349,8 @@ ofa_idbperiod_get_name( const ofaIDBPeriod *period )
 		return( OFA_IDBPERIOD_GET_INTERFACE( period )->get_name( period ));
 	}
 
-	g_info( "%s: ofaIDBPeriod instance %p does not provide 'get_name() method",
-			thisfn, ( void * ) period );
+	g_info( "%s: ofaIDBPeriod's %s implementation does not provide 'get_name() method",
+			thisfn, G_OBJECT_TYPE_NAME( period ));
 	return( NULL );
 }
 

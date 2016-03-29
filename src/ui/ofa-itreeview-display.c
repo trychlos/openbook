@@ -219,8 +219,8 @@ ofa_itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance
 		return( OFA_ITREEVIEW_DISPLAY_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaITreeviewDisplay instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaITreeviewDisplay's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 

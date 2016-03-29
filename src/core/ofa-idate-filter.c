@@ -375,7 +375,11 @@ ofa_idate_filter_add_widget( ofaIDateFilter *filter, GtkWidget *widget, gint whe
 
 	if( OFA_IDATE_FILTER_GET_INTERFACE( filter )->add_widget ){
 		OFA_IDATE_FILTER_GET_INTERFACE( filter )->add_widget( filter, widget, where );
+		return;
 	}
+
+	g_info( "%s: ofaIDateFilter's %s implementation does not provide 'add_widget()' method",
+			thisfn, G_OBJECT_TYPE_NAME( filter ));
 }
 
 static void

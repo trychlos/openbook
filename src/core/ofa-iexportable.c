@@ -202,8 +202,8 @@ ofa_iexportable_get_interface_version( const ofaIExportable *instance )
 		return( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIExportable instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -236,8 +236,8 @@ ofa_iexportable_get_label( const ofaIExportable *instance )
 		return( OFA_IEXPORTABLE_GET_INTERFACE( instance )->get_label( instance ));
 	}
 
-	g_info( "%s: ofaIExportable instance %p does not provide 'get_label()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIExportable's %s implementation does not provide 'get_label()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -292,6 +292,7 @@ iexportable_export_to_stream( ofaIExportable *exportable,
 									GOutputStream *stream, const ofaFileFormat *settings,
 									ofaHub *hub )
 {
+	static const gchar *thisfn = "ofa_iexportable_export_to_stream";
 	sIExportable *sdata;
 
 	sdata = get_iexportable_data( exportable );
@@ -303,6 +304,8 @@ iexportable_export_to_stream( ofaIExportable *exportable,
 		return( OFA_IEXPORTABLE_GET_INTERFACE( exportable )->export( exportable, settings, hub ));
 	}
 
+	g_info( "%s: ofaIExportable's %s implementation does not provide 'export()' method",
+			thisfn, G_OBJECT_TYPE_NAME( exportable ));
 	return( FALSE );
 }
 

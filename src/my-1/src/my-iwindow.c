@@ -174,8 +174,8 @@ my_iwindow_get_interface_version( const myIWindow *instance )
 		return( MY_IWINDOW_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: myIWindow instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIWindow's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -340,8 +340,8 @@ iwindow_init_application( myIWindow *instance )
 		MY_IWINDOW_GET_INTERFACE( instance )->init( instance );
 
 	} else {
-		g_info( "%s: myIWindow instance %p (%s) does not provide 'init()' method",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		g_info( "%s: myIWindow's %s implementation does not provide 'init()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 }
 
@@ -379,8 +379,8 @@ application_do_read_settings( myIWindow *instance, sIWindow *sdata )
 		MY_IWINDOW_GET_INTERFACE( instance )->read_settings( instance, sdata->settings, key_name );
 
 	} else {
-		g_info( "%s: myIWindow instance %p (%s) does not provide 'read_settings()' method",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		g_info( "%s: myIWindow's %s implementation does not provide 'read_settings()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 
 	g_free( key_name );
@@ -398,8 +398,8 @@ application_do_write_settings( myIWindow *instance, sIWindow *sdata )
 		MY_IWINDOW_GET_INTERFACE( instance )->write_settings( instance, sdata->settings, key_name );
 
 	} else {
-		g_info( "%s: myIWindow instance %p (%s) does not provide 'write_settings()' method",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		g_info( "%s: myIWindow's %s implementation does not provide 'write_settings()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 
 	g_free( key_name );
@@ -518,8 +518,8 @@ iwindow_quit_on_escape( const myIWindow *instance )
 		return( MY_IWINDOW_GET_INTERFACE( instance )->quit_on_escape( instance ));
 	}
 
-	g_info( "%s: myIWindow instance %p does not provide 'quit_on_escape()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIWindow's %s implementation does not provide 'quit_on_escape()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( TRUE );
 }
 
@@ -578,20 +578,16 @@ do_close( myIWindow *instance )
 static gchar *
 iwindow_get_identifier( const myIWindow *instance )
 {
-	gchar *identifier;
-
-	identifier = NULL;
+	static const gchar *thisfn = "my_iwindow_get_identifier";
 
 	if( MY_IWINDOW_GET_INTERFACE( instance )->get_identifier ){
-		identifier = MY_IWINDOW_GET_INTERFACE( instance )->get_identifier( instance );
+		return( MY_IWINDOW_GET_INTERFACE( instance )->get_identifier( instance ));
 	}
 
-	if( !my_strlen( identifier )){
-		g_free( identifier );
-		identifier = g_strdup( G_OBJECT_TYPE_NAME( instance ));
-	}
+	g_info( "%s: myIWindow's %s implementation does not provide 'get_identifier()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 
-	return( identifier );
+	return( g_strdup( G_OBJECT_TYPE_NAME( instance )));
 }
 
 /*
@@ -631,8 +627,8 @@ iwindow_set_default_size( myIWindow *instance )
 		gtk_window_resize( GTK_WINDOW( instance ), cx, cy );
 
 	} else {
-		g_info( "%s: myIWindow instance %p (%s) does not provide 'get_default_size()' method",
-				thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		g_info( "%s: myIWindow's %s implementation does not provide 'get_default_size()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 }
 

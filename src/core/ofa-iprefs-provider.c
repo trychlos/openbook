@@ -144,8 +144,8 @@ ofa_iprefs_provider_get_interface_version( const ofaIPrefsProvider *instance )
 		return( OFA_IPREFS_PROVIDER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIPrefsProvider instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIPrefsProvider's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -172,7 +172,7 @@ ofa_iprefs_provider_new_page( ofaIPrefsProvider *instance )
 		return( page );
 	}
 
-	g_info( "%s: ofaIPrefsProvider instance %p does not provide 'new_page()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIPrefsProvider's %s implementation does not provide 'new_page()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

@@ -132,18 +132,17 @@ GtkWidget *
 ofa_iabout_do_init( const ofaIAbout *instance )
 {
 	static const gchar *thisfn = "ofa_iabout_do_init";
-	GtkWidget *page;
 
 	g_return_val_if_fail( instance && OFA_IS_IABOUT( instance ), NULL );
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	page = NULL;
-
 	if( OFA_IABOUT_GET_INTERFACE( instance )->do_init ){
-		page = OFA_IABOUT_GET_INTERFACE( instance )->do_init( instance );
+		return( OFA_IABOUT_GET_INTERFACE( instance )->do_init( instance ));
 	}
 
-	return( page );
+	g_info( "%s: ofaIAbout's %s implementation does not provide 'do_init()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
 }

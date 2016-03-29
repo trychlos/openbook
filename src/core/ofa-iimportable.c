@@ -221,20 +221,23 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, FALSE );
 
-	ok = FALSE;
 	sdata->uri = g_strdup( uri );
 	sdata->settings = settings;
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to ){
 		ok = OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to(
 					importable, sdata->uri, sdata->settings, &sdata->ref, &sdata->count );
+
+		g_debug( "%s: importable=%p (%s), ok=%s, count=%u",
+				thisfn,
+				( void * ) importable, G_OBJECT_TYPE_NAME( importable ), ok ? "True":"False", sdata->count );
+
+		return( ok );
 	}
 
-	g_debug( "%s: importable=%p (%s), ok=%s, count=%u",
-			thisfn,
-			( void * ) importable, G_OBJECT_TYPE_NAME( importable ), ok ? "True":"False", sdata->count );
-
-	return( ok );
+	g_info( "%s: ofaIImportable's %s implementation does not provide 'is_willing_to()' method",
+			thisfn, G_OBJECT_TYPE_NAME( importable ));
+	return( FALSE );
 }
 
 /**
@@ -278,7 +281,6 @@ ofa_iimportable_import( ofaIImportable *importable,
 	g_debug( "%s: count=%d, lines=%p (%d), content=%p (%d)",
 			thisfn, count, ( void * ) lines, g_slist_length( lines ), ( void * ) content, g_slist_length( content ));
 
-	errors = 0;
 	sdata->caller = caller;
 	sdata->progress = 0;
 	sdata->insert = 0;
@@ -286,22 +288,26 @@ ofa_iimportable_import( ofaIImportable *importable,
 
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
 		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, content, settings, hub );
+
+		my_utils_stamp_set_now( &stamp_end );
+
+		sstart = my_utils_stamp_to_str( &stamp_start, MY_STAMP_YYMDHMS );
+		send = my_utils_stamp_to_str( &stamp_end, MY_STAMP_YYMDHMS );
+		count = g_slist_length( lines );
+		udelay = 1000000*(stamp_end.tv_sec-stamp_start.tv_sec)+stamp_end.tv_usec-stamp_start.tv_usec;
+
+		g_debug( "%s: stamp_start=%s, stamp_end=%s, count=%u: average is %'.5lf s",
+				thisfn, sstart, send, count, ( gdouble ) udelay / 1000000.0 / ( gdouble ) count );
+
+		g_free( sstart );
+		g_free( send );
+
+		return( errors );
 	}
 
-	my_utils_stamp_set_now( &stamp_end );
-
-	sstart = my_utils_stamp_to_str( &stamp_start, MY_STAMP_YYMDHMS );
-	send = my_utils_stamp_to_str( &stamp_end, MY_STAMP_YYMDHMS );
-	count = g_slist_length( lines );
-	udelay = 1000000*(stamp_end.tv_sec-stamp_start.tv_sec)+stamp_end.tv_usec-stamp_start.tv_usec;
-
-	g_debug( "%s: stamp_start=%s, stamp_end=%s, count=%u: average is %'.5lf s",
-			thisfn, sstart, send, count, ( gdouble ) udelay / 1000000.0 / ( gdouble ) count );
-
-	g_free( sstart );
-	g_free( send );
-
-	return( errors );
+	g_info( "%s: ofaIImportable's %s implementation does not provide 'import()' method",
+			thisfn, G_OBJECT_TYPE_NAME( importable ));
+	return( 0 );
 }
 
 /**
@@ -505,7 +511,6 @@ ofa_iimportable_import_uri( ofaIImportable *importable,
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, 0 );
 
-	errors = 0;
 	sdata->caller = caller;
 	sdata->progress = 0;
 	sdata->insert = 0;
@@ -513,9 +518,12 @@ ofa_iimportable_import_uri( ofaIImportable *importable,
 	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri ){
 		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import_uri(
 						importable, sdata->ref, sdata->uri, sdata->settings, hub, imported_id );
+		return( errors );
 	}
 
-	return( errors );
+	g_info( "%s: ofaIImportable's %s implementation does not provide 'import_uri()' method",
+			thisfn, G_OBJECT_TYPE_NAME( importable ));
+	return( 0 );
 }
 
 /**

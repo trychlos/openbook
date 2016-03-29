@@ -173,8 +173,8 @@ ofa_idbconnect_get_interface_version( const ofaIDBConnect *instance )
 		return( OFA_IDBCONNECT_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIDBConnect instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -254,8 +254,8 @@ ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const gchar *account, c
 		return( ok );
 	}
 
-	g_info( "%s: ofaIDBConnect instance %p does not provide 'open_with_editor()' method",
-			thisfn, ( void * ) connect );
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'open_with_editor()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
 }
 
@@ -307,8 +307,8 @@ ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, con
 		return( ok );
 	}
 
-	g_info( "%s: ofaIDBConnect instance %p does not provide 'open_with_meta()' method",
-			thisfn, ( void * ) connect );
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'open_with_meta()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
 }
 
@@ -500,7 +500,9 @@ ofa_idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean
 static gboolean
 idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error )
 {
+	static const gchar *thisfn = "ofa_idbconnect_query";
 	gboolean ok;
+	gchar *str;
 
 	ok = FALSE;
 
@@ -510,8 +512,18 @@ idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean dis
 			error_query( connect, query );
 		}
 
-	} else if( display_error ){
-		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, _( "ofaIDBConnect instance does not provide 'query()' method" ));
+	} else {
+		str = g_strdup_printf(
+					_( "ofaIDBConnect's %s implementation does not provide 'query()' method" ),
+					G_OBJECT_TYPE_NAME( connect ));
+
+		if( display_error ){
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+		} else {
+			g_info( "%s: %s", thisfn, str );
+		}
+
+		g_free( str );
 	}
 
 	return( ok );
@@ -539,6 +551,7 @@ ofa_idbconnect_query_ex( const ofaIDBConnect *connect, const gchar *query, GSLis
 {
 	static const gchar *thisfn = "ofa_idbconnect_query_ex";
 	gboolean ok;
+	gchar *str;
 
 	g_debug( "%s: connect=%p, query='%s', result=%p, display_error=%s",
 			thisfn, ( void * ) connect, query, ( void * ) result, display_error ? "True":"False" );
@@ -555,8 +568,18 @@ ofa_idbconnect_query_ex( const ofaIDBConnect *connect, const gchar *query, GSLis
 			error_query( connect, query );
 		}
 
-	} else if( display_error ){
-		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, _( "ofaIDBConnect instance does not provide 'query_ex()' method" ));
+	} else {
+		str = g_strdup_printf(
+					_( "ofaIDBConnect's %s implementation does not provide 'query_ex()' method" ),
+					G_OBJECT_TYPE_NAME( connect ));
+
+		if( display_error ){
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+		} else {
+			g_info( "%s: %s", thisfn, str );
+		}
+
+		g_free( str );
 	}
 
 	return( ok );
@@ -713,8 +736,8 @@ ofa_idbconnect_get_last_error( const ofaIDBConnect *connect )
 		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->get_last_error( connect ));
 	}
 
-	g_info( "%s: ofaIDBConnect instance %p does not provide 'get_last_error()' method",
-			thisfn, ( void * ) connect );
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'get_last_error()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( NULL );
 }
 
@@ -744,8 +767,8 @@ ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
 		return( ok );
 	}
 
-	g_info( "%s: ofaIDBConnect instance %p does not provide 'backup()' method",
-			thisfn, ( void * ) connect );
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'backup()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
 }
 
@@ -798,8 +821,8 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 		return( ok );
 	}
 
-	g_info( "%s: ofaIDBConnect instance %p does not provide 'restore()' method",
-			thisfn, ( void * ) connect );
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'restore()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
 }
 
@@ -837,8 +860,8 @@ ofa_idbconnect_archive_and_new( const ofaIDBConnect *connect,
 		return( OFA_IDBCONNECT_GET_INTERFACE( connect )->archive_and_new( connect, root_account, root_password, begin_next, end_next ));
 	}
 
-	g_info( "%s: ofaIDBConnect instance %p does not provide 'archive_and_new()' method",
-			thisfn, ( void * ) connect );
+	g_info( "%s: ofaIDBConnect's %s implementation does not provide 'archive_and_new()' method",
+			thisfn, G_OBJECT_TYPE_NAME( connect ));
 	return( FALSE );
 }
 
@@ -886,8 +909,8 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier( connect, meta );
 
 	} else {
-		g_info( "%s: ofaIDBConnect instance %p does not provide 'create_dossier()' method",
-				thisfn, ( void * ) connect );
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'create_dossier()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
 		return( FALSE );
 	}
 
@@ -977,8 +1000,8 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBPeri
 		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, period, adm_account, adm_password );
 
 	} else {
-		g_info( "%s: ofaIDBConnect instance %p does not provide 'grant_user()' method",
-				thisfn, ( void * ) connect );
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'grant_user()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
 		return( FALSE );
 	}
 

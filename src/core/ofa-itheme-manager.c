@@ -145,8 +145,8 @@ ofa_itheme_manager_get_interface_version( const ofaIThemeManager *instance )
 		return( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIThemeManager instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIThemeManager's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -171,8 +171,8 @@ ofa_itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *
 		return;
 	}
 
-	g_info( "%s: ofaIThemeManager instance %p does not provide 'define()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIThemeManager's %s implementation does not provide 'define()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -196,7 +196,7 @@ ofa_itheme_manager_activate( ofaIThemeManager *instance, GType type )
 		return( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->activate( instance, type ));
 	}
 
-	g_info( "%s: ofaIThemeManager instance %p does not provide 'activate()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIThemeManager's %s implementation does not provide 'activate()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

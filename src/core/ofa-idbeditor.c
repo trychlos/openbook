@@ -189,8 +189,8 @@ ofa_idbeditor_get_interface_version( const ofaIDBEditor *instance )
 		return( OFA_IDBEDITOR_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIDBEditor instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBEditor's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -261,8 +261,8 @@ ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBMeta *meta, const of
 		return;
 	}
 
-	g_info( "%s: ofaIDBEditor instance %p does not provide 'set_meta()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBEditor's %s implementation does not provide 'set_meta()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -285,8 +285,8 @@ ofa_idbeditor_get_size_group( const ofaIDBEditor *instance, guint column )
 		return( OFA_IDBEDITOR_GET_INTERFACE( instance )->get_size_group( instance, column ));
 	}
 
-	g_info( "%s: ofaIDBEditor instance %p does not provide 'get_size_group()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBEditor's %s implementation does not provide 'get_size_group()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -310,8 +310,8 @@ ofa_idbeditor_get_valid( const ofaIDBEditor *instance, gchar **message )
 		return( OFA_IDBEDITOR_GET_INTERFACE( instance )->get_valid( instance, message ));
 	}
 
-	g_info( "%s: ofaIDBEditor instance %p does not provide 'get_valid()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBEditor's %s implementation does not provide 'get_valid()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( FALSE );
 }
 

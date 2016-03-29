@@ -148,8 +148,8 @@ my_iident_get_interface_version( const myIIdent *instance )
 		return( MY_IIDENT_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: myIIdent instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIIdent's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -178,8 +178,8 @@ my_iident_get_canon_name( const myIIdent *instance, void *user_data )
 		return( MY_IIDENT_GET_INTERFACE( instance )->get_canon_name( instance, user_data ));
 	}
 
-	g_info( "%s: myIIdent instance %p does not provide 'get_canon_name()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIIdent's %s implementation does not provide 'get_canon_name()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -207,8 +207,8 @@ my_iident_get_display_name( const myIIdent *instance, void *user_data )
 		return( MY_IIDENT_GET_INTERFACE( instance )->get_display_name( instance, user_data ));
 	}
 
-	g_info( "%s: myIIdent instance %p does not provide 'get_display_name()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIIdent's %s implementation does not provide 'get_display_name()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 
 	if( MY_IIDENT_GET_INTERFACE( instance )->get_canon_name ){
 		return( my_iident_get_canon_name( instance, user_data ));
@@ -241,7 +241,7 @@ my_iident_get_version( const myIIdent *instance, void *user_data )
 		return( MY_IIDENT_GET_INTERFACE( instance )->get_version( instance, user_data ));
 	}
 
-	g_info( "%s: myIIdent instance %p does not provide 'get_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIIdent's %s implementation does not provide 'get_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

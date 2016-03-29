@@ -173,8 +173,8 @@ my_idialog_get_interface_version( const myIDialog *instance )
 		return( MY_IDIALOG_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: myIDialog instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIDialog's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -222,8 +222,8 @@ idialog_init_application( myIDialog *instance )
 		return;
 	}
 
-	g_info( "%s: myIDialog instance %p (%s) does not provide 'init()' method",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_info( "%s: myIDialog's %s implementation does not provide 'init()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 static void
@@ -427,8 +427,8 @@ do_quit_on_ok( myIDialog *instance )
 		return( MY_IDIALOG_GET_INTERFACE( instance )->quit_on_ok( instance ));
 	}
 
-	g_info( "%s: myIDialog instance %p (%s) does not provide 'quit_on_ok()' method",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_info( "%s: myIDialog's %s implementation does not provide 'quit_on_ok()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( TRUE );
 }
 
@@ -441,8 +441,8 @@ do_quit_on_code( myIDialog *instance, gint code )
 		return( MY_IDIALOG_GET_INTERFACE( instance )->quit_on_code( instance, code ));
 	}
 
-	g_info( "%s: myIDialog instance %p (%s) does not provide 'quit_on_code()' method",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_info( "%s: myIDialog's %s implementation does not provide 'quit_on_code()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( FALSE );
 }
 

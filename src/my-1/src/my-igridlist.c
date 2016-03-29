@@ -180,8 +180,8 @@ my_igridlist_get_interface_version( const myIGridList *instance )
 		return( MY_IGRIDLIST_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: myIGridList instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIGridList's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -413,8 +413,8 @@ my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid )
 		MY_IGRIDLIST_GET_INTERFACE( instance )->set_row( instance, grid, row );
 
 	} else {
-		g_info( "%s: myIGridList instance %p does not provide 'set_row()' method",
-				thisfn, ( void * ) instance );
+		g_info( "%s: myIGridList's %s implementation does not provide 'set_row()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 
 	data->rows_count = row;

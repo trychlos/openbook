@@ -218,8 +218,8 @@ ofa_iaccount_filter_get_interface_version( const ofaIAccountFilter *instance )
 		return( OFA_IACCOUNT_FILTER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIAccountFilter instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIAccountFilter's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 

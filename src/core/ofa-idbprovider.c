@@ -150,8 +150,8 @@ ofa_idbprovider_get_interface_version( const ofaIDBProvider *instance )
 		return( OFA_IDBPROVIDER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIDBProvider instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -178,8 +178,8 @@ ofa_idbprovider_new_meta( const ofaIDBProvider *instance )
 		return( meta );
 	}
 
-	g_info( "%s: ofaIDBProvider instance %p does not provide 'new_meta()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_meta()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -206,8 +206,8 @@ ofa_idbprovider_new_connect( const ofaIDBProvider *instance )
 		return( connect );
 	}
 
-	g_info( "%s: ofaIDBProvider instance %p does not provide 'new_connect()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_connect()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -245,8 +245,8 @@ ofa_idbprovider_new_editor( const ofaIDBProvider *instance, gboolean editable )
 		return( editor );
 	}
 
-	g_info( "%s: ofaIDBProvider instance %p does not provide 'get_editor()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'get_editor()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 

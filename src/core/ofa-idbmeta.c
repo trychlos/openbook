@@ -164,8 +164,8 @@ ofa_idbmeta_get_interface_version( const ofaIDBMeta *meta )
 		return( OFA_IDBMETA_GET_INTERFACE( meta )->get_interface_version( meta ));
 	}
 
-	g_info( "%s: ofaIDBMeta instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) meta );
+	g_info( "%s: ofaIDBMeta's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( meta ));
 	return( 1 );
 }
 
@@ -316,8 +316,8 @@ ofa_idbmeta_set_from_settings( ofaIDBMeta *meta, myISettings *settings, const gc
  		return;
  	}
 
- 	g_info( "%s: ofaIDBMeta instance %p does not provide 'set_from_settings()' method",
- 			thisfn, ( void * ) meta );
+ 	g_info( "%s: ofaIDBMeta's %s implementation does not provide 'set_from_settings()' method",
+ 			thisfn, G_OBJECT_TYPE_NAME( meta ));
  }
 
 /**
@@ -351,8 +351,8 @@ ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, myISe
 		return;
 	}
 
-	g_info( "%s: ofaIDBMeta instance %p does not provide 'set_from_editor()' method",
-			thisfn, ( void * ) meta );
+	g_info( "%s: ofaIDBMeta's %s implementation does not provide 'set_from_editor()' method",
+			thisfn, G_OBJECT_TYPE_NAME( meta ));
 }
 
 /**
@@ -462,8 +462,8 @@ ofa_idbmeta_update_period( ofaIDBMeta *meta,
 		return;
 	}
 
-	g_info( "%s: ofaIDBMeta instance %p does not provide 'update_period()' method",
-			thisfn, ( void * ) meta );
+	g_info( "%s: ofaIDBMeta's %s implementation does not provide 'update_period()' method",
+			thisfn, G_OBJECT_TYPE_NAME( meta ));
 }
 
 /**
@@ -477,6 +477,7 @@ ofa_idbmeta_update_period( ofaIDBMeta *meta,
 void
 ofa_idbmeta_remove_period( ofaIDBMeta *meta, ofaIDBPeriod *period )
 {
+	static const gchar *thisfn = "ofa_idbmeta_remove_period";
 	sIDBMeta *data;
 
 	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
@@ -490,6 +491,9 @@ ofa_idbmeta_remove_period( ofaIDBMeta *meta, ofaIDBPeriod *period )
 		data->periods = g_list_remove( data->periods, period );
 		if( OFA_IDBMETA_GET_INTERFACE( meta )->remove_period ){
 			OFA_IDBMETA_GET_INTERFACE( meta )->remove_period( meta, period );
+		} else {
+			g_info( "%s: ofaIDBMeta's %s implementation does not provide 'remove_period()' method",
+					thisfn, G_OBJECT_TYPE_NAME( meta ));
 		}
 	}
 }

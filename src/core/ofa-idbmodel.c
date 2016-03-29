@@ -247,8 +247,8 @@ ofa_idbmodel_get_interface_version( const ofaIDBModel *instance )
 		return( OFA_IDBMODEL_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIDBModel instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBModel's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -336,8 +336,8 @@ ofa_idbmodel_init_hub_signaling_system( ofaHub *hub )
 		if( OFA_IDBMODEL_GET_INTERFACE( instance )->connect_handlers ){
 			OFA_IDBMODEL_GET_INTERFACE( instance )->connect_handlers( instance, hub );
 		} else {
-			g_info( "%s: ofaIDBModel instance %p does not provide 'connect_handlers()' method",
-					thisfn, ( void * ) instance );
+			g_info( "%s: ofaIDBModel's %s implementation does not provide 'connect_handlers()' method",
+					thisfn, G_OBJECT_TYPE_NAME( instance ));
 		}
 	}
 
@@ -370,8 +370,8 @@ ofa_idbmodel_get_is_deletable( const ofaHub *hub, const ofoBase *object )
 		if( OFA_IDBMODEL_GET_INTERFACE( instance )->get_is_deletable ){
 			ok &= OFA_IDBMODEL_GET_INTERFACE( instance )->get_is_deletable( instance, hub, object );
 		} else {
-			g_info( "%s: ofaIDBModel instance %p does not provide 'get_is_deletable()' method",
-					thisfn, ( void * ) instance );
+			g_info( "%s: ofaIDBModel's %s implementation does not provide 'get_is_deletable()' method",
+					thisfn, G_OBJECT_TYPE_NAME( instance ));
 		}
 	}
 
@@ -443,8 +443,8 @@ ofa_idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConne
 		return( OFA_IDBMODEL_GET_INTERFACE( instance )->get_current_version( instance, connect ));
 	}
 
-	g_info( "%s: ofaIDBModel instance %p does not provide 'get_current_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBModel's %s implementation does not provide 'get_current_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( G_MAXUINT );
 }
 
@@ -467,19 +467,23 @@ ofa_idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect 
 		return( OFA_IDBMODEL_GET_INTERFACE( instance )->get_last_version( instance, connect ));
 	}
 
-	g_info( "%s: ofaIDBModel instance %p does not provide 'get_last_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBModel's %s implementation does not provide 'get_last_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( G_MAXUINT );
 }
 
 static gboolean
 idbmodel_get_needs_update( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
+	static const gchar *thisfn = "ofa_idbmodel_get_needs_update";
 	guint cur_version, last_version;
 
 	if( OFA_IDBMODEL_GET_INTERFACE( instance )->needs_update ){
 		return( OFA_IDBMODEL_GET_INTERFACE( instance )->needs_update( instance, connect ));
 	}
+
+	g_info( "%s: ofaIDBModel's %s implementation does not provide 'needs_update()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 
 	cur_version = ofa_idbmodel_get_current_version( instance, connect );
 	last_version = ofa_idbmodel_get_last_version( instance, connect );
@@ -496,8 +500,8 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 		return( OFA_IDBMODEL_GET_INTERFACE( instance )->ddl_update( instance, hub, window ));
 	}
 
-	g_info( "%s: ofaIDBModel instance %p does not provide 'ddl_update()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIDBModel's %s implementation does not provide 'ddl_update()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( TRUE );
 }
 

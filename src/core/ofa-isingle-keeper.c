@@ -167,8 +167,8 @@ ofa_isingle_keeper_get_interface_version( const ofaISingleKeeper *instance )
 		return( OFA_ISINGLE_KEEPER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaISingleKeeper instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaISingleKeeper's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 

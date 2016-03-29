@@ -161,12 +161,16 @@ ofa_iconcil_get_interface_last_version( void )
 guint
 ofa_iconcil_get_interface_version( const ofaIConcil *instance )
 {
+	static const gchar *thisfn = "ofa_iconcil_get_interface_version";
+
 	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), 0 );
 
 	if( OFA_ICONCIL_GET_INTERFACE( instance )->get_interface_version ){
 		return( OFA_ICONCIL_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
+	g_info( "%s: ofaIConcil's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 

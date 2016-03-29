@@ -148,8 +148,8 @@ ofa_iexeclose_close_get_interface_version( const ofaIExeCloseClose *instance )
 		return( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIExeCloseClose instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIExeCloseClose's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -177,8 +177,8 @@ ofa_iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowtype )
 		return( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->add_row( instance, rowtype ));
 	}
 
-	g_info( "%s: ofaIExeCloseClose instance %p does not provide 'add_row()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIExeCloseClose's %s implementation does not provide 'add_row()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -209,8 +209,8 @@ ofa_iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidg
 		return( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->do_task( instance, rowtype, box, hub ));
 	}
 
-	g_info( "%s: ofaIExeCloseClose instance %p does not provide 'do_task()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIExeCloseClose's %s implementation does not provide 'do_task()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	/* returns %TRUE to let the process continue */
 	return( TRUE );
 }

@@ -144,8 +144,8 @@ my_isettings_get_interface_version( const myISettings *instance )
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -171,8 +171,8 @@ my_isettings_get_keyfile( const myISettings *instance )
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_keyfile( instance ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_keyfile()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_keyfile()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -196,8 +196,8 @@ my_isettings_get_filename( const myISettings *instance )
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_filename( instance ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_filename()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_filename()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -221,8 +221,8 @@ my_isettings_get_groups( const myISettings *instance )
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_groups( instance ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_groups()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_groups()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -248,8 +248,8 @@ my_isettings_remove_group( myISettings *instance, const gchar *group )
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'remove_group()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'remove_group()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -274,8 +274,8 @@ my_isettings_get_keys( const myISettings *instance, const gchar *group )
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_keys( instance, group ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_keys()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_keys()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -364,8 +364,8 @@ my_isettings_remove_key( myISettings *instance, const gchar *group, const gchar 
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'remove_key()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'remove_key()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -391,8 +391,8 @@ my_isettings_get_boolean( const myISettings *instance, const gchar *group, const
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_boolean( instance, group, key ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_boolean()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_boolean()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( FALSE );
 }
 
@@ -422,8 +422,8 @@ my_isettings_set_boolean( myISettings *instance, const gchar *group, const gchar
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'set_boolean()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'set_boolean()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -449,8 +449,8 @@ my_isettings_get_uint( const myISettings *instance, const gchar *group, const gc
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_uint( instance, group, key ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_uint()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_uint()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 0 );
 }
 
@@ -480,8 +480,8 @@ my_isettings_set_uint( myISettings *instance, const gchar *group, const gchar *k
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'set_uint()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'set_uint()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -508,8 +508,8 @@ my_isettings_get_uint_list( const myISettings *instance, const gchar *group, con
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_uint_list( instance, group, key ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_uint_list()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_uint_list()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -541,8 +541,8 @@ my_isettings_set_uint_list( myISettings *instance, const gchar *group, const gch
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'set_uint_list()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'set_uint_list()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -595,8 +595,8 @@ my_isettings_get_string( const myISettings *instance, const gchar *group, const 
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_string( instance, group, key ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_string()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_string()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -626,8 +626,8 @@ my_isettings_set_string( myISettings *instance, const gchar *group, const gchar 
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'set_string()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'set_string()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -654,8 +654,8 @@ my_isettings_get_string_list( const myISettings *instance, const gchar *group, c
 		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_string_list( instance, group, key ));
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'get_string_list()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'get_string_list()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
@@ -686,8 +686,8 @@ my_isettings_set_string_list( myISettings *instance, const gchar *group, const g
 		return;
 	}
 
-	g_info( "%s: myISettings instance %p does not provide 'set_string_list()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myISettings's %s implementation does not provide 'set_string_list()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**

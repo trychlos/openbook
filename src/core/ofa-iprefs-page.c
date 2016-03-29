@@ -158,8 +158,8 @@ ofa_iprefs_page_get_interface_version( const ofaIPrefsPage *instance )
 		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIPrefsPage instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIPrefsPage's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -233,8 +233,8 @@ ofa_iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gcha
 		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->init( instance, settings, label, msgerr ));
 	}
 
-	g_info( "%s: ofaIPrefsPage instance %p does not provide 'init()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIPrefsPage's %s implementation does not provide 'init()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( TRUE );
 }
 
@@ -259,8 +259,8 @@ ofa_iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **msgerr )
 		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->get_valid( instance, msgerr ));
 	}
 
-	g_info( "%s: ofaIPrefsPage instance %p does not provide 'get_valid()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIPrefsPage's %s implementation does not provide 'get_valid()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( TRUE );
 }
 
@@ -288,8 +288,8 @@ ofa_iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr )
 		return( OFA_IPREFS_PAGE_GET_INTERFACE( instance )->apply( instance, msgerr ));
 	}
 
-	g_info( "%s: ofaIPrefsPage instance %p does not provide 'apply()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIPrefsPage's %s implementation does not provide 'apply()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( TRUE );
 }
 

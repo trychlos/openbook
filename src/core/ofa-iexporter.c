@@ -144,8 +144,8 @@ ofa_iexporter_get_interface_version( const ofaIExporter *instance )
 		return( OFA_IEXPORTER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIExporter instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIExporter's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -173,8 +173,8 @@ ofa_iexporter_get_exportables( ofaIExporter *instance )
 		return( OFA_IEXPORTER_GET_INTERFACE( instance )->get_exportables( instance ));
 	}
 
-	g_info( "%s: ofaIExporter instance %p does not provide 'get_exportables()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: ofaIExporter's %s implementation does not provide 'get_exportables()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 

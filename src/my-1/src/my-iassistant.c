@@ -191,8 +191,8 @@ my_iassistant_get_interface_version( const myIAssistant *instance )
 		return( MY_IASSISTANT_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: myIAssistant instance %p does not provide 'get_interface_version()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIAssistant's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
@@ -413,8 +413,8 @@ is_willing_to_quit( myIAssistant *instance, guint keyval )
 		return( MY_IASSISTANT_GET_INTERFACE( instance )->is_willing_to_quit( instance, keyval ));
 	}
 
-	g_info( "%s: myIAssistant instance %p does not provide 'is_willing_to_quit()' method",
-			thisfn, ( void * ) instance );
+	g_info( "%s: myIAssistant's %s implementation does not provide 'is_willing_to_quit()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( TRUE );
 }
 
