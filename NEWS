@@ -36,6 +36,7 @@
    - Import a default accounts chart on dossier creation (todo #1051).
    - Export a dynamic list of exportable objects (todo #519).
    - VATForm: make it exportable (todo #940).
+   - VATForm: make it importable (todo #939).
 
  Bug fixes:
 

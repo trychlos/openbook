@@ -39,6 +39,7 @@
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -172,16 +173,21 @@ static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
 static guint       form_count_for_account( const ofaIDBConnect *connect, const gchar *account );
 static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user );
 static void        tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp );
+static GList      *form_detail_new( ofoTVAForm *form, guint level, const gchar *code, const gchar *label, gboolean has_base, const gchar *base, gboolean has_amount, const gchar *amount );
+static void        form_detail_add( ofoTVAForm *form, GList *fields );
+static GList      *form_boolean_new( ofoTVAForm *form, const gchar *label );
+static void        form_boolean_add( ofoTVAForm *form, GList *fields );
 static gboolean    form_do_insert( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect );
-static gboolean    form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect );
-static gboolean    form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_insert_details_ex( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details );
 static gboolean    form_insert_bools( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang, GList *details );
 static gboolean    form_do_update( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean    form_update_main( ofoTVAForm *form, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean    form_do_delete( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_do_delete_by_mnemo( const ofaIDBConnect *connect, const gchar *mnemo, const gchar *table );
+static gboolean    form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect );
+static gboolean    form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gint        form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo );
 static gint        tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b );
 static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
@@ -191,11 +197,18 @@ static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
+static void        iimportable_iface_init( ofaIImportableInterface *iface );
+static guint       iimportable_get_interface_version( const ofaIImportable *instance );
+static gboolean    iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
+static ofoTVAForm *form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors );
+static GList      *form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo );
+static GList      *form_import_csv_rule( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
 static void
 details_list_free_detail( GList *fields )
@@ -741,6 +754,9 @@ tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp )
 	ofo_base_setter( TVA_FORM, form, string, TFO_UPD_STAMP, upd_stamp );
 }
 
+/**
+ * ofo_tva_form_detail_add:
+ */
 void
 ofo_tva_form_detail_add( ofoTVAForm *form,
 							guint level,
@@ -748,13 +764,23 @@ ofo_tva_form_detail_add( ofoTVAForm *form,
 							gboolean has_base, const gchar *base,
 							gboolean has_amount, const gchar *amount )
 {
-	ofoTVAFormPrivate *priv;
 	GList *fields;
 
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
 
-	priv = ofo_tva_form_get_instance_private( form );
+	fields = form_detail_new( form, level, code, label, has_base, base, has_amount, amount );
+	form_detail_add( form, fields );
+}
+
+static GList *
+form_detail_new( ofoTVAForm *form,
+							guint level,
+							const gchar *code, const gchar *label,
+							gboolean has_base, const gchar *base,
+							gboolean has_amount, const gchar *amount )
+{
+	GList *fields;
 
 	fields = ofa_box_init_fields_list( st_detail_defs );
 	ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_form_get_mnemo( form ));
@@ -766,6 +792,16 @@ ofo_tva_form_detail_add( ofoTVAForm *form,
 	ofa_box_set_string( fields, TFO_DET_BASE, base );
 	ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
 	ofa_box_set_string( fields, TFO_DET_AMOUNT, amount );
+
+	return( fields );
+}
+
+static void
+form_detail_add( ofoTVAForm *form, GList *fields )
+{
+	ofoTVAFormPrivate *priv;
+
+	priv = ofo_tva_form_get_instance_private( form );
 
 	priv->details = g_list_append( priv->details, fields );
 }
@@ -965,18 +1001,34 @@ ofo_tva_form_detail_get_amount( const ofoTVAForm *form, guint idx )
 void
 ofo_tva_form_boolean_add( ofoTVAForm *form, const gchar *label )
 {
-	ofoTVAFormPrivate *priv;
 	GList *fields;
 
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
 
-	priv = ofo_tva_form_get_instance_private( form );
+	fields = form_boolean_new( form, label );
+	form_boolean_add( form, fields );
+}
+
+static GList *
+form_boolean_new( ofoTVAForm *form, const gchar *label )
+{
+	GList *fields;
 
 	fields = ofa_box_init_fields_list( st_boolean_defs );
 	ofa_box_set_string( fields, TFO_MNEMO, ofo_tva_form_get_mnemo( form ));
 	ofa_box_set_int( fields, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
 	ofa_box_set_string( fields, TFO_BOOL_LABEL, label );
+
+	return( fields );
+}
+
+static void
+form_boolean_add( ofoTVAForm *form, GList *fields )
+{
+	ofoTVAFormPrivate *priv;
+
+	priv = ofo_tva_form_get_instance_private( form );
 
 	priv->bools = g_list_append( priv->bools, fields );
 }
@@ -1116,40 +1168,6 @@ form_insert_main( ofoTVAForm *form, const ofaIDBConnect *connect )
 	g_free( label );
 	g_free( stamp_str );
 	g_free( userid );
-
-	return( ok );
-}
-
-static gboolean
-form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect )
-{
-	gchar *query;
-	gboolean ok;
-
-	query = g_strdup_printf(
-			"DELETE FROM TVA_T_FORMS_DET WHERE TFO_MNEMO='%s'",
-			ofo_tva_form_get_mnemo( form ));
-
-	ok = ofa_idbconnect_query( connect, query, TRUE );
-
-	g_free( query );
-
-	return( ok );
-}
-
-static gboolean
-form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect )
-{
-	gchar *query;
-	gboolean ok;
-
-	query = g_strdup_printf(
-			"DELETE FROM TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s'",
-			ofo_tva_form_get_mnemo( form ));
-
-	ok = ofa_idbconnect_query( connect, query, TRUE );
-
-	g_free( query );
 
 	return( ok );
 }
@@ -1412,23 +1430,43 @@ ofo_tva_form_delete( ofoTVAForm *tva_form )
 static gboolean
 form_do_delete( ofoTVAForm *form, const ofaIDBConnect *connect )
 {
+	gboolean ok;
+	const gchar *mnemo;
+
+	mnemo = ofo_tva_form_get_mnemo( form );
+
+	ok = form_do_delete_by_mnemo( connect, mnemo, "TVA_T_FORMS" ) &&
+			form_do_delete_by_mnemo( connect, mnemo, "TVA_T_FORMS_DET" ) &&
+			form_do_delete_by_mnemo( connect, mnemo, "TVA_T_FORMS_BOOL" );
+
+	return( ok );
+}
+
+static gboolean
+form_do_delete_by_mnemo( const ofaIDBConnect *connect, const gchar *mnemo, const gchar *table )
+{
 	gchar *query;
 	gboolean ok;
 
-	query = g_strdup_printf(
-			"DELETE FROM TVA_T_FORMS"
-			"	WHERE TFO_MNEMO='%s'",
-					ofo_tva_form_get_mnemo( form ));
+	query = g_strdup_printf( "DELETE FROM %s WHERE TFO_MNEMO='%s'", table, mnemo );
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 
 	g_free( query );
 
-	if( ok ){
-		ok = form_delete_details( form, connect ) && form_delete_bools( form, connect );
-	}
-
 	return( ok );
+}
+
+static gboolean
+form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect )
+{
+	return( form_do_delete_by_mnemo( connect, ofo_tva_form_get_mnemo( form ), "TVA_T_FORMS_DET" ));
+}
+
+static gboolean
+form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect )
+{
+	return( form_do_delete_by_mnemo( connect, ofo_tva_form_get_mnemo( form ), "TVA_T_FORMS_BOOL" ));
 }
 
 static gint
@@ -1638,4 +1676,303 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	}
 
 	return( TRUE );
+}
+
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+/*
+ * ofo_tva_form_import_csv:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - 1:
+ * - form mnemo
+ * - label
+ * - has correspondence
+ * - notes (opt)
+ *
+ * - 2:
+ * - form mnemo
+ * - row number (placeholder, not imported, but recomputed)
+ * - bool label
+ *
+ * - 3:
+ * - form mnemo
+ * - row number (placeholder, not imported, but recomputed)
+ * - level
+ * - code
+ * - label
+ * - has base
+ * - base rule
+ * - has amount
+ * - amount rule
+ *
+ * It is not required that the input csv files be sorted by mnemo. We
+ * may have all 'main' records, then all 'boolean' and 'detail' records
+ * (but main record must be defined before any boolean or detail one
+ *  for a given mnemo).
+ *
+ * Replace the existing datas in the table with the provided ones of
+ * same identifier, but do not remove other existing vat forms.
+ *
+ * Returns: 0 if no error has occurred, >0 if an error has been detected
+ * during import phase (input file read), <0 if an error has occured
+ * during insert phase.
+ */
+static gint
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
+{
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
+	ofoTVAForm *form;
+	GList *dataset, *it;
+	guint errors, line;
+	gchar *msg, *mnemo;
+	gint type;
+	GList *bool, *rule;
+	const ofaIDBConnect *connect;
+
+	line = 0;
+	errors = 0;
+	dataset = NULL;
+
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		line += 1;
+		fields = ( GSList * ) itl->data;
+		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
+
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		type = cstr ? atoi( cstr ) : 0;
+		switch( type ){
+			case 1:
+				form = form_import_csv_form( importable, fields, settings, line, &errors );
+				if( form ){
+					dataset = g_list_prepend( dataset, form );
+				}
+				break;
+			case 2:
+				mnemo = NULL;
+				bool = form_import_csv_bool( importable, fields, settings, line, &errors, &mnemo );
+				if( bool ){
+					form = form_find_by_mnemo( dataset, mnemo );
+					if( form ){
+						ofa_box_set_int( bool, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
+						form_boolean_add( form, bool );
+					}
+					g_free( mnemo );
+				}
+				break;
+			case 3:
+				mnemo = NULL;
+				rule = form_import_csv_rule( importable, fields, settings, line, &errors, &mnemo );
+				if( rule ){
+					form = form_find_by_mnemo( dataset, mnemo );
+					if( form ){
+						ofa_box_set_int( rule, TFO_BOOL_ROW, 1+ofo_tva_form_detail_get_count( form ));
+						form_detail_add( form, rule );
+					}
+					g_free( mnemo );
+				}
+				break;
+			default:
+				msg = g_strdup_printf( _( "invalid line type: %s" ), cstr );
+				ofa_iimportable_set_message(
+						importable, line, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				errors += 1;
+				continue;
+		}
+	}
+
+	if( !errors ){
+		connect = ofa_hub_get_connect( hub );
+
+		for( it=dataset ; it ; it=it->next ){
+			form = OFO_TVA_FORM( it->data );
+			if( !form_do_delete( form, connect ) || !form_do_insert( form, connect )){
+				errors -= 1;
+			}
+			ofa_iimportable_increment_progress(
+					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_tva_form_detail_get_count( form ));
+		}
+
+		g_list_free_full( dataset,( GDestroyNotify ) g_object_unref );
+		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_TVA_FORM );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
+	}
+
+	return( errors );
+}
+
+static ofoTVAForm *
+form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors )
+{
+	ofoTVAForm *form;
+	gchar *str;
+	GSList *itf;
+	gchar *splitted;
+
+	form = ofo_tva_form_new();
+	itf = fields ? fields->next : NULL;
+
+	/* mnemo */
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty form mnemonic" ));
+		*errors += 1;
+		g_object_unref( form );
+		g_free( str );
+		return( NULL );
+	}
+	ofo_tva_form_set_mnemo( form, str );
+	g_free( str );
+
+	/* label */
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty form label" ));
+		*errors += 1;
+		g_object_unref( form );
+		g_free( str );
+		return( NULL );
+	}
+	ofo_tva_form_set_label( form, str );
+	g_free( str );
+
+	/* has correspondence */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofo_tva_form_set_has_correspondence( form, my_utils_boolean_from_str( str ));
+	g_free( str );
+
+	/* notes
+	 * we are tolerant on the last field... */
+	str = ofa_iimportable_get_string( &itf, settings );
+	splitted = my_utils_import_multi_lines( str );
+	ofo_tva_form_set_notes( form, splitted );
+	g_free( splitted );
+	g_free( str );
+
+	return( form );
+}
+
+static GList *
+form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
+{
+	GList *boolean;
+	gchar *str;
+	GSList *itf;
+
+	boolean = ofa_box_init_fields_list( st_boolean_defs );
+	itf = fields ? fields->next : NULL;
+
+	/* mnemo */
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty form mnemonic" ));
+		*errors += 1;
+		ofa_box_free_fields_list( boolean );
+		g_free( str );
+		return( NULL );
+	}
+	*mnemo = g_strdup( str );
+	ofa_box_set_string( boolean, TFO_MNEMO, str );
+	g_free( str );
+
+	/* row number (placeholder) */
+	itf = itf ? itf->next : NULL;
+
+	/* label */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( boolean, TFO_BOOL_LABEL, str );
+	g_free( str );
+
+	return( boolean );
+}
+
+static GList *
+form_import_csv_rule( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
+{
+	GList *detail;
+	gchar *str;
+	GSList *itf;
+
+	detail = ofa_box_init_fields_list( st_detail_defs );
+	itf = fields ? fields->next : NULL;
+
+	/* mnemo */
+	str = ofa_iimportable_get_string( &itf, settings );
+	if( !my_strlen( str )){
+		ofa_iimportable_set_message(
+				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
+		*errors += 1;
+		ofa_box_free_fields_list( detail );
+		g_free( str );
+		return( NULL );
+	}
+	*mnemo = g_strdup( str );
+	ofa_box_set_string( detail, TFO_MNEMO, str );
+	g_free( str );
+
+	/* row number (placeholder) */
+	itf = itf ? itf->next : NULL;
+
+	/* level */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, TFO_DET_LEVEL, str );
+	g_free( str );
+
+	/* code */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, TFO_DET_CODE, str );
+	g_free( str );
+
+	/* label */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, TFO_DET_LABEL, str );
+	g_free( str );
+
+	/* has base */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, TFO_DET_HAS_BASE, str );
+	g_free( str );
+
+	/* base */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, TFO_DET_BASE, str );
+	g_free( str );
+
+	/* has amount */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, TFO_DET_HAS_AMOUNT, str );
+	g_free( str );
+
+	/* amount */
+	str = ofa_iimportable_get_string( &itf, settings );
+	ofa_box_set_string( detail, TFO_DET_AMOUNT, str );
+	g_free( str );
+
+	return( detail );
 }
