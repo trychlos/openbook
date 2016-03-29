@@ -300,7 +300,7 @@ ofa_settings_set_string_list( ofaSettingsTarget target, const gchar *group, cons
 
 /**
  * ofa_settings_dossier_get_string:
- * @dname: the name of the dossier
+ * @meta: the #ofaIDBMeta meta informations about the dossier.
  * @key: the searched key
  *
  * Returns the key string for the dossier, as a newly allocated string
@@ -330,7 +330,7 @@ ofa_settings_dossier_get_string( const ofaIDBMeta *meta, const gchar *key )
 
 /**
  * ofa_settings_dossier_set_string:
- * @dname: the name of the dossier
+ * @meta: the #ofaIDBMeta meta informations about the dossier.
  * @key: the searched key
  * @value: the value to be set
  *
@@ -356,7 +356,7 @@ ofa_settings_dossier_set_string( const ofaIDBMeta *meta, const gchar *key, const
 
 /**
  * ofa_settings_dossier_get_string_list:
- * @dname: the name of the dossier
+ * @meta: the #ofaIDBMeta meta informations about the dossier.
  * @key: the searched key
  *
  * Returns the key string list for the dossier.
@@ -385,7 +385,7 @@ ofa_settings_dossier_get_string_list( const ofaIDBMeta *meta, const gchar *key )
 
 /**
  * ofa_settings_dossier_set_string_list:
- * @dname: the name of the dossier
+ * @meta: the #ofaIDBMeta meta informations about the dossier.
  * @key: the searched key
  * @value: the value to be set
  *

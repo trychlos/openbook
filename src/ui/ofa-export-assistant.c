@@ -37,6 +37,7 @@
 
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbmeta.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iregister.h"
@@ -68,6 +69,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter       *getter;
+	ofaIDBMeta       *meta;
 
 	/* p0: introduction
 	 */
@@ -143,6 +145,7 @@ enum {
 /* data set against each data type radio button */
 #define DATA_TYPE_INDEX                   "ofa-data-type"
 
+static const gchar *st_export_folder    = "ofa-LastExportFolder";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-export-assistant.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
@@ -251,6 +254,7 @@ export_dispose( GObject *instance )
 
 		/* unref object members here */
 
+		g_clear_object( &priv->meta );
 		g_list_free_full( priv->p1_exportables, ( GDestroyNotify ) g_object_unref );
 		g_clear_object( &priv->p2_export_settings );
 	}
@@ -342,14 +346,24 @@ static void
 iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_export_assistant_iwindow_init";
+	ofaExportAssistantPrivate *priv;
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
+	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
+
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
+	priv->meta = ofa_idbconnect_get_meta( connect );
 }
 
 /*
- * settings are: class_name;export_uri;
+ * user settings are: class_name;
+ * dossier_settings are: last_export_folder_uri
  */
 static void
 iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
@@ -369,14 +383,10 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 			priv->p1_selected_class = g_strdup( cstr );
 		}
 
-		it = it ? it->next : NULL;
-		cstr = it ? it->data : NULL;
-		if( my_strlen( cstr )){
-			priv->p3_furi = g_strdup( cstr );
-		}
-
 		my_isettings_free_string_list( settings, slist );
 	}
+
+	priv->p3_furi = ofa_settings_dossier_get_string( priv->meta, st_export_folder );
 }
 
 static void
@@ -391,14 +401,17 @@ set_settings( ofaExportAssistant *self )
 	settings = my_iwindow_get_settings( MY_IWINDOW( self ));
 	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
 
-	str = g_strdup_printf( "%s;%s;",
-			priv->p1_selected_class ? priv->p1_selected_class : "",
-			priv->p3_furi ? priv->p3_furi : "" );
+	str = g_strdup_printf( "%s;",
+			priv->p1_selected_class ? priv->p1_selected_class : "" );
 
 	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
 
 	g_free( str );
 	g_free( keyname );
+
+	if( my_strlen( priv->p3_last_folder )){
+		ofa_settings_dossier_set_string( priv->meta, st_export_folder, priv->p3_last_folder );
+	}
 }
 
 /*
@@ -753,9 +766,13 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	/* build a default output filename from the last used folder
 	 * plus the default basename for this data type class */
 	if( my_strlen( priv->p3_furi )){
-		dirname = g_path_get_dirname( priv->p3_furi );
+		dirname = g_strdup( priv->p3_furi );
 	} else {
 		dirname = g_strdup( ofa_settings_user_get_string( SETTINGS_EXPORT_FOLDER ));
+		if( !my_strlen( dirname )){
+			g_free( dirname );
+			dirname = g_strdup( "." );
+		}
 	}
 	basename = g_strdup_printf( "%s.csv", priv->p1_selected_class );
 
