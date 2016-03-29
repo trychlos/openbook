@@ -124,9 +124,23 @@ typedef struct {
 	 * This is also used on non-modal windows management, in order to
 	 * make sure there is only one instance for a given 'identifier'.
 	 *
+	 * Defaults to class name.
+	 *
 	 * Since: version 1
 	 */
 	gchar *  ( *get_identifier )       ( const myIWindow *instance );
+
+	/**
+	 * get_key_prefix:
+	 * @instance: the #myIWindow instance.
+	 *
+	 * Returns: The prefix of the keys in settings file.
+	 *
+	 * Defaults to identifier.
+	 *
+	 * Since: version 1
+	 */
+	gchar *  ( *get_key_prefix )       ( const myIWindow *instance );
 
 	/**
 	 * init:

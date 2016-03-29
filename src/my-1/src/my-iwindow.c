@@ -44,7 +44,6 @@ static GList   *st_live_list            = NULL;		/* list of IWindow instances */
 typedef struct {
 	GtkWindow   *parent;
 	myISettings *settings;
-	gchar       *key_prefix;
 	gboolean     initialized;
 	gboolean     hide_on_close;
 }
@@ -599,15 +598,16 @@ iwindow_get_identifier( const myIWindow *instance )
 static gchar *
 iwindow_get_key_prefix( const myIWindow *instance )
 {
-	sIWindow *sdata;
+	static const gchar *thisfn = "my_iwindow_get_key_prefix";
 
-	sdata = get_iwindow_data( instance );
-
-	if( !my_strlen( sdata->key_prefix )){
-		sdata->key_prefix = iwindow_get_identifier( instance );
+	if( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix ){
+		return( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix( instance ));
 	}
 
-	return( g_strdup( sdata->key_prefix ));
+	g_info( "%s: myIWindow's %s implementation does not provide 'get_key_prefix()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
+	return( iwindow_get_identifier( instance ));
 }
 
 /*
@@ -683,7 +683,6 @@ get_iwindow_data( const myIWindow *instance )
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_iwindow_finalized, sdata );
 
 		sdata->parent = NULL;
-		sdata->key_prefix = NULL;
 		sdata->initialized = FALSE;
 		sdata->hide_on_close = FALSE;
 	}
@@ -699,7 +698,6 @@ on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow )
 	g_debug( "%s: sdata=%p, finalized_iwindow=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_iwindow );
 
-	g_free( sdata->key_prefix );
 	g_free( sdata );
 
 	st_live_list = g_list_remove( st_live_list, finalized_iwindow );
