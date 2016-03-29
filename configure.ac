@@ -152,6 +152,7 @@ AC_CONFIG_FILES([
 	src/import-bourso-pdf/Makefile
 	src/import-lcl/Makefile
 	src/import-lcl-pdf/Makefile
+	src/importers/Makefile
 	src/my-1/Makefile
 	src/my-1/my/Makefile
 	src/my-1/src/Makefile

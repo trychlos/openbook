@@ -15085,7 +15085,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
-ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile misc/t_action/Makefile misc/t_amounts/Makefile misc/t_delete/Makefile misc/t_dynbook/Makefile misc/t_nonmodal/Makefile misc/t_spawn/Makefile misc/t_weakref/Makefile po/Makefile.in src/Makefile src/api/Makefile src/core/Makefile src/css/Makefile src/import-bourso/Makefile src/import-bourso-pdf/Makefile src/import-lcl/Makefile src/import-lcl-pdf/Makefile src/my-1/Makefile src/my-1/my/Makefile src/my-1/src/Makefile src/mysql/Makefile src/postgre/Makefile src/recurrent/Makefile src/tva/Makefile src/ui/Makefile"
+ac_config_files="$ac_config_files Makefile data/Makefile data/desktop/Makefile data/icons/Makefile data/init_utf8_comma_pipe_fr/Makefile docs/Makefile m4/Makefile maintainer/Makefile misc/Makefile misc/t_action/Makefile misc/t_amounts/Makefile misc/t_delete/Makefile misc/t_dynbook/Makefile misc/t_nonmodal/Makefile misc/t_spawn/Makefile misc/t_weakref/Makefile po/Makefile.in src/Makefile src/api/Makefile src/core/Makefile src/css/Makefile src/import-bourso/Makefile src/import-bourso-pdf/Makefile src/import-lcl/Makefile src/import-lcl-pdf/Makefile src/importers/Makefile src/my-1/Makefile src/my-1/my/Makefile src/my-1/src/Makefile src/mysql/Makefile src/postgre/Makefile src/recurrent/Makefile src/tva/Makefile src/ui/Makefile"
 
 
 cat >confcache <<\_ACEOF
@@ -16175,6 +16175,7 @@ do
     "src/import-bourso-pdf/Makefile") CONFIG_FILES="$CONFIG_FILES src/import-bourso-pdf/Makefile" ;;
     "src/import-lcl/Makefile") CONFIG_FILES="$CONFIG_FILES src/import-lcl/Makefile" ;;
     "src/import-lcl-pdf/Makefile") CONFIG_FILES="$CONFIG_FILES src/import-lcl-pdf/Makefile" ;;
+    "src/importers/Makefile") CONFIG_FILES="$CONFIG_FILES src/importers/Makefile" ;;
     "src/my-1/Makefile") CONFIG_FILES="$CONFIG_FILES src/my-1/Makefile" ;;
     "src/my-1/my/Makefile") CONFIG_FILES="$CONFIG_FILES src/my-1/my/Makefile" ;;
     "src/my-1/src/Makefile") CONFIG_FILES="$CONFIG_FILES src/my-1/src/Makefile" ;;
