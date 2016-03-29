@@ -34,6 +34,9 @@
  * The #ofaIImporter interface is called by the application in order to
  * try to import objects from an external stream.
  *
+ * The provider (the implementation) should try to transform the
+ * specified uri file content to a list of ofoBase-derived objects.
+ *
  * The #ofaIImporter lets the importable object communicate with the
  * importer code. Two signals are defined:
  * - "progress" to visually render the progress of the import (resp.
@@ -43,6 +46,8 @@
  */
 
 #include <glib-object.h>
+
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
@@ -58,7 +63,7 @@ typedef struct _ofaIImporterParms               ofaIImporterParms;
  * ofaIImporterInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
- * @import_from_uri:       [should] imports a file.
+ * @get_label:             [should] returns a label for the instance.
  *
  * This defines the interface that an #ofaIImporter should implement.
  */
@@ -78,16 +83,49 @@ typedef struct {
 	 * the application considers that the plugin only implements
 	 * the version 1 of the ofaIImporter interface.
 	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface the @instance
+	 * supports.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )( const ofaIImporter *instance );
+	guint         ( *get_interface_version )( const ofaIImporter *instance );
+
+	/**
+	 * get_label:
+	 * @instance: the #ofaIImporter provider.
+	 *
+	 * Return value: the label to be associated with the @instance.
+	 *
+	 * Since: version 1.
+	 */
+	gchar *       ( *get_label )            ( const ofaIImporter *instance );
+
+	/**
+	 * get_accepted_contents:
+	 * @instance: the #ofaIImporter provider.
+	 *
+	 * Return value: a list of accepted mimetypes content.
+	 *
+	 * Since: version 1.
+	 */
+	const GList * ( *get_accepted_contents )( const ofaIImporter *instance );
 }
 	ofaIImporterInterface;
 
-GType ofa_iimporter_get_type       ( void );
+GType        ofa_iimporter_get_type                  ( void );
+
+guint        ofa_iimporter_get_interface_last_version( void );
+
+guint        ofa_iimporter_get_interface_version     ( const ofaIImporter *instance );
+
+gchar       *ofa_iimporter_get_label                 ( const ofaIImporter *instance );
+
+GList       *ofa_iimporter_get_for_content           ( ofaHub *hub,
+															const gchar *content );
+
+const GList *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance );
 
 G_END_DECLS
 

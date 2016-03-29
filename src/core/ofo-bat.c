@@ -86,10 +86,14 @@ static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( const ofaICollectionable *instance );
 static GList      *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static void        iimportable_iface_init( ofaIImportableInterface *iface );
+static guint       iimportable_get_interface_version( const ofaIImportable *instance );
+static gchar      *iimportable_get_label( const ofaIImportable *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
 static void
 bat_finalize( GObject *instance )
@@ -1430,4 +1434,30 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 	}
 
 	return( g_list_reverse( dataset ));
+}
+
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->get_label = iimportable_get_label;
+}
+
+static guint
+iimportable_get_interface_version( const ofaIImportable *instance )
+{
+	return( 1 );
+}
+
+static gchar *
+iimportable_get_label( const ofaIImportable *instance )
+{
+	return( g_strdup( _( "_Bank account transaction list" )));
 }

@@ -61,6 +61,7 @@ Press Continue.</property>
                 <property name="margin_top">4</property>
                 <property name="margin_bottom">4</property>
                 <property name="hexpand">False</property>
+                <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="p2-furi">
@@ -82,6 +83,29 @@ Press Continue.</property>
                   <packing>
                     <property name="left_attach">0</property>
                     <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label212">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Guessed content :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p2-content">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">1</property>
                   </packing>
                 </child>
               </object>
@@ -107,7 +131,7 @@ Press Continue.</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">in</property>
             <child>
-              <object class="GtkGrid" id="grid22">
+              <object class="GtkGrid" id="grid22-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_left">12</property>
@@ -116,132 +140,7 @@ Press Continue.</property>
                 <property name="margin_bottom">4</property>
                 <property name="hexpand">False</property>
                 <child>
-                  <object class="GtkRadioButton" id="p2-rate">
-                    <property name="label" translatable="yes">Reference: _rates</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p2-releve</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">5</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p2-entries">
-                    <property name="label" translatable="yes">_Entries</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p2-releve</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">6</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p2-currency">
-                    <property name="label" translatable="yes">Reference: _currencies</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p2-releve</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p2-releve">
-                    <property name="label" translatable="yes">_Bank account transaction list</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="active">True</property>
-                    <property name="draw_indicator">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">7</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p2-journals">
-                    <property name="label" translatable="yes">Reference: le_dgers</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p2-releve</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p2-class">
-                    <property name="label" translatable="yes">Reference : account c_lasses</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p2-releve</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p2-account">
-                    <property name="label" translatable="yes">Reference: _accounts chart</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p2-releve</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkRadioButton" id="p2-model">
-                    <property name="label" translatable="yes">Reference: _operation templates</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">False</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">0</property>
-                    <property name="draw_indicator">True</property>
-                    <property name="group">p2-releve</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">4</property>
-                  </packing>
+                  <placeholder/>
                 </child>
               </object>
             </child>
@@ -331,11 +230,34 @@ Press Continue.</property>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
+                    <property name="top_attach">2</property>
                   </packing>
                 </child>
                 <child>
                   <object class="GtkLabel" id="p3-datatype">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="label313">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Guessed content :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p3-content">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>

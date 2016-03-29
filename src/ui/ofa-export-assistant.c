@@ -77,7 +77,7 @@ typedef struct {
 	/* p1: select data type to be exported
 	 */
 	GList            *p1_exportables;
-	GSList           *p1_group;
+	GtkWidget        *p1_parent;
 	gint              p1_row;
 	GtkWidget        *p1_selected_btn;
 	gchar            *p1_selected_class;
@@ -466,7 +466,7 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	ofaHub *hub;
 	GList *it;
 	gchar *label;
-	GtkWidget *parent, *btn, *first;
+	GtkWidget *btn, *first;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -480,8 +480,8 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p1_row = 0;
 	first = NULL;
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-parent" );
-	g_return_if_fail( parent && GTK_IS_GRID( parent ));
+	priv->p1_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-parent" );
+	g_return_if_fail( priv->p1_parent && GTK_IS_GRID( priv->p1_parent ));
 
 	for( it=priv->p1_exportables ; it ; it=it->next ){
 		label = ofa_iexportable_get_label( OFA_IEXPORTABLE( it->data ));
@@ -494,14 +494,10 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 			}
 			g_object_set_data( G_OBJECT( btn ), DATA_TYPE_INDEX, it->data );
 			g_signal_connect( btn, "toggled", G_CALLBACK( p1_on_type_toggled ), self );
-			gtk_grid_attach( GTK_GRID( parent ), btn, 0, priv->p1_row++, 1, 1 );
+			gtk_grid_attach( GTK_GRID( priv->p1_parent ), btn, 0, priv->p1_row++, 1, 1 );
 		}
 		g_free( label );
 	}
-
-	priv->p1_group = gtk_radio_button_get_group( GTK_RADIO_BUTTON( first ));
-	g_debug( "%s: group=%p, count=%d",
-			thisfn, ( void * ) priv->p1_group, g_slist_length( priv->p1_group ));
 }
 
 static void
@@ -510,7 +506,7 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_export_assistant_p1_do_display";
 	ofaExportAssistantPrivate *priv;
 	gint i;
-	GtkWidget *parent, *btn;
+	GtkWidget *btn;
 	gboolean is_complete;
 	ofaIExportable *object;
 
@@ -519,12 +515,9 @@ p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p1-parent" );
-	g_return_if_fail( parent && GTK_IS_GRID( parent ));
-
 	if( my_strlen( priv->p1_selected_class )){
 		for( i=0 ; i<priv->p1_row ; ++i ){
-			btn = gtk_grid_get_child_at( GTK_GRID( parent ), 0, i );
+			btn = gtk_grid_get_child_at( GTK_GRID( priv->p1_parent ), 0, i );
 			g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 			object = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
 			if( !my_collate( G_OBJECT_TYPE_NAME( object ), priv->p1_selected_class )){
@@ -551,19 +544,19 @@ static gboolean
 p1_is_complete( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
-	GSList *it;
+	gint i;
+	GtkWidget *btn;
 	ofaIExportable *object;
 	const gchar *label;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	g_return_val_if_fail( priv->p1_group, FALSE );
-
 	/* which is the currently active button ? */
-	for( it=priv->p1_group ; it ; it=it->next ){
-		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( it->data ))){
-			object = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( it->data ), DATA_TYPE_INDEX ));
-			priv->p1_selected_btn = GTK_WIDGET( it->data );
+	for( i=0 ; i<priv->p1_row ; ++i ){
+		btn = gtk_grid_get_child_at( GTK_GRID( priv->p1_parent ), 0, i );
+		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+			object = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
+			priv->p1_selected_btn = btn;
 			g_free( priv->p1_selected_class );
 			priv->p1_selected_class = g_strdup( G_OBJECT_TYPE_NAME( object ));
 			g_free( priv->p1_selected_label );

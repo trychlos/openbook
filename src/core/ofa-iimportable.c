@@ -154,7 +154,6 @@ interface_base_finalize( ofaIImportableInterface *klass )
 
 /**
  * ofa_iimportable_get_interface_last_version:
- * @instance: this #ofaIImportable instance.
  *
  * Returns: the last version number of this interface.
  */
@@ -162,6 +161,51 @@ guint
 ofa_iimportable_get_interface_last_version( void )
 {
 	return( IIMPORTABLE_LAST_VERSION );
+}
+
+/**
+ * ofa_iimportable_get_interface_version:
+ * @instance: this #ofaIImportable instance.
+ *
+ * Returns: the version number implemented.
+ */
+guint
+ofa_iimportable_get_interface_version( const ofaIImportable *importable )
+{
+	static const gchar *thisfn = "ofa_iimportable_get_interface_version";
+
+	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
+
+	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->get_interface_version ){
+		return( OFA_IIMPORTABLE_GET_INTERFACE( importable )->get_interface_version( importable ));
+	}
+
+	g_info( "%s: ofaIImportable's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( importable ));
+	return( 1 );
+}
+
+/**
+ * ofa_iimportable_get_label:
+ * @instance: this #ofaIImportable instance.
+ *
+ * Returns: the label to be associated to the @instance's class, as a
+ * newly allocated string which should be g_free() by the caller.
+ */
+gchar *
+ofa_iimportable_get_label( const ofaIImportable *importable )
+{
+	static const gchar *thisfn = "ofa_iimportable_get_label";
+
+	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), NULL );
+
+	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->get_label ){
+		return( OFA_IIMPORTABLE_GET_INTERFACE( importable )->get_label( importable ));
+	}
+
+	g_info( "%s: ofaIImportable's %s implementation does not provide 'get_label()' method",
+			thisfn, G_OBJECT_TYPE_NAME( importable ));
+	return( NULL );
 }
 
 /**

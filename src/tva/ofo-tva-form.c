@@ -199,6 +199,7 @@ static gchar      *iexportable_get_label( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( const ofaIImportable *instance );
+static gchar      *iimportable_get_label( const ofaIImportable *instance );
 static gboolean    iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
 static ofoTVAForm *form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors );
 static GList      *form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo );
@@ -1689,6 +1690,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = iimportable_get_interface_version;
+	iface->get_label = iimportable_get_label;
 	iface->import = iimportable_import;
 }
 
@@ -1696,6 +1698,12 @@ static guint
 iimportable_get_interface_version( const ofaIImportable *instance )
 {
 	return( 1 );
+}
+
+static gchar *
+iimportable_get_label( const ofaIImportable *instance )
+{
+	return( g_strdup( _( "_VAT forms" )));
 }
 
 /*

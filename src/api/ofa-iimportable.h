@@ -67,6 +67,7 @@ typedef struct _ofaIImportable                    ofaIImportable;
  * ofaIImportableInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
+ * @get_label:             [should] returns the label of the class.
  * @import:                [should] imports a dataset.
  * @is_willing_to:         [should] is this instance willing to import the uri ?
  * @import uri:            [should] tries to import a file.
@@ -91,6 +92,14 @@ typedef struct {
 	 * Defaults to 1.
 	 */
 	guint    ( *get_interface_version )( const ofaIImportable *instance );
+
+	/**
+	 * get_label:
+	 * @instance: the #ofaIImportable provider.
+	 *
+	 * Returns: the label to be associated to the class.
+	 */
+	gchar *  ( *get_label )            ( const ofaIImportable *instance );
 
 	/**
 	 * import:
@@ -173,6 +182,10 @@ guint           ofa_iimportable_get_interface_last_version( void );
 
 /* an importer-oriented API
  */
+guint           ofa_iimportable_get_interface_version     ( const ofaIImportable *importable );
+
+gchar          *ofa_iimportable_get_label                 ( const ofaIImportable *importable );
+
 ofaIImportable *ofa_iimportable_find_willing_to   ( ofaHub *hub,
 															const gchar *uri,
 															const ofaFileFormat *settings );

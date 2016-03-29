@@ -26,8 +26,10 @@
 #include <config.h>
 #endif
 
-#include <string.h>
+#include "my/my-utils.h"
 
+#include "api/ofa-extender-collection.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-iimporter.h"
 
 /* signals defined here
@@ -41,15 +43,15 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-#define IIMPORTER_LAST_VERSION          1
-#define IIMPORTER_DATA                  "ofa-iimporter-data"
+#define IIMPORTER_LAST_VERSION            1
+
+#define IIMPORTER_DATA                   "ofa-iimporter-data"
 
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType register_type( void );
 static void  interface_base_init( ofaIImporterInterface *klass );
 static void  interface_base_finalize( ofaIImporterInterface *klass );
-static guint iimporter_get_interface_version( const ofaIImporter *instance );
 
 /**
  * ofa_iimporter_get_type:
@@ -109,8 +111,6 @@ interface_base_init( ofaIImporterInterface *klass )
 	if( !st_initializations ){
 
 		g_debug( "%s: klass%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
-
-		klass->get_interface_version = iimporter_get_interface_version;
 
 		/**
 		 * ofaIImporter::progress:
@@ -205,10 +205,121 @@ interface_base_finalize( ofaIImporterInterface *klass )
 	}
 }
 
-static guint
-iimporter_get_interface_version( const ofaIImporter *instance )
+/**
+ * ofa_iimporter_get_interface_last_version:
+ *
+ * Returns: the last version number of this interface.
+ */
+guint
+ofa_iimporter_get_interface_last_version( void )
 {
+	return( IIMPORTER_LAST_VERSION );
+}
+
+/**
+ * ofa_iimporter_get_interface_version:
+ * @instance: this #ofaIImporter instance.
+ *
+ * Returns: the version number implemented.
+ */
+guint
+ofa_iimporter_get_interface_version( const ofaIImporter *instance )
+{
+	static const gchar *thisfn = "ofa_iimporter_get_interface_version";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), 0 );
+
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_interface_version( instance ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_interface_version()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
+}
+
+/**
+ * ofa_iimporter_get_label:
+ * @instance: this #ofaIImporter instance.
+ *
+ * Returns: the label to be associated with the @instance importer,
+ * as a newly allocated string which should be g_free() by the caller.
+ */
+gchar *
+ofa_iimporter_get_label( const ofaIImporter *instance )
+{
+	static const gchar *thisfn = "ofa_iimporter_get_label";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_label ){
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_label( instance ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_label()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
+ * ofa_iimporter_get_for_content:
+ * @hub: the #ofaHub object of the application.
+ * @content: the (guessed) mimetype of the imported file.
+ *
+ * Returns: a list of #ofaIImporter instances which are willing to deal
+ * with the specified mimetype content.
+ *
+ * The returned list should be #g_list_free_full( L, ( GDestroyNotify ) g_object_unref )
+ * by the caller.
+ */
+GList *
+ofa_iimporter_get_for_content( ofaHub *hub, const gchar *content )
+{
+	GList *selected;
+	GList *importers, *it;
+	const GList *contents, *ic;
+	ofaExtenderCollection *extenders;
+
+	selected = NULL;
+	extenders = ofa_hub_get_extender_collection( hub );
+	importers = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IIMPORTER );
+
+	for( it=importers ; it ; it=it->next ){
+		contents = ofa_iimporter_get_accepted_contents( OFA_IIMPORTER( it->data ));
+		for( ic=contents ; ic ; ic=ic->next ){
+			if( !my_collate(( const gchar * ) ic->data, content )){
+				selected = g_list_prepend( selected, g_object_ref( it->data ));
+				break;
+			}
+		}
+	}
+
+	ofa_extender_collection_free_types( importers );
+
+	return( selected );
+}
+
+/**
+ * ofa_iimporter_get_accepted_contents:
+ * @instance: this #ofaIImporter instance.
+ *
+ * Returns: the list of mimetypes the @instance importer is able to
+ * deal with.
+ */
+const GList *
+ofa_iimporter_get_accepted_contents( const ofaIImporter *instance )
+{
+	static const gchar *thisfn = "ofa_iimporter_get_accepted_contents";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents ){
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents( instance ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_accepted_contents()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
 }
 
 #if 0
