@@ -558,6 +558,12 @@ init_counters_page( ofaDossierProperties *self )
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-ope" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	str = ofa_counter_to_str( ofo_dossier_get_last_ope( priv->dossier ));
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-settlement" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	str = ofa_counter_to_str( ofo_dossier_get_last_settlement( priv->dossier ));

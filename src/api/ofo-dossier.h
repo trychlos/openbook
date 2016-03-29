@@ -108,6 +108,7 @@ const gchar         *ofo_dossier_get_status                ( const ofoDossier *d
 ofxCounter           ofo_dossier_get_last_bat              ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_last_batline          ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_last_entry            ( const ofoDossier *dossier );
+ofxCounter           ofo_dossier_get_last_ope              ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_last_settlement       ( const ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_last_concil           ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_last_closing_date     ( const ofoDossier *dossier );

@@ -66,6 +66,7 @@ enum {
 	DOS_LAST_BAT,
 	DOS_LAST_BATLINE,
 	DOS_LAST_ENTRY,
+	DOS_LAST_OPE,
 	DOS_LAST_SETTLEMENT,
 	DOS_LAST_CONCIL,
 	DOS_CURRENT,
@@ -161,6 +162,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( DOS_LAST_ENTRY ),
+				OFA_TYPE_COUNTER,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_LAST_OPE ),
 				OFA_TYPE_COUNTER,
 				FALSE,
 				FALSE },
@@ -700,6 +705,17 @@ ofxCounter
 ofo_dossier_get_last_entry( const ofoDossier *dossier )
 {
 	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_ENTRY );
+}
+
+/**
+ * ofo_dossier_get_last_ope:
+ *
+ * Returns: the last operation number allocated in the exercice.
+ */
+ofxCounter
+ofo_dossier_get_last_ope( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_LAST_OPE );
 }
 
 /**
