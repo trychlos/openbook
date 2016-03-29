@@ -255,7 +255,7 @@ static gboolean
 do_backup( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	gchar *fname, *folder, *uri;
+	gchar *folder, *uri;
 	gboolean ok;
 
 	priv = ofa_backup_get_instance_private( self );
@@ -265,15 +265,13 @@ do_backup( ofaBackup *self )
 	/*folder = gtk_file_chooser_get_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ));*/
 
 	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->dialog ));
-	fname = g_filename_from_uri( uri, NULL, NULL );
-	folder = g_path_get_dirname( fname );
+	folder = g_path_get_dirname( uri );
 
 	ofa_settings_dossier_set_string( priv->meta, st_backup_folder, folder );
 
 	ok = ofa_idbconnect_backup( priv->connect, uri );
 
 	g_free( folder );
-	g_free( fname );
 	g_free( uri );
 
 	return( ok );
