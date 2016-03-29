@@ -154,6 +154,8 @@ static gboolean dbmodel_v27( ofaMysqlDBModel *model, gint version );
 static gulong   count_v27( ofaMysqlDBModel *model );
 static gboolean dbmodel_v28( ofaMysqlDBModel *model, gint version );
 static gulong   count_v28( ofaMysqlDBModel *model );
+static gboolean dbmodel_v29( ofaMysqlDBModel *model, gint version );
+static gulong   count_v29( ofaMysqlDBModel *model );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -165,6 +167,7 @@ static sMigration st_migrates[] = {
 		{ 26, dbmodel_v26, count_v26 },
 		{ 27, dbmodel_v27, count_v27 },
 		{ 28, dbmodel_v28, count_v28 },
+		{ 29, dbmodel_v29, count_v29 },
 		{ 0 }
 };
 
@@ -1728,4 +1731,50 @@ static gulong
 count_v28( ofaMysqlDBModel *model )
 {
 	return( 17 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v29:
+ *
+ * - Add operation counter
+ * - Extend rules to VX(256)
+ * - Remove old OFA_T_OPE_TEMPLATE_DET columns
+ */
+static gboolean
+dbmodel_v29( ofaMysqlDBModel *model, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v29";
+
+	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+
+	if( !exec_query( model,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD    COLUMN DOS_LAST_OPE      BIGINT  DEFAULT 0                     COMMENT 'Last used operation number'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( model,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
+			"	DROP   COLUMN OTE_DET_ACCOUNT_LOCKED2,"
+			"	DROP   COLUMN OTE_DET_LABEL_LOCKED2,"
+			"	DROP   COLUMN OTE_DET_DEBIT_LOCKED2,"
+			"	DROP   COLUMN OTE_DET_CREDIT_LOCKED2,"
+			"	MODIFY COLUMN OTE_DET_COMMENT   VARCHAR(256)                          COMMENT 'Detail line comment',"
+			"	MODIFY COLUMN OTE_DET_ACCOUNT   VARCHAR(256)                          COMMENT 'Account identifier computing rule',"
+			"	MODIFY COLUMN OTE_DET_DEBIT     VARCHAR(256)                          COMMENT 'Debit amount computing rule',"
+			"	MODIFY COLUMN OTE_DET_CREDIT    VARCHAR(256)                          COMMENT 'Credit amount computing rule'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v29( ofaMysqlDBModel *model )
+{
+	return( 2 );
 }

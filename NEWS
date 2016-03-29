@@ -31,6 +31,8 @@
   
  New features and improvements:
 
+   - DDL Core v 29
+   - DDL VAT v 5
    - Import a default accounts chart on dossier creation (todo #1051).
    - Export a dynamic list of exportable objects (todo #519).
    - VATForm: make it exportable (todo #940).

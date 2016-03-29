@@ -142,9 +142,9 @@ typedef struct {
 
 /* data max length */
 #define OTE_MNEMO_MAX_LENGTH                 64
-#define OTE_DET_COMMENT_MAX_LENGTH          128
+#define OTE_DET_COMMENT_MAX_LENGTH          256
 #define OTE_DET_LABEL_MAX_LENGTH            256
-#define OTE_DET_AMOUNT_MAX_LENGTH           128
+#define OTE_DET_AMOUNT_MAX_LENGTH           256
 
 GType           ofo_ope_template_get_type                 ( void ) G_GNUC_CONST;
 

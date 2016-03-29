@@ -67,6 +67,8 @@ static gboolean dbmodel_to_v3( sUpdate *update_data, guint version );
 static gulong   count_v3( sUpdate *update_data );
 static gboolean dbmodel_to_v4( sUpdate *update_data, guint version );
 static gulong   count_v4( sUpdate *update_data );
+static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
+static gulong   count_v5( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -80,6 +82,7 @@ static sMigration st_migrates[] = {
 		{ 2, dbmodel_to_v2, count_v2 },
 		{ 3, dbmodel_to_v3, count_v3 },
 		{ 4, dbmodel_to_v4, count_v4 },
+		{ 5, dbmodel_to_v5, count_v5 },
 		{ 0 }
 };
 
@@ -533,6 +536,69 @@ dbmodel_to_v4( sUpdate *update_data, guint version )
 
 static gulong
 count_v4( sUpdate *update_data )
+{
+	return( 6 );
+}
+
+/*
+ * resize rules
+ */
+static gboolean
+dbmodel_to_v5( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_to_v5";
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_FORMS "
+			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Form identifier',"
+			"	MODIFY COLUMN TFO_UPD_USER        VARCHAR(64)                           COMMENT 'User responsible of last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_FORMS_BOOL "
+			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_FORMS_DET "
+			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
+			"	MODIFY COLUMN TFO_DET_CODE        VARCHAR(64)                           COMMENT 'Detail line code',"
+			"	MODIFY COLUMN TFO_DET_BASE        VARCHAR(256)                          COMMENT 'Detail base computing rule',"
+			"	MODIFY COLUMN TFO_DET_AMOUNT      VARCHAR(256)                          COMMENT 'Detail amount computing rule'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS "
+			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
+			"	MODIFY COLUMN TFO_UPD_USER        VARCHAR(64)                           COMMENT 'User responsible of last update'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS_BOOL "
+			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS_DET "
+			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
+			"	MODIFY COLUMN TFO_DET_CODE        VARCHAR(64)                           COMMENT 'Detail line code',"
+			"	MODIFY COLUMN TFO_DET_BASE_RULE   VARCHAR(256)                          COMMENT 'Detail base computing rule',"
+			"	MODIFY COLUMN TFO_DET_AMOUNT_RULE VARCHAR(256)                          COMMENT 'Detail amount computing rule'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v5( sUpdate *update_data )
 {
 	return( 6 );
 }

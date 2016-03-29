@@ -83,8 +83,8 @@ typedef struct {
 #define DET_SPIN_MAX_WIDTH              2
 #define DET_CODE_MAX_LENGTH             64
 #define DET_LABEL_MAX_LENGTH            256
-#define DET_BASE_MAX_LENGTH             128
-#define DET_AMOUNT_MAX_LENGTH           128
+#define DET_BASE_MAX_LENGTH             256
+#define DET_AMOUNT_MAX_LENGTH           256
 #define BOOL_LABEL_MAX_LENGTH           256
 
 /* the columns in the dynamic grid
