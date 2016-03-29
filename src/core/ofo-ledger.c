@@ -194,7 +194,7 @@ static void       icollectionable_iface_init( ofaICollectionableInterface *iface
 static guint      icollectionable_get_interface_version( const ofaICollectionable *instance );
 static GList     *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
-static guint      iexportable_get_interface_version( const ofaIExportable *instance );
+static gchar     *iexportable_get_label( const ofaIExportable *instance );
 static gboolean   iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
 static gchar     *export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency );
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
@@ -1716,14 +1716,14 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iexportable_get_interface_version;
+	iface->get_label = iexportable_get_label;
 	iface->export = iexportable_export;
 }
 
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
+static gchar *
+iexportable_get_label( const ofaIExportable *instance )
 {
-	return( 1 );
+	return( g_strdup( _( "Reference : _ledgers" )));
 }
 
 /*
@@ -1737,7 +1737,7 @@ static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
 	ofoLedgerPrivate *priv;
-	GList *dataset, *it, *bal;
+	GList *dataset, *it, *ic, *bal;
 	GSList *lines;
 	gchar *str;
 	gboolean ok, with_headers;
@@ -1796,12 +1796,13 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		ledger = OFO_LEDGER( it->data );
 		priv = ofo_ledger_get_instance_private( ledger );
 
-		for( bal=priv->balances ; bal ; bal=bal->next ){
+		for( ic=priv->balances ; ic ; ic=ic->next ){
+			bal = ( GList * ) ic->data;
 			cur_code = ofa_box_get_string( bal, LED_CURRENCY );
 			g_return_val_if_fail( cur_code && my_strlen( cur_code ), FALSE );
 			currency = ofo_currency_get_by_code( hub, cur_code );
 			g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
-			str = ofa_box_csv_get_line_ex( bal->data, settings, ( CSVExportFunc ) export_cb, currency );
+			str = ofa_box_csv_get_line_ex( bal, settings, ( CSVExportFunc ) export_cb, currency );
 			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
 			g_free( str );
 			ok = ofa_iexportable_export_lines( exportable, lines );
@@ -1817,7 +1818,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 /*
  * a callback to adjust the decimal digits count to the precision of the
- * currency of the account of the entry
+ * currency
  */
 static gchar *
 export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency )

@@ -542,16 +542,16 @@ ofa_hub_register_types( ofaHub *hub )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->ofofakes = NULL;
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_DOSSIER, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CLASS, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CURRENCY, NULL ));
 	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
 	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_BAT, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CLASS, NULL ));
 	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CONCIL, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CURRENCY, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_DOSSIER, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_ENTRY, NULL ));
 	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_LEDGER, NULL ));
 	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
 	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_RATE, NULL ));
+	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_ENTRY, NULL ));
 }
 
 /**

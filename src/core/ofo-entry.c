@@ -220,7 +220,7 @@ static gboolean     entry_do_update( ofoEntry *entry, ofaHub *hub );
 static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *connect );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
-static guint        iexportable_get_interface_version( const ofaIExportable *instance );
+static gchar       *iexportable_get_label( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
 static gchar       *export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
@@ -2700,14 +2700,14 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iexportable_get_interface_version;
+	iface->get_label = iexportable_get_label;
 	iface->export = iexportable_export;
 }
 
-static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
+static gchar *
+iexportable_get_label( const ofaIExportable *instance )
 {
-	return( 1 );
+	return( g_strdup( _( "_Entries" )));
 }
 
 /*

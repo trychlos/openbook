@@ -23,7 +23,7 @@ Press Continue.</property>
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkGrid" id="grid1">
+          <object class="GtkGrid" id="p1-parent">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">12</property>
@@ -31,132 +31,28 @@ Press Continue.</property>
             <property name="margin_top">4</property>
             <property name="margin_bottom">4</property>
             <child>
-              <object class="GtkRadioButton" id="p1-currency">
-                <property name="label" translatable="yes">Reference : _currencies</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="draw_indicator">True</property>
-                <property name="group">p1-dossier</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">2</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkRadioButton" id="p1-ledger">
-                <property name="label" translatable="yes">Reference : _ledgers</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="draw_indicator">True</property>
-                <property name="group">p1-dossier</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">4</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkRadioButton" id="p1-rate">
-                <property name="label" translatable="yes">Reference : _rates</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="draw_indicator">True</property>
-                <property name="group">p1-dossier</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">6</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkRadioButton" id="p1-dossier">
-                <property name="label" translatable="yes">_Dossier</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="active">True</property>
-                <property name="draw_indicator">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkRadioButton" id="p1-class">
-                <property name="label" translatable="yes">Reference : account cla_sses</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="draw_indicator">True</property>
-                <property name="group">p1-dossier</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">1</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkRadioButton" id="p1-account">
-                <property name="label" translatable="yes">Reference : _accounts chart</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="draw_indicator">True</property>
-                <property name="group">p1-dossier</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">3</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkRadioButton" id="p1-model">
-                <property name="label" translatable="yes">Reference : operation _templates</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="draw_indicator">True</property>
-                <property name="group">p1-dossier</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">5</property>
-              </packing>
+              <placeholder/>
             </child>
             <child>
-              <object class="GtkRadioButton" id="p1-entries">
-                <property name="label" translatable="yes">_Entries</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">False</property>
-                <property name="use_underline">True</property>
-                <property name="xalign">0</property>
-                <property name="draw_indicator">True</property>
-                <property name="group">p1-dossier</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">7</property>
-              </packing>
+              <placeholder/>
             </child>
           </object>
           <packing>

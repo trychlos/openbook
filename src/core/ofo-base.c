@@ -131,6 +131,7 @@ ofo_base_init_fields_list( const ofsBoxDef *defs )
 GList *
 ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofaHub *hub )
 {
+	static const gchar *thisfn = "ofo_base_load_dataset";
 	const ofaIDBConnect *connect;
 	ofoBase *object;
 	ofoBasePrivate *priv;
@@ -152,6 +153,7 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofa
 		dataset = g_list_prepend( dataset, object );
 	}
 	g_list_free( rows );
+	g_debug( "%s: dataset count=%d", thisfn, g_list_length( dataset ));
 
 	return( g_list_reverse( dataset ));
 }
