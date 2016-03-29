@@ -1735,7 +1735,7 @@ update_decimal_sep( const ofsBoxData *box_data, const ofaFileFormat *settings, c
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+	static const gchar *thisfn = "ofo_ope_template_iimportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
