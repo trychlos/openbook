@@ -1840,7 +1840,7 @@ export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar 
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+	static const gchar *thisfn = "ofo_ledger_iimportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
