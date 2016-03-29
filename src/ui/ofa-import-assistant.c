@@ -400,27 +400,29 @@ static void
 iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
 {
 	ofaImportAssistantPrivate *priv;
-	GList *list, *it;
+	GList *slist, *it;
 	const gchar *cstr;
 
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
-	list = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
+	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
 
-	it = list;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p2_type = atoi( cstr );
+	if( slist ){
+		it = slist;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		if( my_strlen( cstr )){
+			priv->p2_type = atoi( cstr );
+		}
+
+		it = it ? it->next : NULL;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		if( my_strlen( cstr )){
+			g_free( priv->p1_folder );
+			priv->p1_folder = g_strdup( cstr );
+		}
+
+		my_isettings_free_string_list( settings, slist );
 	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( priv->p1_folder );
-		priv->p1_folder = g_strdup( cstr );
-	}
-
-	my_isettings_free_string_list( settings, list );
 }
 
 static void
