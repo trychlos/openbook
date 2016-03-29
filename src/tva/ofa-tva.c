@@ -31,11 +31,18 @@
 #include "ofa-tva.h"
 #include "ofa-tva-dbmodel.h"
 #include "ofa-tva-execlose.h"
+#include "ofo-tva-form.h"
+#include "ofo-tva-record.h"
 
 /* private instance data
  */
 struct _ofaTvaPrivate {
 	gboolean  dispose_has_run;
+
+	/* an instanciation of each class managed by the module
+	 * needed in order to dynamically get exportables/importables
+	 */
+	GList    *fakes;
 };
 
 #define MODULE_DISPLAY_NAME              "VAT declarations"
@@ -51,6 +58,7 @@ static void   class_init( ofaTvaClass *klass );
 static void   iident_iface_init( myIIdentInterface *iface );
 static gchar *iident_get_display_name( const myIIdent *instance, void *user_data );
 static gchar *iident_get_version( const myIIdent *instance, void *user_data );
+static GList *tva_register_types( void );
 
 GType
 ofa_tva_get_type( void )
@@ -134,6 +142,7 @@ instance_dispose( GObject *object )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_list_free_full( priv->fakes, ( GDestroyNotify ) g_object_unref );
 	}
 
 	/* chain up to the parent class */
@@ -156,7 +165,9 @@ instance_init( GTypeInstance *instance, gpointer klass )
 	self = OFA_TVA( instance );
 
 	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_TVA, ofaTvaPrivate );
+
 	self->priv->dispose_has_run = FALSE;
+	self->priv->fakes = tva_register_types();
 }
 
 static void
@@ -198,4 +209,28 @@ static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
 {
 	return( g_strdup( MODULE_VERSION ));
+}
+
+static GList *
+tva_register_types( void )
+{
+	GList *list;
+
+	list = NULL;
+	list = g_list_prepend( list, g_object_new( OFO_TYPE_TVA_FORM, NULL ));
+	list = g_list_prepend( list, g_object_new( OFO_TYPE_TVA_RECORD, NULL ));
+
+	return( list );
+}
+
+GList *
+ofa_tva_get_registered_types( const ofaTva *module )
+{
+	ofaTvaPrivate *priv;
+
+	g_return_val_if_fail( module && OFA_IS_TVA( module ), NULL );
+
+	priv = module->priv;
+
+	return( priv->fakes );
 }

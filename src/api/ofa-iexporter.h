@@ -53,7 +53,7 @@ typedef struct _ofaIExporter                    ofaIExporter;
  * ofaIExporterInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
- * @export:                [should] exports a dataset.
+ * @get_exportables:       [should] returns the list of exportables objects.
  *
  * This defines the interface that an #ofaIExporter should implement.
  */

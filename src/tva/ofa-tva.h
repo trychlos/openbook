@@ -61,9 +61,11 @@ typedef struct {
 }
 	ofaTvaClass;
 
-GType  ofa_tva_get_type     ( void );
+GType  ofa_tva_get_type            ( void );
 
-void   ofa_tva_register_type( GTypeModule *module );
+void   ofa_tva_register_type       ( GTypeModule *module );
+
+GList *ofa_tva_get_registered_types( const ofaTva *module );
 
 G_END_DECLS
 
