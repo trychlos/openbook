@@ -1333,7 +1333,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_class_iimportable_iface_init";
+	static const gchar *thisfn = "ofo_rate_iimportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
