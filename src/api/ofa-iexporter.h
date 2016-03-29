@@ -31,10 +31,8 @@
  * @short_description: The Export Interface
  * @include: openbook/ofa-iexporter.h
  *
- * The #ofaIExporter interface exports items to the outside world.
- * It should be implemented by the code which exports the item
- * (cf. eg. #ofaExportAssistant), or by any code which interfaces to
- * an #ofaIExportable item.
+ * The main goal of #ofaIExporter interface is to provide an access to
+ * ofaIExportable objects.
  *
  * The #ofaIEXporter interface expects that exportable items all
  * implement the #ofaIExportable interface.
