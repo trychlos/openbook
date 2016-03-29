@@ -140,7 +140,7 @@ ofa_extender_module_class_init( ofaExtenderModuleClass *klass )
 
 /*
  * triggered by GTypeModule base class when first loading the library,
- * which is itself triggered by module_new:g_type_module_use()
+ * which is itself triggered by #ofa_extender_module_new::g_type_module_use()
  *
  * returns: %TRUE if the module is successfully loaded
  */
@@ -169,7 +169,6 @@ module_v_load( GTypeModule *module )
 
 /*
  * 'unload' is triggered by the last 'unuse' call
- * which is itself called in ofa_plugin::instance_dispose
  */
 static void
 module_v_unload( GTypeModule *module )
@@ -222,6 +221,8 @@ ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
 	}
 
 	plugin_register_types( module );
+
+	g_type_module_unuse( G_TYPE_MODULE( module ));
 
 	return( module );
 }

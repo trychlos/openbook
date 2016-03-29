@@ -31,7 +31,7 @@
 #include "ofa-tva.h"
 #include "ofa-tva-dbmodel.h"
 #include "ofa-tva-execlose.h"
-#include "ofa-tva-exporter.h"
+#include "ofa-tva-register.h"
 #include "ofo-tva-form.h"
 #include "ofo-tva-record.h"
 
@@ -90,8 +90,8 @@ ofa_tva_register_type( GTypeModule *module )
 		NULL
 	};
 
-	static const GInterfaceInfo iexporter_iface_info = {
-		( GInterfaceInitFunc ) ofa_tva_exporter_iface_init,
+	static const GInterfaceInfo iregister_iface_info = {
+		( GInterfaceInitFunc ) ofa_tva_register_iface_init,
 		NULL,
 		NULL
 	};
@@ -114,7 +114,7 @@ ofa_tva_register_type( GTypeModule *module )
 
 	g_type_module_add_interface( module, st_module_type, MY_TYPE_IIDENT, &iident_iface_info );
 
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IEXPORTER, &iexporter_iface_info );
+	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IREGISTER, &iregister_iface_info );
 
 	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBMODEL, &idbmodel_iface_info );
 

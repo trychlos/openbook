@@ -22,22 +22,22 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_TVA_EXPORTER_H__
-#define __OFA_TVA_EXPORTER_H__
+#ifndef __OFA_TVA_REGISTER_H__
+#define __OFA_TVA_REGISTER_H__
 
 /**
- * SECTION: ofa_tva_iexporter
+ * SECTION: ofa_tva_iregister
  * @short_description: #ofaTva class definition.
  *
- * #ofaIExporter interface management.
+ * #ofaIRegister interface management.
  */
 
-#include "api/ofa-iexporter.h"
+#include "api/ofa-iregister.h"
 
 G_BEGIN_DECLS
 
-void ofa_tva_exporter_iface_init( ofaIExporterInterface *iface );
+void ofa_tva_register_iface_init( ofaIRegisterInterface *iface );
 
 G_END_DECLS
 
-#endif /* __OFA_TVA_EXPORTER_H__ */
+#endif /* __OFA_TVA_REGISTER_H__ */

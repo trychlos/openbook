@@ -28,25 +28,24 @@
 
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-iexportable.h"
-#include "api/ofa-iexporter.h"
+#include "api/ofa-iregister.h"
 #include "api/ofa-igetter.h"
 
-#define IEXPORTER_LAST_VERSION            1
+#define IREGISTER_LAST_VERSION            1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
-static void  interface_base_init( ofaIExporterInterface *klass );
-static void  interface_base_finalize( ofaIExporterInterface *klass );
+static void  interface_base_init( ofaIRegisterInterface *klass );
+static void  interface_base_finalize( ofaIRegisterInterface *klass );
 
 /**
- * ofa_iexporter_get_type:
+ * ofa_iregister_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_iexporter_get_type( void )
+ofa_iregister_get_type( void )
 {
 	static GType type = 0;
 
@@ -58,18 +57,18 @@ ofa_iexporter_get_type( void )
 }
 
 /*
- * ofa_iexporter_register_type:
+ * ofa_iregister_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_iexporter_register_type";
+	static const gchar *thisfn = "ofa_iregister_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIExporterInterface ),
+		sizeof( ofaIRegisterInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -82,7 +81,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIExporter", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIRegister", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -90,9 +89,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIExporterInterface *klass )
+interface_base_init( ofaIRegisterInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iexporter_interface_base_init";
+	static const gchar *thisfn = "ofa_iregister_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -103,9 +102,9 @@ interface_base_init( ofaIExporterInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIExporterInterface *klass )
+interface_base_finalize( ofaIRegisterInterface *klass )
 {
-	static const gchar *thisfn = "ofa_iexporter_interface_base_finalize";
+	static const gchar *thisfn = "ofa_iregister_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -116,103 +115,106 @@ interface_base_finalize( ofaIExporterInterface *klass )
 }
 
 /**
- * ofa_iexporter_get_interface_last_version:
+ * ofa_iregister_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_iexporter_get_interface_last_version( void )
+ofa_iregister_get_interface_last_version( void )
 {
-	return( IEXPORTER_LAST_VERSION );
+	return( IREGISTER_LAST_VERSION );
 }
 
 /**
- * ofa_iexporter_get_interface_version:
- * @instance: this #ofaIExporter instance.
+ * ofa_iregister_get_interface_version:
+ * @instance: this #ofaIRegister instance.
  *
  * Returns: the version number of this interface implemented by the
  * application.
  */
 guint
-ofa_iexporter_get_interface_version( const ofaIExporter *instance )
+ofa_iregister_get_interface_version( const ofaIRegister *instance )
 {
-	static const gchar *thisfn = "ofa_iexporter_get_interface_version";
+	static const gchar *thisfn = "ofa_iregister_get_interface_version";
 
-	g_return_val_if_fail( instance && OFA_IS_IEXPORTER( instance ), 0 );
+	g_return_val_if_fail( instance && OFA_IS_IREGISTER( instance ), 0 );
 
-	if( OFA_IEXPORTER_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_IEXPORTER_GET_INTERFACE( instance )->get_interface_version( instance ));
+	if( OFA_IREGISTER_GET_INTERFACE( instance )->get_interface_version ){
+		return( OFA_IREGISTER_GET_INTERFACE( instance )->get_interface_version( instance ));
 	}
 
-	g_info( "%s: ofaIExporter's %s implementation does not provide 'get_interface_version()' method",
+	g_info( "%s: ofaIRegister's %s implementation does not provide 'get_interface_version()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 1 );
 }
 
 /**
- * ofa_iexporter_get_exportables:
- * @instance: this #ofaIExporter instance.
+ * ofa_iregister_get_for_type:
+ * @instance: this #ofaIRegister instance.
+ * @type: a GType.
  *
- * Returns: a list of new references to #ofaIExportable objects.
+ * Returns: a list of new references to objects which implement this
+ * @type.
  *
  * This method is directly meants for the plugins, so that they are able
- * to advertize their ofaIExportable objects.
+ * to advertize the properties of their objects.
  *
  * The interface will take ownership of the returned list, and will
  * #g_list_free_full( list, ( GDestroyNotify ) g_object_unref ) after
  * use.
  */
 GList *
-ofa_iexporter_get_exportables( ofaIExporter *instance )
+ofa_iregister_get_for_type( ofaIRegister *instance, GType type )
 {
-	static const gchar *thisfn = "ofa_iexporter_get_exportables";
+	static const gchar *thisfn = "ofa_iregister_get_for_type";
 
-	g_return_val_if_fail( instance && OFA_IS_IEXPORTER( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IREGISTER( instance ), NULL );
 
-	if( OFA_IEXPORTER_GET_INTERFACE( instance )->get_exportables ){
-		return( OFA_IEXPORTER_GET_INTERFACE( instance )->get_exportables( instance ));
+	if( OFA_IREGISTER_GET_INTERFACE( instance )->get_for_type ){
+		return( OFA_IREGISTER_GET_INTERFACE( instance )->get_for_type( instance, type ));
 	}
 
-	g_info( "%s: ofaIExporter's %s implementation does not provide 'get_exportables()' method",
+	g_info( "%s: ofaIRegister's %s implementation does not provide 'get_for_type()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }
 
 /**
- * ofa_iexporter_get_exportables_all:
+ * ofa_iregister_get_all_for_type:
  * @hub: the #ofaHub object of the application.
+ * @type: a GType.
  *
- * Returns: a list of new references to #ofaIExportable 'fake' objects,
- * concatenating both those from the core library, and those advertized
- * by the plugins.
+ * Returns: a list of new references to objects which implement the
+ * @type, concatenating both those from the core library, and those
+ * advertized by the plugins.
  *
  * It is expected that the caller takes ownership of the returned list,
  * and #g_list_free_full( list, ( GDestroyNotify ) g_object_unref )
  * after use.
  */
 GList *
-ofa_iexporter_get_exportables_all( ofaHub *hub )
+ofa_iregister_get_all_for_type( ofaHub *hub, GType type )
 {
-	GList *exportables, *exporters;
+	GList *objects, *registers;
 	GList *it, *it_objects;
 	ofaExtenderCollection *extenders;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	/* requests the ofaIExportables from core library
-	 * from ofaHub as ofaIExporter */
-	exportables = ofa_iexporter_get_exportables( OFA_IEXPORTER( hub ));
+	/* requests the objects first from core library
+	 * from ofaHub as ofaIRegister */
+	objects = ofa_iregister_get_for_type( OFA_IREGISTER( hub ), type );
 
-	/* requests the ofaIExportables from ofaIExporter modules */
+	/* requests the ofaIExportables from ofaIRegister modules */
 	extenders = ofa_hub_get_extender_collection( hub );
-	exporters = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IEXPORTER );
+	registers = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IREGISTER );
 
-	for( it=exporters ; it ; it=it->next ){
-		it_objects = ofa_iexporter_get_exportables( OFA_IEXPORTER( it->data ));
-		exportables = g_list_concat( exportables, it_objects );
+	for( it=registers ; it ; it=it->next ){
+		it_objects = ofa_iregister_get_for_type( OFA_IREGISTER( it->data ), type );
+		objects = g_list_concat( objects, it_objects );
 	}
 
-	ofa_extender_collection_free_types( exporters );
+	ofa_extender_collection_free_types( registers );
 
-	return( exportables );
+	return( objects );
 }

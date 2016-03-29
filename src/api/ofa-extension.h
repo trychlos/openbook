@@ -72,6 +72,8 @@
  * It is suggested that loadable modules implement the #myIIdent
  * interface, in order to be able to provide some identification
  * informations to the application.
+ *
+ * See also http://www.lanedo.com/users/mitch/module-system-talk-guadec-2006/Module-System-Talk-Guadec-2006.pdf
  */
 
 #include <gio/gio.h>

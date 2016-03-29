@@ -51,7 +51,6 @@ api_include_HEADERS = \
 	ofa-idbprovider-def.h								\
 	ofa-iexeclose-close.h								\
 	ofa-iexportable.h									\
-	ofa-iexporter.h										\
 	ofa-igetter.h										\
 	ofa-igetter-def.h									\
 	ofa-iimportable.h									\
@@ -60,6 +59,7 @@ api_include_HEADERS = \
 	ofa-iprefs-page-def.h								\
 	ofa-iprefs-provider.h								\
 	ofa-iprefs-provider-def.h							\
+	ofa-iregister.h										\
 	ofa-isingle-keeper.h								\
 	ofa-istore.h										\
 	ofa-itheme-manager.h								\

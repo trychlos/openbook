@@ -26,50 +26,48 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-iexportable.h"
-
 #include "ofa-tva.h"
-#include "ofa-tva-exporter.h"
+#include "ofa-tva-register.h"
 
-static guint  iexporter_get_interface_version( const ofaIExporter *instance );
-static GList *iexporter_get_exportables( ofaIExporter *instance );
+static guint  iregister_get_interface_version( const ofaIRegister *instance );
+static GList *iregister_get_for_type( ofaIRegister *instance, GType type );
 
 /*
- * #ofaIExporter interface setup
+ * #ofaIRegister interface setup
  */
 void
-ofa_tva_exporter_iface_init( ofaIExporterInterface *iface )
+ofa_tva_register_iface_init( ofaIRegisterInterface *iface )
 {
-	static const gchar *thisfn = "ofa_tva_exporter_iface_init";
+	static const gchar *thisfn = "ofa_tva_register_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iexporter_get_interface_version;
-	iface->get_exportables = iexporter_get_exportables;
+	iface->get_interface_version = iregister_get_interface_version;
+	iface->get_for_type = iregister_get_for_type;
 }
 
 /*
- * the version of the #ofaIExporter interface implemented by the module
+ * the version of the #ofaIRegister interface implemented by the module
  */
 static guint
-iexporter_get_interface_version( const ofaIExporter *instance )
+iregister_get_interface_version( const ofaIRegister *instance )
 {
 	return( 1 );
 }
 
 static GList *
-iexporter_get_exportables( ofaIExporter *instance )
+iregister_get_for_type( ofaIRegister *instance, GType type )
 {
-	GList *vat_objects, *exportables, *it;
+	GList *vat_objects, *typed_objects, *it;
 
 	vat_objects = ofa_tva_get_registered_types( OFA_TVA( instance ));
-	exportables = NULL;
+	typed_objects = NULL;
 
 	for( it=vat_objects ; it ; it=it->next ){
-		if( OFA_IS_IEXPORTABLE( it->data )){
-			exportables = g_list_prepend( exportables, g_object_ref( it->data ));
+		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
+			typed_objects = g_list_prepend( typed_objects, g_object_ref( it->data ));
 		}
 	}
 
-	return( exportables );
+	return( typed_objects );
 }

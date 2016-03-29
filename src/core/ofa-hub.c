@@ -37,7 +37,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-iexportable.h"
-#include "api/ofa-iexporter.h"
+#include "api/ofa-iregister.h"
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -86,8 +86,8 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
-static void    iexporter_iface_init( ofaIExporterInterface *iface );
-static GList  *iexporter_get_exportables( ofaIExporter *instance );
+static void    iregister_iface_init( ofaIRegisterInterface *iface );
+static GList  *iregister_get_for_type( ofaIRegister *instance, GType type );
 static void    icollector_iface_init( ofaICollectorInterface *iface );
 static guint   icollector_get_interface_version( const ofaICollector *instance );
 static void    isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
@@ -100,7 +100,7 @@ static void    free_lines( GSList *lines );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTER, iexporter_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IREGISTER, iregister_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTOR, icollector_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISINGLE_KEEPER, isingle_keeper_iface_init ))
 
@@ -404,20 +404,20 @@ ofa_hub_class_init( ofaHubClass *klass )
 }
 
 /*
- * ofaIExporter interface management
+ * ofaIRegister interface management
  */
 static void
-iexporter_iface_init( ofaIExporterInterface *iface )
+iregister_iface_init( ofaIRegisterInterface *iface )
 {
-	static const gchar *thisfn = "ofa_hub_iexporter_iface_init";
+	static const gchar *thisfn = "ofa_hub_iregister_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_exportables = iexporter_get_exportables;
+	iface->get_for_type = iregister_get_for_type;
 }
 
 static GList *
-iexporter_get_exportables( ofaIExporter *instance )
+iregister_get_for_type( ofaIRegister *instance, GType type )
 {
 	ofaHubPrivate *priv;
 	GList *list, *it;
@@ -427,7 +427,7 @@ iexporter_get_exportables( ofaIExporter *instance )
 	list = NULL;
 
 	for( it=priv->ofofakes ; it ; it=it->next ){
-		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), OFA_TYPE_IEXPORTABLE )){
+		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
 			list = g_list_prepend( list, g_object_ref( it->data ));
 		}
 	}
