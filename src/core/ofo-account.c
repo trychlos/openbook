@@ -2111,7 +2111,6 @@ iexportable_get_label( const ofaIExportable *instance )
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
 {
-	GSList *lines;
 	gchar *str;
 	GList *dataset, *it;
 	gboolean with_headers, ok;
@@ -2130,9 +2129,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	if( with_headers ){
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		lines = g_slist_prepend( NULL, str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		ok = ofa_iexportable_set_line( exportable, str );
+		g_free( str );
 		if( !ok ){
 			return( FALSE );
 		}
@@ -2147,9 +2145,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		} else {
 			str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
 		}
-		lines = g_slist_prepend( NULL, str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		ok = ofa_iexportable_set_line( exportable, str );
+		g_free( str );
 		if( !ok ){
 			return( FALSE );
 		}

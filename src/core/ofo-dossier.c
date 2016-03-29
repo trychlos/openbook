@@ -1716,8 +1716,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	ofoDossier *dossier;
 	ofoDossierPrivate *priv;
 	GList *cur_detail;
-	GSList *lines;
-	gchar *str;
+	gchar *str, *str2;
 	gboolean ok, with_headers;
 	gulong count;
 	gchar field_sep;
@@ -1739,39 +1738,39 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	if( with_headers ){
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
+		str2 = g_strdup_printf( "1%c%s", field_sep, str );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
 			return( FALSE );
 		}
 
 		str = ofa_box_csv_get_header( st_currency_defs, settings );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
+		str2 = g_strdup_printf( "2%c%s", field_sep, str );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
 			return( FALSE );
 		}
 	}
 
 	str = ofa_box_csv_get_line( OFO_BASE( dossier )->prot->fields, settings );
-	lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
+	str2 = g_strdup_printf( "1%c%s", field_sep, str );
+	ok = ofa_iexportable_set_line( exportable, str2 );
+	g_free( str2 );
 	g_free( str );
-	ok = ofa_iexportable_export_lines( exportable, lines );
-	g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 	if( !ok ){
 		return( FALSE );
 	}
 
 	for( cur_detail=priv->cur_details ; cur_detail ; cur_detail=cur_detail->next ){
 		str = ofa_box_csv_get_line( cur_detail->data, settings );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
+		str2 = g_strdup_printf( "2%c%s", field_sep, str );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
 			return( FALSE );
 		}

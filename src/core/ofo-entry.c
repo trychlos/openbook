@@ -2735,7 +2735,6 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 	gchar field_sep;
 	gulong count;
 	gchar *str, *str2, *sdate, *suser, *sstamp;
-	GSList *lines;
 	ofoConcil *concil;
 	const gchar *acc_id, *cur_code;
 	ofoAccount *account;
@@ -2756,9 +2755,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
 		str2 = g_strdup_printf( "%s%c%s%c%s%c%s",
 				str, field_sep, "ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp" );
-		lines = g_slist_prepend( NULL, str2 );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
 		if( !ok ){
 			return( FALSE );
@@ -2781,9 +2779,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 		sstamp = concil ? my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
 		str2 = g_strdup_printf( "%s%c%s%c%s%c%s",
 				str, field_sep, sdate, field_sep, suser, field_sep, sstamp );
-		lines = g_slist_prepend( NULL, str2 );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
 		g_free( sdate );
 		g_free( suser );

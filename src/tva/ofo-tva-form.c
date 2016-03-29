@@ -1550,9 +1550,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 {
 	ofoTVAFormPrivate *priv;
 	GList *dataset, *it, *det;
-	GSList *lines;
 	ofoTVAForm *form;
-	gchar *str;
+	gchar *str, *str2;
 	gboolean ok, with_headers;
 	gulong count;
 	gchar field_sep;
@@ -1575,28 +1574,28 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	if( with_headers ){
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
+		str2 = g_strdup_printf( "1%c%s", field_sep, str );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
 			return( FALSE );
 		}
 
 		str = ofa_box_csv_get_header( st_boolean_defs, settings );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
+		str2 = g_strdup_printf( "2%c%s", field_sep, str );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
 			return( FALSE );
 		}
 
 		str = ofa_box_csv_get_header( st_detail_defs, settings );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "3%c%s", field_sep, str ));
+		str2 = g_strdup_printf( "3%c%s", field_sep, str );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
 			return( FALSE );
 		}
@@ -1604,10 +1603,10 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	for( it=dataset ; it ; it=it->next ){
 		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
-		lines = g_slist_prepend( NULL, g_strdup_printf( "1%c%s", field_sep, str ));
+		str2 = g_strdup_printf( "1%c%s", field_sep, str );
+		ok = ofa_iexportable_set_line( exportable, str2 );
+		g_free( str2 );
 		g_free( str );
-		ok = ofa_iexportable_export_lines( exportable, lines );
-		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 		if( !ok ){
 			return( FALSE );
 		}
@@ -1617,10 +1616,10 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 		for( det=priv->bools ; det ; det=det->next ){
 			str = ofa_box_csv_get_line( det->data, settings );
-			lines = g_slist_prepend( NULL, g_strdup_printf( "2%c%s", field_sep, str ));
+			str2 = g_strdup_printf( "2%c%s", field_sep, str );
+			ok = ofa_iexportable_set_line( exportable, str2 );
+			g_free( str2 );
 			g_free( str );
-			ok = ofa_iexportable_export_lines( exportable, lines );
-			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 			if( !ok ){
 				return( FALSE );
 			}
@@ -1628,10 +1627,10 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 		for( det=priv->details ; det ; det=det->next ){
 			str = ofa_box_csv_get_line( det->data, settings );
-			lines = g_slist_prepend( NULL, g_strdup_printf( "3%c%s", field_sep, str ));
+			str2 = g_strdup_printf( "3%c%s", field_sep, str );
+			ok = ofa_iexportable_set_line( exportable, str2 );
+			g_free( str2 );
 			g_free( str );
-			ok = ofa_iexportable_export_lines( exportable, lines );
-			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 			if( !ok ){
 				return( FALSE );
 			}

@@ -32,11 +32,20 @@
  * @include: openbook/ofa-iexportable.h
  *
  * The #ofaIExportable interface exports items to the outside world.
+ *
+ * This interface addresses the requested class by the mean of a
+ * particular object, most often just allocated for this need.
+ *
+ * The implementation should begin by counting and advertizing the
+ * interface about the total count of lines it expects to output.
+ * Then each call to #ofa_iexportable_set_line() method will increment
+ * the progress.
  */
+
+#include "my/my-iprogress.h"
 
 #include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
-#include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
 
@@ -108,19 +117,19 @@ guint    ofa_iexportable_get_interface_version     ( const ofaIExportable *expor
 
 gchar   *ofa_iexportable_get_label                 ( const ofaIExportable *exportable );
 
-gboolean ofa_iexportable_export_to_path            ( ofaIExportable *exportable,
+gboolean ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
 															const gchar *uri,
 															const ofaFileFormat *settings,
 															ofaHub *hub,
-															const void *instance );
+															myIProgress *progress );
 
 gulong   ofa_iexportable_get_count                 ( ofaIExportable *exportable );
 
 void     ofa_iexportable_set_count                 ( ofaIExportable *exportable,
 															gulong count );
 
-gboolean ofa_iexportable_export_lines              ( ofaIExportable *exportable,
-															GSList *lines );
+gboolean ofa_iexportable_set_line                  ( ofaIExportable *exportable,
+															const gchar *line );
 
 G_END_DECLS
 

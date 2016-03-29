@@ -60,6 +60,12 @@ typedef struct _myIProgress                    myIProgress;
 /**
  * myIProgressInterface:
  * @get_interface_version: [should]: returns the implemented version number.
+ * @start_work: [should]: initialize the work.
+ * @start_progress: [should]: initialize one progress instance.
+ * @pulse: [should]: increment a progress bar.
+ * @set_row: [should]: increment a grid row.
+ * @set_ok: [should]: set OK/not OK.
+ * @set_text: [should]: set a message.
  *
  * This defines the interface that an #myIProgress must/should/may implement.
  */

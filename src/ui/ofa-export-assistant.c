@@ -173,11 +173,14 @@ static void      p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidg
 static gboolean  p3_confirm_overwrite( const ofaExportAssistant *self, const gchar *fname );
 static void      p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static gboolean  p5_export_data( ofaExportAssistant *self );
-static void      p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self );
+static void      iprogress_iface_init( myIProgressInterface *iface );
+static void      iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *empty );
+static void      iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
 
 G_DEFINE_TYPE_EXTENDED( ofaExportAssistant, ofa_export_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaExportAssistant )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IPROGRESS, iprogress_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IASSISTANT, iassistant_iface_init ))
 
 static const ofsIAssistant st_pages_cb [] = {
@@ -1014,7 +1017,6 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p5_do_display";
 	ofaExportAssistantPrivate *priv;
-	GtkWidget *parent;
 
 	g_return_if_fail( OFA_IS_EXPORT_ASSISTANT( self ));
 
@@ -1026,17 +1028,7 @@ p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_export_assistant_get_instance_private( self );
 
 	priv->p5_page = page;
-
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-bar-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p5_bar = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p5_bar ));
-
-	/* message sent by the ofaIExportable::export() implementation */
 	priv->p5_base = OFA_IEXPORTABLE( g_object_get_data( G_OBJECT( priv->p1_selected_btn ), DATA_TYPE_INDEX ));
-	g_signal_connect( priv->p5_base, "ofa-progress", G_CALLBACK( p5_on_progress ), self );
-
-	gtk_widget_show_all( page );
 
 	g_idle_add(( GSourceFunc ) p5_export_data, self );
 }
@@ -1055,18 +1047,19 @@ p5_export_data( ofaExportAssistant *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 
 	/* first, export */
-	ok = ofa_iexportable_export_to_path( priv->p5_base, priv->p3_furi, priv->p2_export_settings, hub, self );
+	ok = ofa_iexportable_export_to_uri(
+			priv->p5_base, priv->p3_furi, priv->p2_export_settings, hub, MY_IPROGRESS( self ));
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );
 
 	if( ok ){
 		text = g_strdup_printf( _( "OK: « %s » has been successfully exported.\n\n"
-				"%ld lines have been written in '%s' output file." ),
+				"%ld lines have been written in '%s' output stream." ),
 				priv->p1_selected_label, ofa_iexportable_get_count( priv->p5_base ), priv->p3_furi );
 	} else {
 		text = g_strdup_printf( _( "Unfortunately, « %s » export has encountered errors.\n\n"
-				"The '%s' file may be incomplete or inaccurate.\n\n"
+				"The '%s' stream may be incomplete or inaccurate.\n\n"
 				"Please fix these errors, and retry then." ),
 				priv->p1_selected_label, priv->p3_furi );
 	}
@@ -1083,13 +1076,49 @@ p5_export_data( ofaExportAssistant *self )
 	return( G_SOURCE_REMOVE );
 }
 
+/*
+ * myIProgress interface management
+ */
 static void
-p5_on_progress( ofaIExportable *exportable, gdouble progress, const gchar *text, ofaExportAssistant *self )
+iprogress_iface_init( myIProgressInterface *iface )
+{
+	static const gchar *thisfn = "ofa_export_assistant_iprogress_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->start_work = iprogress_start_work;
+	iface->pulse = iprogress_pulse;
+}
+
+static void
+iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *empty )
 {
 	ofaExportAssistantPrivate *priv;
+	GtkWidget *parent;
 
-	priv = ofa_export_assistant_get_instance_private( self );
+	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
 
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p5_page ), "p5-bar-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	priv->p5_bar = my_progress_bar_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p5_bar ));
+
+	gtk_widget_show_all( priv->p5_page );
+}
+
+static void
+iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total )
+{
+	ofaExportAssistantPrivate *priv;
+	gdouble progress;
+	gchar *str;
+
+	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
+
+	progress = total ? ( gdouble ) count / ( gdouble ) total : 0;
 	g_signal_emit_by_name( priv->p5_bar, "my-double", progress );
-	g_signal_emit_by_name( priv->p5_bar, "my-text", text );
+
+	str = total ? g_strdup_printf( "%ld/%ld", count, total ) : g_strdup_printf( "%ld", count );
+	g_signal_emit_by_name( priv->p5_bar, "my-text", str );
+	g_free( str );
 }
