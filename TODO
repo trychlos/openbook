@@ -370,8 +370,6 @@
 
  939 2015-12-21 FEAT tva/ofoTVAForm: make it importable
 
- 940 2015-12-21 FEAT tva/ofoTVAForm: make it exportable
-
  956 2016- 1- 6 PACK add to make distcheck a script which checks that
                      -def includes are always used in headers (and only)
 
@@ -613,6 +611,9 @@
                      up almost all pages..
      2016- 1-27 done: headers are moved back to ui/ directory, thanks to
                 the new ofaIGetter and ofaIThemeManager interfaces.
+
+ 940 2015-12-21 FEAT tva/ofoTVAForm: make it exportable
+     2016- 3-29 done
 
  941 2015-12-27 have an interface to replace ofa_main_window_get_dossier
                  (and idem for ofa_page_get_dossier)

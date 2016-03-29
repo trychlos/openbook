@@ -133,8 +133,6 @@ ofa_igetter_get_interface_version( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_interface_version";
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
 	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), 0 );
 
 	if( OFA_IGETTER_GET_INTERFACE( instance )->get_interface_version ){
@@ -158,8 +156,6 @@ ofa_igetter_get_application( const ofaIGetter *instance )
 	static const gchar *thisfn = "ofa_igetter_get_application";
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
-	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
 
 	if( OFA_IGETTER_GET_INTERFACE( instance )->get_application ){
 		return( OFA_IGETTER_GET_INTERFACE( instance )->get_application( instance ));
@@ -188,8 +184,6 @@ ofa_igetter_get_hub( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_hub";
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
 	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
 
 	if( OFA_IGETTER_GET_INTERFACE( instance )->get_hub ){
@@ -211,8 +205,6 @@ GtkApplicationWindow *
 ofa_igetter_get_main_window( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_main_window";
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
 
@@ -238,8 +230,6 @@ ofaIThemeManager *
 ofa_igetter_get_theme_manager( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_theme_manager";
-
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
 

@@ -67,7 +67,7 @@ iexporter_get_exportables( ofaIExporter *instance )
 
 	for( it=vat_objects ; it ; it=it->next ){
 		if( OFA_IS_IEXPORTABLE( it->data )){
-			exportables = g_list_prepend( exportables, it->data );
+			exportables = g_list_prepend( exportables, g_object_ref( it->data ));
 		}
 	}
 

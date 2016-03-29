@@ -81,19 +81,11 @@ typedef struct {
 #define DATA_ROW                        "ofa-data-row"
 #define DET_SPIN_WIDTH                  2
 #define DET_SPIN_MAX_WIDTH              2
-#define DET_CODE_WIDTH                  4
-#define DET_CODE_MAX_WIDTH              6
-#define DET_CODE_MAX_LENGTH             10
-#define DET_LABEL_MAX_WIDTH             80
-#define DET_LABEL_MAX_LENGTH            192
-#define DET_BASE_WIDTH                  8
-#define DET_BASE_MAX_WIDTH              16
-#define DET_BASE_MAX_LENGTH             80
-#define DET_AMOUNT_WIDTH                8
-#define DET_AMOUNT_MAX_WIDTH            16
-#define DET_AMOUNT_MAX_LENGTH           80
-#define BOOL_LABEL_MAX_WIDTH            80
-#define BOOL_LABEL_MAX_LENGTH           192
+#define DET_CODE_MAX_LENGTH             64
+#define DET_LABEL_MAX_LENGTH            256
+#define DET_BASE_MAX_LENGTH             128
+#define DET_AMOUNT_MAX_LENGTH           128
+#define BOOL_LABEL_MAX_LENGTH           256
 
 /* the columns in the dynamic grid
  * thy are numbered from zero, so that the N_DET_COLUMNS is the count
@@ -458,6 +450,7 @@ set_detail_widgets( ofaTVAFormProperties *self, guint row )
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
+	/* level */
 	adjustment = gtk_adjustment_new( 1.0, 1.0, ( gdouble ) G_MAXUINT, 1.0, 10.0, 0.0 );
 	spin = gtk_spin_button_new( adjustment, 1.0, 0 );
 	g_object_set_data( G_OBJECT( spin ), DATA_ROW, GUINT_TO_POINTER( row ));
@@ -467,50 +460,51 @@ set_detail_widgets( ofaTVAFormProperties *self, guint row )
 	gtk_grid_attach( GTK_GRID( priv->det_grid ), spin, 1+COL_DET_LEVEL, row, 1, 1 );
 	gtk_widget_set_sensitive( spin, priv->is_current );
 
+	/* code */
 	entry = gtk_entry_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_code_changed ), self );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_CODE_WIDTH );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_CODE_MAX_WIDTH );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_CODE_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_CODE, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
 
+	/* label */
 	entry = gtk_entry_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_label_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_LABEL_MAX_WIDTH );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_LABEL_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_LABEL, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
 
+	/* has base */
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( toggle ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_base_toggled ), self );
 	gtk_grid_attach( GTK_GRID( priv->det_grid ), toggle, 1+COL_DET_HAS_BASE, row, 1, 1 );
 	gtk_widget_set_sensitive( toggle, priv->is_current );
 
+	/* base */
 	entry = gtk_entry_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_base_changed ), self );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_BASE_WIDTH );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_BASE_MAX_WIDTH );
+	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_BASE_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_BASE, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, FALSE );
 
+	/* has amount */
 	toggle = gtk_check_button_new();
 	g_object_set_data( G_OBJECT( toggle ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_amount_toggled ), self );
 	gtk_grid_attach( GTK_GRID( priv->det_grid ), toggle, 1+COL_DET_HAS_AMOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( toggle, priv->is_current );
 
+	/* amount */
 	entry = gtk_entry_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_amount_changed ), self );
-	gtk_entry_set_width_chars( GTK_ENTRY( entry ), DET_AMOUNT_WIDTH );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), DET_AMOUNT_MAX_WIDTH );
+	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_AMOUNT_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_AMOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, FALSE );
@@ -589,11 +583,11 @@ set_boolean_widgets( ofaTVAFormProperties *self, guint row )
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
+	/* label */
 	entry = gtk_entry_new();
 	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_bool_label_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
-	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), BOOL_LABEL_MAX_WIDTH );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), BOOL_LABEL_MAX_LENGTH );
 	gtk_grid_attach( GTK_GRID( priv->bool_grid ), entry, 1+COL_BOOL_LABEL, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );

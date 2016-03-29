@@ -153,7 +153,7 @@ ofa_iexporter_get_interface_version( const ofaIExporter *instance )
  * ofa_iexporter_get_exportables:
  * @instance: this #ofaIExporter instance.
  *
- * Returns: a list of newly allocated #ofaIExportable objects.
+ * Returns: a list of new references to #ofaIExportable objects.
  *
  * This method is directly meants for the plugins, so that they are able
  * to advertize their ofaIExportable objects.
@@ -182,9 +182,9 @@ ofa_iexporter_get_exportables( ofaIExporter *instance )
  * ofa_iexporter_get_exportables_all:
  * @hub: the #ofaHub object of the application.
  *
- * Returns: a list of #ofaIExportable 'fake' objects, concatenating
- * both those from the core library, and those advertized by the
- * plugins.
+ * Returns: a list of new references to #ofaIExportable 'fake' objects,
+ * concatenating both those from the core library, and those advertized
+ * by the plugins.
  *
  * It is expected that the caller takes ownership of the returned list,
  * and #g_list_free_full( list, ( GDestroyNotify ) g_object_unref )
