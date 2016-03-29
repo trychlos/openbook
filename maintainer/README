@@ -60,10 +60,10 @@
  ===
 
  Run with:
- $ G_DEBUG=fatal_warnings G_MESSAGES_DEBUG=OFA OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf gdb ./_install/bin/openbook
+ $ G_DEBUG=fatal_warnings G_MESSAGES_DEBUG='MY|OFA' OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf gdb ./_install/bin/openbook
  or
  $ G_DEBUG=fatal_warnings \
-    G_MESSAGES_DEBUG=OFA \
+    G_MESSAGES_DEBUG='MY|OFA' \
     OFA_DOSSIER_CONF=$HOME/.config/openbook/dossier_dvlp.conf \
       gdb ./_install/bin/openbook
 
