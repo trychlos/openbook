@@ -44,8 +44,8 @@
 
 #include "my/my-iprogress.h"
 
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
+#include "api/ofa-stream-format.h"
 
 G_BEGIN_DECLS
 
@@ -104,7 +104,7 @@ typedef struct {
 	 * Return: %TRUE if the dataset has been successfully exported.
 	 */
 	gboolean ( *export )               ( ofaIExportable *instance,
-												const ofaFileFormat *settings,
+												const ofaStreamFormat *settings,
 												ofaHub *hub );
 }
 	ofaIExportableInterface;
@@ -119,7 +119,7 @@ gchar   *ofa_iexportable_get_label                 ( const ofaIExportable *expor
 
 gboolean ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
 															const gchar *uri,
-															const ofaFileFormat *settings,
+															const ofaStreamFormat *settings,
 															ofaHub *hub,
 															myIProgress *progress );
 

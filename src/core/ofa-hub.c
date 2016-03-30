@@ -91,7 +91,7 @@ static void    isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
 static void    dossier_do_close( ofaHub *hub );
 static void    init_signaling_system( ofaHub *hub );
 static void    check_db_vs_settings( const ofaHub *hub );
-static GSList *get_lines_from_content( const gchar *content, const ofaFileFormat *settings, guint *errors );
+static GSList *get_lines_from_content( const gchar *content, const ofaStreamFormat *settings, guint *errors );
 static void    free_fields( GSList *fields );
 static void    free_lines( GSList *lines );
 
@@ -880,7 +880,7 @@ check_db_vs_settings( const ofaHub *hub )
  * @dossier: the target #ofoDossier
  * @object: an empty object of the class to be imported.
  * @uri: the input file
- * @settings: the #ofaFileFormat instance which describes the @uri file.
+ * @settings: the #ofaStreamFormat instance which describes the @uri file.
  * @caller: [allow-none]: the #ofaIImporter instance
  * @errors: [allow-none][out]: errors count
  *
@@ -889,7 +889,7 @@ check_db_vs_settings( const ofaHub *hub )
  * Returns: the count of imported lines.
  */
 guint
-ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const ofaFileFormat *settings, void *caller, guint *errors )
+ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const ofaStreamFormat *settings, void *caller, guint *errors )
 {
 	guint count, local_errors;
 	gchar *content;
@@ -900,13 +900,13 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 	g_return_val_if_fail( object && OFA_IS_IIMPORTABLE( object ), 0 );
 	g_return_val_if_fail( my_strlen( uri ), 0 );
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 
 	count = 0;
 	local_errors = 0;
-	headers_count = ofa_file_format_get_headers_count( settings );
+	headers_count = ofa_stream_format_get_headers_count( settings );
 
-	content = my_utils_uri_get_content( uri, ofa_file_format_get_charmap( settings ), &local_errors );
+	content = my_utils_uri_get_content( uri, ofa_stream_format_get_charmap( settings ), &local_errors );
 	if( !local_errors ){
 		lines = get_lines_from_content( content, settings, &local_errors );
 		if( !local_errors ){
@@ -947,7 +947,7 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
  * inside a quoted field.
  */
 static GSList *
-get_lines_from_content( const gchar *content, const ofaFileFormat *settings, guint *errors )
+get_lines_from_content( const gchar *content, const ofaStreamFormat *settings, guint *errors )
 {
 	static const gchar *thisfn = "ofa_hub_get_lines_from_content";
 	GSList *tmp_list, *out_list, *it_list, *field_list;
@@ -1008,7 +1008,7 @@ get_lines_from_content( const gchar *content, const ofaFileFormat *settings, gui
 	 * fields have to be splitted when field separator is not backslashed */
 	numline = 0;
 	out_list = NULL;
-	field_sep = g_strdup_printf( "%c", ofa_file_format_get_field_sep( settings ));
+	field_sep = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( settings ));
 
 	if( *errors == 0 ){
 		for( it_list=tmp_list ; it_list ; it_list=it_list->next ){

@@ -55,7 +55,7 @@ typedef struct {
 	/* when importing via a plugin
 	 */
 	gchar               *uri;
-	const ofaFileFormat *settings;
+	const ofaStreamFormat *settings;
 	void                *ref;
 }
 	sIImportable;
@@ -68,7 +68,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIImportableInterface *klass );
 static void          interface_base_finalize( ofaIImportableInterface *klass );
-static gboolean      iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const ofaFileFormat *settings );
+static gboolean      iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const ofaStreamFormat *settings );
 static void          render_progress( ofaIImportable *importable, sIImportable *sdata, guint number, guint phase );
 static sIImportable *get_iimportable_data( ofaIImportable *importable );
 static void          on_importable_finalized( sIImportable *sdata, GObject *finalized_object );
@@ -219,7 +219,7 @@ ofa_iimportable_get_label( const ofaIImportable *importable )
  * after import.
  */
 ofaIImportable *
-ofa_iimportable_find_willing_to( ofaHub *hub, const gchar *uri, const ofaFileFormat *settings )
+ofa_iimportable_find_willing_to( ofaHub *hub, const gchar *uri, const ofaStreamFormat *settings )
 {
 	static const gchar *thisfn = "ofa_iimportable_find_willing_to";
 	ofaExtenderCollection *extenders;
@@ -248,19 +248,19 @@ ofa_iimportable_find_willing_to( ofaHub *hub, const gchar *uri, const ofaFileFor
  * ofa_iimportable_is_willing_to:
  * @importable: this #ofaIImportable instance.
  * @uri: the URI to be imported.
- * @settings: an #ofaFileFormat object.
+ * @settings: an #ofaStreamFormat object.
  *
  * Returns: %TRUE if the provider is willing to import the file.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const ofaFileFormat *settings )
+iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const ofaStreamFormat *settings )
 {
 	static const gchar *thisfn = "ofa_iimportable_is_willing_to";
 	sIImportable *sdata;
 	gboolean ok;
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), FALSE );
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
 
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, FALSE );
@@ -289,7 +289,7 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
  * @importable: this #ofaIImportable instance.
  * @lines: the content of the imported file as a #GSList list of
  *  #GSList fields.
- * @settings: an #ofaFileFormat object.
+ * @settings: an #ofaStreamFormat object.
  * @dossier: the current dossier.
  * @caller: the caller instance.
  *
@@ -299,7 +299,7 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
  */
 gint
 ofa_iimportable_import( ofaIImportable *importable,
-									GSList *lines, const ofaFileFormat *settings,
+									GSList *lines, const ofaStreamFormat *settings,
 									ofaHub *hub, void *caller )
 {
 	static const gchar *thisfn = "ofa_iimportable_import";
@@ -313,14 +313,14 @@ ofa_iimportable_import( ofaIImportable *importable,
 
 	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
 	g_return_val_if_fail( OFO_IS_BASE( importable ), 0 );
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 
 	my_utils_stamp_set_now( &stamp_start );
 	sdata = get_iimportable_data( importable );
 	g_return_val_if_fail( sdata, 0 );
 
-	count = ofa_file_format_get_headers_count( settings );
+	count = ofa_stream_format_get_headers_count( settings );
 	content = g_slist_nth( lines, count );
 	g_debug( "%s: count=%d, lines=%p (%d), content=%p (%d)",
 			thisfn, count, ( void * ) lines, g_slist_length( lines ), ( void * ) content, g_slist_length( content ));
@@ -364,7 +364,7 @@ ofa_iimportable_import( ofaIImportable *importable,
  * Returns NULL if empty.
  */
 gchar *
-ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
+ofa_iimportable_get_string( GSList **it, const ofaStreamFormat *settings )
 {
 	const gchar *cstr;
 	gchar *str1, *str2, *regexp, *str_delim_str;
@@ -375,7 +375,7 @@ ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 	cstr = *it ? ( const gchar * )(( *it )->data ) : NULL;
 	if( cstr ){
 		str1 = NULL;
-		str_delim = ofa_file_format_get_string_delim( settings );
+		str_delim = ofa_stream_format_get_string_delim( settings );
 		str_delim_str = g_strdup_printf( "%c", str_delim );
 		len = my_strlen( cstr );
 		if( len ){
@@ -384,7 +384,7 @@ ofa_iimportable_get_string( GSList **it, const ofaFileFormat *settings )
 			} else {
 				str1 = g_strstrip( g_strdup( cstr ));
 			}
-			regexp = g_strdup_printf( "(\\\")|(\\\n)|(\\\r)|(\\%c)", ofa_file_format_get_field_sep( settings ));
+			regexp = g_strdup_printf( "(\\\")|(\\\n)|(\\\r)|(\\%c)", ofa_stream_format_get_field_sep( settings ));
 			str2 = my_utils_unquote_regexp( str1, regexp );
 			if( !my_strlen( str2 )){
 				g_free( str2 );

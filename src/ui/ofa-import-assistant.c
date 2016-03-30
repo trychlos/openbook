@@ -35,15 +35,14 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
-#include "api/ofa-iregister.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
@@ -54,7 +53,7 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
-#include "core/ofa-file-format-bin.h"
+#include "core/ofa-stream-format-bin.h"
 
 #include "ui/ofa-import-assistant.h"
 
@@ -82,55 +81,63 @@ enum {
 /* private instance data
  */
 typedef struct {
-	gboolean          dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter       *getter;
-	ofaIDBMeta       *meta;
+	ofaIGetter         *getter;
+	ofaIDBMeta         *meta;
 
 	/* p0: introduction
 	 */
 
 	/* p1: select file to be imported
 	 */
-	GtkFileChooser   *p1_chooser;
-	gchar            *p1_folder;
-	gchar            *p1_furi;			/* the utf-8 imported filename */
-	gchar            *p1_content;
+	GtkFileChooser     *p1_chooser;
+	gchar              *p1_folder;
+	gchar              *p1_furi;			/* the utf-8 imported filename */
+	gchar              *p1_content;
 
 	/* p2: select a type of data to be imported
 	 */
-	GtkWidget        *p2_furi;
-	GtkWidget        *p2_content;
-	GList            *p2_importables;
-	GtkWidget        *p2_parent;
-	gint              p2_row;
-	GtkWidget        *p2_selected_btn;
-	gchar            *p2_selected_class;
-	gchar            *p2_selected_label;
+	GtkWidget          *p2_furi;
+	GtkWidget          *p2_content;
+	GtkWidget          *p2_import_tview;
+	GtkListStore       *p2_import_store;
+	GList              *p2_importers;
+	GList              *p2_importables;
+	gchar              *p2_importer_label;
+	ofaIImporter       *p2_importer_obj;
+	GtkWidget          *p2_parent;
+	gint                p2_col;
+	gint                p2_row;
+	GtkWidget          *p2_selected_btn;
+	gchar              *p2_selected_class;
+	gchar              *p2_selected_label;
+	GtkWidget          *p2_message;
 
-	/* p3: locale settings
+	/* p3: format settings
 	 */
-	GtkWidget        *p3_furi;
-	GtkWidget        *p3_content;
-	GtkWidget        *p3_datatype;
-	gchar            *p3_settings_key;
-	ofaFileFormat    *p3_import_settings;
-	ofaFileFormatBin *p3_settings_prefs;
-	GtkWidget        *p3_message;
+	GtkWidget          *p3_furi;
+	GtkWidget          *p3_content;
+	GtkWidget          *p3_importer;
+	GtkWidget          *p3_datatype;
+	gchar              *p3_settings_key;
+	ofaStreamFormat    *p3_import_settings;
+	ofaStreamFormatBin *p3_settings_prefs;
+	GtkWidget          *p3_message;
 
 	/* p4: confirm
 	 */
 
 	/* p5: import the file, display the result
 	 */
-	myProgressBar    *p5_import;
-	myProgressBar    *p5_insert;
-	GtkWidget        *p5_page;
-	GtkWidget        *p5_text;
-	ofaIImportable   *p5_object;
-	ofaIImportable   *p5_plugin;
+	myProgressBar      *p5_import;
+	myProgressBar      *p5_insert;
+	GtkWidget          *p5_page;
+	GtkWidget          *p5_text;
+	ofaIImportable     *p5_object;
+	ofaIImportable     *p5_plugin;
 }
 	ofaImportAssistantPrivate;
 
@@ -169,6 +176,15 @@ static const sRadios st_radios[] = {
 		{ 0 }
 };
 
+/**
+ * The columns stored in the page 3 importer store.
+ */
+enum {
+	IMP_COL_LABEL = 0,
+	IMP_COL_OBJECT,
+	IMP_N_COLUMNS
+};
+
 /* data set against each of above radio buttons */
 #define DATA_TYPE_INDEX                   "ofa-data-type"
 
@@ -192,12 +208,13 @@ static gboolean p1_check_for_complete( ofaImportAssistant *self );
 static void     p1_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
+static void     p2_on_import_selection_changed( GtkTreeSelection *select, ofaImportAssistant *self );
 static void     p2_on_type_toggled( GtkToggleButton *button, ofaImportAssistant *self );
 static void     p2_check_for_complete( ofaImportAssistant *self );
 static void     p2_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
-static void     p3_on_settings_changed( ofaFileFormatBin *bin, ofaImportAssistant *self );
+static void     p3_on_settings_changed( ofaStreamFormatBin *bin, ofaImportAssistant *self );
 static void     p3_check_for_complete( ofaImportAssistant *self );
 static void     p3_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
@@ -261,6 +278,7 @@ import_assistant_finalize( GObject *instance )
 	g_free( priv->p1_folder );
 	g_free( priv->p1_furi );
 	g_free( priv->p1_content );
+	g_free( priv->p2_importer_label );
 	g_free( priv->p2_selected_class );
 	g_free( priv->p2_selected_label );
 	g_free( priv->p3_settings_key );
@@ -285,6 +303,7 @@ import_assistant_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->meta );
 		g_list_free_full( priv->p2_importables, ( GDestroyNotify ) g_object_unref );
+		g_list_free_full( priv->p2_importers, ( GDestroyNotify ) g_object_unref );
 		g_clear_object( &priv->p3_import_settings );
 		g_clear_object( &priv->p5_object );
 		g_clear_object( &priv->p5_plugin );
@@ -308,6 +327,7 @@ ofa_import_assistant_init( ofaImportAssistant *self )
 	priv = ofa_import_assistant_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->p2_importers = NULL;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -611,13 +631,17 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	ofaHub *hub;
 	GList *it;
 	gchar *label;
-	GtkWidget *btn, *first;
+	GtkWidget *btn, *first, *label_widget;
+	GtkTreeViewColumn *column;
+	GtkCellRenderer *cell;
+	GtkTreeSelection *select;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
+	/* previously set */
 	priv->p2_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
 	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
 	my_utils_widget_set_style( priv->p2_furi, "labelinfo" );
@@ -626,10 +650,33 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p2_content && GTK_IS_LABEL( priv->p2_content ));
 	my_utils_widget_set_style( priv->p2_content, "labelinfo" );
 
+	/* available importers */
+	priv->p2_import_tview = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-treeview" );
+	g_return_if_fail( priv->p2_import_tview && GTK_IS_TREE_VIEW( priv->p2_import_tview ));
+
+	cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+					"Label", cell, "text", IMP_COL_LABEL, NULL );
+	gtk_tree_view_column_set_alignment( column, 0 );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->p2_import_tview ), column );
+
+	priv->p2_import_store = gtk_list_store_new( IMP_N_COLUMNS, G_TYPE_STRING, G_TYPE_OBJECT );
+	gtk_tree_view_set_model( GTK_TREE_VIEW( priv->p2_import_tview ), GTK_TREE_MODEL( priv->p2_import_store ));
+	g_object_unref( priv->p2_import_store );
+
+	label_widget = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-label23" );
+	g_return_if_fail( label_widget && GTK_IS_LABEL( label_widget ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label_widget ), priv->p2_import_tview );
+
+	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->p2_import_tview ));
+	g_signal_connect( select, "changed", G_CALLBACK( p2_on_import_selection_changed ), self );
+
+	/* expected data */
 	hub = ofa_igetter_get_hub( priv->getter );
 	priv->p2_importables = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTABLE );
 	g_debug( "%s: importables count=%d", thisfn, g_list_length( priv->p2_importables ));
 	priv->p2_selected_btn = NULL;
+	priv->p2_col = 1;
 	priv->p2_row = 0;
 	first = NULL;
 
@@ -647,10 +694,15 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 			}
 			g_object_set_data( G_OBJECT( btn ), DATA_TYPE_INDEX, it->data );
 			g_signal_connect( btn, "toggled", G_CALLBACK( p2_on_type_toggled ), self );
-			gtk_grid_attach( GTK_GRID( priv->p2_parent ), btn, 0, priv->p2_row++, 1, 1 );
+			gtk_grid_attach( GTK_GRID( priv->p2_parent ), btn, priv->p2_col, priv->p2_row++, 1, 1 );
 		}
 		g_free( label );
 	}
+
+	/* error message */
+	priv->p2_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-msgerr" );
+	g_return_if_fail( priv->p2_message && GTK_IS_LABEL( priv->p2_message ));
+	my_utils_widget_set_style( priv->p2_message, "labelerror" );
 }
 
 static void
@@ -658,6 +710,10 @@ p2_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p2_do_display";
 	ofaImportAssistantPrivate *priv;
+	ofaHub *hub;
+	GList *importers, *it;
+	gchar *label;
+	GtkTreeIter iter;
 	gint i;
 	GtkWidget *btn;
 	ofaIImportable *object;
@@ -667,12 +723,40 @@ p2_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
+	/* previously set */
 	gtk_label_set_text( GTK_LABEL( priv->p2_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p2_content ), priv->p1_content );
 
+	if( priv->p2_importers ){
+		g_list_free_full( priv->p2_importers, ( GDestroyNotify ) g_object_unref );
+		priv->p2_importers = NULL;
+		gtk_list_store_clear( priv->p2_import_store );
+	}
+
+	/* importers */
+	hub = ofa_igetter_get_hub( priv->getter );
+	importers = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTER );
+	g_debug( "p2_do_display: importers count=%d", g_list_length( importers ));
+	for( it=importers ; it ; it=it->next ){
+		if( ofa_iimporter_get_accept_content( OFA_IIMPORTER( it->data ), priv->p1_content )){
+			priv->p2_importers = g_list_prepend( priv->p2_importers, g_object_ref( it->data ));
+			label = ofa_iimporter_get_label( OFA_IIMPORTER( it->data ));
+			if( my_strlen( label )){
+				gtk_list_store_insert_with_values( priv->p2_import_store, &iter, -1,
+						IMP_COL_LABEL,  label,
+						IMP_COL_OBJECT, it->data,
+						-1 );
+			}
+			g_free( label );
+		}
+	}
+	g_list_free_full( importers, ( GDestroyNotify ) g_object_unref );
+	g_debug( "p2_do_display: p2_importers count=%d", g_list_length( priv->p2_importers ));
+
+	/* importables */
 	if( my_strlen( priv->p2_selected_class )){
 		for( i=0 ; i<priv->p2_row ; ++i ){
-			btn = gtk_grid_get_child_at( GTK_GRID( priv->p2_parent ), 0, i );
+			btn = gtk_grid_get_child_at( GTK_GRID( priv->p2_parent ), priv->p2_col, i );
 			g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
 			object = OFA_IIMPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
 			if( !my_collate( G_OBJECT_TYPE_NAME( object ), priv->p2_selected_class )){
@@ -686,6 +770,12 @@ p2_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
+p2_on_import_selection_changed( GtkTreeSelection *select, ofaImportAssistant *self )
+{
+	p2_check_for_complete( self );
+}
+
+static void
 p2_on_type_toggled( GtkToggleButton *button, ofaImportAssistant *self )
 {
 	p2_check_for_complete( self );
@@ -695,6 +785,8 @@ static void
 p2_check_for_complete( ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
+	gboolean complete;
+	GtkTreeSelection *select;
 	gint i;
 	GtkWidget *btn;
 	ofaIImportable *object;
@@ -702,27 +794,61 @@ p2_check_for_complete( ofaImportAssistant *self )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	/* which is the currently active button ? */
-	for( i=0 ; i<priv->p2_row ; ++i ){
-		btn = gtk_grid_get_child_at( GTK_GRID( priv->p2_parent ), 0, i );
-		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
-			object = OFA_IIMPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
-			priv->p2_selected_btn = btn;
-			g_free( priv->p2_selected_class );
-			priv->p2_selected_class = g_strdup( G_OBJECT_TYPE_NAME( object ));
-			g_free( priv->p2_selected_label );
-			label = gtk_button_get_label( GTK_BUTTON( priv->p2_selected_btn ));
-			priv->p2_selected_label = my_utils_str_remove_underlines( label );
-			break;
+	complete = TRUE;
+	gtk_label_set_text( GTK_LABEL( priv->p2_message ), "" );
+
+	/* do we have a selected importer */
+	if( complete ){
+		if( !g_list_length( priv->p2_importers )){
+			complete = FALSE;
+			gtk_label_set_text( GTK_LABEL( priv->p2_message ), _( "No available importer" ));
+		}
+	}
+	if( complete ){
+		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->p2_import_tview ));
+		if( !gtk_tree_selection_get_selected( select, NULL, NULL )){
+			complete = FALSE;
+			gtk_label_set_text( GTK_LABEL( priv->p2_message ), _( "No selected importer" ));
 		}
 	}
 
-	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), priv->p2_selected_btn != NULL );
+	/* which is the currently active button ? */
+	if( complete ){
+		for( i=0 ; i<priv->p2_row ; ++i ){
+			btn = gtk_grid_get_child_at( GTK_GRID( priv->p2_parent ), priv->p2_col, i );
+			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( btn ))){
+				object = OFA_IIMPORTABLE( g_object_get_data( G_OBJECT( btn ), DATA_TYPE_INDEX ));
+				priv->p2_selected_btn = btn;
+				g_free( priv->p2_selected_class );
+				priv->p2_selected_class = g_strdup( G_OBJECT_TYPE_NAME( object ));
+				g_free( priv->p2_selected_label );
+				label = gtk_button_get_label( GTK_BUTTON( priv->p2_selected_btn ));
+				priv->p2_selected_label = my_utils_str_remove_underlines( label );
+				break;
+			}
+		}
+		complete = ( priv->p2_selected_btn != NULL );
+	}
+
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), complete );
 }
 
 static void
 p2_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
+	ofaImportAssistantPrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->p2_import_tview ));
+	gtk_tree_selection_get_selected( select, &tmodel, &iter );
+	gtk_tree_model_get( tmodel, &iter, IMP_COL_LABEL, &priv->p2_importer_label, IMP_COL_OBJECT, &priv->p2_importer_obj, -1 );
+	g_return_if_fail( priv->p2_importer_obj && OFA_IS_IIMPORTER( priv->p2_importer_obj ));
+	g_object_unref( priv->p2_importer_obj );
+
 	set_settings( self );
 }
 
@@ -747,6 +873,7 @@ p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
+	/* previously set */
 	priv->p3_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
 	g_return_if_fail( priv->p3_furi && GTK_IS_LABEL( priv->p3_furi ));
 	my_utils_widget_set_style( priv->p3_furi, "labelinfo" );
@@ -754,6 +881,10 @@ p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p3_content = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-content" );
 	g_return_if_fail( priv->p3_content && GTK_IS_LABEL( priv->p3_content ));
 	my_utils_widget_set_style( priv->p3_content, "labelinfo" );
+
+	priv->p3_importer = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-importer" );
+	g_return_if_fail( priv->p3_importer && GTK_IS_LABEL( priv->p3_importer ));
+	my_utils_widget_set_style( priv->p3_importer, "labelinfo" );
 
 	priv->p3_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-datatype" );
 	g_return_if_fail( priv->p3_datatype && GTK_IS_LABEL( priv->p3_datatype ));
@@ -769,13 +900,22 @@ p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_size_group_add_widget( hgroup, label );
 
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label313" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( hgroup, label );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-label314" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( hgroup, label );
+
+	/* stream format */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-settings-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->p3_settings_prefs = ofa_file_format_bin_new( NULL );
+	priv->p3_settings_prefs = ofa_stream_format_bin_new( NULL );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_settings_prefs ));
 	my_utils_size_group_add_size_group(
-			hgroup, ofa_file_format_bin_get_size_group( priv->p3_settings_prefs, 0 ));
+			hgroup, ofa_stream_format_bin_get_size_group( priv->p3_settings_prefs, 0 ));
 
 	g_signal_connect(
 			priv->p3_settings_prefs, "ofa-changed", G_CALLBACK( p3_on_settings_changed ), self );
@@ -801,10 +941,13 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
+	/* previously set */
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p3_content ), priv->p1_content );
 	gtk_label_set_text( GTK_LABEL( priv->p3_datatype ), priv->p2_selected_label );
+	gtk_label_set_text( GTK_LABEL( priv->p3_importer ), priv->p2_importer_label );
 
+	/* stream format */
 	candidate_key =  g_strdup_printf( "%s-%s", SETTINGS_IMPORT_SETTINGS, priv->p2_selected_class );
 	instance = ofa_settings_get_settings( SETTINGS_TARGET_USER );
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
@@ -818,10 +961,10 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p3_settings_key = g_strdup( candidate_key );
 
 	g_clear_object( &priv->p3_import_settings );
-	priv->p3_import_settings = ofa_file_format_new( found_key );
-	ofa_file_format_set_prefs_name( priv->p3_import_settings, priv->p3_settings_key );
-	ofa_file_format_set_mode( priv->p3_import_settings, OFA_FFMODE_IMPORT );
-	ofa_file_format_bin_set_format( priv->p3_settings_prefs, priv->p3_import_settings );
+	priv->p3_import_settings = ofa_stream_format_new( found_key );
+	ofa_stream_format_set_prefs_name( priv->p3_import_settings, priv->p3_settings_key );
+	ofa_stream_format_set_mode( priv->p3_import_settings, OFA_SFMODE_IMPORT );
+	ofa_stream_format_bin_set_format( priv->p3_settings_prefs, priv->p3_import_settings );
 
 	g_free( candidate_key );
 
@@ -829,7 +972,7 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p3_on_settings_changed( ofaFileFormatBin *bin, ofaImportAssistant *self )
+p3_on_settings_changed( ofaStreamFormatBin *bin, ofaImportAssistant *self )
 {
 	p3_check_for_complete( self );
 }
@@ -843,7 +986,7 @@ p3_check_for_complete( ofaImportAssistant *self )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	ok = ofa_file_format_bin_is_valid( priv->p3_settings_prefs, &message );
+	ok = ofa_stream_format_bin_is_valid( priv->p3_settings_prefs, &message );
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_message ), my_strlen( message ) ? message : "" );
 	g_free( message );
@@ -862,7 +1005,7 @@ p3_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	ofa_file_format_bin_apply( priv->p3_settings_prefs );
+	ofa_stream_format_bin_apply( priv->p3_settings_prefs );
 }
 
 /*
@@ -876,7 +1019,7 @@ p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	GtkWidget *label;
 	gboolean complete;
 	myDateFormat format;
-	ofaFFtype ffmt;
+	ofeStream ffmt;
 	gchar *str;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -894,50 +1037,50 @@ p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	my_utils_widget_set_style( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p2_selected_label );
 
-	ffmt = ofa_file_format_get_fftype( priv->p3_import_settings );
+	ffmt = ofa_stream_format_get_fftype( priv->p3_import_settings );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-ffmt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_utils_widget_set_style( label, "labelinfo" );
-	gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_fftype_str( ffmt ));
+	gtk_label_set_text( GTK_LABEL( label ), ofa_stream_format_get_fftype_str( ffmt ));
 
-	if( ffmt != OFA_FFTYPE_OTHER ){
+	if( ffmt != OFA_STREAM_OTHER ){
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-charmap" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelinfo" );
-		gtk_label_set_text( GTK_LABEL( label ), ofa_file_format_get_charmap( priv->p3_import_settings ));
+		gtk_label_set_text( GTK_LABEL( label ), ofa_stream_format_get_charmap( priv->p3_import_settings ));
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-date" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelinfo" );
-		format = ofa_file_format_get_date_format( priv->p3_import_settings );
+		format = ofa_stream_format_get_date_format( priv->p3_import_settings );
 		gtk_label_set_text( GTK_LABEL( label ), my_date_get_format_str( format ));
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-decimal" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelinfo" );
-		str = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->p3_import_settings ));
+		str = g_strdup_printf( "%c", ofa_stream_format_get_decimal_sep( priv->p3_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-field" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelinfo" );
-		str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->p3_import_settings ));
+		str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( priv->p3_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-strdelim" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelinfo" );
-		str = g_strdup_printf( "%c", ofa_file_format_get_string_delim( priv->p3_import_settings ));
+		str = g_strdup_printf( "%c", ofa_stream_format_get_string_delim( priv->p3_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-headers" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 		my_utils_widget_set_style( label, "labelinfo" );
-		str = g_strdup_printf( "%d", ofa_file_format_get_headers_count( priv->p3_import_settings ));
+		str = g_strdup_printf( "%d", ofa_stream_format_get_headers_count( priv->p3_import_settings ));
 		gtk_label_set_text( GTK_LABEL( label ), str );
 		g_free( str );
 	}
@@ -1055,12 +1198,12 @@ p5_do_import( ofaImportAssistant *self )
 	has_worked = TRUE;
 
 	/* first, import */
-	ffmt = ofa_file_format_get_fftype( priv->p3_import_settings );
+	ffmt = ofa_stream_format_get_fftype( priv->p3_import_settings );
 	switch( ffmt ){
-		case OFA_FFTYPE_CSV:
+		case OFA_STREAM_CSV:
 			count = p5_do_import_csv( self, &errors );
 			break;
-		case OFA_FFTYPE_OTHER:
+		case OFA_STREAM_OTHER:
 			g_return_val_if_fail( priv->p5_plugin && OFA_IS_IIMPORTABLE( priv->p5_plugin ), FALSE );
 			count = p5_do_import_other( self, &errors );
 			break;

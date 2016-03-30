@@ -49,10 +49,10 @@
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-portfolio-collection.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -128,7 +128,7 @@ void                    ofa_hub_remediate_settings      ( const ofaHub *hub );
 guint                   ofa_hub_import_csv              ( ofaHub *hub,
 																ofaIImportable *object,
 																const gchar *uri,
-																const ofaFileFormat *settings,
+																const ofaStreamFormat *settings,
 																void *caller,
 																guint *errors );
 

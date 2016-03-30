@@ -27,7 +27,7 @@
 
 #include <glib.h>
 
-#include "api/ofa-file-format.h"
+#include "api/ofa-stream-format.h"
 
 /**
  * SECTION: ofa_box
@@ -101,7 +101,7 @@ typedef struct {
 /**
  * a callback function which may be called on CSV exporting
  */
-typedef gchar * ( *CSVExportFunc )( const ofsBoxData *data, const ofaFileFormat *format, const gchar *text, void *user_data );
+typedef gchar * ( *CSVExportFunc )( const ofsBoxData *data, const ofaStreamFormat *format, const gchar *text, void *user_data );
 
 /* because DBMS keeps 5 digits after the decimal dot */
 #define PRECISION                       100000
@@ -122,13 +122,13 @@ gchar           *ofa_box_dbms_get_columns_list( const ofsBoxDef *defs );
 GList           *ofa_box_dbms_parse_result    ( const ofsBoxDef *defs, GSList *row );
 
 gchar           *ofa_box_csv_get_header       ( const ofsBoxDef *defs,
-													const ofaFileFormat *format );
+													const ofaStreamFormat *format );
 
 gchar           *ofa_box_csv_get_line         ( const GList *fields_list,
-													const ofaFileFormat *format );
+													const ofaStreamFormat *format );
 
 gchar           *ofa_box_csv_get_line_ex      ( const GList *fields_list,
-													const ofaFileFormat *format,
+													const ofaStreamFormat *format,
 													CSVExportFunc cb, void *user_data );
 
 gconstpointer    ofa_box_get_value            ( const GList *fields_list, gint id );

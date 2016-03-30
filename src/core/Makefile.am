@@ -88,9 +88,6 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-prefs.c									\
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
-	ofa-file-format.c									\
-	ofa-file-format-bin.c								\
-	ofa-file-format-bin.h								\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
@@ -142,6 +139,9 @@ libofa_core_la_SOURCES = \
 	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
 	ofa-settings.c										\
+	ofa-stream-format.c									\
+	ofa-stream-format-bin.c								\
+	ofa-stream-format-bin.h								\
 	ofo-account.c										\
 	ofo-base.c											\
 	ofo-bat.c											\

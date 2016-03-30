@@ -49,6 +49,7 @@
    - ofaApplication: implements new ofaIGetter interface.
    - ofaExtension: now passes the ofaIGetter (instead of the GApplication).
    - ofaFileDir: renamed as ofaPortfolioCollection (todo #1052).
+   - ofaFileFormat: renamed as ofaStreamFormat.
    - ofa_hub_register_types(): new method.
    - ofaImporters: new loadable module.
    - ofaIRegister: new interface.
@@ -225,7 +226,7 @@
    - ofaExerciceCloseAssistant: makes the assistant non-modal, using new myIAssistant interface.
    - ofaExportAssistant: makes the assistant non-modal, using new myIAssistant interface.
    - ofaExportAssistant: keep the format configuration per data type.
-   - ofaFileFormat: now haves a string delimiter configuration option (todo #1028).
+   - ofaStreamFormat: now haves a string delimiter configuration option (todo #1028).
    - ofaGuidedInputBin: account selection icon is set inside of the entry.
    - ofaImportAssistant: makes the assistant non-modal, using new myIAssistant interface.
    - ofaImportAssistant: keep the format configuration per data type (todo #1005).
@@ -273,10 +274,10 @@
    - my_utils_widget_set_margin(): renamed as my_utils_widget_set_margins().
    - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
    - ofaBox: have to/from string, to/from dbms (todo #1029).
-   - ofaBox: refactoring exports with ofaFileFormat (todo #1030).
+   - ofaBox: refactoring exports with ofaStreamFormat (todo #1030).
    - ofa_file_set_mode(): new method.
    - ofa_file_set_prefs_name(): new method.
-   - ofa_file_format_bin_set_format(): new method.
+   - ofa_stream_format_bin_set_format(): new method.
    - ofaIPrefsPage: have an error message on init() and apply() methods.
    - ofoLedgerSummaryRender: add date selection as a subtitle (todo #1032).
    - ofoBat: rename ofo_bat_get|set_begin|end methods (todo #996).

@@ -959,14 +959,14 @@
      2016- 3- 2      Have to be done after iexporter/iexportable review
      2016- 3-15 Cancelled - better for each source to have its own code
 
-1028 2016- 3- 2 FEAT FileFormat: whether string should be surrounded by
+1028 2016- 3- 2 FEAT StreamFormat: whether string should be surrounded by
                      double quotes should be a configuration parameter
      2016- 3- 3 done
 
 1029 2016- 3- 2 FEAT ofaBox: have to/from string, to/from dbms
      2016- 3- 2 done
 
-1030 2016- 3- 2 FEAT ofaBox: have full FileFormat settings when importing
+1030 2016- 3- 2 FEAT ofaBox: have full StreamFormat settings when importing
                      or exporting
      2016- 3- 2 done
 

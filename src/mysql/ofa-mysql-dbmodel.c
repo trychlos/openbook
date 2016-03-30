@@ -33,13 +33,13 @@
 #include "my/my-iprogress.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
 #include "api/ofo-class.h"
 #include "api/ofo-currency.h"
@@ -478,7 +478,7 @@ import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import )
 	ofaMysqlDBModelPrivate *priv;
 	gint count;
 	gboolean ok;
-	ofaFileFormat *settings;
+	ofaStreamFormat *settings;
 	ofoBase *object;
 	gchar *uri, *fname, *str;
 	GtkWidget *label;
@@ -493,9 +493,9 @@ import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import )
 		g_free( str );
 		my_iprogress_start_progress( priv->window, self, label, FALSE );
 
-		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-		ofa_file_format_set( settings,
-				NULL, OFA_FFTYPE_CSV, OFA_FFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', '\0', import->header_count );
+		settings = ofa_stream_format_new( SETTINGS_IMPORT_SETTINGS );
+		ofa_stream_format_set( settings,
+				NULL, OFA_STREAM_CSV, OFA_SFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', '\0', import->header_count );
 		object = g_object_new( import->typefn(), NULL );
 		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
 		uri = g_filename_to_uri( fname, NULL, NULL );

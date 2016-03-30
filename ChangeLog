@@ -703,7 +703,7 @@
 	* src/ui/ofa-dossier-new.c,
 	* src/ui/ofa-dossier-properties.c,
 	* src/ui/ofa-exercice-store.c,
-	* src/ui/ofa-file-format-bin.c,
+	* src/ui/ofa-stream-format-bin.c,
 	* src/ui/ofa-guided-input-bin.c,
 	* src/ui/ofa-ope-template-properties.c,
 	* src/ui/ofa-ope-templates-book.c,

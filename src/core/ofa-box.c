@@ -113,7 +113,7 @@ amount_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-amount_to_string( const ofsBoxData *box, const ofaFileFormat *format )
+amount_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -166,7 +166,7 @@ counter_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-counter_to_string( const ofsBoxData *box, const ofaFileFormat *format )
+counter_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -218,7 +218,7 @@ int_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-int_to_string( const ofsBoxData *box, const ofaFileFormat *format )
+int_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -277,7 +277,7 @@ date_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-date_to_string( const ofsBoxData *box, const ofaFileFormat *format )
+date_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -342,7 +342,7 @@ string_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-string_to_string( const ofsBoxData *box, const ofaFileFormat *format )
+string_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
 {
 	gchar *temp, *str, *regexp;
 	gchar field_sep, str_delim;
@@ -350,8 +350,8 @@ string_to_string( const ofsBoxData *box, const ofaFileFormat *format )
 	g_return_val_if_fail( box->def->type == OFA_TYPE_STRING, NULL );
 
 	if( box->string ){
-		field_sep = ofa_file_format_get_field_sep( format );
-		str_delim = ofa_file_format_get_string_delim( format );
+		field_sep = ofa_stream_format_get_field_sep( format );
+		str_delim = ofa_stream_format_get_string_delim( format );
 		regexp = g_strdup_printf( "[\"\n\r%c]", field_sep );
 		temp = my_utils_quote_regexp( box->string, regexp );
 		if( str_delim ){
@@ -424,7 +424,7 @@ timestamp_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-timestamp_to_string( const ofsBoxData *box, const ofaFileFormat *format )
+timestamp_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -447,7 +447,7 @@ typedef void          ( *SetFn )       ( gpointer box, gconstpointer value );
 typedef gpointer      ( *FromDBMSFn )  ( const ofsBoxDef *def, const gchar *source );
 typedef gchar       * ( *ToDBMSFn )    ( gconstpointer box );
 typedef gpointer      ( *FromStringFn )( const ofsBoxDef *def, const gchar *source );
-typedef gchar       * ( *ToStringFn )  ( gconstpointer box, const ofaFileFormat *format );
+typedef gchar       * ( *ToStringFn )  ( gconstpointer box, const ofaStreamFormat *format );
 typedef void          ( *FreeFn )      ( gpointer box );
 
 typedef struct {
@@ -683,13 +683,13 @@ ofa_box_dbms_parse_result( const ofsBoxDef *defs, GSList *row )
 /**
  * ofa_box_csv_get_header:
  * @boxed: the definition of ofaBox elementary data of the object
- * @format: the #ofaFileFormat configuration settings.
+ * @format: the #ofaStreamFormat configuration settings.
  *
  * Returns the header of a CSV-type export, with a semi-colon separator,
  * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_csv_get_header( const ofsBoxDef *defs, const ofaFileFormat *format )
+ofa_box_csv_get_header( const ofsBoxDef *defs, const ofaStreamFormat *format )
 {
 	GString *header;
 	const ofsBoxDef *idef;
@@ -697,8 +697,8 @@ ofa_box_csv_get_header( const ofsBoxDef *defs, const ofaFileFormat *format )
 	gchar field_sep, str_delim;
 
 	header = g_string_new( "" );
-	field_sep = ofa_file_format_get_field_sep( format );
-	str_delim = ofa_file_format_get_string_delim( format );
+	field_sep = ofa_stream_format_get_field_sep( format );
+	str_delim = ofa_stream_format_get_string_delim( format );
 
 	if( defs ){
 		idef = defs;
@@ -773,13 +773,13 @@ compute_csv_name( const gchar *dbms_name )
 /**
  * ofa_box_csv_get_line:
  * @fields_list: the list of elementary datas of the record
- * @format: the #ofaFileFormat configuration settings.
+ * @format: the #ofaStreamFormat configuration settings.
  *
  * Returns the line of a CSV-type export, with requested configuration,
  * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_csv_get_line( const GList *fields_list, const ofaFileFormat *format )
+ofa_box_csv_get_line( const GList *fields_list, const ofaStreamFormat *format )
 {
 	return( ofa_box_csv_get_line_ex( fields_list, format, NULL, NULL ));
 }
@@ -787,12 +787,12 @@ ofa_box_csv_get_line( const GList *fields_list, const ofaFileFormat *format )
 /**
  * ofa_box_csv_get_line_ex:
  * @fields_list:
- * @format: the #ofaFileFormat configuration settings.
+ * @format: the #ofaStreamFormat configuration settings.
  * @cb:
  * @user_data:
  */
 gchar *
-ofa_box_csv_get_line_ex( const GList *fields_list, const ofaFileFormat *format, CSVExportFunc cb, void *user_data )
+ofa_box_csv_get_line_ex( const GList *fields_list, const ofaStreamFormat *format, CSVExportFunc cb, void *user_data )
 {
 	GString *line;
 	const GList *it;
@@ -803,8 +803,8 @@ ofa_box_csv_get_line_ex( const GList *fields_list, const ofaFileFormat *format, 
 	gchar decimal_sep, field_sep;
 
 	line = g_string_new( "" );
-	decimal_sep = ofa_file_format_get_decimal_sep( format );
-	field_sep = ofa_file_format_get_field_sep( format );
+	decimal_sep = ofa_stream_format_get_decimal_sep( format );
+	field_sep = ofa_stream_format_get_field_sep( format );
 
 	for( it=fields_list ; it ; it=it->next ){
 

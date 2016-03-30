@@ -30,11 +30,11 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
+#include "api/ofa-stream-format.h"
 
 #include "ui/ofa-bat-utils.h"
 
@@ -55,7 +55,7 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 	static const gchar *thisfn = "ofa_bat_utils_import";
 	ofxCounter imported_id;
 	GtkWidget *file_chooser;
-	ofaFileFormat *settings;
+	ofaStreamFormat *settings;
 	ofaIImportable *importable;
 	ofaHub *hub;
 	gchar *uri, *str;
@@ -75,9 +75,9 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 
 	if( gtk_dialog_run( GTK_DIALOG( file_chooser )) == GTK_RESPONSE_OK ){
 
-		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-		ofa_file_format_set( settings,
-				NULL, OFA_FFTYPE_OTHER, OFA_FFMODE_IMPORT, "UTF-8", 0, ',', ' ', '\0', 0 );
+		settings = ofa_stream_format_new( SETTINGS_IMPORT_SETTINGS );
+		ofa_stream_format_set( settings,
+				NULL, OFA_STREAM_OTHER, OFA_SFMODE_IMPORT, "UTF-8", 0, ',', ' ', '\0', 0 );
 
 		/* take the uri before clearing bat lines */
 		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));

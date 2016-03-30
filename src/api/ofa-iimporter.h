@@ -122,10 +122,10 @@ guint        ofa_iimporter_get_interface_version     ( const ofaIImporter *insta
 
 gchar       *ofa_iimporter_get_label                 ( const ofaIImporter *instance );
 
-GList       *ofa_iimporter_get_for_content           ( ofaHub *hub,
-															const gchar *content );
-
 const GList *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance );
+
+gboolean     ofa_iimporter_get_accept_content        ( const ofaIImporter *instance,
+															const gchar *content );
 
 G_END_DECLS
 

@@ -50,8 +50,8 @@
  */
 
 #include "api/ofa-box.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub-def.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-dossier-def.h"
 
 G_BEGIN_DECLS
@@ -116,7 +116,7 @@ typedef struct {
 	 */
 	gint     ( *import )               ( ofaIImportable *instance,
 												GSList *lines,
-												const ofaFileFormat *settings,
+												const ofaStreamFormat *settings,
 												ofaHub *hub );
 
 	/**
@@ -131,7 +131,7 @@ typedef struct {
 	 */
 	gboolean ( *is_willing_to )        ( ofaIImportable *instance,
 												const gchar *uri,
-												const ofaFileFormat *settings,
+												const ofaStreamFormat *settings,
 												void **ref,
 												guint *count );
 
@@ -151,7 +151,7 @@ typedef struct {
 	guint    ( *import_uri )           ( ofaIImportable *instance,
 												void *ref,
 												const gchar *uri,
-												const ofaFileFormat *settings,
+												const ofaStreamFormat *settings,
 												ofaHub *hub,
 												ofxCounter *imported_id );
 }
@@ -188,11 +188,11 @@ gchar          *ofa_iimportable_get_label                 ( const ofaIImportable
 
 ofaIImportable *ofa_iimportable_find_willing_to   ( ofaHub *hub,
 															const gchar *uri,
-															const ofaFileFormat *settings );
+															const ofaStreamFormat *settings );
 
 gint            ofa_iimportable_import            ( ofaIImportable *importable,
 															GSList *lines,
-															const ofaFileFormat *settings,
+															const ofaStreamFormat *settings,
 															ofaHub *hub,
 															void *caller );
 
@@ -209,7 +209,7 @@ void            ofa_iimportable_set_count         ( ofaIImportable *importable,
 /* an importable-oriented API
  */
 gchar          *ofa_iimportable_get_string        ( GSList **it,
-															const ofaFileFormat *settings );
+															const ofaStreamFormat *settings );
 
 void            ofa_iimportable_pulse             ( ofaIImportable *importable,
 															ofeImportablePhase phase );

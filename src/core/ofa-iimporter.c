@@ -262,6 +262,57 @@ ofa_iimporter_get_label( const ofaIImporter *instance )
 }
 
 /**
+ * ofa_iimporter_get_accepted_contents:
+ * @instance: this #ofaIImporter instance.
+ *
+ * Returns: the list of mimetypes the @instance importer is able to
+ * deal with.
+ */
+const GList *
+ofa_iimporter_get_accepted_contents( const ofaIImporter *instance )
+{
+	static const gchar *thisfn = "ofa_iimporter_get_accepted_contents";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents ){
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents( instance ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_accepted_contents()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
+ * ofa_iimporter_get_accept_content:
+ * @instance: this #ofaIImporter instance.
+ * @content: the (guessed) mimetype of the imported file.
+ *
+ * Returns: %TRUE if the @instance accepts the @content.
+ */
+gboolean
+ofa_iimporter_get_accept_content( const ofaIImporter *instance, const gchar *content )
+{
+	gboolean accept;
+	const GList *contents, *it;
+
+	g_debug( "ofa_iimporter_get_accept_content: content=%s", content );
+	accept = FALSE;
+	contents = ofa_iimporter_get_accepted_contents( instance );
+	for( it=contents ; it ; it=it->next ){
+		g_debug( "ofa_iimporter_get_accept_content: it_data=%s", ( const gchar * ) it->data );
+		if( !my_collate(( const gchar * ) it->data, content )){
+			accept = TRUE;
+			break;
+		}
+	}
+
+	return( accept );
+}
+
+#if 0
+/**
  * ofa_iimporter_get_for_content:
  * @hub: the #ofaHub object of the application.
  * @content: the (guessed) mimetype of the imported file.
@@ -299,30 +350,6 @@ ofa_iimporter_get_for_content( ofaHub *hub, const gchar *content )
 	return( selected );
 }
 
-/**
- * ofa_iimporter_get_accepted_contents:
- * @instance: this #ofaIImporter instance.
- *
- * Returns: the list of mimetypes the @instance importer is able to
- * deal with.
- */
-const GList *
-ofa_iimporter_get_accepted_contents( const ofaIImporter *instance )
-{
-	static const gchar *thisfn = "ofa_iimporter_get_accepted_contents";
-
-	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
-
-	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents ){
-		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents( instance ));
-	}
-
-	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_accepted_contents()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
-}
-
-#if 0
 /**
  * ofa_iimporter_import_from_uri:
  * @importer: this #ofaIImporter instance.

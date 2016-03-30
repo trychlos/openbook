@@ -33,13 +33,13 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -196,14 +196,14 @@ static GList      *icollectionable_load_collection( const ofaICollectionable *in
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
-static gboolean    iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
-static ofoTVAForm *form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors );
-static GList      *form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo );
-static GList      *form_import_csv_rule( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo );
+static gboolean    iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static ofoTVAForm *form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors );
+static GList      *form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors, gchar **mnemo );
+static GList      *form_import_csv_rule( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors, gchar **mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
@@ -1585,7 +1585,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoTVAFormPrivate *priv;
 	GList *dataset, *it, *det;
@@ -1597,8 +1597,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	dataset = ofo_tva_form_get_dataset( hub );
 
-	with_headers = ofa_file_format_has_headers( settings );
-	field_sep = ofa_file_format_get_field_sep( settings );
+	with_headers = ofa_stream_format_has_headers( settings );
+	field_sep = ofa_stream_format_get_field_sep( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -1746,7 +1746,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * during insert phase.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -1833,7 +1833,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 }
 
 static ofoTVAForm *
-form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors )
+form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors )
 {
 	ofoTVAForm *form;
 	gchar *str;
@@ -1886,7 +1886,7 @@ form_import_csv_form( ofaIImportable *importable, GSList *fields, const ofaFileF
 }
 
 static GList *
-form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
+form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors, gchar **mnemo )
 {
 	GList *boolean;
 	gchar *str;
@@ -1921,7 +1921,7 @@ form_import_csv_bool( ofaIImportable *importable, GSList *fields, const ofaFileF
 }
 
 static GList *
-form_import_csv_rule( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
+form_import_csv_rule( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors, gchar **mnemo )
 {
 	GList *detail;
 	gchar *str;

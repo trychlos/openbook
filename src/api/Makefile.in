@@ -391,7 +391,7 @@ api_include_HEADERS = \
 	ofa-dossier-prefs.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-module.h								\
-	ofa-file-format.h									\
+	ofa-stream-format.h									\
 	ofa-hub.h											\
 	ofa-hub-def.h										\
 	ofa-iabout.h										\

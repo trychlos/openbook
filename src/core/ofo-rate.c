@@ -35,7 +35,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
@@ -44,6 +43,7 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -159,13 +159,13 @@ static GList    *icollectionable_load_collection( const ofaICollectionable *inst
 static void      iexportable_iface_init( ofaIExportableInterface *iface );
 static guint     iexportable_get_interface_version( const ofaIExportable *instance );
 static gchar    *iexportable_get_label( const ofaIExportable *instance );
-static gboolean  iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
+static gboolean  iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar    *iimportable_get_label( const ofaIImportable *instance );
-static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
-static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors );
-static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors, gchar **mnemo );
+static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors );
+static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors, gchar **mnemo );
 static gboolean  rate_do_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0,
@@ -1264,7 +1264,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoRatePrivate *priv;
 	GList *dataset, *it, *det;
@@ -1276,8 +1276,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	dataset = ofo_rate_get_dataset( hub );
 
-	with_headers = ofa_file_format_has_headers( settings );
-	field_sep = ofa_file_format_get_field_sep( settings );
+	with_headers = ofa_stream_format_has_headers( settings );
+	field_sep = ofa_stream_format_get_field_sep( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -1396,7 +1396,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -1472,7 +1472,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 }
 
 static ofoRate *
-rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors )
+rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors )
 {
 	ofoRate *rate;
 	gchar *str;
@@ -1520,7 +1520,7 @@ rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaFileF
 }
 
 static GList *
-rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
+rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors, gchar **mnemo )
 {
 	GList *detail;
 	gchar *str;
@@ -1560,7 +1560,7 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaF
 
 	/* rate rate */
 	str = ofa_iimportable_get_string( &itf, settings );
-	amount = my_double_set_from_csv( str, ofa_file_format_get_decimal_sep( settings ));
+	amount = my_double_set_from_csv( str, ofa_stream_format_get_decimal_sep( settings ));
 	ofa_box_set_amount( detail, RAT_VAL_RATE, amount );
 	g_free( str );
 

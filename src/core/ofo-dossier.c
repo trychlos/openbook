@@ -221,7 +221,7 @@ static gboolean    do_update_currency_properties( ofoDossier *dossier );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( const ofaIExportable *instance );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
+static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
 
@@ -1719,7 +1719,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoDossier *dossier;
 	ofoDossierPrivate *priv;
@@ -1734,8 +1734,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	priv = ofo_dossier_get_instance_private( dossier );
 
-	with_headers = ofa_file_format_has_headers( settings );
-	field_sep = ofa_file_format_get_field_sep( settings );
+	with_headers = ofa_stream_format_has_headers( settings );
+	field_sep = ofa_stream_format_get_field_sep( settings );
 
 	count = 1;
 	if( with_headers ){

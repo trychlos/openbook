@@ -7,7 +7,6 @@
     <file>ofa-date-filter-hv-bin.ui</file>
     <file>ofa-dbms-root-bin.ui</file>
     <file>ofa-dossier-delete-prefs-bin.ui</file>
-    <file>ofa-file-format-bin.ui</file>
     <file>ofa-guided-input.ui</file>
     <file>ofa-guided-input-bin.ui</file>
     <file>ofa-idbmodel.ui</file>
@@ -16,6 +15,7 @@
     <file>ofa-ope-template-select.ui</file>
     <file>ofa-open-prefs-bin.ui</file>
     <file>ofa-preferences.ui</file>
+    <file>ofa-stream-format-bin.ui</file>
 
     <file>filler.png</file>
     <file>notes.png</file>

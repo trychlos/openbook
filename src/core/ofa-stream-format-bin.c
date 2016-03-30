@@ -34,40 +34,40 @@
 #include "my/my-field-combo.h"
 #include "my/my-utils.h"
 
-#include "ofa-file-format-bin.h"
+#include "ofa-stream-format-bin.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean        dispose_has_run;
+	gboolean         dispose_has_run;
 
 	/* initialization data
 	 */
-	ofaFileFormat  *settings;
+	ofaStreamFormat *settings;
 
 	/* UI
 	 */
-	GtkWidget      *format_combo;		/* file format */
-	GtkWidget      *settings_frame;
-	GtkWidget      *encoding_combo;
-	myDateCombo    *date_combo;
-	myDecimalCombo *decimal_combo;
-	myFieldCombo   *field_combo;
-	GtkWidget      *field_parent;
-	GtkWidget      *field_label;
-	GtkWidget      *dispo_frame;
-	GtkWidget      *str_delim_entry;
-	GtkWidget      *headers_btn;
-	GtkWidget      *headers_label;
-	GtkWidget      *headers_count;
-	GtkSizeGroup   *group0;
-	GtkSizeGroup   *group1;
+	//GtkWidget      *format_combo;		/* file format */
+	GtkWidget       *settings_frame;
+	GtkWidget       *encoding_combo;
+	myDateCombo     *date_combo;
+	myDecimalCombo  *decimal_combo;
+	myFieldCombo    *field_combo;
+	GtkWidget       *field_parent;
+	GtkWidget       *field_label;
+	GtkWidget       *dispo_frame;
+	GtkWidget       *str_delim_entry;
+	GtkWidget       *headers_btn;
+	GtkWidget       *headers_label;
+	GtkWidget       *headers_count;
+	GtkSizeGroup    *group0;
+	GtkSizeGroup    *group1;
 
 	/* runtime data
 	 */
-	ofaFFtype       format;
+	ofeStream       format;
 }
-	ofaFileFormatBinPrivate;
+	ofaStreamFormatBinPrivate;
 
 /* column ordering in the file format combobox
  */
@@ -93,57 +93,57 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-file-format-bin.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-stream-format-bin.ui";
 
-static void     setup_bin( ofaFileFormatBin *bin );
-static void     init_file_format( ofaFileFormatBin *self );
-static void     on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self );
-static void     init_encoding( ofaFileFormatBin *self );
-static void     on_encoding_changed( GtkComboBox *box, ofaFileFormatBin *self );
-static void     init_date_format( ofaFileFormatBin *self );
-static void     on_date_changed( myDateCombo *combo, myDateFormat format, ofaFileFormatBin *self );
-static void     init_decimal_dot( ofaFileFormatBin *self );
-static void     on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatBin *self );
-static void     init_field_separator( ofaFileFormatBin *self );
-static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self );
-static void     init_str_delimiter( ofaFileFormatBin *self );
-static void     init_headers( ofaFileFormatBin *self );
-static void     on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self );
-static void     on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self );
-static void     setup_format( ofaFileFormatBin *bin );
-static gboolean is_validable( ofaFileFormatBin *self, gchar **error_message );
-static gint     get_file_format( ofaFileFormatBin *self );
-static gchar   *get_charmap( ofaFileFormatBin *self );
-static gboolean do_apply( ofaFileFormatBin *self );
+static void     setup_bin( ofaStreamFormatBin *bin );
+//static void     init_stream_format( ofaStreamFormatBin *self );
+//static void     on_fftype_changed( GtkComboBox *box, ofaStreamFormatBin *self );
+static void     init_encoding( ofaStreamFormatBin *self );
+static void     on_encoding_changed( GtkComboBox *box, ofaStreamFormatBin *self );
+static void     init_date_format( ofaStreamFormatBin *self );
+static void     on_date_changed( myDateCombo *combo, myDateFormat format, ofaStreamFormatBin *self );
+static void     init_decimal_dot( ofaStreamFormatBin *self );
+static void     on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaStreamFormatBin *self );
+static void     init_field_separator( ofaStreamFormatBin *self );
+static void     on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaStreamFormatBin *self );
+static void     init_str_delimiter( ofaStreamFormatBin *self );
+static void     init_headers( ofaStreamFormatBin *self );
+static void     on_headers_toggled( GtkToggleButton *button, ofaStreamFormatBin *self );
+static void     on_headers_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self );
+static void     setup_format( ofaStreamFormatBin *bin );
+static gboolean is_validable( ofaStreamFormatBin *self, gchar **error_message );
+static gint     get_stream_format( ofaStreamFormatBin *self );
+static gchar   *get_charmap( ofaStreamFormatBin *self );
+static gboolean do_apply( ofaStreamFormatBin *self );
 static GList   *get_available_charmaps( void );
 
-G_DEFINE_TYPE_EXTENDED( ofaFileFormatBin, ofa_file_format_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaFileFormatBin ))
+G_DEFINE_TYPE_EXTENDED( ofaStreamFormatBin, ofa_stream_format_bin, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaStreamFormatBin ))
 
 static void
-file_format_bin_finalize( GObject *instance )
+stream_format_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_file_format_bin_finalize";
+	static const gchar *thisfn = "ofa_stream_format_bin_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_format_bin_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_stream_format_bin_parent_class )->finalize( instance );
 }
 
 static void
-file_format_bin_dispose( GObject *instance )
+stream_format_bin_dispose( GObject *instance )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_FILE_FORMAT_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_STREAM_FORMAT_BIN( instance ));
 
-	priv = ofa_file_format_bin_get_instance_private( OFA_FILE_FORMAT_BIN( instance ));
+	priv = ofa_stream_format_bin_get_instance_private( OFA_STREAM_FORMAT_BIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -156,47 +156,47 @@ file_format_bin_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_format_bin_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_stream_format_bin_parent_class )->dispose( instance );
 }
 
 static void
-ofa_file_format_bin_init( ofaFileFormatBin *self )
+ofa_stream_format_bin_init( ofaStreamFormatBin *self )
 {
-	static const gchar *thisfn = "ofa_file_format_bin_init";
-	ofaFileFormatBinPrivate *priv;
+	static const gchar *thisfn = "ofa_stream_format_bin_init";
+	ofaStreamFormatBinPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_FILE_FORMAT_BIN( self ));
+	g_return_if_fail( self && OFA_IS_STREAM_FORMAT_BIN( self ));
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_file_format_bin_class_init( ofaFileFormatBinClass *klass )
+ofa_stream_format_bin_class_init( ofaStreamFormatBinClass *klass )
 {
-	static const gchar *thisfn = "ofa_file_format_bin_class_init";
+	static const gchar *thisfn = "ofa_stream_format_bin_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = file_format_bin_dispose;
-	G_OBJECT_CLASS( klass )->finalize = file_format_bin_finalize;
+	G_OBJECT_CLASS( klass )->dispose = stream_format_bin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = stream_format_bin_finalize;
 
 	/**
-	 * ofaFileFormatBin::changed:
+	 * ofaStreamFormatBin::changed:
 	 *
 	 * This signal is sent when one of the data is changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaFileFormatBin *bin,
+	 * void ( *handler )( ofaStreamFormatBin *bin,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_FILE_FORMAT_BIN,
+				OFA_TYPE_STREAM_FORMAT_BIN,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -208,23 +208,23 @@ ofa_file_format_bin_class_init( ofaFileFormatBinClass *klass )
 }
 
 /**
- * ofa_file_format_bin_new:
- * @format: [allow-none]: a #ofaFileFormat instance, usually read from
+ * ofa_stream_format_bin_new:
+ * @format: [allow-none]: a #ofaStreamFormat instance, usually read from
  *  settings.
  *
- * Returns: a new #ofaFileFormatBin instance.
+ * Returns: a new #ofaStreamFormatBin instance.
  */
-ofaFileFormatBin *
-ofa_file_format_bin_new( ofaFileFormat *format )
+ofaStreamFormatBin *
+ofa_stream_format_bin_new( ofaStreamFormat *format )
 {
-	ofaFileFormatBin *self;
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBin *self;
+	ofaStreamFormatBinPrivate *priv;
 
-	g_return_val_if_fail( !format || OFA_IS_FILE_FORMAT( format ), NULL );
+	g_return_val_if_fail( !format || OFA_IS_STREAM_FORMAT( format ), NULL );
 
-	self = g_object_new( OFA_TYPE_FILE_FORMAT_BIN, NULL );
+	self = g_object_new( OFA_TYPE_STREAM_FORMAT_BIN, NULL );
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	setup_bin( self );
 
@@ -239,14 +239,14 @@ ofa_file_format_bin_new( ofaFileFormat *format )
 /*
  */
 static void
-setup_bin( ofaFileFormatBin *bin )
+setup_bin( ofaStreamFormatBin *bin )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel;
 
-	priv = ofa_file_format_bin_get_instance_private( bin );
+	priv = ofa_stream_format_bin_get_instance_private( bin );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -276,17 +276,18 @@ setup_bin( ofaFileFormatBin *bin )
 
 	/* export format at the end so that it is able to rely on
 	   precomputed widgets */
-	init_file_format( bin );
+	//init_stream_format( bin );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
 	gtk_widget_show_all( GTK_WIDGET( bin ));
 }
 
+#if 0
 static void
-init_file_format( ofaFileFormatBin *self )
+init_stream_format( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
@@ -294,7 +295,7 @@ init_file_format( ofaFileFormatBin *self )
 	const gchar *cstr;
 	GtkWidget *label;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->format_combo =
 			my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-export-format" );
@@ -316,7 +317,7 @@ init_file_format( ofaFileFormatBin *self )
 			GTK_CELL_LAYOUT( priv->format_combo ), cell, "text", EXP_COL_LABEL );
 
 	for( i=1 ; TRUE ; ++i ){
-		cstr = ofa_file_format_get_fftype_str( i );
+		cstr = ofa_stream_format_get_fftype_str( i );
 		if( cstr ){
 			gtk_list_store_insert_with_values(
 					GTK_LIST_STORE( tmodel ),
@@ -335,13 +336,13 @@ init_file_format( ofaFileFormatBin *self )
 }
 
 static void
-on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self )
+on_fftype_changed( GtkComboBox *box, ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	if( !gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->format_combo ), &iter )){
 		g_return_if_reached();
@@ -350,18 +351,19 @@ on_fftype_changed( GtkComboBox *box, ofaFileFormatBin *self )
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 	gtk_tree_model_get( tmodel, &iter, EXP_COL_FORMAT, &priv->format, -1 );
 
-	gtk_widget_set_sensitive( priv->settings_frame, priv->format != OFA_FFTYPE_OTHER );
-	gtk_widget_set_sensitive( priv->field_label, priv->format == OFA_FFTYPE_CSV );
-	gtk_widget_set_sensitive( priv->field_parent, priv->format == OFA_FFTYPE_CSV );
-	gtk_widget_set_sensitive( priv->dispo_frame, priv->format != OFA_FFTYPE_OTHER );
+	gtk_widget_set_sensitive( priv->settings_frame, priv->format != OFA_STREAM_OTHER );
+	gtk_widget_set_sensitive( priv->field_label, priv->format == OFA_STREAM_CSV );
+	gtk_widget_set_sensitive( priv->field_parent, priv->format == OFA_STREAM_CSV );
+	gtk_widget_set_sensitive( priv->dispo_frame, priv->format != OFA_STREAM_OTHER );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
+#endif
 
 static void
-init_encoding( ofaFileFormatBin *self )
+init_encoding( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	GtkCellRenderer *cell;
@@ -370,7 +372,7 @@ init_encoding( ofaFileFormatBin *self )
 	const gchar *cstr;
 	GtkWidget *label;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->encoding_combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-encoding" );
 	g_return_if_fail( priv->encoding_combo && GTK_IS_COMBO_BOX( priv->encoding_combo ));
@@ -411,18 +413,18 @@ init_encoding( ofaFileFormatBin *self )
 }
 
 static void
-on_encoding_changed( GtkComboBox *box, ofaFileFormatBin *self )
+on_encoding_changed( GtkComboBox *box, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-init_date_format( ofaFileFormatBin *self )
+init_date_format( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkWidget *widget, *label;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->date_combo = my_date_combo_new();
 
@@ -439,18 +441,18 @@ init_date_format( ofaFileFormatBin *self )
 }
 
 static void
-on_date_changed( myDateCombo *combo, myDateFormat format, ofaFileFormatBin *self )
+on_date_changed( myDateCombo *combo, myDateFormat format, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-init_decimal_dot( ofaFileFormatBin *self )
+init_decimal_dot( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkWidget *parent, *label;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->decimal_combo = my_decimal_combo_new();
 
@@ -467,18 +469,18 @@ init_decimal_dot( ofaFileFormatBin *self )
 }
 
 static void
-on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaFileFormatBin *self )
+on_decimal_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-init_field_separator( ofaFileFormatBin *self )
+init_field_separator( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkWidget *label;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->field_combo = my_field_combo_new();
 	priv->field_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-field-parent" );
@@ -495,18 +497,18 @@ init_field_separator( ofaFileFormatBin *self )
 }
 
 static void
-on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaFileFormatBin *self )
+on_field_changed( myFieldCombo *combo, const gchar *field_sep, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-init_str_delimiter( ofaFileFormatBin *self )
+init_str_delimiter( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkWidget *label;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->str_delim_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-string-delimiter" );
 	g_return_if_fail( priv->str_delim_entry && GTK_IS_ENTRY( priv->str_delim_entry ));
@@ -517,11 +519,11 @@ init_str_delimiter( ofaFileFormatBin *self )
 }
 
 static void
-init_headers( ofaFileFormatBin *self )
+init_headers( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->headers_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-headers" );
 	g_return_if_fail( priv->headers_btn && GTK_IS_TOGGLE_BUTTON( priv->headers_btn ));
@@ -540,32 +542,32 @@ init_headers( ofaFileFormatBin *self )
 }
 
 static void
-on_headers_toggled( GtkToggleButton *button, ofaFileFormatBin *self )
+on_headers_toggled( GtkToggleButton *button, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-on_headers_count_changed( GtkSpinButton *button, ofaFileFormatBin *self )
+on_headers_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
- * ofa_file_format_bin_get_size_group:
- * @bin: this #ofaFileFormatBin instance.
+ * ofa_stream_format_bin_get_size_group:
+ * @bin: this #ofaStreamFormatBin instance.
  * @column: the desired column number.
  *
  * Returns: the #GtkSizeGroup which managed the @column.
  */
 GtkSizeGroup *
-ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin, guint column )
+ofa_stream_format_bin_get_size_group( const ofaStreamFormatBin *bin, guint column )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 
-	g_return_val_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), NULL );
 
-	priv = ofa_file_format_bin_get_instance_private( bin );
+	priv = ofa_stream_format_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -580,22 +582,22 @@ ofa_file_format_bin_get_size_group( const ofaFileFormatBin *bin, guint column )
 }
 
 /**
- * ofa_file_format_bin_set_format:
- * @bin: this #ofaFileFormatBin instance.
- * @format: the new #ofaFileFormat object to be considered.
+ * ofa_stream_format_bin_set_format:
+ * @bin: this #ofaStreamFormatBin instance.
+ * @format: the new #ofaStreamFormat object to be considered.
  *
  * Release the reference previously taken on the initial object, and
  * then take a new reference on @format.
  */
 void
-ofa_file_format_bin_set_format( ofaFileFormatBin *bin, ofaFileFormat *format )
+ofa_stream_format_bin_set_format( ofaStreamFormatBin *bin, ofaStreamFormat *format )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ));
-	g_return_if_fail( format && OFA_IS_FILE_FORMAT( format ));
+	g_return_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ));
+	g_return_if_fail( format && OFA_IS_STREAM_FORMAT( format ));
 
-	priv = ofa_file_format_bin_get_instance_private( bin );
+	priv = ofa_stream_format_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -606,50 +608,50 @@ ofa_file_format_bin_set_format( ofaFileFormatBin *bin, ofaFileFormat *format )
 }
 
 static void
-setup_format( ofaFileFormatBin *bin )
+setup_format( ofaStreamFormatBin *bin )
 {
-	static const gchar *thisfn = "ofa_file_format_bin_setup_format";
-	ofaFileFormatBinPrivate *priv;
+	static const gchar *thisfn = "ofa_stream_format_bin_setup_format";
+	ofaStreamFormatBinPrivate *priv;
 	gchar *str;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gint settings_fmt, store_fmt;
-	ofaFFmode mode;
+	//GtkTreeModel *tmodel;
+	//GtkTreeIter iter;
+	//gint settings_fmt, store_fmt;
+	ofeSMode mode;
 	gboolean bvalue;
 	gint count;
 	GtkAdjustment *adjust;
 
-	priv = ofa_file_format_bin_get_instance_private( bin );
+	priv = ofa_stream_format_bin_get_instance_private( bin );
 
 	/* encoding */
-	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->encoding_combo ), ofa_file_format_get_charmap( priv->settings ));
+	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->encoding_combo ), ofa_stream_format_get_charmap( priv->settings ));
 
 	/* date format */
-	my_date_combo_set_selected( priv->date_combo, ofa_file_format_get_date_format( priv->settings ));
+	my_date_combo_set_selected( priv->date_combo, ofa_stream_format_get_date_format( priv->settings ));
 
 	/* decimal separator */
-	str = g_strdup_printf( "%c", ofa_file_format_get_decimal_sep( priv->settings ));
+	str = g_strdup_printf( "%c", ofa_stream_format_get_decimal_sep( priv->settings ));
 	my_decimal_combo_set_selected( priv->decimal_combo, str );
 	g_free( str );
 
 	/* field separator */
-	str = g_strdup_printf( "%c", ofa_file_format_get_field_sep( priv->settings ));
+	str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( priv->settings ));
 	my_field_combo_set_selected( priv->field_combo, str );
 	g_free( str );
 
 	/* string delimiter */
-	str = g_strdup_printf( "%c", ofa_file_format_get_string_delim( priv->settings ));
+	str = g_strdup_printf( "%c", ofa_stream_format_get_string_delim( priv->settings ));
 	gtk_entry_set_text( GTK_ENTRY( priv->str_delim_entry ), str );
 	g_free( str );
 
 	/* headers */
-	mode = ofa_file_format_get_ffmode( priv->settings );
+	mode = ofa_stream_format_get_ffmode( priv->settings );
 	switch( mode ){
-		case OFA_FFMODE_EXPORT:
+		case OFA_SFMODE_EXPORT:
 			/* have toggle button
 			 * remove spin button */
 			gtk_widget_show( priv->headers_btn );
-			bvalue = ofa_file_format_has_headers( priv->settings );
+			bvalue = ofa_stream_format_has_headers( priv->settings );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
 			on_headers_toggled( GTK_TOGGLE_BUTTON( priv->headers_btn ), bin );
 
@@ -657,13 +659,13 @@ setup_format( ofaFileFormatBin *bin )
 			gtk_widget_hide( priv->headers_count );
 			break;
 
-		case OFA_FFMODE_IMPORT:
+		case OFA_SFMODE_IMPORT:
 			/* hide toggle
 			 * have spin button */
 			gtk_widget_hide( priv->headers_btn );
 			gtk_widget_show( priv->headers_label );
 			gtk_widget_show( priv->headers_count );
-			count = ofa_file_format_get_headers_count( priv->settings );
+			count = ofa_stream_format_get_headers_count( priv->settings );
 			adjust = gtk_adjustment_new( count, 0, 9999, 1, 10, 10 );
 			gtk_spin_button_set_adjustment( GTK_SPIN_BUTTON( priv->headers_count), adjust );
 			gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->headers_count ), count );
@@ -673,8 +675,9 @@ setup_format( ofaFileFormatBin *bin )
 			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
 	}
 
+#if 0
 	/* export format */
-	settings_fmt = ofa_file_format_get_fftype( priv->settings );
+	settings_fmt = ofa_stream_format_get_fftype( priv->settings );
 	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->format_combo ));
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		while( TRUE ){
@@ -688,11 +691,12 @@ setup_format( ofaFileFormatBin *bin )
 			}
 		}
 	}
+#endif
 }
 
 /**
- * ofa_file_format_bin_is_valid:
- * @bin: this #ofaFileFormatBin instance.
+ * ofa_stream_format_bin_is_valid:
+ * @bin: this #ofaStreamFormatBin instance.
  * @error_message: [allow-none]: pointer to an error message.
  *  If set, then this is a newly allocated string which should be
  *  g_free() by the caller.
@@ -700,13 +704,13 @@ setup_format( ofaFileFormatBin *bin )
  * Returns: %TRUE if selection is ok
  */
 gboolean
-ofa_file_format_bin_is_valid( ofaFileFormatBin *bin, gchar **error_message )
+ofa_stream_format_bin_is_valid( ofaStreamFormatBin *bin, gchar **error_message )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 
-	g_return_val_if_fail( bin && OFA_IS_FILE_FORMAT_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), FALSE );
 
-	priv = ofa_file_format_bin_get_instance_private( bin );
+	priv = ofa_stream_format_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -714,20 +718,20 @@ ofa_file_format_bin_is_valid( ofaFileFormatBin *bin, gchar **error_message )
 }
 
 static gboolean
-is_validable( ofaFileFormatBin *self, gchar **error_message )
+is_validable( ofaStreamFormatBin *self, gchar **error_message )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
 	gint iformat, ivalue;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	if( error_message ){
 		*error_message = NULL;
 	}
 
 	/* import/export format */
-	iformat = get_file_format( self );
+	iformat = get_stream_format( self );
 	if( iformat < 1 ){
 		if( error_message ){
 			*error_message = g_strdup( _( "Invalid or unknown file format" ));
@@ -735,7 +739,7 @@ is_validable( ofaFileFormatBin *self, gchar **error_message )
 		return( FALSE );
 	}
 	/* doesn't check configuration when the import/export is 'other' format */
-	if( iformat == OFA_FFTYPE_OTHER ){
+	if( iformat == OFA_STREAM_OTHER ){
 		return( TRUE );
 	}
 
@@ -785,14 +789,15 @@ is_validable( ofaFileFormatBin *self, gchar **error_message )
 }
 
 static gint
-get_file_format( ofaFileFormatBin *self )
+get_stream_format( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
-	ofaFFtype format;
+#if 0
+	ofaStreamFormatBinPrivate *priv;
+	ofeStream format;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 	format = -1;
 
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->format_combo ), &iter )){
@@ -802,17 +807,19 @@ get_file_format( ofaFileFormatBin *self )
 	}
 
 	return( format );
+#endif
+	return( 0 );
 }
 
 static gchar *
-get_charmap( ofaFileFormatBin *self )
+get_charmap( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gchar *charmap;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 	charmap = NULL;
 
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->encoding_combo ), &iter )){
@@ -825,7 +832,7 @@ get_charmap( ofaFileFormatBin *self )
 }
 
 /**
- * ofa_file_format_bin_apply:
+ * ofa_stream_format_bin_apply:
  *
  * This take the current selection out of the dialog box, setting the
  * user preferences.
@@ -833,13 +840,13 @@ get_charmap( ofaFileFormatBin *self )
  * Returns: %TRUE if selection is ok
  */
 gboolean
-ofa_file_format_bin_apply( ofaFileFormatBin *settings )
+ofa_stream_format_bin_apply( ofaStreamFormatBin *settings )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT_BIN( settings ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT_BIN( settings ), FALSE );
 
-	priv = ofa_file_format_bin_get_instance_private( settings );
+	priv = ofa_stream_format_bin_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -851,15 +858,15 @@ ofa_file_format_bin_apply( ofaFileFormatBin *settings )
 }
 
 static gboolean
-do_apply( ofaFileFormatBin *self )
+do_apply( ofaStreamFormatBin *self )
 {
-	ofaFileFormatBinPrivate *priv;
+	ofaStreamFormatBinPrivate *priv;
 	gchar *charmap, *decimal_sep, *field_sep;
 	gint iformat, ivalue, iheaders;
-	ofaFFmode mode;
+	ofeSMode mode;
 	const gchar *str_delim;
 
-	priv = ofa_file_format_bin_get_instance_private( self );
+	priv = ofa_stream_format_bin_get_instance_private( self );
 	charmap = NULL;
 	ivalue = -1;
 	iheaders = -1;
@@ -867,24 +874,24 @@ do_apply( ofaFileFormatBin *self )
 	field_sep = g_strdup( "");
 	str_delim = g_strdup( "");
 
-	iformat = get_file_format( self );
-	mode = ofa_file_format_get_ffmode( priv->settings );
+	iformat = get_stream_format( self );
+	mode = ofa_stream_format_get_ffmode( priv->settings );
 
-	if( iformat != OFA_FFTYPE_OTHER ){
+	if( iformat != OFA_STREAM_OTHER ){
 		charmap = get_charmap( self );
 		ivalue = my_date_combo_get_selected( priv->date_combo );
 		decimal_sep = my_decimal_combo_get_selected( priv->decimal_combo );
 		field_sep = my_field_combo_get_selected( priv->field_combo );
 		str_delim = gtk_entry_get_text( GTK_ENTRY( priv->str_delim_entry ));
 
-		if( mode == OFA_FFMODE_EXPORT ){
+		if( mode == OFA_SFMODE_EXPORT ){
 			iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
 		} else {
 			iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
 		}
 	}
 
-	ofa_file_format_set( priv->settings,
+	ofa_stream_format_set( priv->settings,
 								NULL,
 								iformat,
 								mode, charmap, ivalue, decimal_sep[0], field_sep[0], str_delim[0], iheaders );
@@ -903,7 +910,7 @@ do_apply( ofaFileFormatBin *self )
 static GList *
 get_available_charmaps( void )
 {
-	static const gchar *thisfn = "ofa_file_format_bin_get_available_charmaps";
+	static const gchar *thisfn = "ofa_stream_format_bin_get_available_charmaps";
 	gchar *stdout, *stderr;
 	gint exit_status;
 	GError *error;

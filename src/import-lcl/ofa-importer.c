@@ -38,10 +38,10 @@
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 #include "api/ofs-bat.h"
 
@@ -52,7 +52,7 @@
 struct _ofaLCLImporterPrivate {
 	gboolean             dispose_has_run;
 
-	const ofaFileFormat *settings;
+	const ofaStreamFormat *settings;
 	ofaHub              *hub;
 	GSList              *lines;
 	guint                count;
@@ -75,8 +75,8 @@ static gchar       *iident_get_display_name( const myIIdent *instance, void *use
 static gchar       *iident_get_version( const myIIdent *instance, void *user_data );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *lcl_importer );
-static gboolean     iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
-static guint        iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id );
+static gboolean     iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const ofaStreamFormat *settings, void **ref, guint *count );
+static guint        iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id );
 static GSList      *get_file_content( ofaIImportable *lcl_importer, const gchar *uri );
 static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
 static gboolean     lcl_tabulated_text_v1_check( ofaLCLImporter *lcl_importer );
@@ -266,7 +266,7 @@ iimportable_get_interface_version( const ofaIImportable *lcl_importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const ofaStreamFormat *settings, void **ref, guint *count )
 {
 	static const gchar *thisfn = "ofa_lcl_importer_iimportable_is_willing_to";
 	ofaLCLImporterPrivate *priv;
@@ -300,7 +300,7 @@ iimportable_is_willing_to( ofaIImportable *lcl_importer, const gchar *uri, const
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id )
+iimportable_import_uri( ofaIImportable *lcl_importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id )
 {
 	static const gchar *thisfn = "ofa_lcl_importer_iimportable_import_uri";
 	ofaLCLImporterPrivate *priv;

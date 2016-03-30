@@ -32,8 +32,8 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-file-format.h"
 #include "api/ofa-settings.h"
+#include "api/ofa-stream-format.h"
 
 /* private instance data
  */
@@ -47,8 +47,8 @@ typedef struct {
 	/* runtime data
 	 */
 	gchar       *name;					/* may be %NULL if defaults */
-	ofaFFtype    type;
-	ofaFFmode    mode;
+	ofeStream    type;
+	ofeSMode    mode;
 	gchar       *charmap;
 	myDateFormat date_format;
 	gchar        decimal_sep;
@@ -59,23 +59,23 @@ typedef struct {
 		gint     count_headers;
 	} h;
 }
-	ofaFileFormatPrivate;
+	ofaStreamFormatPrivate;
 
 typedef struct {
-	ofaFFtype      format;
+	ofeStream      format;
 	const gchar *label;
 }
 	sFormat;
 
-static const sFormat st_file_format[] = {
-		{ OFA_FFTYPE_CSV,   N_( "CSV-like file format" )},
-		{ OFA_FFTYPE_FIXED, N_( "Fixed file format" )},
-		{ OFA_FFTYPE_OTHER, N_( "Other (plugin-managed) format" )},
+static const sFormat st_stream_format[] = {
+		{ OFA_STREAM_CSV,   N_( "CSV-like file format" )},
+		{ OFA_STREAM_FIXED, N_( "Fixed file format" )},
+		{ OFA_STREAM_OTHER, N_( "Other (plugin-managed) format" )},
 		{ 0 }
 };
 
-static gint         st_def_format       = OFA_FFTYPE_CSV;
-static gint         st_def_mode         = OFA_FFMODE_EXPORT;
+static gint         st_def_format       = OFA_STREAM_CSV;
+static gint         st_def_mode         = OFA_SFMODE_EXPORT;
 static const gchar *st_def_charmap      = "UTF-8";
 static const gint   st_def_date         = MY_DATE_SQL;
 static const gchar *st_def_decimal      = ".";
@@ -83,42 +83,42 @@ static const gchar *st_def_field_sep    = ";";
 static const gchar *st_def_headers      = "True";
 static const gchar *st_def_string_delim = "\"";
 
-static void  do_init( ofaFileFormat *self, const gchar *prefs_name );
+static void  do_init( ofaStreamFormat *self, const gchar *prefs_name );
 
-G_DEFINE_TYPE_EXTENDED( ofaFileFormat, ofa_file_format, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE( ofaFileFormat ))
+G_DEFINE_TYPE_EXTENDED( ofaStreamFormat, ofa_stream_format, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaStreamFormat ))
 
 static void
-file_format_finalize( GObject *instance )
+stream_format_finalize( GObject *instance )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	static const gchar *thisfn = "ofa_file_format_finalize";
+	static const gchar *thisfn = "ofa_stream_format_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_FILE_FORMAT( instance ));
+	g_return_if_fail( instance && OFA_IS_STREAM_FORMAT( instance ));
 
 	/* free data members here */
-	priv = ofa_file_format_get_instance_private( OFA_FILE_FORMAT( instance ));
+	priv = ofa_stream_format_get_instance_private( OFA_STREAM_FORMAT( instance ));
 
 	g_free( priv->prefs_name );
 	g_free( priv->charmap );
 	g_free( priv->name );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_format_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_stream_format_parent_class )->finalize( instance );
 }
 
 static void
-file_format_dispose( GObject *instance )
+stream_format_dispose( GObject *instance )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_FILE_FORMAT( instance ));
+	g_return_if_fail( instance && OFA_IS_STREAM_FORMAT( instance ));
 
-	priv = ofa_file_format_get_instance_private( OFA_FILE_FORMAT( instance ));
+	priv = ofa_stream_format_get_instance_private( OFA_STREAM_FORMAT( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -128,52 +128,52 @@ file_format_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_file_format_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_stream_format_parent_class )->dispose( instance );
 }
 
 static void
-ofa_file_format_init( ofaFileFormat *self )
+ofa_stream_format_init( ofaStreamFormat *self )
 {
-	static const gchar *thisfn = "ofa_file_format_init";
-	ofaFileFormatPrivate *priv;
+	static const gchar *thisfn = "ofa_stream_format_init";
+	ofaStreamFormatPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_FILE_FORMAT( self ));
+	g_return_if_fail( self && OFA_IS_STREAM_FORMAT( self ));
 
-	priv = ofa_file_format_get_instance_private( self );
+	priv = ofa_stream_format_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_file_format_class_init( ofaFileFormatClass *klass )
+ofa_stream_format_class_init( ofaStreamFormatClass *klass )
 {
-	static const gchar *thisfn = "ofa_file_format_class_init";
+	static const gchar *thisfn = "ofa_stream_format_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = file_format_dispose;
-	G_OBJECT_CLASS( klass )->finalize = file_format_finalize;
+	G_OBJECT_CLASS( klass )->dispose = stream_format_dispose;
+	G_OBJECT_CLASS( klass )->finalize = stream_format_finalize;
 }
 
 /**
- * ofa_file_format_new:
+ * ofa_stream_format_new:
  * @prefs_name: [allow-none]: the name of the settings key which is
  *  used to serialized this file format. If set, the object will be
  *  initialized from settings. If %NULL, the general defaults will
  *  be set.
  * @mode: whether the file format targets export or import.
  *
- * Returns: a newly allocated #ofaFileFormat object.
+ * Returns: a newly allocated #ofaStreamFormat object.
  */
-ofaFileFormat *
-ofa_file_format_new( const gchar *prefs_name )
+ofaStreamFormat *
+ofa_stream_format_new( const gchar *prefs_name )
 {
-	ofaFileFormat *self;
+	ofaStreamFormat *self;
 
-	self = g_object_new( OFA_TYPE_FILE_FORMAT, NULL );
+	self = g_object_new( OFA_TYPE_STREAM_FORMAT, NULL );
 
 	do_init( self, prefs_name );
 
@@ -187,15 +187,15 @@ ofa_file_format_new( const gchar *prefs_name )
  * import: name;type;mode;charmap;date_format;decimal_sep;field_sep;count_headers;string_delim
  */
 static void
-do_init( ofaFileFormat *self, const gchar *prefs_name )
+do_init( ofaStreamFormat *self, const gchar *prefs_name )
 {
-	static const gchar *thisfn = "ofa_file_format_do_init";
-	ofaFileFormatPrivate *priv;
+	static const gchar *thisfn = "ofa_stream_format_do_init";
+	ofaStreamFormatPrivate *priv;
 	GList *prefs_list, *it;
 	const gchar *cstr;
 	gchar *text;
 
-	priv = ofa_file_format_get_instance_private( self );
+	priv = ofa_stream_format_get_instance_private( self );
 
 	priv->prefs_name = g_strdup( prefs_name );
 	prefs_list = ofa_settings_user_get_string_list( prefs_name );
@@ -221,8 +221,8 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 	priv->mode = atoi( text );
 	g_debug( "%s: prefs=%s, type=%d, mode=%d", thisfn, prefs_name, priv->type, priv->mode );
 	g_free( text );
-	if( priv->mode != OFA_FFMODE_EXPORT && priv->mode != OFA_FFMODE_IMPORT ){
-		priv->mode = OFA_FFMODE_EXPORT;
+	if( priv->mode != OFA_SFMODE_EXPORT && priv->mode != OFA_SFMODE_IMPORT ){
+		priv->mode = OFA_SFMODE_EXPORT;
 	}
 
 	/* charmap */
@@ -259,7 +259,7 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : st_def_headers;
 	/*g_debug( "do_init: headers='%s'", cstr );*/
-	if( priv->mode == OFA_FFMODE_EXPORT ){
+	if( priv->mode == OFA_SFMODE_EXPORT ){
 		priv->h.with_headers = g_utf8_collate( cstr, "True" ) == 0;
 	} else {
 		priv->h.count_headers = atoi( cstr );
@@ -276,16 +276,16 @@ do_init( ofaFileFormat *self, const gchar *prefs_name )
 }
 
 /**
- * ofa_file_format_get_ffmode:
+ * ofa_stream_format_get_ffmode:
  */
-ofaFFmode
-ofa_file_format_get_ffmode( const ofaFileFormat *settings )
+ofeSMode
+ofa_stream_format_get_ffmode( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -293,16 +293,16 @@ ofa_file_format_get_ffmode( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_fftype:
+ * ofa_stream_format_get_fftype:
  */
-ofaFFtype
-ofa_file_format_get_fftype( const ofaFileFormat *settings )
+ofeStream
+ofa_stream_format_get_fftype( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -310,17 +310,17 @@ ofa_file_format_get_fftype( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_fftype_str:
+ * ofa_stream_format_get_fftype_str:
  */
 const gchar *
-ofa_file_format_get_fftype_str( ofaFFtype format )
+ofa_stream_format_get_fftype_str( ofeStream format )
 {
-	static const gchar *thisfn = "ofa_file_format_get_fftype_str";
+	static const gchar *thisfn = "ofa_stream_format_get_fftype_str";
 	gint i;
 
-	for( i=0 ; st_file_format[i].format ; ++i ){
-		if( st_file_format[i].format == format ){
-			return( gettext( st_file_format[i].label ));
+	for( i=0 ; st_stream_format[i].format ; ++i ){
+		if( st_stream_format[i].format == format ){
+			return( gettext( st_stream_format[i].label ));
 		}
 	}
 
@@ -331,16 +331,16 @@ ofa_file_format_get_fftype_str( ofaFFtype format )
 }
 
 /**
- * ofa_file_format_get_charmap:
+ * ofa_stream_format_get_charmap:
  */
 const gchar *
-ofa_file_format_get_charmap( const ofaFileFormat *settings )
+ofa_stream_format_get_charmap( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), NULL );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), NULL );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -348,16 +348,16 @@ ofa_file_format_get_charmap( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_date_format:
+ * ofa_stream_format_get_date_format:
  */
 myDateFormat
-ofa_file_format_get_date_format( const ofaFileFormat *settings )
+ofa_stream_format_get_date_format( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), -1 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), -1 );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, -1 );
 
@@ -365,16 +365,16 @@ ofa_file_format_get_date_format( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_decimal_sep:
+ * ofa_stream_format_get_decimal_sep:
  */
 gchar
-ofa_file_format_get_decimal_sep( const ofaFileFormat *settings )
+ofa_stream_format_get_decimal_sep( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -382,16 +382,16 @@ ofa_file_format_get_decimal_sep( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_field_sep:
+ * ofa_stream_format_get_field_sep:
  */
 gchar
-ofa_file_format_get_field_sep( const ofaFileFormat *settings )
+ofa_stream_format_get_field_sep( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -399,16 +399,16 @@ ofa_file_format_get_field_sep( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_string_delim:
+ * ofa_stream_format_get_string_delim:
  */
 gchar
-ofa_file_format_get_string_delim( const ofaFileFormat *settings )
+ofa_stream_format_get_string_delim( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -416,16 +416,16 @@ ofa_file_format_get_string_delim( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_get_headers_count:
+ * ofa_stream_format_get_headers_count:
  */
 gint
-ofa_file_format_get_headers_count( const ofaFileFormat *settings )
+ofa_stream_format_get_headers_count( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -433,16 +433,16 @@ ofa_file_format_get_headers_count( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_has_headers:
+ * ofa_stream_format_has_headers:
  */
 gboolean
-ofa_file_format_has_headers( const ofaFileFormat *settings )
+ofa_stream_format_has_headers( const ofaStreamFormat *settings )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_FILE_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -450,7 +450,7 @@ ofa_file_format_has_headers( const ofaFileFormat *settings )
 }
 
 /**
- * ofa_file_format_set:
+ * ofa_stream_format_set:
  * @settings:
  * @name:
  * @type:
@@ -462,10 +462,10 @@ ofa_file_format_has_headers( const ofaFileFormat *settings )
  * @with_headers:
  */
 void
-ofa_file_format_set( ofaFileFormat *settings,
+ofa_stream_format_set( ofaStreamFormat *settings,
 								const gchar *name,
-								ofaFFtype type,
-								ofaFFmode mode,
+								ofeStream type,
+								ofeSMode mode,
 								const gchar *charmap,
 								myDateFormat date_format,
 								gchar decimal_sep,
@@ -473,13 +473,13 @@ ofa_file_format_set( ofaFileFormat *settings,
 								gchar string_delim,
 								gint count_headers )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 	GList *prefs_list;
 	gchar *sfile, *sdate, *sdecimal, *sfield, *sheaders, *sstrdelim;
 
-	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
+	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -521,7 +521,7 @@ ofa_file_format_set( ofaFileFormat *settings,
 	prefs_list = g_list_append( prefs_list, sfield );
 
 	/* with headers */
-	if( priv->mode == OFA_FFMODE_EXPORT ){
+	if( priv->mode == OFA_SFMODE_EXPORT ){
 		priv->h.with_headers = count_headers > 0;
 		sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
 	} else {
@@ -536,7 +536,7 @@ ofa_file_format_set( ofaFileFormat *settings,
 	prefs_list = g_list_append( prefs_list, sstrdelim );
 
 	/* save in user preferences */
-	g_debug( "ofa_file_format_set: prefs_name=%s", priv->prefs_name );
+	g_debug( "ofa_stream_format_set: prefs_name=%s", priv->prefs_name );
 	if( my_strlen( priv->prefs_name )){
 		ofa_settings_user_set_string_list( priv->prefs_name, prefs_list );
 	}
@@ -552,20 +552,20 @@ ofa_file_format_set( ofaFileFormat *settings,
 }
 
 /**
- * ofa_file_format_set_mode:
+ * ofa_stream_format_set_mode:
  * @settings:
  * @mode:
  *
  * Set the import/export mode.
  */
 void
-ofa_file_format_set_mode( ofaFileFormat *settings, ofaFFmode mode )
+ofa_stream_format_set_mode( ofaStreamFormat *settings, ofeSMode mode )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
+	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -582,13 +582,13 @@ ofa_file_format_set_mode( ofaFileFormat *settings, ofaFFmode mode )
  * (hopefully more specific) user preference.
  */
 void
-ofa_file_format_set_prefs_name( ofaFileFormat *settings, const gchar *name )
+ofa_stream_format_set_prefs_name( ofaStreamFormat *settings, const gchar *name )
 {
-	ofaFileFormatPrivate *priv;
+	ofaStreamFormatPrivate *priv;
 
-	g_return_if_fail( settings && OFA_IS_FILE_FORMAT( settings ));
+	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
 
-	priv = ofa_file_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_if_fail( !priv->dispose_has_run );
 

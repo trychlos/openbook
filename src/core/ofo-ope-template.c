@@ -33,7 +33,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
@@ -41,6 +40,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -200,14 +200,14 @@ static GList          *icollectionable_load_collection( const ofaICollectionable
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( const ofaIExportable *instance );
 static gchar          *iexportable_get_label( const ofaIExportable *instance );
-static gboolean        iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
-static gchar          *update_decimal_sep( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, void *empty );
+static gboolean        iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
+static gchar          *update_decimal_sep( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, void *empty );
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar          *iimportable_get_label( const ofaIImportable *instance );
-static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
-static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors );
-static GList          *model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint count, guint *errors, gchar **mnemo );
+static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors );
+static GList          *model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors, gchar **mnemo );
 static gboolean        model_do_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
@@ -1638,7 +1638,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it, *det;
@@ -1650,8 +1650,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	dataset = ofo_ope_template_get_dataset( hub );
 
-	with_headers = ofa_file_format_has_headers( settings );
-	field_sep = ofa_file_format_get_field_sep( settings );
+	with_headers = ofa_stream_format_has_headers( settings );
+	field_sep = ofa_stream_format_get_field_sep( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){
@@ -1718,7 +1718,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  * => this user-remediation function
  */
 static gchar *
-update_decimal_sep( const ofsBoxData *box_data, const ofaFileFormat *settings, const gchar *text, void *empty )
+update_decimal_sep( const ofsBoxData *box_data, const ofaStreamFormat *settings, const gchar *text, void *empty )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;
@@ -1728,7 +1728,7 @@ update_decimal_sep( const ofsBoxData *box_data, const ofaFileFormat *settings, c
 	box_def = ofa_box_data_get_def( box_data );
 
 	if( box_def->id == OTE_DET_DEBIT || box_def->id == OTE_DET_CREDIT ){
-		decimal_sep = ofa_file_format_get_decimal_sep( settings );
+		decimal_sep = ofa_stream_format_get_decimal_sep( settings );
 		if( decimal_sep != '.' ){
 			g_free( str );
 			str = my_utils_char_replace( text, '.', decimal_sep );
@@ -1805,7 +1805,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -1883,7 +1883,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 }
 
 static ofoOpeTemplate *
-model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors )
+model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors )
 {
 	ofoOpeTemplate *model;
 	gchar *str;
@@ -1963,7 +1963,7 @@ model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaFil
 }
 
 static GList *
-model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaFileFormat *settings, guint line, guint *errors, gchar **mnemo )
+model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors, gchar **mnemo )
 {
 	GList *detail;
 	gchar *str;

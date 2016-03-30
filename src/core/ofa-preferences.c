@@ -46,7 +46,7 @@
 
 #include "core/ofa-open-prefs-bin.h"
 #include "core/ofa-dossier-delete-prefs-bin.h"
-#include "core/ofa-file-format-bin.h"
+#include "core/ofa-stream-format-bin.h"
 
 /* private instance data
  */
@@ -90,12 +90,12 @@ typedef struct {
 
 	/* Export settings
 	 */
-	ofaFileFormatBin         *export_settings;
+	ofaStreamFormatBin       *export_settings;
 	GtkFileChooser           *p5_chooser;
 
 	/* Import settings
 	 */
-	ofaFileFormatBin         *import_settings;
+	ofaStreamFormatBin       *import_settings;
 
 	/* UI - Plugin pages
 	 */
@@ -549,7 +549,7 @@ init_export_page( ofaPreferences *self )
 	GtkWidget *target, *label;
 	gchar *str;
 	GtkSizeGroup *group;
-	ofaFileFormat *settings;
+	ofaStreamFormat *settings;
 
 	priv = ofa_preferences_get_instance_private( self );
 
@@ -558,12 +558,12 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_file_format_new( SETTINGS_EXPORT_SETTINGS );
-	priv->export_settings = ofa_file_format_bin_new( settings );
+	settings = ofa_stream_format_new( SETTINGS_EXPORT_SETTINGS );
+	priv->export_settings = ofa_stream_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
 	my_utils_size_group_add_size_group(
-			group, ofa_file_format_bin_get_size_group( priv->export_settings, 0 ));
+			group, ofa_stream_format_bin_get_size_group( priv->export_settings, 0 ));
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-folder" ));
 	str = ofa_settings_user_get_string( SETTINGS_EXPORT_FOLDER );
@@ -585,15 +585,15 @@ init_import_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
 	GtkWidget *target;
-	ofaFileFormat *settings;
+	ofaStreamFormat *settings;
 
 	priv = ofa_preferences_get_instance_private( self );
 
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-import-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
-	priv->import_settings = ofa_file_format_bin_new( settings );
+	settings = ofa_stream_format_new( SETTINGS_IMPORT_SETTINGS );
+	priv->import_settings = ofa_stream_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));
 }
@@ -1216,7 +1216,7 @@ do_update_export_page( ofaPreferences *self, gchar **msgerr )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	ofa_file_format_bin_apply( priv->export_settings );
+	ofa_stream_format_bin_apply( priv->export_settings );
 
 	text = gtk_file_chooser_get_current_folder_uri( priv->p5_chooser );
 	if( my_strlen( text )){
@@ -1234,7 +1234,7 @@ do_update_import_page( ofaPreferences *self, gchar **msgerr )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	ofa_file_format_bin_apply( priv->import_settings );
+	ofa_stream_format_bin_apply( priv->import_settings );
 
 	return( TRUE );
 }

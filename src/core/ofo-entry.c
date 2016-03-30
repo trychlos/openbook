@@ -36,12 +36,12 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-account.h"
@@ -222,12 +222,12 @@ static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *conne
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( const ofaIExportable *instance );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub );
-static gchar       *export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency );
+static gboolean     iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
+static gchar       *export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub );
+static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
@@ -2737,7 +2737,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * add to the dataset the informations got from conciliation groups.
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GList *result, *it;
 	gboolean ok, with_headers;
@@ -2751,8 +2751,8 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
 
 	result = entry_load_dataset( hub, NULL, NULL );
 
-	with_headers = ofa_file_format_has_headers( settings );
-	field_sep = ofa_file_format_get_field_sep( settings );
+	with_headers = ofa_stream_format_has_headers( settings );
+	field_sep = ofa_stream_format_get_field_sep( settings );
 
 	count = ( gulong ) g_list_length( result );
 	if( with_headers ){
@@ -2809,7 +2809,7 @@ iexportable_export( ofaIExportable *exportable, const ofaFileFormat *settings, o
  * currency of the account of the entry
  */
 static gchar *
-export_cb( const ofsBoxData *box_data, const ofaFileFormat *format, const gchar *text, ofoCurrency *currency )
+export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;
@@ -2902,7 +2902,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * during insert phase.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileFormat *settings, ofaHub *hub )
+iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_entry_iimportable_import";
 	GSList *itl, *fields, *itf;
@@ -2931,7 +2931,7 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 	past = NULL;
 	exe = NULL;
 	fut = NULL;
-	date_format = ofa_file_format_get_date_format( settings );
+	date_format = ofa_stream_format_get_date_format( settings );
 	connect = ofa_hub_get_connect( hub );
 	dossier = ofa_hub_get_dossier( hub );
 
@@ -3096,12 +3096,12 @@ iimportable_import( ofaIImportable *importable, GSList *lines, const ofaFileForm
 
 		/* debit */
 		str = ofa_iimportable_get_string( &itf, settings );
-		debit = my_double_set_from_csv( str, ofa_file_format_get_decimal_sep( settings ));
+		debit = my_double_set_from_csv( str, ofa_stream_format_get_decimal_sep( settings ));
 		g_free( str );
 
 		/* credit */
 		str = ofa_iimportable_get_string( &itf, settings );
-		credit = my_double_set_from_csv( str, ofa_file_format_get_decimal_sep( settings ));
+		credit = my_double_set_from_csv( str, ofa_stream_format_get_decimal_sep( settings ));
 		g_free( str );
 
 		if( 0 ){

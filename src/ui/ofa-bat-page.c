@@ -33,13 +33,13 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-buttons-box.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 

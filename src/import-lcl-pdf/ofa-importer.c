@@ -39,10 +39,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-file-format.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-preferences.h"
+#include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 #include "api/ofs-bat.h"
 
@@ -53,7 +53,7 @@
 struct _ofaLclPdfImporterPrivate {
 	gboolean             dispose_has_run;
 
-	const ofaFileFormat *settings;
+	const ofaStreamFormat *settings;
 	ofaHub              *hub;
 	guint                count;
 	guint                errors;
@@ -102,8 +102,8 @@ static gchar    *iident_get_display_name( const myIIdent *instance, void *user_d
 static gchar    *iident_get_version( const myIIdent *instance, void *user_data );
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer );
-static gboolean  iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count );
-static guint     iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id );
+static gboolean  iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaStreamFormat *settings, void **ref, guint *count );
+static guint     iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id );
 static gboolean  lcl_pdf_v1_check( ofaLclPdfImporter *importer, const gchar *uri );
 static ofsBat   *lcl_pdf_v1_import( ofaLclPdfImporter *importer, const gchar *uri );
 static ofsBat   *read_header( ofaLclPdfImporter *importer, PopplerPage *page, GList *rc_list );
@@ -297,7 +297,7 @@ iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer )
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaFileFormat *settings, void **ref, guint *count )
+iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaStreamFormat *settings, void **ref, guint *count )
 {
 	static const gchar *thisfn = "ofa_lcl_pdf_importer_iimportable_is_willing_to";
 	ofaLclPdfImporterPrivate *priv;
@@ -328,7 +328,7 @@ iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofa
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaFileFormat *settings, ofaHub *hub, ofxCounter *imported_id )
+iimportable_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id )
 {
 	static const gchar *thisfn = "ofa_lcl_pdf_importer_iimportable_import_uri";
 	ofaLclPdfImporterPrivate *priv;

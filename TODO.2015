@@ -2640,7 +2640,7 @@
                 src/core/ofa-admin-credentials-bin.ui       : #d69d42d
                 src/core/ofa-dbms-root-bin.ui               : #366e131
                 src/core/ofa-dossier-delete-prefs.piece.ui  : #bd9c322
-                src/core/ofa-file-format-bin.ui             : ok
+                src/core/ofa-stream-format-bin.ui             : ok
                 src/core/ofa-preferences.ui                 : #d2f554b
                 src/mysql/ofa-mysql-connect-display-piece.ui: #ff6750a
                 src/mysql/ofa-mysql-connect-enter-piece.ui  : d53ac94
@@ -2717,7 +2717,7 @@
      2015- 1- 5 done - svn #4407
 
  522 2014-12-12 pieces of dialogs should have the corresponding code
-                isolated and named accordingly (see ofaFileFormatPiece)
+                isolated and named accordingly (see ofaStreamFormatPiece)
      2015- 1- 5 review ofaDossierDeletePrefs, and do not unref from
                 ofa_preferences_dispose
      2015- 1- 6 see #553 if DossierDeletePrefs should be kept ?
@@ -2849,7 +2849,7 @@
 
  552 2015- 1- 5 at least classes which export an amount should use the
                 ofaBox definitions as ofaBox is able to output the data
-                following the ofaFileFormat recommandations:
+                following the ofaStreamFormat recommandations:
                 ofoEntry
                 ofoLedger
      2015- 1- 5 done - svn #4407
@@ -2883,7 +2883,7 @@
                 loaded, there is no way to reset it :(
      2015- 1-19 done - svn #4496
 
- 563 2015- 1- 8 IImportable interface: take FileFormat settings into
+ 563 2015- 1- 8 IImportable interface: take StreamFormat settings into
                 account
      2015- 1-17 done - svn #4469
 
@@ -3977,7 +3977,7 @@
                 src/core/ofa-admin-credentials-bin.ui       OK
                 src/core/ofa-dbms-root-bin.ui               OK
                 src/core/ofa-dossier-delete-prefs-bin.ui    OK
-                src/core/ofa-file-format-bin.ui             OK
+                src/core/ofa-stream-format-bin.ui             OK
                 src/core/ofa-preferences.ui                 OK
                 src/mysql/ofa-mysql-connect-display-bin.ui  OK
                 src/mysql/ofa-mysql-connect-enter-bin.ui    OK
