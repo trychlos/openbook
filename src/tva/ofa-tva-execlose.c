@@ -31,7 +31,6 @@
 #include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
-#include "ofa-tva.h"
 #include "ofa-tva-execlose.h"
 
 /* a dedicated structure to hold needed datas

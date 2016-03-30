@@ -162,12 +162,12 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_libofa_tva_la_OBJECTS = ofa-module.lo ofa-tva.lo ofa-tva-dbmodel.lo \
+am_libofa_tva_la_OBJECTS = ofa-extension.lo ofa-tva-dbmodel.lo \
 	ofa-tva-declare-page.lo ofa-tva-execlose.lo \
 	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
 	ofa-tva-main.lo ofa-tva-manage-page.lo ofa-tva-record-new.lo \
 	ofa-tva-record-properties.lo ofa-tva-record-store.lo \
-	ofa-tva-register.lo ofo-tva-form.lo ofo-tva-record.lo
+	ofo-tva-form.lo ofo-tva-record.lo
 am__objects_1 = resources.lo
 nodist_libofa_tva_la_OBJECTS = $(am__objects_1)
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS) \
@@ -443,9 +443,7 @@ nodist_libofa_tva_la_SOURCES = \
 	$(NULL)
 
 libofa_tva_la_SOURCES = \
-	ofa-module.c										\
-	ofa-tva.c											\
-	ofa-tva.h											\
+	ofa-extension.c										\
 	ofa-tva-dbmodel.c									\
 	ofa-tva-dbmodel.h									\
 	ofa-tva-declare-page.c								\
@@ -466,8 +464,6 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-record-properties.h							\
 	ofa-tva-record-store.c								\
 	ofa-tva-record-store.h								\
-	ofa-tva-register.c									\
-	ofa-tva-register.h									\
 	ofo-tva-form.c										\
 	ofo-tva-form.h										\
 	ofo-tva-record.c									\
@@ -572,7 +568,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extension.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-dbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-declare-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-execlose.Plo@am__quote@
@@ -583,8 +579,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-new.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-store.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-register.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tva-form.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tva-record.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Plo@am__quote@

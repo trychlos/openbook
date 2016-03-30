@@ -58,9 +58,7 @@ nodist_libofa_tva_la_SOURCES = \
 	$(NULL)
 
 libofa_tva_la_SOURCES = \
-	ofa-module.c										\
-	ofa-tva.c											\
-	ofa-tva.h											\
+	ofa-extension.c										\
 	ofa-tva-dbmodel.c									\
 	ofa-tva-dbmodel.h									\
 	ofa-tva-declare-page.c								\
@@ -81,8 +79,6 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-record-properties.h							\
 	ofa-tva-record-store.c								\
 	ofa-tva-record-store.h								\
-	ofa-tva-register.c									\
-	ofa-tva-register.h									\
 	ofo-tva-form.c										\
 	ofo-tva-form.h										\
 	ofo-tva-record.c									\

@@ -176,7 +176,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
 
 /*
  * The count of GType types provided by this extension.
- * Each new GType type must be addressed in #ofa_extension_list_types().
+ * Each of these GType types must be addressed in #ofa_extension_list_types().
  * Only the GTypeModule has to be registered from #ofa_extension_startup().
  */
 #define TYPES_COUNT	 2
