@@ -37,7 +37,6 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-iexportable.h"
-#include "api/ofa-iregister.h"
 #include "api/ofa-isingle-keeper.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -59,7 +58,7 @@ typedef struct {
 	 */
 	ofaExtenderCollection  *extenders;
 	ofaPortfolioCollection *portfolios;
-	GList                  *ofofakes;
+	GList                  *objects;
 
 	/* dossier
 	 */
@@ -86,8 +85,6 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
-static void    iregister_iface_init( ofaIRegisterInterface *iface );
-static GList  *iregister_get_for_type( ofaIRegister *instance, GType type );
 static void    icollector_iface_init( ofaICollectorInterface *iface );
 static guint   icollector_get_interface_version( const ofaICollector *instance );
 static void    isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
@@ -100,7 +97,6 @@ static void    free_lines( GSList *lines );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IREGISTER, iregister_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTOR, icollector_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISINGLE_KEEPER, isingle_keeper_iface_init ))
 
@@ -137,7 +133,7 @@ hub_dispose( GObject *instance )
 
 		g_clear_object( &priv->extenders );
 		g_clear_object( &priv->portfolios );
-		g_list_free_full( priv->ofofakes, ( GDestroyNotify ) g_object_unref );
+		g_list_free_full( priv->objects, ( GDestroyNotify ) g_object_unref );
 
 		dossier_do_close( OFA_HUB( instance ));
 	}
@@ -404,38 +400,6 @@ ofa_hub_class_init( ofaHubClass *klass )
 }
 
 /*
- * ofaIRegister interface management
- */
-static void
-iregister_iface_init( ofaIRegisterInterface *iface )
-{
-	static const gchar *thisfn = "ofa_hub_iregister_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_for_type = iregister_get_for_type;
-}
-
-static GList *
-iregister_get_for_type( ofaIRegister *instance, GType type )
-{
-	ofaHubPrivate *priv;
-	GList *list, *it;
-
-	priv = ofa_hub_get_instance_private( OFA_HUB( instance ));
-
-	list = NULL;
-
-	for( it=priv->ofofakes ; it ; it=it->next ){
-		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
-			list = g_list_prepend( list, g_object_ref( it->data ));
-		}
-	}
-
-	return( list );
-}
-
-/*
  * ofaICollector interface management
  */
 static void
@@ -541,17 +505,57 @@ ofa_hub_register_types( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->ofofakes = NULL;
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_DOSSIER, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CLASS, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CURRENCY, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_BAT, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_CONCIL, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_LEDGER, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_RATE, NULL ));
-	priv->ofofakes = g_list_prepend( priv->ofofakes, g_object_new( OFO_TYPE_ENTRY, NULL ));
+	priv->objects = NULL;
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CLASS, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_RATE, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_BAT, NULL ));
+}
+
+/**
+ * ofa_hub_get_for_type:
+ * @hub: the #ofaHub object of the application.
+ * @type: a GType.
+ *
+ * Returns: a list of new references to objects which implement the
+ * @type, concatenating both those from the core library, and those
+ * advertized by the plugins.
+ *
+ * It is expected that the caller takes ownership of the returned list,
+ * and #g_list_free_full( list, ( GDestroyNotify ) g_object_unref )
+ * after use.
+ */
+GList *
+ofa_hub_get_for_type( ofaHub *hub, GType type )
+{
+	ofaHubPrivate *priv;
+	GList *objects, *it, *extender_objects;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	/* requests first the objects registered from core library */
+	objects = NULL;
+	for( it=priv->objects ; it ; it=it->next ){
+		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
+			objects = g_list_prepend( objects, g_object_ref( it->data ));
+		}
+	}
+
+	/* requests then same type from loaded modules */
+	extender_objects = ofa_extender_collection_get_for_type( priv->extenders, type );
+	objects = g_list_concat( objects, extender_objects );
+
+	return( objects );
 }
 
 /**

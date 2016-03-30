@@ -627,7 +627,7 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	my_utils_widget_set_style( priv->p2_content, "labelinfo" );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	priv->p2_importables = ofa_iregister_get_all_for_type( hub, OFA_TYPE_IIMPORTABLE );
+	priv->p2_importables = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTABLE );
 	g_debug( "%s: importables count=%d", thisfn, g_list_length( priv->p2_importables ));
 	priv->p2_selected_btn = NULL;
 	priv->p2_row = 0;

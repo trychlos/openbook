@@ -67,6 +67,7 @@ Press Continue.</property>
                   <object class="GtkLabel" id="p2-furi">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="ellipsize">start</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>
@@ -203,6 +204,7 @@ Press Continue.</property>
                   <object class="GtkLabel" id="p3-furi">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="ellipsize">start</property>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>

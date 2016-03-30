@@ -178,7 +178,7 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
 	ofa-idbprovider.lo ofa-iexeclose-close.lo ofa-iexportable.lo \
 	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-iprefs-page.lo ofa-iprefs-provider.lo ofa-iregister.lo \
+	ofa-iprefs-page.lo ofa-iprefs-provider.lo \
 	ofa-isingle-keeper.lo ofa-istore.lo ofa-itheme-manager.lo \
 	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
@@ -523,7 +523,6 @@ libofa_core_la_SOURCES = \
 	ofa-iimportable.c									\
 	ofa-iprefs-page.c									\
 	ofa-iprefs-provider.c								\
-	ofa-iregister.c										\
 	ofa-isingle-keeper.c								\
 	ofa-istore.c										\
 	ofa-itheme-manager.c								\
@@ -709,7 +708,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimporter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprefs-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprefs-provider.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iregister.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-isingle-keeper.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-istore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itheme-manager.Plo@am__quote@

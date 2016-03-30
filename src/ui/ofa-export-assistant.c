@@ -474,7 +474,7 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_export_assistant_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	priv->p1_exportables = ofa_iregister_get_all_for_type( hub, OFA_TYPE_IEXPORTABLE );
+	priv->p1_exportables = ofa_hub_get_for_type( hub, OFA_TYPE_IEXPORTABLE );
 	g_debug( "%s: exportables count=%d", thisfn, g_list_length( priv->p1_exportables ));
 	priv->p1_selected_btn = NULL;
 	priv->p1_row = 0;

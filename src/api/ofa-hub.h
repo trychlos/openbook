@@ -103,6 +103,9 @@ void                    ofa_hub_set_extender_collection ( ofaHub *hub,
 
 void                    ofa_hub_register_types          ( ofaHub *hub );
 
+GList                  *ofa_hub_get_for_type            ( ofaHub *hub,
+																GType type );
+
 ofaPortfolioCollection *ofa_hub_get_portfolio_collection( const ofaHub *hub );
 
 void                    ofa_hub_set_portfolio_collection( ofaHub *hub,
