@@ -66,7 +66,7 @@ nodist_libofa_mysql_la_SOURCES = \
 	$(NULL)
 
 libofa_mysql_la_SOURCES = \
-	ofa-module.c										\
+	ofa-extension.c										\
 	ofa-mysql-cmdline.c									\
 	ofa-mysql-cmdline.h									\
 	ofa-mysql-connect.c									\
@@ -79,8 +79,6 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-editor-display.h							\
 	ofa-mysql-editor-enter.c							\
 	ofa-mysql-editor-enter.h							\
-	ofa-mysql-id.c										\
-	ofa-mysql-id.h										\
 	ofa-mysql-iprefs-provider.c							\
 	ofa-mysql-iprefs-provider.h							\
 	ofa-mysql-meta.c									\

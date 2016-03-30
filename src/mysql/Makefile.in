@@ -173,21 +173,21 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 @HAVE_MYSQL_TRUE@libofa_mysql_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__libofa_mysql_la_SOURCES_DIST = ofa-module.c ofa-mysql-cmdline.c \
+am__libofa_mysql_la_SOURCES_DIST = ofa-extension.c ofa-mysql-cmdline.c \
 	ofa-mysql-cmdline.h ofa-mysql-connect.c ofa-mysql-connect.h \
 	ofa-mysql-dbmodel.c ofa-mysql-dbmodel.h ofa-mysql-dbprovider.c \
 	ofa-mysql-dbprovider.h ofa-mysql-editor-display.c \
 	ofa-mysql-editor-display.h ofa-mysql-editor-enter.c \
-	ofa-mysql-editor-enter.h ofa-mysql-id.c ofa-mysql-id.h \
-	ofa-mysql-iprefs-provider.c ofa-mysql-iprefs-provider.h \
-	ofa-mysql-meta.c ofa-mysql-meta.h ofa-mysql-period.c \
-	ofa-mysql-period.h ofa-mysql-prefs-bin.c ofa-mysql-prefs-bin.h \
-	ofa-mysql-user-prefs.c ofa-mysql-user-prefs.h
-@HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-module.lo \
+	ofa-mysql-editor-enter.h ofa-mysql-iprefs-provider.c \
+	ofa-mysql-iprefs-provider.h ofa-mysql-meta.c ofa-mysql-meta.h \
+	ofa-mysql-period.c ofa-mysql-period.h ofa-mysql-prefs-bin.c \
+	ofa-mysql-prefs-bin.h ofa-mysql-user-prefs.c \
+	ofa-mysql-user-prefs.h
+@HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-extension.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.lo ofa-mysql-connect.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-dbmodel.lo ofa-mysql-dbprovider.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.lo \
-@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo ofa-mysql-id.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.lo ofa-mysql-period.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.lo \
@@ -470,7 +470,7 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	$(NULL)
 
 @HAVE_MYSQL_TRUE@libofa_mysql_la_SOURCES = \
-@HAVE_MYSQL_TRUE@	ofa-module.c										\
+@HAVE_MYSQL_TRUE@	ofa-extension.c										\
 @HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.c									\
 @HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.h									\
 @HAVE_MYSQL_TRUE@	ofa-mysql-connect.c									\
@@ -483,8 +483,6 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-display.h							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.c							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-editor-enter.h							\
-@HAVE_MYSQL_TRUE@	ofa-mysql-id.c										\
-@HAVE_MYSQL_TRUE@	ofa-mysql-id.h										\
 @HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.c							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.h							\
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.c									\
@@ -595,14 +593,13 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-module.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extension.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-cmdline.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-connect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-dbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-dbprovider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-editor-enter.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-iprefs-provider.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-period.Plo@am__quote@

@@ -30,81 +30,83 @@
 
 #include "api/ofa-extension.h"
 
-#include "importers/ofa-importers-csv.h"
+#include "mysql/ofa-mysql-dbmodel.h"
+#include "mysql/ofa-mysql-dbprovider.h"
 
 /*
  * The part below defines and implements the GTypeModule-derived class
  *  for this library.
  * See infra for the software extension API implementation.
  */
-#define OFA_TYPE_IMPORTERS_ID                ( ofa_importers_id_get_type())
-#define OFA_IMPORTERS_ID( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_IMPORTERS_ID, ofaImportersId ))
-#define OFA_IMPORTERS_ID_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_IMPORTERS_ID, ofaImportersIdClass ))
-#define OFA_IS_IMPORTERS_ID( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_IMPORTERS_ID ))
-#define OFA_IS_IMPORTERS_ID_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_IMPORTERS_ID ))
-#define OFA_IMPORTERS_ID_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_IMPORTERS_ID, ofaImportersIdClass ))
+#define OFA_TYPE_MYSQL_ID                ( ofa_mysql_id_get_type())
+#define OFA_MYSQL_ID( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_ID, ofaMysqlId ))
+#define OFA_MYSQL_ID_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_ID, ofaMysqlIdClass ))
+#define OFA_IS_MYSQL_ID( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_ID ))
+#define OFA_IS_MYSQL_ID_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_ID ))
+#define OFA_MYSQL_ID_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_ID, ofaMysqlIdClass ))
 
 typedef struct {
 	/*< public members >*/
 	GObject      parent;
 }
-	ofaImportersId;
+	ofaMysqlId;
 
 typedef struct {
 	/*< public members >*/
 	GObjectClass parent;
 }
-	ofaImportersIdClass;
+	ofaMysqlIdClass;
 
 /* private instance data
  */
 typedef struct {
 	gboolean dispose_has_run;
 }
-	ofaImportersIdPrivate;
+	ofaMysqlIdPrivate;
 
-GType ofa_importers_id_get_type( void );
+GType ofa_mysql_id_get_type( void );
 
 static void   iident_iface_init( myIIdentInterface *iface );
 static gchar *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar *iident_get_display_name( const myIIdent *instance, void *user_data );
 static gchar *iident_get_version( const myIIdent *instance, void *user_data );
 
-G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaImportersId, ofa_importers_id, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE_DYNAMIC( ofaImportersId )
+G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaMysqlId, ofa_mysql_id, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE_DYNAMIC( ofaMysqlId )
 		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init ))
 
 static void
-ofa_importers_id_class_finalize( ofaImportersIdClass *klass )
+ofa_mysql_id_class_finalize( ofaMysqlIdClass *klass )
 {
-	static const gchar *thisfn = "ofa_importers_id_class_finalize";
+	static const gchar *thisfn = "ofa_mysql_id_class_finalize";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 }
 
 static void
-importers_id_finalize( GObject *instance )
+mysql_id_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_importers_id_finalize";
+	static const gchar *thisfn = "ofa_mysql_id_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_IMPORTERS_ID( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_ID( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_importers_id_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_mysql_id_parent_class )->finalize( instance );
 }
 
 static void
-importers_id_dispose( GObject *instance )
+mysql_id_dispose( GObject *instance )
 {
-	ofaImportersIdPrivate *priv;
+	ofaMysqlIdPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_IMPORTERS_ID( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_ID( instance ));
 
-	priv = ofa_importers_id_get_instance_private( OFA_IMPORTERS_ID( instance ));
+	priv = ofa_mysql_id_get_instance_private( OFA_MYSQL_ID( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -114,60 +116,67 @@ importers_id_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_importers_id_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_mysql_id_parent_class )->dispose( instance );
 }
 
 static void
-ofa_importers_id_init( ofaImportersId *self )
+ofa_mysql_id_init( ofaMysqlId *self )
 {
-	static const gchar *thisfn = "ofa_importers_id_init";
-	ofaImportersIdPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_id_init";
+	ofaMysqlIdPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_IMPORTERS_ID( self ));
+	g_return_if_fail( self && OFA_IS_MYSQL_ID( self ));
 
-	priv = ofa_importers_id_get_instance_private( self );
+	priv = ofa_mysql_id_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_importers_id_class_init( ofaImportersIdClass *klass )
+ofa_mysql_id_class_init( ofaMysqlIdClass *klass )
 {
-	static const gchar *thisfn = "ofa_importers_id_class_init";
+	static const gchar *thisfn = "ofa_mysql_id_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = importers_id_dispose;
-	G_OBJECT_CLASS( klass )->finalize = importers_id_finalize;
+	G_OBJECT_CLASS( klass )->dispose = mysql_id_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_id_finalize;
 }
 
 /*
- * myIIdent interface management
+ * #myIIdent interface management
  */
 static void
 iident_iface_init( myIIdentInterface *iface )
 {
-	static const gchar *thisfn = "ofa_importers_id_iident_iface_init";
+	static const gchar *thisfn = "ofa_mysql_id_iident_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_canon_name = iident_get_canon_name;
+	iface->get_display_name = iident_get_display_name;
 	iface->get_version = iident_get_version;
 }
 
 static gchar *
 iident_get_canon_name( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup( "Importers" ));
+	return( g_strdup( "MySQL" ));
+}
+
+static gchar *
+iident_get_display_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( "MySQL Library" ));
 }
 
 static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup( "v 2016.1" ));
+	return( g_strdup( PACKAGE_VERSION ));
 }
 
 /*
@@ -179,7 +188,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
  * Each new GType type must be addressed in #ofa_extension_list_types().
  * Only the GTypeModule has to be registered from #ofa_extension_startup().
  */
-#define TYPES_COUNT	 2
+#define TYPES_COUNT	 3
 
 /*
  * ofa_extension_startup:
@@ -189,11 +198,11 @@ iident_get_version( const myIIdent *instance, void *user_data )
 gboolean
 ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 {
-	static const gchar *thisfn = "importers/ofa_extension_startup";
+	static const gchar *thisfn = "mysql/ofa_extension_startup";
 
 	g_debug( "%s: module=%p, getter=%p", thisfn, ( void * ) module, ( void * ) getter  );
 
-	ofa_importers_id_register_type( module );
+	ofa_mysql_id_register_type( module );
 
 	return( TRUE );
 }
@@ -206,14 +215,15 @@ ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 guint
 ofa_extension_list_types( const GType **types )
 {
-	static const gchar *thisfn = "importers/ofa_extension_list_types";
+	static const gchar *thisfn = "mysql/ofa_extension_list_types";
 	static GType types_list [1+TYPES_COUNT];
 	gint i = 0;
 
 	g_debug( "%s: types=%p", thisfn, ( void * ) types );
 
-	types_list[i++] = OFA_TYPE_IMPORTERS_ID;
-	types_list[i++] = OFA_TYPE_IMPORTERS_CSV;
+	types_list[i++] = OFA_TYPE_MYSQL_ID;
+	types_list[i++] = OFA_TYPE_MYSQL_DBMODEL;
+	types_list[i++] = OFA_TYPE_MYSQL_DBPROVIDER;
 
 	g_return_val_if_fail( i == TYPES_COUNT, 0 );
 	types_list[i] = 0;
@@ -230,7 +240,7 @@ ofa_extension_list_types( const GType **types )
 void
 ofa_extension_shutdown( void )
 {
-	static const gchar *thisfn = "importers/ofa_extension_shutdown";
+	static const gchar *thisfn = "mysql/ofa_extension_shutdown";
 
 	g_debug( "%s", thisfn );
 }
