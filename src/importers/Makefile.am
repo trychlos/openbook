@@ -36,9 +36,9 @@ AM_CPPFLAGS += \
 	$(NULL)
 
 libofa_importers_la_SOURCES = \
-	ofa-module.c									\
-	ofa-import-csv.c								\
-	ofa-import-csv.h								\
+	ofa-extension.c									\
+	ofa-importers-csv.c								\
+	ofa-importers-csv.h								\
 	$(NULL)
 
 libofa_importers_la_LIBADD = \
