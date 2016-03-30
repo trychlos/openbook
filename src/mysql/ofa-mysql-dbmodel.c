@@ -52,7 +52,7 @@
 
 /* private instance data
  */
-struct _ofaMysqlDBModelPrivate {
+typedef struct {
 	gboolean             dispose_has_run;
 
 	/* update setup
@@ -65,7 +65,8 @@ struct _ofaMysqlDBModelPrivate {
 	 */
 	gulong               total;
 	gulong               current;
-};
+}
+	ofaMysqlDBModelPrivate;
 
 #define DBMODEL_CANON_NAME               "CORE"
 
@@ -115,13 +116,6 @@ static sImport st_imports[] = {
 
 #define MARGIN_LEFT                       20
 
-static GType         st_module_type     = 0;
-static GObjectClass *st_parent_class    = NULL;
-
-static void     instance_finalize( GObject *object );
-static void     instance_dispose( GObject *object );
-static void     instance_init( GTypeInstance *instance, gpointer klass );
-static void     class_init( ofaMysqlDBModelClass *klass );
 static void     iident_iface_init( myIIdentInterface *iface );
 static gchar   *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar   *iident_get_version( const myIIdent *instance, void *user_data );
@@ -130,32 +124,32 @@ static guint    idbmodel_get_current_version( const ofaIDBModel *instance, const
 static guint    idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint    get_last_version( void );
 static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
-static gboolean upgrade_to( ofaMysqlDBModel *model, sMigration *smig );
-static gboolean exec_query( ofaMysqlDBModel *model, const gchar *query );
-static gboolean version_begin( ofaMysqlDBModel *model, gint version );
-static gboolean version_end( ofaMysqlDBModel *model, gint version );
-static gboolean import_utf8_comma_pipe_file( ofaMysqlDBModel *model, sImport *import );
-static gint     count_rows( ofaMysqlDBModel *model, const gchar *table );
-static gboolean dbmodel_v20( ofaMysqlDBModel *model, gint version );
-static gulong   count_v20( ofaMysqlDBModel *model );
-static gboolean dbmodel_v21( ofaMysqlDBModel *model, gint version );
-static gulong   count_v21( ofaMysqlDBModel *model );
-static gboolean dbmodel_v22( ofaMysqlDBModel *model, gint version );
-static gulong   count_v22( ofaMysqlDBModel *model );
-static gboolean dbmodel_v23( ofaMysqlDBModel *model, gint version );
-static gulong   count_v23( ofaMysqlDBModel *model );
-static gboolean dbmodel_v24( ofaMysqlDBModel *model, gint version );
-static gulong   count_v24( ofaMysqlDBModel *model );
-static gboolean dbmodel_v25( ofaMysqlDBModel *model, gint version );
-static gulong   count_v25( ofaMysqlDBModel *model );
-static gboolean dbmodel_v26( ofaMysqlDBModel *model, gint version );
-static gulong   count_v26( ofaMysqlDBModel *model );
-static gboolean dbmodel_v27( ofaMysqlDBModel *model, gint version );
-static gulong   count_v27( ofaMysqlDBModel *model );
-static gboolean dbmodel_v28( ofaMysqlDBModel *model, gint version );
-static gulong   count_v28( ofaMysqlDBModel *model );
-static gboolean dbmodel_v29( ofaMysqlDBModel *model, gint version );
-static gulong   count_v29( ofaMysqlDBModel *model );
+static gboolean upgrade_to( ofaMysqlDBModel *self, sMigration *smig );
+static gboolean exec_query( ofaMysqlDBModel *self, const gchar *query );
+static gboolean version_begin( ofaMysqlDBModel *self, gint version );
+static gboolean version_end( ofaMysqlDBModel *self, gint version );
+static gboolean import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import );
+static gint     count_rows( ofaMysqlDBModel *self, const gchar *table );
+static gboolean dbmodel_v20( ofaMysqlDBModel *self, gint version );
+static gulong   count_v20( ofaMysqlDBModel *self );
+static gboolean dbmodel_v21( ofaMysqlDBModel *self, gint version );
+static gulong   count_v21( ofaMysqlDBModel *self );
+static gboolean dbmodel_v22( ofaMysqlDBModel *self, gint version );
+static gulong   count_v22( ofaMysqlDBModel *self );
+static gboolean dbmodel_v23( ofaMysqlDBModel *self, gint version );
+static gulong   count_v23( ofaMysqlDBModel *self );
+static gboolean dbmodel_v24( ofaMysqlDBModel *self, gint version );
+static gulong   count_v24( ofaMysqlDBModel *self );
+static gboolean dbmodel_v25( ofaMysqlDBModel *self, gint version );
+static gulong   count_v25( ofaMysqlDBModel *self );
+static gboolean dbmodel_v26( ofaMysqlDBModel *self, gint version );
+static gulong   count_v26( ofaMysqlDBModel *self );
+static gboolean dbmodel_v27( ofaMysqlDBModel *self, gint version );
+static gulong   count_v27( ofaMysqlDBModel *self );
+static gboolean dbmodel_v28( ofaMysqlDBModel *self, gint version );
+static gulong   count_v28( ofaMysqlDBModel *self );
+static gboolean dbmodel_v29( ofaMysqlDBModel *self, gint version );
+static gulong   count_v29( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -171,118 +165,70 @@ static sMigration st_migrates[] = {
 		{ 0 }
 };
 
-GType
-ofa_mysql_dbmodel_get_type( void )
-{
-	return( st_module_type );
-}
-
-void
-ofa_mysql_dbmodel_register_type( GTypeModule *module )
-{
-	static const gchar *thisfn = "ofa_mysql_dbmodel_register_type";
-
-	static GTypeInfo info = {
-		sizeof( ofaMysqlDBModelClass ),
-		NULL,
-		NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaMysqlDBModel ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	static const GInterfaceInfo iident_iface_info = {
-		( GInterfaceInitFunc ) iident_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo idbmodel_iface_info = {
-		( GInterfaceInitFunc ) idbmodel_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaMysqlDBModel", &info, 0 );
-
-	g_type_module_add_interface( module, st_module_type, MY_TYPE_IIDENT, &iident_iface_info );
-
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBMODEL, &idbmodel_iface_info );
-}
+G_DEFINE_TYPE_EXTENDED( ofaMysqlDBModel, ofa_mysql_dbmodel, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMysqlDBModel )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBMODEL, idbmodel_iface_init ))
 
 static void
-instance_finalize( GObject *object )
+mysql_dbmodel_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_dbmodel_instance_finalize";
+	static const gchar *thisfn = "ofa_mysql_dbmodel_finalize";
 
-	g_debug( "%s: object=%p (%s)",
-			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( object && OFA_IS_MYSQL_DBMODEL( object ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_DBMODEL( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+	G_OBJECT_CLASS( ofa_mysql_dbmodel_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *object )
+mysql_dbmodel_dispose( GObject *instance )
 {
 	ofaMysqlDBModelPrivate *priv;
 
-	g_return_if_fail( object && OFA_IS_MYSQL_DBMODEL( object ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_DBMODEL( instance ));
 
-	priv = OFA_MYSQL_DBMODEL( object )->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( OFA_MYSQL_DBMODEL( instance ));
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
 
-		/* unref object members here */
+		/* unref instance members here */
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->dispose( object );
+	G_OBJECT_CLASS( ofa_mysql_dbmodel_parent_class )->dispose( instance );
 }
 
 static void
-instance_init( GTypeInstance *instance, gpointer klass )
+ofa_mysql_dbmodel_init( ofaMysqlDBModel *self )
 {
-	static const gchar *thisfn = "ofa_mysql_dbmodel_instance_init";
-	ofaMysqlDBModel *self;
+	static const gchar *thisfn = "ofa_mysql_dbmodel_init";
+	ofaMysqlDBModelPrivate *priv;
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn,
-			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_DBMODEL( instance ));
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
-	self = OFA_MYSQL_DBMODEL( instance );
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MYSQL_DBMODEL, ofaMysqlDBModelPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
-class_init( ofaMysqlDBModelClass *klass )
+ofa_mysql_dbmodel_class_init( ofaMysqlDBModelClass *klass )
 {
 	static const gchar *thisfn = "ofa_mysql_dbmodel_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
-	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMysqlDBModelPrivate ));
+	G_OBJECT_CLASS( klass )->dispose = mysql_dbmodel_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_dbmodel_finalize;
 }
 
 /*
@@ -379,7 +325,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 	GtkWidget *label;
 	gchar *str;
 
-	priv = OFA_MYSQL_DBMODEL( instance )->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( OFA_MYSQL_DBMODEL( instance ));
 
 	ok = TRUE;
 	priv->hub = hub;
@@ -439,62 +385,62 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
  * upgrade the DB model to the specified version
  */
 static gboolean
-upgrade_to( ofaMysqlDBModel *model, sMigration *smig )
+upgrade_to( ofaMysqlDBModel *self, sMigration *smig )
 {
 	ofaMysqlDBModelPrivate *priv;
 	gboolean ok;
 	GtkWidget *label;
 	gchar *str;
 
-	priv = model->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	str = g_strdup_printf( _( "Upgrading to v %d :" ), smig->ver_target );
 	label = gtk_label_new( str );
 	g_free( str );
 	gtk_widget_set_valign( label, GTK_ALIGN_END );
 	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
-	my_iprogress_start_progress( priv->window, model, label, TRUE );
+	my_iprogress_start_progress( priv->window, self, label, TRUE );
 
-	priv->total = smig->fncount( model )+3;	/* counting version_begin+version_end */
+	priv->total = smig->fncount( self )+3;	/* counting version_begin+version_end */
 	priv->current = 0;
 
-	ok = version_begin( model, smig->ver_target ) &&
-			smig->fnquery( model, smig->ver_target ) &&
-			version_end( model, smig->ver_target );
+	ok = version_begin( self, smig->ver_target ) &&
+			smig->fnquery( self, smig->ver_target ) &&
+			version_end( self, smig->ver_target );
 
-	my_iprogress_set_ok( priv->window, model, NULL, ok ? 0 : 1 );
+	my_iprogress_set_ok( priv->window, self, NULL, ok ? 0 : 1 );
 
 	return( ok );
 }
 
 static gboolean
-exec_query( ofaMysqlDBModel *model, const gchar *query )
+exec_query( ofaMysqlDBModel *self, const gchar *query )
 {
 	ofaMysqlDBModelPrivate *priv;
 	gboolean ok;
 
-	priv = model->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
-	my_iprogress_set_text( priv->window, model, query );
+	my_iprogress_set_text( priv->window, self, query );
 
 	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 
 	priv->current += 1;
-	my_iprogress_pulse( priv->window, model, priv->current, priv->total );
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
 
 	return( ok );
 }
 
 static gboolean
-version_begin( ofaMysqlDBModel *model, gint version )
+version_begin( ofaMysqlDBModel *self, gint version )
 {
 	gboolean ok;
 	gchar *query;
 
 	/* default value for timestamp cannot be null */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_VERSION ("
-			"	VER_NUMBER INTEGER   NOT NULL UNIQUE DEFAULT 0 COMMENT 'DB model version number',"
+			"	VER_NUMBER INTEGER   NOT NULL UNIQUE DEFAULT 0 COMMENT 'DB self version number',"
 			"	VER_DATE   TIMESTAMP                 DEFAULT 0 COMMENT 'Version application timestamp') "
 			"CHARACTER SET utf8" )){
 		return( FALSE );
@@ -503,31 +449,31 @@ version_begin( ofaMysqlDBModel *model, gint version )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_VERSION "
 			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", version );
-	ok = exec_query( model, query );
+	ok = exec_query( self, query );
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-version_end( ofaMysqlDBModel *model, gint version )
+version_end( ofaMysqlDBModel *self, gint version )
 {
 	gchar *query;
 	gboolean ok;
 
-	/* we do this only at the end of the DB model udpate
+	/* we do this only at the end of the DB self udpate
 	 * as a mark that all has been successfully done
 	 */
 	query = g_strdup_printf(
 			"UPDATE OFA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", version );
-	ok = exec_query( model, query );
+	ok = exec_query( self, query );
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-import_utf8_comma_pipe_file( ofaMysqlDBModel *model, sImport *import )
+import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import )
 {
 	ofaMysqlDBModelPrivate *priv;
 	gint count;
@@ -537,15 +483,15 @@ import_utf8_comma_pipe_file( ofaMysqlDBModel *model, sImport *import )
 	gchar *uri, *fname, *str;
 	GtkWidget *label;
 
-	priv = model->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	ok = TRUE;
-	count = count_rows( model, import->table );
+	count = count_rows( self, import->table );
 	if( !count ){
 		str = g_strdup_printf( _( "Importing into %s :" ), import->table );
 		label = gtk_label_new( str );
 		g_free( str );
-		my_iprogress_start_progress( priv->window, model, label, FALSE );
+		my_iprogress_start_progress( priv->window, self, label, FALSE );
 
 		settings = ofa_file_format_new( SETTINGS_IMPORT_SETTINGS );
 		ofa_file_format_set( settings,
@@ -563,20 +509,20 @@ import_utf8_comma_pipe_file( ofaMysqlDBModel *model, sImport *import )
 		str = g_strdup_printf( _( "%d lines" ), count );
 		label = gtk_label_new( str );
 		g_free( str );
-		my_iprogress_set_row( priv->window, model, label );
+		my_iprogress_set_row( priv->window, self, label );
 	}
 
 	return( ok );
 }
 
 static gint
-count_rows( ofaMysqlDBModel *model, const gchar *table )
+count_rows( ofaMysqlDBModel *self, const gchar *table )
 {
 	ofaMysqlDBModelPrivate *priv;
 	gint count;
 	gchar *query;
 
-	priv = model->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	query = g_strdup_printf( "SELECT COUNT(*) FROM %s", table );
 	ofa_idbconnect_query_int( priv->connect, query, &count, TRUE );
@@ -591,7 +537,7 @@ count_rows( ofaMysqlDBModel *model, const gchar *table )
  * This is the initial creation of the schema
  */
 static gboolean
-dbmodel_v20( ofaMysqlDBModel *model, gint version )
+dbmodel_v20( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v20";
 	ofaMysqlDBModelPrivate *priv;
@@ -599,15 +545,15 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	gboolean ok;
 	ofaIDBMeta *meta;
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
-	priv = model->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	/* n° 1 */
 	/* ACC_TYPE is renamed to ACC_ROOT in v27 */
 	/* ACC_FORWARD is renamed to ACC_FORWARDABLE in v27 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
 			"	ACC_LABEL           VARCHAR(80)   NOT NULL           COMMENT 'Account label',"
@@ -673,7 +619,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	/* n° 2 */
 	/* BAT_SOLDE is remediated in v22 */
 	/* Labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT ("
 			"	BAT_ID        BIGINT      NOT NULL UNIQUE            COMMENT 'Intern import identifier',"
 			"	BAT_URI       VARCHAR(256)                           COMMENT 'Imported URI',"
@@ -694,7 +640,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	/* BAT_LINE_UPD_STAMP is remediated in v21 */
 	/* BAT_LINE_ENTRY and BAT_LINE_UPD_USER are remediated in v24 */
 	/* Labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_LINES ("
 			"	BAT_ID             BIGINT   NOT NULL                 COMMENT 'Intern import identifier',"
 			"	BAT_LINE_ID        BIGINT   NOT NULL UNIQUE          COMMENT 'Intern imported line identifier',"
@@ -713,7 +659,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 
 	/* n° 4 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CLASSES ("
 			"	CLA_NUMBER       INTEGER     NOT NULL UNIQUE         COMMENT 'Class number',"
 			"	CLA_LABEL        VARCHAR(80) NOT NULL                COMMENT 'Class label',"
@@ -726,7 +672,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 
 	/* n° 5 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CURRENCIES ("
 			"	CUR_CODE      VARCHAR(3) BINARY NOT NULL      UNIQUE COMMENT 'ISO-3A identifier of the currency',"
 			"	CUR_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Currency label',"
@@ -742,7 +688,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	/* n° 6 */
 	/* DOS_STATUS is renamed to DOS_CURRENT in v27 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
 			"	DOS_DEF_CURRENCY     VARCHAR(3)                      COMMENT 'Default currency identifier',"
@@ -777,7 +723,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
 			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
 			dossier_name, DOSSIER_EXERCICE_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
-	ok = exec_query( model, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	g_free( dossier_name );
 	g_object_unref( meta );
@@ -787,7 +733,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 
 	/* n° 8 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER_CUR ("
 			"	DOS_ID               INTEGER   NOT NULL              COMMENT 'Row identifier',"
 			"	DOS_CURRENCY         VARCHAR(3)                      COMMENT 'Currency identifier',"
@@ -799,7 +745,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 
 	/* n° 9 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
 			"	ENT_NUMBER       BIGINT  NOT NULL UNIQUE             COMMENT 'Entry number',"
@@ -827,7 +773,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 
 	/* n° 10 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS ("
 			"	LED_MNEMO     VARCHAR(6) BINARY  NOT NULL UNIQUE     COMMENT 'Mnemonic identifier of the ledger',"
 			"	LED_LABEL     VARCHAR(80) NOT NULL                   COMMENT 'Ledger label',"
@@ -841,7 +787,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 
 	/* n° 11 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_CUR ("
 			"	LED_MNEMO            VARCHAR(6) NOT NULL             COMMENT 'Internal ledger identifier',"
 			"	LED_CUR_CODE         VARCHAR(3) NOT NULL             COMMENT 'Internal currency identifier',"
@@ -859,7 +805,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	/* n° 12 */
 	/* locked indicators are remediated in v27 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
 			"	OTE_LABEL      VARCHAR(80)       NOT NULL            COMMENT 'Template label',"
@@ -877,7 +823,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	/* n° 13 */
 	/* locked indicators are remediated in v27 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES_DET ("
 			"	OTE_MNEMO              VARCHAR(6) NOT NULL           COMMENT 'Operation template menmonic',"
 			"	OTE_DET_ROW            INTEGER    NOT NULL           COMMENT 'Detail line number',"
@@ -900,7 +846,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	if( !ofa_dbms_query( dbms,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RECURRENT ("
 			"	REC_ID        INTEGER AUTO_INCREMENT NOT NULL UNIQUE COMMENT 'Internal identifier',"
-			"	REC_MOD_MNEMO VARCHAR(6)                  COMMENT 'Entry model mnemmonic',"
+			"	REC_MOD_MNEMO VARCHAR(6)                  COMMENT 'Entry self mnemmonic',"
 			"	REC_PERIOD    VARCHAR(1)                  COMMENT 'Periodicity',"
 			"	REC_DAY       INTEGER                     COMMENT 'Day of the period',"
 			"	REC_NOTES     VARCHAR(4096)               COMMENT 'Notes',"
@@ -914,7 +860,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 
 	/* n° 14 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES ("
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL UNIQUE  COMMENT 'Mnemonic identifier of the rate',"
 			"	RAT_LABEL         VARCHAR(80)       NOT NULL         COMMENT 'Rate label',"
@@ -928,7 +874,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
 	/* n° 15 */
 	/* RAT_VAL_BEG is renamed as RAT_VAL_BEGIN in v27 */
 	/* Identifiers and labels are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_RATES_VAL ("
 			"	RAT_UNUSED        INTEGER AUTO_INCREMENT PRIMARY KEY COMMENT 'An unused counter to have a unique key while keeping NULL values',"
 			"	RAT_MNEMO         VARCHAR(6) BINARY NOT NULL         COMMENT 'Mnemonic identifier of the rate',"
@@ -948,7 +894,7 @@ dbmodel_v20( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v20( ofaMysqlDBModel *model )
+count_v20( ofaMysqlDBModel *self )
 {
 	return( 15 );
 }
@@ -958,14 +904,14 @@ count_v20( ofaMysqlDBModel *model )
  * have zero timestamp on unreconciliated batlines
  */
 static gboolean
-dbmodel_v21( ofaMysqlDBModel *model, gint version )
+dbmodel_v21( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v21";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
 	/* n° 1 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT_LINES "
 			"	MODIFY COLUMN BAT_LINE_UPD_STAMP TIMESTAMP DEFAULT 0 "
 			"	COMMENT 'Reconciliation timestamp'" )){
@@ -973,7 +919,7 @@ dbmodel_v21( ofaMysqlDBModel *model, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_BAT_LINES "
 			"	SET BAT_LINE_UPD_STAMP=0 WHERE BAT_LINE_ENTRY IS NULL" )){
 		return( FALSE );
@@ -987,7 +933,7 @@ dbmodel_v21( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v21( ofaMysqlDBModel *model )
+count_v21( ofaMysqlDBModel *self )
 {
 	return( 2 );
 }
@@ -997,14 +943,14 @@ count_v21( ofaMysqlDBModel *model )
  * have begin_solde and end_solde in bat
  */
 static gboolean
-dbmodel_v22( ofaMysqlDBModel *model, gint version )
+dbmodel_v22( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v22";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
 	/* n° 1 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT "
 			"	CHANGE COLUMN BAT_SOLDE BAT_SOLDE_END DECIMAL(20,5) "
 			"	COMMENT 'Signed end balance of the account'" )){
@@ -1012,7 +958,7 @@ dbmodel_v22( ofaMysqlDBModel *model, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT "
 			"	ADD COLUMN BAT_SOLDE_BEGIN DECIMAL(20,5) "
 			"	COMMENT 'Signed begin balance of the account'" )){
@@ -1027,7 +973,7 @@ dbmodel_v22( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v22( ofaMysqlDBModel *model )
+count_v22( ofaMysqlDBModel *self )
 {
 	return( 2 );
 }
@@ -1038,14 +984,14 @@ count_v22( ofaMysqlDBModel *model )
  * remediated in v27
  */
 static gboolean
-dbmodel_v23( ofaMysqlDBModel *model, gint version )
+dbmodel_v23( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v23";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
 	/* n° 1 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ACCOUNTS "
 			"	ADD COLUMN ACC_CLOSED CHAR(1) "
 			"	COMMENT 'Whether the account is closed'" )){
@@ -1060,7 +1006,7 @@ dbmodel_v23( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v23( ofaMysqlDBModel *model )
+count_v23( ofaMysqlDBModel *self )
 {
 	return( 1 );
 }
@@ -1068,19 +1014,19 @@ count_v23( ofaMysqlDBModel *model )
 /*
  * ofa_ddl_update_dbmodel_v24:
  *
- * This is an intermediate DB model wrongly introduced in v0.37 as a
+ * This is an intermediate DB self wrongly introduced in v0.37 as a
  * reconciliation improvement try, and replaced in v0.38
  * (cf. dbmodel v25 below)
  */
 static gboolean
-dbmodel_v24( ofaMysqlDBModel *model, gint version )
+dbmodel_v24( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v24";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
 	/* n° 1 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_BAT_CONCIL ("
 			"       BAT_LINE_ID       BIGINT      NOT NULL           COMMENT 'BAT line identifier',"
 			"       BAT_REC_ENTRY     BIGINT      NOT NULL           COMMENT 'Entry the BAT line was reconciliated against',"
@@ -1092,7 +1038,7 @@ dbmodel_v24( ofaMysqlDBModel *model, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"INSERT INTO OFA_T_BAT_CONCIL "
 			"       (BAT_LINE_ID,BAT_REC_ENTRY,BAT_REC_UPD_USER,BAT_REC_UPD_STAMP) "
 			"       SELECT BAT_LINE_ID,BAT_LINE_ENTRY,BAT_LINE_UPD_USER,BAT_LINE_UPD_STAMP "
@@ -1104,7 +1050,7 @@ dbmodel_v24( ofaMysqlDBModel *model, gint version )
 	}
 
 	/* n° 3 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT_LINES "
 			"       DROP COLUMN BAT_LINE_ENTRY,"
 			"       DROP COLUMN BAT_LINE_UPD_USER,"
@@ -1120,7 +1066,7 @@ dbmodel_v24( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v24( ofaMysqlDBModel *model )
+count_v24( ofaMysqlDBModel *self )
 {
 	return( 3 );
 }
@@ -1128,14 +1074,14 @@ count_v24( ofaMysqlDBModel *model )
 /*
  * ofa_ddl_update_dbmodel_v25:
  *
- * Define a new b-e reconciliation model where any 'b' bat lines may be
+ * Define a new b-e reconciliation self where any 'b' bat lines may be
  * reconciliated against any 'e' entries, where 'b' and 'e' may both be
  * equal to zero.
- * This is a rupture from the previous model where the relation was only
+ * This is a rupture from the previous self where the relation was only
  * 1-1.
  */
 static gboolean
-dbmodel_v25( ofaMysqlDBModel *model, gint version )
+dbmodel_v25( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v25";
 	ofaMysqlDBModelPrivate *priv;
@@ -1144,15 +1090,15 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 	gchar *query, *sdval, *user, *stamp;
 	gboolean ok;
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
-	priv = model->priv;
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	last_concil = 0;
 
 	/* n° 1 */
 	/* Labels and identifiers are resized in v28 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL ("
 			"	REC_ID        BIGINT PRIMARY KEY NOT NULL            COMMENT 'Reconciliation identifier',"
 			"	REC_DVAL      DATE               NOT NULL            COMMENT 'Bank value date',"
@@ -1163,7 +1109,7 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 	}
 
 	/* n° 2 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_CONCIL_IDS ("
 			"	REC_ID         BIGINT             NOT NULL           COMMENT 'Reconciliation identifier',"
 			"	REC_IDS_TYPE   CHAR(1)            NOT NULL           COMMENT 'Identifier type Bat/Entry',"
@@ -1173,7 +1119,7 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 	}
 
 	/* n° 3 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	ADD COLUMN DOS_LAST_CONCIL BIGINT NOT NULL DEFAULT 0 COMMENT 'Last reconciliation identifier used'" )){
 		return( FALSE );
@@ -1204,7 +1150,7 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 					"INSERT INTO OFA_T_CONCIL "
 					"	(REC_ID,REC_DVAL,REC_USER,REC_STAMP) "
 					"	VALUES (%ld,'%s','%s','%s')", rec_id, sdval, user, stamp );
-			ok = exec_query( model, query );
+			ok = exec_query( self, query );
 			g_free( query );
 			g_free( stamp );
 			g_free( user );
@@ -1218,7 +1164,7 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 					"	(REC_ID,REC_IDS_TYPE,REC_IDS_OTHER) "
 					"	VALUES (%ld,'E',%ld)",
 					rec_id, number );
-			ok = exec_query( model, query );
+			ok = exec_query( self, query );
 			g_free( query );
 			if( !ok ){
 				break;
@@ -1233,7 +1179,7 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 	/* n° 4 */
 	query = g_strdup_printf(
 			"UPDATE OFA_T_DOSSIER SET DOS_LAST_CONCIL=%ld WHERE DOS_ID=%u", last_concil, DOSSIER_ROW_ID );
-	ok = exec_query( model, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1260,7 +1206,7 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 					"INSERT INTO OFA_T_CONCIL_IDS "
 					"	(REC_ID,REC_IDS_TYPE,REC_IDS_OTHER) "
 					"	VALUES (%ld,'B',%ld)", rec_id, bat_id );
-			ok = exec_query( model, query );
+			ok = exec_query( self, query );
 			g_free( query );
 		}
 		ofa_idbconnect_free_results( result );
@@ -1270,13 +1216,13 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
 	}
 
 	/* n° 5 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"DROP TABLE OFA_T_BAT_CONCIL" )){
 		return( FALSE );
 	}
 
 	/* n° 6 */
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ENTRIES "
 			"	DROP COLUMN ENT_CONCIL_DVAL, "
 			"	DROP COLUMN ENT_CONCIL_USER, "
@@ -1292,7 +1238,7 @@ dbmodel_v25( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v25( ofaMysqlDBModel *model )
+count_v25( ofaMysqlDBModel *self )
 {
 	return( 6 );
 }
@@ -1308,26 +1254,26 @@ count_v25( ofaMysqlDBModel *model )
  * - have a date in order to be able to close a period.
  */
 static gboolean
-dbmodel_v26( ofaMysqlDBModel *model, gint version )
+dbmodel_v26( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v26";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	ADD COLUMN DOS_LAST_CLOSING DATE COMMENT 'Last closed period',"
 			"	ADD COLUMN DOS_PREVEXE_ENTRY BIGINT COMMENT 'last entry number of the previous exercice'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_RATES_VAL "
 			"	ADD COLUMN RAT_VAL_ROW INTEGER COMMENT 'Row number of the validity detail line'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT "
 			"	ADD COLUMN BAT_ACCOUNT VARCHAR(20) COMMENT 'Associated Openbook account'" )){
 		return( FALSE );
@@ -1341,7 +1287,7 @@ dbmodel_v26( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v26( ofaMysqlDBModel *model )
+count_v26( ofaMysqlDBModel *self )
 {
 	return( 3 );
 }
@@ -1354,13 +1300,13 @@ count_v26( ofaMysqlDBModel *model )
  * - OTE_xxx_LOCKED: CHAR(1)
  */
 static gboolean
-dbmodel_v27( ofaMysqlDBModel *model, gint version )
+dbmodel_v27( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v27";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	ADD COLUMN DOS_SIRET VARCHAR(13) COMMENT 'SIRET',"
 			"	CHANGE COLUMN DOS_STATUS "
@@ -1368,19 +1314,19 @@ dbmodel_v27( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_DOSSIER "
 			"	SET DOS_CURRENT='Y' WHERE DOS_CURRENT='O'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_DOSSIER "
 			"	SET DOS_CURRENT='N' WHERE DOS_CURRENT!='Y' OR DOS_CURRENT IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ACCOUNTS "
 			"	CHANGE COLUMN ACC_TYPE "
 			"              ACC_ROOT        CHAR(1) DEFAULT 'N' COMMENT 'Root account',"
@@ -1389,105 +1335,105 @@ dbmodel_v27( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_ROOT='Y' WHERE ACC_ROOT='R'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_ROOT='N' WHERE ACC_ROOT!='Y' OR ACC_ROOT IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_SETTLEABLE='Y' WHERE ACC_SETTLEABLE='S'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_SETTLEABLE='N' WHERE ACC_SETTLEABLE!='Y' OR ACC_SETTLEABLE IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_RECONCILIABLE='Y' WHERE ACC_RECONCILIABLE='R'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_RECONCILIABLE='N' WHERE ACC_RECONCILIABLE!='Y' OR ACC_RECONCILIABLE IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_FORWARDABLE='Y' WHERE ACC_FORWARDABLE='F'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_FORWARDABLE='N' WHERE ACC_FORWARDABLE!='Y' OR ACC_FORWARDABLE IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_CLOSED='Y' WHERE ACC_CLOSED='C'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_ACCOUNTS "
 			"	SET ACC_CLOSED='N' WHERE ACC_CLOSED!='Y' OR ACC_CLOSED IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
 			"	CHANGE COLUMN OTE_LED_LOCKED OTE_LED_LOCKED2 INTEGER,"
 			"	CHANGE COLUMN OTE_REF_LOCKED OTE_REF_LOCKED2 INTEGER" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
 			"	ADD COLUMN OTE_LED_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Ledger is locked',"
 			"	ADD COLUMN OTE_REF_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Operation reference is locked'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_LED_LOCKED='Y' WHERE OTE_LED_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_LED_LOCKED='N' WHERE OTE_LED_LOCKED2=0 OR OTE_LED_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_REF_LOCKED='Y' WHERE OTE_REF_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES "
 			"	SET OTE_REF_LOCKED='N' WHERE OTE_REF_LOCKED2=0 OR OTE_REF_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
 			"	CHANGE COLUMN OTE_DET_ACCOUNT_LOCKED OTE_DET_ACCOUNT_LOCKED2 INTEGER,"
 			"	CHANGE COLUMN OTE_DET_LABEL_LOCKED OTE_DET_LABEL_LOCKED2 INTEGER,"
@@ -1496,7 +1442,7 @@ dbmodel_v27( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
 			"	ADD COLUMN OTE_DET_ACCOUNT_LOCKED CHAR(1) DEFAULT 'N' COMMENT 'Account number is locked',"
 			"	ADD COLUMN OTE_DET_LABEL_LOCKED   CHAR(1) DEFAULT 'N' COMMENT 'Entry label is locked',"
@@ -1505,55 +1451,55 @@ dbmodel_v27( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_ACCOUNT_LOCKED='Y' WHERE OTE_DET_ACCOUNT_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_ACCOUNT_LOCKED='N' WHERE OTE_DET_ACCOUNT_LOCKED2=0 OR OTE_DET_ACCOUNT_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_LABEL_LOCKED='Y' WHERE OTE_DET_LABEL_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_LABEL_LOCKED='N' WHERE OTE_DET_LABEL_LOCKED2=0 OR OTE_DET_LABEL_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_DEBIT_LOCKED='Y' WHERE OTE_DET_DEBIT_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_DEBIT_LOCKED='N' WHERE OTE_DET_DEBIT_LOCKED2=0 OR OTE_DET_DEBIT_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_CREDIT_LOCKED='Y' WHERE OTE_DET_CREDIT_LOCKED2!=0" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"UPDATE OFA_T_OPE_TEMPLATES_DET "
 			"	SET OTE_DET_CREDIT_LOCKED='N' WHERE OTE_DET_CREDIT_LOCKED2=0 OR OTE_DET_CREDIT_LOCKED2 IS NULL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_RATES_VAL "
 			"	CHANGE COLUMN RAT_VAL_BEG "
 			"              RAT_VAL_BEGIN DATE DEFAULT NULL COMMENT 'Validity begin date'" )){
@@ -1568,7 +1514,7 @@ dbmodel_v27( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v27( ofaMysqlDBModel *model )
+count_v27( ofaMysqlDBModel *self )
 {
 	return( 31 );
 }
@@ -1579,13 +1525,13 @@ count_v27( ofaMysqlDBModel *model )
  * - Review all identifiers and labels size
  */
 static gboolean
-dbmodel_v28( ofaMysqlDBModel *model, gint version )
+dbmodel_v28( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v28";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ACCOUNTS"
 			"	MODIFY COLUMN ACC_NUMBER        VARCHAR(64)    BINARY NOT NULL UNIQUE COMMENT 'Account identifier',"
 			"   MODIFY COLUMN ACC_LABEL         VARCHAR(256)   NOT NULL               COMMENT 'Account label',"
@@ -1593,13 +1539,13 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_AUDIT "
 			"	MODIFY COLUMN AUD_QUERY         VARCHAR(65520) NOT NULL               COMMENT 'Query content'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT "
 			"	MODIFY COLUMN BAT_FORMAT        VARCHAR(128)                          COMMENT 'Identified file format',"
 			"	MODIFY COLUMN BAT_RIB           VARCHAR(128)                          COMMENT 'Bank provided RIB',"
@@ -1608,34 +1554,34 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_BAT_LINES "
 			"	MODIFY COLUMN BAT_LINE_REF      VARCHAR(256)                          COMMENT 'Line reference as recorded by the Bank',"
 			"	MODIFY COLUMN BAT_LINE_LABEL    VARCHAR(256)                          COMMENT 'Line label'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_CLASSES "
 			"	MODIFY COLUMN CLA_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Class label',"
 			"	MODIFY COLUMN CLA_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_CONCIL "
 			"	MODIFY COLUMN REC_USER          VARCHAR(64)                           COMMENT 'User responsible of the reconciliation'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_CURRENCIES "
 			"	MODIFY COLUMN CUR_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Currency label',"
 			"	MODIFY COLUMN CUR_UPD_USER      VARCHAR(64)                           COMMENT 'User responsible of properties last update'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	MODIFY COLUMN DOS_FORW_OPE      VARCHAR(64)                           COMMENT 'Operation mnemo for carried forward entries',"
 			"	MODIFY COLUMN DOS_IMPORT_LEDGER VARCHAR(64)                           COMMENT 'Default import ledger',"
@@ -1647,13 +1593,13 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOSSIER_CUR "
 			"	MODIFY COLUMN DOS_SLD_ACCOUNT   VARCHAR(64)                           COMMENT 'Balancing account when closing the exercice'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ENTRIES "
 			"	MODIFY COLUMN ENT_LABEL         VARCHAR(256)                          COMMENT 'Entry label',"
 			"	MODIFY COLUMN ENT_REF           VARCHAR(256)                          COMMENT 'Piece reference',"
@@ -1665,7 +1611,7 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_LEDGERS "
 			"	MODIFY COLUMN LED_MNEMO         VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Ledger identifier',"
 			"	MODIFY COLUMN LED_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Ledger label',"
@@ -1673,13 +1619,13 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_LEDGERS_CUR "
 			"	MODIFY COLUMN LED_MNEMO         VARCHAR(64)  BINARY NOT NULL          COMMENT 'Ledger identifier'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES "
 			"	MODIFY COLUMN OTE_MNEMO         VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Operation template identifier',"
 			"	MODIFY COLUMN OTE_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Operation template label',"
@@ -1689,7 +1635,7 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
 			"	MODIFY COLUMN OTE_MNEMO         VARCHAR(64)  BINARY NOT NULL          COMMENT 'Operation template identifier',"
 			"	MODIFY COLUMN OTE_DET_COMMENT   VARCHAR(128)                          COMMENT 'Detail line comment',"
@@ -1700,7 +1646,7 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_RATES "
 			"	MODIFY COLUMN RAT_MNEMO         VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Rate identifier',"
 			"	MODIFY COLUMN RAT_LABEL         VARCHAR(256) NOT NULL                 COMMENT 'Rate label',"
@@ -1708,13 +1654,13 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_RATES_VAL "
 			"	MODIFY COLUMN RAT_MNEMO         VARCHAR(64)  BINARY NOT NULL          COMMENT 'Rate identifier'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_ROLES "
 			"	MODIFY COLUMN ROL_USER          VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'User account'" )){
 		return( FALSE );
@@ -1728,7 +1674,7 @@ dbmodel_v28( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v28( ofaMysqlDBModel *model )
+count_v28( ofaMysqlDBModel *self )
 {
 	return( 17 );
 }
@@ -1741,19 +1687,19 @@ count_v28( ofaMysqlDBModel *model )
  * - Remove old OFA_T_OPE_TEMPLATE_DET columns
  */
 static gboolean
-dbmodel_v29( ofaMysqlDBModel *model, gint version )
+dbmodel_v29( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v29";
 
-	g_debug( "%s: model=%p, version=%d", thisfn, ( void * ) model, version );
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOSSIER "
 			"	ADD    COLUMN DOS_LAST_OPE      BIGINT  DEFAULT 0                     COMMENT 'Last used operation number'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( model,
+	if( !exec_query( self,
 			"ALTER TABLE OFA_T_OPE_TEMPLATES_DET "
 			"	DROP   COLUMN OTE_DET_ACCOUNT_LOCKED2,"
 			"	DROP   COLUMN OTE_DET_LABEL_LOCKED2,"
@@ -1774,7 +1720,7 @@ dbmodel_v29( ofaMysqlDBModel *model, gint version )
  * to be used as the progression indicator
  */
 static gulong
-count_v29( ofaMysqlDBModel *model )
+count_v29( ofaMysqlDBModel *self )
 {
 	return( 2 );
 }

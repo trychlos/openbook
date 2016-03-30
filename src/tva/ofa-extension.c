@@ -128,8 +128,6 @@ ofa_tva_id_init( ofaTVAId *self )
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_TVA_ID( self ));
-
 	priv = ofa_tva_id_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
@@ -214,7 +212,7 @@ ofa_extension_list_types( const GType **types )
 	static GType types_list [1+TYPES_COUNT];
 	gint i = 0;
 
-	g_debug( "%s: types=%p", thisfn, ( void * ) types );
+	g_debug( "%s: types=%p, count=%u", thisfn, ( void * ) types, TYPES_COUNT );
 
 	types_list[i++] = OFA_TYPE_TVA_ID;
 	types_list[i++] = OFO_TYPE_TVA_FORM;

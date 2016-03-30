@@ -49,21 +49,15 @@
 
 /* private instance data
  */
-struct _ofaMysqlDBProviderPrivate {
+typedef struct {
 	gboolean dispose_has_run;
-};
+}
+	ofaMysqlDBProviderPrivate;
 
 #define DBPROVIDER_CANON_NAME            "MySQL"
 #define DBPROVIDER_DISPLAY_NAME          "MySQL DBMS Provider"
 #define DBPROVIDER_VERSION                PACKAGE_VERSION
 
-static GType         st_module_type     = 0;
-static GObjectClass *st_parent_class    = NULL;
-
-static void           instance_finalize( GObject *object );
-static void           instance_dispose( GObject *object );
-static void           instance_init( GTypeInstance *instance, gpointer klass );
-static void           class_init( ofaMysqlDBProviderClass *klass );
 static void           iident_iface_init( myIIdentInterface *iface );
 static gchar         *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar         *iident_get_display_name( const myIIdent *instance, void *user_data );
@@ -73,126 +67,71 @@ static ofaIDBMeta    *idbprovider_new_meta( void );
 static ofaIDBConnect *idbprovider_new_connect( void );
 static ofaIDBEditor  *idbprovider_new_editor( gboolean editable );
 
-GType
-ofa_mysql_dbprovider_get_type( void )
-{
-	return( st_module_type );
-}
-
-void
-ofa_mysql_dbprovider_register_type( GTypeModule *module )
-{
-	static const gchar *thisfn = "ofa_mysql_dbprovider_register_type";
-
-	static GTypeInfo info = {
-		sizeof( ofaMysqlDBProviderClass ),
-		NULL,
-		NULL,
-		( GClassInitFunc ) class_init,
-		NULL,
-		NULL,
-		sizeof( ofaMysqlDBProvider ),
-		0,
-		( GInstanceInitFunc ) instance_init
-	};
-
-	static const GInterfaceInfo iident_iface_info = {
-		( GInterfaceInitFunc ) iident_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo idbprovider_iface_info = {
-		( GInterfaceInitFunc ) idbprovider_iface_init,
-		NULL,
-		NULL
-	};
-
-	static const GInterfaceInfo iprefs_provider_iface_info = {
-		( GInterfaceInitFunc ) ofa_mysql_iprefs_provider_iface_init,
-		NULL,
-		NULL
-	};
-
-	g_debug( "%s", thisfn );
-
-	st_module_type = g_type_module_register_type( module, G_TYPE_OBJECT, "ofaMysqlDBProvider", &info, 0 );
-
-	g_type_module_add_interface( module, st_module_type, MY_TYPE_IIDENT, &iident_iface_info );
-
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IDBPROVIDER, &idbprovider_iface_info );
-
-	g_type_module_add_interface( module, st_module_type, OFA_TYPE_IPREFS_PROVIDER, &iprefs_provider_iface_info );
-}
+G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMysqlDBProvider )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPROVIDER, idbprovider_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPREFS_PROVIDER, ofa_mysql_iprefs_provider_iface_init ))
 
 static void
-instance_finalize( GObject *object )
+mysql_dbprovider_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_dbprovider_instance_finalize";
+	static const gchar *thisfn = "ofa_mysql_dbprovider_finalize";
 
-	g_debug( "%s: object=%p (%s)",
-			thisfn, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( object && OFA_IS_MYSQL_DBPROVIDER( object ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_DBPROVIDER( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->finalize( object );
+	G_OBJECT_CLASS( ofa_mysql_dbprovider_parent_class )->finalize( instance );
 }
 
 static void
-instance_dispose( GObject *object )
+mysql_dbprovider_dispose( GObject *instance )
 {
 	ofaMysqlDBProviderPrivate *priv;
 
-	g_return_if_fail( object && OFA_IS_MYSQL_DBPROVIDER( object ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_DBPROVIDER( instance ));
 
-	priv = OFA_MYSQL_DBPROVIDER( object )->priv;
+	priv = ofa_mysql_dbprovider_get_instance_private( OFA_MYSQL_DBPROVIDER( instance ));
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
 
-		/* unref object members here */
+		/* unref instance members here */
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( st_parent_class )->dispose( object );
+	G_OBJECT_CLASS( ofa_mysql_dbprovider_parent_class )->dispose( instance );
 }
 
 static void
-instance_init( GTypeInstance *instance, gpointer klass )
+ofa_mysql_dbprovider_init( ofaMysqlDBProvider *self )
 {
-	static const gchar *thisfn = "ofa_mysql_dbprovider_instance_init";
-	ofaMysqlDBProvider *self;
+	static const gchar *thisfn = "ofa_mysql_dbprovider_init";
+	ofaMysqlDBProviderPrivate *priv;
 
-	g_debug( "%s: instance=%p (%s), klass=%p",
-			thisfn,
-			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) klass );
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_DBPROVIDER( instance ));
+	priv = ofa_mysql_dbprovider_get_instance_private( self );
 
-	self = OFA_MYSQL_DBPROVIDER( instance );
-
-	self->priv = G_TYPE_INSTANCE_GET_PRIVATE( self, OFA_TYPE_MYSQL_DBPROVIDER, ofaMysqlDBProviderPrivate );
-	self->priv->dispose_has_run = FALSE;
+	priv->dispose_has_run = FALSE;
 }
 
 static void
-class_init( ofaMysqlDBProviderClass *klass )
+ofa_mysql_dbprovider_class_init( ofaMysqlDBProviderClass *klass )
 {
 	static const gchar *thisfn = "ofa_mysql_dbprovider_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	st_parent_class = g_type_class_peek_parent( klass );
-
-	G_OBJECT_CLASS( klass )->dispose = instance_dispose;
-	G_OBJECT_CLASS( klass )->finalize = instance_finalize;
-
-	g_type_class_add_private( klass, sizeof( ofaMysqlDBProviderPrivate ));
+	G_OBJECT_CLASS( klass )->dispose = mysql_dbprovider_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_dbprovider_finalize;
 }
 
 /*

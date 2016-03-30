@@ -46,26 +46,19 @@ G_BEGIN_DECLS
 #define OFA_IS_MYSQL_DBMODEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_DBMODEL ))
 #define OFA_MYSQL_DBMODEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_DBMODEL, ofaMysqlDBModelClass ))
 
-typedef struct _ofaMysqlDBModelPrivate        ofaMysqlDBModelPrivate;
-
 typedef struct {
 	/*< public members >*/
-	GObject                 parent;
-
-	/*< private members >*/
-	ofaMysqlDBModelPrivate *priv;
+	GObject      parent;
 }
 	ofaMysqlDBModel;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass            parent;
+	GObjectClass parent;
 }
 	ofaMysqlDBModelClass;
 
-GType ofa_mysql_dbmodel_get_type     ( void );
-
-void  ofa_mysql_dbmodel_register_type( GTypeModule *module );
+GType ofa_mysql_dbmodel_get_type( void );
 
 G_END_DECLS
 

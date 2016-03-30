@@ -227,6 +227,40 @@ ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
 	return( module );
 }
 
+/**
+ * ofa_extender_module_free:
+ * @module:
+ * @user_data:
+ *
+ * Unref all non-GTypeModule objects.
+ *
+ * Called on #ofaExtenderCollection finalization
+ * (because NEVER unref a GTypeModule - so just free the attached objects).
+ */
+void
+ofa_extender_module_free( ofaExtenderModule *module, void *user_data )
+{
+	ofaExtenderModulePrivate *priv;
+	gboolean found;
+	GList *it;
+	gpointer ptr;
+
+	priv = ofa_extender_module_get_instance_private( module );
+
+	do {
+		found = FALSE;
+		for( it=priv->objects ; it ; it=it->next ){
+			if( !G_IS_TYPE_MODULE( it->data )){
+				ptr = it->data;
+				priv->objects = g_list_remove( priv->objects, ptr );
+				g_object_unref( ptr );
+				found = TRUE;
+				break;
+			}
+		}
+	} while( found );
+}
+
 /*
  * the module has been successfully loaded
  * is it a valid plugin ?

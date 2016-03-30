@@ -47,26 +47,19 @@ G_BEGIN_DECLS
 #define OFA_IS_MYSQL_DBPROVIDER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_DBPROVIDER ))
 #define OFA_MYSQL_DBPROVIDER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_DBPROVIDER, ofaMysqlDBProviderClass ))
 
-typedef struct _ofaMysqlDBProviderPrivate        ofaMysqlDBProviderPrivate;
-
 typedef struct {
 	/*< public members >*/
-	GObject                    parent;
-
-	/*< private members >*/
-	ofaMysqlDBProviderPrivate *priv;
+	GObject      parent;
 }
 	ofaMysqlDBProvider;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass               parent;
+	GObjectClass parent;
 }
 	ofaMysqlDBProviderClass;
 
-GType ofa_mysql_dbprovider_get_type     ( void );
-
-void  ofa_mysql_dbprovider_register_type( GTypeModule *module );
+GType ofa_mysql_dbprovider_get_type( void );
 
 G_END_DECLS
 
