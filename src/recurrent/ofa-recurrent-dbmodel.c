@@ -35,7 +35,6 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-ope-template.h"
 
-#include "ofa-recurrent.h"
 #include "ofa-recurrent-dbmodel.h"
 #include "ofo-recurrent-gen.h"
 #include "ofo-recurrent-model.h"

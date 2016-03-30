@@ -59,9 +59,7 @@ nodist_libofa_recurrent_la_SOURCES = \
 	$(NULL)
 
 libofa_recurrent_la_SOURCES = \
-	ofa-module.c										\
-	ofa-recurrent.c										\
-	ofa-recurrent.h										\
+	ofa-extension.c										\
 	ofa-recurrent-dbmodel.c								\
 	ofa-recurrent-dbmodel.h								\
 	ofa-recurrent-execlose.c							\
