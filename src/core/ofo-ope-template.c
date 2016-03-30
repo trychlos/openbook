@@ -1762,7 +1762,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
 static gchar *
 iimportable_get_label( const ofaIImportable *instance )
 {
-	return( g_strdup( _( "Reference : operation _templates" )));
+	return( iexportable_get_label( OFA_IEXPORTABLE( instance )));
 }
 
 /*

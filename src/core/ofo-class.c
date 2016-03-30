@@ -788,7 +788,7 @@ iimportable_get_interface_version( const ofaIImportable *instance )
 static gchar *
 iimportable_get_label( const ofaIImportable *instance )
 {
-	return( g_strdup( _( "Reference : account cla_sses" )));
+	return( iexportable_get_label( OFA_IEXPORTABLE( instance )));
 }
 
 /*
