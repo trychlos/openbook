@@ -113,8 +113,11 @@ static gboolean   iexportable_export( ofaIExportable *exportable, const ofaStrea
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar     *iimportable_get_label( const ofaIImportable *instance );
-static gboolean   iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
-static gboolean   class_do_drop_content( const ofaIDBConnect *connect );
+static guint      iimportable_import( ofaIImportable *exportable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList     *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void       iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean   class_get_exists( const ofoClass *class, const ofaIDBConnect *connect );
+static gboolean   class_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoClass )
@@ -776,7 +779,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->old_import = iimportable_old_import;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -792,7 +795,7 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /*
- * ofo_class_iimportable_old_import:
+ * ofo_class_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -810,90 +813,178 @@ iimportable_get_label( const ofaIImportable *instance )
  * error occurs during insert phase, then the table is changed and only
  * contains the successfully inserted records.
  */
-static gint
-iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+static guint
+iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
-	GSList *itl, *fields, *itf;
-	ofoClass *class;
-	GList *dataset, *it;
-	guint errors, number, line;
-	gchar *msg, *splitted, *str;
-	const ofaIDBConnect *connect;
+	GList *dataset;
 
-	line = 0;
-	errors = 0;
+	dataset = iimportable_import_parse( importer, parms, lines );
+
+	if( parms->parse_errs == 0 && parms->imported_count > 0 ){
+		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs == 0 ){
+			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_CLASS );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CLASS );
+		}
+	}
+
+	if( dataset ){
+		ofo_class_free_dataset( dataset );
+	}
+
+	return( parms->parse_errs+parms->insert_errs );
+}
+
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+	guint numline, number;
+	const gchar *cstr;
+	ofoClass *class;
+	gchar *str, *splitted;
+	GSList *itl, *fields, *itf;
+
+	numline = 0;
 	dataset = NULL;
+
+	ofa_iimporter_progress_start( importer, parms );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
-		line += 1;
-		class = ofo_class_new();
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
 		fields = ( GSList * ) itl->data;
-		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
-		itf = fields;
+		class = ofo_class_new();
 
 		/* class number */
-		str = ofa_iimportable_get_string( &itf, settings );
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		number = 0;
-		if( str ){
-			number = atoi( str );
+		if( my_strlen( cstr )){
+			number = atoi( cstr );
 		}
 		if( number < 1 || number > 9 ){
-			msg = g_strdup_printf( _( "invalid class number: %s" ), str );
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, msg );
-			g_free( msg );
+			str = g_strdup_printf( _( "invalid class number: %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
 			g_free( str );
-			errors += 1;
+			parms->parse_errs += 1;
 			continue;
 		}
-		g_free( str );
 		ofo_class_set_number( class, number );
 
 		/* class label */
-		str = ofa_iimportable_get_string( &itf, settings );
-		if( !my_strlen( str )){
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "empty class label" ));
-			errors += 1;
-			g_free( str );
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty class label" ));
+			parms->parse_errs += 1;
 			continue;
 		} else {
-			ofo_class_set_label( class, str );
+			ofo_class_set_label( class, cstr );
 		}
-		g_free( str );
 
 		/* notes */
-		str = ofa_iimportable_get_string( &itf, settings );
-		splitted = my_utils_import_multi_lines( str );
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		splitted = my_utils_import_multi_lines( cstr );
 		ofo_class_set_notes( class, splitted );
 		g_free( splitted );
-		g_free( str );
 
 		dataset = g_list_prepend( dataset, class );
 	}
 
-	if( !errors ){
-		connect = ofa_hub_get_connect( hub );
-		class_do_drop_content( connect );
+	return( dataset );
+}
 
-		for( it=dataset ; it ; it=it->next ){
-			if( !class_do_insert( OFO_CLASS( it->data ), connect )){
-				errors -= 1;
-			}
-			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
-		}
+static void
+iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
+{
+	GList *it;
+	const ofaIDBConnect *connect;
+	gboolean insert;
+	guint total;
+	gchar *str;
+	ofoClass *class;
+	gint class_id;
 
-		ofo_class_free_dataset( dataset );
-		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_CLASS );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CLASS );
+	total = g_list_length( dataset );
+	connect = ofa_hub_get_connect( parms->hub );
+	ofa_iimporter_progress_start( importer, parms );
+
+	if( parms->empty && total > 0 ){
+		class_drop_content( connect );
 	}
 
-	return( errors );
+	for( it=dataset ; it ; it=it->next ){
+
+		if( parms->stop && parms->insert_errs > 0 ){
+			break;
+		}
+
+		str = NULL;
+		insert = TRUE;
+		class = OFO_CLASS( it->data );
+
+		if( class_get_exists( class, connect )){
+			parms->duplicate_count += 1;
+			class_id = ofo_class_get_number( class );
+
+			switch( parms->mode ){
+				case OFA_IMMODE_REPLACE:
+					str = g_strdup_printf( _( "%d: duplicate class, replacing previous one" ), class_id );
+					class_do_delete( class, connect );
+					break;
+				case OFA_IMMODE_IGNORE:
+					str = g_strdup_printf( _( "%d: duplicate class, ignored (skipped)" ), class_id );
+					insert = FALSE;
+					total -= 1;
+					break;
+				case OFA_IMMODE_ABORT:
+					str = g_strdup_printf( _( "%d: erroneous duplicate class" ), class_id );
+					insert = FALSE;
+					total -= 1;
+					parms->insert_errs += 1;
+					break;
+			}
+		}
+		if( str ){
+			ofa_iimporter_progress_text( importer, parms, str );
+			g_free( str );
+		}
+		if( insert ){
+			if( class_do_insert( class, connect )){
+				parms->inserted_count += 1;
+			} else {
+				parms->insert_errs += 1;
+			}
+		}
+		ofa_iimporter_progress_pulse(
+				importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+	}
 }
 
 static gboolean
-class_do_drop_content( const ofaIDBConnect *connect )
+class_get_exists( const ofoClass *class, const ofaIDBConnect *connect )
+{
+	gint class_id;
+	gint count;
+	gchar *str;
+
+	count = 0;
+	class_id = ofo_class_get_number( class );
+	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_CLASSES WHERE CLA_NUMBER=%d", class_id );
+	ofa_idbconnect_query_int( connect, str, &count, FALSE );
+
+	return( count > 0 );
+}
+
+static gboolean
+class_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_CLASSES", TRUE ));
 }

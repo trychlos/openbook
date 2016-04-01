@@ -2296,8 +2296,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		}
 
 		numline += 1;
-		account = ofo_account_new();
 		fields = ( GSList * ) itl->data;
+		account = ofo_account_new();
 
 		/* account number */
 		itf = fields;

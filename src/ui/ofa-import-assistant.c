@@ -1572,7 +1572,7 @@ p7_do_import( ofaImportAssistant *self )
 				parms.inserted_count, priv->p1_furi, priv->p2_selected_label );
 		style = "labelinfo";
 
-	} else if( parms.import_errs > 0 ){
+	} else if( parms.parse_errs > 0 ){
 		text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors "
 				"during analyse and import phase.\n"
 				"The « %s » recordset has been left unchanged.\n"
