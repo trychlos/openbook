@@ -16,6 +16,7 @@
     <file>ofa-open-prefs-bin.ui</file>
     <file>ofa-preferences.ui</file>
     <file>ofa-stream-format-bin.ui</file>
+    <file>ofa-stream-format-disp.ui</file>
 
     <file>filler.png</file>
     <file>notes.png</file>

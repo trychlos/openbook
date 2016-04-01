@@ -65,6 +65,7 @@
    - ofa_page_get_main_window(): removed method.
    - ofa_page_get_hub(): removed method.
    - ofa_page_get_theme(): removed method.
+   - ofaStreamFormatDisp: new class to display an ofaStreamFormat.
 
 -----------------------------------------------------------------------
  Version 0.52

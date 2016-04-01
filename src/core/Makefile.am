@@ -142,6 +142,8 @@ libofa_core_la_SOURCES = \
 	ofa-stream-format.c									\
 	ofa-stream-format-bin.c								\
 	ofa-stream-format-bin.h								\
+	ofa-stream-format-disp.c							\
+	ofa-stream-format-disp.h							\
 	ofo-account.c										\
 	ofo-base.c											\
 	ofo-bat.c											\
