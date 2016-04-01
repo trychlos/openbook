@@ -1272,6 +1272,9 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_clear_object( &priv->p5_import_settings );
 	priv->p5_import_settings = ofa_stream_format_new( found_key, OFA_SFMODE_IMPORT );
+	if( !found_key ){
+		ofa_stream_format_set_name( priv->p5_import_settings, class_name );
+	}
 	ofa_stream_format_bin_set_format( priv->p5_settings_prefs, priv->p5_import_settings );
 
 	p5_check_for_complete( self );
