@@ -315,6 +315,7 @@ setup_format( ofaStreamFormatDisp *self )
 	/* name */
 	cstr = ofa_stream_format_get_name( priv->settings );
 	gtk_label_set_text( GTK_LABEL( priv->name_data ), cstr ? cstr : "" ),
+	my_utils_widget_set_style( priv->name_data, "labelinfo" );
 
 	/* mode */
 	mode = ofa_stream_format_get_mode( priv->settings );
