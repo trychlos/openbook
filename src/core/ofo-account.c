@@ -229,8 +229,8 @@ static gchar       *iimportable_get_label( const ofaIImportable *instance );
 static guint        iimportable_import( ofaIImportable *exportable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
-static gboolean     account_get_exists( const ofaIDBConnect *connect, const gchar *number );
-static gboolean     account_do_drop_content( const ofaIDBConnect *connect );
+static gboolean     account_get_exists( const ofoAccount *account, const ofaIDBConnect *connect );
+static gboolean     account_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoAccount )
@@ -2239,9 +2239,9 @@ iimportable_get_label( const ofaIImportable *instance )
  *
  * Returns: the total count of errors.
  *
- * As the table may be dropped between import phase and insert phase,
- * if an error occurs during insert phase, then the table is changed
- * and only contains the successfully inserted records.
+ * As the table may have been dropped between import phase and insert
+ * phase, if an error occurs during insert phase, then the table is
+ * changed and only contains the successfully inserted records.
  */
 static guint
 iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
@@ -2250,7 +2250,7 @@ iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImpor
 
 	dataset = iimportable_import_parse( importer, parms, lines );
 
-	if( parms->import_errs == 0 && parms->imported_count > 0 ){
+	if( parms->parse_errs == 0 && parms->imported_count > 0 ){
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
@@ -2263,7 +2263,7 @@ iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImpor
 		ofo_account_free_dataset( dataset );
 	}
 
-	return( parms->import_errs+parms->insert_errs );
+	return( parms->parse_errs+parms->insert_errs );
 }
 
 static GList *
@@ -2291,7 +2291,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
-		if( parms->stop && parms->import_errs > 0 ){
+		if( parms->stop && parms->parse_errs > 0 ){
 			break;
 		}
 
@@ -2304,7 +2304,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !my_strlen( cstr )){
 			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty account number" ));
-			parms->import_errs += 1;
+			parms->parse_errs += 1;
 			continue;
 		}
 		class_num = ofo_account_get_class_from_number( cstr );
@@ -2313,7 +2313,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			str = g_strdup_printf( _( "invalid class number for account %s" ), cstr );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
 			g_free( str );
-			parms->import_errs += 1;
+			parms->parse_errs += 1;
 			continue;
 		}
 		ofo_account_set_number( account, cstr );
@@ -2323,7 +2323,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !my_strlen( cstr )){
 			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty account label" ));
-			parms->import_errs += 1;
+			parms->parse_errs += 1;
 			continue;
 		}
 		ofo_account_set_label( account, cstr );
@@ -2346,7 +2346,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			str = g_strdup_printf( _( "invalid account type: %s" ), cstr );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
 			g_free( str );
-			parms->import_errs += 1;
+			parms->parse_errs += 1;
 			continue;
 		}
 		is_root = !my_collate( cstr, ACCOUNT_TYPE_ROOT ) || !my_collate( cstr, "Y" );
@@ -2359,7 +2359,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			}
 			if( !my_strlen( dev_code )){
 				ofa_iimporter_progress_num_text( importer, parms, numline, _( "no currency set, and unable to get a default currency" ));
-				parms->import_errs += 1;
+				parms->parse_errs += 1;
 				continue;
 			}
 			currency = ofo_currency_get_by_code( parms->hub, dev_code );
@@ -2367,7 +2367,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				str = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
 				ofa_iimporter_progress_num_text( importer, parms, numline, str );
 				g_free( str );
-				parms->import_errs += 1;
+				parms->parse_errs += 1;
 				continue;
 			}
 			ofo_account_set_currency( account, dev_code );
@@ -2383,7 +2383,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				str = g_strdup_printf( _( "invalid settleable account indicator: %s" ), cstr );
 				ofa_iimporter_progress_num_text( importer, parms, numline, str );
 				g_free( str );
-				parms->import_errs += 1;
+				parms->parse_errs += 1;
 				continue;
 			} else {
 				ofo_account_set_settleable( account,
@@ -2401,7 +2401,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				str = g_strdup_printf( _( "invalid reconciliable account indicator: %s" ), cstr );
 				ofa_iimporter_progress_num_text( importer, parms, numline, str );
 				g_free( str );
-				parms->import_errs += 1;
+				parms->parse_errs += 1;
 				continue;
 			} else {
 				ofo_account_set_reconciliable( account,
@@ -2419,7 +2419,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				str = g_strdup_printf( _( "invalid forwardable account indicator: %s" ), cstr );
 				ofa_iimporter_progress_num_text( importer, parms, numline, str );
 				g_free( str );
-				parms->import_errs += 1;
+				parms->parse_errs += 1;
 				continue;
 			} else {
 				ofo_account_set_forwardable( account,
@@ -2437,7 +2437,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				str = g_strdup_printf( _( "invalid closed account indicator: %s" ), cstr );
 				ofa_iimporter_progress_num_text( importer, parms, numline, str );
 				g_free( str );
-				parms->import_errs += 1;
+				parms->parse_errs += 1;
 				continue;
 			} else {
 				ofo_account_set_closed( account,
@@ -2467,7 +2467,6 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 {
 	GList *it;
 	const ofaIDBConnect *connect;
-	const gchar *acc_id;
 	gboolean insert;
 	guint total;
 	ofoAccount *account;
@@ -2477,8 +2476,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	connect = ofa_hub_get_connect( parms->hub );
 	ofa_iimporter_progress_start( importer, parms );
 
-	if( parms->empty && total ){
-		account_do_drop_content( connect );
+	if( parms->empty && total > 0 ){
+		account_drop_content( connect );
 	}
 
 	for( it=dataset ; it ; it=it->next ){
@@ -2490,9 +2489,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		str = NULL;
 		insert = TRUE;
 		account = OFO_ACCOUNT( it->data );
-		acc_id = ofo_account_get_number( account );
 
-		if( account_get_exists( connect, acc_id )){
+		if( account_get_exists( account, connect )){
 			parms->duplicate_count += 1;
 
 			switch( parms->mode ){
@@ -2530,20 +2528,22 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 }
 
 static gboolean
-account_get_exists( const ofaIDBConnect *connect, const gchar *number )
+account_get_exists( const ofoAccount *account, const ofaIDBConnect *connect )
 {
+	const gchar *account_id;
 	gint count;
 	gchar *str;
 
 	count = 0;
-	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_NUMBER='%s'", number );
+	account_id = ofo_account_get_number( account );
+	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_NUMBER='%s'", account_id );
 	ofa_idbconnect_query_int( connect, str, &count, FALSE );
 
 	return( count > 0 );
 }
 
 static gboolean
-account_do_drop_content( const ofaIDBConnect *connect )
+account_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_ACCOUNTS", TRUE ));
 }

@@ -174,7 +174,7 @@ struct _ofsImporterParms {
 	guint            imported_count;
 	guint            duplicate_count;
 	guint            inserted_count;
-	guint            import_errs;
+	guint            parse_errs;
 	guint            insert_errs;
 	myIProgress     *progress;
 };
