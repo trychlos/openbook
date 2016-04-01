@@ -110,7 +110,7 @@ typedef enum {
 	OFA_SFHAS_FIELDSEP    = 1 << 4,
 	OFA_SFHAS_STRDELIM    = 1 << 5,
 	OFA_SFHAS_HEADERS     = 1 << 6,
-	OFA_SFHAS_ALL         = 0xff,
+	OFA_SFHAS_ALL         = 0xffff,
 }
 	ofeSFHas;
 
