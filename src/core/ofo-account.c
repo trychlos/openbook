@@ -2469,13 +2469,15 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	const ofaIDBConnect *connect;
 	const gchar *acc_id;
 	gboolean insert;
+	guint total;
 	ofoAccount *account;
 	gchar *str;
 
+	total = g_list_length( dataset );
 	connect = ofa_hub_get_connect( parms->hub );
 	ofa_iimporter_progress_start( importer, parms );
 
-	if( parms->empty && g_list_length( dataset )){
+	if( parms->empty && total ){
 		account_do_drop_content( connect );
 	}
 
@@ -2485,28 +2487,35 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			break;
 		}
 
+		str = NULL;
 		insert = TRUE;
 		account = OFO_ACCOUNT( it->data );
 		acc_id = ofo_account_get_number( account );
 
 		if( account_get_exists( connect, acc_id )){
 			parms->duplicate_count += 1;
-			str = g_strdup_printf( _( "%s: duplicate account" ), acc_id );
-			ofa_iimporter_progress_text( importer, parms, str );
-			g_free( str );
 
 			switch( parms->mode ){
 				case OFA_IMMODE_REPLACE:
+					str = g_strdup_printf( _( "%s: duplicate account, replacing previous one" ), acc_id );
 					account_do_delete( account, connect );
 					break;
 				case OFA_IMMODE_IGNORE:
+					str = g_strdup_printf( _( "%s: duplicate account, ignored (skipped)" ), acc_id );
 					insert = FALSE;
+					total -= 1;
 					break;
 				case OFA_IMMODE_ABORT:
+					str = g_strdup_printf( _( "%s: erroneous duplicate account" ), acc_id );
 					insert = FALSE;
+					total -= 1;
 					parms->insert_errs += 1;
 					break;
 			}
+		}
+		if( str ){
+			ofa_iimporter_progress_text( importer, parms, str );
+			g_free( str );
 		}
 		if( insert ){
 			if( account_do_insert( account, connect )){
@@ -2516,7 +2525,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			}
 		}
 		ofa_iimporter_progress_pulse(
-				importer, parms, ( gulong ) parms->inserted_count, ( gulong ) g_list_length( dataset ));
+				importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
 	}
 }
 
