@@ -2296,7 +2296,6 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		}
 
 		numline += 1;
-		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) numline, ( gulong ) g_slist_length( lines ));
 		account = ofo_account_new();
 		fields = ( GSList * ) itl->data;
 
@@ -2456,6 +2455,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 		parms->imported_count += 1;
 		dataset = g_list_prepend( dataset, account );
+		ofa_iimporter_progress_pulse(
+				importer, parms, ( gulong ) parms->imported_count, ( gulong ) g_slist_length( lines ));
 	}
 
 	return( dataset );
@@ -2467,28 +2468,22 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	GList *it;
 	const ofaIDBConnect *connect;
 	const gchar *acc_id;
-	guint num;
 	gboolean insert;
 	ofoAccount *account;
 	gchar *str;
 
 	connect = ofa_hub_get_connect( parms->hub );
+	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && g_list_length( dataset )){
 		account_do_drop_content( connect );
 	}
-
-	num = 0;
-	ofa_iimporter_progress_start( importer, parms );
 
 	for( it=dataset ; it ; it=it->next ){
 
 		if( parms->stop && parms->insert_errs > 0 ){
 			break;
 		}
-
-		num += 1;
-		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) num, ( gulong ) g_list_length( dataset ));
 
 		insert = TRUE;
 		account = OFO_ACCOUNT( it->data );
@@ -2520,6 +2515,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->insert_errs += 1;
 			}
 		}
+		ofa_iimporter_progress_pulse(
+				importer, parms, ( gulong ) parms->inserted_count, ( gulong ) g_list_length( dataset ));
 	}
 }
 
