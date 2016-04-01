@@ -398,7 +398,9 @@
 1056 2016- 3-31 FEAT use gtk_scrollable_get_vadjustment() in GtkTextView
                      (ofaIDBModel, ofaImportAssistant, others ?)
 
-1057
+1057 2016- 4- 1 ofaExportAssistant: use ofaStreamFormatDisp
+
+1058
 
 -----------------------------------------------------------------------
  DONE
