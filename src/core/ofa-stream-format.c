@@ -324,6 +324,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	text = g_strdup( cstr ? cstr : st_def_thousand );
 	priv->thousand_sep = atoi( text );
 	g_free( text );
+	g_debug( "do_init: thousand_sep=%d", priv->thousand_sep );
 
 	/* decimal separator */
 	it = it ? it->next : NULL;
@@ -350,6 +351,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	} else {
 		priv->h.count_headers = atoi( cstr );
 	}
+	g_debug( "do_init: headers=%d", priv->h.count_headers );
 
 	/* string delimiter */
 	it = it ? it->next : NULL;
@@ -357,6 +359,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	text = g_strdup( cstr ? cstr : st_def_string_delim );
 	priv->string_delim = atoi( text );
 	g_free( text );
+	g_debug( "do_init: strdelim=%d", priv->string_delim );
 
 	if( prefs_list ){
 		ofa_settings_free_string_list( prefs_list );
@@ -744,16 +747,6 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 	sfield = g_strdup_printf( "%d", field_sep );
 	prefs_list = g_list_append( prefs_list, sfield );
 
-	/* string delimiter */
-	priv->string_delim = '\0';
-	priv->indicators &= ~OFA_SFHAS_STRDELIM;
-	if( has_string_delim ){
-		priv->string_delim = string_delim;
-		priv->indicators |= OFA_SFHAS_STRDELIM;
-	}
-	sstrdelim = g_strdup_printf( "%d", string_delim );
-	prefs_list = g_list_append( prefs_list, sstrdelim );
-
 	/* with headers */
 	priv->h.count_headers = 0;
 	priv->indicators &= ~OFA_SFHAS_HEADERS;
@@ -770,6 +763,16 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 		sheaders = g_strdup( "" );
 	}
 	prefs_list = g_list_append( prefs_list, sheaders );
+
+	/* string delimiter */
+	priv->string_delim = '\0';
+	priv->indicators &= ~OFA_SFHAS_STRDELIM;
+	if( has_string_delim ){
+		priv->string_delim = string_delim;
+		priv->indicators |= OFA_SFHAS_STRDELIM;
+	}
+	sstrdelim = g_strdup_printf( "%d", string_delim );
+	prefs_list = g_list_append( prefs_list, sstrdelim );
 
 	/* prefix with indicators */
 	sinds = g_strdup_printf( "%d", priv->indicators );
