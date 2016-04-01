@@ -863,15 +863,11 @@ iimportable_get_label( const ofaIImportable *instance )
  * - digits
  * - notes (opt)
  *
- * Replace the whole table with the provided datas.
+ * Returns: the total count of errors.
  *
- * Returns: 0 if no error has occurred, >0 if an error has been detected
- * during import phase (input file read), <0 if an error has occured
- * during insert phase.
- *
- * As the table is dropped between import phase and insert phase, if an
- * error occurs during insert phase, then the table is changed and only
- * contains the successfully inserted records.
+ * As the table may have been dropped between import phase and insert
+ * phase, if an error occurs during insert phase, then the table is
+ * changed and only contains the successfully inserted records.
  */
 static guint
 iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )

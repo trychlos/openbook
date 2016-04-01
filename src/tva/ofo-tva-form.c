@@ -1742,9 +1742,6 @@ iimportable_get_label( const ofaIImportable *instance )
  * (but main record must be defined before any boolean or detail one
  *  for a given mnemo).
  *
- * Replace the existing datas in the table with the provided ones of
- * same identifier, but do not remove other existing vat forms.
- *
  * Returns: the total count of errors.
  *
  * As the table may have been dropped between import phase and insert
