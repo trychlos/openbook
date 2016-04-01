@@ -75,9 +75,8 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 
 	if( gtk_dialog_run( GTK_DIALOG( file_chooser )) == GTK_RESPONSE_OK ){
 
-		settings = ofa_stream_format_new( SETTINGS_IMPORT_SETTINGS );
-		ofa_stream_format_set( settings,
-				NULL, OFA_STREAM_OTHER, OFA_SFMODE_IMPORT, "UTF-8", 0, ',', ' ', '\0', 0 );
+		settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+		ofa_stream_format_set( settings, TRUE, "UTF-8", FALSE, 0, FALSE, '\0', TRUE, ',', TRUE, ' ', TRUE, '\0', TRUE, 0 );
 
 		/* take the uri before clearing bat lines */
 		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));

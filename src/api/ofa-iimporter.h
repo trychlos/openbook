@@ -43,6 +43,9 @@
  *   the insertion in the DBMS)
  * - "message" to display a standard, warning or error message during
  *   the import (resp. the DBMS insertion).
+ *
+ * The #ofaIImporter implementation should also implement #myIIdent
+ * interface.
  */
 
 #include <glib-object.h>
@@ -63,7 +66,7 @@ typedef struct _ofaIImporterParms               ofaIImporterParms;
  * ofaIImporterInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
- * @get_label:             [should] returns a label for the instance.
+ * @get_accepted_contents: [should] returns accepted contents.
  *
  * This defines the interface that an #ofaIImporter should implement.
  */
@@ -93,16 +96,6 @@ typedef struct {
 	guint         ( *get_interface_version )( const ofaIImporter *instance );
 
 	/**
-	 * get_label:
-	 * @instance: the #ofaIImporter provider.
-	 *
-	 * Return value: the label to be associated with the @instance.
-	 *
-	 * Since: version 1.
-	 */
-	gchar *       ( *get_label )            ( const ofaIImporter *instance );
-
-	/**
 	 * get_accepted_contents:
 	 * @instance: the #ofaIImporter provider.
 	 *
@@ -120,7 +113,11 @@ guint        ofa_iimporter_get_interface_last_version( void );
 
 guint        ofa_iimporter_get_interface_version     ( const ofaIImporter *instance );
 
-gchar       *ofa_iimporter_get_label                 ( const ofaIImporter *instance );
+gchar       *ofa_iimporter_get_canon_name            ( const ofaIImporter *instance );
+
+gchar       *ofa_iimporter_get_display_name          ( const ofaIImporter *instance );
+
+gchar       *ofa_iimporter_get_version               ( const ofaIImporter *instance );
 
 const GList *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance );
 

@@ -30,27 +30,27 @@
  * @short_description: #ofaStreamFormat class definition.
  * @include: openbook/ofa-stream-format.h
  *
- * A convenience class which manages the data formats for import and
- * export streams.
+ * A convenience class which manages the format to be used on input/output
+ * streams.
  *
- * We are planning to manage two main file formats:
- * 1/ a 'csv'-like format: mode text, line-oriented, with a field
- *    separator
- * 2/ a fixed format, binary mode, where each field has its own fixed
- *    width.
+ * File formats are named..
  *
- * File formats may be named by the application (or the user).
+ * Import and export assistants may save the used stream format using
+ * the data type class name as the user-provided name.
  *
- * File format is serialized in settings as a semi-colon separated
+ * File format is serialized in user settings as a semi-colon separated
  * string list:
- * - name
- * - file format
  * - encoding charmap
  * - date format
  * - decimal separator (ascii code of the char)
  * - field separator (ascii code of the char)
  * - whether the exported file contains headers, or count of the headers
- *   lines in an imported file
+ *   lines in an imported file.
+ *
+ * The full key name in the user settings is so built from:
+ * - the user-provided name, which defaults to 'Default'
+ * - the mode associated to the format 'Import' or 'Export'
+ * - a 'Format suffix.
  */
 
 #include "my/my-date.h"
@@ -76,39 +76,19 @@ typedef struct {
 }
 	ofaStreamFormatClass;
 
-/**
- * ofeStream:
- * The format of the file as a whole.
- * @OFA_STREAM_CSV:   a text file, csv-like format, line-oriented, with
- *                  a field separator
- * @OFA_STREAM_FIXED: a text or binary mode, fixed-format file (without
- *                  field separator).
- * @OFA_STREAM_OTHER: any other format, whether it is text or binary;
- *                  this format is not handled by Openbook, and must
- *                  be managed by a specialized code (e.g. BAT).
- *
- * This indicator should be provided by ofaIImporter implementations,
- * because it lets the UI display ad-hoc fields.
- */
-typedef enum {
-	OFA_STREAM_CSV = 1,					/* keep this =1 as this is the default */
-	OFA_STREAM_FIXED,
-	OFA_STREAM_OTHER
-}
-	ofeStream;
-
 /*
- * +--------------------------+---------+------------+------------+----------+-------------+---------+
- * | Content                    Charmap   DateFormat   DecimalSep   FieldSep   StringDelim   Headers |
- * +--------------------------+---------+------------+------------+----------+-------------+---------+
- * | application/pdf               Y          Y             Y          N            N           N    |
- * | application/vnd.ms-excel      Y          Y             Y          N            Y           N    |
- * | text/csv                      Y          Y             Y          Y            Y           Y    |
- * +--------------------------+---------+------------+------------+----------+-------------+---------+
+ * +--------------------------+---------+------------+------------+----------+-------------+---------+-------------+---------+
+ * | Content                  | Charmap | DateFormat | DecimalSep | FieldSep | StringDelim | Headers | ThousandSep | EndLine |
+ * +--------------------------+---------+------------+------------+----------+-------------+---------+-------------+---------+
+ * | application/pdf          |    Y    |     Y      |      Y     |    N     |      N      |    N    |      Y      |    N    |
+ * | application/vnd.ms-excel |    Y    |     Y      |      Y     |    N     |      Y      |    N    |      Y      |    Y    |
+ * | text/csv                 |    Y    |     Y      |      Y     |    Y     |      Y      |    Y    |      Y      |    Y    |
+ * | text/json                |    Y    |     Y      |      Y     |    Y     |      Y      |    Y    |      Y      |    N    |
+ * +--------------------------+---------+------------+------------+----------+-------------+---------+-------------+---------+
  */
 
 /**
- * ofeSMode:
+ * ofeSFMode:
  * The destination of the file format:
  * @OFA_SFMODE_EXPORT: file format for export, with headers indicator
  * @OFA_SFMODE_IMPORT: file format for import, with count of headers
@@ -117,39 +97,74 @@ typedef enum {
 	OFA_SFMODE_EXPORT = 1,				/* keep this =1 as this is the default */
 	OFA_SFMODE_IMPORT
 }
-	ofeSMode;
+	ofeSFMode;
 
-GType            ofa_stream_format_get_type         ( void ) G_GNUC_CONST;
+/**
+ * Whether this stream format has which indicators.
+ */
+typedef enum {
+	OFA_SFHAS_CHARMAP     = 1 << 0,
+	OFA_SFHAS_DATEFMT     = 1 << 1,
+	OFA_SFHAS_THOUSANDSEP = 1 << 2,
+	OFA_SFHAS_DECIMALSEP  = 1 << 3,
+	OFA_SFHAS_FIELDSEP    = 1 << 4,
+	OFA_SFHAS_STRDELIM    = 1 << 5,
+	OFA_SFHAS_HEADERS     = 1 << 6,
+	OFA_SFHAS_ALL         = 0xff,
+}
+	ofeSFHas;
 
-ofaStreamFormat *ofa_stream_format_new              ( const gchar *prefs_name );
+GType            ofa_stream_format_get_type          ( void ) G_GNUC_CONST;
 
-ofeSMode         ofa_stream_format_get_ffmode       ( const ofaStreamFormat *settings );
-ofeStream        ofa_stream_format_get_fftype       ( const ofaStreamFormat *settings );
-const gchar     *ofa_stream_format_get_fftype_str   ( ofeStream format );
-const gchar     *ofa_stream_format_get_charmap      ( const ofaStreamFormat *settings );
-myDateFormat     ofa_stream_format_get_date_format  ( const ofaStreamFormat *settings );
-gchar            ofa_stream_format_get_decimal_sep  ( const ofaStreamFormat *settings );
-gchar            ofa_stream_format_get_field_sep    ( const ofaStreamFormat *settings );
-gchar            ofa_stream_format_get_string_delim ( const ofaStreamFormat *settings );
-gint             ofa_stream_format_get_headers_count( const ofaStreamFormat *settings );
-gboolean         ofa_stream_format_has_headers      ( const ofaStreamFormat *settings );
+const gchar     *ofa_stream_format_get_default_name  ( void );
 
-void             ofa_stream_format_set              ( ofaStreamFormat *settings,
-															const gchar *name,
-															ofeStream type,
-															ofeSMode mode,
-															const gchar *charmap,
-															myDateFormat date_format,
-															gchar decimal_sep,
-															gchar field_sep,
-															gchar string_delim,
-															gint count_headers );
+ofeSFMode        ofa_stream_format_get_default_mode  ( void );
 
-void             ofa_stream_format_set_mode         ( ofaStreamFormat *settings,
-															ofeSMode mode );
+const gchar     *ofa_stream_format_get_mode_str      ( ofeSFMode mode );
+const gchar     *ofa_stream_format_get_mode_localestr( ofeSFMode mode );
 
-void             ofa_stream_format_set_prefs_name   ( ofaStreamFormat *settings,
-															const gchar *new_name );
+gboolean         ofa_stream_format_exists            ( const gchar *name,
+															ofeSFMode mode );
+
+ofaStreamFormat *ofa_stream_format_new               ( const gchar *name,
+															ofeSFMode mode );
+
+const gchar     *ofa_stream_format_get_name          ( const ofaStreamFormat *settings );
+ofeSFMode        ofa_stream_format_get_mode          ( const ofaStreamFormat *settings );
+
+gboolean         ofa_stream_format_get_has_charmap   ( const ofaStreamFormat *settings );
+const gchar     *ofa_stream_format_get_charmap       ( const ofaStreamFormat *settings );
+
+gboolean         ofa_stream_format_get_has_date      ( const ofaStreamFormat *settings );
+myDateFormat     ofa_stream_format_get_date_format   ( const ofaStreamFormat *settings );
+
+gboolean         ofa_stream_format_get_has_thousand  ( const ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_thousand_sep  ( const ofaStreamFormat *settings );
+
+gboolean         ofa_stream_format_get_has_decimal   ( const ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_decimal_sep   ( const ofaStreamFormat *settings );
+
+gboolean         ofa_stream_format_get_has_field     ( const ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_field_sep     ( const ofaStreamFormat *settings );
+
+gboolean         ofa_stream_format_get_has_strdelim  ( const ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_string_delim  ( const ofaStreamFormat *settings );
+
+gboolean         ofa_stream_format_get_has_headers   ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_with_headers  ( const ofaStreamFormat *settings );
+gint             ofa_stream_format_get_headers_count ( const ofaStreamFormat *settings );
+
+void             ofa_stream_format_set               ( ofaStreamFormat *settings,
+															gboolean has_charmap, const gchar *charmap,
+															gboolean has_datefmt, myDateFormat datefmt,
+															gboolean has_thousand_sep, gchar thousand_sep,
+															gboolean has_decimal_sep, gchar decimal_sep,
+															gboolean has_field_sep, gchar field_sep,
+															gboolean has_string_delim, gchar string_delim,
+															gboolean has_headers, gint count_headers );
+
+void             ofa_stream_format_set_name          ( ofaStreamFormat *settings, const gchar *name );
+void             ofa_stream_format_set_mode          ( ofaStreamFormat *settings, ofeSFMode mode );
 
 G_END_DECLS
 

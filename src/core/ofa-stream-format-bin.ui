@@ -2,7 +2,6 @@
 <!-- Generated with glade 3.19.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkSizeGroup" id="ffb-col0-hsize"/>
   <object class="GtkSizeGroup" id="ffb-col1-hsize"/>
   <object class="GtkWindow" id="ffb-window">
     <property name="can_focus">False</property>
@@ -40,7 +39,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">0</property>
+                    <property name="top_attach">2</property>
                   </packing>
                 </child>
                 <child>
@@ -53,7 +52,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
+                    <property name="top_attach">3</property>
                   </packing>
                 </child>
                 <child>
@@ -66,11 +65,11 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">2</property>
+                    <property name="top_attach">5</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p5-field-label">
+                  <object class="GtkLabel" id="ffb-field-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">_Field separator :</property>
@@ -79,11 +78,11 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">3</property>
+                    <property name="top_attach">6</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p3-string-label">
+                  <object class="GtkLabel" id="ffb-string-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">_Strings are enclosed between char :</property>
@@ -92,7 +91,7 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">4</property>
+                    <property name="top_attach">7</property>
                   </packing>
                 </child>
                 <child>
@@ -105,49 +104,21 @@
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">6</property>
+                    <property name="top_attach">10</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkComboBox" id="p5-encoding">
+                  <object class="GtkComboBox" id="ffb-encoding">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                   </object>
                   <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkBox" id="p5-parent-date">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="orientation">vertical</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkBox" id="p5-decimal-parent">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="orientation">vertical</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
+                    <property name="left_attach">2</property>
                     <property name="top_attach">2</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox" id="p5-field-parent">
+                  <object class="GtkBox" id="ffb-date-parent">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="orientation">vertical</property>
@@ -156,12 +127,40 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="left_attach">1</property>
+                    <property name="left_attach">2</property>
                     <property name="top_attach">3</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="p3-string-delimiter">
+                  <object class="GtkBox" id="ffb-decimal-parent">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">5</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="ffb-field-parent">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">6</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="ffb-string-delimiter">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="halign">start</property>
@@ -170,12 +169,12 @@
                     <property name="max_width_chars">2</property>
                   </object>
                   <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">4</property>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">7</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkCheckButton" id="p5-headers">
+                  <object class="GtkCheckButton" id="ffb-headers">
                     <property name="label" translatable="yes">With _header row(s)</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -185,12 +184,12 @@
                     <property name="draw_indicator">True</property>
                   </object>
                   <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">5</property>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">9</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkSpinButton" id="p3-count">
+                  <object class="GtkSpinButton" id="ffb-count">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="halign">start</property>
@@ -202,9 +201,224 @@
                     <property name="numeric">True</property>
                   </object>
                   <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">10</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ffb-mode-label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">M_ode :</property>
+                    <property name="use_underline">True</property>
+                    <property name="selectable">True</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ffb-name-label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">_Name :</property>
+                    <property name="use_underline">True</property>
+                    <property name="selectable">True</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="ffb-name">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ffb-thousand-label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">_Thousand separator :</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkComboBox" id="ffb-mode-combo">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkEntry" id="ffb-thousand">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="halign">start</property>
+                    <property name="max_length">1</property>
+                    <property name="width_chars">2</property>
+                    <property name="max_width_chars">2</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="ffb-has-charmap">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="ffb-has-datefmt">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="ffb-has-thousand">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">4</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="ffb-has-decimal">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">5</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="ffb-has-fieldsep">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
                     <property name="left_attach">1</property>
                     <property name="top_attach">6</property>
                   </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="ffb-has-strdelim">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">7</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="ffb-count-label1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">He_aders :</property>
+                    <property name="use_underline">True</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">8</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkCheckButton" id="ffb-has-headers">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="xalign">0</property>
+                    <property name="draw_indicator">True</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">8</property>
+                  </packing>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
+                </child>
+                <child>
+                  <placeholder/>
                 </child>
                 <child>
                   <placeholder/>
@@ -227,5 +441,18 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup" id="ffb-col0-hsize">
+    <widgets>
+      <widget name="ffb-encoding-label"/>
+      <widget name="ffb-date-label"/>
+      <widget name="ffb-decimal-label"/>
+      <widget name="ffb-field-label"/>
+      <widget name="ffb-string-label"/>
+      <widget name="ffb-count-label"/>
+      <widget name="ffb-mode-label"/>
+      <widget name="ffb-name-label"/>
+      <widget name="ffb-thousand-label"/>
+    </widgets>
   </object>
 </interface>

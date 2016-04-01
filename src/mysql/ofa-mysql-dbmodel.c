@@ -493,9 +493,15 @@ import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import )
 		g_free( str );
 		my_iprogress_start_progress( priv->window, self, label, FALSE );
 
-		settings = ofa_stream_format_new( SETTINGS_IMPORT_SETTINGS );
+		settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
 		ofa_stream_format_set( settings,
-				NULL, OFA_STREAM_CSV, OFA_SFMODE_IMPORT, "UTF-8", MY_DATE_SQL, ',', '|', '\0', import->header_count );
+									TRUE, "UTF-8", 			/* charmap */
+									TRUE, MY_DATE_SQL, 		/* date format */
+									TRUE, '\0',				/* thousand sep */
+									TRUE, ',',				/* decimal sep */
+									TRUE, '|', 				/* field sep */
+									TRUE, '\0', 			/* string delimiter */
+									TRUE, import->header_count );
 		object = g_object_new( import->typefn(), NULL );
 		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
 		uri = g_filename_to_uri( fname, NULL, NULL );

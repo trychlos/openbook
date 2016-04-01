@@ -71,6 +71,10 @@ ofaStreamFormatBin *ofa_stream_format_bin_new           ( ofaStreamFormat *forma
 GtkSizeGroup       *ofa_stream_format_bin_get_size_group( const ofaStreamFormatBin *bin,
 																guint col_number );
 
+GtkWidget          *ofa_stream_format_bin_get_name_entry( const ofaStreamFormatBin *bin );
+
+GtkWidget          *ofa_stream_format_bin_get_mode_combo( const ofaStreamFormatBin *bin );
+
 void                ofa_stream_format_bin_set_format    ( ofaStreamFormatBin *bin,
 																ofaStreamFormat *format );
 

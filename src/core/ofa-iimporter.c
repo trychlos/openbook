@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "my/my-iident.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
@@ -239,24 +240,70 @@ ofa_iimporter_get_interface_version( const ofaIImporter *instance )
 }
 
 /**
- * ofa_iimporter_get_label:
+ * ofa_iimporter_get_canon_name:
  * @instance: this #ofaIImporter instance.
  *
- * Returns: the label to be associated with the @instance importer,
- * as a newly allocated string which should be g_free() by the caller.
+ * Returns: the canonical name to be associated with the @instance
+ * provided that it implements the myIIdent interface, or %NULL
  */
 gchar *
-ofa_iimporter_get_label( const ofaIImporter *instance )
+ofa_iimporter_get_canon_name( const ofaIImporter *instance )
 {
-	static const gchar *thisfn = "ofa_iimporter_get_label";
+	static const gchar *thisfn = "ofa_iimporter_get_canon_name";
 
 	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
 
-	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_label ){
-		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_label( instance ));
+	if( MY_IS_IIDENT( instance )){
+		return( my_iident_get_canon_name( MY_IIDENT( instance ), NULL ));
 	}
 
-	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_label()' method",
+	g_info( "%s: ofaIImporter's %s implementation does not implement myIIdent interface",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
+ * ofa_iimporter_get_display_name:
+ * @instance: this #ofaIImporter instance.
+ *
+ * Returns: the displayable name to be associated with the @instance
+ * provided that it implements the myIIdent interface, or %NULL
+ */
+gchar *
+ofa_iimporter_get_display_name( const ofaIImporter *instance )
+{
+	static const gchar *thisfn = "ofa_iimporter_get_display_name";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+
+	if( MY_IS_IIDENT( instance )){
+		return( my_iident_get_display_name( MY_IIDENT( instance ), NULL ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not implement myIIdent interface",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
+ * ofa_iimporter_get_version:
+ * @instance: this #ofaIImporter instance.
+ *
+ * Returns: the version to be associated with the @instance
+ * provided that it implements the myIIdent interface, or %NULL
+ */
+gchar *
+ofa_iimporter_get_version( const ofaIImporter *instance )
+{
+	static const gchar *thisfn = "ofa_iimporter_get_version";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+
+	if( MY_IS_IIDENT( instance )){
+		return( my_iident_get_version( MY_IIDENT( instance ), NULL ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not implement myIIdent interface",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

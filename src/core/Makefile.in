@@ -170,8 +170,7 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-currency-store.lo ofa-date-filter-hv-bin.lo \
 	ofa-dbms-root-bin.lo ofa-dossier-delete-prefs-bin.lo \
 	ofa-dossier-prefs.lo ofa-extender-collection.lo \
-	ofa-extender-module.lo ofa-stream-format.lo \
-	ofa-stream-format-bin.lo ofa-guided-input.lo \
+	ofa-extender-module.lo ofa-guided-input.lo \
 	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
 	ofa-icollectionable.lo ofa-icollector.lo ofa-iconcil.lo \
 	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
@@ -186,11 +185,12 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
 	ofa-open-prefs-bin.lo ofa-page.lo ofa-periodicity.lo \
 	ofa-periodicity-bin.lo ofa-portfolio-collection.lo \
-	ofa-preferences.lo ofa-settings.lo ofo-account.lo ofo-base.lo \
-	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
-	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
-	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-bat.lo ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
+	ofa-preferences.lo ofa-settings.lo ofa-stream-format.lo \
+	ofa-stream-format-bin.lo ofo-account.lo ofo-base.lo ofo-bat.lo \
+	ofo-bat-line.lo ofo-class.lo ofo-concil.lo ofo-currency.lo \
+	ofo-dossier.lo ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo \
+	ofo-rate.lo ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
+	ofs-currency.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -496,9 +496,6 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-prefs.c									\
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
-	ofa-stream-format.c									\
-	ofa-stream-format-bin.c								\
-	ofa-stream-format-bin.h								\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\
@@ -550,6 +547,9 @@ libofa_core_la_SOURCES = \
 	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
 	ofa-settings.c										\
+	ofa-stream-format.c									\
+	ofa-stream-format-bin.c								\
+	ofa-stream-format-bin.h								\
 	ofo-account.c										\
 	ofo-base.c											\
 	ofo-bat.c											\
@@ -685,8 +685,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-module.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format-bin.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-input.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-hub.Plo@am__quote@
@@ -727,6 +725,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-portfolio-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settings.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-account.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-base.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-bat-line.Plo@am__quote@

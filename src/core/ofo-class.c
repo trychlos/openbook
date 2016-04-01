@@ -735,7 +735,7 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
 	gulong count;
 
 	dataset = ofo_class_get_dataset( hub );
-	with_headers = ofa_stream_format_has_headers( settings );
+	with_headers = ofa_stream_format_get_with_headers( settings );
 
 	count = ( gulong ) g_list_length( dataset );
 	if( with_headers ){

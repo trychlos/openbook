@@ -89,7 +89,6 @@ typedef struct {
 	ofaStreamFormatBin *p2_settings_prefs;
 	GtkWidget          *p2_message;
 	gchar              *p2_format;
-	gchar              *p2_settings_key;
 
 	/* p3: output file
 	 */
@@ -230,7 +229,6 @@ export_finalize( GObject *instance )
 	g_free( priv->p1_selected_class );
 	g_free( priv->p1_selected_label );
 	g_free( priv->p2_format );
-	g_free( priv->p2_settings_key );
 	g_free( priv->p3_last_folder );
 	g_free( priv->p3_furi );
 
@@ -594,7 +592,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_init";
 	ofaExportAssistantPrivate *priv;
-	GtkWidget *label, *parent, *button;
+	GtkWidget *label, *parent, *button, *combo;
 	GtkSizeGroup *hgroup;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -612,6 +610,10 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_settings_prefs ));
 
 	g_signal_connect( priv->p2_settings_prefs, "ofa-changed", G_CALLBACK( p2_on_settings_changed ), self );
+
+	combo = ofa_stream_format_bin_get_mode_combo( priv->p2_settings_prefs );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	gtk_widget_set_sensitive( combo, FALSE );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
@@ -638,36 +640,25 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_display";
 	ofaExportAssistantPrivate *priv;
-	gchar *candidate_key;
 	const gchar *found_key;
-	myISettings *instance;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
+	/* previously set */
 	gtk_label_set_text( GTK_LABEL( priv->p2_datatype ), priv->p1_selected_label );
 
-	candidate_key =  g_strdup_printf( "%s-%s", SETTINGS_EXPORT_SETTINGS, priv->p1_selected_class );
-	instance = ofa_settings_get_settings( SETTINGS_TARGET_USER );
-	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
-
-	if( my_isettings_has_key( instance, SETTINGS_GROUP_GENERAL, candidate_key )){
-		found_key = candidate_key;
-	} else {
-		g_debug( "%s: candidate_key=%s not found", thisfn, candidate_key );
-		found_key = SETTINGS_EXPORT_SETTINGS;
+	/* get a suitable format */
+	found_key = NULL;
+	if( ofa_stream_format_exists( priv->p1_selected_class, OFA_SFMODE_EXPORT )){
+		found_key = priv->p1_selected_class;
 	}
-	priv->p2_settings_key = g_strdup( candidate_key );
 
 	g_clear_object( &priv->p2_export_settings );
-	priv->p2_export_settings = ofa_stream_format_new( found_key );
-	ofa_stream_format_set_prefs_name( priv->p2_export_settings, priv->p2_settings_key );
-	ofa_stream_format_set_mode( priv->p2_export_settings, OFA_SFMODE_EXPORT );
+	priv->p2_export_settings = ofa_stream_format_new( found_key, OFA_SFMODE_EXPORT );
 	ofa_stream_format_bin_set_format( priv->p2_settings_prefs, priv->p2_export_settings );
-
-	g_free( candidate_key );
 
 	p2_check_for_complete( self );
 }
@@ -706,7 +697,6 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_forward";
 	ofaExportAssistantPrivate *priv;
-	ofeStream fftype;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -716,8 +706,7 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	ofa_stream_format_bin_apply( priv->p2_settings_prefs );
 
 	g_free( priv->p2_format );
-	fftype = ofa_stream_format_get_fftype( priv->p2_export_settings );
-	priv->p2_format = g_strdup( ofa_stream_format_get_fftype_str( fftype ));
+	priv->p2_format = g_strdup( ofa_stream_format_get_name( priv->p2_export_settings ));
 }
 
 /*
@@ -991,7 +980,7 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_utils_widget_set_style( label, "labelinfo" );
 	str = g_strdup(
-			ofa_stream_format_has_headers( priv->p2_export_settings ) ? _( "True" ) : _( "False" ));
+			ofa_stream_format_get_with_headers( priv->p2_export_settings ) ? _( "True" ) : _( "False" ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 

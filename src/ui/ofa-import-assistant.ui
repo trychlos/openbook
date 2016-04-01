@@ -37,7 +37,7 @@ Press Continue.</property>
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Selection of the file to be imported</property>
+        <property name="title" translatable="yes">Select the file to be imported</property>
       </packing>
     </child>
     <child>
@@ -132,7 +132,7 @@ Press Continue.</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">in</property>
             <child>
-              <object class="GtkGrid" id="grid22-parent">
+              <object class="GtkGrid" id="p2-datatype-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_left">12</property>
@@ -151,9 +151,6 @@ Press Continue.</property>
                     <property name="top_attach">0</property>
                   </packing>
                 </child>
-                <child>
-                  <placeholder/>
-                </child>
               </object>
             </child>
             <child type="label">
@@ -166,27 +163,47 @@ Press Continue.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">1</property>
           </packing>
         </child>
         <child>
-          <object class="GtkFrame" id="frame23">
+          <object class="GtkLabel" id="p2-message">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="title" translatable="yes">Select the type of data</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkGrid" id="p3-grid">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="row_spacing">3</property>
+        <property name="column_spacing">4</property>
+        <child>
+          <object class="GtkFrame" id="frame32">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label_xalign">0</property>
             <property name="shadow_type">in</property>
             <child>
-              <object class="GtkGrid" id="grid23">
+              <object class="GtkGrid" id="grid32">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
                 <property name="margin_top">4</property>
                 <property name="margin_bottom">4</property>
                 <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkLabel" id="label231">
+                  <object class="GtkLabel" id="label321">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                   </object>
@@ -196,19 +213,19 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkScrolledWindow" id="scrolledwindow1">
+                  <object class="GtkScrolledWindow" id="scrolledwindow321">
                     <property name="height_request">100</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="shadow_type">in</property>
                     <child>
-                      <object class="GtkTreeView" id="p2-treeview">
+                      <object class="GtkTreeView" id="p3-treeview">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="hexpand">True</property>
                         <property name="headers_visible">False</property>
                         <child internal-child="selection">
-                          <object class="GtkTreeSelection" id="treeview-selection1"/>
+                          <object class="GtkTreeSelection" id="treeview-selection"/>
                         </child>
                       </object>
                     </child>
@@ -221,7 +238,7 @@ Press Continue.</property>
               </object>
             </child>
             <child type="label">
-              <object class="GtkLabel" id="p2-label23">
+              <object class="GtkLabel" id="label32">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes"> Available _importers </property>
@@ -235,34 +252,10 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p2-msgerr">
+          <object class="GtkLabel" id="p3-message">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">3</property>
-          </packing>
-        </child>
-      </object>
-      <packing>
-        <property name="title" translatable="yes">Selection of the type of data</property>
-      </packing>
-    </child>
-    <child>
-      <object class="GtkGrid" id="p3-grid">
-        <property name="visible">True</property>
-        <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
-        <child>
-          <object class="GtkBox" id="p3-settings-parent">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="orientation">vertical</property>
-            <child>
-              <placeholder/>
-            </child>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -299,7 +292,7 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p3-label311">
+                  <object class="GtkLabel" id="label311">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Source file :</property>
@@ -311,30 +304,7 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p3-label312">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Source data type :</property>
-                    <property name="xalign">1</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="p3-datatype">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="xalign">0</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">3</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="p3-label313">
+                  <object class="GtkLabel" id="label312">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="label" translatable="yes">Guessed content :</property>
@@ -357,10 +327,10 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p3-label314">
+                  <object class="GtkLabel" id="label313">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Importer :</property>
+                    <property name="label" translatable="yes">Target data type :</property>
                     <property name="xalign">1</property>
                   </object>
                   <packing>
@@ -369,7 +339,7 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkLabel" id="p3-importer">
+                  <object class="GtkLabel" id="p3-datatype">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="xalign">0</property>
@@ -394,8 +364,157 @@ Press Continue.</property>
             <property name="top_attach">0</property>
           </packing>
         </child>
+      </object>
+      <packing>
+        <property name="title" translatable="yes">Select the importer</property>
+      </packing>
+    </child>
+    <child>
+      <object class="GtkGrid" id="p4-grid">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="row_spacing">3</property>
         <child>
-          <object class="GtkLabel" id="p3-message">
+          <object class="GtkBox" id="p4-settings-parent">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkFrame" id="frame41">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="hexpand">True</property>
+            <property name="label_xalign">0</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkGrid" id="grid41">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">12</property>
+                <property name="margin_right">4</property>
+                <property name="margin_top">4</property>
+                <property name="margin_bottom">4</property>
+                <property name="hexpand">False</property>
+                <property name="row_spacing">3</property>
+                <property name="column_spacing">4</property>
+                <child>
+                  <object class="GtkLabel" id="p4-furi">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="ellipsize">start</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-furi-label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Source file :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-content-label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Guessed content :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-content">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">1</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-importer-label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Importer :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-importer">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">3</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-data-label">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Target data type :</property>
+                    <property name="xalign">1</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel" id="p4-datatype">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="xalign">0</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">2</property>
+                  </packing>
+                </child>
+              </object>
+            </child>
+            <child type="label">
+              <object class="GtkLabel" id="label41">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes"> Previously set </property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p4-message">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
@@ -410,20 +529,20 @@ Press Continue.</property>
         </child>
       </object>
       <packing>
-        <property name="title" translatable="yes">Set the file format settings</property>
+        <property name="title" translatable="yes">Configure the stream format</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p4-grid">
+      <object class="GtkGrid" id="p5-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="row_spacing">3</property>
         <property name="column_spacing">4</property>
         <child>
-          <object class="GtkLabel" id="label41">
+          <object class="GtkLabel" id="label51">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">&lt;b&gt;Source file&lt;/b&gt;</property>
+            <property name="label" translatable="yes">&lt;b&gt;Source URI&lt;/b&gt;</property>
             <property name="use_markup">True</property>
             <property name="xalign">0</property>
           </object>
@@ -433,33 +552,33 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label42">
+          <object class="GtkLabel" id="label52">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">&lt;b&gt;Imported data type&lt;/b&gt;</property>
+            <property name="label" translatable="yes">&lt;b&gt;Target data type&lt;/b&gt;</property>
             <property name="use_markup">True</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">2</property>
+            <property name="top_attach">3</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label44">
+          <object class="GtkLabel" id="label54">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">&lt;b&gt;Import settings&lt;/b&gt;</property>
+            <property name="label" translatable="yes">&lt;b&gt;Stream format&lt;/b&gt;</property>
             <property name="use_markup">True</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">6</property>
+            <property name="top_attach">8</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label441">
+          <object class="GtkLabel" id="label541">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
@@ -468,11 +587,11 @@ Press Continue.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">7</property>
+            <property name="top_attach">11</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label442">
+          <object class="GtkLabel" id="label542">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
@@ -481,11 +600,11 @@ Press Continue.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">8</property>
+            <property name="top_attach">12</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label443">
+          <object class="GtkLabel" id="label543">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
@@ -494,11 +613,11 @@ Press Continue.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">9</property>
+            <property name="top_attach">14</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label444">
+          <object class="GtkLabel" id="label544">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
@@ -507,66 +626,66 @@ Press Continue.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">10</property>
+            <property name="top_attach">15</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-charmap">
+          <object class="GtkLabel" id="p5-charmap">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">7</property>
+            <property name="top_attach">11</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-date">
+          <object class="GtkLabel" id="p5-date">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">8</property>
+            <property name="top_attach">12</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-decimal">
+          <object class="GtkLabel" id="p5-decimal">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">9</property>
+            <property name="top_attach">14</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-field">
+          <object class="GtkLabel" id="p5-field">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">10</property>
+            <property name="top_attach">15</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-type">
+          <object class="GtkLabel" id="p5-type">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">3</property>
+            <property name="top_attach">4</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-furi">
+          <object class="GtkLabel" id="p5-furi">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="hexpand">True</property>
@@ -579,31 +698,31 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label43">
+          <object class="GtkLabel" id="label53">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="label" translatable="yes">&lt;b&gt;File format&lt;/b&gt;</property>
+            <property name="label" translatable="yes">&lt;b&gt;Importer&lt;/b&gt;</property>
             <property name="use_markup">True</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">4</property>
+            <property name="top_attach">5</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-ffmt">
+          <object class="GtkLabel" id="p5-impname">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">5</property>
+            <property name="top_attach">6</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label445">
+          <object class="GtkLabel" id="label546">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">20</property>
@@ -612,22 +731,22 @@ Press Continue.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">12</property>
+            <property name="top_attach">17</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-headers">
+          <object class="GtkLabel" id="p5-headers">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">12</property>
+            <property name="top_attach">17</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="label1">
+          <object class="GtkLabel" id="label545">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="label" translatable="yes">String delimiter :</property>
@@ -635,19 +754,116 @@ Press Continue.</property>
           </object>
           <packing>
             <property name="left_attach">0</property>
-            <property name="top_attach">11</property>
+            <property name="top_attach">16</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p4-strdelim">
+          <object class="GtkLabel" id="p5-strdelim">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="xalign">0</property>
           </object>
           <packing>
             <property name="left_attach">1</property>
-            <property name="top_attach">11</property>
+            <property name="top_attach">16</property>
           </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p5-content">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p5-impversion">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">7</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label547">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Name :</property>
+            <property name="xalign">1</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">9</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p5-name">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">9</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label548">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Thousand separator :</property>
+            <property name="xalign">1</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">13</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p5-thousand">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">13</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="label549">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="label" translatable="yes">Mode :</property>
+            <property name="xalign">1</property>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">10</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkLabel" id="p5-mode">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="xalign">0</property>
+          </object>
+          <packing>
+            <property name="left_attach">1</property>
+            <property name="top_attach">10</property>
+          </packing>
+        </child>
+        <child>
+          <placeholder/>
+        </child>
+        <child>
+          <placeholder/>
         </child>
         <child>
           <placeholder/>
@@ -678,20 +894,20 @@ Press Continue.</property>
       </packing>
     </child>
     <child>
-      <object class="GtkGrid" id="p5-grid">
+      <object class="GtkGrid" id="p6-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="margin_bottom">10</property>
         <property name="row_spacing">20</property>
         <child>
-          <object class="GtkScrolledWindow" id="scrolledwindow53">
+          <object class="GtkScrolledWindow" id="scrolledwindow63">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="hexpand">False</property>
             <property name="vexpand">True</property>
             <property name="shadow_type">in</property>
             <child>
-              <object class="GtkTextView" id="p5-text-view">
+              <object class="GtkTextView" id="p6-text-view">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
@@ -706,7 +922,7 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkLabel" id="p5-label">
+          <object class="GtkLabel" id="p6-label">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="margin_left">40</property>
@@ -720,12 +936,12 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkGrid" id="grid51">
+          <object class="GtkGrid" id="grid61">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
             <child>
-              <object class="GtkLabel" id="label511">
+              <object class="GtkLabel" id="label611">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Import</property>
@@ -736,7 +952,7 @@ Press Continue.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="p5-bar-parent">
+              <object class="GtkBox" id="p6-bar-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_left">40</property>
@@ -759,12 +975,12 @@ Press Continue.</property>
           </packing>
         </child>
         <child>
-          <object class="GtkGrid" id="grid52">
+          <object class="GtkGrid" id="grid62">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="row_spacing">3</property>
             <child>
-              <object class="GtkLabel" id="label521">
+              <object class="GtkLabel" id="label621">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="label" translatable="yes">Insertion</property>
@@ -775,7 +991,7 @@ Press Continue.</property>
               </packing>
             </child>
             <child>
-              <object class="GtkBox" id="p5-insert-parent">
+              <object class="GtkBox" id="p6-insert-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_left">40</property>
@@ -817,8 +1033,15 @@ Press Continue.</property>
     <widgets>
       <widget name="label211"/>
       <widget name="label212"/>
-      <widget name="label231"/>
       <widget name="label221"/>
+    </widgets>
+  </object>
+  <object class="GtkSizeGroup" id="p3-sizegroup">
+    <widgets>
+      <widget name="label321"/>
+      <widget name="label311"/>
+      <widget name="label312"/>
+      <widget name="label313"/>
     </widgets>
   </object>
 </interface>

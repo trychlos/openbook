@@ -546,7 +546,7 @@ static void
 init_export_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
-	GtkWidget *target, *label;
+	GtkWidget *target, *label, *entry, *combo;
 	gchar *str;
 	GtkSizeGroup *group;
 	ofaStreamFormat *settings;
@@ -558,12 +558,20 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_stream_format_new( SETTINGS_EXPORT_SETTINGS );
+	settings = ofa_stream_format_new( NULL, OFA_SFMODE_EXPORT );
 	priv->export_settings = ofa_stream_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
 	my_utils_size_group_add_size_group(
 			group, ofa_stream_format_bin_get_size_group( priv->export_settings, 0 ));
+
+	entry = ofa_stream_format_bin_get_name_entry( priv->export_settings );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	gtk_widget_set_sensitive( entry, FALSE );
+
+	combo = ofa_stream_format_bin_get_mode_combo( priv->export_settings );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	gtk_widget_set_sensitive( combo, FALSE );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-folder" ));
 	str = ofa_settings_user_get_string( SETTINGS_EXPORT_FOLDER );
@@ -584,7 +592,7 @@ static void
 init_import_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
-	GtkWidget *target;
+	GtkWidget *target, *entry, *combo;
 	ofaStreamFormat *settings;
 
 	priv = ofa_preferences_get_instance_private( self );
@@ -592,10 +600,18 @@ init_import_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-import-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_stream_format_new( SETTINGS_IMPORT_SETTINGS );
+	settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
 	priv->import_settings = ofa_stream_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));
+
+	entry = ofa_stream_format_bin_get_name_entry( priv->import_settings );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	gtk_widget_set_sensitive( entry, FALSE );
+
+	combo = ofa_stream_format_bin_get_mode_combo( priv->import_settings );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	gtk_widget_set_sensitive( combo, FALSE );
 }
 
 static gboolean

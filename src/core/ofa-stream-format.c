@@ -40,20 +40,20 @@
 typedef struct {
 	gboolean     dispose_has_run;
 
-	/* if serialized in user preferences
+	/* when serialized in user preferences
 	 */
-	gchar       *prefs_name;
+	gchar       *name;
+	ofeSFMode    mode;
+	gint         indicators;
 
 	/* runtime data
 	 */
-	gchar       *name;					/* may be %NULL if defaults */
-	ofeStream    type;
-	ofeSMode    mode;
 	gchar       *charmap;
 	myDateFormat date_format;
+	gchar        thousand_sep;
 	gchar        decimal_sep;
-	gchar        field_sep;				/* csv only */
-	gchar        string_delim;			/* csv only */
+	gchar        field_sep;
+	gchar        string_delim;
 	union {
 		gboolean with_headers;
 		gint     count_headers;
@@ -62,28 +62,28 @@ typedef struct {
 	ofaStreamFormatPrivate;
 
 typedef struct {
-	ofeStream      format;
-	const gchar *label;
+	ofeSFMode    mode;
+	const gchar *str;
+	const gchar *localized;
 }
-	sFormat;
+	sLabels;
 
-static const sFormat st_stream_format[] = {
-		{ OFA_STREAM_CSV,   N_( "CSV-like file format" )},
-		{ OFA_STREAM_FIXED, N_( "Fixed file format" )},
-		{ OFA_STREAM_OTHER, N_( "Other (plugin-managed) format" )},
+static sLabels st_labels[] = {
+		{ OFA_SFMODE_EXPORT, "Export", N_( "Export" )},
+		{ OFA_SFMODE_IMPORT, "Import", N_( "Import" )},
 		{ 0 }
 };
 
-static gint         st_def_format       = OFA_STREAM_CSV;
-static gint         st_def_mode         = OFA_SFMODE_EXPORT;
 static const gchar *st_def_charmap      = "UTF-8";
 static const gint   st_def_date         = MY_DATE_SQL;
+static const gchar *st_def_thousand     = "";
 static const gchar *st_def_decimal      = ".";
 static const gchar *st_def_field_sep    = ";";
 static const gchar *st_def_headers      = "True";
 static const gchar *st_def_string_delim = "\"";
 
-static void  do_init( ofaStreamFormat *self, const gchar *prefs_name );
+static void   do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode );
+static gchar *get_key_name( const gchar *name, ofeSFMode mode );
 
 G_DEFINE_TYPE_EXTENDED( ofaStreamFormat, ofa_stream_format, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaStreamFormat ))
@@ -103,9 +103,8 @@ stream_format_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_stream_format_get_instance_private( OFA_STREAM_FORMAT( instance ));
 
-	g_free( priv->prefs_name );
-	g_free( priv->charmap );
 	g_free( priv->name );
+	g_free( priv->charmap );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_stream_format_parent_class )->finalize( instance );
@@ -159,23 +158,108 @@ ofa_stream_format_class_init( ofaStreamFormatClass *klass )
 }
 
 /**
+ * ofa_stream_format_get_default_name:
+ *
+ * Returns: the default name.
+ */
+const gchar *
+ofa_stream_format_get_default_name( void )
+{
+	return( "Default" );
+}
+
+/**
+ * ofa_stream_format_get_default_mode:
+ *
+ * Returns: the default mode.
+ */
+ofeSFMode
+ofa_stream_format_get_default_mode( void )
+{
+	return( OFA_SFMODE_EXPORT );
+}
+
+/**
+ * ofa_stream_format_get_mode_str:
+ *
+ * Returns: the associated non-localized string.
+ */
+const gchar *
+ofa_stream_format_get_mode_str( ofeSFMode mode )
+{
+	gint i;
+
+	for( i=0 ; st_labels[i].mode ; ++i ){
+		if( st_labels[i].mode == mode ){
+			return( st_labels[i].str );
+		}
+	}
+
+	return( ofa_stream_format_get_mode_str( ofa_stream_format_get_default_mode()));
+}
+
+/**
+ * ofa_stream_format_get_mode_localestr:
+ *
+ * Returns: the associated ocalized string.
+ */
+const gchar *
+ofa_stream_format_get_mode_localestr( ofeSFMode mode )
+{
+	gint i;
+
+	for( i=0 ; st_labels[i].mode ; ++i ){
+		if( st_labels[i].mode == mode ){
+			return( gettext( st_labels[i].localized ));
+		}
+	}
+
+	return( ofa_stream_format_get_mode_localestr( ofa_stream_format_get_default_mode()));
+}
+
+/**
+ * ofa_stream_format_exists:
+ * @name: the user-provided name for this format.
+ * @mode: the target mode for this format.
+ *
+ * Returns: %TRUE if the @name-@mode format is already defined in user
+ * settings.
+ */
+gboolean
+ofa_stream_format_exists( const gchar *name, ofeSFMode mode )
+{
+	gboolean exists;
+	gchar *keyname, *str;
+
+	exists = FALSE;
+
+	keyname = get_key_name( name, mode );
+	if( my_strlen( keyname )){
+		str = ofa_settings_user_get_string( keyname );
+		exists = my_strlen( str ) > 0;
+		g_free( str );
+	}
+
+	return( exists );
+}
+
+/**
  * ofa_stream_format_new:
- * @prefs_name: [allow-none]: the name of the settings key which is
- *  used to serialized this file format. If set, the object will be
- *  initialized from settings. If %NULL, the general defaults will
- *  be set.
- * @mode: whether the file format targets export or import.
+ * @name: [allow-none]: the user-provided name for this format;
+ *  defaults to 'Default'.
+ * @mode: [allow-none]: the target mode for this format;
+ *  defaults to Export
  *
  * Returns: a newly allocated #ofaStreamFormat object.
  */
 ofaStreamFormat *
-ofa_stream_format_new( const gchar *prefs_name )
+ofa_stream_format_new( const gchar *name, ofeSFMode mode )
 {
 	ofaStreamFormat *self;
 
 	self = g_object_new( OFA_TYPE_STREAM_FORMAT, NULL );
 
-	do_init( self, prefs_name );
+	do_init( self, name, mode );
 
 	return( self );
 }
@@ -183,52 +267,47 @@ ofa_stream_format_new( const gchar *prefs_name )
 /*
  * read file format from user settings:
  *
- * export: name;type;mode;charmap;date_format;decimal_sep;field_sep;with_headers;string_delim
- * import: name;type;mode;charmap;date_format;decimal_sep;field_sep;count_headers;string_delim
+ * export: indicators;charmap;date_format;thousand_sep;decimal_sep;field_sep;with_headers;string_delim;
+ * import: indicators;charmap;date_format;thousand_sep;decimal_sep;field_sep;count_headers;string_delim;
  */
 static void
-do_init( ofaStreamFormat *self, const gchar *prefs_name )
+do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 {
-	static const gchar *thisfn = "ofa_stream_format_do_init";
 	ofaStreamFormatPrivate *priv;
+	gchar *keyname;
 	GList *prefs_list, *it;
 	const gchar *cstr;
 	gchar *text;
 
 	priv = ofa_stream_format_get_instance_private( self );
 
-	priv->prefs_name = g_strdup( prefs_name );
-	prefs_list = ofa_settings_user_get_string_list( prefs_name );
+	priv->name = g_strdup( my_strlen( name ) ? name : ofa_stream_format_get_default_name());
 
-	/* name of this file format */
+	switch( mode ){
+		case OFA_SFMODE_EXPORT:
+		case OFA_SFMODE_IMPORT:
+			priv->mode = mode;
+			break;
+		default:
+			priv->mode = ofa_stream_format_get_default_mode();
+			break;
+	}
+
+	keyname = get_key_name( priv->name, priv->mode );
+	g_return_if_fail( my_strlen( keyname ));
+
+	prefs_list = ofa_settings_user_get_string_list( keyname );
+
+	/* indicators */
 	it = prefs_list;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
-	/*g_debug( "do_init: name='%s'", cstr );*/
-	priv->name = ( gchar * )( cstr ? g_strdup( cstr ) : cstr );
-
-	/* file format type */
-	it = it ? it->next : NULL;
-	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
-	/*g_debug( "do_init: ffmt='%s'", cstr );*/
-	text = cstr ? g_strdup( cstr ) : g_strdup_printf( "%d", st_def_format );
-	priv->type = atoi( text );
-	g_free( text );
-
-	/* target mode */
-	it = it ? it->next : NULL;
-	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
-	text = cstr ? g_strdup( cstr ) : g_strdup_printf( "%d", st_def_mode );
-	priv->mode = atoi( text );
-	g_debug( "%s: prefs=%s, type=%d, mode=%d", thisfn, prefs_name, priv->type, priv->mode );
-	g_free( text );
-	if( priv->mode != OFA_SFMODE_EXPORT && priv->mode != OFA_SFMODE_IMPORT ){
-		priv->mode = OFA_SFMODE_EXPORT;
-	}
+	priv->indicators = cstr ? atoi( cstr ) : OFA_SFHAS_ALL;
 
 	/* charmap */
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : st_def_charmap;
 	/*g_debug( "do_init: charmap='%s'", cstr );*/
+	g_free( priv->charmap );
 	priv->charmap = g_strdup( cstr );
 
 	/* date format */
@@ -239,11 +318,18 @@ do_init( ofaStreamFormat *self, const gchar *prefs_name )
 	priv->date_format = atoi( text );
 	g_free( text );
 
+	/* thousand separator */
+	it = it ? it->next : NULL;
+	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
+	text = g_strdup( cstr ? cstr : st_def_thousand );
+	priv->thousand_sep = atoi( text );
+	g_free( text );
+
 	/* decimal separator */
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
 	/*g_debug( "do_init: decimal_sep='%s'", cstr );*/
-	text = g_strdup( cstr ? cstr : st_def_decimal);
+	text = g_strdup( cstr ? cstr : st_def_decimal );
 	priv->decimal_sep = atoi( text );
 	g_free( text );
 
@@ -272,14 +358,35 @@ do_init( ofaStreamFormat *self, const gchar *prefs_name )
 	priv->string_delim = atoi( text );
 	g_free( text );
 
-	ofa_settings_free_string_list( prefs_list );
+	if( prefs_list ){
+		ofa_settings_free_string_list( prefs_list );
+	}
+
+	g_free( keyname );
 }
 
 /**
- * ofa_stream_format_get_ffmode:
+ * ofa_stream_format_get_name:
  */
-ofeSMode
-ofa_stream_format_get_ffmode( const ofaStreamFormat *settings )
+const gchar *
+ofa_stream_format_get_name( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), NULL );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return(( const gchar * ) priv->name );
+}
+
+/**
+ * ofa_stream_format_get_mode:
+ */
+ofeSFMode
+ofa_stream_format_get_mode( const ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -293,41 +400,20 @@ ofa_stream_format_get_ffmode( const ofaStreamFormat *settings )
 }
 
 /**
- * ofa_stream_format_get_fftype:
+ * ofa_stream_format_get_has_charmap:
  */
-ofeStream
-ofa_stream_format_get_fftype( const ofaStreamFormat *settings )
+gboolean
+ofa_stream_format_get_has_charmap( const ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
 
 	priv = ofa_stream_format_get_instance_private( settings );
 
-	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	return( priv->type );
-}
-
-/**
- * ofa_stream_format_get_fftype_str:
- */
-const gchar *
-ofa_stream_format_get_fftype_str( ofeStream format )
-{
-	static const gchar *thisfn = "ofa_stream_format_get_fftype_str";
-	gint i;
-
-	for( i=0 ; st_stream_format[i].format ; ++i ){
-		if( st_stream_format[i].format == format ){
-			return( gettext( st_stream_format[i].label ));
-		}
-	}
-
-	/* only a debug message as the overflow of the previous loop is
-	 * used when enumerating valid file formats */
-	g_info( "%s: unknown file format: %d (may be normal)", thisfn, format );
-	return( NULL );
+	return( priv->indicators & OFA_SFHAS_CHARMAP );
 }
 
 /**
@@ -348,6 +434,23 @@ ofa_stream_format_get_charmap( const ofaStreamFormat *settings )
 }
 
 /**
+ * ofa_stream_format_get_has_date:
+ */
+gboolean
+ofa_stream_format_get_has_date( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->indicators & OFA_SFHAS_DATEFMT );
+}
+
+/**
  * ofa_stream_format_get_date_format:
  */
 myDateFormat
@@ -362,6 +465,57 @@ ofa_stream_format_get_date_format( const ofaStreamFormat *settings )
 	g_return_val_if_fail( !priv->dispose_has_run, -1 );
 
 	return( priv->date_format );
+}
+
+/**
+ * ofa_stream_format_get_has_thousand:
+ */
+gboolean
+ofa_stream_format_get_has_thousand( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->indicators & OFA_SFHAS_THOUSANDSEP );
+}
+
+/**
+ * ofa_stream_format_get_thousand_sep:
+ */
+gchar
+ofa_stream_format_get_thousand_sep( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+
+	return( priv->thousand_sep );
+}
+
+/**
+ * ofa_stream_format_get_has_decimal:
+ */
+gboolean
+ofa_stream_format_get_has_decimal( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->indicators & OFA_SFHAS_DECIMALSEP );
 }
 
 /**
@@ -382,6 +536,23 @@ ofa_stream_format_get_decimal_sep( const ofaStreamFormat *settings )
 }
 
 /**
+ * ofa_stream_format_get_has_field:
+ */
+gboolean
+ofa_stream_format_get_has_field( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->indicators & OFA_SFHAS_FIELDSEP );
+}
+
+/**
  * ofa_stream_format_get_field_sep:
  */
 gchar
@@ -396,6 +567,23 @@ ofa_stream_format_get_field_sep( const ofaStreamFormat *settings )
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
 	return( priv->field_sep );
+}
+
+/**
+ * ofa_stream_format_get_has_strdelim:
+ */
+gboolean
+ofa_stream_format_get_has_strdelim( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->indicators & OFA_SFHAS_STRDELIM );
 }
 
 /**
@@ -416,6 +604,41 @@ ofa_stream_format_get_string_delim( const ofaStreamFormat *settings )
 }
 
 /**
+ * ofa_stream_format_get_has_headers:
+ */
+gboolean
+ofa_stream_format_get_has_headers( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->indicators & OFA_SFHAS_HEADERS );
+}
+
+/**
+ * ofa_stream_format_get_with_headers:
+ */
+gboolean
+ofa_stream_format_get_with_headers( const ofaStreamFormat *settings )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+	g_return_val_if_fail( priv->mode == OFA_SFMODE_EXPORT, FALSE );
+
+	return( priv->h.with_headers );
+}
+
+/**
  * ofa_stream_format_get_headers_count:
  */
 gint
@@ -428,54 +651,38 @@ ofa_stream_format_get_headers_count( const ofaStreamFormat *settings )
 	priv = ofa_stream_format_get_instance_private( settings );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
+	g_return_val_if_fail( priv->mode == OFA_SFMODE_IMPORT, FALSE );
 
 	return( priv->h.count_headers );
 }
 
 /**
- * ofa_stream_format_has_headers:
- */
-gboolean
-ofa_stream_format_has_headers( const ofaStreamFormat *settings )
-{
-	ofaStreamFormatPrivate *priv;
-
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
-
-	priv = ofa_stream_format_get_instance_private( settings );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( priv->h.with_headers );
-}
-
-/**
  * ofa_stream_format_set:
  * @settings:
- * @name:
- * @type:
- * @mode
  * @charmap:
  * @date_format:
+ * @thousand_sep:
  * @decimal_sep:
  * @field_sep:
- * @with_headers:
+ * @count_headers:
+ *  is headers count on import,
+ *  is with_headers if greater than zero on export.
  */
 void
 ofa_stream_format_set( ofaStreamFormat *settings,
-								const gchar *name,
-								ofeStream type,
-								ofeSMode mode,
-								const gchar *charmap,
-								myDateFormat date_format,
-								gchar decimal_sep,
-								gchar field_sep,
-								gchar string_delim,
-								gint count_headers )
+								gboolean has_charmap, const gchar *charmap,
+								gboolean has_datefmt, myDateFormat datefmt,
+								gboolean has_thousand_sep, gchar thousand_sep,
+								gboolean has_decimal_sep, gchar decimal_sep,
+								gboolean has_field_sep, gchar field_sep,
+								gboolean has_string_delim, gchar string_delim,
+								gboolean has_headers, gint count_headers )
 {
+	static const gchar *thisfn = "ofa_stream_format_set";
 	ofaStreamFormatPrivate *priv;
 	GList *prefs_list;
-	gchar *sfile, *sdate, *sdecimal, *sfield, *sheaders, *sstrdelim;
+	gchar *sdate, *sthousand, *sdecimal, *sfield, *sheaders, *sstrdelim;
+	gchar *keyname, *sinds;
 
 	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
 
@@ -485,70 +692,131 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 
 	prefs_list = NULL;
 
-	/* name */
-	g_free( priv->name );
-	priv->name = g_strdup( name );
-	prefs_list = g_list_append( prefs_list, ( gpointer )( name ? name : "" ));
-
-	/* file format */
-	priv->type = type;
-	sfile = g_strdup_printf( "%d", type );
-	prefs_list = g_list_append( prefs_list, sfile );
-
-	/* mode */
-	priv->mode = mode;
-	sfile = g_strdup_printf( "%d", mode );
-	prefs_list = g_list_append( prefs_list, sfile );
-
 	/* charmap (may be %NULL) */
 	g_free( priv->charmap );
-	priv->charmap = g_strdup( charmap );
+	priv->charmap = NULL;
+	priv->indicators &= ~OFA_SFHAS_CHARMAP;
+	if( has_charmap ){
+		priv->charmap = g_strdup( charmap );
+		priv->indicators |= OFA_SFHAS_CHARMAP;
+	}
 	prefs_list = g_list_append( prefs_list, ( gpointer ) charmap );
 
 	/* date format  */
-	priv->date_format = date_format;
-	sdate = g_strdup_printf( "%d", date_format );
+	priv->date_format = 0;
+	priv->indicators &= ~OFA_SFHAS_DATEFMT;
+	if( has_datefmt ){
+		priv->date_format = datefmt;
+		sdate = g_strdup_printf( "%d", datefmt );
+		priv->indicators |= OFA_SFHAS_DATEFMT;
+	} else {
+		sdate = g_strdup( "" );
+	}
 	prefs_list = g_list_append( prefs_list, sdate );
 
+	/* thousand separator */
+	priv->thousand_sep = '\0';
+	priv->indicators &= ~OFA_SFHAS_THOUSANDSEP;
+	if( has_thousand_sep ){
+		priv->thousand_sep = thousand_sep;
+		priv->indicators |= OFA_SFHAS_THOUSANDSEP;
+	}
+	sthousand = g_strdup_printf( "%d", thousand_sep );
+	prefs_list = g_list_append( prefs_list, sthousand );
+
 	/* decimal separator */
-	priv->decimal_sep = decimal_sep;
+	priv->decimal_sep = '\0';
+	priv->indicators &= ~OFA_SFHAS_DECIMALSEP;
+	if( has_decimal_sep ){
+		priv->decimal_sep = decimal_sep;
+		priv->indicators |= OFA_SFHAS_DECIMALSEP;
+	}
 	sdecimal = g_strdup_printf( "%d", decimal_sep );
 	prefs_list = g_list_append( prefs_list, sdecimal );
 
 	/* field separator */
-	priv->field_sep = field_sep;
+	priv->field_sep = '\0';
+	priv->indicators &= ~OFA_SFHAS_FIELDSEP;
+	if( has_field_sep ){
+		priv->field_sep = field_sep;
+		priv->indicators |= OFA_SFHAS_FIELDSEP;
+	}
 	sfield = g_strdup_printf( "%d", field_sep );
 	prefs_list = g_list_append( prefs_list, sfield );
 
-	/* with headers */
-	if( priv->mode == OFA_SFMODE_EXPORT ){
-		priv->h.with_headers = count_headers > 0;
-		sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
-	} else {
-		priv->h.count_headers = count_headers;
-		sheaders = g_strdup_printf( "%d", priv->h.count_headers );
-	}
-	prefs_list = g_list_append( prefs_list, sheaders );
-
 	/* string delimiter */
-	priv->string_delim = string_delim;
+	priv->string_delim = '\0';
+	priv->indicators &= ~OFA_SFHAS_STRDELIM;
+	if( has_string_delim ){
+		priv->string_delim = string_delim;
+		priv->indicators |= OFA_SFHAS_STRDELIM;
+	}
 	sstrdelim = g_strdup_printf( "%d", string_delim );
 	prefs_list = g_list_append( prefs_list, sstrdelim );
 
-	/* save in user preferences */
-	g_debug( "ofa_stream_format_set: prefs_name=%s", priv->prefs_name );
-	if( my_strlen( priv->prefs_name )){
-		ofa_settings_user_set_string_list( priv->prefs_name, prefs_list );
+	/* with headers */
+	priv->h.count_headers = 0;
+	priv->indicators &= ~OFA_SFHAS_HEADERS;
+	if( has_headers ){
+		if( priv->mode == OFA_SFMODE_EXPORT ){
+			priv->h.with_headers = count_headers > 0;
+			sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
+		} else {
+			priv->h.count_headers = count_headers;
+			sheaders = g_strdup_printf( "%d", priv->h.count_headers );
+		}
+		priv->indicators |= OFA_SFHAS_HEADERS;
+	} else {
+		sheaders = g_strdup( "" );
 	}
+	prefs_list = g_list_append( prefs_list, sheaders );
+
+	/* prefix with indicators */
+	sinds = g_strdup_printf( "%d", priv->indicators );
+	prefs_list = g_list_prepend( prefs_list, sinds );
+
+	/* save in user preferences */
+	keyname = get_key_name( priv->name, priv->mode );
+	g_debug( "%s: keyname=%s", thisfn, keyname );
+	g_return_if_fail( my_strlen( keyname ));
+	ofa_settings_user_set_string_list( keyname, prefs_list );
+	g_free( keyname );
 
 	g_list_free( prefs_list );
-
+	g_free( sinds );
 	g_free( sstrdelim );
 	g_free( sheaders );
 	g_free( sfield );
 	g_free( sdecimal );
+	g_free( sthousand );
 	g_free( sdate );
-	g_free( sfile );
+}
+
+/**
+ * ofa_stream_format_set_name:
+ * @settings:
+ * @name:
+ *
+ * Change the name of the settings.
+ * This will so also change the key in user settings.
+ *
+ * This let us read a default user preference, and then write to a new
+ * (hopefully more specific) user preference.
+ */
+void
+ofa_stream_format_set_name( ofaStreamFormat *settings, const gchar *name )
+{
+	ofaStreamFormatPrivate *priv;
+
+	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
+	g_return_if_fail( my_strlen( name ));
+
+	priv = ofa_stream_format_get_instance_private( settings );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->name );
+	priv->name = g_strdup( name );
 }
 
 /**
@@ -559,11 +827,12 @@ ofa_stream_format_set( ofaStreamFormat *settings,
  * Set the import/export mode.
  */
 void
-ofa_stream_format_set_mode( ofaStreamFormat *settings, ofeSMode mode )
+ofa_stream_format_set_mode( ofaStreamFormat *settings, ofeSFMode mode )
 {
 	ofaStreamFormatPrivate *priv;
 
 	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
+	g_return_if_fail( mode == OFA_SFMODE_EXPORT || mode == OFA_SFMODE_IMPORT );
 
 	priv = ofa_stream_format_get_instance_private( settings );
 
@@ -572,26 +841,17 @@ ofa_stream_format_set_mode( ofaStreamFormat *settings, ofeSMode mode )
 	priv->mode = mode;
 }
 
-/**
- * ofa_file_change_prefs_name:
- * @settings:
- * @name:
- *
- * Change the name of the key in the user preferences configuration file.
- * This let us read a default user preference, and then write to a new
- * (hopefully more specific) user preference.
- */
-void
-ofa_stream_format_set_prefs_name( ofaStreamFormat *settings, const gchar *name )
+static gchar *
+get_key_name( const gchar *name, ofeSFMode mode )
 {
-	ofaStreamFormatPrivate *priv;
+	gchar *keyname;
 
-	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
+	keyname = NULL;
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	if( my_strlen( name ) &&
+			( mode == OFA_SFMODE_EXPORT || mode == OFA_SFMODE_IMPORT )){
+		keyname = g_strdup_printf( "%s-%s-format", name, ofa_stream_format_get_mode_str( mode ));
+	}
 
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->prefs_name );
-	priv->prefs_name = g_strdup( name );
+	return( keyname );
 }

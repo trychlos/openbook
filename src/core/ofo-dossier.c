@@ -1734,7 +1734,7 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
 
 	priv = ofo_dossier_get_instance_private( dossier );
 
-	with_headers = ofa_stream_format_has_headers( settings );
+	with_headers = ofa_stream_format_get_with_headers( settings );
 	field_sep = ofa_stream_format_get_field_sep( settings );
 
 	count = 1;

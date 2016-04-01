@@ -45,7 +45,6 @@ static void         iident_iface_init( myIIdentInterface *iface );
 static gchar       *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar       *iident_get_version( const myIIdent *instance, void *user_data );
 static void         iimporter_iface_init( ofaIImporterInterface *iface );
-static gchar       *iimporter_get_label( const ofaIImporter *instance );
 static const GList *iimporter_get_accepted_contents( const ofaIImporter *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaImportersCSV, ofa_importers_csv, G_TYPE_OBJECT, 0,
@@ -152,14 +151,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_label = iimporter_get_label;
 	iface->get_accepted_contents = iimporter_get_accepted_contents;
-}
-
-static gchar *
-iimporter_get_label( const ofaIImporter *instance )
-{
-	return( iident_get_canon_name( MY_IIDENT( instance ), NULL ));
 }
 
 static const GList *
