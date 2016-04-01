@@ -939,6 +939,7 @@ setup_format( ofaStreamFormatBin *self )
 	str = g_strdup_printf( "%d", mode );
 	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->mode_combo ), str );
 	g_free( str );
+	mode_on_changed( GTK_COMBO_BOX( priv->mode_combo ), self );
 
 	/* encoding */
 	has = ofa_stream_format_get_has_charmap( priv->settings );
@@ -983,7 +984,9 @@ setup_format( ofaStreamFormatBin *self )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ), has );
 	str_delim_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_strdelim ), self );
 	str = g_strdup_printf( "%c", ofa_stream_format_get_string_delim( priv->settings ));
-	gtk_entry_set_text( GTK_ENTRY( priv->str_delim_entry ), str );
+	if( my_strlen( str )){
+		gtk_entry_set_text( GTK_ENTRY( priv->str_delim_entry ), str );
+	}
 	g_free( str );
 
 	/* headers */
@@ -1007,9 +1010,6 @@ setup_format( ofaStreamFormatBin *self )
 		default:
 			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
 	}
-
-	/* mode */
-	mode_on_changed( GTK_COMBO_BOX( priv->mode_combo ), self );
 }
 
 /**
