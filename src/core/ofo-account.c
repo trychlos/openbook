@@ -2467,6 +2467,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 {
 	GList *it;
 	const ofaIDBConnect *connect;
+	const gchar *acc_id;
 	gboolean insert;
 	guint total;
 	ofoAccount *account;
@@ -2492,6 +2493,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 
 		if( account_get_exists( account, connect )){
 			parms->duplicate_count += 1;
+			acc_id = ofo_account_get_number( account );
 
 			switch( parms->mode ){
 				case OFA_IMMODE_REPLACE:
