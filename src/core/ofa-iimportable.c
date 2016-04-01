@@ -286,6 +286,32 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
 
 /**
  * ofa_iimportable_import:
+ * @importable: a #ofaIImportable instance.
+ * @importer: the #ofaIImporter instance.
+ * @parms: the #ofsImporterParms arguments.
+ * @lines: the lines to be imported.
+ *
+ * Returns: the total count of errors.
+ */
+guint
+ofa_iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	static const gchar *thisfn = "ofa_iimportable_import";
+
+	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 1 );
+	g_return_val_if_fail( importer && OFA_IS_IIMPORTER( importer ), 1 );
+
+	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
+		return( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, importer, parms, lines ));
+	}
+
+	g_info( "%s: ofaIImportable's %s implementation does not provide 'import()' method",
+			thisfn, G_OBJECT_TYPE_NAME( importable ));
+	return( 1 );
+}
+
+/**
+ * ofa_iimportable_old_import:
  * @importable: this #ofaIImportable instance.
  * @lines: the content of the imported file as a #GSList list of
  *  #GSList fields.
@@ -298,11 +324,11 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
  * Returns: the count of found errors.
  */
 gint
-ofa_iimportable_import( ofaIImportable *importable,
+ofa_iimportable_old_import( ofaIImportable *importable,
 									GSList *lines, const ofaStreamFormat *settings,
 									ofaHub *hub, void *caller )
 {
-	static const gchar *thisfn = "ofa_iimportable_import";
+	static const gchar *thisfn = "ofa_iimportable_old_import";
 	sIImportable *sdata;
 	gint errors;
 	GTimeVal stamp_start, stamp_end;
@@ -330,8 +356,8 @@ ofa_iimportable_import( ofaIImportable *importable,
 	sdata->insert = 0;
 	sdata->count = g_slist_length( content );
 
-	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
-		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, content, settings, hub );
+	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->old_import ){
+		errors = OFA_IIMPORTABLE_GET_INTERFACE( importable )->old_import( importable, content, settings, hub );
 
 		my_utils_stamp_set_now( &stamp_end );
 
@@ -526,7 +552,7 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
 }
 
 /**
- * ofa_iimportable_import_uri:
+ * ofa_iimportable_old_import_uri:
  * @importable: this #ofaIImportable instance.
  * @dossier: the current dossier.
  * @caller: [allow-none]: the caller instance.
@@ -539,10 +565,10 @@ on_importable_finalized( sIImportable *sdata, GObject *finalized_object )
  * Returns: the count of errors.
  */
 guint
-ofa_iimportable_import_uri( ofaIImportable *importable,
+ofa_iimportable_old_import_uri( ofaIImportable *importable,
 								ofaHub *hub, void *caller, ofxCounter *imported_id )
 {
-	static const gchar *thisfn = "ofa_iimportable_import_uri";
+	static const gchar *thisfn = "ofa_iimportable_old_import_uri";
 	sIImportable *sdata;
 	gint errors;
 

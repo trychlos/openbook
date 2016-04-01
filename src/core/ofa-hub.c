@@ -906,7 +906,7 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
 	local_errors = 0;
 	headers_count = ofa_stream_format_get_headers_count( settings );
 
-	content = my_utils_uri_get_content( uri, ofa_stream_format_get_charmap( settings ), &local_errors );
+	content = my_utils_uri_get_content( uri, ofa_stream_format_get_charmap( settings ), &local_errors, NULL );
 	if( !local_errors ){
 		lines = get_lines_from_content( content, settings, &local_errors );
 		if( !local_errors ){
@@ -914,7 +914,7 @@ ofa_hub_import_csv( ofaHub *hub, ofaIImportable *object, const gchar *uri, const
 				count = g_slist_length( lines ) - headers_count;
 
 				if( count > 0 ){
-					local_errors = ofa_iimportable_import( object, lines, settings, hub, caller );
+					local_errors = ofa_iimportable_old_import( object, lines, settings, hub, caller );
 
 				} else if( count < 0 ){
 					count = 0;

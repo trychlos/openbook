@@ -50,7 +50,11 @@
 
 #include <glib-object.h>
 
+#include "my/my-iprogress.h"
+
 #include "api/ofa-hub-def.h"
+#include "api/ofa-import-mode.h"
+#include "api/ofa-stream-format.h"
 
 G_BEGIN_DECLS
 
@@ -60,13 +64,15 @@ G_BEGIN_DECLS
 #define OFA_IIMPORTER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IIMPORTER, ofaIImporterInterface ))
 
 typedef struct _ofaIImporter                    ofaIImporter;
-typedef struct _ofaIImporterParms               ofaIImporterParms;
+typedef struct _ofsImporterParms                ofsImporterParms;
 
 /**
  * ofaIImporterInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
  * @get_accepted_contents: [should] returns accepted contents.
+ * @is_willing_to: [should] whether the importer is willing to import this uri.
+ * @import: [should]: import the data.
  *
  * This defines the interface that an #ofaIImporter should implement.
  */
@@ -99,13 +105,79 @@ typedef struct {
 	 * get_accepted_contents:
 	 * @instance: the #ofaIImporter provider.
 	 *
-	 * Return value: a list of accepted mimetypes content.
+	 * Returns: a list of accepted mimetypes content.
 	 *
 	 * Since: version 1.
 	 */
 	const GList * ( *get_accepted_contents )( const ofaIImporter *instance );
+
+	/**
+	 * is_willing_to:
+	 * @instance: the #ofaIImporter provider.
+	 * @uri: [allow-none]: the imported uri.
+	 * @type: [allow-none]: the candidate GType.
+	 *
+	 * Returns: %TRUE if the @instance is willing to import @uri into @type.
+	 *
+	 * Since: version 1.
+	 */
+	gboolean      ( *is_willing_to )        ( const ofaIImporter *instance,
+													const gchar *uri,
+													GType type );
+
+	/**
+	 * import:
+	 * @instance: the #ofaIImporter provider.
+	 * @parms: the arguments of the method.
+	 *
+	 * Returns: the total count of errors.
+	 *
+	 * Since: version 1.
+	 */
+	guint         ( *import )               ( ofaIImporter *instance,
+													ofsImporterParms *parms );
 }
 	ofaIImporterInterface;
+
+/**
+ * ofsImporterParms:
+ * @version: the version number of this structure.
+ * @hub: the #ofaHub object of the application.
+ * @empty: whether to empty the target table before insertion.
+ * @mode: the behavior regarding duplicates.
+ * @stop: whether to stop on first error.
+ * @uri: the imported uri.
+ * @type: the candidate GType.
+ * @format: the #ofaStreamFormat description of the input stream format.
+ * @read_count: [out]: the total count of read records.
+ * @imported_count: [out]: the count of successfullly imported records.
+ * @duplicate_count: [out]: the count of duplicate records.
+ * @inserted_count: [out]: the count of successfully inserted records.
+ * @inserted_count: [out]: the count of successfully inserted records.
+ * @import_errs: [out]: the count of import errors.
+ * @insert_errs: [out]: the count of insert errors.
+ * @progress: [allow-none]: a #myIProgress instance.
+ *
+ * The data structure which hosts #ofa_iimporter_import() arguments.
+ */
+struct _ofsImporterParms {
+	guint            version;
+										/* v 1 */
+	ofaHub          *hub;
+	gboolean         empty;
+	ofeImportMode    mode;
+	gboolean         stop;
+	gchar           *uri;
+	GType            type;
+	ofaStreamFormat *format;
+	guint            read_count;
+	guint            imported_count;
+	guint            duplicate_count;
+	guint            inserted_count;
+	guint            import_errs;
+	guint            insert_errs;
+	myIProgress     *progress;
+};
 
 GType        ofa_iimporter_get_type                  ( void );
 
@@ -123,6 +195,30 @@ const GList *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *insta
 
 gboolean     ofa_iimporter_get_accept_content        ( const ofaIImporter *instance,
 															const gchar *content );
+
+gboolean     ofa_iimporter_is_willing_to             ( const ofaIImporter *instance,
+															const gchar *uri,
+															GType type );
+
+guint        ofa_iimporter_import                    ( ofaIImporter *instance,
+															ofsImporterParms *parms );
+
+void         ofa_iimporter_progress_start            ( ofaIImporter *instance,
+															ofsImporterParms *parms );
+
+void         ofa_iimporter_progress_pulse            ( ofaIImporter *instance,
+															ofsImporterParms *parms,
+															gulong count,
+															gulong total );
+
+void         ofa_iimporter_progress_num_text         ( ofaIImporter *instance,
+															ofsImporterParms *parms,
+															guint numline,
+															const gchar *text );
+
+void         ofa_iimporter_progress_text             ( ofaIImporter *instance,
+															ofsImporterParms *parms,
+															const gchar *text );
 
 G_END_DECLS
 

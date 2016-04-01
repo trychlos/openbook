@@ -622,6 +622,48 @@ my_utils_char_replace( const gchar *string, gchar old_ch, gchar new_ch )
 }
 
 /**
+ * my_utils_str_remove_str_delim:
+ * @string:
+ * @fieldsep:
+ * @strdelim:
+ *
+ * Returns a newly allocated string pointed without string delimiters.
+ */
+gchar *
+my_utils_str_remove_str_delim( const gchar *cstr, gchar fieldsep, gchar strdelim )
+{
+	gchar *str1, *str2, *regexp, *str_delim_str;
+	glong len;
+
+	str2 = NULL;
+	if( cstr ){
+		str1 = NULL;
+		str_delim_str = g_strdup_printf( "%c", strdelim );
+		len = my_strlen( cstr );
+		if( len ){
+			if( strdelim && g_str_has_prefix( cstr, str_delim_str ) && g_str_has_suffix( cstr, str_delim_str )){
+				str1 = g_utf8_substring( cstr, 1, len-1 );
+			} else {
+				str1 = g_strstrip( g_strdup( cstr ));
+			}
+			regexp = g_strdup_printf( "(\\\")|(\\\n)|(\\\r)|(\\%c)", fieldsep );
+			str2 = my_utils_unquote_regexp( str1, regexp );
+			if( !my_strlen( str2 )){
+				g_free( str2 );
+				str2 = NULL;
+			}
+		}
+		if( 0 ){
+			g_debug( "src='%s', temp='%s', out='%s'", cstr, str1, str2 );
+		}
+		g_free( str_delim_str );
+		g_free( str1 );
+	}
+
+	return( str2 );
+}
+
+/**
  * my_utils_str_remove_suffix:
  * @string: source string.
  * @suffix: suffix to be removed from @string.
@@ -1725,24 +1767,39 @@ my_utils_uri_exists( const gchar *uri )
 /**
  * my_utils_uri_get_content:
  * @uri:
- * @from_codeset: source codeset.
- * @errors: [out]:
+ * @from_codeset: [allow-none]: source codeset.
+ * @errors: [allow-none][out]:
+ * @msgerr: [allow-none][out]: error message placeholder;
+ *  if %NULL, error messages are displayed in a warning dialog box.
  *
- * Returns the file content as a single, null-terminated, buffer of UTF-8 chars.
+ * Returns: the file content as a single, null-terminated, buffer of UTF-8 chars.
  */
 gchar *
-my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *errors )
+my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *errors, gchar **msgerr )
 {
 	GFile *gfile;
 	gchar *sysfname, *content, *str, *temp;
 	GError *error;
 
+	if( errors ){
+		*errors = 0;
+	}
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+
 	sysfname = my_utils_filename_from_utf8( uri );
 	if( !sysfname ){
+		if( errors ){
+			*errors += 1;
+		}
 		str = g_strdup_printf( _( "Unable to get a system filename for '%s' URI" ), uri );
-		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
-		g_free( str );
-		*errors += 1;
+		if( msgerr ){
+			*msgerr = str;
+		} else {
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+			g_free( str );
+		}
 		return( NULL );
 	}
 
@@ -1752,28 +1809,40 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 	error = NULL;
 	content = NULL;
 	if( !g_file_load_contents( gfile, NULL, &content, NULL, NULL, &error )){
+		if( errors ){
+			*errors += 1;
+		}
 		str = g_strdup_printf( _( "Unable to load content from '%s' file: %s" ), uri, error->message );
-		my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
-		g_free( str );
+		if( msgerr ){
+			*msgerr = str;
+		} else {
+			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+			g_free( str );
+		}
 		g_error_free( error );
 		g_free( content );
-		*errors += 1;
 		content = NULL;
 	}
 
 	g_object_unref( gfile );
 
 	/* convert to UTF-8 if needed */
-	if( content && my_collate( from_codeset, "UTF-8" )){
+	if( content && from_codeset && my_collate( from_codeset, "UTF-8" )){
 		temp = g_convert( content, -1, from_codeset, "UTF-8", NULL, NULL, &error );
 		g_free( content );
 		content = temp;
 		if( !content ){
-			str = g_strdup_printf( _( "Unable to convert to UTF-8 the '%s' file content: %s"),
-					uri, error->message );
-			my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
-			g_free( str );
-			*errors += 1;
+			if( errors ){
+				*errors += 1;
+			}
+			str = g_strdup_printf( _( "Unable to convert from %s to UTF-8 the '%s' file content: %s"),
+					from_codeset, uri, error->message );
+			if( msgerr ){
+				*msgerr = str;
+			} else {
+				my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
+				g_free( str );
+			}
 		}
 	}
 

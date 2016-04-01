@@ -129,7 +129,7 @@ static gboolean     iexportable_export( ofaIExportable *exportable, const ofaStr
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean     iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
 static gboolean     currency_do_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0,
@@ -834,7 +834,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->import = iimportable_import;
+	iface->old_import = iimportable_old_import;
 }
 
 static guint
@@ -850,7 +850,7 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /**
- * ofo_currency_iimportable_import:
+ * ofo_currency_iimportable_old_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -871,7 +871,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	ofoCurrency *currency;

@@ -358,6 +358,125 @@ ofa_iimporter_get_accept_content( const ofaIImporter *instance, const gchar *con
 	return( accept );
 }
 
+/**
+ * ofa_iimporter_is_willing_to:
+ * @instance: this #ofaIImporter instance.
+ * @uri: [allow-none]: the uri of the stream to be imported.
+ * @type: [allow-none]: the candidate target GType.
+ *
+ * Returns: %TRUE if the @instance is willing to import @uri to @type.
+ */
+gboolean
+ofa_iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type )
+{
+	static const gchar *thisfn = "ofa_iimporter_is_willing_to";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), FALSE );
+
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->is_willing_to ){
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->is_willing_to( instance, uri, type ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not provide 'is_willing_to()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( TRUE );
+}
+
+/**
+ * ofa_iimporter_import:
+ * @instance: this #ofaIImporter instance.
+ * @parms: the arguments of the methods.
+ *
+ * Returns: the total count of errors.
+ */
+guint
+ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
+{
+	static const gchar *thisfn = "ofa_iimporter_import";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), 0 );
+
+	if( parms->progress ){
+		my_iprogress_start_work( parms->progress, instance, NULL );
+	}
+
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->import ){
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->import( instance, parms ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not provide 'import()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( 0 );
+}
+
+/**
+ * ofa_iimporter_progress_start:
+ * @instance: this #ofaIImporter instance.
+ * @parms: the arguments of the methods.
+ *
+ * Acts as a proxy to #myIProgress::start_progress() method.
+ */
+void
+ofa_iimporter_progress_start( ofaIImporter *instance, ofsImporterParms *parms )
+{
+	if( parms->progress ){
+		my_iprogress_start_progress( parms->progress, instance, NULL, TRUE );
+	}
+}
+
+/**
+ * ofa_iimporter_progress_pulse:
+ * @instance: this #ofaIImporter instance.
+ * @parms: the arguments of the methods.
+ * @count: the current count.
+ * @total: the total count.
+ *
+ * Acts as a proxy to #myIProgress::pulse() method.
+ */
+void
+ofa_iimporter_progress_pulse( ofaIImporter *instance, ofsImporterParms *parms, gulong count, gulong total )
+{
+	if( parms->progress ){
+		my_iprogress_pulse( parms->progress, instance, count, total );
+	}
+}
+
+/**
+ * ofa_iimporter_progress_num_text:
+ * @instance: this #ofaIImporter instance.
+ * @parms: the arguments of the methods.
+ * @text: the text to be displayed.
+ *
+ * Acts as a proxy to #myIProgress::set_text() method.
+ */
+void
+ofa_iimporter_progress_num_text( ofaIImporter *instance, ofsImporterParms *parms, guint numline, const gchar *text )
+{
+	gchar *str;
+
+	if( parms->progress ){
+		str = g_strdup_printf( "[%u] %s\n", numline, text );
+		ofa_iimporter_progress_text( instance, parms, str );
+		g_free( str );
+	}
+}
+
+/**
+ * ofa_iimporter_progress_text:
+ * @instance: this #ofaIImporter instance.
+ * @parms: the arguments of the methods.
+ * @text: the text to be displayed.
+ *
+ * Acts as a proxy to #myIProgress::set_text() method.
+ */
+void
+ofa_iimporter_progress_text( ofaIImporter *instance, ofsImporterParms *parms, const gchar *text )
+{
+	if( parms->progress ){
+		my_iprogress_set_text( parms->progress, instance, text );
+	}
+}
+
 #if 0
 /**
  * ofa_iimporter_get_for_content:

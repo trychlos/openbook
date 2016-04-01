@@ -87,7 +87,7 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 		importable = ofa_iimportable_find_willing_to( hub, uri, settings );
 
 		if( importable ){
-			if( ofa_iimportable_import_uri( importable, hub, NULL, &imported_id ) > 0 ){
+			if( ofa_iimportable_old_import_uri( importable, hub, NULL, &imported_id ) > 0 ){
 				imported_id = 0;
 			}
 

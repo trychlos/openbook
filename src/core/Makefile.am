@@ -110,6 +110,7 @@ libofa_core_la_SOURCES = \
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
+	ofa-import-mode.c									\
 	ofa-iprefs-page.c									\
 	ofa-iprefs-provider.c								\
 	ofa-isingle-keeper.c								\

@@ -3050,7 +3050,7 @@
  605 2015- 1-28 add the dbname in the main window title
      2015- 1-29 done - svn #4523
 
- 606 2015- 1-28 ofa_iimportable_import_fname() becomes ...import_uri()
+ 606 2015- 1-28 ofa_iimportable_old_import_fname() becomes ...import_uri()
      2015- 1-29 done - svn #4523
 
  608 2015- 1-29 ViewEntries: when modifying account or ledger, make sure

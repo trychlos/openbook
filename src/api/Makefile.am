@@ -54,6 +54,7 @@ api_include_HEADERS = \
 	ofa-igetter-def.h									\
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
+	ofa-import-mode.h									\
 	ofa-iprefs-page.h									\
 	ofa-iprefs-page-def.h								\
 	ofa-iprefs-provider.h								\

@@ -205,7 +205,7 @@ static gchar          *update_decimal_sep( const ofsBoxData *box_data, const ofa
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar          *iimportable_get_label( const ofaIImportable *instance );
-static gboolean        iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean        iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
 static ofoOpeTemplate *model_import_csv_model( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors );
 static GList          *model_import_csv_detail( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors, gchar **mnemo );
 static gboolean        model_do_drop_content( const ofaIDBConnect *connect );
@@ -1750,7 +1750,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->import = iimportable_import;
+	iface->old_import = iimportable_old_import;
 }
 
 static guint
@@ -1766,7 +1766,7 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /*
- * ofo_ope_template_iimportable_import:
+ * ofo_ope_template_iimportable_old_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -1805,7 +1805,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;

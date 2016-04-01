@@ -68,6 +68,7 @@ gboolean      my_utils_boolean_from_str               ( const gchar *str );
 
 gchar        *my_utils_char_replace                   ( const gchar *string, gchar old_ch, gchar new_ch );
 
+gchar        *my_utils_str_remove_str_delim           ( const gchar *string, gchar fieldsep, gchar strdelim );
 gchar        *my_utils_str_remove_suffix              ( const gchar *string, const gchar *suffix );
 gchar        *my_utils_str_remove_underlines          ( const gchar *string );
 gchar        *my_utils_str_replace                    ( const gchar *string, const gchar *old, const gchar *new );
@@ -144,7 +145,7 @@ gboolean      my_utils_file_is_readable_file          ( const gchar *filename );
 gchar        *my_utils_filename_from_utf8             ( const gchar *filename );
 
 gboolean      my_utils_uri_exists                     ( const gchar *uri );
-gchar        *my_utils_uri_get_content                ( const gchar *uri, const gchar *from_codeset, guint *errors );
+gchar        *my_utils_uri_get_content                ( const gchar *uri, const gchar *from_codeset, guint *errors, gchar **msgerr );
 gboolean      my_utils_uri_is_dir                     ( const gchar *uri );
 gboolean      my_utils_uri_is_readable_file           ( const gchar *uri );
 

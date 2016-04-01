@@ -75,7 +75,7 @@ static gchar    *iident_get_version( const myIIdent *instance, void *user_data )
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( const ofaIImportable *bourso_importer );
 static gboolean  iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, const ofaStreamFormat *settings, void **ref, guint *count );
-static guint     iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id );
+static guint     iimportable_old_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id );
 static GSList   *get_file_content( ofaIImportable *bourso_importer, const gchar *uri );
 static gboolean  bourso_excel95_v1_check( ofaBoursoImporter *bourso_importer );
 static ofsBat   *bourso_excel95_v1_import( ofaBoursoImporter *bourso_importer );
@@ -253,7 +253,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->is_willing_to = iimportable_is_willing_to;
-	iface->import_uri = iimportable_import_uri;
+	iface->import_uri = iimportable_old_import_uri;
 }
 
 static guint
@@ -303,9 +303,9 @@ iimportable_is_willing_to( ofaIImportable *bourso_importer, const gchar *uri, co
  * import the file
  */
 static guint
-iimportable_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id )
+iimportable_old_import_uri( ofaIImportable *bourso_importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id )
 {
-	static const gchar *thisfn = "ofa_bourso_importer_iimportable_import_uri";
+	static const gchar *thisfn = "ofa_bourso_importer_iimportable_old_import_uri";
 	ofaBoursoImporterPrivate *priv;
 	gint idx;
 	ofsBat *bat;

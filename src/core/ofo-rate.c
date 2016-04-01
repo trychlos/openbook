@@ -163,7 +163,7 @@ static gboolean  iexportable_export( ofaIExportable *exportable, const ofaStream
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar    *iimportable_get_label( const ofaIImportable *instance );
-static gboolean  iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean  iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
 static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors );
 static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors, gchar **mnemo );
 static gboolean  rate_do_drop_content( const ofaIDBConnect *connect );
@@ -1348,7 +1348,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->import = iimportable_import;
+	iface->old_import = iimportable_old_import;
 }
 
 static guint
@@ -1396,7 +1396,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;

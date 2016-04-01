@@ -165,15 +165,6 @@
                 reconciliable (and shouldn't) has to be checked when 
                 setting these accounts for balance
 
- 520 2014-12-11 ImportAssistant: the list of importables should be
-                dynamically computed from the list of classes which
-                implement the ofaIImportable interface
-     2016- 1-18 this would imply that all candidate classes declare
-                themselves to a central hub (not the dossier, but the
-                application for example)
-                which would nonetheless be close of the
-                connect_to_hub_signaling_system() calls
-
  525 2014-12-13 when importing entries: review the code to be faster
                 import accounts: 0.02286 s/row - 0.02316 s/row (127 rows)
                 import ledgers:  0.02982 s/row (9 rows)
@@ -344,12 +335,6 @@
  910 2015-11-30 FEAT let the user configure the main title components as
                      a preference
 
- 915 2015-12- 4 ARCH a class object (say e.g. ofoClass) should
-                     implement the ofaIExportable/ofaIImportable
-                     interfaces but the exporter/importer plugins should
-                     rather implement a ofaIEXporter/ofaIImporter
-                     interface 
-
  920 2015-12-10 FEAT review RestoreAssistant
                      + let restore on a selected exercice rather than on
                      the current one
@@ -460,6 +445,16 @@
                 application for example) - which would nonetheless be
                 close of the connect_to_hub_signaling_system() calls
      2016- 3-29 done
+
+ 520 2014-12-11 ImportAssistant: the list of importables should be
+                dynamically computed from the list of classes which
+                implement the ofaIImportable interface
+     2016- 1-18 this would imply that all candidate classes declare
+                themselves to a central hub (not the dossier, but the
+                application for example)
+                which would nonetheless be close of the
+                connect_to_hub_signaling_system() calls
+     2016- 4- 1 done
 
  572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
                 them with integers ?
@@ -596,6 +591,13 @@
                      Use case: be able to delete the whole operation
                      when the user wants to delete an entry
      2016- 3-29 Column is created (though not used for now)
+
+ 915 2015-12- 4 ARCH a class object (say e.g. ofoClass) should
+                     implement the ofaIExportable/ofaIImportable
+                     interfaces but the exporter/importer plugins should
+                     rather implement a ofaIEXporter/ofaIImporter
+                     interface
+     2016- 4- 1 done
 
  919 2015-12-10 GTK  my_utils_dialog_info/warning: have a transient parent
      2016- 3-11 this has been done at least for myIWindow implementations;

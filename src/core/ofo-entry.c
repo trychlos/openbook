@@ -227,7 +227,7 @@ static gchar       *export_cb( const ofsBoxData *box_data, const ofaStreamFormat
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean     iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( const ofaIConcil *instance );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
@@ -2835,7 +2835,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->import = iimportable_import;
+	iface->old_import = iimportable_old_import;
 }
 
 static guint
@@ -2851,7 +2851,7 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /*
- * ofo_entry_iimportable_import:
+ * ofo_entry_iimportable_old_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -2902,9 +2902,9 @@ iimportable_get_label( const ofaIImportable *instance )
  * during insert phase.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_entry_iimportable_import";
+	static const gchar *thisfn = "ofo_entry_iimportable_old_import";
 	GSList *itl, *fields, *itf;
 	ofoEntry *entry;
 	GList *dataset, *it;

@@ -51,6 +51,7 @@
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub-def.h"
+#include "api/ofa-iimporter.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-dossier-def.h"
 
@@ -114,10 +115,26 @@ typedef struct {
 	 *
 	 * The recordset must be left unchanged if an error is found.
 	 */
-	gint     ( *import )               ( ofaIImportable *instance,
+	gint     ( *old_import )               ( ofaIImportable *instance,
 												GSList *lines,
 												const ofaStreamFormat *settings,
 												ofaHub *hub );
+
+	/**
+	 * import:
+	 * @instance: the #ofaIImportable instance.
+	 * @parms: the #ofsImporterParms import arguments.
+	 * @lines: the lines of the imported file, as a #GSList list of
+	 *  lines, where line->data is a #GSList of fields values.
+	 *
+	 * Import the dataset from the provided content.
+	 *
+	 * Return: the total count of errors.
+	 */
+	guint     ( *import )               ( ofaIImportable *instance,
+												ofaIImporter *importer,
+												ofsImporterParms *parms,
+												GSList *lines );
 
 	/**
 	 * is_willing_to:
@@ -190,13 +207,18 @@ ofaIImportable *ofa_iimportable_find_willing_to   ( ofaHub *hub,
 															const gchar *uri,
 															const ofaStreamFormat *settings );
 
-gint            ofa_iimportable_import            ( ofaIImportable *importable,
+guint           ofa_iimportable_import            ( ofaIImportable *importable,
+															ofaIImporter *importer,
+															ofsImporterParms *parms,
+															GSList *lines );
+
+gint            ofa_iimportable_old_import            ( ofaIImportable *importable,
 															GSList *lines,
 															const ofaStreamFormat *settings,
 															ofaHub *hub,
 															void *caller );
 
-guint           ofa_iimportable_import_uri        ( ofaIImportable *importable,
+guint           ofa_iimportable_old_import_uri        ( ofaIImportable *importable,
 															ofaHub *hub,
 															void *caller,
 															ofxCounter *imported_id );

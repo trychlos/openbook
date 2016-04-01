@@ -35,6 +35,7 @@
    - DDL VAT v 5
    - Import a default accounts chart on dossier creation (todo #1051).
    - Export a dynamic list of exportable objects (todo #519).
+   - Import a dynamic list of importable objects (todo #520).
    - VATForm: make it exportable (todo #940).
    - VATForm: make it importable (todo #939).
 
@@ -44,6 +45,7 @@
 
  Other changes:
 
+   - Fix import architecture with ofaIImporter/ofaIImportable interfaces (todo #915).
    - myIWindow: remove all references to main window.
    - myIWindow::get_key_prefix(): new method.
    - ofaApplication: implements new ofaIGetter interface.
@@ -51,6 +53,7 @@
    - ofaFileDir: renamed as ofaPortfolioCollection (todo #1052).
    - ofaFileFormat: renamed as ofaStreamFormat.
    - ofa_hub_register_types(): new method.
+   - ofaIImporter: new interface.
    - ofaImporters: new loadable module.
    - ofaIRegister: new interface.
    - ofaIGetter: new interface.

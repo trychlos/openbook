@@ -43,6 +43,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-iimporter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
@@ -225,7 +226,10 @@ static gchar       *export_cb( const ofsBoxData *box_data, const ofaStreamFormat
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static gboolean     iimportable_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
+static guint        iimportable_import( ofaIImportable *exportable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList       *iimportable_import_analyse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean     iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
 static gboolean     account_do_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
@@ -2196,6 +2200,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
 	iface->import = iimportable_import;
+	iface->old_import = iimportable_old_import;
 }
 
 static guint
@@ -2212,6 +2217,286 @@ iimportable_get_label( const ofaIImportable *instance )
 
 /*
  * ofo_account_iimportable_import:
+ * @importable: a fake object to address this class.
+ * @importer: the #ofaIImporter instance.
+ * @parms: the #ofsImporterParms arguments.
+ * @lines: the list of fields-splitted lines.
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - account number
+ * - label
+ * - currency iso 3a code (mandatory for detail accounts, default to
+ *   dossier currency)
+ * - is_root = {N|Y} (defaults to no)
+ * - is_settleable = {N|Y} (defaults to no)
+ * - is_reconciliable = {N|Y} (defaults to no)
+ * - carried forwardable on new exercice = {N|Y} (defaults to no)
+ * - is_closed = {N|Y} (defaults to no)
+ * - notes (opt)
+ *
+ * Replace the whole table with the provided datas.
+ * All the balances are set to NULL.
+ *
+ * Returns: the total count of errors.
+ *
+ * As the table may be dropped between import phase and insert phase,
+ * if an error occurs during insert phase, then the table is changed
+ * and only contains the successfully inserted records.
+ */
+static guint
+iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+
+	dataset = iimportable_import_analyse( importer, parms, lines );
+
+	if( parms->import_errs == 0 && parms->imported_count > 0 ){
+		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs == 0 ){
+			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_ACCOUNT );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
+		}
+	}
+
+	if( dataset ){
+		ofo_account_free_dataset( dataset );
+	}
+
+	return( parms->import_errs+parms->insert_errs );
+}
+
+static GList *
+iimportable_import_analyse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+	guint class_num, numline;
+	ofoDossier *dossier;
+	const gchar *def_dev_code, *cstr, *dev_code;
+	GSList *itl, *fields, *itf;
+	ofoAccount *account;
+	gchar *str, *splitted;
+	ofoCurrency *currency;
+	ofoClass *class_obj;
+	gboolean is_root;
+
+	numline = 0;
+	dataset = NULL;
+	/* may be NULL
+	 * eg. when importing accounts on dossier creation */
+	dossier = ofa_hub_get_dossier( parms->hub );
+	def_dev_code = dossier ? ofo_dossier_get_default_currency( dossier ) : NULL;
+
+	ofa_iimporter_progress_start( importer, parms );
+
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		if( parms->stop && parms->import_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) numline, ( gulong ) g_slist_length( lines ));
+		account = ofo_account_new();
+		fields = ( GSList * ) itl->data;
+
+		/* account number */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty account number" ));
+			parms->import_errs += 1;
+			continue;
+		}
+		class_num = ofo_account_get_class_from_number( cstr );
+		class_obj = ofo_class_get_by_number( parms->hub, class_num );
+		if( !class_obj && !OFO_IS_CLASS( class_obj )){
+			str = g_strdup_printf( _( "invalid class number for account %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->import_errs += 1;
+			continue;
+		}
+		ofo_account_set_number( account, cstr );
+
+		/* account label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty account label" ));
+			parms->import_errs += 1;
+			continue;
+		}
+		ofo_account_set_label( account, cstr );
+
+		/* currency code */
+		itf = itf ? itf->next : NULL;
+		dev_code = itf ? ( const gchar * ) itf->data : NULL;
+
+		/* root account
+		 * previous to DB model v27, root/detail accounts were marked with R/D
+		 * starting with v27, root accounts are marked with Y/N */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			cstr = "N";
+		} else if( my_collate( cstr, ACCOUNT_TYPE_DETAIL ) &&
+					my_collate( cstr, ACCOUNT_TYPE_ROOT ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+			str = g_strdup_printf( _( "invalid account type: %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->import_errs += 1;
+			continue;
+		}
+		is_root = !my_collate( cstr, ACCOUNT_TYPE_ROOT ) || !my_collate( cstr, "Y" );
+		ofo_account_set_root( account, is_root );
+
+		/* check the currency code if a detail account */
+		if( !is_root ){
+			if( !my_strlen( dev_code )){
+				dev_code = def_dev_code;
+			}
+			if( !my_strlen( dev_code )){
+				ofa_iimporter_progress_num_text( importer, parms, numline, _( "no currency set, and unable to get a default currency" ));
+				parms->import_errs += 1;
+				continue;
+			}
+			currency = ofo_currency_get_by_code( parms->hub, dev_code );
+			if( !currency ){
+				str = g_strdup_printf( _( "invalid account currency: %s" ), dev_code );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->import_errs += 1;
+				continue;
+			}
+			ofo_account_set_currency( account, dev_code );
+		}
+
+		/* settleable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, ACCOUNT_SETTLEABLE ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid settleable account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->import_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_settleable( account,
+						!my_collate( cstr, ACCOUNT_SETTLEABLE ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* reconciliable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, ACCOUNT_RECONCILIABLE ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid reconciliable account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->import_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_reconciliable( account,
+						!my_collate( cstr, ACCOUNT_RECONCILIABLE ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* carried forwardable ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, ACCOUNT_FORWARDABLE ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid forwardable account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->import_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_forwardable( account,
+						!my_collate( cstr, ACCOUNT_FORWARDABLE ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* closed ? */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			if( my_collate( cstr, ACCOUNT_CLOSED ) &&
+					my_collate( cstr, "Y" ) &&
+					my_collate( cstr, "N" )){
+				str = g_strdup_printf( _( "invalid closed account indicator: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->import_errs += 1;
+				continue;
+			} else {
+				ofo_account_set_closed( account,
+						!my_collate( cstr, ACCOUNT_CLOSED ) || !my_collate( cstr, "Y" ));
+			}
+		}
+
+		/* notes
+		 * we are tolerant on the last field... */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		splitted = my_utils_import_multi_lines( cstr );
+		ofo_account_set_notes( account, splitted );
+		g_free( splitted );
+
+		parms->imported_count += 1;
+		dataset = g_list_prepend( dataset, account );
+	}
+
+	return( dataset );
+}
+
+static void
+iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
+{
+	GList *it;
+	const ofaIDBConnect *connect;
+	guint num;
+
+	connect = ofa_hub_get_connect( parms->hub );
+
+	if( parms->empty && g_list_length( dataset )){
+		account_do_drop_content( connect );
+	}
+
+	num = 0;
+	ofa_iimporter_progress_start( importer, parms );
+
+	for( it=dataset ; it ; it=it->next ){
+
+		if( parms->stop && parms->insert_errs > 0 ){
+			break;
+		}
+
+		num += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) num, ( gulong ) g_list_length( dataset ));
+
+		if( account_do_insert( OFO_ACCOUNT( it->data ), connect )){
+			parms->inserted_count += 1;
+		} else {
+			parms->insert_errs += 1;
+		}
+	}
+}
+
+/*
+ * ofo_account_iimportable_old_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -2238,7 +2523,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * contains the successfully inserted records.
  */
 static gint
-iimportable_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
 {
 	GSList *itl, *fields, *itf;
 	ofoDossier *dossier;

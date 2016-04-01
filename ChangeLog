@@ -1211,7 +1211,7 @@
 	- entry_set_concil_user(), entry_set_concil_stamp(): new static methods
 	- ofo_entry_update_concil() now updates both the DBMS and the object
 	  which fixes todo #687
-	- iimportable_import() now imports user and timestamp.
+	- iimportable_old_import() now imports user and timestamp.
 
 	* src/ui/ofa-exercice-close-assistant.c,
 	* src/ui/ofa-reconciliation.c: updated accordingly.
