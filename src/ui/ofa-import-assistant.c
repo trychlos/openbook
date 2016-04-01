@@ -230,7 +230,9 @@ static void     p3_do_forward( ofaImportAssistant *self, gint page_num, GtkWidge
 static void     p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_enum_cb( ofeImportMode mode, const gchar *label, GtkListStore *store );
 static void     p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
+static void     p4_on_empty_toggled( GtkToggleButton *btn, ofaImportAssistant *self );
 static void     p4_on_mode_changed( GtkComboBox *combo, ofaImportAssistant *self );
+static void     p4_on_stop_toggled( GtkToggleButton *btn, ofaImportAssistant *self );
 static gboolean p4_check_for_complete( ofaImportAssistant *self );
 static void     p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
@@ -1014,6 +1016,7 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* import behavior */
 	priv->p4_empty_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-empty" );
 	g_return_if_fail( priv->p4_empty_btn && GTK_IS_CHECK_BUTTON( priv->p4_empty_btn ));
+	g_signal_connect( priv->p4_empty_btn, "toggled", G_CALLBACK( p4_on_empty_toggled ), self );
 
 	priv->p4_mode_combo = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-mode" );
 	g_return_if_fail( priv->p4_mode_combo && GTK_IS_COMBO_BOX( priv->p4_mode_combo ));
@@ -1034,6 +1037,7 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p4_stop_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-stop" );
 	g_return_if_fail( priv->p4_stop_btn && GTK_IS_CHECK_BUTTON( priv->p4_stop_btn ));
+	g_signal_connect( priv->p4_stop_btn, "toggled", G_CALLBACK( p4_on_stop_toggled ), self );
 
 	/* error message */
 	priv->p4_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
@@ -1088,9 +1092,39 @@ p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
+p4_on_empty_toggled( GtkToggleButton *btn, ofaImportAssistant *self )
+{
+	ofaImportAssistantPrivate *priv;
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	priv->p4_empty = gtk_toggle_button_get_active( btn );
+}
+
+static void
 p4_on_mode_changed( GtkComboBox *combo, ofaImportAssistant *self )
 {
+	ofaImportAssistantPrivate *priv;
+	const gchar *cstr;
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	cstr = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->p4_mode_combo ));
+	if( my_strlen( cstr )){
+		priv->p4_import_mode = atoi( cstr );
+	}
+
 	p4_check_for_complete( self );
+}
+
+static void
+p4_on_stop_toggled( GtkToggleButton *btn, ofaImportAssistant *self )
+{
+	ofaImportAssistantPrivate *priv;
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	priv->p4_stop = gtk_toggle_button_get_active( btn );
 }
 
 static gboolean
@@ -1128,14 +1162,7 @@ p4_check_for_complete( ofaImportAssistant *self )
 static void
 p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
-	ofaImportAssistantPrivate *priv;
-
-	priv = ofa_import_assistant_get_instance_private( self );
-
-	g_return_if_fail( priv->p4_import_mode >= 1 );
-
-	priv->p4_empty = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_empty_btn ));
-	priv->p4_stop = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_stop_btn ));
+	set_user_settings( self );
 }
 
 /*
