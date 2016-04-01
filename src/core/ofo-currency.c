@@ -129,8 +129,11 @@ static gboolean     iexportable_export( ofaIExportable *exportable, const ofaStr
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static gboolean     iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
-static gboolean     currency_do_drop_content( const ofaIDBConnect *connect );
+static guint        iimportable_import( ofaIImportable *exportable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean     currency_get_exists( const ofoCurrency *currency, const ofaIDBConnect *connect );
+static gboolean     currency_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoCurrency )
@@ -834,7 +837,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->old_import = iimportable_old_import;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -850,7 +853,7 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /**
- * ofo_currency_iimportable_old_import:
+ * ofo_currency_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -870,99 +873,189 @@ iimportable_get_label( const ofaIImportable *instance )
  * error occurs during insert phase, then the table is changed and only
  * contains the successfully inserted records.
  */
-static gint
-iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+static guint
+iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
-	GSList *itl, *fields, *itf;
-	ofoCurrency *currency;
-	GList *dataset, *it;
-	guint errors, line;
-	gchar *splitted, *str;
-	const ofaIDBConnect *connect;
+	GList *dataset;
 
-	line = 0;
-	errors = 0;
+	dataset = iimportable_import_parse( importer, parms, lines );
+
+	if( parms->parse_errs == 0 && parms->imported_count > 0 ){
+		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs == 0 ){
+			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_CURRENCY );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CURRENCY );
+		}
+	}
+
+	if( dataset ){
+		ofo_currency_free_dataset( dataset );
+	}
+
+	return( parms->parse_errs+parms->insert_errs );
+}
+
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+	guint numline, total;
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
+	gchar *splitted;
+	ofoCurrency *currency;
+
+	numline = 0;
 	dataset = NULL;
+	total = g_slist_length( lines );
+
+	ofa_iimporter_progress_start( importer, parms );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
-		line += 1;
-		currency = ofo_currency_new();
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
 		fields = ( GSList * ) itl->data;
-		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
-		itf = fields;
+		currency = ofo_currency_new();
 
 		/* currency code */
-		str = ofa_iimportable_get_string( &itf, settings );
-		if( !my_strlen( str )){
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ISO 3A currency code" ));
-			errors += 1;
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty ISO 3A currency code" ));
+			parms->parse_errs += 1;
 			continue;
 		}
-		ofo_currency_set_code( currency, str );
-		g_free( str );
+		ofo_currency_set_code( currency, cstr );
 
 		/* currency label */
-		str = ofa_iimportable_get_string( &itf, settings );
-		if( !my_strlen( str )){
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "empty currency label" ));
-			errors += 1;
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty currency label" ));
+			parms->parse_errs += 1;
 			continue;
 		}
-		ofo_currency_set_label( currency, str );
-		g_free( str );
+		ofo_currency_set_label( currency, cstr );
 
 		/* currency symbol */
-		str = ofa_iimportable_get_string( &itf, settings );
-		if( !my_strlen( str )){
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "empty currency symbol" ));
-			errors += 1;
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty currency symbol" ));
+			parms->parse_errs += 1;
 			continue;
 		}
-		ofo_currency_set_symbol( currency, str );
-		g_free( str );
+		ofo_currency_set_symbol( currency, cstr );
 
 		/* currency digits - defaults to 2 */
-		str = ofa_iimportable_get_string( &itf, settings );
-		ofo_currency_set_digits( currency,
-				( my_strlen( str ) ? atoi( str ) : CUR_DEFAULT_DIGITS ));
-		g_free( str );
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		ofo_currency_set_digits( currency, ( my_strlen( cstr ) ? atoi( cstr ) : CUR_DEFAULT_DIGITS ));
 
 		/* notes
 		 * we are tolerant on the last field... */
-		str = ofa_iimportable_get_string( &itf, settings );
-		splitted = my_utils_import_multi_lines( str );
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		splitted = my_utils_import_multi_lines( cstr );
 		ofo_currency_set_notes( currency, splitted );
 		g_free( splitted );
-		g_free( str );
 
 		dataset = g_list_prepend( dataset, currency );
+		parms->imported_count += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 	}
 
-	if( !errors ){
-		connect = ofa_hub_get_connect( hub );
-		currency_do_drop_content( connect );
+	return( dataset );
+}
 
-		for( it=dataset ; it ; it=it->next ){
-			if( !currency_do_insert( OFO_CURRENCY( it->data ), connect )){
-				errors -= 1;
-			}
-			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
+static void
+iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
+{
+	GList *it;
+	const ofaIDBConnect *connect;
+	gboolean insert;
+	guint total;
+	gchar *str;
+	ofoCurrency *currency;
+	const gchar *cur_id;
+
+	total = g_list_length( dataset );
+	connect = ofa_hub_get_connect( parms->hub );
+	ofa_iimporter_progress_start( importer, parms );
+
+	if( parms->empty && total > 0 ){
+		currency_drop_content( connect );
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+
+		if( parms->stop && parms->insert_errs > 0 ){
+			break;
 		}
 
-		ofo_currency_free_dataset( dataset );
-		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_CURRENCY );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CURRENCY );
-	}
+		str = NULL;
+		insert = TRUE;
+		currency = OFO_CURRENCY( it->data );
 
-	return( errors );
+		if( currency_get_exists( currency, connect )){
+			parms->duplicate_count += 1;
+			cur_id = ofo_currency_get_code( currency );
+
+			switch( parms->mode ){
+				case OFA_IMMODE_REPLACE:
+					str = g_strdup_printf( _( "%s: duplicate currency, replacing previous one" ), cur_id );
+					currency_do_delete( currency, connect );
+					break;
+				case OFA_IMMODE_IGNORE:
+					str = g_strdup_printf( _( "%s: duplicate currency, ignored (skipped)" ), cur_id );
+					insert = FALSE;
+					total -= 1;
+					break;
+				case OFA_IMMODE_ABORT:
+					str = g_strdup_printf( _( "%s: erroneous duplicate currency" ), cur_id );
+					insert = FALSE;
+					total -= 1;
+					parms->insert_errs += 1;
+					break;
+			}
+		}
+		if( str ){
+			ofa_iimporter_progress_text( importer, parms, str );
+			g_free( str );
+		}
+		if( insert ){
+			if( currency_do_insert( currency, connect )){
+				parms->inserted_count += 1;
+			} else {
+				parms->insert_errs += 1;
+			}
+		}
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+	}
 }
 
 static gboolean
-currency_do_drop_content( const ofaIDBConnect *connect )
+currency_get_exists( const ofoCurrency *currency, const ofaIDBConnect *connect )
+{
+	const gchar *cur_id;
+	gint count;
+	gchar *str;
+
+	count = 0;
+	cur_id = ofo_currency_get_code( currency );
+	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_CURRENCIES WHERE CUR_CODE='%s'", cur_id );
+	ofa_idbconnect_query_int( connect, str, &count, FALSE );
+
+	return( count > 0 );
+}
+
+static gboolean
+currency_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_CURRENCIES", TRUE ));
 }

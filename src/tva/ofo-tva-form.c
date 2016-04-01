@@ -1781,7 +1781,7 @@ static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
 	GList *dataset;
-	guint numline;
+	guint numline, total;
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
 	ofoTVAForm *form;
@@ -1791,6 +1791,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 	numline = 0;
 	dataset = NULL;
+	total = g_slist_length( lines );
 
 	ofa_iimporter_progress_start( importer, parms );
 
@@ -1811,7 +1812,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			case 1:
 				form = iimportable_import_parse_form( importer, parms, numline, itf );
 				if( form ){
+					parms->imported_count += 1;
 					dataset = g_list_prepend( dataset, form );
+					ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 				}
 				break;
 			case 2:
@@ -1822,6 +1825,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 					if( form ){
 						ofa_box_set_int( bool, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
 						form_boolean_add( form, bool );
+						total -= 1;
+						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 					}
 					g_free( mnemo );
 				}
@@ -1834,6 +1839,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 					if( form ){
 						ofa_box_set_int( rule, TFO_BOOL_ROW, 1+ofo_tva_form_detail_get_count( form ));
 						form_detail_add( form, rule );
+						total -= 1;
+						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 					}
 					g_free( mnemo );
 				}
@@ -2057,8 +2064,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->insert_errs += 1;
 			}
 		}
-		ofa_iimporter_progress_pulse(
-				importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
 	}
 }
 

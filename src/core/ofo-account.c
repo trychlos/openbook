@@ -2270,7 +2270,7 @@ static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
 	GList *dataset;
-	guint class_num, numline;
+	guint class_num, numline, total;
 	ofoDossier *dossier;
 	const gchar *def_dev_code, *cstr, *dev_code;
 	GSList *itl, *fields, *itf;
@@ -2282,6 +2282,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 	numline = 0;
 	dataset = NULL;
+	total = g_slist_length( lines );
+
 	/* may be NULL
 	 * eg. when importing accounts on dossier creation */
 	dossier = ofa_hub_get_dossier( parms->hub );
@@ -2453,10 +2455,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		ofo_account_set_notes( account, splitted );
 		g_free( splitted );
 
-		parms->imported_count += 1;
 		dataset = g_list_prepend( dataset, account );
-		ofa_iimporter_progress_pulse(
-				importer, parms, ( gulong ) parms->imported_count, ( gulong ) g_slist_length( lines ));
+		parms->imported_count += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 	}
 
 	return( dataset );
@@ -2524,8 +2525,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->insert_errs += 1;
 			}
 		}
-		ofa_iimporter_progress_pulse(
-				importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
 	}
 }
 

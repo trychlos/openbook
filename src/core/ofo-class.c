@@ -840,7 +840,7 @@ static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
 	GList *dataset;
-	guint numline, number;
+	guint numline, total, number;
 	const gchar *cstr;
 	ofoClass *class;
 	gchar *str, *splitted;
@@ -848,6 +848,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 	numline = 0;
 	dataset = NULL;
+	total = g_slist_length( lines );
 
 	ofa_iimporter_progress_start( importer, parms );
 
@@ -896,6 +897,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		g_free( splitted );
 
 		dataset = g_list_prepend( dataset, class );
+		parms->imported_count += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 	}
 
 	return( dataset );
@@ -963,8 +966,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->insert_errs += 1;
 			}
 		}
-		ofa_iimporter_progress_pulse(
-				importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
 	}
 }
 
