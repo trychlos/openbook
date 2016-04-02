@@ -40,9 +40,50 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-account.h"
 #include "api/ofo-base.h"
+#include "api/ofo-class.h"
+#include "api/ofo-currency.h"
+#include "api/ofo-dossier.h"
+#include "api/ofo-ledger.h"
+#include "api/ofo-ope-template.h"
+#include "api/ofo-rate.h"
 
 #define IDBMODEL_LAST_VERSION             1
+
+/* default imported datas
+ *
+ * Note that the construct
+ *   static const gchar *st_classes = INIT1DIR "/classes-h1.csv";
+ * plus a reference to st_classes in the array initializer
+ * is refused with the message "initializer element is not constant"
+ */
+typedef GType ( *fnType )( void );
+
+typedef struct {
+	const gchar *label;
+	const gchar *table;
+	const gchar *filename;
+	gint         header_count;
+	fnType       typefn;
+}
+	sImport;
+
+static sImport st_imports[] = {
+		{ N_( "Classes" ),
+				"OFA_T_CLASSES",       "classes-h1.csv",       1, ofo_class_get_type },
+		{ N_( "Currencies" ),
+				"OFA_T_CURRENCIES",    "currencies-h1.csv",    1, ofo_currency_get_type },
+		{ N_( "Accounts" ),
+				"OFA_T_ACCOUNTS",      "accounts-h1.csv",      1, ofo_account_get_type },
+		{ N_( "Ledgers" ),
+				"OFA_T_LEDGERS",       "ledgers-h1.csv",       1, ofo_ledger_get_type },
+		{ N_( "Operation templates" ),
+				"OFA_T_OPE_TEMPLATES", "ope-templates-h2.csv", 2, ofo_ope_template_get_type },
+		{ N_( "Rates" ),
+				"OFA_T_RATES",         "rates-h2.csv",         2, ofo_rate_get_type },
+		{ 0 }
+};
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -77,6 +118,7 @@ struct _ofaDBModelWindowPrivate {
 	GList         *plugins_list;
 	ofaHub        *hub;
 	GList         *workers;
+	gboolean       work_started;
 
 	/* UI
 	 */
@@ -91,10 +133,6 @@ struct _ofaDBModelWindowPrivate {
 	/* settings
 	 */
 	gint           paned_pos;
-
-	/* returned value
-	 */
-	gboolean       updated;
 };
 
 /* a data structure for each myIProgress worker
@@ -126,6 +164,10 @@ static void     iwindow_write_settings( myIWindow *instance, myISettings *settin
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static gboolean do_run( ofaDBModelWindow *dialog );
+static gboolean do_update_model( ofaDBModelWindow *self );
+static gboolean do_import_data( ofaDBModelWindow *self );
+static gboolean import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import );
+static gint     count_rows( ofaDBModelWindow *self, const gchar *table );
 static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWindow *dialog );
 static void     iprogress_iface_init( myIProgressInterface *iface );
 static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
@@ -267,6 +309,7 @@ ofa_idbmodel_get_interface_version( const ofaIDBModel *instance )
 gboolean
 ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 {
+	static const gchar *thisfn = "ofa_idbmodel_update";
 	ofaExtenderCollection *extenders;
 	GList *plugins_list, *it;
 	gboolean need_update, ok;
@@ -281,12 +324,10 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 	connect = ofa_hub_get_connect( hub );
 	extenders = ofa_hub_get_extender_collection( hub );
 	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
+	g_debug( "%s: IDBModel plugins count=%u", thisfn, g_list_length( plugins_list ));
 
 	for( it=plugins_list ; it && !need_update ; it=it->next ){
 		need_update = idbmodel_get_needs_update( OFA_IDBMODEL( it->data ), connect );
-		if( need_update ){
-			break;
-		}
 	}
 
 	if( need_update ){
@@ -723,29 +764,20 @@ idialog_init( myIDialog *instance )
 
 /*
  * First upgrade the CORE DBModel; only then upgrade other IDBModels.
+ * Last import default datas.
  */
 static gboolean
 do_run( ofaDBModelWindow *self )
 {
 	ofaDBModelWindowPrivate *priv;
-	ofaIDBModel *core_model;
 	gboolean ok;
-	GList *it;
 	gchar *str;
 	GtkMessageType type;
 
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
-	core_model = ofa_idbmodel_get_by_name( priv->hub, "CORE" );
-	ok = core_model ? idbmodel_ddl_update( core_model, priv->hub, MY_IPROGRESS( self )) : TRUE;
-
-	for( it=priv->plugins_list ; it && ok ; it=it->next ){
-		if( it->data != ( void * ) core_model ){
-			ok &= idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_IPROGRESS( self ));
-		}
-	}
-
-	priv->updated = ok;
+	ok = do_update_model( self ) &&
+			do_import_data( self );
 
 	if( ok ){
 		str = g_strdup( _( "The database has been successfully updated" ));
@@ -762,6 +794,149 @@ do_run( ofaDBModelWindow *self )
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
+}
+
+static gboolean
+do_update_model( ofaDBModelWindow *self )
+{
+	ofaDBModelWindowPrivate *priv;
+	ofaIDBModel *core_model;
+	gboolean ok;
+	GList *it;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	core_model = ofa_idbmodel_get_by_name( priv->hub, "CORE" );
+	ok = core_model ? idbmodel_ddl_update( core_model, priv->hub, MY_IPROGRESS( self )) : TRUE;
+
+	for( it=priv->plugins_list ; it && ok ; it=it->next ){
+		if( it->data != ( void * ) core_model ){
+			ok &= idbmodel_ddl_update( OFA_IDBMODEL( it->data ), priv->hub, MY_IPROGRESS( self ));
+		}
+	}
+
+	return( ok );
+}
+
+static gboolean
+do_import_data( ofaDBModelWindow *self )
+{
+	ofaDBModelWindowPrivate *priv;
+	gboolean ok;
+	gint i;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	ok = TRUE;
+	priv->work_started = FALSE;
+
+	for( i=0 ; st_imports[i].label && ok ; ++i ){
+		ok &= import_utf8_comma_pipe_file( self, &st_imports[i] );
+	}
+
+	return( ok );
+}
+
+/*
+ * only import provided default datas if target table is empty
+ */
+static gboolean
+import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
+{
+	ofaDBModelWindowPrivate *priv;
+	gboolean ok;
+	guint count, errors;
+	gchar *uri, *fname, *str;
+	GType type;
+	ofaIImporter *importer;
+	ofsImporterParms parms;
+	ofaStreamFormat *settings;
+	GtkWidget *label;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	ok = TRUE;
+	count = count_rows( self, import->table );
+	if( count == 0 ){
+
+		/* find an importer for these uri+type */
+		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
+		uri = g_filename_to_uri( fname, NULL, NULL );
+		g_free( fname );
+		type = import->typefn();
+		importer = ofa_hub_get_willing_to( priv->hub, uri, type );
+
+		/* if found, then import data */
+		if( importer ){
+			g_return_val_if_fail( OFA_IS_IIMPORTER( importer ), FALSE );
+
+			if( !priv->work_started ){
+				priv->work_started = TRUE;
+				label = gtk_label_new( _( " Setting default datas " ));
+				my_iprogress_start_work( MY_IPROGRESS( self ), self, label );
+			}
+
+			str = g_strdup_printf( _( "Importing into %s :" ), import->table );
+			label = gtk_label_new( str );
+			g_free( str );
+			my_iprogress_start_progress( MY_IPROGRESS( self ), self, label, FALSE );
+
+			settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+			ofa_stream_format_set( settings,
+										TRUE, "UTF-8", 			/* charmap */
+										TRUE, MY_DATE_SQL, 		/* date format */
+										TRUE, '\0',				/* thousand sep */
+										TRUE, ',',				/* decimal sep */
+										TRUE, '|', 				/* field sep */
+										TRUE, '\0', 			/* string delimiter */
+										TRUE, import->header_count );
+
+			memset( &parms, '\0', sizeof( parms ));
+			parms.version = 1;
+			parms.hub = priv->hub;
+			parms.empty = TRUE;
+			parms.mode = OFA_IMMODE_ABORT;
+			parms.stop = FALSE;
+			parms.uri = uri;
+			parms.type = type;
+			parms.format = settings;
+
+			errors = ofa_iimporter_import( importer, &parms );
+
+			if( errors ){
+				str = g_strdup( _( "error detected" ));
+				ok = FALSE;
+			} else {
+				str = g_strdup_printf( _( "%d successfully imported records" ), parms.inserted_count );
+			}
+			label = gtk_label_new( str );
+			g_free( str );
+			my_iprogress_set_row( MY_IPROGRESS( self ), self, label );
+
+			g_object_unref( settings );
+			g_object_unref( importer );
+		}
+	}
+
+	return( ok );
+}
+
+static gint
+count_rows( ofaDBModelWindow *self, const gchar *table )
+{
+	ofaDBModelWindowPrivate *priv;
+	const ofaIDBConnect *connect;
+	gint count;
+	gchar *query;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	connect = ofa_hub_get_connect( priv->hub );
+	query = g_strdup_printf( "SELECT COUNT(*) FROM %s", table );
+	ofa_idbconnect_query_int( connect, query, &count, TRUE );
+	g_free( query );
+
+	return( count );
 }
 
 /*
@@ -848,6 +1023,7 @@ static void
 iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar )
 {
 	sWorker *sdata;
+	GtkGrid *grid;
 
 	sdata = get_worker_data( OFA_DBMODEL_WINDOW( instance ), worker );
 
@@ -856,7 +1032,8 @@ iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *
 			sdata->grid3 = gtk_grid_new();
 			gtk_grid_set_column_spacing( GTK_GRID( sdata->grid3 ), 4 );
 			gtk_grid_attach( GTK_GRID( sdata->grid3 ), widget, 0, 0, 1, 1 );
-			gtk_grid_attach( GTK_GRID( sdata->grid2 ), sdata->grid3, 0, sdata->row2, 3, 1 );
+			grid = GTK_GRID( sdata->grid2 ? sdata->grid2 : sdata->grid1 );
+			gtk_grid_attach( grid, sdata->grid3, 0, sdata->row2, 3, 1 );
 
 		} else {
 			gtk_grid_attach( GTK_GRID( sdata->grid2 ), widget, 0, sdata->row2, 1, 1 );

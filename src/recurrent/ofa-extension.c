@@ -32,6 +32,8 @@
 
 #include "api/ofa-extension.h"
 
+#include "ofa-recurrent-dbmodel.h"
+#include "ofa-recurrent-execlose.h"
 #include "ofa-recurrent-main.h"
 #include "ofo-recurrent-gen.h"
 #include "ofo-recurrent-model.h"
@@ -76,7 +78,9 @@ static gchar *iident_get_version( const myIIdent *instance, void *user_data );
 
 G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaRecurrentId, ofa_recurrent_id, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE_DYNAMIC( ofaRecurrentId )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init ))
+		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IDBMODEL, ofa_recurrent_dbmodel_iface_init )
+		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IEXECLOSE_CLOSE, ofa_recurrent_execlose_iface_init ))
 
 static void
 ofa_recurrent_id_class_finalize( ofaRecurrentIdClass *klass )

@@ -41,13 +41,7 @@
 #include "api/ofa-iimporter.h"
 #include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
-#include "api/ofo-account.h"
-#include "api/ofo-class.h"
-#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-ledger.h"
-#include "api/ofo-ope-template.h"
-#include "api/ofo-rate.h"
 
 #include "mysql/ofa-mysql-dbmodel.h"
 
@@ -81,40 +75,6 @@ typedef struct {
 }
 	sMigration;
 
-/* default imported datas
- *
- * Note that the construct
- *   static const gchar *st_classes = INIT1DIR "/classes-h1.csv";
- * plus a reference to st_classes in the array initializer
- * is refused with the message "initializer element is not constant"
- */
-typedef GType ( *fnType )( void );
-
-typedef struct {
-	const gchar *label;
-	const gchar *table;
-	const gchar *filename;
-	gint         header_count;
-	fnType       typefn;
-}
-	sImport;
-
-static sImport st_imports[] = {
-		{ N_( "Classes" ),
-				"OFA_T_CLASSES",       "classes-h1.csv",       1, ofo_class_get_type },
-		{ N_( "Currencies" ),
-				"OFA_T_CURRENCIES",    "currencies-h1.csv",    1, ofo_currency_get_type },
-		{ N_( "Accounts" ),
-				"OFA_T_ACCOUNTS",      "accounts-h1.csv",      1, ofo_account_get_type },
-		{ N_( "Ledgers" ),
-				"OFA_T_LEDGERS",       "ledgers-h1.csv",       1, ofo_ledger_get_type },
-		{ N_( "Operation templates" ),
-				"OFA_T_OPE_TEMPLATES", "ope-templates-h2.csv", 2, ofo_ope_template_get_type },
-		{ N_( "Rates" ),
-				"OFA_T_RATES",         "rates-h2.csv",         2, ofo_rate_get_type },
-		{ 0 }
-};
-
 #define MARGIN_LEFT                       20
 
 static void     iident_iface_init( myIIdentInterface *iface );
@@ -129,8 +89,6 @@ static gboolean upgrade_to( ofaMysqlDBModel *self, sMigration *smig );
 static gboolean exec_query( ofaMysqlDBModel *self, const gchar *query );
 static gboolean version_begin( ofaMysqlDBModel *self, gint version );
 static gboolean version_end( ofaMysqlDBModel *self, gint version );
-static gboolean import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import );
-static gint     count_rows( ofaMysqlDBModel *self, const gchar *table );
 static gboolean dbmodel_v20( ofaMysqlDBModel *self, gint version );
 static gulong   count_v20( ofaMysqlDBModel *self );
 static gboolean dbmodel_v21( ofaMysqlDBModel *self, gint version );
@@ -363,14 +321,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 				}
 			}
 		}
-		if( ok ){
-			for( i=0 ; st_imports[i].label ; ++i ){
-				if( !import_utf8_comma_pipe_file( OFA_MYSQL_DBMODEL( instance ), &st_imports[i] )){
-					ok = FALSE;
-					break;
-				}
-			}
-		}
+
 	} else {
 		str = g_strdup_printf( _( "Last version is v %u : up to date" ), last_version );
 		label = gtk_label_new( str );
@@ -471,101 +422,6 @@ version_end( ofaMysqlDBModel *self, gint version )
 	g_free( query );
 
 	return( ok );
-}
-
-/*
- * only import provided default datas if target table is empty
- */
-static gboolean
-import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import )
-{
-	ofaMysqlDBModelPrivate *priv;
-	gboolean ok;
-	guint count, errors;
-	gchar *uri, *fname, *str;
-	GType type;
-	ofaIImporter *importer;
-	ofsImporterParms parms;
-	ofaStreamFormat *settings;
-	GtkWidget *label;
-
-	priv = ofa_mysql_dbmodel_get_instance_private( self );
-
-	ok = TRUE;
-	count = count_rows( self, import->table );
-	if( count == 0 ){
-
-		/* find an importer for these uri+type */
-		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
-		uri = g_filename_to_uri( fname, NULL, NULL );
-		g_free( fname );
-		type = import->typefn();
-		importer = ofa_hub_get_willing_to( priv->hub, uri, type );
-
-		/* if found, then import data */
-		if( importer ){
-			g_return_val_if_fail( OFA_IS_IIMPORTER( importer ), FALSE );
-
-			str = g_strdup_printf( _( "Importing into %s :" ), import->table );
-			label = gtk_label_new( str );
-			g_free( str );
-			my_iprogress_start_progress( priv->window, self, label, FALSE );
-
-			settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
-			ofa_stream_format_set( settings,
-										TRUE, "UTF-8", 			/* charmap */
-										TRUE, MY_DATE_SQL, 		/* date format */
-										TRUE, '\0',				/* thousand sep */
-										TRUE, ',',				/* decimal sep */
-										TRUE, '|', 				/* field sep */
-										TRUE, '\0', 			/* string delimiter */
-										TRUE, import->header_count );
-
-			memset( &parms, '\0', sizeof( parms ));
-			parms.version = 1;
-			parms.hub = priv->hub;
-			parms.empty = TRUE;
-			parms.mode = OFA_IMMODE_ABORT;
-			parms.stop = FALSE;
-			parms.uri = uri;
-			parms.type = type;
-			parms.format = settings;
-			parms.progress = priv->window;
-
-			errors = ofa_iimporter_import( importer, &parms );
-
-			if( errors ){
-				str = g_strdup( _( "error detected" ));
-				ok = FALSE;
-			} else {
-				str = g_strdup_printf( _( "%d records" ), parms.inserted_count );
-			}
-			label = gtk_label_new( str );
-			g_free( str );
-			my_iprogress_set_row( priv->window, self, label );
-
-			g_object_unref( settings );
-			g_object_unref( importer );
-		}
-	}
-
-	return( ok );
-}
-
-static gint
-count_rows( ofaMysqlDBModel *self, const gchar *table )
-{
-	ofaMysqlDBModelPrivate *priv;
-	gint count;
-	gchar *query;
-
-	priv = ofa_mysql_dbmodel_get_instance_private( self );
-
-	query = g_strdup_printf( "SELECT COUNT(*) FROM %s", table );
-	ofa_idbconnect_query_int( priv->connect, query, &count, TRUE );
-	g_free( query );
-
-	return( count );
 }
 
 /*

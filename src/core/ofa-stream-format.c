@@ -324,7 +324,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	text = g_strdup( cstr ? cstr : st_def_thousand );
 	priv->thousand_sep = atoi( text );
 	g_free( text );
-	g_debug( "do_init: thousand_sep=%d", priv->thousand_sep );
+	//g_debug( "do_init: thousand_sep=%d", priv->thousand_sep );
 
 	/* decimal separator */
 	it = it ? it->next : NULL;
@@ -351,7 +351,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	} else {
 		priv->h.count_headers = atoi( cstr );
 	}
-	g_debug( "do_init: headers=%d", priv->h.count_headers );
+	//g_debug( "do_init: headers=%d", priv->h.count_headers );
 
 	/* string delimiter */
 	it = it ? it->next : NULL;
@@ -359,7 +359,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	text = g_strdup( cstr ? cstr : st_def_string_delim );
 	priv->string_delim = atoi( text );
 	g_free( text );
-	g_debug( "do_init: strdelim=%d", priv->string_delim );
+	//g_debug( "do_init: strdelim=%d", priv->string_delim );
 
 	if( prefs_list ){
 		ofa_settings_free_string_list( prefs_list );
