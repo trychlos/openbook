@@ -36,17 +36,14 @@
  * implementation is provided with a list of lines, each line being
  * itself a list of fields.
  *
- * The interface takes care of splitting the input stream per line, and
- * of splitting each line per field, according to the provided file
- * format.
+ * The #ofaIImporter is expected to take care of splitting the input
+ * stream per line, and of splitting each line per field, according to
+ * the provided stream format.
  *
- * It is the responsability of the implementation:
+ * It is the responsability of the #ofaIImportable implementation:
  * - to fill up the provided object with the provided fields contents,
  * - to advertize the importer with an eventual error,
  * - to advertize the importer with its progress.
- *
- * A caller which would take advantage of this mechanism should implement
- * the #ofaIImporter interface.
  */
 
 #include "api/ofa-box.h"
@@ -68,8 +65,8 @@ typedef struct _ofaIImportable                    ofaIImportable;
  * ofaIImportableInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
- * @get_label:             [should] returns the label of the class.
- * @import:                [should] imports a dataset.
+ * @get_label:             [should] returns the label asssociated to the class.
+ * @import:                [should] imports an input stream.
  * @is_willing_to:         [should] is this instance willing to import the uri ?
  * @import uri:            [should] tries to import a file.
  *

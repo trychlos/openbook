@@ -125,6 +125,10 @@ ofaDossierPrefs        *ofa_hub_get_dossier_prefs       ( const ofaHub *hub );
 
 void                    ofa_hub_remediate_settings      ( const ofaHub *hub );
 
+ofaIImporter           *ofa_hub_get_willing_to          ( ofaHub *hub,
+																const gchar *uri,
+																GType type );
+
 guint                   ofa_hub_import_csv              ( ofaHub *hub,
 																ofaIImportable *object,
 																const gchar *uri,

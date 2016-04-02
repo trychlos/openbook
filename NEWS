@@ -52,6 +52,7 @@
    - ofaExtension: now passes the ofaIGetter (instead of the GApplication).
    - ofaFileDir: renamed as ofaPortfolioCollection (todo #1052).
    - ofaFileFormat: renamed as ofaStreamFormat.
+   - ofa_hub_get_willing_to(): new method.
    - ofa_hub_register_types(): new method.
    - ofaIImporter: new interface.
    - ofaImporters: new loadable module.

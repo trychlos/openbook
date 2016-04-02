@@ -876,6 +876,38 @@ check_db_vs_settings( const ofaHub *hub )
 }
 
 /**
+ * ofa_hub_get_willing_to:
+ * @hub: this #ofaHub instance.
+ * @uri: the URI of a file to be imported.
+ * @type: the expected target GType.
+ *
+ * Returns: a new reference to the first found #ofaIImporter willing to
+ * import the @uri, which should be #g_object_unref() by the caller.
+ */
+ofaIImporter *
+ofa_hub_get_willing_to( ofaHub *hub, const gchar *uri, GType type )
+{
+	ofaIImporter *found;
+	ofaExtenderCollection *extenders;
+	GList *importers, *it;
+
+	found = NULL;
+	extenders = ofa_hub_get_extender_collection( hub );
+	importers = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IIMPORTER );
+
+	for( it=importers ; it ; it=it->next ){
+		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), uri, type )){
+			found = OFA_IIMPORTER( it->data );
+			break;
+		}
+	}
+
+	ofa_extender_collection_free_types( importers );
+
+	return( found ? g_object_ref( G_OBJECT( found )) : NULL );
+}
+
+/**
  * ofa_hub_import_csv:
  * @dossier: the target #ofoDossier
  * @object: an empty object of the class to be imported.
