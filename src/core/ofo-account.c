@@ -43,7 +43,6 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-iimporter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
