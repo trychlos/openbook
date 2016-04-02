@@ -1797,8 +1797,6 @@ iimportable_get_label( const ofaIImportable *instance )
  * It is not required that the input csv files be sorted by mnemo. We
  * may have all 'model' records, then all 'validity' records...
  *
- * Replace the whole table with the provided datas.
- *
  * Returns: the total count of errors.
  *
  * As the table may have been dropped between import phase and insert
@@ -1990,7 +1988,7 @@ iimportable_import_parse_detail( ofaIImporter *importer, ofsImporterParms *parms
 	if( !my_strlen( cstr )){
 		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty operation template mnemonic" ));
 		parms->parse_errs += 1;
-		g_free( detail );
+		ofa_box_free_fields_list( detail );
 		return( NULL );
 	}
 	*mnemo = g_strdup( cstr );

@@ -163,10 +163,13 @@ static gboolean  iexportable_export( ofaIExportable *exportable, const ofaStream
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar    *iimportable_get_label( const ofaIImportable *instance );
-static gboolean  iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
-static ofoRate  *rate_import_csv_rate( ofaIImportable *exportable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors );
-static GList    *rate_import_csv_validity( ofaIImportable *exportable, GSList *fields, const ofaStreamFormat *settings, guint count, guint *errors, gchar **mnemo );
-static gboolean  rate_do_drop_content( const ofaIDBConnect *connect );
+static guint     iimportable_import( ofaIImportable *exportable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList    *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static ofoRate  *iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
+static GList    *iimportable_import_parse_validity( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields, gchar **mnemo );
+static void      iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean  rate_get_exists( const ofoRate *rate, const ofaIDBConnect *connect );
+static gboolean  rate_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRate )
@@ -1348,7 +1351,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->old_import = iimportable_old_import;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -1364,7 +1367,7 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /*
- * ofo_rate_import_csv:
+ * ofo_rate_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -1385,145 +1388,152 @@ iimportable_get_label( const ofaIImportable *instance )
  * Contrarily, validity lines for a given rate are imported in the order
  * they are found in the input file.
  *
- * Replace the whole table with the provided datas.
+ * Returns: the total count of errors.
  *
- * Returns: 0 if no error has occurred, >0 if an error has been detected
- * during import phase (input file read), <0 if an error has occured
- * during insert phase.
- *
- * As the table is dropped between import phase and insert phase, if an
- * error occurs during insert phase, then the table is changed and only
- * contains the successfully inserted records.
+ * As the table may have been dropped between import phase and insert
+ * phase, if an error occurs during insert phase, then the table is
+ * changed and only contains the successfully inserted records.
  */
-static gint
-iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+static guint
+iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	GList *dataset;
+
+	dataset = iimportable_import_parse( importer, parms, lines );
+
+	if( parms->parse_errs == 0 && parms->imported_count > 0 ){
+		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs == 0 ){
+			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_RATE );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
+		}
+	}
+
+	if( dataset ){
+		ofo_rate_free_dataset( dataset );
+	}
+
+	return( parms->parse_errs+parms->insert_errs );
+}
+
+/*
+ * parse to a dataset
+ */
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
-	ofoRate *rate;
-	GList *dataset, *it;
-	guint errors, line;
-	gchar *msg, *mnemo;
+	guint numline, total;
+	gchar *str, *mnemo;
 	gint type;
 	GList *detail;
-	const ofaIDBConnect *connect;
+	ofoRate *rate;
 
-	line = 0;
-	errors = 0;
+	numline = 0;
 	dataset = NULL;
+	total = g_slist_length( lines );
+
+	ofa_iimporter_progress_start( importer, parms );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
-		line += 1;
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
 		fields = ( GSList * ) itl->data;
-		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
 
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		type = cstr ? atoi( cstr ) : 0;
+
 		switch( type ){
 			case 1:
-				rate = rate_import_csv_rate( importable, fields, settings, line, &errors );
+				rate = iimportable_import_parse_main( importer, parms, numline, itf );
 				if( rate ){
 					dataset = g_list_prepend( dataset, rate );
+					parms->imported_count += 1;
+					ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 				}
 				break;
 			case 2:
 				mnemo = NULL;
-				detail = rate_import_csv_validity( importable, fields, settings, line, &errors, &mnemo );
+				detail = iimportable_import_parse_validity( importer, parms, numline, itf, &mnemo );
 				if( detail ){
 					rate = rate_find_by_mnemo( dataset, mnemo );
 					if( rate ){
 						ofa_box_set_int( detail, RAT_VAL_ROW, 1+ofo_rate_get_val_count( rate ));
 						rate_val_add_detail( rate, detail );
+						total -= 1;
+						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 					}
 					g_free( mnemo );
 				}
 				break;
 			default:
-				msg = g_strdup_printf( _( "invalid rate line type: %s" ), cstr );
-				ofa_iimportable_set_message(
-						importable, line, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				errors += 1;
+				str = g_strdup_printf( _( "invalid line type: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
 				continue;
 		}
 	}
 
-	if( !errors ){
-		connect = ofa_hub_get_connect( hub );
-		rate_do_drop_content( connect );
-
-		for( it=dataset ; it ; it=it->next ){
-			rate = OFO_RATE( it->data );
-			if( !rate_do_insert( rate, connect )){
-				errors -= 1;
-			}
-			ofa_iimportable_increment_progress(
-					importable, IMPORTABLE_PHASE_INSERT, 1+ofo_rate_get_val_count( rate ));
-		}
-
-		ofo_rate_free_dataset( dataset );
-		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_RATE );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
-	}
-
-	return( errors );
+	return( dataset );
 }
 
 static ofoRate *
-rate_import_csv_rate( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors )
+iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields )
 {
-	ofoRate *rate;
-	gchar *str;
+	const gchar *cstr;
 	GSList *itf;
 	gchar *splitted;
+	ofoRate *rate;
 
 	rate = ofo_rate_new();
-	itf = fields ? fields->next : NULL;
 
 	/* rate mnemo */
-	str = ofa_iimportable_get_string( &itf, settings );
-	if( !my_strlen( str )){
-		ofa_iimportable_set_message(
-				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
-		*errors += 1;
+	itf = fields ? fields->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty rate mnemonic" ));
+		parms->parse_errs += 1;
 		g_object_unref( rate );
-		g_free( str );
 		return( NULL );
 	}
-	ofo_rate_set_mnemo( rate, str );
-	g_free( str );
+	ofo_rate_set_mnemo( rate, cstr );
 
 	/* rate label */
-	str = ofa_iimportable_get_string( &itf, settings );
-	if( !my_strlen( str )){
-		ofa_iimportable_set_message(
-				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate label" ));
-		*errors += 1;
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty rate label" ));
+		parms->parse_errs += 1;
 		g_object_unref( rate );
-		g_free( str );
 		return( NULL );
 	}
-	ofo_rate_set_label( rate, str );
-	g_free( str );
+	ofo_rate_set_label( rate, cstr );
 
 	/* notes
 	 * we are tolerant on the last field... */
-	str = ofa_iimportable_get_string( &itf, settings );
-	splitted = my_utils_import_multi_lines( str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	splitted = my_utils_import_multi_lines( cstr );
 	ofo_rate_set_notes( rate, splitted );
 	g_free( splitted );
-	g_free( str );
 
 	return( rate );
 }
 
 static GList *
-rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaStreamFormat *settings, guint line, guint *errors, gchar **mnemo )
+iimportable_import_parse_validity( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields, gchar **mnemo )
 {
 	GList *detail;
-	gchar *str;
+	const gchar *cstr;
 	GSList *itf;
 	GDate date;
 	ofxAmount amount;
@@ -1532,43 +1542,124 @@ rate_import_csv_validity( ofaIImportable *importable, GSList *fields, const ofaS
 	itf = fields ? fields->next : NULL;
 
 	/* rate mnemo */
-	str = ofa_iimportable_get_string( &itf, settings );
-	if( !my_strlen( str )){
-		ofa_iimportable_set_message(
-				importable, line, IMPORTABLE_MSG_ERROR, _( "empty rate mnemonic" ));
-		*errors += 1;
+	itf = fields ? fields->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( !my_strlen( cstr )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty operation template mnemonic" ));
+		parms->parse_errs += 1;
 		ofa_box_free_fields_list( detail );
-		g_free( str );
 		return( NULL );
 	}
-	*mnemo = g_strdup( str );
-	ofa_box_set_string( detail, RAT_MNEMO, str );
-	g_free( str );
+	*mnemo = g_strdup( cstr );
+	ofa_box_set_string( detail, RAT_MNEMO, cstr );
 
 	/* row number (placeholder) */
 	itf = itf ? itf->next : NULL;
 
 	/* rate begin validity */
-	str = ofa_iimportable_get_string( &itf, settings );
-	ofa_box_set_date( detail, RAT_VAL_BEGIN, my_date_set_from_sql( &date, str ));
-	g_free( str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofa_box_set_date( detail, RAT_VAL_BEGIN, my_date_set_from_sql( &date, cstr ));
 
 	/* rate end validity */
-	str = ofa_iimportable_get_string( &itf, settings );
-	ofa_box_set_date( detail, RAT_VAL_END, my_date_set_from_sql( &date, str ));
-	g_free( str );
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	ofa_box_set_date( detail, RAT_VAL_END, my_date_set_from_sql( &date, cstr ));
 
 	/* rate rate */
-	str = ofa_iimportable_get_string( &itf, settings );
-	amount = my_double_set_from_csv( str, ofa_stream_format_get_decimal_sep( settings ));
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	amount = my_double_set_from_csv( cstr, ofa_stream_format_get_decimal_sep( parms->format ));
 	ofa_box_set_amount( detail, RAT_VAL_RATE, amount );
-	g_free( str );
 
 	return( detail );
 }
+/*
+ * insert records
+ */
+static void
+iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
+{
+	GList *it;
+	const ofaIDBConnect *connect;
+	const gchar *mnemo;
+	gboolean insert;
+	guint total;
+	gchar *str;
+	ofoRate *rate;
+
+	total = g_list_length( dataset );
+	connect = ofa_hub_get_connect( parms->hub );
+	ofa_iimporter_progress_start( importer, parms );
+
+	if( parms->empty && total > 0 ){
+		rate_drop_content( connect );
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+
+		if( parms->stop && parms->insert_errs > 0 ){
+			break;
+		}
+
+		str = NULL;
+		insert = TRUE;
+		rate = OFO_RATE( it->data );
+
+		if( rate_get_exists( rate, connect )){
+			parms->duplicate_count += 1;
+			mnemo = ofo_rate_get_mnemo( rate );
+
+			switch( parms->mode ){
+				case OFA_IMMODE_REPLACE:
+					str = g_strdup_printf( _( "%s: duplicate rate, replacing previous one" ), mnemo );
+					rate_do_delete( rate, connect );
+					break;
+				case OFA_IMMODE_IGNORE:
+					str = g_strdup_printf( _( "%s: duplicate rate, ignored (skipped)" ), mnemo );
+					insert = FALSE;
+					total -= 1;
+					break;
+				case OFA_IMMODE_ABORT:
+					str = g_strdup_printf( _( "%s: erroneous duplicate rate" ), mnemo );
+					insert = FALSE;
+					total -= 1;
+					parms->insert_errs += 1;
+					break;
+			}
+		}
+		if( str ){
+			ofa_iimporter_progress_text( importer, parms, str );
+			g_free( str );
+		}
+		if( insert ){
+			if( rate_do_insert( rate, connect )){
+				parms->inserted_count += 1;
+			} else {
+				parms->insert_errs += 1;
+			}
+		}
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+	}
+}
 
 static gboolean
-rate_do_drop_content( const ofaIDBConnect *connect )
+rate_get_exists( const ofoRate *rate, const ofaIDBConnect *connect )
+{
+	const gchar *rate_id;
+	gint count;
+	gchar *str;
+
+	count = 0;
+	rate_id = ofo_rate_get_mnemo( rate );
+	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_RATES WHERE RAT_MNEMO='%s'", rate_id );
+	ofa_idbconnect_query_int( connect, str, &count, FALSE );
+
+	return( count > 0 );
+}
+
+static gboolean
+rate_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_RATES", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_RATES_VAL", TRUE ));

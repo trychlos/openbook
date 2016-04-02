@@ -2233,7 +2233,6 @@ iimportable_get_label( const ofaIImportable *instance )
  * - is_closed = {N|Y} (defaults to no)
  * - notes (opt)
  *
- * Replace the whole table with the provided datas.
  * All the balances are set to NULL.
  *
  * Returns: the total count of errors.
