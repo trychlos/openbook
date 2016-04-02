@@ -398,17 +398,20 @@
 1056 2016- 3-31 FEAT use gtk_scrollable_get_vadjustment() in GtkTextView
                      (ofaIDBModel, ofaImportAssistant, others ?)
 
-1057 2016- 4- 1 ofaExportAssistant: use ofaStreamFormatDisp
+1057 2016- 4- 1 CODE ofaExportAssistant: use ofaStreamFormatDisp
 
-1058 2016- 4- 2 split ofo-entry.c
+1058 2016- 4- 2 CODE split ofo-entry.c
 
-1059 2016- 4- 2 ofaIImportable: have a warns_on_empty_on_import() method
+1059 2016- 4- 2 FEAT ofaIImportable: have a warns_on_empty_on_import() method
                 use case: when importing entries
 
-1060 2016- 4- 2 ofaIImportable: have a may_duplicates() method
+1060 2016- 4- 2 FEAT ofaIImportable: have a may_duplicates() method
                 use case: when importing entries
 
-1061
+1061 2016- 4- 2 FEAT save the table before import, restoring it in case
+                of an error
+
+1062
 
 -----------------------------------------------------------------------
  DONE

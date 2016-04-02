@@ -201,8 +201,11 @@ static gchar     *export_cb( const ofsBoxData *box_data, const ofaStreamFormat *
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar     *iimportable_get_label( const ofaIImportable *instance );
-static gboolean   iimportable_old_import( ofaIImportable *exportable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub );
-static gboolean   ledger_do_drop_content( const ofaIDBConnect *connect );
+static guint      iimportable_import( ofaIImportable *exportable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList     *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void       iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean   ledger_get_exists( const ofoLedger *ledger, const ofaIDBConnect *connect );
+static gboolean   ledger_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoLedger )
@@ -1855,7 +1858,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
-	iface->old_import = iimportable_old_import;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -1871,7 +1874,7 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /*
- * ofo_ledger_iimportable_old_import:
+ * ofo_ledger_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
@@ -1879,118 +1882,208 @@ iimportable_get_label( const ofaIImportable *instance )
  * - label
  * - notes (opt)
  *
- * Replace the whole table with the provided datas, initializing the
+ * Replace the main table with the provided datas, initializing the
  * balances to zero.
  *
  * In order to be able to import a previously exported file:
  * - we accept that the first field of the first line be "1" or "2"
  * - we silently ignore other lines.
  *
- * Returns: 0 if no error has occurred, >0 if an error has been detected
- * during import phase (input file read), <0 if an error has occured
- * during insert phase.
+ * Returns: the total count of errors.
  *
- * As the table is dropped between import phase and insert phase, if an
- * error occurs during insert phase, then the table is changed and only
- * contains the successfully inserted records.
+ * As the table may have been dropped between import phase and insert
+ * phase, if an error occurs during insert phase, then the table is
+ * changed and only contains the successfully inserted records.
  */
-static gint
-iimportable_old_import( ofaIImportable *importable, GSList *lines, const ofaStreamFormat *settings, ofaHub *hub )
+static guint
+iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	GList *dataset;
+
+	dataset = iimportable_import_parse( importer, parms, lines );
+
+	if( parms->parse_errs == 0 && parms->imported_count > 0 ){
+		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs == 0 ){
+			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_LEDGER );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
+		}
+	}
+
+	if( dataset ){
+		ofo_ledger_free_dataset( dataset );
+	}
+
+	return( parms->parse_errs+parms->insert_errs );
+}
+
+/*
+ * parse to a dataset
+ */
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
-	ofoLedger *ledger;
-	GList *dataset, *it;
-	guint errors, line;
-	gchar *splitted, *msg, *str;
+	guint numline, total;
+	gchar *splitted, *str;
 	gboolean have_prefix;
-	const ofaIDBConnect *connect;
+	ofoLedger *ledger;
 
-	line = 0;
-	errors = 0;
+	numline = 0;
 	dataset = NULL;
+	total = g_slist_length( lines );
 	have_prefix = FALSE;
+
+	ofa_iimporter_progress_start( importer, parms );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
-		line += 1;
-		ledger = ofo_ledger_new();
+
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
 		fields = ( GSList * ) itl->data;
-		ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_IMPORT, 1 );
+		ledger = ofo_ledger_new();
 
 		/* ledger mnemo or "1" */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( line == 1 ){
+		if( numline == 1 ){
 			have_prefix = ( my_strlen( cstr ) &&
-					( !g_utf8_collate( cstr, "1" ) || !g_utf8_collate( cstr, "2" )));
+					( !my_collate( cstr, "1" ) || !my_collate( cstr, "2" )));
 		}
-		str = ofa_iimportable_get_string( &itf, settings );
 		if( have_prefix ){
-			if( g_utf8_collate( str, "1" )){
-				msg = g_strdup_printf( _( "ignoring line with prefix=%s" ), str );
-				ofa_iimportable_set_message(
-						importable, line, IMPORTABLE_MSG_WARNING, msg );
-				g_free( msg );
+			if( my_collate( cstr, "1" )){
+				str = g_strdup_printf( _( "ignoring line with prefix=%s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				total -= 1;
 				g_free( str );
 				continue;
 			}
-			g_free( str );
-			str = ofa_iimportable_get_string( &itf, settings );
+			itf = itf ? itf->next : NULL;
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
 		}
-		if( !str ){
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ledger mnemo" ));
-			errors += 1;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty ledger mnemo" ));
+			parms->parse_errs += 1;
 			continue;
 		}
-		ofo_ledger_set_mnemo( ledger, str );
-		g_free( str );
+		ofo_ledger_set_mnemo( ledger, cstr );
 
 		/* ledger label */
-		str = ofa_iimportable_get_string( &itf, settings );
-		if( !str ){
-			ofa_iimportable_set_message(
-					importable, line, IMPORTABLE_MSG_ERROR, _( "empty ledger label" ));
-			errors += 1;
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty ledger label" ));
+			parms->parse_errs += 1;
 			continue;
 		}
-		ofo_ledger_set_label( ledger, str );
-		g_free( str );
+		ofo_ledger_set_label( ledger, cstr );
 
 		/* notes
 		 * we are tolerant on the last field... */
-		str = ofa_iimportable_get_string( &itf, settings );
-		splitted = my_utils_import_multi_lines( str );
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		splitted = my_utils_import_multi_lines( cstr );
 		ofo_ledger_set_notes( ledger, splitted );
 		g_free( splitted );
-		g_free( str );
 
 		dataset = g_list_prepend( dataset, ledger );
+		parms->imported_count += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
 	}
 
-	if( !errors ){
-		ofa_iimportable_set_count( importable, g_list_length( dataset ));
-		connect = ofa_hub_get_connect( hub );
-		ledger_do_drop_content( connect );
+	return( dataset );
+}
 
-		for( it=dataset ; it ; it=it->next ){
-			if( !ledger_do_insert( OFO_LEDGER( it->data ), connect )){
-				errors -= 1;
-			}
-			ofa_iimportable_increment_progress( importable, IMPORTABLE_PHASE_INSERT, 1 );
+static void
+iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
+{
+	GList *it;
+	const ofaIDBConnect *connect;
+	gboolean insert;
+	guint total;
+	gchar *str;
+	ofoLedger *ledger;
+	const gchar *led_id;
+
+	total = g_list_length( dataset );
+	connect = ofa_hub_get_connect( parms->hub );
+	ofa_iimporter_progress_start( importer, parms );
+
+	if( parms->empty && total > 0 ){
+		ledger_drop_content( connect );
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+
+		if( parms->stop && parms->insert_errs > 0 ){
+			break;
 		}
 
-		ofo_ledger_free_dataset( dataset );
-		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_LEDGER );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
-	}
+		str = NULL;
+		insert = TRUE;
+		ledger = OFO_LEDGER( it->data );
 
-	return( errors );
+		if( ledger_get_exists( ledger, connect )){
+			parms->duplicate_count += 1;
+			led_id = ofo_ledger_get_mnemo( ledger );
+
+			switch( parms->mode ){
+				case OFA_IMMODE_REPLACE:
+					str = g_strdup_printf( _( "%s: duplicate ledger, replacing previous one" ), led_id );
+					ledger_do_delete( ledger, connect );
+					break;
+				case OFA_IMMODE_IGNORE:
+					str = g_strdup_printf( _( "%s: duplicate ledger, ignored (skipped)" ), led_id );
+					insert = FALSE;
+					total -= 1;
+					break;
+				case OFA_IMMODE_ABORT:
+					str = g_strdup_printf( _( "%s: erroneous duplicate ledger" ), led_id );
+					insert = FALSE;
+					total -= 1;
+					parms->insert_errs += 1;
+					break;
+			}
+		}
+		if( str ){
+			ofa_iimporter_progress_text( importer, parms, str );
+			g_free( str );
+		}
+		if( insert ){
+			if( ledger_do_insert( ledger, connect )){
+				parms->inserted_count += 1;
+			} else {
+				parms->insert_errs += 1;
+			}
+		}
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+	}
 }
 
 static gboolean
-ledger_do_drop_content( const ofaIDBConnect *connect )
+ledger_get_exists( const ofoLedger *ledger, const ofaIDBConnect *connect )
+{
+	const gchar *ledger_id;
+	gint count;
+	gchar *str;
+
+	count = 0;
+	ledger_id = ofo_ledger_get_mnemo( ledger );
+	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_LEDGERS WHERE LED_MNEMO='%s'", ledger_id );
+	ofa_idbconnect_query_int( connect, str, &count, FALSE );
+
+	return( count > 0 );
+}
+
+static gboolean
+ledger_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_LEDGERS", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_LEDGERS_CUR", TRUE ));
