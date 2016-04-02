@@ -1,0 +1,442 @@
+/*
+ * Open Freelance Accounting
+ * A double-entry accounting application for freelances.
+ *
+ * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
+ *
+ * Open Freelance Accounting is free software; you can redistribute it
+ * and/or modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of the
+ * License, or (at your option) any later version.
+ *
+ * Open Freelance Accounting is distributed in the hope that it will be
+ * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+ * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Open Freelance Accounting; see the file COPYING. If not,
+ * see <http://www.gnu.org/licenses/>.
+ *
+ * Authors:
+ *   Pierre Wieser <pwieser@trychlos.org>
+ */
+
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include "importers/ofa-importer-txt.h"
+
+/* private instance data
+ */
+typedef struct {
+	gboolean dispose_has_run;
+}
+	ofaImporterTxtPrivate;
+
+static GList *st_accepted_contents      = NULL;
+
+static GSList      *get_file_content( ofaIImportable *importer_txt, const gchar *uri );
+static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
+static gboolean     lcl_tabulated_text_v1_check( ofaImporterTxt *importer_txt );
+static ofsBat      *lcl_tabulated_text_v1_import( ofaImporterTxt *importer_txt );
+static const gchar *lcl_get_ref_paiement( const gchar *str );
+static gchar       *lcl_concatenate_labels( gchar ***iter );
+static gdouble      get_double( const gchar *str );
+
+G_DEFINE_TYPE_EXTENDED( ofaImporterTxt, ofa_importer_txt, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaImporterTxt ))
+
+static void
+importer_txt_finalize( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_importer_txt_finalize";
+
+	g_return_if_fail( instance && OFA_IS_IMPORTER_TXT( instance ));
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	/* free data members here */
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_importer_txt_parent_class )->finalize( instance );
+}
+
+static void
+importer_txt_dispose( GObject *instance )
+{
+	ofaImporterTxtPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_IMPORTER_TXT( instance ));
+
+	priv = ofa_importer_txt_get_instance_private( OFA_IMPORTER_TXT( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref instance members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_importer_txt_parent_class )->dispose( instance );
+}
+
+static void
+ofa_importer_txt_init( ofaImporterTxt *self )
+{
+	static const gchar *thisfn = "ofa_importer_txt_init";
+	ofaImporterTxtPrivate *priv;
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_IMPORTER_TXT( self ));
+
+	priv = ofa_importer_txt_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+}
+
+static void
+ofa_importer_txt_class_init( ofaImporterTxtClass *klass )
+{
+	static const gchar *thisfn = "ofa_importer_txt_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = importer_txt_dispose;
+	G_OBJECT_CLASS( klass )->finalize = importer_txt_finalize;
+}
+
+/**
+ * ofa_importer_txt_get_accepted_contents:
+ * @instance: a #ofaImporterTxt instance.
+ *
+ * Returns: the list of mimetypes accepted by this class.
+ */
+const GList *
+ofa_importer_txt_get_accepted_contents( const ofaImporterTxt *instance )
+{
+	if( !st_accepted_contents ){
+		st_accepted_contents = g_list_prepend( NULL, "application/vnd.ms-excel" );
+	}
+
+	return( st_accepted_contents );
+}
+
+/**
+ * ofa_importer_txt_is_willing_to:
+ * @instance: a #ofaImporterTxt instance.
+ * @uri: the uri to the filename to be imported.
+ * @type: the expected GType.
+ *
+ * Returns: %TRUE if this @instance is willing to import the @uri.
+ *
+ * From this base class point of view, it only involves a content
+ * check.
+ */
+gboolean
+ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance, const gchar *uri, GType type )
+{
+	gchar *filename, *content;
+	gboolean ok;
+
+	filename = g_filename_from_uri( uri, NULL, NULL );
+	content = g_content_type_guess( filename, NULL, 0, NULL );
+	ok = ( my_collate( content, "application/vnd.ms-excel" ) == 0 );
+
+	g_free( content );
+	g_free( filename );
+
+	return( ok );
+}
+
+static GSList *
+get_file_content( ofaIImportable *importer_txt, const gchar *uri )
+{
+	GFile *gfile;
+	gchar *contents, *buffer, *str;
+	gchar **lines, **iter;
+	GSList *list;
+	gsize length;
+	glong loaded_len, computed_len, i;
+
+	list = NULL;
+	gfile = g_file_new_for_uri( uri );
+	if( g_file_load_contents( gfile, NULL, &contents, &length, NULL, NULL )){
+
+		/* if the returned length is greater that the computed one,
+		 * it is probable that we are facing a badly-formatted line
+		 * so remove '\00' chars */
+
+		loaded_len = ( glong ) length;
+		computed_len = g_utf8_strlen( contents, length );
+
+		/*g_debug( "contents='%s'", contents );
+		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
+				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
+
+		if( loaded_len > computed_len ){
+			for( i=computed_len ; contents[i] == '\0' && i<loaded_len ; ++i ){
+				/*g_debug( "i=%ld, contents[i]=%x", i, contents[i] );*/
+				;
+			}
+			buffer = g_strdup_printf( "%s%s", contents, contents+i );
+			g_free( contents );
+			contents = buffer;
+		}
+
+		/*g_debug( "contents='%s'", contents );
+		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
+				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
+
+		lines = g_strsplit( contents, "\n", -1 );
+		g_free( contents );
+		iter = lines;
+		while( *iter ){
+			str = g_strstrip( g_strdup( *iter ));
+			list = g_slist_prepend( list, str );
+			/*g_debug( "get_file_content: str='%s'", str );*/
+			iter++;
+		}
+		g_strfreev( lines );
+	}
+	g_object_unref( gfile );
+
+	return( g_slist_reverse( list ));
+}
+
+static gboolean
+lcl_tabulated_text_v1_check( ofaImporterTxt *importer_txt )
+{
+	ofaImporterTxtPrivate *priv;
+	gchar **tokens, **iter;
+	GDate date;
+
+	priv = importer_txt->priv;
+	tokens = g_strsplit( priv->lines->data, "\t", -1 );
+	/* only interpret first line */
+	/* first field = value date */
+	iter = tokens;
+	if( !scan_date_dmyy( &date, *iter )){
+		return( FALSE );
+	}
+	iter += 1;
+	if( !get_double( *iter )){
+		return( FALSE );
+	}
+	/* other fields may be empty */
+
+	priv->count = g_slist_length( priv->lines )-1;
+	g_strfreev( tokens );
+
+	return( TRUE );
+}
+
+static ofsBat  *
+lcl_tabulated_text_v1_import( ofaImporterTxt *importer_txt )
+{
+	ofaImporterTxtPrivate *priv;
+	GSList *line;
+	ofsBat *sbat;
+	ofsBatDetail *sdet;
+	gchar **tokens, **iter;
+	gint count, nb;
+	gchar *msg, *sbegin, *send;
+
+	priv = importer_txt->priv;
+	line = priv->lines;
+	sbat = g_new0( ofsBat, 1 );
+	nb = g_slist_length( priv->lines );
+	count = 0;
+	priv->errors = 0;
+
+	while( TRUE ){
+		if( !line || !my_strlen( line->data )){
+			break;
+		}
+		tokens = g_strsplit( line->data, "\t", -1 );
+		iter = tokens;
+		count += 1;
+
+		/* detail line */
+		if( count < nb ){
+			sdet = g_new0( ofsBatDetail, 1 );
+			ofa_iimportable_increment_progress( OFA_IIMPORTABLE( importer_txt ), IMPORTABLE_PHASE_IMPORT, 1 );
+
+			scan_date_dmyy( &sdet->deffect, *iter );
+
+			iter += 1;
+			sdet->amount = get_double( *iter );
+
+			iter += 1;
+			if( my_strlen( *iter )){
+				sdet->ref = g_strdup( lcl_get_ref_paiement( *iter ));
+			}
+
+			iter += 1;
+			sdet->label = lcl_concatenate_labels( &iter );
+
+			/* do not interpret
+			 * unknown field nor category */
+			sbat->details = g_list_prepend( sbat->details, sdet );
+
+		/* last line is the file footer */
+		} else {
+			scan_date_dmyy( &sbat->end, *iter );
+
+			iter +=1 ;
+			sbat->end_solde = get_double( *iter );
+			sbat->end_solde_set = TRUE;
+
+			iter += 1;
+			/* no ref */
+
+			iter += 1;
+			sbat->rib = lcl_concatenate_labels( &iter );
+
+			if( ofo_bat_exists( priv->hub, sbat->rib, &sbat->begin, &sbat->end )){
+				sbegin = my_date_to_str( &sbat->begin, ofa_prefs_date_display());
+				send = my_date_to_str( &sbat->end, ofa_prefs_date_display());
+				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
+						sbat->rib, sbegin, send );
+				ofa_iimportable_set_message( OFA_IIMPORTABLE( importer_txt ), nb, IMPORTABLE_MSG_ERROR, msg );
+				g_free( msg );
+				g_free( sbegin );
+				g_free( send );
+				priv->errors += 1;
+				ofs_bat_free( sbat );
+				sbat = NULL;
+			}
+		}
+
+		g_strfreev( tokens );
+		line = line->next;
+	}
+
+	return( sbat );
+}
+
+typedef struct {
+	const gchar *bat_label;
+	const gchar *ofa_label;
+}
+	lclPaiement;
+
+static const lclPaiement st_lcl_paiements[] = {
+		{ "Carte",       "CB" },
+		{ "Virement",    "Vir" },
+		{ "Prélèvement", "Prel" },
+		{ "Chèque",      "Ch" },
+		{ "TIP",         "TIP" },
+		{ 0 }
+};
+
+static const gchar *
+lcl_get_ref_paiement( const gchar *str )
+{
+	gint i;
+
+	if( my_strlen( str )){
+		for( i=0 ; st_lcl_paiements[i].bat_label ; ++ i ){
+			if( !g_utf8_collate( str, st_lcl_paiements[i].bat_label )){
+				return( st_lcl_paiements[i].ofa_label );
+			}
+		}
+	}
+
+	return( NULL );
+}
+
+/*
+ * return a newly allocated stripped string
+ */
+static gchar *
+lcl_concatenate_labels( gchar ***iter )
+{
+	GString *lab1;
+	gchar *lab2;
+
+	lab1 = g_string_new( "" );
+	if( **iter ){
+		lab2 = g_strdup( **iter );
+		g_strstrip( lab2 );
+		if( my_strlen( lab2 )){
+			if( my_strlen( lab1->str )){
+				lab1 = g_string_append( lab1, " " );
+			}
+			lab1 = g_string_append( lab1, lab2 );
+		}
+		g_free( lab2 );
+
+		*iter += 1;
+		if( **iter ){
+			lab2 = g_strdup( **iter );
+			g_strstrip( lab2 );
+			if( my_strlen( lab2 )){
+				if( my_strlen( lab1->str )){
+					lab1 = g_string_append( lab1, " " );
+				}
+				lab1 = g_string_append( lab1, lab2 );
+			}
+			g_free( lab2 );
+
+			*iter += 1;
+			if( my_strlen( **iter )){
+				lab2 = g_strdup( **iter );
+				g_strstrip( lab2 );
+				if( my_strlen( lab2 )){
+					if( my_strlen( lab1->str )){
+						lab1 = g_string_append( lab1, " " );
+					}
+					lab1 = g_string_append( lab1, lab2 );
+				}
+				g_free( lab2 );
+			}
+		}
+	}
+
+	g_strstrip( lab1->str );
+	return( g_string_free( lab1, FALSE ));
+}
+
+/*
+ * parse a 'dd/mm/yyyy' date
+ */
+static GDate *
+scan_date_dmyy( GDate *date, const gchar *str )
+{
+	gint d, m, y;
+
+	my_date_clear( date );
+	sscanf( str, "%d/%d/%d", &d, &m, &y );
+	if( d <= 0 || m <= 0 || y < 0 || d > 31 || m > 12 ){
+		return( NULL );
+	}
+	g_date_set_dmy( date, d, m, y );
+	if( !my_date_is_valid( date )){
+		return( NULL );
+	}
+
+	return( date );
+}
+
+/*
+ * amounts are expected to use comma as decimal separator
+ *  and no thousand separator
+ */
+static gdouble
+get_double( const gchar *str )
+{
+	gchar *dotsep;
+	gdouble amount;
+
+	dotsep = my_utils_str_replace( str, ",", "." );
+	amount = my_double_set_from_sql( dotsep );
+	g_free( dotsep );
+
+	return( amount );
+}

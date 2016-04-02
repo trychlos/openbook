@@ -37,8 +37,14 @@ AM_CPPFLAGS += \
 
 libofa_importers_la_SOURCES = \
 	ofa-extension.c									\
-	ofa-importers-csv.c								\
-	ofa-importers-csv.h								\
+	ofa-importer-csv.c								\
+	ofa-importer-csv.h								\
+	ofa-importer-txt.c								\
+	ofa-importer-txt.h								\
+	ofa-importer-txt-bourso.c						\
+	ofa-importer-txt-bourso.h						\
+	ofa-importer-txt-lcl.c							\
+	ofa-importer-txt-lcl.h							\
 	$(NULL)
 
 libofa_importers_la_LIBADD = \

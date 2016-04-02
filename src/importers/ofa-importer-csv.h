@@ -22,12 +22,12 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_IMPORTERS_CSV_H__
-#define __OFA_IMPORTERS_CSV_H__
+#ifndef __OFA_IMPORTER_CSV_H__
+#define __OFA_IMPORTER_CSV_H__
 
 /**
- * SECTION: ofa_importers_csv
- * @short_description: #ofaImportersCSV class definition.
+ * SECTION: ofa_importer_csv
+ * @short_description: #ofaImporterCSV class definition.
  *
  * A #ofaIImmporter implementation which manages text/csv mimetypes.
  */
@@ -36,27 +36,27 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_IMPORTERS_CSV                ( ofa_importers_csv_get_type())
-#define OFA_IMPORTERS_CSV( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_IMPORTERS_CSV, ofaImportersCSV ))
-#define OFA_IMPORTERS_CSV_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_IMPORTERS_CSV, ofaImportersCSVClass ))
-#define OFA_IS_IMPORTERS_CSV( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_IMPORTERS_CSV ))
-#define OFA_IS_IMPORTERS_CSV_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_IMPORTERS_CSV ))
-#define OFA_IMPORTERS_CSV_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_IMPORTERS_CSV, ofaImportersCSVClass ))
+#define OFA_TYPE_IMPORTER_CSV                ( ofa_importer_csv_get_type())
+#define OFA_IMPORTER_CSV( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_IMPORTER_CSV, ofaImporterCSV ))
+#define OFA_IMPORTER_CSV_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_IMPORTER_CSV, ofaImporterCSVClass ))
+#define OFA_IS_IMPORTER_CSV( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_IMPORTER_CSV ))
+#define OFA_IS_IMPORTER_CSV_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_IMPORTER_CSV ))
+#define OFA_IMPORTER_CSV_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_IMPORTER_CSV, ofaImporterCSVClass ))
 
 typedef struct {
 	/*< public members >*/
 	GObject      parent;
 }
-	ofaImportersCSV;
+	ofaImporterCSV;
 
 typedef struct {
 	/*< public members >*/
 	GObjectClass parent;
 }
-	ofaImportersCSVClass;
+	ofaImporterCSVClass;
 
-GType ofa_importers_csv_get_type( void );
+GType ofa_importer_csv_get_type( void );
 
 G_END_DECLS
 
-#endif /* __OFA_IMPORTERS_CSV_H__ */
+#endif /* __OFA_IMPORTER_CSV_H__ */

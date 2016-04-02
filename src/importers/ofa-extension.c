@@ -30,7 +30,7 @@
 
 #include "api/ofa-extension.h"
 
-#include "importers/ofa-importers-csv.h"
+#include "importers/ofa-importer-csv.h"
 
 /*
  * The part below defines and implements the GTypeModule-derived class
@@ -211,7 +211,7 @@ ofa_extension_list_types( const GType **types )
 	g_debug( "%s: types=%p, count=%u", thisfn, ( void * ) types, TYPES_COUNT );
 
 	types_list[i++] = OFA_TYPE_IMPORTERS_ID;
-	types_list[i++] = OFA_TYPE_IMPORTERS_CSV;
+	types_list[i++] = OFA_TYPE_IMPORTER_CSV;
 
 	g_return_val_if_fail( i == TYPES_COUNT, 0 );
 	types_list[i] = 0;

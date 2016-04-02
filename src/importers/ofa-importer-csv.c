@@ -34,14 +34,17 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-iimporter.h"
 
-#include "importers/ofa-importers-csv.h"
+#include "importers/ofa-importer-csv.h"
 
 /* private instance data
  */
 typedef struct {
 	gboolean dispose_has_run;
 }
-	ofaImportersCSVPrivate;
+	ofaImporterCSVPrivate;
+
+#define IMPORTER_DISPLAY_NAME            "Text/CSV importer"
+#define IMPORTER_VERSION                 "v 2016.1"
 
 static GList *st_accepted_contents      = NULL;
 
@@ -60,35 +63,35 @@ static void         free_lines( GSList *lines );
 static void         free_fields( GSList *fields );
 static void         set_error_message( ofaIImporter *instance, ofsImporterParms *parms, const gchar *msgerr );
 
-G_DEFINE_TYPE_EXTENDED( ofaImportersCSV, ofa_importers_csv, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE( ofaImportersCSV )
+G_DEFINE_TYPE_EXTENDED( ofaImporterCSV, ofa_importer_csv, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaImporterCSV )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTER, iimporter_iface_init ))
 
 static void
-importers_csv_finalize( GObject *instance )
+importer_csv_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_importers_csv_finalize";
+	static const gchar *thisfn = "ofa_importer_csv_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_IMPORTERS_CSV( instance ));
+	g_return_if_fail( instance && OFA_IS_IMPORTER_CSV( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_importers_csv_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_importer_csv_parent_class )->finalize( instance );
 }
 
 static void
-importers_csv_dispose( GObject *instance )
+importer_csv_dispose( GObject *instance )
 {
-	ofaImportersCSVPrivate *priv;
+	ofaImporterCSVPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_IMPORTERS_CSV( instance ));
+	g_return_if_fail( instance && OFA_IS_IMPORTER_CSV( instance ));
 
-	priv = ofa_importers_csv_get_instance_private( OFA_IMPORTERS_CSV( instance ));
+	priv = ofa_importer_csv_get_instance_private( OFA_IMPORTER_CSV( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -98,34 +101,34 @@ importers_csv_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_importers_csv_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_importer_csv_parent_class )->dispose( instance );
 }
 
 static void
-ofa_importers_csv_init( ofaImportersCSV *self )
+ofa_importer_csv_init( ofaImporterCSV *self )
 {
-	static const gchar *thisfn = "ofa_importers_csv_init";
-	ofaImportersCSVPrivate *priv;
+	static const gchar *thisfn = "ofa_importer_csv_init";
+	ofaImporterCSVPrivate *priv;
 
-	g_debug( "%s: instance=%p (%s)",
+	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_IMPORTERS_CSV( self ));
+	g_return_if_fail( self && OFA_IS_IMPORTER_CSV( self ));
 
-	priv = ofa_importers_csv_get_instance_private( self );
+	priv = ofa_importer_csv_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_importers_csv_class_init( ofaImportersCSVClass *klass )
+ofa_importer_csv_class_init( ofaImporterCSVClass *klass )
 {
-	static const gchar *thisfn = "ofa_importers_csv_class_init";
+	static const gchar *thisfn = "ofa_importer_csv_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = importers_csv_dispose;
-	G_OBJECT_CLASS( klass )->finalize = importers_csv_finalize;
+	G_OBJECT_CLASS( klass )->dispose = importer_csv_dispose;
+	G_OBJECT_CLASS( klass )->finalize = importer_csv_finalize;
 }
 
 /*
@@ -134,7 +137,7 @@ ofa_importers_csv_class_init( ofaImportersCSVClass *klass )
 static void
 iident_iface_init( myIIdentInterface *iface )
 {
-	static const gchar *thisfn = "ofa_importers_csv_iident_iface_init";
+	static const gchar *thisfn = "ofa_importer_csv_iident_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -145,13 +148,13 @@ iident_iface_init( myIIdentInterface *iface )
 static gchar *
 iident_get_canon_name( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup( "Text/CSV importer" ));
+	return( g_strdup( IMPORTER_DISPLAY_NAME ));
 }
 
 static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup( "v 2016.1" ));
+	return( g_strdup( IMPORTER_VERSION ));
 }
 
 /*
@@ -160,7 +163,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
 static void
 iimporter_iface_init( ofaIImporterInterface *iface )
 {
-	static const gchar *thisfn = "ofa_importers_csv_iimporter_iface_init";
+	static const gchar *thisfn = "ofa_importer_csv_iimporter_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -179,10 +182,23 @@ iimporter_get_accepted_contents( const ofaIImporter *instance )
 	return( st_accepted_contents );
 }
 
+/*
+ * just check that the provided file is a csv one
+ */
 static gboolean
 iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type )
 {
-	return( TRUE );
+	gchar *filename, *content;
+	gboolean ok;
+
+	filename = g_filename_from_uri( uri, NULL, NULL );
+	content = g_content_type_guess( filename, NULL, 0, NULL );
+	ok = ( my_collate( content, "text/csv" ) == 0 );
+
+	g_free( content );
+	g_free( filename );
+
+	return( ok );
 }
 
 static guint
@@ -279,7 +295,7 @@ do_import_csv( ofaIImporter *instance, ofsImporterParms *parms )
 static GSList *
 get_lines_from_content( const gchar *content, const ofaStreamFormat *settings, guint *errors, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_importers_csv_get_lines_from_content";
+	static const gchar *thisfn = "ofa_importer_csv_get_lines_from_content";
 	GSList *eol_list, *splitted, *it;
 	guint numline;
 
@@ -314,7 +330,7 @@ get_lines_from_content( const gchar *content, const ofaStreamFormat *settings, g
 static GSList *
 split_by_line( const gchar *content, const ofaStreamFormat *settings, guint *errors, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_importers_csv_split_by_line";
+	static const gchar *thisfn = "ofa_importer_csv_split_by_line";
 	GSList *eol_list;
 	gchar **lines, **it_line;
 	gchar *prev, *temp;
@@ -368,7 +384,7 @@ split_by_line( const gchar *content, const ofaStreamFormat *settings, guint *err
 static GSList *
 split_by_field( const gchar *line, guint numline, const ofaStreamFormat *settings, guint *errors, gchar **msgerr )
 {
-	static const gchar *thisfn = "ofa_importers_csv_split_by_field";
+	static const gchar *thisfn = "ofa_importer_csv_split_by_field";
 	GSList *out_list;
 	gchar *fieldsep_str;
 	gchar **fields, **it_field;
