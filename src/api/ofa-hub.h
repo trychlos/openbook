@@ -129,13 +129,6 @@ ofaIImporter           *ofa_hub_get_willing_to          ( ofaHub *hub,
 																const gchar *uri,
 																GType type );
 
-guint                   ofa_hub_import_csv              ( ofaHub *hub,
-																ofaIImportable *object,
-																const gchar *uri,
-																const ofaStreamFormat *settings,
-																void *caller,
-																guint *errors );
-
 void                    ofa_hub_disconnect_handlers     ( ofaHub *hub,
 																GList *handlers );
 

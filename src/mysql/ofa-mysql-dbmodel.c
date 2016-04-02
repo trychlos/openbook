@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "my/my-iident.h"
 #include "my/my-iprogress.h"
@@ -37,7 +38,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
-#include "api/ofa-iimportable.h"
+#include "api/ofa-iimporter.h"
 #include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
@@ -472,50 +473,80 @@ version_end( ofaMysqlDBModel *self, gint version )
 	return( ok );
 }
 
+/*
+ * only import provided default datas if target table is empty
+ */
 static gboolean
 import_utf8_comma_pipe_file( ofaMysqlDBModel *self, sImport *import )
 {
 	ofaMysqlDBModelPrivate *priv;
-	gint count;
 	gboolean ok;
-	ofaStreamFormat *settings;
-	ofoBase *object;
+	guint count, errors;
 	gchar *uri, *fname, *str;
+	GType type;
+	ofaIImporter *importer;
+	ofsImporterParms parms;
+	ofaStreamFormat *settings;
 	GtkWidget *label;
 
 	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	ok = TRUE;
 	count = count_rows( self, import->table );
-	if( !count ){
-		str = g_strdup_printf( _( "Importing into %s :" ), import->table );
-		label = gtk_label_new( str );
-		g_free( str );
-		my_iprogress_start_progress( priv->window, self, label, FALSE );
+	if( count == 0 ){
 
-		settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
-		ofa_stream_format_set( settings,
-									TRUE, "UTF-8", 			/* charmap */
-									TRUE, MY_DATE_SQL, 		/* date format */
-									TRUE, '\0',				/* thousand sep */
-									TRUE, ',',				/* decimal sep */
-									TRUE, '|', 				/* field sep */
-									TRUE, '\0', 			/* string delimiter */
-									TRUE, import->header_count );
-		object = g_object_new( import->typefn(), NULL );
+		/* find an importer for these uri+type */
 		fname = g_strdup_printf( "%s/%s", INIT1DIR, import->filename );
 		uri = g_filename_to_uri( fname, NULL, NULL );
 		g_free( fname );
-		count = ofa_hub_import_csv( priv->hub, OFA_IIMPORTABLE( object ), uri, settings, NULL, NULL );
-		ok = ( count > 0 );
-		g_free( uri );
-		g_object_unref( object );
-		g_object_unref( settings );
+		type = import->typefn();
+		importer = ofa_hub_get_willing_to( priv->hub, uri, type );
 
-		str = g_strdup_printf( _( "%d lines" ), count );
-		label = gtk_label_new( str );
-		g_free( str );
-		my_iprogress_set_row( priv->window, self, label );
+		/* if found, then import data */
+		if( importer ){
+			g_return_val_if_fail( OFA_IS_IIMPORTER( importer ), FALSE );
+
+			str = g_strdup_printf( _( "Importing into %s :" ), import->table );
+			label = gtk_label_new( str );
+			g_free( str );
+			my_iprogress_start_progress( priv->window, self, label, FALSE );
+
+			settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+			ofa_stream_format_set( settings,
+										TRUE, "UTF-8", 			/* charmap */
+										TRUE, MY_DATE_SQL, 		/* date format */
+										TRUE, '\0',				/* thousand sep */
+										TRUE, ',',				/* decimal sep */
+										TRUE, '|', 				/* field sep */
+										TRUE, '\0', 			/* string delimiter */
+										TRUE, import->header_count );
+
+			memset( &parms, '\0', sizeof( parms ));
+			parms.version = 1;
+			parms.hub = priv->hub;
+			parms.empty = TRUE;
+			parms.mode = OFA_IMMODE_ABORT;
+			parms.stop = FALSE;
+			parms.uri = uri;
+			parms.type = type;
+			parms.format = settings;
+			parms.progress = priv->window;
+
+			errors = ofa_iimporter_import( importer, &parms );
+
+			if( errors ){
+				str = g_strdup( _( "error detected" ));
+				ok = FALSE;
+			} else {
+				str = g_strdup_printf( _( "%d records" ), parms.inserted_count );
+			}
+			label = gtk_label_new( str );
+			g_free( str );
+			my_iprogress_set_row( priv->window, self, label );
+
+			g_object_unref( settings );
+			g_object_unref( importer );
+		}
 	}
 
 	return( ok );
