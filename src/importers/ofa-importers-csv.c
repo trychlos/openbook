@@ -233,9 +233,9 @@ do_import_csv( ofaIImporter *instance, ofsImporterParms *parms )
 
 	/* import the dataset */
 	if( lines ){
-		parms->read_count = g_slist_length( lines );
+		parms->lines_count = g_slist_length( lines );
 		headers_count = ofa_stream_format_get_headers_count( parms->format );
-		count = parms->read_count - headers_count;
+		count = parms->lines_count - headers_count;
 
 		if( count > 0 ){
 			object = g_object_new( parms->type, NULL );
@@ -257,7 +257,7 @@ do_import_csv( ofaIImporter *instance, ofsImporterParms *parms )
 			errors += 1;
 			msgerr = g_strdup_printf(
 							_( "Expected headers count=%u greater than count of lines=%u read from '%s' file" ),
-								headers_count, parms->read_count, parms->uri );
+								headers_count, parms->lines_count, parms->uri );
 			set_error_message( instance, parms, msgerr );
 			g_free( msgerr );
 		}

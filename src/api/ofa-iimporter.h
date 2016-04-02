@@ -149,8 +149,8 @@ typedef struct {
  * @uri: the imported uri.
  * @type: the candidate GType.
  * @format: the #ofaStreamFormat description of the input stream format.
- * @read_count: [out]: the total count of read records.
- * @imported_count: [out]: the count of successfullly imported records.
+ * @lines_count: [out]: the total count of lines read from input stream.
+ * @parsed_count: [out]: the count of successfullly parsed records.
  * @duplicate_count: [out]: the count of duplicate records.
  * @inserted_count: [out]: the count of successfully inserted records.
  * @inserted_count: [out]: the count of successfully inserted records.
@@ -170,8 +170,8 @@ struct _ofsImporterParms {
 	gchar           *uri;
 	GType            type;
 	ofaStreamFormat *format;
-	guint            read_count;
-	guint            imported_count;
+	guint            lines_count;
+	guint            parsed_count;
 	guint            duplicate_count;
 	guint            inserted_count;
 	guint            parse_errs;

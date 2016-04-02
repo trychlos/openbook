@@ -1755,7 +1755,7 @@ iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImpor
 
 	dataset = iimportable_import_parse( importer, parms, lines );
 
-	if( parms->parse_errs == 0 && parms->imported_count > 0 ){
+	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
@@ -1809,9 +1809,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			case 1:
 				form = iimportable_import_parse_form( importer, parms, numline, itf );
 				if( form ){
-					parms->imported_count += 1;
+					parms->parsed_count += 1;
 					dataset = g_list_prepend( dataset, form );
-					ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
+					ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
 				}
 				break;
 			case 2:
@@ -1823,7 +1823,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 						ofa_box_set_int( bool, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
 						form_boolean_add( form, bool );
 						total -= 1;
-						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
+						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
 					}
 					g_free( mnemo );
 				}
@@ -1837,7 +1837,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 						ofa_box_set_int( rule, TFO_BOOL_ROW, 1+ofo_tva_form_detail_get_count( form ));
 						form_detail_add( form, rule );
 						total -= 1;
-						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->imported_count, ( gulong ) total );
+						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
 					}
 					g_free( mnemo );
 				}
