@@ -623,6 +623,31 @@ my_utils_char_replace( const gchar *string, gchar old_ch, gchar new_ch )
 }
 
 /**
+ * my_utils_str_in_list:
+ * @str: the string to be searched for.
+ * @list: the #GList list.
+ *
+ * Returns: %TRUE if @str is found in @list.
+ */
+gboolean
+my_utils_str_in_list( const gchar *str, const GList *list )
+{
+	gboolean ok;
+	const GList *it;
+
+	ok = FALSE;
+
+	for( it=list ; it ; it=it->next ){
+		if( my_collate(( const gchar * ) it->data, str ) == 0 ){
+			ok = TRUE;
+			break;
+		}
+	}
+
+	return( ok );
+}
+
+/**
  * my_utils_str_remove_str_delim:
  * @string:
  * @fieldsep:
@@ -1775,6 +1800,9 @@ my_utils_uri_exists( const gchar *uri )
  *
  * Returns: the file content as a single, null-terminated, buffer of
  * UTF-8 chars, which should be g_free() by the caller.
+ *
+ * The function returns the unconverted buffer if the conversion cannot
+ * be made.
  */
 gchar *
 my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *errors, gchar **msgerr )
@@ -1853,10 +1881,8 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 
 	/* convert to UTF-8 if needed */
 	if( content && from_codeset && my_collate( from_codeset, "UTF-8" )){
-		temp = g_convert( content, -1, from_codeset, "UTF-8", NULL, NULL, &error );
-		g_free( content );
-		content = temp;
-		if( !content ){
+		temp = g_convert( content, -1, "UTF-8", from_codeset, NULL, NULL, &error );
+		if( !temp ){
 			if( errors ){
 				*errors += 1;
 			}
@@ -1868,6 +1894,9 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 				my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 				g_free( str );
 			}
+		} else {
+			g_free( content );
+			content = temp;
 		}
 	}
 
@@ -1896,15 +1925,19 @@ my_utils_uri_get_lines( const gchar *uri, const gchar *from_codeset, guint *erro
 	if( msgerr ){
 		*msgerr = NULL;
 	}
-	errors = 0;
-	content = my_utils_uri_get_content( uri, from_codeset, errors, msgerr );
 	if( errors ){
+		*errors = 0;
+	}
+
+	content = my_utils_uri_get_content( uri, from_codeset, errors, msgerr );
+
+	if( errors && *errors ){
 		g_free( content );
 		return( NULL );
 	}
 
 	/* convert buffer content to list of lines */
-	lines = split_by_line( content );
+	lines = content ? split_by_line( content ) : NULL;
 
 	g_free( content );
 

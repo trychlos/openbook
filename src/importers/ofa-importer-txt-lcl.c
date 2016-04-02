@@ -26,12 +26,7 @@
 #include <config.h>
 #endif
 
-#include <gio/gio.h>
 #include <glib/gi18n.h>
-#include <math.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 #include "my/my-date.h"
 #include "my/my-double.h"
@@ -53,24 +48,45 @@ typedef struct {
 }
 	ofaImporterTxtLclPrivate;
 
+typedef struct _sParser                   sParser;
+
 #define IMPORTER_CANON_NAME              "LCL tabulated-BAT importer"
 #define IMPORTER_VERSION                  PACKAGE_VERSION
 
-static void         iident_iface_init( myIIdentInterface *iface );
-static gchar       *iident_get_canon_name( const myIIdent *instance, void *user_data );
-static gchar       *iident_get_version( const myIIdent *instance, void *user_data );
-static void         iimporter_iface_init( ofaIImporterInterface *iface );
-static const GList *iimporter_get_accepted_contents( const ofaIImporter *instance );
-static gboolean     iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
-static gboolean     is_willing_to_parse( const ofaImporterTxtLcl *instance, const gchar *uri )
-static guint        iimporter_import( ofaIImporter *instance, ofsImporterParms *parms );
-static guint        do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms );
-static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
-static gboolean     lcl_tabulated_text_v1_check( ofaImporterTxtLcl *importer_txt_lcl );
-static ofsBat      *lcl_tabulated_text_v1_import( ofaImporterTxtLcl *importer_txt_lcl );
-static const gchar *lcl_get_ref_paiement( const gchar *str );
-static gchar       *lcl_concatenate_labels( gchar ***iter );
-static gdouble      get_double( const gchar *str );
+static GList *st_accepted_contents      = NULL;
+
+typedef struct {
+	const gchar *bat_label;
+	const gchar *ofa_label;
+}
+	lclPaiement;
+
+static const lclPaiement st_lcl_paiements[] = {
+		{ "Carte",       "CB" },
+		{ "Virement",    "Vir" },
+		{ "Prélèvement", "Prel" },
+		{ "Chèque",      "Ch" },
+		{ "TIP",         "TIP" },
+		{ 0 }
+};
+
+static void             iident_iface_init( myIIdentInterface *iface );
+static gchar           *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar           *iident_get_version( const myIIdent *instance, void *user_data );
+static void             iimporter_iface_init( ofaIImporterInterface *iface );
+static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance );
+static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
+static gboolean         is_willing_to_parse( const ofaImporterTxtLcl *instance, const gchar *uri );
+static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
+static GSList          *do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms, gchar **msgerr );
+static gboolean         lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, const ofaStreamFormat *format, const GSList *lines );
+static GSList          *lcl_tabulated_text_v1_parse( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *lines );
+static GSList          *parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *fields );
+static GSList          *parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *fields );
+static sParser         *get_willing_to_parser( const ofaImporterTxtLcl *self, const ofaStreamFormat *format, const GSList *lines );
+static ofaStreamFormat *get_default_stream_format( const ofaImporterTxtLcl *self );
+static GSList          *split_by_field( const ofaImporterTxtLcl *self, const gchar *line, const ofaStreamFormat *format );
+static const gchar     *get_ref_paiement( const gchar *str );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterTxtLcl, ofa_importer_txt_lcl, OFA_TYPE_IMPORTER_TXT, 0,
 		G_ADD_PRIVATE( ofaImporterTxtLcl )
@@ -81,16 +97,15 @@ G_DEFINE_TYPE_EXTENDED( ofaImporterTxtLcl, ofa_importer_txt_lcl, OFA_TYPE_IMPORT
  * If several versions happen to be managed, then should be set first
  * the most recent.
  */
-typedef struct {
+struct _sParser {
 	const gchar *label;
 	guint        version;
-	gboolean   (*fnTest)  ( ofaImporterTxtLcl *, const ofaStreamFormat *, GSList * );
-	ofsBat *   (*fnImport)( ofaImporterTxtLcl *, ofsImporterParms *, GSList * );
-}
-	ImportFormat;
+	gboolean   (*fnTest) ( const ofaImporterTxtLcl *, const sParser *, const ofaStreamFormat *, const GSList * );
+	GSList *   (*fnParse)( ofaImporterTxtLcl *, const sParser *, ofsImporterParms *, GSList * );
+};
 
-static ImportFormat st_import_formats[] = {
-		{ N_( "LCL .xls (tabulated text) 2014" ), 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_import },
+static sParser st_parsers[] = {
+		{ N_( "LCL .xls (tabulated text) 2014" ), 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_parse },
 		{ 0 }
 };
 
@@ -195,13 +210,17 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 
 	iface->get_accepted_contents = iimporter_get_accepted_contents;
 	iface->is_willing_to = iimporter_is_willing_to;
-	iface->import = iimporter_import;
+	iface->parse = iimporter_parse;
 }
 
 static const GList *
 iimporter_get_accepted_contents( const ofaIImporter *instance )
 {
-	return( ofa_importer_txt_get_accepted_contents( OFA_IMPORTER_TXT( instance )));
+	if( !st_accepted_contents ){
+		st_accepted_contents = g_list_prepend( NULL, "application/vnd.ms-excel" );
+	}
+
+	return( st_accepted_contents );
 }
 
 static gboolean
@@ -209,7 +228,7 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
 {
 	gboolean ok;
 
-	ok = ofa_importer_txt_is_willing_to( OFA_IMPORTER_TXT( instance ), uri, type ) &&
+	ok = ofa_importer_txt_is_willing_to( OFA_IMPORTER_TXT( instance ), uri, iimporter_get_accepted_contents( instance )) &&
 			type == OFO_TYPE_BAT &&
 			is_willing_to_parse( OFA_IMPORTER_TXT_LCL( instance ), uri );
 
@@ -227,216 +246,308 @@ is_willing_to_parse( const ofaImporterTxtLcl *self, const gchar *uri )
 {
 	ofaStreamFormat *format;
 	GSList *lines;
-	gint i;
-	gboolean ok;
+	sParser *parser;
 
-	ok = FALSE;
-
-	format = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
-	ofa_stream_format_set( format,
-			TRUE,  "UTF-8",					/* charmap */
-			TRUE,  MY_DATE_DMYY,			/* date format */
-			FALSE, '\0',					/* thousand sep */
-			TRUE,  ',',						/* decimal sep */
-			FALSE, '\t',					/* field sep */
-			FALSE, '\0',					/* string delim */
-			FALSE, 0 );						/* headers */
-
+	parser = NULL;
+	format = get_default_stream_format( self );
 	lines = my_utils_uri_get_lines( uri, ofa_stream_format_get_charmap( format ), NULL, NULL );
 
 	if( lines ){
-		for( i=0 ; st_import_formats[i].label ; ++i ){
-			if( st_import_formats[i].fnTest( self, format, lines )){
-				ok = TRUE;
-				break;
-			}
-		}
+		parser = get_willing_to_parser( self, format, lines );
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 	}
 
 	g_object_unref( format );
 
-	return( ok );
+	return( parser != NULL );
 }
 
-static guint
-iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
+static GSList *
+iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr )
 {
-	g_return_val_if_fail( parms->hub && OFA_IS_HUB( parms->hub ), 1 );
-	g_return_val_if_fail( my_strlen( parms->uri ), 1 );
-	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), 1 );
-	g_return_val_if_fail( ofa_stream_format_get_has_field( parms->format ), 1 );
+	g_return_val_if_fail( parms->hub && OFA_IS_HUB( parms->hub ), NULL );
+	g_return_val_if_fail( my_strlen( parms->uri ), NULL );
+	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), NULL );
+	g_return_val_if_fail( ofa_stream_format_get_has_field( parms->format ), NULL );
 
-	return( do_parse( OFA_IMPORTER_TXT_LCL( instance ), parms ));
+	return( do_parse( OFA_IMPORTER_TXT_LCL( instance ), parms, msgerr ));
 }
 
-static guint
-do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms )
+static GSList *
+do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms, gchar **msgerr )
 {
-	GSList *lines;
-	gchar *msgerr;
-	gint i, idx, errors;
+	GSList *lines, *out_by_fields;
+	sParser *parser;
 
-	errors = 0;
-	msgerr = NULL;
-
-	lines = my_utils_uri_get_lines( parms->uri, ofa_stream_format_get_charmap( parms->format ), &errors, &msgerr );
 	if( msgerr ){
-		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, msgerr );
-		}
-		g_free( msgerr );
-		if( lines ){
-			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
-		}
-		return( errors );
+		*msgerr = NULL;
+	}
+
+	out_by_fields = NULL;
+	lines = my_utils_uri_get_lines( parms->uri, ofa_stream_format_get_charmap( parms->format ), NULL, msgerr );
+
+	if( *msgerr ){
+		return( NULL );
 	}
 
 	if( lines ){
-		idx = -1;
-		for( i=0 ; st_import_formats[i].label ; ++i ){
-			if( st_import_formats[i].fnTest( self, parms->format, lines )){
-				idx = i;
-				break;
-			}
-		}
-		if( idx >= 0 ){
-			errors = st_import_formats[i].fnImport( self, parms, lines )
+		parser = get_willing_to_parser( self, parms->format, lines );
+		if( parser ){
+			out_by_fields = parser->fnParse( self, parser, parms, lines );
 		}
 		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 	}
 
-	return( errors );
+	return( out_by_fields );
 }
 
+/*
+ * only interpret the first line
+ *  07/11/2014	-34,0	Virement		PRLV SEPA Free Telecom
+ */
 static gboolean
-lcl_tabulated_text_v1_check( ofaImporterTxtLcl *importer_txt_lcl )
+lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, const ofaStreamFormat *format, const GSList *lines )
 {
-	ofaImporterTxtLclPrivate *priv;
-	gchar **tokens, **iter;
+	GSList *fields, *it;
+	const gchar *cstr;
 	GDate date;
+	gdouble amount;
 
-	priv = importer_txt_lcl->priv;
-	tokens = g_strsplit( priv->lines->data, "\t", -1 );
 	/* only interpret first line */
+	fields = split_by_field( self, lines->data, format );
+
 	/* first field = value date */
-	iter = tokens;
-	if( !scan_date_dmyy( &date, *iter )){
+	it = fields ? fields : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	my_date_set_from_str( &date, cstr, ofa_stream_format_get_date_format( format ));
+	if( !my_date_is_valid( &date )){
 		return( FALSE );
 	}
-	iter += 1;
-	if( !get_double( *iter )){
+	/* second field is the amount */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	amount = my_double_set_from_str( cstr,
+			ofa_stream_format_get_thousand_sep( format ), ofa_stream_format_get_decimal_sep( format ));
+	if( !amount ){
 		return( FALSE );
 	}
 	/* other fields may be empty */
 
-	priv->count = g_slist_length( priv->lines )-1;
-	g_strfreev( tokens );
+	g_slist_free_full( fields, ( GDestroyNotify ) g_free );
 
 	return( TRUE );
 }
 
-static ofsBat  *
-lcl_tabulated_text_v1_import( ofaImporterTxtLcl *importer_txt_lcl )
+/*
+ * solde is in the last line
+ */
+static GSList  *
+lcl_tabulated_text_v1_parse( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *lines )
 {
-	ofaImporterTxtLclPrivate *priv;
-	GSList *line;
-	ofsBat *sbat;
-	ofsBatDetail *sdet;
-	gchar **tokens, **iter;
-	gint count, nb;
-	gchar *msg, *sbegin, *send;
+	GSList *output;
+	GSList *rev_lines, *it, *fields;
 
-	priv = importer_txt_lcl->priv;
-	line = priv->lines;
-	sbat = g_new0( ofsBat, 1 );
-	nb = g_slist_length( priv->lines );
-	count = 0;
-	priv->errors = 0;
+	output = NULL;
 
-	while( TRUE ){
-		if( !line || !my_strlen( line->data )){
-			break;
-		}
-		tokens = g_strsplit( line->data, "\t", -1 );
-		iter = tokens;
-		count += 1;
+	rev_lines = g_slist_reverse( lines );
+	fields = split_by_field( self, ( const gchar * ) rev_lines->data, parms->format );
+	output = g_slist_concat( output, parse_solde_v1( self, parser, parms, fields ));
+	g_slist_free_full( fields, ( GDestroyNotify ) g_free );
 
-		/* detail line */
-		if( count < nb ){
-			sdet = g_new0( ofsBatDetail, 1 );
-			ofa_iimportable_increment_progress( OFA_IIMPORTABLE( importer_txt_lcl ), IMPORTABLE_PHASE_IMPORT, 1 );
-
-			scan_date_dmyy( &sdet->deffect, *iter );
-
-			iter += 1;
-			sdet->amount = get_double( *iter );
-
-			iter += 1;
-			if( my_strlen( *iter )){
-				sdet->ref = g_strdup( lcl_get_ref_paiement( *iter ));
-			}
-
-			iter += 1;
-			sdet->label = lcl_concatenate_labels( &iter );
-
-			/* do not interpret
-			 * unknown field nor category */
-			sbat->details = g_list_prepend( sbat->details, sdet );
-
-		/* last line is the file footer */
-		} else {
-			scan_date_dmyy( &sbat->end, *iter );
-
-			iter +=1 ;
-			sbat->end_solde = get_double( *iter );
-			sbat->end_solde_set = TRUE;
-
-			iter += 1;
-			/* no ref */
-
-			iter += 1;
-			sbat->rib = lcl_concatenate_labels( &iter );
-
-			if( ofo_bat_exists( priv->hub, sbat->rib, &sbat->begin, &sbat->end )){
-				sbegin = my_date_to_str( &sbat->begin, ofa_prefs_date_display());
-				send = my_date_to_str( &sbat->end, ofa_prefs_date_display());
-				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
-						sbat->rib, sbegin, send );
-				ofa_iimportable_set_message( OFA_IIMPORTABLE( importer_txt_lcl ), nb, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				g_free( sbegin );
-				g_free( send );
-				priv->errors += 1;
-				ofs_bat_free( sbat );
-				sbat = NULL;
-			}
-		}
-
-		g_strfreev( tokens );
-		line = line->next;
+	rev_lines = rev_lines->next;
+	for( it=rev_lines ; it ; it=it->next ){
+		fields = split_by_field( self, ( const gchar * ) it->data, parms->format );
+		output = g_slist_concat( output, parse_detail_v1( self, parser, parms, fields ));
+		g_slist_free_full( fields, ( GDestroyNotify ) g_free );
 	}
 
-	return( sbat );
+	return( output );
 }
 
-typedef struct {
-	const gchar *bat_label;
-	const gchar *ofa_label;
-}
-	lclPaiement;
+static GSList  *
+parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *fields )
+{
+	GSList *output, *it;
+	const gchar *cstr;
+	GDate end_date;
+	gdouble end_solde;
+	gchar *rib, *sdate, *ssolde;
 
-static const lclPaiement st_lcl_paiements[] = {
-		{ "Carte",       "CB" },
-		{ "Virement",    "Vir" },
-		{ "Prélèvement", "Prel" },
-		{ "Chèque",      "Ch" },
-		{ "TIP",         "TIP" },
-		{ 0 }
-};
+	output = NULL;
+
+	/* ending date */
+	it = fields ? fields : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	my_date_set_from_str( &end_date, cstr, ofa_stream_format_get_date_format( parms->format ));
+	sdate = my_date_to_str( &end_date, MY_DATE_SQL );
+
+	/* ending solde */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	end_solde = my_double_set_from_str( cstr,
+						ofa_stream_format_get_thousand_sep( parms->format ),
+						ofa_stream_format_get_decimal_sep( parms->format ));
+	ssolde = my_double_to_sql( end_solde );
+
+	/* no reference */
+	it = it ? it->next : NULL;
+	it = it ? it->next : NULL;
+
+	/* rib */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	rib = g_strstrip( g_strdup( cstr ));;
+
+	output = g_slist_prepend( output, g_strdup( "1" ));
+	output = g_slist_prepend( output, g_strdup( parms->uri ));
+	output = g_slist_prepend( output, g_strdup( parser->label ));
+	output = g_slist_prepend( output, rib );
+	output = g_slist_prepend( output, g_strdup( "" ));
+	output = g_slist_prepend( output, g_strdup( "" ));
+	output = g_slist_prepend( output, g_strdup( "" ));
+	output = g_slist_prepend( output, g_strdup( "N" ));
+	output = g_slist_prepend( output, sdate );
+	output = g_slist_prepend( output, ssolde );
+	output = g_slist_prepend( output, g_strdup( "Y" ));
+
+	return( output );
+}
+
+static GSList  *
+parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *fields )
+{
+	GSList *output, *it;
+	const gchar *cstr;
+	GDate date;
+	gdouble amount;
+	gchar *sdate, *samount, *sref, *tmp, *slabel;
+
+	output = NULL;
+
+	/* effect date */
+	it = fields ? fields : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	my_date_set_from_str( &date, cstr, ofa_stream_format_get_date_format( parms->format ));
+	sdate = my_date_to_str( &date, MY_DATE_SQL );
+
+	/* amount */
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	amount = my_double_set_from_str( cstr,
+						ofa_stream_format_get_thousand_sep( parms->format ),
+						ofa_stream_format_get_decimal_sep( parms->format ));
+	samount = my_double_to_sql( amount );
+
+	/* reference */
+	sref = g_strdup( "" );
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( sref );
+		sref = g_strdup( get_ref_paiement( cstr ));
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		tmp = g_strdup_printf( "%s %s", sref, cstr );
+		g_free( sref );
+		sref = tmp;
+	}
+
+	/* label */
+	slabel = g_strdup( "" );
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( slabel );
+		slabel = g_strstrip( g_strdup( cstr ));
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		tmp = g_strdup_printf( "%s %s", slabel, cstr );
+		g_free( slabel );
+		slabel = tmp;
+	}
+
+	output = g_slist_prepend( output, g_strdup( "2" ));
+	output = g_slist_prepend( output, g_strdup( "" ));
+	output = g_slist_prepend( output, sdate );
+	output = g_slist_prepend( output, sref );
+	output = g_slist_prepend( output, slabel );
+	output = g_slist_prepend( output, samount );
+	output = g_slist_prepend( output, g_strdup( "" ));
+
+	return( output );
+}
+
+static sParser *
+get_willing_to_parser( const ofaImporterTxtLcl *self, const ofaStreamFormat *format, const GSList *lines )
+{
+	sParser *parser;
+	gint i;
+
+	parser = NULL;
+
+	for( i=0 ; st_parsers[i].label ; ++i ){
+		if( st_parsers[i].fnTest( self, &st_parsers[i], format, lines )){
+			parser = &st_parsers[i];
+			break;
+		}
+	}
+
+	return( parser );
+}
+
+static ofaStreamFormat *
+get_default_stream_format( const ofaImporterTxtLcl *self )
+{
+	ofaStreamFormat *format;
+
+	format = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+
+	ofa_stream_format_set( format,
+			TRUE,  "ISO-8859-15",			/* Western Europe */
+			TRUE,  MY_DATE_DMYY,			/* date format dd/mm/yyyy */
+			FALSE, '\0',					/* no thousand sep */
+			TRUE,  ',',						/* comma decimal sep */
+			TRUE,  '\t',					/* tab field sep */
+			FALSE, '\0',					/* no string delim */
+			FALSE, 0 );						/* no header */
+
+	return( format );
+}
+
+/*
+ * output new GSList with newly allocated strings
+ * free with g_slist_free_full( list, ( GDestroyNotify ) g_free )
+ */
+static GSList *
+split_by_field( const ofaImporterTxtLcl *self, const gchar *line, const ofaStreamFormat *format )
+{
+	GSList *out;
+	gchar **tokens, **iter;
+	gchar *str;
+
+	str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( format ));
+	tokens = g_strsplit( line, str, -1 );
+	g_free( str );
+
+	out = NULL;
+	iter = tokens;
+
+	while( *iter ){
+		out = g_slist_prepend( out, g_strstrip( g_strdup( *iter )));
+		iter++;
+	}
+
+	g_strfreev( tokens );
+
+	return( g_slist_reverse( out ));
+}
 
 static const gchar *
-lcl_get_ref_paiement( const gchar *str )
+get_ref_paiement( const gchar *str )
 {
 	gint i;
 
@@ -446,97 +557,8 @@ lcl_get_ref_paiement( const gchar *str )
 				return( st_lcl_paiements[i].ofa_label );
 			}
 		}
+		return( str );
 	}
 
 	return( NULL );
-}
-
-/*
- * return a newly allocated stripped string
- */
-static gchar *
-lcl_concatenate_labels( gchar ***iter )
-{
-	GString *lab1;
-	gchar *lab2;
-
-	lab1 = g_string_new( "" );
-	if( **iter ){
-		lab2 = g_strdup( **iter );
-		g_strstrip( lab2 );
-		if( my_strlen( lab2 )){
-			if( my_strlen( lab1->str )){
-				lab1 = g_string_append( lab1, " " );
-			}
-			lab1 = g_string_append( lab1, lab2 );
-		}
-		g_free( lab2 );
-
-		*iter += 1;
-		if( **iter ){
-			lab2 = g_strdup( **iter );
-			g_strstrip( lab2 );
-			if( my_strlen( lab2 )){
-				if( my_strlen( lab1->str )){
-					lab1 = g_string_append( lab1, " " );
-				}
-				lab1 = g_string_append( lab1, lab2 );
-			}
-			g_free( lab2 );
-
-			*iter += 1;
-			if( my_strlen( **iter )){
-				lab2 = g_strdup( **iter );
-				g_strstrip( lab2 );
-				if( my_strlen( lab2 )){
-					if( my_strlen( lab1->str )){
-						lab1 = g_string_append( lab1, " " );
-					}
-					lab1 = g_string_append( lab1, lab2 );
-				}
-				g_free( lab2 );
-			}
-		}
-	}
-
-	g_strstrip( lab1->str );
-	return( g_string_free( lab1, FALSE ));
-}
-
-/*
- * parse a 'dd/mm/yyyy' date
- */
-static GDate *
-scan_date_dmyy( GDate *date, const gchar *str )
-{
-	gint d, m, y;
-
-	my_date_clear( date );
-	sscanf( str, "%d/%d/%d", &d, &m, &y );
-	if( d <= 0 || m <= 0 || y < 0 || d > 31 || m > 12 ){
-		return( NULL );
-	}
-	g_date_set_dmy( date, d, m, y );
-	if( !my_date_is_valid( date )){
-		return( NULL );
-	}
-
-	return( date );
-}
-
-/*
- * amounts are expected to use comma as decimal separator
- *  and no thousand separator
- */
-static gdouble
-get_double( const gchar *str )
-{
-	gchar *dotsep;
-	gdouble amount;
-
-	dotsep = my_utils_str_replace( str, ",", "." );
-	amount = my_double_set_from_sql( dotsep );
-	g_free( dotsep );
-
-	return( amount );
 }

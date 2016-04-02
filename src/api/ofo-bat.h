@@ -33,6 +33,43 @@
  *
  * This file defines the #ofoBat class public API: these are the tables
  * which contain the imported bank account transaction lines.
+ *
+ * Import
+ * ------
+ * Due to the particular nature of this class, import is driven one BAT
+ * at a time, that is each import operation only concerns one BAT file.
+ *
+ * As other classes, ofoBat class expects to be provided with a GSList
+ * of lines, each line being itself a GSList of fields. These lists are
+ * provided by ofaIImporter implementations.
+ *
+ * Two type of lines must be provided, in this order:
+ *
+ * Bat:
+ * - line type = 1
+ * - source uri
+ * - importer label
+ * - rib
+ * - currency
+ * - beginning date as yyyy-mm-dd
+ * - beginning solde (no thousand sep, dot decimal sep)
+ * - beginning solde set (Y|N)
+ * - ending date as yyyy-mm-dd
+ * - ending solde (no thousand sep, dot decimal sep)
+ * - ending solde set (Y|N)
+ *
+ * BatLine:
+ * - line type = 2
+ * - operation date as yyyy-mm-dd
+ * - effect date as yyyy-mm-dd
+ * - reference
+ * - label
+ * - amount (no thousand sep, dot decimal sep)
+ * - currency
+ *
+ * Datas are expected to be provided only if present in the source
+ * (though, obviously, at least a date, a label and an amount should
+ *  be present in the detail lines).
  */
 
 #include "api/ofa-box.h"

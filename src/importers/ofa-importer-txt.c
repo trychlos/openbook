@@ -26,6 +26,10 @@
 #include <config.h>
 #endif
 
+#include <gio/gio.h>
+
+#include "my/my-utils.h"
+
 #include "importers/ofa-importer-txt.h"
 
 /* private instance data
@@ -34,15 +38,6 @@ typedef struct {
 	gboolean dispose_has_run;
 }
 	ofaImporterTxtPrivate;
-
-static GList *st_accepted_contents      = NULL;
-
-static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
-static gboolean     lcl_tabulated_text_v1_check( ofaImporterTxt *importer_txt );
-static ofsBat      *lcl_tabulated_text_v1_import( ofaImporterTxt *importer_txt );
-static const gchar *lcl_get_ref_paiement( const gchar *str );
-static gchar       *lcl_concatenate_labels( gchar ***iter );
-static gdouble      get_double( const gchar *str );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterTxt, ofa_importer_txt, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaImporterTxt ))
@@ -111,34 +106,16 @@ ofa_importer_txt_class_init( ofaImporterTxtClass *klass )
 }
 
 /**
- * ofa_importer_txt_get_accepted_contents:
- * @instance: a #ofaImporterTxt instance.
- *
- * Returns: the list of mimetypes accepted by this class.
- */
-const GList *
-ofa_importer_txt_get_accepted_contents( const ofaImporterTxt *instance )
-{
-	if( !st_accepted_contents ){
-		st_accepted_contents = g_list_prepend( NULL, "application/vnd.ms-excel" );
-	}
-
-	return( st_accepted_contents );
-}
-
-/**
  * ofa_importer_txt_is_willing_to:
  * @instance: a #ofaImporterTxt instance.
  * @uri: the uri to the filename to be imported.
- * @type: the expected GType.
+ * @accepted_contents: the #GList of the accepted mimetypes.
  *
- * Returns: %TRUE if this @instance is willing to import the @uri.
- *
- * From this base class point of view, it only involves a content
- * check.
+ * Returns: %TRUE if the guessed content of the @uri is listed in the
+ * @accepted_contents.
  */
 gboolean
-ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance, const gchar *uri, GType type )
+ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance, const gchar *uri, const GList *accepted_contents )
 {
 	gchar *filename, *content;
 	gboolean ok;
@@ -146,242 +123,10 @@ ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance, const gchar *uri
 	filename = g_filename_from_uri( uri, NULL, NULL );
 	content = g_content_type_guess( filename, NULL, 0, NULL );
 
-	ok = ( my_collate( content, "application/vnd.ms-excel" ) == 0 );
+	ok = my_utils_str_in_list( content, accepted_contents );
 
 	g_free( content );
 	g_free( filename );
 
 	return( ok );
-}
-
-static gboolean
-lcl_tabulated_text_v1_check( ofaImporterTxt *importer_txt )
-{
-	ofaImporterTxtPrivate *priv;
-	gchar **tokens, **iter;
-	GDate date;
-
-	priv = importer_txt->priv;
-	tokens = g_strsplit( priv->lines->data, "\t", -1 );
-	/* only interpret first line */
-	/* first field = value date */
-	iter = tokens;
-	if( !scan_date_dmyy( &date, *iter )){
-		return( FALSE );
-	}
-	iter += 1;
-	if( !get_double( *iter )){
-		return( FALSE );
-	}
-	/* other fields may be empty */
-
-	priv->count = g_slist_length( priv->lines )-1;
-	g_strfreev( tokens );
-
-	return( TRUE );
-}
-
-static ofsBat  *
-lcl_tabulated_text_v1_import( ofaImporterTxt *importer_txt )
-{
-	ofaImporterTxtPrivate *priv;
-	GSList *line;
-	ofsBat *sbat;
-	ofsBatDetail *sdet;
-	gchar **tokens, **iter;
-	gint count, nb;
-	gchar *msg, *sbegin, *send;
-
-	priv = importer_txt->priv;
-	line = priv->lines;
-	sbat = g_new0( ofsBat, 1 );
-	nb = g_slist_length( priv->lines );
-	count = 0;
-	priv->errors = 0;
-
-	while( TRUE ){
-		if( !line || !my_strlen( line->data )){
-			break;
-		}
-		tokens = g_strsplit( line->data, "\t", -1 );
-		iter = tokens;
-		count += 1;
-
-		/* detail line */
-		if( count < nb ){
-			sdet = g_new0( ofsBatDetail, 1 );
-			ofa_iimportable_increment_progress( OFA_IIMPORTABLE( importer_txt ), IMPORTABLE_PHASE_IMPORT, 1 );
-
-			scan_date_dmyy( &sdet->deffect, *iter );
-
-			iter += 1;
-			sdet->amount = get_double( *iter );
-
-			iter += 1;
-			if( my_strlen( *iter )){
-				sdet->ref = g_strdup( lcl_get_ref_paiement( *iter ));
-			}
-
-			iter += 1;
-			sdet->label = lcl_concatenate_labels( &iter );
-
-			/* do not interpret
-			 * unknown field nor category */
-			sbat->details = g_list_prepend( sbat->details, sdet );
-
-		/* last line is the file footer */
-		} else {
-			scan_date_dmyy( &sbat->end, *iter );
-
-			iter +=1 ;
-			sbat->end_solde = get_double( *iter );
-			sbat->end_solde_set = TRUE;
-
-			iter += 1;
-			/* no ref */
-
-			iter += 1;
-			sbat->rib = lcl_concatenate_labels( &iter );
-
-			if( ofo_bat_exists( priv->hub, sbat->rib, &sbat->begin, &sbat->end )){
-				sbegin = my_date_to_str( &sbat->begin, ofa_prefs_date_display());
-				send = my_date_to_str( &sbat->end, ofa_prefs_date_display());
-				msg = g_strdup_printf( _( "Already imported BAT file: RIB=%s, begin=%s, end=%s" ),
-						sbat->rib, sbegin, send );
-				ofa_iimportable_set_message( OFA_IIMPORTABLE( importer_txt ), nb, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				g_free( sbegin );
-				g_free( send );
-				priv->errors += 1;
-				ofs_bat_free( sbat );
-				sbat = NULL;
-			}
-		}
-
-		g_strfreev( tokens );
-		line = line->next;
-	}
-
-	return( sbat );
-}
-
-typedef struct {
-	const gchar *bat_label;
-	const gchar *ofa_label;
-}
-	lclPaiement;
-
-static const lclPaiement st_lcl_paiements[] = {
-		{ "Carte",       "CB" },
-		{ "Virement",    "Vir" },
-		{ "Prélèvement", "Prel" },
-		{ "Chèque",      "Ch" },
-		{ "TIP",         "TIP" },
-		{ 0 }
-};
-
-static const gchar *
-lcl_get_ref_paiement( const gchar *str )
-{
-	gint i;
-
-	if( my_strlen( str )){
-		for( i=0 ; st_lcl_paiements[i].bat_label ; ++ i ){
-			if( !g_utf8_collate( str, st_lcl_paiements[i].bat_label )){
-				return( st_lcl_paiements[i].ofa_label );
-			}
-		}
-	}
-
-	return( NULL );
-}
-
-/*
- * return a newly allocated stripped string
- */
-static gchar *
-lcl_concatenate_labels( gchar ***iter )
-{
-	GString *lab1;
-	gchar *lab2;
-
-	lab1 = g_string_new( "" );
-	if( **iter ){
-		lab2 = g_strdup( **iter );
-		g_strstrip( lab2 );
-		if( my_strlen( lab2 )){
-			if( my_strlen( lab1->str )){
-				lab1 = g_string_append( lab1, " " );
-			}
-			lab1 = g_string_append( lab1, lab2 );
-		}
-		g_free( lab2 );
-
-		*iter += 1;
-		if( **iter ){
-			lab2 = g_strdup( **iter );
-			g_strstrip( lab2 );
-			if( my_strlen( lab2 )){
-				if( my_strlen( lab1->str )){
-					lab1 = g_string_append( lab1, " " );
-				}
-				lab1 = g_string_append( lab1, lab2 );
-			}
-			g_free( lab2 );
-
-			*iter += 1;
-			if( my_strlen( **iter )){
-				lab2 = g_strdup( **iter );
-				g_strstrip( lab2 );
-				if( my_strlen( lab2 )){
-					if( my_strlen( lab1->str )){
-						lab1 = g_string_append( lab1, " " );
-					}
-					lab1 = g_string_append( lab1, lab2 );
-				}
-				g_free( lab2 );
-			}
-		}
-	}
-
-	g_strstrip( lab1->str );
-	return( g_string_free( lab1, FALSE ));
-}
-
-/*
- * parse a 'dd/mm/yyyy' date
- */
-static GDate *
-scan_date_dmyy( GDate *date, const gchar *str )
-{
-	gint d, m, y;
-
-	my_date_clear( date );
-	sscanf( str, "%d/%d/%d", &d, &m, &y );
-	if( d <= 0 || m <= 0 || y < 0 || d > 31 || m > 12 ){
-		return( NULL );
-	}
-	g_date_set_dmy( date, d, m, y );
-	if( !my_date_is_valid( date )){
-		return( NULL );
-	}
-
-	return( date );
-}
-
-/*
- * amounts are expected to use comma as decimal separator
- *  and no thousand separator
- */
-static gdouble
-get_double( const gchar *str )
-{
-	gchar *dotsep;
-	gdouble amount;
-
-	dotsep = my_utils_str_replace( str, ",", "." );
-	amount = my_double_set_from_sql( dotsep );
-	g_free( dotsep );
-
-	return( amount );
 }

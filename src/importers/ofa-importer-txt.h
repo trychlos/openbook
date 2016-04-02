@@ -34,7 +34,7 @@
  * (which may also be known as application/vnd.ms-excel).
  */
 
-#include "api/ofa-stream-format.h"
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
@@ -57,13 +57,11 @@ typedef struct {
 }
 	ofaImporterTxtClass;
 
-GType        ofa_importer_txt_get_type             ( void );
+GType    ofa_importer_txt_get_type     ( void );
 
-const GList *ofa_importer_txt_get_accepted_contents( const ofaImporterTxt *instance );
-
-gboolean     ofa_importer_txt_is_willing_to        ( const ofaImporterTxt *instance,
-															const gchar *uri,
-															GType type );
+gboolean ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance,
+												const gchar *uri,
+												const GList *accepted_contents );
 
 G_END_DECLS
 

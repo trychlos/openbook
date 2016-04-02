@@ -412,6 +412,9 @@
                 of an error
 
 1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
+                which may or may not be changed
+
+1063
 
 -----------------------------------------------------------------------
  DONE

@@ -31,6 +31,7 @@
 #include "api/ofa-extension.h"
 
 #include "importers/ofa-importer-csv.h"
+#include "importers/ofa-importer-txt-lcl.h"
 
 /*
  * The part below defines and implements the GTypeModule-derived class
@@ -177,7 +178,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
  * Each of these GType types must be addressed in #ofa_extension_list_types().
  * Only the GTypeModule has to be registered from #ofa_extension_startup().
  */
-#define TYPES_COUNT	 2
+#define TYPES_COUNT	 3
 
 /*
  * ofa_extension_startup:
@@ -212,6 +213,7 @@ ofa_extension_list_types( const GType **types )
 
 	types_list[i++] = OFA_TYPE_IMPORTERS_ID;
 	types_list[i++] = OFA_TYPE_IMPORTER_CSV;
+	types_list[i++] = OFA_TYPE_IMPORTER_TXT_LCL;
 
 	g_return_val_if_fail( i == TYPES_COUNT, 0 );
 	types_list[i] = 0;
