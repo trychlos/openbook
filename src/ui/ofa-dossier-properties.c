@@ -617,7 +617,7 @@ init_preferences_page( ofaDossierProperties *self )
 	priv->prefs_bin = ofa_open_prefs_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs_bin ));
 
-	priv->prefs = ofa_hub_get_dossier_prefs( hub );
+	priv->prefs = ofa_hub_dossier_get_prefs( hub );
 
 	notes = ofa_dossier_prefs_get_open_notes( priv->prefs );
 	nonempty = ofa_dossier_prefs_get_nonempty( priv->prefs );

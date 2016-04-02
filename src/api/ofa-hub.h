@@ -92,44 +92,44 @@ typedef struct {
 #define SIGNAL_HUB_STATUS_CHANGE        "hub-status-change"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
 
-GType                   ofa_hub_get_type                ( void ) G_GNUC_CONST;
+GType                   ofa_hub_get_type                  ( void ) G_GNUC_CONST;
 
-ofaHub                 *ofa_hub_new                     ( void );
+ofaHub                 *ofa_hub_new                       ( void );
 
-ofaExtenderCollection  *ofa_hub_get_extender_collection ( const ofaHub *hub );
+ofaExtenderCollection  *ofa_hub_get_extender_collection   ( const ofaHub *hub );
 
-void                    ofa_hub_set_extender_collection ( ofaHub *hub,
+void                    ofa_hub_set_extender_collection   ( ofaHub *hub,
 																ofaExtenderCollection *collection );
 
-void                    ofa_hub_register_types          ( ofaHub *hub );
+void                    ofa_hub_register_types            ( ofaHub *hub );
 
-GList                  *ofa_hub_get_for_type            ( ofaHub *hub,
+GList                  *ofa_hub_get_for_type              ( ofaHub *hub,
 																GType type );
 
-ofaPortfolioCollection *ofa_hub_get_portfolio_collection( const ofaHub *hub );
+ofaPortfolioCollection *ofa_hub_get_portfolio_collection  ( const ofaHub *hub );
 
-void                    ofa_hub_set_portfolio_collection( ofaHub *hub,
+void                    ofa_hub_set_portfolio_collection  ( ofaHub *hub,
 																ofaPortfolioCollection *collection );
 
-gboolean                ofa_hub_dossier_open            ( ofaHub *hub,
+const ofaIDBConnect    *ofa_hub_get_connect               ( const ofaHub *hub );
+
+ofoDossier             *ofa_hub_get_dossier               ( const ofaHub *hub );
+
+gboolean                ofa_hub_dossier_open              ( ofaHub *hub,
 																ofaIDBConnect *connect,
 																GtkWindow *parent );
 
-void                    ofa_hub_dossier_close           ( ofaHub *hub );
+void                    ofa_hub_dossier_close             ( ofaHub *hub );
 
-const ofaIDBConnect    *ofa_hub_get_connect             ( const ofaHub *hub );
+ofaDossierPrefs        *ofa_hub_dossier_get_prefs         ( const ofaHub *hub );
 
-ofoDossier             *ofa_hub_get_dossier             ( const ofaHub *hub );
+void                    ofa_hub_dossier_remediate_settings( const ofaHub *hub );
 
-ofaDossierPrefs        *ofa_hub_get_dossier_prefs       ( const ofaHub *hub );
-
-void                    ofa_hub_remediate_settings      ( const ofaHub *hub );
-
-ofaIImporter           *ofa_hub_get_willing_to          ( ofaHub *hub,
+ofaIImporter           *ofa_hub_get_willing_to            ( ofaHub *hub,
 																const gchar *uri,
 																GType type );
 
-void                    ofa_hub_disconnect_handlers     ( ofaHub *hub,
+void                    ofa_hub_disconnect_handlers       ( ofaHub *hub,
 																GList *handlers );
 
 G_END_DECLS

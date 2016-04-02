@@ -564,7 +564,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 		if( ofa_hub_dossier_open( hub, connect, GTK_WINDOW( self ))){
-			ofa_hub_remediate_settings( hub );
+			ofa_hub_dossier_remediate_settings( hub );
 
 			if( priv->b_properties ){
 				main_window = ofa_igetter_get_main_window( priv->getter );

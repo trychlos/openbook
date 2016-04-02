@@ -601,6 +601,52 @@ ofa_hub_set_portfolio_collection( ofaHub *hub, ofaPortfolioCollection *collectio
 	priv->portfolios = collection;
 }
 
+/*
+ * ofa_hub_get_connect:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofaIDBConnect connection object.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+const ofaIDBConnect *
+ofa_hub_get_connect( const ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->connect );
+}
+
+/*
+ * ofa_hub_get_dossier:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #ofoDossier object.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+ofoDossier *
+ofa_hub_get_dossier( const ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->dossier );
+}
+
 /**
  * ofa_hub_dossier_open:
  * @hub: this #ofaHub instance.
@@ -718,53 +764,7 @@ init_signaling_system( ofaHub *hub )
 }
 
 /*
- * ofa_hub_get_connect:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #ofaIDBConnect connection object.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-const ofaIDBConnect *
-ofa_hub_get_connect( const ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->connect );
-}
-
-/*
- * ofa_hub_get_dossier:
- * @hub: this #ofaHub instance.
- *
- * Returns: the #ofoDossier object.
- *
- * The returned reference is owned by the @hub object, and should
- * not be released by the caller.
- */
-ofoDossier *
-ofa_hub_get_dossier( const ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->dossier );
-}
-
-/*
- * ofa_hub_get_dossier_prefs:
+ * ofa_hub_dossier_get_prefs:
  * @hub: this #ofaHub instance.
  *
  * Returns: the #ofaDossierPrefs object.
@@ -773,7 +773,7 @@ ofa_hub_get_dossier( const ofaHub *hub )
  * not be released by the caller.
  */
 ofaDossierPrefs *
-ofa_hub_get_dossier_prefs( const ofaHub *hub )
+ofa_hub_dossier_get_prefs( const ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -787,7 +787,7 @@ ofa_hub_get_dossier_prefs( const ofaHub *hub )
 }
 
 /*
- * ofa_hub_remediate_settings:
+ * ofa_hub_dossier_remediate_settings:
  * @hub: this #ofaHub instance.
  *
  * Make sure, and update them if needed, that dossier settings datas
@@ -796,7 +796,7 @@ ofa_hub_get_dossier_prefs( const ofaHub *hub )
  * - begin and end dates of the exercice.
  */
 void
-ofa_hub_remediate_settings( const ofaHub *hub )
+ofa_hub_dossier_remediate_settings( const ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 

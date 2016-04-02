@@ -717,7 +717,7 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 
 	g_signal_emit_by_name( self, OFA_SIGNAL_DOSSIER_CHANGED, dossier );
 
-	prefs = ofa_hub_get_dossier_prefs( hub );
+	prefs = ofa_hub_dossier_get_prefs( hub );
 
 	/* display dossier notes ? */
 	if( ofa_prefs_dossier_open_notes() || ofa_dossier_prefs_get_open_notes( prefs )){
