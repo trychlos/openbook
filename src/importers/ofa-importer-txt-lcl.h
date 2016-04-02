@@ -33,6 +33,9 @@
  * LCL Import Bank Account Transaction (BAT) files in tabulated text
  * format.
  *
+ * #ofaImporterTxtLcl class is built so that it is able to parse several
+ * versions of the file.
+ *
  * As of 2014- 6- 1, lines are:
  02/03/2015	\t -150,0	\t Chèque		\t 9192244
  02/03/2015	\t -26,9	\t Carte		\t			\t CB  ASF              27/02/15	\t 0	\t Divers

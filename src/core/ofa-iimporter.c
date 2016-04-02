@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "my/my-iident.h"
 #include "my/my-utils.h"
 
@@ -40,6 +42,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType register_type( void );
 static void  interface_base_init( ofaIImporterInterface *klass );
 static void  interface_base_finalize( ofaIImporterInterface *klass );
+static void  free_fields( GSList *fields );
 
 /**
  * ofa_iimporter_get_type:
@@ -303,20 +306,65 @@ guint
 ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 {
 	static const gchar *thisfn = "ofa_iimporter_import";
+	GSList *lines;
+	guint error_count, headers_count;
+	gint count;
+	gchar *msgerr;
 
-	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), 0 );
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), 1 );
 
 	if( parms->progress ){
 		my_iprogress_start_work( parms->progress, instance, NULL );
 	}
 
-	if( OFA_IIMPORTER_GET_INTERFACE( instance )->import ){
-		return( OFA_IIMPORTER_GET_INTERFACE( instance )->import( instance, parms ));
+	lines = NULL;
+	msgerr = NULL;
+	error_count = 0;
+
+	/* first parse the input stream to a GSList of lines, each line data
+	 * being itself a GSList of fields
+	 */
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->parse ){
+		lines = OFA_IIMPORTER_GET_INTERFACE( instance )->parse( instance, parms, &msgerr );
+	} else {
+		g_info( "%s: ofaIImporter's %s implementation does not provide 'parse()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 
-	g_info( "%s: ofaIImporter's %s implementation does not provide 'import()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 0 );
+	/* then import the parsed datas
+	 */
+	if( msgerr ){
+		ofa_iimporter_progress_text( instance, parms, msgerr );
+		g_free( msgerr );
+		error_count += 1;
+
+	} else if( lines ){
+		parms->lines_count = g_slist_length( lines );
+		headers_count = ofa_stream_format_get_headers_count( parms->format );
+		count = parms->lines_count - headers_count;
+
+		if( count > 0 ){
+			error_count = ofa_iimportable_import( parms->type, instance, parms, g_slist_nth( lines, headers_count ));
+
+		} else if( count < 0 ){
+			error_count += 1;
+			msgerr = g_strdup_printf(
+							_( "Expected headers count=%u greater than count of lines=%u read from '%s' file" ),
+								headers_count, parms->lines_count, parms->uri );
+			ofa_iimporter_progress_text( instance, parms, msgerr );
+			g_free( msgerr );
+		}
+
+		g_slist_free_full( lines, ( GDestroyNotify ) free_fields );
+	}
+
+	return( error_count );
+}
+
+static void
+free_fields( GSList *fields )
+{
+	g_slist_free_full( fields, ( GDestroyNotify ) g_free );
 }
 
 /**

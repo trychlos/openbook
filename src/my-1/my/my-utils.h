@@ -146,6 +146,7 @@ gchar        *my_utils_filename_from_utf8             ( const gchar *filename );
 
 gboolean      my_utils_uri_exists                     ( const gchar *uri );
 gchar        *my_utils_uri_get_content                ( const gchar *uri, const gchar *from_codeset, guint *errors, gchar **msgerr );
+GSList       *my_utils_uri_get_lines                  ( const gchar *uri, const gchar *from_codeset, guint *errors, gchar **msgerr );
 gboolean      my_utils_uri_is_dir                     ( const gchar *uri );
 gboolean      my_utils_uri_is_readable_file           ( const gchar *uri );
 

@@ -101,6 +101,26 @@ typedef struct {
 
 	/**
 	 * import:
+	 * @importer: the #ofaIImporter instance.
+	 * @parms: the #ofsImporterParms import arguments.
+	 * @lines: the lines of the imported file, as a #GSList list of
+	 *  lines, where line->data is a #GSList of fields values.
+	 *
+	 * Import the dataset from the provided content.
+	 *
+	 * Return: the total count of errors.
+	 *
+	 * Since: version 1.
+	 *
+	 * This method is class-wide, and thus does not involve any
+	 * #ofaIImportable instance.
+	 */
+	guint     ( *import )              ( ofaIImporter *importer,
+												ofsImporterParms *parms,
+												GSList *lines );
+
+	/**
+	 * import:
 	 * @instance: the #ofaIImportable provider.
 	 * @lines: the lines of the imported file, as a #GSList list of
 	 *  lines, where line->data is a #GSList of fields values.
@@ -116,22 +136,6 @@ typedef struct {
 												GSList *lines,
 												const ofaStreamFormat *settings,
 												ofaHub *hub );
-
-	/**
-	 * import:
-	 * @instance: the #ofaIImportable instance.
-	 * @parms: the #ofsImporterParms import arguments.
-	 * @lines: the lines of the imported file, as a #GSList list of
-	 *  lines, where line->data is a #GSList of fields values.
-	 *
-	 * Import the dataset from the provided content.
-	 *
-	 * Return: the total count of errors.
-	 */
-	guint     ( *import )               ( ofaIImportable *instance,
-												ofaIImporter *importer,
-												ofsImporterParms *parms,
-												GSList *lines );
 
 	/**
 	 * is_willing_to:
@@ -204,7 +208,7 @@ ofaIImportable *ofa_iimportable_find_willing_to   ( ofaHub *hub,
 															const gchar *uri,
 															const ofaStreamFormat *settings );
 
-guint           ofa_iimportable_import            ( ofaIImportable *importable,
+guint           ofa_iimportable_import            ( GType type,
 															ofaIImporter *importer,
 															ofsImporterParms *parms,
 															GSList *lines );

@@ -52,6 +52,7 @@ static void     my_utils_container_dump_rec( GtkContainer *container, const gcha
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static gboolean utils_css_provider_setup( void );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
+static GSList  *split_by_line( const gchar *content );
 static gboolean is_dir( GFile *file );
 static gboolean is_readable_gfile( GFile *file );
 
@@ -1772,14 +1773,17 @@ my_utils_uri_exists( const gchar *uri )
  * @msgerr: [allow-none][out]: error message placeholder;
  *  if %NULL, error messages are displayed in a warning dialog box.
  *
- * Returns: the file content as a single, null-terminated, buffer of UTF-8 chars.
+ * Returns: the file content as a single, null-terminated, buffer of
+ * UTF-8 chars, which should be g_free() by the caller.
  */
 gchar *
 my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *errors, gchar **msgerr )
 {
 	GFile *gfile;
-	gchar *sysfname, *content, *str, *temp;
+	gchar *sysfname, *content, *str, *temp, *buffer;
 	GError *error;
+	gsize read_length;
+	glong loaded_len, computed_len, i;
 
 	if( errors ){
 		*errors = 0;
@@ -1808,7 +1812,7 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 
 	error = NULL;
 	content = NULL;
-	if( !g_file_load_contents( gfile, NULL, &content, NULL, NULL, &error )){
+	if( !g_file_load_contents( gfile, NULL, &content, &read_length, NULL, &error )){
 		if( errors ){
 			*errors += 1;
 		}
@@ -1825,6 +1829,27 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 	}
 
 	g_object_unref( gfile );
+
+	/* if the returned length is greater that the computed one,
+	 * it is probable that we are facing a badly-formatted content
+	 * so remove '\00' chars */
+
+	loaded_len = ( glong ) read_length;
+	computed_len = g_utf8_strlen( content, read_length );
+
+	/*g_debug( "contents='%s'", contents );
+	g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
+			( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
+
+	if( loaded_len > computed_len ){
+		for( i=computed_len ; content[i] == '\0' && i<loaded_len ; ++i ){
+			/*g_debug( "i=%ld, contents[i]=%x", i, contents[i] );*/
+			;
+		}
+		buffer = g_strdup_printf( "%s%s", content, content+i );
+		g_free( content );
+		content = buffer;
+	}
 
 	/* convert to UTF-8 if needed */
 	if( content && from_codeset && my_collate( from_codeset, "UTF-8" )){
@@ -1847,6 +1872,93 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 	}
 
 	return( content );
+}
+
+/**
+ * my_utils_uri_get_lines:
+ * @uri: the URI of the input stream.
+ * @from_codeset: [allow-none]: source codeset.
+ * @errors: [allow-none][out]:
+ * @msgerr: [allow-none][out]: error message placeholder;
+ *  if %NULL, error messages are displayed in a warning dialog box.
+ *
+ * Returns: the file content as a #GSList list of UTF-8 null-terminated
+ * strings, which should be  #g_slist_free_full( list, ( GDestroyNotify ) g_free )
+ * by the caller.
+ */
+GSList *
+my_utils_uri_get_lines( const gchar *uri, const gchar *from_codeset, guint *errors, gchar **msgerr )
+{
+	gchar *content;
+	GSList *lines;
+
+	/* load file content in memory + charmap conversion */
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	errors = 0;
+	content = my_utils_uri_get_content( uri, from_codeset, errors, msgerr );
+	if( errors ){
+		g_free( content );
+		return( NULL );
+	}
+
+	/* convert buffer content to list of lines */
+	lines = split_by_line( content );
+
+	g_free( content );
+
+	return( lines );
+}
+
+/*
+ * split the content into a GSList of lines
+ * taking into account the possible backslashed end-of-lines
+ */
+static GSList *
+split_by_line( const gchar *content )
+{
+	GSList *eol_list;
+	gchar **lines, **it_line;
+	gchar *prev, *temp;
+	guint numline;
+
+	/* split on end-of-line
+	 * then re-concatenate segments when end-of-line was backslashed */
+	lines = g_strsplit( content, "\n", -1 );
+	it_line = lines;
+	prev = NULL;
+	eol_list = NULL;
+	numline = 0;
+
+	while( *it_line ){
+		if( prev ){
+			if( 0 ){
+				g_debug( "num=%u line='%s'", numline, prev );
+			}
+			temp = g_utf8_substring( prev, 0, my_strlen( prev )-1 );
+			g_free( prev );
+			prev = temp;
+			temp = g_strconcat( prev, "\n", *it_line, NULL );
+			g_free( prev );
+			prev = temp;
+		} else {
+			prev = g_strdup( *it_line );
+		}
+		if( my_strlen( prev ) && !g_str_has_suffix( prev, "\\" )){
+			numline += 1;
+			eol_list = g_slist_prepend( eol_list, g_strdup( prev ));
+			g_free( prev );
+			prev = NULL;
+		} else if( !my_strlen( prev )){
+			g_free( prev );
+			prev = NULL;
+		}
+		it_line++;
+	}
+	g_strfreev( lines );
+
+	return( g_slist_reverse( eol_list ));
 }
 
 /**

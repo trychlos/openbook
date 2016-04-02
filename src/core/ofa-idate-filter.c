@@ -139,6 +139,7 @@ interface_base_init( ofaIDateFilterInterface *klass )
 	static const gchar *thisfn = "ofa_idate_filter_interface_base_init";
 
 	if( st_initializations == 0 ){
+
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		/**
@@ -202,6 +203,7 @@ interface_base_finalize( ofaIDateFilterInterface *klass )
 	st_initializations -= 1;
 
 	if( st_initializations == 0 ){
+
 		g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 	}
 }

@@ -37,7 +37,6 @@ typedef struct {
 
 static GList *st_accepted_contents      = NULL;
 
-static GSList      *get_file_content( ofaIImportable *importer_txt, const gchar *uri );
 static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
 static gboolean     lcl_tabulated_text_v1_check( ofaImporterTxt *importer_txt );
 static ofsBat      *lcl_tabulated_text_v1_import( ofaImporterTxt *importer_txt );
@@ -146,67 +145,13 @@ ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance, const gchar *uri
 
 	filename = g_filename_from_uri( uri, NULL, NULL );
 	content = g_content_type_guess( filename, NULL, 0, NULL );
+
 	ok = ( my_collate( content, "application/vnd.ms-excel" ) == 0 );
 
 	g_free( content );
 	g_free( filename );
 
 	return( ok );
-}
-
-static GSList *
-get_file_content( ofaIImportable *importer_txt, const gchar *uri )
-{
-	GFile *gfile;
-	gchar *contents, *buffer, *str;
-	gchar **lines, **iter;
-	GSList *list;
-	gsize length;
-	glong loaded_len, computed_len, i;
-
-	list = NULL;
-	gfile = g_file_new_for_uri( uri );
-	if( g_file_load_contents( gfile, NULL, &contents, &length, NULL, NULL )){
-
-		/* if the returned length is greater that the computed one,
-		 * it is probable that we are facing a badly-formatted line
-		 * so remove '\00' chars */
-
-		loaded_len = ( glong ) length;
-		computed_len = g_utf8_strlen( contents, length );
-
-		/*g_debug( "contents='%s'", contents );
-		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
-				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
-
-		if( loaded_len > computed_len ){
-			for( i=computed_len ; contents[i] == '\0' && i<loaded_len ; ++i ){
-				/*g_debug( "i=%ld, contents[i]=%x", i, contents[i] );*/
-				;
-			}
-			buffer = g_strdup_printf( "%s%s", contents, contents+i );
-			g_free( contents );
-			contents = buffer;
-		}
-
-		/*g_debug( "contents='%s'", contents );
-		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
-				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
-
-		lines = g_strsplit( contents, "\n", -1 );
-		g_free( contents );
-		iter = lines;
-		while( *iter ){
-			str = g_strstrip( g_strdup( *iter ));
-			list = g_slist_prepend( list, str );
-			/*g_debug( "get_file_content: str='%s'", str );*/
-			iter++;
-		}
-		g_strfreev( lines );
-	}
-	g_object_unref( gfile );
-
-	return( g_slist_reverse( list ));
 }
 
 static gboolean

@@ -34,7 +34,7 @@
  * (which may also be known as application/vnd.ms-excel).
  */
 
-#include <glib-object.h>
+#include "api/ofa-stream-format.h"
 
 G_BEGIN_DECLS
 

@@ -200,7 +200,7 @@ static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStre
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
-static guint       iimportable_import( ofaIImportable *exportable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static guint       iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList      *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static ofoTVAForm *iimportable_import_parse_form( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
 static GList      *iimportable_import_parse_bool( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields, gchar **mnemo );
@@ -1749,7 +1749,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * changed and only contains the successfully inserted records.
  */
 static guint
-iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
 	GList *dataset;
 

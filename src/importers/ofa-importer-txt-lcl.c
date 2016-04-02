@@ -49,14 +49,7 @@
 /* private instance data
  */
 typedef struct {
-	gboolean             dispose_has_run;
-
-	const ofaStreamFormat *settings;
-	ofaHub              *hub;
-	GSList              *lines;
-	guint                count;
-	guint                errors;
-
+	gboolean dispose_has_run;
 }
 	ofaImporterTxtLclPrivate;
 
@@ -69,9 +62,9 @@ static gchar       *iident_get_version( const myIIdent *instance, void *user_dat
 static void         iimporter_iface_init( ofaIImporterInterface *iface );
 static const GList *iimporter_get_accepted_contents( const ofaIImporter *instance );
 static gboolean     iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
-static gboolean     iimporter_is_willing_to_parse( ofaIImporter *instance, const gchar *uri )
+static gboolean     is_willing_to_parse( const ofaImporterTxtLcl *instance, const gchar *uri )
 static guint        iimporter_import( ofaIImporter *instance, ofsImporterParms *parms );
-static GSList      *get_file_content( ofaIImportable *importer_txt_lcl, const gchar *uri );
+static guint        do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms );
 static GDate       *scan_date_dmyy( GDate *date, const gchar *str );
 static gboolean     lcl_tabulated_text_v1_check( ofaImporterTxtLcl *importer_txt_lcl );
 static ofsBat      *lcl_tabulated_text_v1_import( ofaImporterTxtLcl *importer_txt_lcl );
@@ -84,18 +77,20 @@ G_DEFINE_TYPE_EXTENDED( ofaImporterTxtLcl, ofa_importer_txt_lcl, OFA_TYPE_IMPORT
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTER, iimporter_iface_init ))
 
-/* a description of the import functions we are able to manage here
+/* A description of the import functions we are able to manage here.
+ * If several versions happen to be managed, then should be set first
+ * the most recent.
  */
 typedef struct {
 	const gchar *label;
-	gint         version;
-	gboolean   (*fnTest)  ( ofaImporterTxtLcl * );
-	ofsBat *   (*fnImport)( ofaImporterTxtLcl * );
+	guint        version;
+	gboolean   (*fnTest)  ( ofaImporterTxtLcl *, const ofaStreamFormat *, GSList * );
+	ofsBat *   (*fnImport)( ofaImporterTxtLcl *, ofsImporterParms *, GSList * );
 }
 	ImportFormat;
 
 static ImportFormat st_import_formats[] = {
-		{ "LCL - Excel (tabulated text)", 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_import },
+		{ N_( "LCL .xls (tabulated text) 2014" ), 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_import },
 		{ 0 }
 };
 
@@ -216,7 +211,7 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
 
 	ok = ofa_importer_txt_is_willing_to( OFA_IMPORTER_TXT( instance ), uri, type ) &&
 			type == OFO_TYPE_BAT &&
-			iimporter_is_willing_to_parse( instance, uri );
+			is_willing_to_parse( OFA_IMPORTER_TXT_LCL( instance ), uri );
 
 	return( ok );
 }
@@ -228,32 +223,38 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-iimporter_is_willing_to_parse( ofaIImporter *instance, const gchar *uri )
+is_willing_to_parse( const ofaImporterTxtLcl *self, const gchar *uri )
 {
-	static const gchar *thisfn = "ofa_importer_txt_lcl_iimporter_is_willing_to_parse";
-	ofaImporterTxtLclPrivate *priv;
+	ofaStreamFormat *format;
+	GSList *lines;
 	gint i;
 	gboolean ok;
 
-	g_debug( "%s: importer_txt_lcl=%p, uri=%s, settings=%p, count=%p",
-			thisfn, ( void * ) importer_txt_lcl, uri, ( void * ) settings, ( void * ) count );
-
-	priv = OFA_IMPORTER_TXT_LCL( importer_txt_lcl )->priv;
 	ok = FALSE;
 
-	priv->lines = get_file_content( importer_txt_lcl, uri );
-	priv->settings = settings;
+	format = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+	ofa_stream_format_set( format,
+			TRUE,  "UTF-8",					/* charmap */
+			TRUE,  MY_DATE_DMYY,			/* date format */
+			FALSE, '\0',					/* thousand sep */
+			TRUE,  ',',						/* decimal sep */
+			FALSE, '\t',					/* field sep */
+			FALSE, '\0',					/* string delim */
+			FALSE, 0 );						/* headers */
 
-	for( i=0 ; st_import_formats[i].label ; ++i ){
-		if( st_import_formats[i].fnTest( OFA_IMPORTER_TXT_LCL( importer_txt_lcl ))){
-			*ref = GINT_TO_POINTER( i );
-			*count = priv->count;
-			ok = TRUE;
-			break;
+	lines = my_utils_uri_get_lines( uri, ofa_stream_format_get_charmap( format ), NULL, NULL );
+
+	if( lines ){
+		for( i=0 ; st_import_formats[i].label ; ++i ){
+			if( st_import_formats[i].fnTest( self, format, lines )){
+				ok = TRUE;
+				break;
+			}
 		}
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 	}
 
-	g_slist_free_full( priv->lines, ( GDestroyNotify ) g_free );
+	g_object_unref( format );
 
 	return( ok );
 }
@@ -266,101 +267,46 @@ iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), 1 );
 	g_return_val_if_fail( ofa_stream_format_get_has_field( parms->format ), 1 );
 
-	return( do_import_csv( instance, parms ));
+	return( do_parse( OFA_IMPORTER_TXT_LCL( instance ), parms ));
 }
 
-/*
- * import the file
- */
 static guint
-iimportable_old_import_uri( ofaIImportable *importer_txt_lcl, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id )
+do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms )
 {
-	static const gchar *thisfn = "ofa_importer_txt_lcl_iimportable_old_import_uri";
-	ofaImporterTxtLclPrivate *priv;
-	gint idx;
-	ofsBat *bat;
+	GSList *lines;
+	gchar *msgerr;
+	gint i, idx, errors;
 
-	g_debug( "%s: importer_txt_lcl=%p, ref=%p, uri=%s, settings=%p, hub=%p, imported_id=%p",
-			thisfn, ( void * ) importer_txt_lcl, ref,
-			uri, ( void * ) settings, ( void * ) hub, ( void * ) imported_id );
+	errors = 0;
+	msgerr = NULL;
 
-	priv = OFA_IMPORTER_TXT_LCL( importer_txt_lcl )->priv;
-
-	priv->lines = get_file_content( importer_txt_lcl, uri );
-	priv->settings = settings;
-	priv->hub = hub;
-
-	idx = GPOINTER_TO_INT( ref );
-	bat = NULL;
-
-	if( st_import_formats[idx].fnImport ){
-		bat = st_import_formats[idx].fnImport( OFA_IMPORTER_TXT_LCL( importer_txt_lcl ));
-		if( bat ){
-			bat->uri = g_strdup( uri );
-			bat->format = g_strdup( st_import_formats[idx].label );
-			ofo_bat_import( importer_txt_lcl, bat, hub, imported_id );
-			ofs_bat_free( bat );
+	lines = my_utils_uri_get_lines( parms->uri, ofa_stream_format_get_charmap( parms->format ), &errors, &msgerr );
+	if( msgerr ){
+		if( parms->progress ){
+			my_iprogress_set_text( parms->progress, msgerr );
 		}
+		g_free( msgerr );
+		if( lines ){
+			g_slist_free_full( lines, ( GDestroyNotify ) g_free );
+		}
+		return( errors );
 	}
 
-	g_slist_free_full( priv->lines, ( GDestroyNotify ) g_free );
-
-	return( priv->errors );
-}
-
-static GSList *
-get_file_content( ofaIImportable *importer_txt_lcl, const gchar *uri )
-{
-	GFile *gfile;
-	gchar *contents, *buffer, *str;
-	gchar **lines, **iter;
-	GSList *list;
-	gsize length;
-	glong loaded_len, computed_len, i;
-
-	list = NULL;
-	gfile = g_file_new_for_uri( uri );
-	if( g_file_load_contents( gfile, NULL, &contents, &length, NULL, NULL )){
-
-		/* if the returned length is greater that the computed one,
-		 * it is probable that we are facing a badly-formatted line
-		 * so remove '\00' chars */
-
-		loaded_len = ( glong ) length;
-		computed_len = g_utf8_strlen( contents, length );
-
-		/*g_debug( "contents='%s'", contents );
-		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
-				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
-
-		if( loaded_len > computed_len ){
-			for( i=computed_len ; contents[i] == '\0' && i<loaded_len ; ++i ){
-				/*g_debug( "i=%ld, contents[i]=%x", i, contents[i] );*/
-				;
+	if( lines ){
+		idx = -1;
+		for( i=0 ; st_import_formats[i].label ; ++i ){
+			if( st_import_formats[i].fnTest( self, parms->format, lines )){
+				idx = i;
+				break;
 			}
-			buffer = g_strdup_printf( "%s%s", contents, contents+i );
-			g_free( contents );
-			contents = buffer;
 		}
-
-		/*g_debug( "contents='%s'", contents );
-		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
-				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
-
-		lines = g_strsplit( contents, "\n", -1 );
-		g_free( contents );
-		iter = lines;
-		while( *iter ){
-			str = g_strstrip( g_strdup( *iter ));
-			list = g_slist_prepend( list, str );
-			/*g_debug( "get_file_content: str='%s'", str );*/
-			iter++;
+		if( idx >= 0 ){
+			errors = st_import_formats[i].fnImport( self, parms, lines )
 		}
-		g_strfreev( lines );
+		g_slist_free_full( lines, ( GDestroyNotify ) g_free );
 	}
-	g_object_unref( gfile );
 
-	return( g_slist_reverse( list ));
+	return( errors );
 }
 
 static gboolean

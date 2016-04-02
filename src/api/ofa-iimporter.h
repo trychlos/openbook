@@ -130,12 +130,14 @@ typedef struct {
 	 * @instance: the #ofaIImporter provider.
 	 * @parms: the arguments of the method.
 	 *
-	 * Returns: the total count of errors.
+	 * Returns: a GSList of lines, each being a GSList of fields,
+	 * or %NULL if an error has occured.
 	 *
 	 * Since: version 1.
 	 */
-	guint         ( *import )               ( ofaIImporter *instance,
-													ofsImporterParms *parms );
+	GSList *      ( *parse )                ( ofaIImporter *instance,
+													ofsImporterParms *parms,
+													gchar **msgerr );
 }
 	ofaIImporterInterface;
 

@@ -148,6 +148,7 @@ interface_base_finalize( ofaIImportableInterface *klass )
 	st_initializations -= 1;
 
 	if( !st_initializations ){
+
 		g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 	}
 }
@@ -286,7 +287,7 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
 
 /**
  * ofa_iimportable_import:
- * @importable: a #ofaIImportable instance.
+ * @type: the GType of the target class.
  * @importer: the #ofaIImporter instance.
  * @parms: the #ofsImporterParms arguments.
  * @lines: the lines to be imported.
@@ -294,20 +295,37 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
  * Returns: the total count of errors.
  */
 guint
-ofa_iimportable_import( ofaIImportable *importable, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+ofa_iimportable_import( GType type, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
-	static const gchar *thisfn = "ofa_iimportable_import";
+	gpointer klass, iface;
+	guint error_count;
+	gchar *msgerr;
 
-	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 1 );
 	g_return_val_if_fail( importer && OFA_IS_IIMPORTER( importer ), 1 );
 
-	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import ){
-		return( OFA_IIMPORTABLE_GET_INTERFACE( importable )->import( importable, importer, parms, lines ));
+	error_count = 0;
+
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_IIMPORTABLE );
+	g_return_val_if_fail( iface, 1 );
+
+	if((( ofaIImportableInterface * ) iface )->import ){
+		error_count = (( ofaIImportableInterface * ) iface )->import( importer, parms, lines );
+
+	} else {
+		error_count += 1;
+		msgerr = g_strdup_printf(
+						_( "Target class %s does not implement ofaIImportable interface" ),
+						g_type_name( type ));
+		if( parms->progress ){
+			my_iprogress_set_text( parms->progress, importer, msgerr );
+		}
+		g_free( msgerr );
 	}
 
-	g_info( "%s: ofaIImportable's %s implementation does not provide 'import()' method",
-			thisfn, G_OBJECT_TYPE_NAME( importable ));
-	return( 1 );
+	return( error_count );
 }
 
 /**

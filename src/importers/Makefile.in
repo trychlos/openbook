@@ -164,7 +164,7 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)" \
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_importers_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_libofa_importers_la_OBJECTS = ofa-extension.lo ofa-importers-csv.lo
+am_libofa_importers_la_OBJECTS = ofa-extension.lo ofa-importer-csv.lo
 libofa_importers_la_OBJECTS = $(am_libofa_importers_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -422,10 +422,17 @@ pkglib_LTLIBRARIES = libofa-importers.la
 plugin_datadir = $(pkgdatadir)/$(plugin_id)
 libofa_importers_la_SOURCES = \
 	ofa-extension.c									\
-	ofa-importers-csv.c								\
-	ofa-importers-csv.h								\
+	ofa-importer-csv.c								\
+	ofa-importer-csv.h								\
 	$(NULL)
 
+
+#	ofa-importer-txt.c								\
+#	ofa-importer-txt.h								\
+#	ofa-importer-txt-bourso.c						\
+#	ofa-importer-txt-bourso.h						\
+#	ofa-importer-txt-lcl.c							\
+#	ofa-importer-txt-lcl.h							
 libofa_importers_la_LIBADD = \
 	$(OPENBOOK_LIBS)								\
 	$(NULL)
@@ -526,7 +533,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extension.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importers-csv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer-csv.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
