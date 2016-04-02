@@ -52,8 +52,9 @@ typedef struct {
 	sDec;
 
 static const sDec st_dec[] = {
-		{ ";", N_( "; (semi-colon)" )},
-		{ "|", N_( "| (pipe)" )},
+		{ "\t", N_( "\\t	(tab)" )},
+		{ ";",  N_( ";	(semi-colon)" )},
+		{ "|",  N_( "|	(pipe)" )},
 		{ 0 }
 };
 

@@ -52,8 +52,8 @@ typedef struct {
 	sDec;
 
 static const sDec st_dec[] = {
-		{ ".", N_( ". (dot)" )},
-		{ ",", N_( ", (comma)" )},
+		{ ".", N_( ".	(dot)" )},
+		{ ",", N_( ",	(comma)" )},
 		{ 0 }
 };
 
