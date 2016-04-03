@@ -403,9 +403,9 @@ parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms
 	output = g_slist_prepend( output, g_strdup( parms->uri ));
 	output = g_slist_prepend( output, g_strdup( parser->label ));
 	output = g_slist_prepend( output, rib );
-	output = g_slist_prepend( output, g_strdup( "" ));
-	output = g_slist_prepend( output, g_strdup( "" ));
-	output = g_slist_prepend( output, g_strdup( "" ));
+	output = g_slist_prepend( output, g_strdup( "" ));					/* currency */
+	output = g_slist_prepend( output, g_strdup( "" ));					/* begin date */
+	output = g_slist_prepend( output, g_strdup( "" ));					/* begin solde */
 	output = g_slist_prepend( output, g_strdup( "N" ));
 	output = g_slist_prepend( output, sdate );
 	output = g_slist_prepend( output, ssolde );
@@ -454,12 +454,12 @@ parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParm
 	slabel = tmp ? tmp : g_strdup( "" );
 
 	output = g_slist_prepend( output, g_strdup( "2" ));
-	output = g_slist_prepend( output, g_strdup( "" ));
+	output = g_slist_prepend( output, g_strdup( "" ));		/* operation date */
 	output = g_slist_prepend( output, sdate );
 	output = g_slist_prepend( output, sref );
 	output = g_slist_prepend( output, slabel );
 	output = g_slist_prepend( output, samount );
-	output = g_slist_prepend( output, g_strdup( "" ));
+	output = g_slist_prepend( output, g_strdup( "" ));		/* currency */
 
 	return( g_slist_reverse( output ));
 }

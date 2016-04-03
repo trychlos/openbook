@@ -1711,9 +1711,9 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 		ofo_bat_line_set_deffect( batline, my_date_set_from_str( &deffect, cstr, MY_DATE_SQL ));
 	}
 
-	/* at least one of operation or effect date must be set */
-	if( !my_date_is_valid( &dope ) && !my_date_is_valid( &deffect )){
-		ofa_iimporter_progress_num_text( importer, parms, numline, _( "neither operation nor effect dates are set" ));
+	/* effect date is mandatory */
+	if( !my_date_is_valid( &deffect )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "effect date is not set" ));
 		parms->parse_errs += 1;
 		g_object_unref( batline );
 		return( NULL );

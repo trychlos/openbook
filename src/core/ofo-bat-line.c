@@ -63,6 +63,8 @@ typedef struct {
 	ofoBatLinePrivate;
 
 static GList       *bat_line_load_dataset( ofaHub *hub, const gchar *where );
+static const GDate *bat_line_get_dope( const ofoBatLine *bat );
+static const gchar *bat_line_get_label( const ofoBatLine *bat );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
 static gboolean     bat_line_do_insert( ofoBatLine *bat, ofaHub *hub );
 static gboolean     bat_line_insert_main( ofoBatLine *bat, ofaHub *hub );
@@ -340,27 +342,18 @@ ofo_bat_line_get_line_id( const ofoBatLine *bat )
  * ofo_bat_line_get_deffect:
  *
  * Returns: the effect date.
- *
- * Defaults to the operation date if effect date is not valid.
  */
 const GDate *
 ofo_bat_line_get_deffect( const ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
-	const GDate *date;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT_LINE( bat ), NULL );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
 
 	priv = ofo_bat_line_get_instance_private( bat );
 
-	date = &priv->dope;
-
-	if( my_date_is_valid( &priv->deffect )){
-		date = &priv->deffect;
-	}
-
-	return( date );
+	return( &priv->deffect );
 }
 
 /**
@@ -373,21 +366,30 @@ ofo_bat_line_get_deffect( const ofoBatLine *bat )
 const GDate *
 ofo_bat_line_get_dope( const ofoBatLine *bat )
 {
-	ofoBatLinePrivate *priv;
-	const GDate *date;
+	const GDate *date, *dope;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT_LINE( bat ), NULL );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
 
-	priv = ofo_bat_line_get_instance_private( bat );
-
-	date = &priv->deffect;
-
-	if( my_date_is_valid( &priv->dope )){
-		date = &priv->dope;
-	}
+	dope = bat_line_get_dope( bat );
+	date = my_date_is_valid( dope ) ? dope : ofo_bat_line_get_deffect( bat );
 
 	return( date );
+}
+
+/*
+ * bat_line_get_dope:
+ *
+ * Returns: the operation date (no default).
+ */
+static const GDate *
+bat_line_get_dope( const ofoBatLine *bat )
+{
+	ofoBatLinePrivate *priv;
+
+	priv = ofo_bat_line_get_instance_private( bat );
+
+	return( &priv->dope );
 }
 
 /**
@@ -416,21 +418,30 @@ ofo_bat_line_get_ref( const ofoBatLine *bat )
 const gchar *
 ofo_bat_line_get_label( const ofoBatLine *bat )
 {
-	ofoBatLinePrivate *priv;
-	const gchar *label;
+	const gchar *label_orig, *label_out;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT_LINE( bat ), NULL );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
 
+	label_orig = bat_line_get_label( bat );
+	label_out = my_strlen( label_orig ) ? label_orig : ofo_bat_line_get_ref( bat );
+
+	return( label_out );
+}
+
+/*
+ * bat_line_get_label:
+ *
+ * Returns: the label of the BAT line (no default).
+ */
+static const gchar *
+bat_line_get_label( const ofoBatLine *bat )
+{
+	ofoBatLinePrivate *priv;
+
 	priv = ofo_bat_line_get_instance_private( bat );
 
-	label = priv->ref;
-
-	if( my_strlen( priv->label )){
-		label = priv->label;
-	}
-
-	return( label );
+	return( priv->label );
 }
 
 /**
@@ -664,7 +675,7 @@ bat_line_insert_main( ofoBatLine *bat, ofaHub *hub )
 					str );
 	g_free( str );
 
-	dope = ofo_bat_line_get_dope( bat );
+	dope = bat_line_get_dope( bat );
 	if( my_date_is_valid( dope )){
 		str = my_date_to_str( dope, MY_DATE_SQL );
 		g_string_append_printf( query, "'%s',", str );
@@ -681,7 +692,7 @@ bat_line_insert_main( ofoBatLine *bat, ofaHub *hub )
 	}
 	g_free( str );
 
-	str = my_utils_quote_single( ofo_bat_line_get_label( bat ));
+	str = my_utils_quote_single( bat_line_get_label( bat ));
 	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
