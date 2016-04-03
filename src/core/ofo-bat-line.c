@@ -194,7 +194,8 @@ bat_line_load_dataset( ofaHub *hub, const gchar *where )
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
 			bat_id = atol(( gchar * ) icol->data );
-			line = ofo_bat_line_new( bat_id );
+			line = ofo_bat_line_new();
+			ofo_bat_line_set_bat_id( line, bat_id );
 			icol = icol->next;
 			bat_line_set_line_id( line, atol(( gchar * ) icol->data ));
 			icol = icol->next;
@@ -294,14 +295,11 @@ ofo_bat_line_get_bat_id_from_bat_line_id( ofaHub *hub, ofxCounter line_id )
  * ofo_bat_line_new:
  */
 ofoBatLine *
-ofo_bat_line_new( gint bat_id )
+ofo_bat_line_new( void )
 {
 	ofoBatLine *bat;
-	ofoBatLinePrivate *priv;
 
 	bat = g_object_new( OFO_TYPE_BAT_LINE, NULL );
-	priv = ofo_bat_line_get_instance_private( bat );
-	priv->bat_id = bat_id;
 
 	return( bat );
 }
@@ -340,34 +338,56 @@ ofo_bat_line_get_line_id( const ofoBatLine *bat )
 
 /**
  * ofo_bat_line_get_deffect:
+ *
+ * Returns: the effect date.
+ *
+ * Defaults to the operation date if effect date is not valid.
  */
 const GDate *
 ofo_bat_line_get_deffect( const ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
+	const GDate *date;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT_LINE( bat ), NULL );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
 
 	priv = ofo_bat_line_get_instance_private( bat );
 
-	return(( const GDate * ) &priv->deffect );
+	date = &priv->dope;
+
+	if( my_date_is_valid( &priv->deffect )){
+		date = &priv->deffect;
+	}
+
+	return( date );
 }
 
 /**
  * ofo_bat_line_get_dope:
+ *
+ * Returns: the operation date.
+ *
+ * Defaults to the effect date if operation date is not valid.
  */
 const GDate *
 ofo_bat_line_get_dope( const ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
+	const GDate *date;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT_LINE( bat ), NULL );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
 
 	priv = ofo_bat_line_get_instance_private( bat );
 
-	return(( const GDate * ) &priv->dope );
+	date = &priv->deffect;
+
+	if( my_date_is_valid( &priv->dope )){
+		date = &priv->dope;
+	}
+
+	return( date );
 }
 
 /**
@@ -388,18 +408,29 @@ ofo_bat_line_get_ref( const ofoBatLine *bat )
 
 /**
  * ofo_bat_line_get_label:
+ *
+ * Returns: the label of the BAT line.
+ *
+ * Defaults to the reference (hoping it is set).
  */
 const gchar *
 ofo_bat_line_get_label( const ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
+	const gchar *label;
 
 	g_return_val_if_fail( bat && OFO_IS_BAT_LINE( bat ), NULL );
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, NULL );
 
 	priv = ofo_bat_line_get_instance_private( bat );
 
-	return(( const gchar * ) priv->label );
+	label = priv->ref;
+
+	if( my_strlen( priv->label )){
+		label = priv->label;
+	}
+
+	return( label );
 }
 
 /**
@@ -432,6 +463,22 @@ ofo_bat_line_get_amount( const ofoBatLine *bat )
 	priv = ofo_bat_line_get_instance_private( bat );
 
 	return( priv->amount );
+}
+
+/**
+ * bat_line_set_bat_id:
+ */
+void
+ofo_bat_line_set_bat_id( ofoBatLine *bat, ofxCounter id )
+{
+	ofoBatLinePrivate *priv;
+
+	g_return_if_fail( bat && OFO_IS_BAT_LINE( bat ));
+	g_return_if_fail( !OFO_BASE( bat )->prot->dispose_has_run );
+
+	priv = ofo_bat_line_get_instance_private( bat );
+
+	priv->bat_id = id;
 }
 
 /*

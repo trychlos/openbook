@@ -1681,12 +1681,15 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 	ofaImportAssistantPrivate *priv;
 	GtkTextBuffer *buffer;
 	GtkTextIter iter;
+	gchar *str;
 
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
+	str = g_strdup_printf( "%s\n", text );
 	buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->p7_text ));
 	gtk_text_buffer_get_end_iter( buffer, &iter );
-	gtk_text_buffer_insert( buffer, &iter, text, -1 );
+	gtk_text_buffer_insert( buffer, &iter, str, -1 );
+	g_free( str );
 
 	/* let Gtk update the display */
 	while( gtk_events_pending()){

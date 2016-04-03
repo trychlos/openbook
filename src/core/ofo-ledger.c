@@ -1941,7 +1941,6 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
-
 		if( parms->stop && parms->parse_errs > 0 ){
 			break;
 		}
@@ -2051,11 +2050,11 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 					parms->insert_errs += 1;
 					break;
 			}
-		}
-		if( str ){
+
 			ofa_iimporter_progress_text( importer, parms, str );
 			g_free( str );
 		}
+
 		if( insert ){
 			if( ledger_do_insert( ledger, connect )){
 				parms->inserted_count += 1;
@@ -2063,6 +2062,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->insert_errs += 1;
 			}
 		}
+
 		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
 	}
 }

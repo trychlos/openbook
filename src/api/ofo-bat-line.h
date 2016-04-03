@@ -32,6 +32,10 @@
  *
  * This file defines the #ofoBatLine class public API: these are the
  * imported bank account transaction lines.
+ *
+ * Amount is signed
+ * ----------------
+ * Amount is less than zero for expenses, greater than zero for incomes.
  */
 
 #include "api/ofa-box.h"
@@ -69,7 +73,7 @@ GList       *ofo_bat_line_get_dataset_for_print_reconcil
 ofxCounter   ofo_bat_line_get_bat_id_from_bat_line_id
                                            ( ofaHub *hub, ofxCounter line_id );
 
-ofoBatLine  *ofo_bat_line_new              ( gint bat_id );
+ofoBatLine  *ofo_bat_line_new              ( void );
 
 ofxCounter   ofo_bat_line_get_bat_id       ( const ofoBatLine *batline );
 ofxCounter   ofo_bat_line_get_line_id      ( const ofoBatLine *batline );
@@ -80,6 +84,7 @@ const gchar *ofo_bat_line_get_label        ( const ofoBatLine *batline );
 const gchar *ofo_bat_line_get_currency     ( const ofoBatLine *batline );
 ofxAmount    ofo_bat_line_get_amount       ( const ofoBatLine *batline );
 
+void         ofo_bat_line_set_bat_id       ( ofoBatLine *batline, ofxCounter bat_id );
 void         ofo_bat_line_set_deffect      ( ofoBatLine *batline, const GDate *date );
 void         ofo_bat_line_set_dope         ( ofoBatLine *batline, const GDate *date );
 void         ofo_bat_line_set_ref          ( ofoBatLine *batline, const gchar *ref );

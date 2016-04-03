@@ -83,6 +83,30 @@ my_strlen( const gchar *str )
 }
 
 /**
+ * my_utils_dump_gslist:
+ *
+ * Dump a GSList list of GSList datas.
+ */
+void
+my_utils_dump_gslist( const GSList *list )
+{
+	static const gchar *thisfn = "my_utils_dump_gslist";
+	const GSList *itl, *fields, *itf;
+	const gchar *cstr;
+	gint numline;
+
+	numline = 0;
+	for( itl=list ; itl ; itl=itl->next ){
+		numline += 1;
+		fields = ( const GSList * ) itl->data;
+		for( itf=fields ; itf ; itf=itf->next ){
+			cstr = ( const gchar * ) itf->data;
+			g_debug( "%s: numline=%d, str='%s'", thisfn, numline, cstr );
+		}
+	}
+}
+
+/**
  * my_utils_quote_single:
  *
  * Replace "'" quote characters with "\\'" before executing SQL queries

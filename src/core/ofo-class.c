@@ -950,11 +950,11 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 					parms->insert_errs += 1;
 					break;
 			}
-		}
-		if( str ){
+
 			ofa_iimporter_progress_text( importer, parms, str );
 			g_free( str );
 		}
+
 		if( insert ){
 			if( class_do_insert( class, connect )){
 				parms->inserted_count += 1;
@@ -962,6 +962,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->insert_errs += 1;
 			}
 		}
+
 		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
 	}
 }

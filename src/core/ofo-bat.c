@@ -39,6 +39,7 @@
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-concil.h"
@@ -78,6 +79,7 @@ static void        bat_set_upd_stamp( ofoBat *bat, const GTimeVal *upd_stamp );
 static gboolean    bat_do_insert( ofoBat *bat, ofaHub *hub );
 static gboolean    bat_insert_main( ofoBat *bat, ofaHub *hub );
 static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_do_delete_by_where( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect );
 static gint        bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b );
@@ -89,6 +91,15 @@ static GList      *icollectionable_load_collection( const ofaICollectionable *in
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( const ofaIImportable *instance );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
+static guint       iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList      *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static ofoBat     *iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
+static ofoBatLine *iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
+static void        iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean    bat_get_exists( const ofoBat *bat, const ofaIDBConnect *connect );
+static gchar      *bat_get_where( const ofoBat *bat );
+static ofxCounter  bat_get_id_by_where( const ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
@@ -930,7 +941,6 @@ gboolean
 ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofo_bat_insert";
-	ofoBatPrivate *priv;
 	ofoDossier *dossier;
 	gboolean ok;
 
@@ -942,10 +952,9 @@ ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 	g_return_val_if_fail( !OFO_BASE( bat )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
-	priv = ofo_bat_get_instance_private( bat );
 
 	dossier = ofa_hub_get_dossier( hub );
-	priv->id = ofo_dossier_get_next_bat( dossier );
+	bat_set_id( bat, ofo_dossier_get_next_bat( dossier ));
 
 	if( bat_do_insert( bat, hub )){
 		ofo_base_set_hub( OFO_BASE( bat ), hub );
@@ -1190,6 +1199,33 @@ ofo_bat_delete( ofoBat *bat )
 	return( ok );
 }
 
+/*
+ * when the ofoBat does not yet have an identifier
+ */
+static gboolean
+bat_do_delete_by_where( ofoBat *bat, const ofaIDBConnect *connect )
+{
+	ofxCounter bat_id;
+	gchar *query;
+	gboolean ok;
+
+	ok = TRUE;
+
+	bat_id = bat_get_id_by_where( bat, connect );
+
+	if( bat_id > 0 ){
+		query = g_strdup_printf( "DELETE FROM OFA_T_BAT WHERE BAT_ID=%ld", bat_id );
+		ok &= ofa_idbconnect_query( connect, query, FALSE );
+		g_free( query );
+
+		query = g_strdup_printf( "DELETE FROM OFA_T_BAT_LINES WHERE BAT_ID=%ld", bat_id );
+		ok &= ofa_idbconnect_query( connect, query, FALSE );
+		g_free( query );
+	}
+
+	return( ok );
+}
+
 static gboolean
 bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect )
 {
@@ -1300,8 +1336,9 @@ ofo_bat_import( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounte
 	if( ok ){
 		for( it=sbat->details ; it ; it=it->next ){
 			sdet = ( ofsBatDetail * ) it->data;
-			bline = ofo_bat_line_new( ofo_bat_get_id( bat ));
+			bline = ofo_bat_line_new();
 
+			ofo_bat_line_set_bat_id( bline, ofo_bat_get_id( bat ));
 			ofo_bat_line_set_deffect( bline, &sdet->deffect );
 			ofo_bat_line_set_dope( bline, &sdet->dope );
 			ofo_bat_line_set_ref( bline, sdet->ref );
@@ -1448,6 +1485,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 
 	iface->get_interface_version = iimportable_get_interface_version;
 	iface->get_label = iimportable_get_label;
+	iface->import = iimportable_import;
 }
 
 static guint
@@ -1460,4 +1498,469 @@ static gchar *
 iimportable_get_label( const ofaIImportable *instance )
 {
 	return( g_strdup( _( "_Bank account transaction list" )));
+}
+
+/*
+ * ofo_bat_iimportable_import:
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ *
+ * Returns: the total count of errors.
+ *
+ * As the table may have been dropped between import phase and insert
+ * phase, if an error occurs during insert phase, then the table is
+ * changed and only contains the successfully inserted records.
+ */
+static guint
+iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+
+	dataset = iimportable_import_parse( importer, parms, lines );
+
+	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
+		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs == 0 ){
+			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_BAT );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
+		}
+	}
+
+	if( dataset ){
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
+	}
+
+	return( parms->parse_errs+parms->insert_errs );
+}
+
+/*
+ * parse to a dataset
+ */
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+	GSList *itl, *fields, *itf;
+	const gchar *cstr;
+	guint numline, total, type;
+	gchar *str;
+	ofoBat *bat;
+	ofoBatLine *line;
+
+	numline = 0;
+	dataset = NULL;
+	total = g_slist_length( lines );
+
+	ofa_iimporter_progress_start( importer, parms );
+	//my_utils_dump_gslist( lines );
+
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
+		fields = ( GSList * ) itl->data;
+
+		/* line type */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		type = cstr ? atoi( cstr ) : 0;
+
+		switch( type ){
+			case 1:
+				bat = iimportable_import_parse_main( importer, parms, numline, itf );
+				if( bat ){
+					dataset = g_list_prepend( dataset, bat );
+					parms->parsed_count += 1;
+				}
+				break;
+			case 2:
+				line = iimportable_import_parse_line( importer, parms, numline, itf );
+				if( line ){
+					dataset = g_list_prepend( dataset, line );
+					parms->parsed_count += 1;
+				}
+				break;
+			default:
+				str = g_strdup_printf( _( "invalid line type: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				total -= 1;
+				continue;
+		}
+
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
+	}
+
+	return( g_list_reverse( dataset ));
+}
+
+static ofoBat *
+iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields )
+{
+	const gchar *cstr;
+	GSList *itf;
+	ofoBat *bat;
+	GDate date;
+
+	bat = ofo_bat_new();
+
+	/* uri */
+	itf = fields ? fields->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_uri( bat, cstr );
+	}
+
+	/* importer label */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_format( bat, cstr );
+	}
+
+	/* rib */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_rib( bat, cstr );
+	}
+
+	/* currency */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_currency( bat, cstr );
+	}
+
+	/* begin date */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_begin_date( bat, my_date_set_from_str( &date, cstr, MY_DATE_SQL ));
+	}
+
+	/* begin solde */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_begin_solde( bat, my_double_set_from_sql( cstr ));
+	}
+
+	/* begin solde set */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_begin_solde_set( bat, my_utils_boolean_from_str( cstr ));
+	}
+
+	/* end date */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_end_date( bat, my_date_set_from_str( &date, cstr, MY_DATE_SQL ));
+	}
+
+	/* end solde */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_end_solde( bat, my_double_set_from_sql( cstr ));
+	}
+
+	/* end solde set */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_set_end_solde_set( bat, my_utils_boolean_from_str( cstr ));
+	}
+
+	return( bat );
+}
+
+static ofoBatLine *
+iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields )
+{
+	const gchar *cstr, *sref, *slabel;
+	GSList *itf;
+	GDate dope, deffect;
+	ofoBatLine *batline;
+
+	batline = ofo_bat_line_new();
+
+	sref = NULL;
+	slabel = NULL;
+	my_date_clear( &dope );
+	my_date_clear( &deffect );
+
+	/* operation date */
+	itf = fields ? fields->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_line_set_dope( batline, my_date_set_from_str( &dope, cstr, MY_DATE_SQL ));
+	}
+
+	/* effect date */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_line_set_deffect( batline, my_date_set_from_str( &deffect, cstr, MY_DATE_SQL ));
+	}
+
+	/* at least one of operation or effect date must be set */
+	if( !my_date_is_valid( &dope ) && !my_date_is_valid( &deffect )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "neither operation nor effect dates are set" ));
+		parms->parse_errs += 1;
+		g_object_unref( batline );
+		return( NULL );
+	}
+
+	/* reference */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_line_set_ref( batline, cstr );
+		sref = cstr;
+	}
+
+	/* label */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_line_set_label( batline, cstr );
+		slabel = cstr;
+	}
+
+	/* at least ref or label must be set */
+	if( !my_strlen( sref ) && !my_strlen( slabel )){
+		ofa_iimporter_progress_num_text( importer, parms, numline, _( "neither reference nor label are set" ));
+		parms->parse_errs += 1;
+		g_object_unref( batline );
+		return( NULL );
+	}
+
+	/* amount */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_line_set_amount( batline, my_double_set_from_sql( cstr ));
+	}
+
+	/* currency */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( my_strlen( cstr )){
+		ofo_bat_line_set_currency( batline, cstr );
+	}
+
+	return( batline );
+}
+
+static void
+iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
+{
+	GList *it;
+	const ofaIDBConnect *connect;
+	gboolean insert, skipped;
+	guint total;
+	gchar *str, *sdate;
+	ofoBase *object;
+	const gchar *rib, *label;
+	gchar *sdbegin, *sdend;
+	ofxCounter bat_id;
+	ofoDossier *dossier;
+
+	bat_id = 0;
+	skipped = FALSE;
+	total = g_list_length( dataset );
+	connect = ofa_hub_get_connect( parms->hub );
+	ofa_iimporter_progress_start( importer, parms );
+
+	if( parms->empty && total > 0 ){
+		bat_drop_content( connect );
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+
+		if( parms->stop && parms->insert_errs > 0 ){
+			break;
+		}
+
+		str = NULL;
+		insert = TRUE;
+		object = OFO_BASE( it->data );
+
+		if( OFO_IS_BAT( object )){
+
+			/* must only pass here once */
+			g_return_if_fail( bat_id == 0 );
+
+			if( bat_get_exists( OFO_BAT( object ), connect )){
+				parms->duplicate_count += 1;
+
+				rib = ofo_bat_get_rib( OFO_BAT( object ));
+				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_display());
+				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_display());
+
+				switch( parms->mode ){
+					case OFA_IMMODE_REPLACE:
+						str = g_strdup_printf( _( "%s %s %s: duplicate BAT file, replacing previous one" ), rib, sdbegin, sdend );
+						bat_do_delete_by_where( OFO_BAT( object ), connect );
+						break;
+					case OFA_IMMODE_IGNORE:
+						str = g_strdup_printf( _( "%s %s %s: duplicate BAT file, skipped" ), rib, sdbegin, sdend );
+						skipped = TRUE;
+						insert = FALSE;
+						total -= 1;
+						break;
+					case OFA_IMMODE_ABORT:
+						str = g_strdup_printf( _( "%s %s %s: duplicate BAT file, making it erroneous" ), rib, sdbegin, sdend );
+						insert = FALSE;
+						total -= 1;
+						parms->insert_errs += 1;
+						break;
+				}
+
+				g_free( sdbegin );
+				g_free( sdend );
+
+				ofa_iimporter_progress_text( importer, parms, str );
+				g_free( str );
+			}
+
+			if( insert ){
+				dossier = ofa_hub_get_dossier( parms->hub );
+				bat_set_id( OFO_BAT( object ), ofo_dossier_get_next_bat( dossier ));
+				if( bat_do_insert( OFO_BAT( object ), parms->hub )){
+					parms->inserted_count += 1;
+					bat_id = ofo_bat_get_id( OFO_BAT( object ));
+				} else {
+					parms->insert_errs += 1;
+				}
+			}
+
+		} else {
+			g_return_if_fail( OFO_IS_BAT_LINE( it->data ));
+
+			if( bat_id <= 0 ){
+				sdate = my_date_to_str( ofo_bat_line_get_dope( OFO_BAT_LINE( it->data )), ofa_prefs_date_display());
+				label = ofo_bat_line_get_label( OFO_BAT_LINE( it->data ));
+				if( skipped ){
+					str = g_strdup_printf( _( "%s %s: line ignored due to previous BAT being have been skipped" ), sdate, label );
+				} else {
+					str = g_strdup_printf( _( "%s %s: line ignored due to previous BAT being have been set erroneous" ), sdate, label );
+				}
+				ofa_iimporter_progress_text( importer, parms, str );
+				g_free( str );
+				g_free( sdate );
+				total -= 1;
+
+			} else {
+				ofo_bat_line_set_bat_id( OFO_BAT_LINE( it->data ), bat_id );
+				if( ofo_bat_line_insert( OFO_BAT_LINE( object ), parms->hub )){
+					parms->inserted_count += 1;
+				} else {
+					parms->insert_errs += 1;
+				}
+			}
+		}
+
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+	}
+}
+
+/*
+ * provided bat is an being-imported one: datas are set but the id
+ */
+static gboolean
+bat_get_exists( const ofoBat *bat, const ofaIDBConnect *connect )
+{
+	gchar *query, *where;
+	gint count;
+
+	count = 0;
+	where = bat_get_where( bat );
+	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_BAT WHERE %s", where );
+
+	ofa_idbconnect_query_int( connect, query, &count, TRUE );
+
+	g_free( query );
+	g_free( where );
+
+	return( count > 0 );
+}
+
+/*
+ * build a where clause without using the id counter
+ */
+static gchar *
+bat_get_where( const ofoBat *bat )
+{
+	const GDate *dbegin, *dend;
+	const gchar *rib;
+	gchar *sdate;
+	GString *query;
+
+	dbegin = ofo_bat_get_begin_date( bat );
+	dend = ofo_bat_get_end_date( bat );
+	rib = ofo_bat_get_rib( bat );
+
+	query = g_string_new( "");
+
+	if( my_strlen( rib )){
+		g_string_append_printf( query, "BAT_RIB='%s' ", rib );
+	} else {
+		g_string_append_printf( query, "BAT_RIB IS NULL " );
+	}
+
+	if( my_date_is_valid( dbegin )){
+		sdate = my_date_to_str( dbegin, MY_DATE_SQL );
+		g_string_append_printf( query, "AND BAT_BEGIN='%s' ", sdate );
+		g_free( sdate );
+	} else {
+		g_string_append_printf( query, "AND BAT_BEGIN IS NULL " );
+	}
+
+	if( my_date_is_valid( dend )){
+		sdate = my_date_to_str( dend, MY_DATE_SQL );
+		g_string_append_printf( query, "AND BAT_END='%s'", sdate );
+		g_free( sdate );
+	} else {
+		g_string_append_printf( query, "AND BAT_END IS NULL" );
+	}
+
+	return( g_string_free( query, FALSE ));
+}
+
+static ofxCounter
+bat_get_id_by_where( const ofoBat *bat, const ofaIDBConnect *connect )
+{
+	gchar *query, *where;
+	GSList *result, *irow, *icol;
+	ofxCounter bat_id;
+
+	bat_id = 0;
+	where = bat_get_where( bat );
+	query = g_strdup_printf( "SELECT BAT_ID FROM OFA_T_BAT WHERE %s", where );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, FALSE )){
+		irow = result;
+		icol = ( GSList * ) irow->data;
+		bat_id = atol(( gchar * ) icol->data );
+
+		ofa_idbconnect_free_results( result );
+	}
+
+	return( bat_id );
+}
+
+static gboolean
+bat_drop_content( const ofaIDBConnect *connect )
+{
+	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_BAT", TRUE ) &&
+			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_BAT_LINES", TRUE ));
 }

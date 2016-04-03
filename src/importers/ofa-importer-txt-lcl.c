@@ -63,9 +63,9 @@ typedef struct {
 
 static const lclPaiement st_lcl_paiements[] = {
 		{ "Carte",       "CB" },
-		{ "Virement",    "Vir" },
-		{ "Prélèvement", "Prel" },
-		{ "Chèque",      "Ch" },
+		{ "Virement",    "VIR" },
+		{ "Prélèvement", "PREL" },
+		{ "Chèque",      "CH" },
 		{ "TIP",         "TIP" },
 		{ 0 }
 };
@@ -86,7 +86,8 @@ static GSList          *parse_detail_v1( ofaImporterTxtLcl *self, const sParser 
 static sParser         *get_willing_to_parser( const ofaImporterTxtLcl *self, const ofaStreamFormat *format, const GSList *lines );
 static ofaStreamFormat *get_default_stream_format( const ofaImporterTxtLcl *self );
 static GSList          *split_by_field( const ofaImporterTxtLcl *self, const gchar *line, const ofaStreamFormat *format );
-static const gchar     *get_ref_paiement( const gchar *str );
+static gchar           *get_ref_paiement( const gchar *str );
+static gchar           *concatenate_string( ofaImporterTxtLcl *self, const sParser *parser, GSList **list, const gchar *prev );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterTxtLcl, ofa_importer_txt_lcl, OFA_TYPE_IMPORTER_TXT, 0,
 		G_ADD_PRIVATE( ofaImporterTxtLcl )
@@ -351,17 +352,17 @@ lcl_tabulated_text_v1_parse( ofaImporterTxtLcl *self, const sParser *parser, ofs
 
 	rev_lines = g_slist_reverse( lines );
 	fields = split_by_field( self, ( const gchar * ) rev_lines->data, parms->format );
-	output = g_slist_concat( output, parse_solde_v1( self, parser, parms, fields ));
+	output = g_slist_prepend( output, parse_solde_v1( self, parser, parms, fields ));
 	g_slist_free_full( fields, ( GDestroyNotify ) g_free );
 
 	rev_lines = rev_lines->next;
 	for( it=rev_lines ; it ; it=it->next ){
 		fields = split_by_field( self, ( const gchar * ) it->data, parms->format );
-		output = g_slist_concat( output, parse_detail_v1( self, parser, parms, fields ));
+		output = g_slist_prepend( output, parse_detail_v1( self, parser, parms, fields ));
 		g_slist_free_full( fields, ( GDestroyNotify ) g_free );
 	}
 
-	return( output );
+	return( g_slist_reverse( output ));
 }
 
 static GSList  *
@@ -410,7 +411,7 @@ parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms
 	output = g_slist_prepend( output, ssolde );
 	output = g_slist_prepend( output, g_strdup( "Y" ));
 
-	return( output );
+	return( g_slist_reverse( output ));
 }
 
 static GSList  *
@@ -439,36 +440,18 @@ parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParm
 	samount = my_double_to_sql( amount );
 
 	/* reference */
-	sref = g_strdup( "" );
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( sref );
-		sref = g_strdup( get_ref_paiement( cstr ));
-	}
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		tmp = g_strdup_printf( "%s %s", sref, cstr );
-		g_free( sref );
-		sref = tmp;
-	}
+	sref = get_ref_paiement( cstr );
+	tmp = concatenate_string( self, parser, &it, sref );
+	g_free( sref );
+	sref = tmp ? tmp : g_strdup( "" );
 
 	/* label */
-	slabel = g_strdup( "" );
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( slabel );
-		slabel = g_strstrip( g_strdup( cstr ));
-	}
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		tmp = g_strdup_printf( "%s %s", slabel, cstr );
-		g_free( slabel );
-		slabel = tmp;
-	}
+	slabel = concatenate_string( self, parser, &it, NULL );
+	tmp = concatenate_string( self, parser, &it, slabel );
+	g_free( slabel );
+	slabel = tmp ? tmp : g_strdup( "" );
 
 	output = g_slist_prepend( output, g_strdup( "2" ));
 	output = g_slist_prepend( output, g_strdup( "" ));
@@ -478,7 +461,7 @@ parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParm
 	output = g_slist_prepend( output, samount );
 	output = g_slist_prepend( output, g_strdup( "" ));
 
-	return( output );
+	return( g_slist_reverse( output ));
 }
 
 static sParser *
@@ -546,19 +529,59 @@ split_by_field( const ofaImporterTxtLcl *self, const gchar *line, const ofaStrea
 	return( g_slist_reverse( out ));
 }
 
-static const gchar *
-get_ref_paiement( const gchar *str )
+static gchar *
+get_ref_paiement( const gchar *cstr )
 {
+	gchar *found, *str;
 	gint i;
+
+	found = NULL;
+	str = g_strstrip( g_strdup( cstr ));
 
 	if( my_strlen( str )){
 		for( i=0 ; st_lcl_paiements[i].bat_label ; ++ i ){
 			if( !g_utf8_collate( str, st_lcl_paiements[i].bat_label )){
-				return( st_lcl_paiements[i].ofa_label );
+				found = g_strstrip( g_strdup( st_lcl_paiements[i].ofa_label ));
+				break;
 			}
 		}
-		return( str );
+		if( !found ){
+			found = g_strdup( str );
+		}
 	}
 
-	return( NULL );
+	g_free( str );
+	return( found );
+}
+
+/*
+ * concatenate the next string
+ */
+static gchar *
+concatenate_string( ofaImporterTxtLcl *self, const sParser *parser, GSList **list, const gchar *prev )
+{
+	GSList *it;
+	const gchar *cstr;
+	gchar *label, *tmp, *tmp2;
+
+	label = my_strlen( prev ) ? g_strstrip( g_strdup( prev )) : g_strdup( "" );
+
+	it = ( *list ) ? ( *list )->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		if( my_strlen( label )){
+			tmp = g_strdup_printf( "%s ", label );
+			g_free( label );
+			label = tmp;
+		}
+		tmp = g_strstrip( g_strdup( cstr ));
+		tmp2 = g_strdup_printf( "%s%s", label, tmp );
+		g_free( tmp );
+		g_free( label );
+		label = tmp2;
+	}
+
+	*list = it;
+
+	return( label );
 }

@@ -1091,7 +1091,7 @@ Press Continue.</property>
               <object class="GtkLabel" id="label711">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes">Import</property>
+                <property name="label" translatable="yes">Parsing</property>
               </object>
               <packing>
                 <property name="left_attach">0</property>
