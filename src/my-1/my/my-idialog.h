@@ -81,7 +81,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint    ( *get_interface_version )( void );
 
@@ -93,7 +93,7 @@ typedef struct {
 	 * This is called once, before the first presentation, when running
 	 * a modal dialog.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void     ( *init )                 ( myIDialog *instance );
 
@@ -103,7 +103,7 @@ typedef struct {
 	 *
 	 * Returns: %TRUE if the implementation is OK to terminate the dialog.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gboolean ( *quit_on_ok )           ( myIDialog *instance );
 
@@ -114,7 +114,7 @@ typedef struct {
 	 *
 	 * Returns: %TRUE if the implementation is OK to terminate the dialog.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gboolean ( *quit_on_code )         ( myIDialog *instance,
 												gint response_code );

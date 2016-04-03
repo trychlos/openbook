@@ -91,7 +91,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint      ( *get_interface_version )( void );
 
@@ -102,7 +102,7 @@ typedef struct {
 	 *
 	 * Returns: the keyfile of the underlying settings file.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	GKeyFile * ( *get_keyfile )          ( const myISettings *instance );
 
@@ -113,7 +113,7 @@ typedef struct {
 	 * Returns: the filename of the underlying settings file, as a newly
 	 * allocated string which should be g_free() by the caller.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gchar *    ( *get_filename )         ( const myISettings *instance );
 
@@ -124,7 +124,7 @@ typedef struct {
 	 * Returns: the list of groups as a #GList of strings which should
 	 * be #my_isettings_free_groups() by the caller.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	GList *    ( *get_groups )           ( const myISettings *instance );
 
@@ -135,7 +135,7 @@ typedef struct {
 	 *
 	 * Removes the @group from the settings file.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *remove_group )         ( myISettings *instance,
 												const gchar *group );
@@ -148,7 +148,7 @@ typedef struct {
 	 * Returns: the list of keys as a #GList of strings which should be
 	 * #my_isettings_free_keys() by the caller.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	GList *    ( *get_keys )             ( const myISettings *instance,
 												const gchar *group );
@@ -159,7 +159,7 @@ typedef struct {
 	 *
 	 * Frees the provided @key_list.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *free_keys )            ( GList *key_list );
 
@@ -171,7 +171,7 @@ typedef struct {
 	 *
 	 * Removes the @key in the @group from the settings file.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *remove_key )           ( myISettings *instance,
 												const gchar *group,
@@ -186,7 +186,7 @@ typedef struct {
 	 * Returns: the value of the @key in the @group,
 	 * or FALSE if not found.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gboolean   ( *get_boolean )          ( const myISettings *instance,
 												const gchar *group,
@@ -201,7 +201,7 @@ typedef struct {
 	 *
 	 * Sets the @value to the @key of the @group.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *set_boolean )          ( myISettings *instance,
 												const gchar *group,
@@ -217,7 +217,7 @@ typedef struct {
 	 * Returns: the value of the @key in the @group,
 	 * or 0 if not found.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint      ( *get_uint )             ( const myISettings *instance,
 												const gchar *group,
@@ -232,7 +232,7 @@ typedef struct {
 	 *
 	 * Sets the @value to the @key of the @group.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *set_uint )             ( myISettings *instance,
 												const gchar *group,
@@ -248,7 +248,7 @@ typedef struct {
 	 * Returns: the value of the @key in the @group as a #GList of
 	 * unsigned integers, or %NULL if not found.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	GList *    ( *get_uint_list )        ( const myISettings *instance,
 												const gchar *group,
@@ -264,7 +264,7 @@ typedef struct {
 	 * Sets the @value to the @key of the @group.
 	 * Removes the key if @value is %NULL.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *set_uint_list )        ( myISettings *instance,
 												const gchar *group,
@@ -278,7 +278,7 @@ typedef struct {
 	 *
 	 * Frees the provided @value.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *free_uint_list )       ( GList *value );
 
@@ -292,7 +292,7 @@ typedef struct {
 	 * allocated string which should be g_free() by the caller,
 	 * or %NULL if not found.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gchar *    ( *get_string )           ( const myISettings *instance,
 												const gchar *group,
@@ -307,7 +307,7 @@ typedef struct {
 	 *
 	 * Sets the @value to the @key of the @group.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *set_string )           ( myISettings *instance,
 												const gchar *group,
@@ -324,7 +324,7 @@ typedef struct {
 	 * strings which should be #my_isettings_free_string_list() by the
 	 * caller.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	GList *    ( *get_string_list )      ( const myISettings *instance,
 												const gchar *group,
@@ -339,7 +339,7 @@ typedef struct {
 	 *
 	 * Sets the @value to the @key of the @group.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *set_string_list )      ( myISettings *instance,
 												const gchar *group,
@@ -353,7 +353,7 @@ typedef struct {
 	 *
 	 * Frees the provided @string_list.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *free_string_list )     ( GList *string_list );
 }

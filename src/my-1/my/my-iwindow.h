@@ -106,7 +106,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint    ( *get_interface_version )( void );
 
@@ -124,7 +124,7 @@ typedef struct {
 	 *
 	 * Defaults to class name.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gchar *  ( *get_identifier )       ( const myIWindow *instance );
 
@@ -136,7 +136,7 @@ typedef struct {
 	 *
 	 * Defaults to identifier.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gchar *  ( *get_key_prefix )       ( const myIWindow *instance );
 
@@ -161,7 +161,7 @@ typedef struct {
 	 * Let the user provide its own default size and position when no
 	 * size and position have been recorded from a previous use.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void     ( *get_default_size )     ( myIWindow *instance,
 												guint *x,
@@ -181,7 +181,7 @@ typedef struct {
 	 *
 	 * Defaults to %TRUE.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gboolean ( *quit_on_escape )       ( const myIWindow *instance );
 
@@ -195,7 +195,7 @@ typedef struct {
 	 * Called at initialization time, after window creation and restore
 	 * of size and position, to let the application read its own settings.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void     ( *read_settings )        ( myIWindow *instance,
 												myISettings *settings,
@@ -211,7 +211,7 @@ typedef struct {
 	 * Called at dispose time, before save of window size and position,
 	 * to let the application write its own settings.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void     ( *write_settings )       ( myIWindow *instance,
 												myISettings *settings,

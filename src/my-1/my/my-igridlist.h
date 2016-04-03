@@ -76,7 +76,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint      ( *get_interface_version )( void );
 
@@ -90,7 +90,7 @@ typedef struct {
 	 * The implementation may take advantage of this method to add
 	 * its own widgets and values to the @grid.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	void       ( *set_row )              ( const myIGridList *instance,
 												GtkGrid *grid,

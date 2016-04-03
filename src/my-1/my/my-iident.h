@@ -70,7 +70,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint    ( *get_interface_version )( void );
 
@@ -83,7 +83,7 @@ typedef struct {
 	 * Returns: the canonical name of the loadable module, as a newly
 	 * allocated string which should be g_free() by the application.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gchar *  ( *get_canon_name )       ( const myIIdent *instance,
 											void *user_data );
@@ -96,7 +96,7 @@ typedef struct {
 	 * Returns: the displayable name of the loadable module, as a newly
 	 * allocated string which should be g_free() by the application.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gchar *  ( *get_display_name )     ( const myIIdent *instance,
 											void *user_data );
@@ -109,7 +109,7 @@ typedef struct {
 	 * Returns: the internal version of the loadable module, as a newly
 	 * allocated string which should be g_free() by the application.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gchar *  ( *get_version )          ( const myIIdent *instance,
 											void *user_data );

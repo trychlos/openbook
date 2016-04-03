@@ -79,7 +79,7 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint    ( *get_interface_version )( void );
 
@@ -100,7 +100,7 @@ typedef struct {
 	 *
 	 * Defaults to %TRUE.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	gboolean ( *is_willing_to_quit )   ( myIAssistant *instance,
 												guint keyval );
