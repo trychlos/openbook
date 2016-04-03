@@ -38,6 +38,8 @@
    - Import a dynamic list of importable objects (todo #520).
    - VATForm: make it exportable (todo #940).
    - VATForm: make it importable (todo #939).
+   - ImporterCSV: new general plugin.
+   - ImporterTxtLcl: new plugin which replace (obsoleted) ImportTxt one.
 
  Bug fixes:
 

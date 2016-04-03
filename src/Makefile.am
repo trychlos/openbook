@@ -29,7 +29,6 @@ SUBDIRS = \
 	css													\
 	import-bourso										\
 	import-bourso-pdf									\
-	import-lcl											\
 	import-lcl-pdf										\
 	importers											\
 	mysql												\

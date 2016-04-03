@@ -114,11 +114,11 @@ have_IMPORT_BOURSO_PDF="no"				# requires Poppler libraries
 if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
 	have_IMPORT_BOURSO_PDF="yes"
 fi
-have_IMPORT_LCL="yes"					# always built
 have_IMPORT_LCL_PDF="no"				# requires Poppler libraries
 if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
 	have_IMPORT_LCL_PDF="yes"
 fi
+have_IMPORTERS="yes"					# always built
 have_POSTGRE="no"						# not built as of 0.35
 AM_CONDITIONAL([HAVE_POSTGRE], [test "${have_POSTGRE}" = "yes"])
 
@@ -150,7 +150,6 @@ AC_CONFIG_FILES([
 	src/css/Makefile
 	src/import-bourso/Makefile
 	src/import-bourso-pdf/Makefile
-	src/import-lcl/Makefile
 	src/import-lcl-pdf/Makefile
 	src/importers/Makefile
 	src/my-1/Makefile
@@ -181,12 +180,12 @@ if test "${have_IMPORT_BOURSO_PDF}" = "yes"; then
 else
 	$as_echo "	  Import_Boursorama_PDF         ${have_IMPORT_BOURSO_PDF}"
 fi
-	$as_echo "	  Import_LCL                    ${have_IMPORT_LCL}"
 if test "${have_IMPORT_LCL_PDF}" = "yes"; then
 	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF} (with Poppler ${POPPLER_msg_version})"
 else
 	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF}"
 fi
+	$as_echo "	  Importers                     ${have_IMPORTERS}"
 if test "${have_MYSQL}" = "yes"; then
 	$as_echo "	  MySQL                         ${have_MYSQL} (with MySQL ${MYSQL_msg_version})"
 else
