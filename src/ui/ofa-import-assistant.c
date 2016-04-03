@@ -1567,9 +1567,17 @@ p7_do_import( ofaImportAssistant *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p7-label" );
 
 	if( errors == 0 ){
-		text = g_strdup_printf( _( "OK: %u lines from '%s' have been successfully "
-				"imported into « %s »." ),
-				parms.inserted_count, priv->p1_furi, priv->p2_selected_label );
+		if( parms.inserted_count == 0 ){
+			text = g_strdup_printf( _( "No line from '%s' has been imported." ),
+					priv->p1_furi );
+		} else if( parms.inserted_count == 1 ){
+			text = g_strdup_printf( _( "OK: one line from '%s' has been successfully "
+					"imported into « %s »." ), priv->p1_furi, priv->p2_selected_label );
+		} else {
+			text = g_strdup_printf( _( "OK: %d lines from '%s' have been successfully "
+					"imported into « %s »." ),
+					parms.inserted_count, priv->p1_furi, priv->p2_selected_label );
+		}
 		style = "labelinfo";
 
 	} else if( parms.parse_errs > 0 ){
