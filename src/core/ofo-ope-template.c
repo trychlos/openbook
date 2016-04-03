@@ -195,15 +195,15 @@ static gboolean        model_do_delete( ofoOpeTemplate *model, const ofaIDBConne
 static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
 static gint            ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
 static void            icollectionable_iface_init( ofaICollectionableInterface *iface );
-static guint           icollectionable_get_interface_version( const ofaICollectionable *instance );
+static guint           icollectionable_get_interface_version( void );
 static GList          *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
-static guint           iexportable_get_interface_version( const ofaIExportable *instance );
+static guint           iexportable_get_interface_version( void );
 static gchar          *iexportable_get_label( const ofaIExportable *instance );
 static gboolean        iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static gchar          *update_decimal_sep( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, void *empty );
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
-static guint           iimportable_get_interface_version( const ofaIImportable *instance );
+static guint           iimportable_get_interface_version( void );
 static gchar          *iimportable_get_label( const ofaIImportable *instance );
 static guint           iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList          *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
@@ -1573,7 +1573,7 @@ icollectionable_iface_init( ofaICollectionableInterface *iface )
 }
 
 static guint
-icollectionable_get_interface_version( const ofaICollectionable *instance )
+icollectionable_get_interface_version( void )
 {
 	return( 1 );
 }
@@ -1622,7 +1622,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 }
 
 static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
+iexportable_get_interface_version( void )
 {
 	return( 1 );
 }
@@ -1757,7 +1757,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 }
 
 static guint
-iimportable_get_interface_version( const ofaIImportable *instance )
+iimportable_get_interface_version( void )
 {
 	return( 1 );
 }

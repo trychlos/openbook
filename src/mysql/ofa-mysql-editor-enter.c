@@ -66,7 +66,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-editor-enter.ui";
 
 static void          idbeditor_iface_init( ofaIDBEditorInterface *iface );
-static guint         idbeditor_get_interface_version( const ofaIDBEditor *instance );
+static guint         idbeditor_get_interface_version( void );
 static GtkSizeGroup *idbeditor_get_size_group( const ofaIDBEditor *instance, guint column );
 static gboolean      idbeditor_get_valid( const ofaIDBEditor *instance, gchar **message );
 static void          setup_bin( ofaMySQLEditorEnter *bin );
@@ -166,7 +166,7 @@ idbeditor_iface_init( ofaIDBEditorInterface *iface )
 }
 
 static guint
-idbeditor_get_interface_version( const ofaIDBEditor *instance )
+idbeditor_get_interface_version( void )
 {
 	return( 1 );
 }

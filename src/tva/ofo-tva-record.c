@@ -230,7 +230,7 @@ static gint          record_cmp_by_compare( const ofoTVARecord *a, const sCompar
 static gint          record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
 static gint          tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b );
 static void          icollectionable_iface_init( ofaICollectionableInterface *iface );
-static guint         icollectionable_get_interface_version( const ofaICollectionable *instance );
+static guint         icollectionable_get_interface_version( void );
 static GList        *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
@@ -1751,7 +1751,7 @@ icollectionable_iface_init( ofaICollectionableInterface *iface )
 }
 
 static guint
-icollectionable_get_interface_version( const ofaICollectionable *instance )
+icollectionable_get_interface_version( void )
 {
 	return( 1 );
 }

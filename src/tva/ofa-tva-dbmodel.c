@@ -87,7 +87,7 @@ static sMigration st_migrates[] = {
 
 #define MARGIN_LEFT                     20
 
-static guint      idbmodel_get_interface_version( const ofaIDBModel *instance );
+static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static void       idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub );
@@ -122,7 +122,7 @@ ofa_tva_dbmodel_iface_init( ofaIDBModelInterface *iface )
  * the version of the #ofaIDBModel interface implemented by the module
  */
 static guint
-idbmodel_get_interface_version( const ofaIDBModel *instance )
+idbmodel_get_interface_version( void )
 {
 	return( 1 );
 }

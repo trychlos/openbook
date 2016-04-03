@@ -57,7 +57,7 @@ typedef struct {
 	ofaMySQLConnectPrivate;
 
 static void     idbconnect_iface_init( ofaIDBConnectInterface *iface );
-static guint    idbconnect_get_interface_version( const ofaIDBConnect *instance );
+static guint    idbconnect_get_interface_version( void );
 static gboolean idbconnect_open_with_editor( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBEditor *editor, gboolean server_only );
 static gboolean idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const gchar *password, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
 static gboolean connect_open( ofaMySQLConnect *connect, const gchar *account, const gchar *password, const gchar *host, const gchar *socket, guint port, const gchar *database, gchar **msg );
@@ -167,7 +167,7 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 }
 
 static guint
-idbconnect_get_interface_version( const ofaIDBConnect *instance )
+idbconnect_get_interface_version( void )
 {
 	return( 1 );
 }

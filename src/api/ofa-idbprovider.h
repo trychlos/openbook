@@ -92,7 +92,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
 	guint           ( *get_interface_version )( void );
 

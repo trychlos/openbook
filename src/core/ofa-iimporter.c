@@ -136,6 +136,10 @@ ofa_iimporter_get_interface_last_version( void )
  *
  * Returns: the version number of this interface which is managed by
  * the @type implementation.
+ *
+ * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
 ofa_iimporter_get_interface_version( GType type )

@@ -133,9 +133,11 @@ ofa_itheme_manager_get_interface_last_version( void )
  * the @type implementation.
  *
  * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
-ofa_itheme_manager_get_interface_version( const ofaIThemeManager *instance )
+ofa_itheme_manager_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;

@@ -115,7 +115,7 @@ static gboolean model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *
 static gint     model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
 static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void     icollectionable_iface_init( ofaICollectionableInterface *iface );
-static guint    icollectionable_get_interface_version( const ofaICollectionable *instance );
+static guint    icollectionable_get_interface_version( void );
 static GList   *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
@@ -670,7 +670,7 @@ icollectionable_iface_init( ofaICollectionableInterface *iface )
 }
 
 static guint
-icollectionable_get_interface_version( const ofaICollectionable *instance )
+icollectionable_get_interface_version( void )
 {
 	return( 1 );
 }

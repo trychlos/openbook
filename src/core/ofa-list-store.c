@@ -60,7 +60,7 @@ enum {
 static gint st_signals[ N_SIGNALS ] = { 0 };
 
 static void   istore_iface_init( ofaIStoreInterface *iface );
-static guint  istore_get_interface_version( const ofaIStore *instance );
+static guint  istore_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaListStore, ofa_list_store, GTK_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaListStore )
@@ -257,7 +257,7 @@ istore_iface_init( ofaIStoreInterface *iface )
 }
 
 static guint
-istore_get_interface_version( const ofaIStore *instance )
+istore_get_interface_version( void )
 {
 	return( 1 );
 }

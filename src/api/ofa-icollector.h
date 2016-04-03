@@ -83,7 +83,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )( const ofaICollector *instance );
+	guint ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 }

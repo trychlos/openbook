@@ -170,6 +170,10 @@ ofa_iimportable_get_interface_last_version( void )
  *
  * Returns: the version number of this interface which is managed by
  * the @type implementation.
+ *
+ * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
 ofa_iimportable_get_interface_version( GType type )
@@ -235,7 +239,7 @@ ofa_iimportable_import( GType type, ofaIImporter *importer, ofsImporterParms *pa
 		if( parms->progress ){
 			my_iprogress_set_text( parms->progress, importer, msgerr );
 		} else {
-			g_info( msgerr );
+			g_info( "%s", msgerr );
 		}
 		g_free( msgerr );
 	}

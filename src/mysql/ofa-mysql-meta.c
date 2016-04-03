@@ -53,7 +53,7 @@ typedef struct {
 #define MYSQL_PORT_KEY                  "mysql-port"
 
 static void            idbmeta_iface_init( ofaIDBMetaInterface *iface );
-static guint           idbmeta_get_interface_version( const ofaIDBMeta *instance );
+static guint           idbmeta_get_interface_version( void );
 static void            idbmeta_set_from_settings( ofaIDBMeta *instance, myISettings *settings, const gchar *group );
 static void            idbmeta_set_from_editor( ofaIDBMeta *instance, const ofaIDBEditor *editor, myISettings *settings, const gchar *group );
 static GList          *load_periods( ofaIDBMeta *meta, myISettings *settings, const gchar *group );
@@ -149,7 +149,7 @@ idbmeta_iface_init( ofaIDBMetaInterface *iface )
 }
 
 static guint
-idbmeta_get_interface_version( const ofaIDBMeta *instance )
+idbmeta_get_interface_version( void )
 {
 	return( 1 );
 }

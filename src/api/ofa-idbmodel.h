@@ -98,26 +98,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDBModel provider.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIDBModel interface.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
-	guint         ( *get_interface_version )( const ofaIDBModel *instance );
+	guint         ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_current_version:
 	 * @instance: the #ofaIDBModel provider.
@@ -222,12 +216,21 @@ typedef struct {
 }
 	ofaIDBModelInterface;
 
+/*
+ * Interface-wide
+ */
 GType        ofa_idbmodel_get_type                  ( void );
 
 guint        ofa_idbmodel_get_interface_last_version( void );
 
-guint        ofa_idbmodel_get_interface_version     ( const ofaIDBModel *instance );
+/*
+ * Implementation-wide
+ */
+guint        ofa_idbmodel_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 gboolean     ofa_idbmodel_update                    ( ofaHub *hub,
 															GtkWindow *parent );
 

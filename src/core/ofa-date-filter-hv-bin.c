@@ -41,7 +41,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-date-filter-hv-bin.ui";
 
 static void  idate_filter_iface_init( ofaIDateFilterInterface *iface );
-static guint idate_filter_get_interface_version( const ofaIDateFilter *instance );
+static guint idate_filter_get_interface_version( void );
 static void  idate_filter_add_widget( ofaIDateFilter *instance, GtkWidget *widget, gint where );
 
 G_DEFINE_TYPE_EXTENDED( ofaDateFilterHVBin, ofa_date_filter_hv_bin, GTK_TYPE_BIN, 0,
@@ -141,7 +141,7 @@ idate_filter_iface_init( ofaIDateFilterInterface *iface )
 }
 
 static guint
-idate_filter_get_interface_version( const ofaIDateFilter *instance )
+idate_filter_get_interface_version( void )
 {
 	return( 1 );
 }

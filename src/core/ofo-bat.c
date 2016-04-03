@@ -86,10 +86,10 @@ static gint        bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b );
 static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
-static guint       icollectionable_get_interface_version( const ofaICollectionable *instance );
+static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
-static guint       iimportable_get_interface_version( const ofaIImportable *instance );
+static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
 static guint       iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList      *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
@@ -1380,7 +1380,7 @@ icollectionable_iface_init( ofaICollectionableInterface *iface )
 }
 
 static guint
-icollectionable_get_interface_version( const ofaICollectionable *instance )
+icollectionable_get_interface_version( void )
 {
 	return( 1 );
 }
@@ -1489,7 +1489,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 }
 
 static guint
-iimportable_get_interface_version( const ofaIImportable *instance )
+iimportable_get_interface_version( void )
 {
 	return( 1 );
 }

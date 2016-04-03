@@ -69,7 +69,7 @@ static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
 static gboolean     bat_line_do_insert( ofoBatLine *bat, ofaHub *hub );
 static gboolean     bat_line_insert_main( ofoBatLine *bat, ofaHub *hub );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
-static guint        iconcil_get_interface_version( const ofaIConcil *instance );
+static guint        iconcil_get_interface_version( void );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
 static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 
@@ -735,7 +735,7 @@ iconcil_iface_init( ofaIConcilInterface *iface )
 }
 
 static guint
-iconcil_get_interface_version( const ofaIConcil *instance )
+iconcil_get_interface_version( void )
 {
 	return( 1 );
 }

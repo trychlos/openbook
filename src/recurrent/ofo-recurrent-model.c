@@ -118,7 +118,7 @@ static gboolean           model_do_delete( ofoRecurrentModel *model, const ofaID
 static gint               model_cmp_by_mnemo( const ofoRecurrentModel *a, const gchar *mnemo );
 static gint               recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a, const ofoRecurrentModel *b );
 static void               icollectionable_iface_init( ofaICollectionableInterface *iface );
-static guint              icollectionable_get_interface_version( const ofaICollectionable *instance );
+static guint              icollectionable_get_interface_version( void );
 static GList             *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
@@ -893,7 +893,7 @@ icollectionable_iface_init( ofaICollectionableInterface *iface )
 }
 
 static guint
-icollectionable_get_interface_version( const ofaICollectionable *instance )
+icollectionable_get_interface_version( void )
 {
 	return( 1 );
 }

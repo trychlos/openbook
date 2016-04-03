@@ -101,7 +101,7 @@ static void      iident_iface_init( myIIdentInterface *iface );
 static gchar    *iident_get_display_name( const myIIdent *instance, void *user_data );
 static gchar    *iident_get_version( const myIIdent *instance, void *user_data );
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
-static guint     iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer );
+static guint     iimportable_get_interface_version( void );
 static gboolean  iimportable_is_willing_to( ofaIImportable *importer, const gchar *uri, const ofaStreamFormat *settings, void **ref, guint *count );
 static guint     iimportable_old_import_uri( ofaIImportable *importer, void *ref, const gchar *uri, const ofaStreamFormat *settings, ofaHub *hub, ofxCounter *imported_id );
 static gboolean  lcl_pdf_v1_check( ofaLclPdfImporter *importer, const gchar *uri );
@@ -285,7 +285,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 }
 
 static guint
-iimportable_get_interface_version( const ofaIImportable *lcl_pdf_importer )
+iimportable_get_interface_version( void )
 {
 	return( 1 );
 }

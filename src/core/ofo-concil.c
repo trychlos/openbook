@@ -67,7 +67,7 @@ static gint       concil_cmp_by_ptr( const ofoConcil *a, const ofoConcil *b );
 static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaIDBConnect *connect );
 static gboolean   concil_do_delete( ofoConcil *concil, const ofaIDBConnect *connect );
 static void       icollectionable_iface_init( ofaICollectionableInterface *iface );
-static guint      icollectionable_get_interface_version( const ofaICollectionable *instance );
+static guint      icollectionable_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofoConcil, ofo_concil, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoConcil )
@@ -708,7 +708,7 @@ icollectionable_iface_init( ofaICollectionableInterface *iface )
 }
 
 static guint
-icollectionable_get_interface_version( const ofaICollectionable *instance )
+icollectionable_get_interface_version( void )
 {
 	return( 1 );
 }

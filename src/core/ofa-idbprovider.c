@@ -188,9 +188,13 @@ provider_get_by_name( GList *modules, const gchar *name )
  *
  * Returns: the version number of this interface which is managed by
  * the @type implementation.
+ *
+ * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
-ofa_idbprovider_get_interface_version( const ofaIDBProvider *instance )
+ofa_idbprovider_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;

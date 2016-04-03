@@ -62,22 +62,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDBPeriod instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implemented by the instance.
-	 *
-	 * Returns: the version number of this interface that the @instance
-	 *  is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
-	guint    ( *get_interface_version )( const ofaIDBPeriod *instance );
+	guint    ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_name:
 	 * @instance: the #ofaIDBPeriod instance.
@@ -118,12 +116,21 @@ typedef struct {
 }
 	ofaIDBPeriodInterface;
 
+/*
+ * Interface-wide
+ */
 GType        ofa_idbperiod_get_type                  ( void );
 
 guint        ofa_idbperiod_get_interface_last_version( void );
 
-guint        ofa_idbperiod_get_interface_version     ( const ofaIDBPeriod *period );
+/*
+ * Implementation-wide
+ */
+guint        ofa_idbperiod_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 const GDate *ofa_idbperiod_get_begin_date            ( const ofaIDBPeriod *period );
 
 void         ofa_idbperiod_set_begin_date            ( ofaIDBPeriod *period,

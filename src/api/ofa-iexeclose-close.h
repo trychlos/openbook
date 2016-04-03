@@ -91,9 +91,9 @@ typedef struct {
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
-	guint    ( *get_interface_version )( const ofaIExeCloseClose *instance );
+	guint    ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**

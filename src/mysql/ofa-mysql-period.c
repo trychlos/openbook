@@ -47,7 +47,7 @@ typedef struct {
 #define MYSQL_DATABASE_KEY_PREFIX       "mysql-db-"
 
 static void            idbperiod_iface_init( ofaIDBPeriodInterface *iface );
-static guint           idbperiod_get_interface_version( const ofaIDBPeriod *instance );
+static guint           idbperiod_get_interface_version( void );
 static gchar          *idbperiod_get_name( const ofaIDBPeriod *instance );
 static gint            idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b );
 static void            idbperiod_dump( const ofaIDBPeriod *instance );
@@ -138,7 +138,7 @@ idbperiod_iface_init( ofaIDBPeriodInterface *iface )
 }
 
 static guint
-idbperiod_get_interface_version( const ofaIDBPeriod *instance )
+idbperiod_get_interface_version( void )
 {
 	return( 1 );
 }

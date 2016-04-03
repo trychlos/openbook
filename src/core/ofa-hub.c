@@ -86,7 +86,7 @@ enum {
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
 static void  icollector_iface_init( ofaICollectorInterface *iface );
-static guint icollector_get_interface_version( const ofaICollector *instance );
+static guint icollector_get_interface_version( void );
 static void  isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
 static void  dossier_do_close( ofaHub *hub );
 static void  init_signaling_system( ofaHub *hub );
@@ -410,7 +410,7 @@ icollector_iface_init( ofaICollectorInterface *iface )
 }
 
 static guint
-icollector_get_interface_version( const ofaICollector *instance )
+icollector_get_interface_version( void )
 {
 	return( 1 );
 }

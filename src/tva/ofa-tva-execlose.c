@@ -51,7 +51,7 @@ typedef struct {
 }
 	sUpdate;
 
-static guint    iexeclose_close_get_interface_version( const ofaIExeCloseClose *instance );
+static guint    iexeclose_close_get_interface_version( void );
 static gchar   *iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowtype );
 static gboolean iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub );
 static gboolean do_task_closing( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub );
@@ -77,7 +77,7 @@ ofa_tva_execlose_iface_init( ofaIExeCloseCloseInterface *iface )
  * the version of the #ofaIExeCloseClose interface implemented by the module
  */
 static guint
-iexeclose_close_get_interface_version( const ofaIExeCloseClose *instance )
+iexeclose_close_get_interface_version( void )
 {
 	return( 1 );
 }

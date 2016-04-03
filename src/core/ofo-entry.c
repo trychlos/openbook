@@ -220,19 +220,19 @@ static gboolean     entry_do_update( ofoEntry *entry, ofaHub *hub );
 static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *connect );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
-static guint        iexportable_get_interface_version( const ofaIExportable *instance );
+static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
 static gboolean     iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static gchar       *export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
-static guint        iimportable_get_interface_version( const ofaIImportable *instance );
+static guint        iimportable_get_interface_version( void );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
 static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean     entry_drop_content( const ofaIDBConnect *connect );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
-static guint        iconcil_get_interface_version( const ofaIConcil *instance );
+static guint        iconcil_get_interface_version( void );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
 static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 
@@ -2711,7 +2711,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 }
 
 static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
+iexportable_get_interface_version( void )
 {
 	return( 1 );
 }
@@ -2842,7 +2842,7 @@ iimportable_iface_init( ofaIImportableInterface *iface )
 }
 
 static guint
-iimportable_get_interface_version( const ofaIImportable *instance )
+iimportable_get_interface_version( void )
 {
 	return( 1 );
 }
@@ -3360,7 +3360,7 @@ iconcil_iface_init( ofaIConcilInterface *iface )
 }
 
 static guint
-iconcil_get_interface_version( const ofaIConcil *instance )
+iconcil_get_interface_version( void )
 {
 	return( 1 );
 }

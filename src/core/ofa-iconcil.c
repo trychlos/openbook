@@ -152,26 +152,40 @@ ofa_iconcil_get_interface_last_version( void )
 
 /**
  * ofa_iconcil_get_interface_version:
- * @instance: this #ofaIConcil instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number implemented by the object.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  *
  * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
-ofa_iconcil_get_interface_version( const ofaIConcil *instance )
+ofa_iconcil_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "ofa_iconcil_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_return_val_if_fail( instance && OFA_IS_ICONCIL( instance ), 0 );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	if( OFA_ICONCIL_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_ICONCIL_GET_INTERFACE( instance )->get_interface_version( instance ));
+	iface = g_type_interface_peek( klass, OFA_TYPE_ICONCIL );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIConcilInterface * ) iface )->get_interface_version ){
+		version = (( ofaIConcilInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIConcil::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: ofaIConcil's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

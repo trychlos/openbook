@@ -63,24 +63,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIConcil instance.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIConcil interface.
-	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1.
 	 */
-	guint         ( *get_interface_version )( const ofaIConcil *instance );
+	guint         ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_object_id:
 	 * @instance: the #ofaIConcil instance.
@@ -104,12 +100,21 @@ typedef struct {
 }
 	ofaIConcilInterface;
 
+/*
+ * Interface-wide
+ */
 GType        ofa_iconcil_get_type                  ( void );
 
 guint        ofa_iconcil_get_interface_last_version( void );
 
-guint        ofa_iconcil_get_interface_version     ( const ofaIConcil *instance );
+/*
+ * Implementation-wide
+ */
+guint        ofa_iconcil_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 ofoConcil   *ofa_iconcil_get_concil                ( const ofaIConcil *instance );
 
 ofoConcil   *ofa_iconcil_new_concil                ( ofaIConcil *instance,

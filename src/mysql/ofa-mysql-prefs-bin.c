@@ -77,7 +77,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysq
 static void     iident_iface_init( myIIdentInterface *iface );
 static gchar   *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static void     iprefs_page_iface_init( ofaIPrefsPageInterface *iface );
-static guint    iprefs_page_get_interface_version( const ofaIPrefsPage *instance );
+static guint    iprefs_page_get_interface_version( void );
 static gboolean iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label, gchar **msgerr );
 static gboolean iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **msgerr );
 static gboolean iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr );
@@ -218,7 +218,7 @@ iprefs_page_iface_init( ofaIPrefsPageInterface *iface )
 }
 
 static guint
-iprefs_page_get_interface_version( const ofaIPrefsPage *instance )
+iprefs_page_get_interface_version( void )
 {
 	return( 1 );
 }

@@ -219,7 +219,7 @@ static gboolean    do_update_properties( ofoDossier *dossier );
 static gboolean    dossier_do_update_currencies( ofoDossier *dossier );
 static gboolean    do_update_currency_properties( ofoDossier *dossier );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
-static guint       iexportable_get_interface_version( const ofaIExportable *instance );
+static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static void        free_currency_details( ofoDossier *dossier );
@@ -1700,7 +1700,7 @@ iexportable_iface_init( ofaIExportableInterface *iface )
 }
 
 static guint
-iexportable_get_interface_version( const ofaIExportable *instance )
+iexportable_get_interface_version( void )
 {
 	return( 1 );
 }

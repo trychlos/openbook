@@ -132,6 +132,8 @@ ofa_iabout_get_interface_last_version( void )
  * the @type implementation.
  *
  * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
 ofa_iabout_get_interface_version( GType type )

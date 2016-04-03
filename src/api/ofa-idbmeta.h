@@ -81,22 +81,20 @@ struct _ofaIDBMetaInterface {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDBMeta instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implemented by the instance.
-	 *
-	 * Returns: the version number of this interface that the @instance
-	 *  is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1
+	 * Since: version 1.
 	 */
-	guint            ( *get_interface_version )( const ofaIDBMeta *instance );
+	guint            ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * set_from_settings:
 	 * @instance: the #ofaIDBMeta instance.
@@ -172,12 +170,21 @@ struct _ofaIDBMetaInterface {
 	void             ( *dump )                 ( const ofaIDBMeta *instance );
 };
 
+/*
+ * Interface-wide
+ */
 GType           ofa_idbmeta_get_type                  ( void );
 
 guint           ofa_idbmeta_get_interface_last_version( void );
 
-guint           ofa_idbmeta_get_interface_version     ( const ofaIDBMeta *meta );
+/*
+ * Implementation-wide
+ */
+guint           ofa_idbmeta_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 ofaIDBProvider *ofa_idbmeta_get_provider              ( const ofaIDBMeta *meta );
 
 void            ofa_idbmeta_set_provider              ( ofaIDBMeta *meta,

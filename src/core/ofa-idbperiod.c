@@ -145,26 +145,40 @@ ofa_idbperiod_get_interface_last_version( void )
 
 /**
  * ofa_idbperiod_get_interface_version:
- * @period: this #ofaIDBPeriod instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number implemented by the object.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  *
  * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
-ofa_idbperiod_get_interface_version( const ofaIDBPeriod *period )
+ofa_idbperiod_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "ofa_idbperiod_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), 0 );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	if( OFA_IDBPERIOD_GET_INTERFACE( period )->get_interface_version ){
-		return( OFA_IDBPERIOD_GET_INTERFACE( period )->get_interface_version( period ));
+	iface = g_type_interface_peek( klass, OFA_TYPE_IDBPERIOD );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIDBPeriodInterface * ) iface )->get_interface_version ){
+		version = (( ofaIDBPeriodInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIDBPeriod::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: ofaIDBPeriod's %s implementation does not provide 'get_interface_version() method",
-			thisfn, G_OBJECT_TYPE_NAME( period ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

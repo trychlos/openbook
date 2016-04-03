@@ -32,7 +32,7 @@
 #include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-prefs-bin.h"
 
-static guint          iprefs_provider_get_interface_version( const ofaIPrefsProvider *instance );
+static guint          iprefs_provider_get_interface_version( void );
 static ofaIPrefsPage *iprefs_provider_new_page( void );
 
 void
@@ -47,7 +47,7 @@ ofa_mysql_iprefs_provider_iface_init( ofaIPrefsProviderInterface *iface )
 }
 
 static guint
-iprefs_provider_get_interface_version( const ofaIPrefsProvider *instance )
+iprefs_provider_get_interface_version( void )
 {
 	return( 1 );
 }

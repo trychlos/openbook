@@ -147,28 +147,40 @@ ofa_idbmeta_get_interface_last_version( void )
 
 /**
  * ofa_idbmeta_get_interface_version:
- * @meta: this #ofaIDBMeta instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number implemented by the object.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  *
  * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
-ofa_idbmeta_get_interface_version( const ofaIDBMeta *meta )
+ofa_idbmeta_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "ofa_idbmeta_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_debug( "%s: meta=%p", thisfn, ( void * ) meta );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), 0 );
+	iface = g_type_interface_peek( klass, OFA_TYPE_IDBMETA );
+	g_return_val_if_fail( iface, 1 );
 
-	if( OFA_IDBMETA_GET_INTERFACE( meta )->get_interface_version ){
-		return( OFA_IDBMETA_GET_INTERFACE( meta )->get_interface_version( meta ));
+	version = 1;
+
+	if((( ofaIDBMetaInterface * ) iface )->get_interface_version ){
+		version = (( ofaIDBMetaInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIDBMeta::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: ofaIDBMeta's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( meta ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**
