@@ -6,6 +6,7 @@ src/core/ofa-date-filter-hv-bin.ui
 src/core/ofa-dbms-root-bin.ui
 src/core/ofa-dossier-delete-prefs-bin.ui
 src/core/ofa-stream-format-bin.ui
+src/core/ofa-stream-format-disp.ui
 src/core/ofa-guided-input.ui
 src/core/ofa-guided-input-bin.ui
 src/core/ofa-idbmodel.ui
