@@ -2033,16 +2033,16 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			mnemo = ofo_tva_form_get_mnemo( form );
 
 			switch( parms->mode ){
-				case OFA_IMMODE_REPLACE:
+				case OFA_IDUPLICATE_REPLACE:
 					str = g_strdup_printf( _( "%s: duplicate VAT form, replacing previous one" ), mnemo );
 					form_do_delete( form, connect );
 					break;
-				case OFA_IMMODE_IGNORE:
+				case OFA_IDUPLICATE_IGNORE:
 					str = g_strdup_printf( _( "%s: duplicate VAT form, ignored (skipped)" ), mnemo );
 					insert = FALSE;
 					total -= 1;
 					break;
-				case OFA_IMMODE_ABORT:
+				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate VAT form" ), mnemo );
 					insert = FALSE;
 					total -= 1;

@@ -53,7 +53,7 @@
 #include "my/my-iprogress.h"
 
 #include "api/ofa-hub-def.h"
-#include "api/ofa-import-mode.h"
+#include "api/ofa-import-duplicate.h"
 #include "api/ofa-stream-format.h"
 
 G_BEGIN_DECLS
@@ -163,22 +163,22 @@ typedef struct {
  * The data structure which hosts #ofa_iimporter_import() arguments.
  */
 struct _ofsImporterParms {
-	guint            version;
+	guint              version;
 										/* v 1 */
-	ofaHub          *hub;
-	gboolean         empty;
-	ofeImportMode    mode;
-	gboolean         stop;
-	gchar           *uri;
-	GType            type;
-	ofaStreamFormat *format;
-	guint            lines_count;
-	guint            parsed_count;
-	guint            duplicate_count;
-	guint            inserted_count;
-	guint            parse_errs;
-	guint            insert_errs;
-	myIProgress     *progress;
+	ofaHub            *hub;
+	gboolean           empty;
+	ofeImportDuplicate mode;
+	gboolean           stop;
+	gchar             *uri;
+	GType              type;
+	ofaStreamFormat   *format;
+	guint              lines_count;
+	guint              parsed_count;
+	guint              duplicate_count;
+	guint              inserted_count;
+	guint              parse_errs;
+	guint              insert_errs;
+	myIProgress       *progress;
 };
 
 GType        ofa_iimporter_get_type                  ( void );

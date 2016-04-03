@@ -30,10 +30,10 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-import-mode.h"
+#include "api/ofa-import-duplicate.h"
 
 typedef struct {
-	ofeImportMode mode;
+	ofeImportDuplicate mode;
 	const gchar  *label;
 }
 	sLabels;
@@ -41,21 +41,21 @@ typedef struct {
 /* import_mode labels are listed here in display order
  */
 static const sLabels st_labels[] = {
-		{ OFA_IMMODE_REPLACE,  N_( "Imported duplicates replace already existing datas" ) },
-		{ OFA_IMMODE_IGNORE,   N_( "Imported duplicates are ignored, already existing datas being left unchanged" ) },
-		{ OFA_IMMODE_ABORT,    N_( "Count duplicate records as errors" ) },
+		{ OFA_IDUPLICATE_REPLACE,  N_( "Imported duplicates replace already existing datas" ) },
+		{ OFA_IDUPLICATE_IGNORE,   N_( "Imported duplicates are ignored, already existing datas being left unchanged" ) },
+		{ OFA_IDUPLICATE_ABORT,    N_( "Count duplicate records as errors" ) },
 		{ 0 }
 };
 
 /**
- * ofa_import_mode_get_label:
+ * ofa_import_duplicate_get_label:
  * @mode: the import mode.
  *
  * Returns: the corresponding localized label as a newly allocated
  * string which should be g_free() by the caller.
  */
 gchar *
-ofa_import_mode_get_label( ofeImportMode mode )
+ofa_import_duplicate_get_label( ofeImportDuplicate mode )
 {
 	gint i;
 	gchar *str;
@@ -72,14 +72,14 @@ ofa_import_mode_get_label( ofeImportMode mode )
 }
 
 /**
- * ofa_import_mode_enum:
+ * ofa_import_duplicate_enum:
  * @fn:
  * @user_data:
  *
  * Enumerate the known import modes.
  */
 void
-ofa_import_mode_enum( ImportModeEnumCb fn, void *user_data )
+ofa_import_duplicate_enum( ImportDuplicateEnumCb fn, void *user_data )
 {
 	gint i;
 

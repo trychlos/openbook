@@ -934,16 +934,16 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			class_id = ofo_class_get_number( class );
 
 			switch( parms->mode ){
-				case OFA_IMMODE_REPLACE:
+				case OFA_IDUPLICATE_REPLACE:
 					str = g_strdup_printf( _( "%d: duplicate class, replacing previous one" ), class_id );
 					class_do_delete( class, connect );
 					break;
-				case OFA_IMMODE_IGNORE:
+				case OFA_IDUPLICATE_IGNORE:
 					str = g_strdup_printf( _( "%d: duplicate class, ignored (skipped)" ), class_id );
 					insert = FALSE;
 					total -= 1;
 					break;
-				case OFA_IMMODE_ABORT:
+				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%d: erroneous duplicate class" ), class_id );
 					insert = FALSE;
 					total -= 1;

@@ -2034,16 +2034,16 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			led_id = ofo_ledger_get_mnemo( ledger );
 
 			switch( parms->mode ){
-				case OFA_IMMODE_REPLACE:
+				case OFA_IDUPLICATE_REPLACE:
 					str = g_strdup_printf( _( "%s: duplicate ledger, replacing previous one" ), led_id );
 					ledger_do_delete( ledger, connect );
 					break;
-				case OFA_IMMODE_IGNORE:
+				case OFA_IDUPLICATE_IGNORE:
 					str = g_strdup_printf( _( "%s: duplicate ledger, ignored (skipped)" ), led_id );
 					insert = FALSE;
 					total -= 1;
 					break;
-				case OFA_IMMODE_ABORT:
+				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate ledger" ), led_id );
 					insert = FALSE;
 					total -= 1;

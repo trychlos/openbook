@@ -1611,16 +1611,16 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			mnemo = ofo_rate_get_mnemo( rate );
 
 			switch( parms->mode ){
-				case OFA_IMMODE_REPLACE:
+				case OFA_IDUPLICATE_REPLACE:
 					str = g_strdup_printf( _( "%s: duplicate rate, replacing previous one" ), mnemo );
 					rate_do_delete( rate, connect );
 					break;
-				case OFA_IMMODE_IGNORE:
+				case OFA_IDUPLICATE_IGNORE:
 					str = g_strdup_printf( _( "%s: duplicate rate, ignored (skipped)" ), mnemo );
 					insert = FALSE;
 					total -= 1;
 					break;
-				case OFA_IMMODE_ABORT:
+				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate rate" ), mnemo );
 					insert = FALSE;
 					total -= 1;

@@ -895,7 +895,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 			parms.version = 1;
 			parms.hub = priv->hub;
 			parms.empty = TRUE;
-			parms.mode = OFA_IMMODE_ABORT;
+			parms.mode = OFA_IDUPLICATE_ABORT;
 			parms.stop = FALSE;
 			parms.uri = uri;
 			parms.type = type;

@@ -1003,16 +1003,16 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			cur_id = ofo_currency_get_code( currency );
 
 			switch( parms->mode ){
-				case OFA_IMMODE_REPLACE:
+				case OFA_IDUPLICATE_REPLACE:
 					str = g_strdup_printf( _( "%s: duplicate currency, replacing previous one" ), cur_id );
 					currency_do_delete( currency, connect );
 					break;
-				case OFA_IMMODE_IGNORE:
+				case OFA_IDUPLICATE_IGNORE:
 					str = g_strdup_printf( _( "%s: duplicate currency, ignored (skipped)" ), cur_id );
 					insert = FALSE;
 					total -= 1;
 					break;
-				case OFA_IMMODE_ABORT:
+				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate currency" ), cur_id );
 					insert = FALSE;
 					total -= 1;

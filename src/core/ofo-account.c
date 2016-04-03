@@ -2495,16 +2495,16 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			acc_id = ofo_account_get_number( account );
 
 			switch( parms->mode ){
-				case OFA_IMMODE_REPLACE:
+				case OFA_IDUPLICATE_REPLACE:
 					str = g_strdup_printf( _( "%s: duplicate account, replacing previous one" ), acc_id );
 					account_do_delete( account, connect );
 					break;
-				case OFA_IMMODE_IGNORE:
+				case OFA_IDUPLICATE_IGNORE:
 					str = g_strdup_printf( _( "%s: duplicate account, ignored (skipped)" ), acc_id );
 					insert = FALSE;
 					total -= 1;
 					break;
-				case OFA_IMMODE_ABORT:
+				case OFA_IDUPLICATE_ABORT:
 					str = g_strdup_printf( _( "%s: erroneous duplicate account" ), acc_id );
 					insert = FALSE;
 					total -= 1;

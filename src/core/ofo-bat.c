@@ -1807,17 +1807,17 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_display());
 
 				switch( parms->mode ){
-					case OFA_IMMODE_REPLACE:
+					case OFA_IDUPLICATE_REPLACE:
 						str = g_strdup_printf( _( "%s %s %s: duplicate BAT file, replacing previous one" ), rib, sdbegin, sdend );
 						bat_do_delete_by_where( OFO_BAT( object ), connect );
 						break;
-					case OFA_IMMODE_IGNORE:
+					case OFA_IDUPLICATE_IGNORE:
 						str = g_strdup_printf( _( "%s %s %s: duplicate BAT file, skipped" ), rib, sdbegin, sdend );
 						skipped = TRUE;
 						insert = FALSE;
 						total -= 1;
 						break;
-					case OFA_IMMODE_ABORT:
+					case OFA_IDUPLICATE_ABORT:
 						str = g_strdup_printf( _( "%s %s %s: duplicate BAT file, making it erroneous" ), rib, sdbegin, sdend );
 						insert = FALSE;
 						total -= 1;

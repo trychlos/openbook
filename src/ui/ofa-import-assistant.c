@@ -42,7 +42,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-iimporter.h"
-#include "api/ofa-import-mode.h"
+#include "api/ofa-import-duplicate.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
@@ -141,7 +141,7 @@ typedef struct {
 	GtkWidget           *p4_stop_btn;
 	GtkWidget           *p4_message;
 	gboolean             p4_empty;
-	ofeImportMode        p4_import_mode;
+	ofeImportDuplicate        p4_import_mode;
 	gboolean             p4_stop;
 
 	/* p5: stream format
@@ -228,7 +228,7 @@ static void     p3_on_import_selection_activated( GtkTreeView *tview, GtkTreePat
 static gboolean p3_check_for_complete( ofaImportAssistant *self );
 static void     p3_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
-static void     p4_enum_cb( ofeImportMode mode, const gchar *label, GtkListStore *store );
+static void     p4_enum_cb( ofeImportDuplicate mode, const gchar *label, GtkListStore *store );
 static void     p4_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p4_on_empty_toggled( GtkToggleButton *btn, ofaImportAssistant *self );
 static void     p4_on_mode_changed( GtkComboBox *combo, ofaImportAssistant *self );
@@ -1033,7 +1033,7 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_combo_box_set_model( GTK_COMBO_BOX( priv->p4_mode_combo ), GTK_TREE_MODEL( store ));
 	g_object_unref( store );
 
-	ofa_import_mode_enum(( ImportModeEnumCb ) p4_enum_cb, store );
+	ofa_import_duplicate_enum(( ImportDuplicateEnumCb ) p4_enum_cb, store );
 
 	priv->p4_stop_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-stop" );
 	g_return_if_fail( priv->p4_stop_btn && GTK_IS_CHECK_BUTTON( priv->p4_stop_btn ));
@@ -1046,7 +1046,7 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static void
-p4_enum_cb( ofeImportMode mode, const gchar *label, GtkListStore *store )
+p4_enum_cb( ofeImportDuplicate mode, const gchar *label, GtkListStore *store )
 {
 	GtkTreeIter iter;
 	gchar *str;
@@ -1285,7 +1285,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p5_datatype ), priv->p2_selected_label );
 	gtk_label_set_text( GTK_LABEL( priv->p5_importer ), priv->p3_importer_label );
 	gtk_label_set_text( GTK_LABEL( priv->p5_empty ), gettext( priv->p4_empty ? st_empty_true : st_empty_false ));
-	str = ofa_import_mode_get_label( priv->p4_import_mode );
+	str = ofa_import_duplicate_get_label( priv->p4_import_mode );
 	gtk_label_set_text( GTK_LABEL( priv->p5_mode ), str );
 	g_free( str );
 	gtk_label_set_text( GTK_LABEL( priv->p5_stop ), gettext( priv->p4_stop ? st_stop_true : st_stop_false ));
@@ -1439,7 +1439,7 @@ p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-import-mode" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_utils_widget_set_style( label, "labelinfo" );
-	str = ofa_import_mode_get_label( priv->p4_import_mode );
+	str = ofa_import_duplicate_get_label( priv->p4_import_mode );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 

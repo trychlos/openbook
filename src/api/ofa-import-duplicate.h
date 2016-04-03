@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_IMPORT_MODE_H__
-#define __OPENBOOK_API_OFA_IMPORT_MODE_H__
+#ifndef __OPENBOOK_API_OFA_IMPORT_DUPLICATE_H__
+#define __OPENBOOK_API_OFA_IMPORT_DUPLICATE_H__
 
 /**
- * SECTION: ofa_import_mode
- * @title: ofaImportMode
- * @short_description: The #ofaImportMode data definition
- * @include: openbook/ofa-import-mode.h
+ * SECTION: ofa_import_duplicate
+ * @title: ofaImportDuplicate
+ * @short_description: The #ofaImportDuplicate data definition
+ * @include: openbook/ofa-import-duplicate.h
  *
  * Import mode manages the import behavior.
  */
@@ -37,33 +37,33 @@
 G_BEGIN_DECLS
 
 /**
- * ofeImportMode:
- * @OFA_IMMODE_REPLACE: replace duplicate records.
- * @OFA_IMMODE_IGNORE: ignore duplicate records (do not replace).
- * @OFA_IMMODE_ABORT: abort on duplicate.
+ * ofeImportDuplicate:
+ * @OFA_IDUPLICATE_REPLACE: replace duplicate records.
+ * @OFA_IDUPLICATE_IGNORE: ignore duplicate records (do not replace).
+ * @OFA_IDUPLICATE_ABORT: abort on duplicate.
  *
  * What to do with duplicate imported datas ?
  *
  */
 typedef enum {
-	OFA_IMMODE_REPLACE = 1,				/* let this first element = 1 (limit of validity) */
-	OFA_IMMODE_IGNORE,
-	OFA_IMMODE_ABORT
+	OFA_IDUPLICATE_REPLACE = 1,				/* let this first element = 1 (limit of validity) */
+	OFA_IDUPLICATE_IGNORE,
+	OFA_IDUPLICATE_ABORT
 }
-	ofeImportMode;
+	ofeImportDuplicate;
 
 /**
- * ImportModeEnumCb:
+ * ImportDuplicateEnumCb:
  *
- * The #ofa_import_mode_enum() callback.
+ * The #ofa_import_duplicate_enum() callback.
  */
-typedef void (*ImportModeEnumCb)( ofeImportMode mode, const gchar *label, void *user_data );
+typedef void ( *ImportDuplicateEnumCb )( ofeImportDuplicate mode, const gchar *label, void *user_data );
 
-gchar *ofa_import_mode_get_label( ofeImportMode mode );
+gchar *ofa_import_duplicate_get_label( ofeImportDuplicate mode );
 
-void   ofa_import_mode_enum     ( ImportModeEnumCb fn,
-										void *user_data );
+void   ofa_import_duplicate_enum     ( ImportDuplicateEnumCb fn,
+											void *user_data );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_IMPORT_MODE_H__ */
+#endif /* __OPENBOOK_API_OFA_IMPORT_DUPLICATE_H__ */
