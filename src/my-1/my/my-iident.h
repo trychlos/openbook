@@ -61,22 +61,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #myIIdent instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implemented by the instance.
-	 *
-	 * Returns: the version number of this interface that the @instance
-	 *  is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_interface_version )( const myIIdent *instance );
+	guint    ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_canon_name:
 	 * @instance: the #myIIdent instance.
@@ -118,12 +116,21 @@ typedef struct {
 }
 	myIIdentInterface;
 
+/*
+ * Interface-wide
+ */
 GType  my_iident_get_type                  ( void );
 
 guint  my_iident_get_interface_last_version( void );
 
-guint  my_iident_get_interface_version     ( const myIIdent *instance );
+/*
+ * Implementation-wide
+ */
+guint  my_iident_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 gchar *my_iident_get_canon_name            ( const myIIdent *instance,
 												void *user_data );
 

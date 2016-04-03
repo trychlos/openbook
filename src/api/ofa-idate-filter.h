@@ -55,24 +55,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDateFilter instance.
 	 *
-	 * The interface code calls this method each time it needs to know
-	 * which version of this interface the application implements.
-	 *
-	 * If this method is not implemented by the application, then the
-	 * interface code considers that the application only implements
-	 * the version 1 of the ofaIDateFilter interface.
-	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the application is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
+	 *
+	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )( const ofaIDateFilter *instance );
+	guint ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * add_widget:
 	 * @instance: the #ofaIDateFilter instance.
@@ -105,39 +101,49 @@ enum {
 	IDATE_FILTER_AFTER
 };
 
-GType        ofa_idate_filter_get_type             ( void );
+/*
+ * Interface-wide
+ */
+GType        ofa_idate_filter_get_type                  ( void );
 
-guint        ofa_idate_filter_get_interface_last_version
-                                                    ( const ofaIDateFilter *filter );
+guint        ofa_idate_filter_get_interface_last_version( void );
 
-void         ofa_idate_filter_setup_bin            ( ofaIDateFilter *filter,
-															const gchar *ui_resource );
+/*
+ * Implementation-wide
+ */
+guint        ofa_idate_filter_get_interface_version     ( GType type );
 
-void         ofa_idate_filter_add_widget           ( ofaIDateFilter *filter,
-															GtkWidget *widget,
-															gint where );
+/*
+ * Instance-wide
+ */
+void         ofa_idate_filter_setup_bin                 ( ofaIDateFilter *filter,
+																const gchar *ui_resource );
 
-void         ofa_idate_filter_set_prefs            ( ofaIDateFilter *filter,
-															const gchar *prefs_key );
+void         ofa_idate_filter_add_widget                ( ofaIDateFilter *filter,
+																GtkWidget *widget,
+																gint where );
 
-const GDate *ofa_idate_filter_get_date             ( ofaIDateFilter *filter,
-															gint who );
+void         ofa_idate_filter_set_prefs                 ( ofaIDateFilter *filter,
+																const gchar *prefs_key );
 
-void         ofa_idate_filter_set_date             ( ofaIDateFilter *filter,
-															gint who,
-															const GDate *date );
+const GDate *ofa_idate_filter_get_date                  ( ofaIDateFilter *filter,
+																gint who );
 
-gboolean     ofa_idate_filter_is_valid             ( ofaIDateFilter *filter,
-															gint who,
-															gchar **message );
+void         ofa_idate_filter_set_date                  ( ofaIDateFilter *filter,
+																gint who,
+																const GDate *date );
 
-GtkWidget   *ofa_idate_filter_get_entry            ( ofaIDateFilter *filter,
-															gint who );
+gboolean     ofa_idate_filter_is_valid                  ( ofaIDateFilter *filter,
+																gint who,
+																gchar **message );
 
-GtkWidget   *ofa_idate_filter_get_frame_label      ( ofaIDateFilter *filter );
+GtkWidget   *ofa_idate_filter_get_entry                 ( ofaIDateFilter *filter,
+																gint who );
 
-GtkWidget   *ofa_idate_filter_get_prompt           ( ofaIDateFilter *filter,
-															gint who );
+GtkWidget   *ofa_idate_filter_get_frame_label           ( ofaIDateFilter *filter );
+
+GtkWidget   *ofa_idate_filter_get_prompt                ( ofaIDateFilter *filter,
+																gint who );
 
 G_END_DECLS
 

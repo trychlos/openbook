@@ -82,19 +82,12 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIExeCloseClose instance.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIExeCloseClose interface.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
@@ -102,6 +95,7 @@ typedef struct {
 	 */
 	guint    ( *get_interface_version )( const ofaIExeCloseClose *instance );
 
+	/*** instance-wide ***/
 	/**
 	 * add_row:
 	 * @instance: the #ofaIExeCloseClose instance.
@@ -149,12 +143,21 @@ enum {
 	EXECLOSE_OPENING
 };
 
+/*
+ * Interface-wide
+ */
 GType    ofa_iexeclose_close_get_type                  ( void );
 
 guint    ofa_iexeclose_close_get_interface_last_version( void );
 
-guint    ofa_iexeclose_close_get_interface_version     ( const ofaIExeCloseClose *instance );
+/*
+ * Implementation-wide
+ */
+guint    ofa_iexeclose_close_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 gchar   *ofa_iexeclose_close_add_row                   ( ofaIExeCloseClose *instance,
 															guint rowtype );
 

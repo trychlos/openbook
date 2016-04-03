@@ -74,26 +74,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: an #myIProgress instance.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the myIProgress interface.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1.
 	 */
-	guint    ( *get_interface_version )( const myIProgress *instance );
+	guint    ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * start_work:
 	 * @instance: the #myIProgress instance.
@@ -192,12 +186,21 @@ typedef struct {
 }
 	myIProgressInterface;
 
+/*
+ * Interface-wide
+ */
 GType           my_iprogress_get_type                  ( void );
 
 guint           my_iprogress_get_interface_last_version( void );
 
-guint           my_iprogress_get_interface_version     ( const myIProgress *instance );
+/*
+ * Implementation-wide
+ */
+guint           my_iprogress_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 void            my_iprogress_start_work                ( myIProgress *instance,
 																const void *worker,
 																GtkWidget *widget );

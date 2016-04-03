@@ -97,7 +97,7 @@ static gchar    *iwindow_get_identifier( const myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
 static void      igridlist_iface_init( myIGridListInterface *iface );
-static guint     igridlist_get_interface_version( const myIGridList *instance );
+static guint     igridlist_get_interface_version( void );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      set_detail_widgets( ofaRateProperties *self, guint row );
 static void      set_detail_values( ofaRateProperties *self, guint row );
@@ -372,7 +372,7 @@ igridlist_iface_init( myIGridListInterface *iface )
 }
 
 static guint
-igridlist_get_interface_version( const myIGridList *instance )
+igridlist_get_interface_version( void )
 {
 	return( 1 );
 }

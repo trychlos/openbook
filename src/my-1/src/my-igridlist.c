@@ -161,28 +161,40 @@ my_igridlist_get_interface_last_version( void )
 
 /**
  * my_igridlist_get_interface_version:
- * @instance: this #myIGridList instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number implemented by the object.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  *
  * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
-my_igridlist_get_interface_version( const myIGridList *instance )
+my_igridlist_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "my_igridlist_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	g_return_val_if_fail( instance && MY_IS_IGRIDLIST( instance ), 0 );
+	iface = g_type_interface_peek( klass, MY_TYPE_IGRIDLIST );
+	g_return_val_if_fail( iface, 1 );
 
-	if( MY_IGRIDLIST_GET_INTERFACE( instance )->get_interface_version ){
-		return( MY_IGRIDLIST_GET_INTERFACE( instance )->get_interface_version( instance ));
+	version = 1;
+
+	if((( myIGridListInterface * ) iface )->get_interface_version ){
+		version = (( myIGridListInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'myIGridList::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: myIGridList's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

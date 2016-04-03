@@ -77,27 +77,16 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIImportable provider.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implented.
-	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 */
-	guint    ( *get_interface_version )( const ofaIImportable *instance );
-
-	/**
-	 * get_label:
-	 * @instance: the #ofaIImportable provider.
-	 *
-	 * Returns: the label to be associated to the class.
-	 */
-	gchar *  ( *get_label )            ( const ofaIImportable *instance );
+	guint    ( *get_interface_version )( void );
 
 	/**
 	 * import:
@@ -111,13 +100,19 @@ typedef struct {
 	 * Return: the total count of errors.
 	 *
 	 * Since: version 1.
-	 *
-	 * This method is class-wide, and thus does not involve any
-	 * #ofaIImportable instance.
 	 */
 	guint     ( *import )              ( ofaIImporter *importer,
 												ofsImporterParms *parms,
 												GSList *lines );
+
+	/*** instance-wide ***/
+	/**
+	 * get_label:
+	 * @instance: the #ofaIImportable provider.
+	 *
+	 * Returns: the label to be associated to the class.
+	 */
+	gchar *  ( *get_label )            ( const ofaIImportable *instance );
 
 	/**
 	 * import:
@@ -194,24 +189,31 @@ typedef enum {
 }
 	ofeImportableMsg;
 
+/*
+ * Interface-wide
+ */
 GType           ofa_iimportable_get_type                  ( void );
 
 guint           ofa_iimportable_get_interface_last_version( void );
 
-/* an importer-oriented API
+/*
+ * Implementation-wide
  */
-guint           ofa_iimportable_get_interface_version     ( const ofaIImportable *importable );
+guint           ofa_iimportable_get_interface_version     ( GType type );
 
+guint           ofa_iimportable_import                    ( GType type,
+																ofaIImporter *importer,
+																ofsImporterParms *parms,
+																GSList *lines );
+
+/*
+ * Instance-wide
+ */
 gchar          *ofa_iimportable_get_label                 ( const ofaIImportable *importable );
 
 ofaIImportable *ofa_iimportable_find_willing_to   ( ofaHub *hub,
 															const gchar *uri,
 															const ofaStreamFormat *settings );
-
-guint           ofa_iimportable_import            ( GType type,
-															ofaIImporter *importer,
-															ofsImporterParms *parms,
-															GSList *lines );
 
 gint            ofa_iimportable_old_import            ( ofaIImportable *importable,
 															GSList *lines,

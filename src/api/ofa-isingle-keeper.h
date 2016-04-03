@@ -62,30 +62,38 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaISingleKeeper instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implented.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )( const ofaISingleKeeper *instance );
+	guint ( *get_interface_version )( void );
+
+	/*** instance-wide ***/
 }
 	ofaISingleKeeperInterface;
 
+/*
+ * Interface-wide
+ */
 GType    ofa_isingle_keeper_get_type                  ( void );
 
 guint    ofa_isingle_keeper_get_interface_last_version( void );
 
-guint    ofa_isingle_keeper_get_interface_version     ( const ofaISingleKeeper *instance );
+/*
+ * Implementation-wide
+ */
+guint    ofa_isingle_keeper_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 GObject *ofa_isingle_keeper_get_object                ( const ofaISingleKeeper *instance,
 															GType type );
 

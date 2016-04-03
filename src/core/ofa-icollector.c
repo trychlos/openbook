@@ -153,27 +153,38 @@ ofa_icollector_get_interface_last_version( void )
 
 /**
  * ofa_icollector_get_interface_version:
- * @instance: this #ofaICollector instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number of this interface implemented by the
- * @collector instance.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  *
  * Defaults to 1.
  */
 guint
-ofa_icollector_get_interface_version( const ofaICollector *instance )
+ofa_icollector_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "ofa_icollector_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_return_val_if_fail( instance && OFA_IS_ICOLLECTOR( instance ), 1 );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	if( OFA_ICOLLECTOR_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_ICOLLECTOR_GET_INTERFACE( instance )->get_interface_version( instance ));
+	iface = g_type_interface_peek( klass, OFA_TYPE_ICOLLECTOR );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaICollectorInterface * ) iface )->get_interface_version ){
+		version = (( ofaICollectorInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaICollector::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: ofaICollector's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

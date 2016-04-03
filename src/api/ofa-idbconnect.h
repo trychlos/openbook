@@ -73,24 +73,18 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: an #ofaIDBConnect instance.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIDBConnect interface.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 */
-	guint    ( *get_interface_version )( const ofaIDBConnect *instance );
+	guint    ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * open_with_editor:
 	 * @instance: this #ofaIDBConnect connection.
@@ -282,12 +276,21 @@ typedef struct {
 }
 	ofaIDBConnectInterface;
 
+/*
+ * Interface-wide
+ */
 GType           ofa_idbconnect_get_type                  ( void );
 
 guint           ofa_idbconnect_get_interface_last_version( void );
 
-guint           ofa_idbconnect_get_interface_version     ( const ofaIDBConnect *connect );
+/*
+ * Implementation-wide
+ */
+guint           ofa_idbconnect_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 ofaIDBProvider *ofa_idbconnect_get_provider              ( const ofaIDBConnect *connect );
 
 void            ofa_idbconnect_set_provider              ( ofaIDBConnect *connect,

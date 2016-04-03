@@ -144,6 +144,42 @@ ofa_istore_get_interface_last_version( const ofaIStore *instance )
 }
 
 /**
+ * ofa_istore_get_interface_version:
+ * @type: the implementation's GType.
+ *
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
+ *
+ * Defaults to 1.
+ */
+guint
+ofa_istore_get_interface_version( GType type )
+{
+	gpointer klass, iface;
+	guint version;
+
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_ISTORE );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIStoreInterface * ) iface )->get_interface_version ){
+		version = (( ofaIStoreInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIStore::get_interface_version()' method",
+				g_type_name( type ));
+	}
+
+	g_type_class_unref( klass );
+
+	return( version );
+}
+
+/**
  * ofa_istore_init:
  * @istore: this #ofaIStore instance.
  *

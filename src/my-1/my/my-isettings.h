@@ -82,22 +82,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #myISettings instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implemented by the instance.
-	 *
-	 * Returns: the version number of this interface that the @instance
-	 *  is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1
 	 */
-	guint      ( *get_interface_version )( const myISettings *instance );
+	guint      ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_keyfile:
 	 * @instance: the #myISettings instance.
@@ -361,12 +359,21 @@ typedef struct {
 }
 	myISettingsInterface;
 
+/*
+ * Interface-wide
+ */
 GType     my_isettings_get_type                  ( void );
 
 guint     my_isettings_get_interface_last_version( void );
 
-guint     my_isettings_get_interface_version     ( const myISettings *instance );
+/*
+ * Implementation-wide
+ */
+guint     my_isettings_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 GKeyFile *my_isettings_get_keyfile               ( const myISettings *instance );
 
 gchar    *my_isettings_get_filename              ( const myISettings *instance );

@@ -64,22 +64,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIThemeManager instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implented.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1.
 	 */
-	guint     ( *get_interface_version )( const ofaIThemeManager *instance );
+	guint     ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * define:
 	 * @instance: the #ofaIThemeManager instance.
@@ -108,12 +106,21 @@ typedef struct {
 }
 	ofaIThemeManagerInterface;
 
+/*
+ * Interface-wide
+ */
 GType    ofa_itheme_manager_get_type                  ( void );
 
 guint    ofa_itheme_manager_get_interface_last_version( void );
 
-guint    ofa_itheme_manager_get_interface_version     ( const ofaIThemeManager *instance );
+/*
+ * Implementation-wide
+ */
+guint    ofa_itheme_manager_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 void     ofa_itheme_manager_define                    ( ofaIThemeManager *instance,
 															GType type,
 															const gchar *label );

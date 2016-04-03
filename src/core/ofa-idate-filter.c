@@ -215,9 +215,45 @@ interface_base_finalize( ofaIDateFilterInterface *klass )
  * Returns: the last version number of this interface.
  */
 guint
-ofa_idate_filter_get_interface_last_version( const ofaIDateFilter *instance )
+ofa_idate_filter_get_interface_last_version( void )
 {
 	return( IDATE_FILTER_LAST_VERSION );
+}
+
+/**
+ * ofa_idate_filter_get_interface_version:
+ * @type: the implementation's GType.
+ *
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
+ *
+ * Defaults to 1.
+ */
+guint
+ofa_idate_filter_get_interface_version( GType type )
+{
+	gpointer klass, iface;
+	guint version;
+
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_IDATE_FILTER );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIDateFilterInterface * ) iface )->get_interface_version ){
+		version = (( ofaIDateFilterInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIDateFilter::get_interface_version()' method",
+				g_type_name( type ));
+	}
+
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

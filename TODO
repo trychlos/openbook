@@ -418,7 +418,11 @@
 
 1064 2016- 4- 3 FEAT ofaStreamFormatDisp: display same label than in combo
 
-1065
+1065 2016- 4- 3 CODE ofaIDBProvider::new_meta, new_connect, new_editor methods
+                should have a provider arg.
+                idem for ofaIPageProvider::new_page
+
+1066
 
 -----------------------------------------------------------------------
  DONE

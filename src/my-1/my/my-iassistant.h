@@ -70,22 +70,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #myIAssistant instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implemented by the instance.
-	 *
-	 * Returns: the version number of this interface that the @instance
-	 *  is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_interface_version )( const myIAssistant *instance );
+	guint    ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * is_willing_to_quit:
 	 * @instance: the #myIAssistant instance.
@@ -128,12 +126,21 @@ typedef struct {
 }
 	ofsIAssistant;
 
+/*
+ * Interface-wide
+ */
 GType    my_iassistant_get_type                  ( void );
 
 guint    my_iassistant_get_interface_last_version( void );
 
-guint    my_iassistant_get_interface_version     ( const myIAssistant *instance );
+/*
+ * Implementation-wide
+ */
+guint    my_iassistant_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 void     my_iassistant_set_callbacks             ( myIAssistant *instance,
 														const ofsIAssistant *cbs );
 

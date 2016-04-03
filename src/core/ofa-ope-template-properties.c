@@ -133,7 +133,7 @@ static void      init_ledger_locked( ofaOpeTemplateProperties *self );
 static void      init_ref( ofaOpeTemplateProperties *self );
 static void      init_detail( ofaOpeTemplateProperties *self );
 static void      igridlist_iface_init( myIGridListInterface *iface );
-static guint     igridlist_get_interface_version( const myIGridList *instance );
+static guint     igridlist_get_interface_version( void );
 static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      set_detail_widgets( ofaOpeTemplateProperties *self, guint row );
 static void      set_detail_values( ofaOpeTemplateProperties *self, guint row );
@@ -550,7 +550,7 @@ igridlist_iface_init( myIGridListInterface *iface )
 }
 
 static guint
-igridlist_get_interface_version( const myIGridList *instance )
+igridlist_get_interface_version( void )
 {
 	return( 1 );
 }

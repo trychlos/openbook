@@ -81,26 +81,18 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIImporter provider.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIImporter interface.
-	 *
-	 * Returns: the version number of this interface the @instance
-	 * supports.
-	 *
-	 * Defaults to 1.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Since: version 1.
 	 */
-	guint         ( *get_interface_version )( const ofaIImporter *instance );
+	guint         ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_accepted_contents:
 	 * @instance: the #ofaIImporter provider.
@@ -181,12 +173,21 @@ struct _ofsImporterParms {
 	myIProgress       *progress;
 };
 
+/*
+ * Interface-wide
+ */
 GType        ofa_iimporter_get_type                  ( void );
 
 guint        ofa_iimporter_get_interface_last_version( void );
 
-guint        ofa_iimporter_get_interface_version     ( const ofaIImporter *instance );
+/*
+ * Implementation-wide
+ */
+guint        ofa_iimporter_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 gchar       *ofa_iimporter_get_canon_name            ( const ofaIImporter *instance );
 
 gchar       *ofa_iimporter_get_display_name          ( const ofaIImporter *instance );

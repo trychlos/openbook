@@ -70,20 +70,18 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIExportable provider.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implented.
-	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 */
-	guint    ( *get_interface_version )( const ofaIExportable *instance );
+	guint    ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_label:
 	 * @instance: the #ofaIExportable provider.
@@ -109,12 +107,21 @@ typedef struct {
 }
 	ofaIExportableInterface;
 
+/*
+ * Interface-wide
+ */
 GType    ofa_iexportable_get_type                  ( void );
 
 guint    ofa_iexportable_get_interface_last_version( void );
 
-guint    ofa_iexportable_get_interface_version     ( const ofaIExportable *exportable );
+/*
+ * Implementation-wide
+ */
+guint    ofa_iexportable_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 gchar   *ofa_iexportable_get_label                 ( const ofaIExportable *exportable );
 
 gboolean ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,

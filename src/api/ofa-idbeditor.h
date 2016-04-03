@@ -74,24 +74,18 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDBEditor instance.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIDBEditor interface.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 */
-	guint           ( *get_interface_version )( const ofaIDBEditor *instance );
+	guint           ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * set_meta:
 	 * @instance: the #ofaIDBEditor instance.
@@ -137,12 +131,21 @@ typedef struct {
 }
 	ofaIDBEditorInterface;
 
+/*
+ * Interface-wide
+ */
 GType           ofa_idbeditor_get_type                  ( void );
 
 guint           ofa_idbeditor_get_interface_last_version( void );
 
-guint           ofa_idbeditor_get_interface_version     ( const ofaIDBEditor *instance );
+/*
+ * Implementation-wide
+ */
+guint           ofa_idbeditor_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 ofaIDBProvider *ofa_idbeditor_get_provider              ( const ofaIDBEditor *instance );
 
 void            ofa_idbeditor_set_provider              ( ofaIDBEditor *instance,

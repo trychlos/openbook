@@ -67,22 +67,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #myIGridList instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implemented by the instance.
-	 *
-	 * Returns: the version number of this interface that the @instance
-	 *  is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1
 	 */
-	guint      ( *get_interface_version )( const myIGridList *instance );
+	guint      ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * set_row:
 	 * @instance: the #myIGridList instance.
@@ -100,12 +98,21 @@ typedef struct {
 }
 	myIGridListInterface;
 
+/*
+ * Interface-wide
+ */
 GType      my_igridlist_get_type                  ( void );
 
 guint      my_igridlist_get_interface_last_version( void );
 
-guint      my_igridlist_get_interface_version     ( const myIGridList *instance );
+/*
+ * Implementation-wide
+ */
+guint      my_igridlist_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 void       my_igridlist_init                      ( const myIGridList *instance,
 														GtkGrid *grid,
 														gboolean is_current,

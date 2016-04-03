@@ -114,12 +114,50 @@ interface_base_finalize( ofaIAboutInterface *klass )
 }
 
 /**
+ * ofa_iabout_get_interface_last_version:
  *
+ * Returns: the last version number of this interface.
  */
 guint
 ofa_iabout_get_interface_last_version( void )
 {
 	return( IABOUT_LAST_VERSION );
+}
+
+/**
+ * ofa_iabout_get_interface_version:
+ * @type: the implementation's GType.
+ *
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
+ *
+ * Defaults to 1.
+ */
+guint
+ofa_iabout_get_interface_version( GType type )
+{
+	gpointer klass, iface;
+	guint version;
+
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_IABOUT );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIAboutInterface * ) iface )->get_interface_version ){
+		version = (( ofaIAboutInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIAbout::get_interface_version()' method",
+				g_type_name( type ));
+	}
+
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

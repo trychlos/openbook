@@ -97,22 +97,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #myIWindow instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implemented by the instance.
-	 *
-	 * Returns: the version number of this interface that the @instance
-	 *  is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1
 	 */
-	guint    ( *get_interface_version )( const myIWindow *instance );
+	guint    ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * get_identifier:
 	 * @instance: the #myIWindow instance.
@@ -221,38 +219,47 @@ typedef struct {
 }
 	myIWindowInterface;
 
-GType                 my_iwindow_get_type                  ( void );
+/*
+ * Interface-wide
+ */
+GType        my_iwindow_get_type                  ( void );
 
-guint                 my_iwindow_get_interface_last_version( void );
+guint        my_iwindow_get_interface_last_version( void );
 
-guint                 my_iwindow_get_interface_version     ( const myIWindow *instance );
+/*
+ * Implementation-wide
+ */
+guint        my_iwindow_get_interface_version     ( GType type );
 
-GtkWindow            *my_iwindow_get_parent                ( const myIWindow *instance );
+/*
+ * Instance-wide
+ */
+GtkWindow   *my_iwindow_get_parent                ( const myIWindow *instance );
 
-void                  my_iwindow_set_parent                ( myIWindow *instance,
-																	GtkWindow *parent );
+void         my_iwindow_set_parent                ( myIWindow *instance,
+														GtkWindow *parent );
 
-myISettings          *my_iwindow_get_settings              ( const myIWindow *instance );
+myISettings *my_iwindow_get_settings              ( const myIWindow *instance );
 
-void                  my_iwindow_set_settings              ( myIWindow *instance,
-																	myISettings *settings );
+void         my_iwindow_set_settings              ( myIWindow *instance,
+														myISettings *settings );
 
-gchar                *my_iwindow_get_keyname               ( const myIWindow *instance );
+gchar       *my_iwindow_get_keyname               ( const myIWindow *instance );
 
-void                  my_iwindow_set_hide_on_close         ( myIWindow *instance,
-																	gboolean hide_on_close );
+void         my_iwindow_set_hide_on_close         ( myIWindow *instance,
+														gboolean hide_on_close );
 
-void                  my_iwindow_init                      ( myIWindow *instance );
+void         my_iwindow_init                      ( myIWindow *instance );
 
-myIWindow            *my_iwindow_present                   ( myIWindow *instance );
+myIWindow   *my_iwindow_present                   ( myIWindow *instance );
 
-void                  my_iwindow_close                     ( myIWindow *instance );
+void         my_iwindow_close                     ( myIWindow *instance );
 
-void                  my_iwindow_close_all                 ( void );
+void         my_iwindow_close_all                 ( void );
 
-void                  my_iwindow_msg_dialog                ( myIWindow *instance,
-																	GtkMessageType type,
-																	const gchar *msg );
+void         my_iwindow_msg_dialog                ( myIWindow *instance,
+														GtkMessageType type,
+														const gchar *msg );
 
 G_END_DECLS
 

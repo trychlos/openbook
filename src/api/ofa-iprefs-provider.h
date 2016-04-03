@@ -67,24 +67,18 @@ struct _ofaIPrefsProviderInterface {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIPrefsProvider provider.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIPrefsProvider interface.
-	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 */
-	guint           ( *get_interface_version )( const ofaIPrefsProvider *instance );
+	guint           ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * new_page:
 	 *
@@ -98,12 +92,21 @@ struct _ofaIPrefsProviderInterface {
 	ofaIPrefsPage * ( *new_page )             ( void );
 };
 
+/*
+ * Interface-wide
+ */
 GType          ofa_iprefs_provider_get_type                  ( void );
 
 guint          ofa_iprefs_provider_get_interface_last_version( void );
 
-guint          ofa_iprefs_provider_get_interface_version     ( const ofaIPrefsProvider *instance );
+/*
+ * Implementation-wide
+ */
+guint          ofa_iprefs_provider_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 ofaIPrefsPage *ofa_iprefs_provider_new_page                  ( ofaIPrefsProvider *instance );
 
 G_END_DECLS

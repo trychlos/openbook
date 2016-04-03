@@ -132,24 +132,36 @@ ofa_iimporter_get_interface_last_version( void )
 
 /**
  * ofa_iimporter_get_interface_version:
- * @instance: this #ofaIImporter instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number implemented.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  */
 guint
-ofa_iimporter_get_interface_version( const ofaIImporter *instance )
+ofa_iimporter_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "ofa_iimporter_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), 0 );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_interface_version( instance ));
+	iface = g_type_interface_peek( klass, OFA_TYPE_IIMPORTER );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIImporterInterface * ) iface )->get_interface_version ){
+		version = (( ofaIImporterInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIImporter::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

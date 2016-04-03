@@ -92,6 +92,7 @@ interface_base_init( myISettingsInterface *klass )
 	static const gchar *thisfn = "my_isettings_interface_base_init";
 
 	if( st_initializations == 0 ){
+
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
 
 		/* declare here the default implementations */
@@ -108,6 +109,7 @@ interface_base_finalize( myISettingsInterface *klass )
 	st_initializations -= 1;
 
 	if( st_initializations == 0 ){
+
 		g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 	}
 }
@@ -125,28 +127,40 @@ my_isettings_get_interface_last_version( void )
 
 /**
  * my_isettings_get_interface_version:
- * @instance: this #myISettings instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number implemented by the object.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  *
  * Defaults to 1.
+ *
+ * Since: version 1.
  */
 guint
-my_isettings_get_interface_version( const myISettings *instance )
+my_isettings_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "my_isettings_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	g_return_val_if_fail( instance && MY_IS_ISETTINGS( instance ), 0 );
+	iface = g_type_interface_peek( klass, MY_TYPE_ISETTINGS );
+	g_return_val_if_fail( iface, 1 );
 
-	if( MY_ISETTINGS_GET_INTERFACE( instance )->get_interface_version ){
-		return( MY_ISETTINGS_GET_INTERFACE( instance )->get_interface_version( instance ));
+	version = 1;
+
+	if((( myISettingsInterface * ) iface )->get_interface_version ){
+		version = (( myISettingsInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'myISettings::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: myISettings's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

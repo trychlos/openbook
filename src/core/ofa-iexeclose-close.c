@@ -131,26 +131,36 @@ ofa_iexeclose_close_get_interface_last_version( void )
 
 /**
  * ofa_iexeclose_close_get_interface_version:
- * @instance: this #ofaIExeCloseClose instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number of this interface the plugin implements.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  */
 guint
-ofa_iexeclose_close_get_interface_version( const ofaIExeCloseClose *instance )
+ofa_iexeclose_close_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "ofa_iexeclose_close_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	g_return_val_if_fail( instance && OFA_IS_IEXECLOSE_CLOSE( instance ), 0 );
+	iface = g_type_interface_peek( klass, OFA_TYPE_IEXECLOSE_CLOSE );
+	g_return_val_if_fail( iface, 1 );
 
-	if( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->get_interface_version ){
-		return( OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance )->get_interface_version( instance ));
+	version = 1;
+
+	if((( ofaIExeCloseCloseInterface * ) iface )->get_interface_version ){
+		version = (( ofaIExeCloseCloseInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIExeCloseClose::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: ofaIExeCloseClose's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
 }
 
 /**

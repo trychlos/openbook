@@ -47,7 +47,7 @@ typedef struct {
 	mySettingsPrivate;
 
 static void       isettings_iface_init( myISettingsInterface *iface );
-static guint      isettings_get_interface_version( const myISettings *instance );
+static guint      isettings_get_interface_version( void );
 static GKeyFile  *isettings_get_keyfile( const myISettings *instance );
 static gchar     *isettings_get_filename( const myISettings *instance );
 static GList     *isettings_get_groups( const myISettings *instance );
@@ -173,7 +173,7 @@ isettings_iface_init( myISettingsInterface *iface )
 }
 
 static guint
-isettings_get_interface_version( const myISettings *instance )
+isettings_get_interface_version( void )
 {
 	return( 1 );
 }

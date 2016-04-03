@@ -58,35 +58,40 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIStore provider.
 	 *
-	 * The interface code calls this method each time it needs to know
-	 * which version of this interface the application implements.
-	 *
-	 * If this method is not implemented by the application, then the
-	 * interface code considers that the application only implements
-	 * the version 1 of the ofaIStore interface.
-	 *
-	 * Return value: if implemented, this method must return the version
-	 * number of this interface the application is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 */
-	guint ( *get_interface_version )( const ofaIStore *instance );
+	guint ( *get_interface_version )( void );
+
+	/*** instance-wide ***/
 }
 	ofaIStoreInterface;
 
-GType        ofa_istore_get_type             ( void );
+/*
+ * Interface-wide
+ */
+GType ofa_istore_get_type                  ( void );
 
-guint        ofa_istore_get_interface_last_version
-                                             ( const ofaIStore *istore );
+guint ofa_istore_get_interface_last_version( const ofaIStore *istore );
 
-void         ofa_istore_init                 ( ofaIStore *istore,
-														ofaHub *hub );
+/*
+ * Implementation-wide
+ */
+guint ofa_istore_get_interface_version     ( GType type );
 
-void         ofa_istore_simulate_dataset_load( const ofaIStore *istore );
+/*
+ * Instance-wide
+ */
+void  ofa_istore_init                      ( ofaIStore *istore,
+													ofaHub *hub );
+
+void  ofa_istore_simulate_dataset_load     ( const ofaIStore *istore );
 
 G_END_DECLS
 

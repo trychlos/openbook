@@ -83,26 +83,20 @@ struct _ofaIDBProviderInterface {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaIDBProvider provider.
 	 *
-	 * The application calls this method each time it needs to know
-	 * which version of this interface the plugin implements.
-	 *
-	 * If this method is not implemented by the plugin,
-	 * the application considers that the plugin only implements
-	 * the version 1 of the ofaIDBProvider interface.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
 	 * Since: version 1
 	 */
-	guint           ( *get_interface_version )( const ofaIDBProvider *instance );
+	guint           ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * new_meta:
 	 *
@@ -135,21 +129,30 @@ struct _ofaIDBProviderInterface {
 	ofaIDBEditor *  ( *new_editor )           ( gboolean editable );
 };
 
+/*
+ * Interface-wide
+ */
 GType           ofa_idbprovider_get_type                  ( void );
 
 guint           ofa_idbprovider_get_interface_last_version( void );
 
-guint           ofa_idbprovider_get_interface_version     ( const ofaIDBProvider *instance );
+ofaIDBProvider *ofa_idbprovider_get_by_name               ( ofaHub *hub,
+																const gchar *provider_name );
 
+/*
+ * Implementation-wide
+ */
+guint           ofa_idbprovider_get_interface_version     ( GType type );
+
+/*
+ * Instance-wide
+ */
 ofaIDBMeta     *ofa_idbprovider_new_meta                  ( const ofaIDBProvider *instance );
 
 ofaIDBConnect  *ofa_idbprovider_new_connect               ( const ofaIDBProvider *instance );
 
 ofaIDBEditor   *ofa_idbprovider_new_editor                ( const ofaIDBProvider *instance,
 																gboolean editable );
-
-ofaIDBProvider *ofa_idbprovider_get_by_name               ( ofaHub *hub,
-																const gchar *provider_name );
 
 gchar          *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *instance );
 

@@ -60,22 +60,20 @@ typedef struct {
 	GTypeInterface parent;
 
 	/*< public >*/
+	/*** implementation-wide ***/
 	/**
 	 * get_interface_version:
-	 * @instance: the #ofaICollectionable instance.
 	 *
-	 * The interface calls this method each time it need to know which
-	 * version is implented.
-	 *
-	 * Returns: if implemented, this method must return the version
-	 * number of this interface the provider is supporting.
+	 * Returns: the version number of this interface which is managed
+	 * by the implementation.
 	 *
 	 * Defaults to 1.
 	 *
-	 * Since: version 1.
+	 * Since: version 1
 	 */
-	guint   ( *get_interface_version )( const ofaICollectionable *instance );
+	guint   ( *get_interface_version )( void );
 
+	/*** instance-wide ***/
 	/**
 	 * load_collection:
 	 * @instance: a fake #ofaICollectionable instance.
@@ -90,12 +88,21 @@ typedef struct {
 }
 	ofaICollectionableInterface;
 
+/*
+ * Interface-wide
+ */
 GType  ofa_icollectionable_get_type                  ( void );
 
 guint  ofa_icollectionable_get_interface_last_version( void );
 
-guint  ofa_icollectionable_get_interface_version     ( const ofaICollectionable *instance );
+/*
+ * Implementation-wide
+ */
+guint  ofa_icollectionable_get_interface_version     ( GType type );
 
+/*
+ * Instance-wide
+ */
 GList *ofa_icollectionable_load_collection           ( const ofaICollectionable *instance,
 															ofaHub *hub );
 

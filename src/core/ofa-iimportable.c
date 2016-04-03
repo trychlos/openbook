@@ -166,24 +166,83 @@ ofa_iimportable_get_interface_last_version( void )
 
 /**
  * ofa_iimportable_get_interface_version:
- * @instance: this #ofaIImportable instance.
+ * @type: the implementation's GType.
  *
- * Returns: the version number implemented.
+ * Returns: the version number of this interface which is managed by
+ * the @type implementation.
  */
 guint
-ofa_iimportable_get_interface_version( const ofaIImportable *importable )
+ofa_iimportable_get_interface_version( GType type )
 {
-	static const gchar *thisfn = "ofa_iimportable_get_interface_version";
+	gpointer klass, iface;
+	guint version;
 
-	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), 0 );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
 
-	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->get_interface_version ){
-		return( OFA_IIMPORTABLE_GET_INTERFACE( importable )->get_interface_version( importable ));
+	iface = g_type_interface_peek( klass, OFA_TYPE_IIMPORTABLE );
+	g_return_val_if_fail( iface, 1 );
+
+	version = 1;
+
+	if((( ofaIImportableInterface * ) iface )->get_interface_version ){
+		version = (( ofaIImportableInterface * ) iface )->get_interface_version();
+
+	} else {
+		g_info( "%s implementation does not provide 'ofaIImportable::get_interface_version()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: ofaIImportable's %s implementation does not provide 'get_interface_version()' method",
-			thisfn, G_OBJECT_TYPE_NAME( importable ));
-	return( 1 );
+	g_type_class_unref( klass );
+
+	return( version );
+}
+
+/**
+ * ofa_iimportable_import:
+ * @type: the GType of the target class.
+ * @importer: the #ofaIImporter instance.
+ * @parms: the #ofsImporterParms arguments.
+ * @lines: the lines to be imported.
+ *
+ * Returns: the total count of errors.
+ */
+guint
+ofa_iimportable_import( GType type, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	gpointer klass, iface;
+	guint error_count;
+	gchar *msgerr;
+
+	g_return_val_if_fail( importer && OFA_IS_IIMPORTER( importer ), 1 );
+
+	error_count = 0;
+
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, 1 );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_IIMPORTABLE );
+	g_return_val_if_fail( iface, 1 );
+
+	if((( ofaIImportableInterface * ) iface )->import ){
+		error_count = (( ofaIImportableInterface * ) iface )->import( importer, parms, lines );
+
+	} else {
+		error_count += 1;
+		msgerr = g_strdup_printf(
+						_( "%s implementation does not provide 'ofaIImportable::import()' method" ),
+						g_type_name( type ));
+		if( parms->progress ){
+			my_iprogress_set_text( parms->progress, importer, msgerr );
+		} else {
+			g_info( msgerr );
+		}
+		g_free( msgerr );
+	}
+
+	g_type_class_unref( klass );
+
+	return( error_count );
 }
 
 /**
@@ -283,49 +342,6 @@ iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const o
 	g_info( "%s: ofaIImportable's %s implementation does not provide 'is_willing_to()' method",
 			thisfn, G_OBJECT_TYPE_NAME( importable ));
 	return( FALSE );
-}
-
-/**
- * ofa_iimportable_import:
- * @type: the GType of the target class.
- * @importer: the #ofaIImporter instance.
- * @parms: the #ofsImporterParms arguments.
- * @lines: the lines to be imported.
- *
- * Returns: the total count of errors.
- */
-guint
-ofa_iimportable_import( GType type, ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
-{
-	gpointer klass, iface;
-	guint error_count;
-	gchar *msgerr;
-
-	g_return_val_if_fail( importer && OFA_IS_IIMPORTER( importer ), 1 );
-
-	error_count = 0;
-
-	klass = g_type_class_ref( type );
-	g_return_val_if_fail( klass, 1 );
-
-	iface = g_type_interface_peek( klass, OFA_TYPE_IIMPORTABLE );
-	g_return_val_if_fail( iface, 1 );
-
-	if((( ofaIImportableInterface * ) iface )->import ){
-		error_count = (( ofaIImportableInterface * ) iface )->import( importer, parms, lines );
-
-	} else {
-		error_count += 1;
-		msgerr = g_strdup_printf(
-						_( "Target class %s does not implement ofaIImportable interface" ),
-						g_type_name( type ));
-		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, importer, msgerr );
-		}
-		g_free( msgerr );
-	}
-
-	return( error_count );
 }
 
 /**
