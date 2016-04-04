@@ -27,7 +27,6 @@ SUBDIRS = \
 	api													\
 	core												\
 	css													\
-	import-bourso										\
 	import-bourso-pdf									\
 	import-lcl-pdf										\
 	importers											\

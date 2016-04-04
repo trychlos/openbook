@@ -148,7 +148,6 @@ AC_CONFIG_FILES([
 	src/api/Makefile
 	src/core/Makefile
 	src/css/Makefile
-	src/import-bourso/Makefile
 	src/import-bourso-pdf/Makefile
 	src/import-lcl-pdf/Makefile
 	src/importers/Makefile
@@ -173,8 +172,7 @@ $as_echo "
 	GLib version                    ${GLIB_msg_version}
 	Maintainer mode                 ${msg_maintainer_mode}
 	Enable deprecated functions     ${enable_deprecated}
-	Built plugins:
-	  Import_Boursorama             ${have_IMPORT_BOURSO}"
+	Built plugins:"
 if test "${have_IMPORT_BOURSO_PDF}" = "yes"; then
 	$as_echo "	  Import_Boursorama_PDF         ${have_IMPORT_BOURSO_PDF} (with Poppler ${POPPLER_msg_version})"
 else
@@ -185,7 +183,7 @@ if test "${have_IMPORT_LCL_PDF}" = "yes"; then
 else
 	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF}"
 fi
-	$as_echo "	  Importers                     ${have_IMPORTERS}"
+	$as_echo "	  Stock importers               ${have_IMPORTERS}"
 if test "${have_MYSQL}" = "yes"; then
 	$as_echo "	  MySQL                         ${have_MYSQL} (with MySQL ${MYSQL_msg_version})"
 else
