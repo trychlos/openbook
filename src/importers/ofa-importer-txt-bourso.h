@@ -22,49 +22,43 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_BOURSO_IMPORTER_H__
-#define __OFA_BOURSO_IMPORTER_H__
+#ifndef __OFA_IMPORTER_TXT_BOURSO_H__
+#define __OFA_IMPORTER_TXT_BOURSO_H__
 
 /**
- * SECTION: ofa_bourso_importer
- * @short_description: #ofaBoursoImporter class definition.
- * @include: ofa-bourso_importer.h
+ * SECTION: ofa_importer_txt_bourso
+ * @short_description: #ofaImporterTxtBourso class definition.
+ * @include: ofa-importer-txt-bourso.h
  *
- * Import Bank Account Transaction (BAT) files in tabulated text format.
+ * Boursorama Import Bank Account Transaction (BAT) files in tabulated
+ * text format.
  */
 
-#include <glib-object.h>
+#include "importers/ofa-importer-txt.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_BOURSO_IMPORTER                ( ofa_bourso_importer_get_type())
-#define OFA_BOURSO_IMPORTER( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BOURSO_IMPORTER, ofaBoursoImporter ))
-#define OFA_BOURSO_IMPORTER_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BOURSO_IMPORTER, ofaBoursoImporterClass ))
-#define OFA_IS_BOURSO_IMPORTER( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BOURSO_IMPORTER ))
-#define OFA_IS_BOURSO_IMPORTER_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BOURSO_IMPORTER ))
-#define OFA_BOURSO_IMPORTER_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BOURSO_IMPORTER, ofaBoursoImporterClass ))
-
-typedef struct _ofaBoursoImporterPrivate        ofaBoursoImporterPrivate;
+#define OFA_TYPE_IMPORTER_TXT_BOURSO                ( ofa_importer_txt_bourso_get_type())
+#define OFA_IMPORTER_TXT_BOURSO( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_IMPORTER_TXT_BOURSO, ofaImporterTxtBourso ))
+#define OFA_IMPORTER_TXT_BOURSO_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_IMPORTER_TXT_BOURSO, ofaImporterTxtBoursoClass ))
+#define OFA_IS_IMPORTER_TXT_BOURSO( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_IMPORTER_TXT_BOURSO ))
+#define OFA_IS_IMPORTER_TXT_BOURSO_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_IMPORTER_TXT_BOURSO ))
+#define OFA_IMPORTER_TXT_BOURSO_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_IMPORTER_TXT_BOURSO, ofaImporterTxtBoursoClass ))
 
 typedef struct {
 	/*< public members >*/
-	GObject                   parent;
-
-	/*< private members >*/
-	ofaBoursoImporterPrivate *priv;
+	ofaImporterTxt      parent;
 }
-	ofaBoursoImporter;
+	ofaImporterTxtBourso;
 
 typedef struct {
 	/*< public members >*/
-	GObjectClass              parent;
+	ofaImporterTxtClass parent;
 }
-	ofaBoursoImporterClass;
+	ofaImporterTxtBoursoClass;
 
-GType ofa_bourso_importer_get_type     ( void );
-
-void  ofa_bourso_importer_register_type( GTypeModule *module );
+GType ofa_importer_txt_bourso_get_type( void );
 
 G_END_DECLS
 
-#endif /* __OFA_BOURSO_IMPORTER_H__ */
+#endif /* __OFA_IMPORTER_TXT_BOURSO_H__ */

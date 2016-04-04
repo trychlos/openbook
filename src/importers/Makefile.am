@@ -41,12 +41,11 @@ libofa_importers_la_SOURCES = \
 	ofa-importer-csv.h								\
 	ofa-importer-txt.c								\
 	ofa-importer-txt.h								\
+	ofa-importer-txt-bourso.c						\
+	ofa-importer-txt-bourso.h						\
 	ofa-importer-txt-lcl.c							\
 	ofa-importer-txt-lcl.h							\
 	$(NULL)
-
-#	ofa-importer-txt-bourso.c						\
-#	ofa-importer-txt-bourso.h						
 
 libofa_importers_la_LIBADD = \
 	$(OPENBOOK_LIBS)								\

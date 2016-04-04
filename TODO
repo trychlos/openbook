@@ -422,7 +422,13 @@
                 should have a provider arg.
                 idem for ofaIPageProvider::new_page
 
-1066
+1066 2016- 4- 3 PluginManager: should show the plugin ident instead of one
+                the extensions ident + have a tab which display the list of
+                provided extensions + tab about + tab properties
+
+1067 2016- 4- 3 rename IExeCloseClose to IExeClose
+
+1068
 
 -----------------------------------------------------------------------
  DONE

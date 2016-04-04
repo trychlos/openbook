@@ -1689,6 +1689,7 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	GSList *itf;
 	GDate dope, deffect;
 	ofoBatLine *batline;
+	ofxAmount amount;
 
 	batline = ofo_bat_line_new();
 
@@ -1747,7 +1748,9 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_line_set_amount( batline, my_double_set_from_sql( cstr ));
+		amount = my_double_set_from_sql( cstr );
+		//g_debug( "ctr=%s, amount=%lf", cstr, amount );
+		ofo_bat_line_set_amount( batline, amount );
 	}
 
 	/* currency */

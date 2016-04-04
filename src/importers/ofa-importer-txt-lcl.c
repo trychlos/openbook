@@ -76,7 +76,7 @@ static gchar           *iident_get_version( const myIIdent *instance, void *user
 static void             iimporter_iface_init( ofaIImporterInterface *iface );
 static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance );
 static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
-static gboolean         is_willing_to_parse( const ofaImporterTxtLcl *instance, const gchar *uri );
+static gboolean         is_willing_to_parse( const ofaImporterTxtLcl *self, const gchar *uri );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, const ofaStreamFormat *format, const GSList *lines );
@@ -95,8 +95,8 @@ G_DEFINE_TYPE_EXTENDED( ofaImporterTxtLcl, ofa_importer_txt_lcl, OFA_TYPE_IMPORT
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTER, iimporter_iface_init ))
 
 /* A description of the import functions we are able to manage here.
- * If several versions happen to be managed, then should be set first
- * the most recent.
+ * If several versions happen to be managed, then the most recent
+ * should be set first.
  */
 struct _sParser {
 	const gchar *label;
@@ -106,7 +106,7 @@ struct _sParser {
 };
 
 static sParser st_parsers[] = {
-		{ N_( "LCL .xls (tabulated text) 2014" ), 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_parse },
+		{ N_( "LCL.xls (tabulated text) 2014" ), 1, lcl_tabulated_text_v1_check, lcl_tabulated_text_v1_parse },
 		{ 0 }
 };
 
@@ -237,8 +237,7 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
 }
 
 /*
- * do the minimum to identify the file
- * as this moment, it should not be needed to make any charmap conversion
+ * do the minimum to identify the file: parse the first line
  *
  * Returns: %TRUE if willing to import.
  */
