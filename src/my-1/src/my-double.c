@@ -92,23 +92,31 @@ my_double_undecorate( const gchar *text, gunichar thousand_sep, gunichar decimal
 	GRegex *regex;
 	gchar *str;
 
+	dest1 = g_strdup( text );
+
 	/* remove the specified thousand separator */
-	str = g_strdup_printf( "%c", thousand_sep );
-	regex = g_regex_new( str, 0, 0, NULL );
-	dest1 = g_regex_replace_literal( regex, text, -1, 0, "", 0, NULL );
-	g_regex_unref( regex );
-	g_free( str );
+	if( thousand_sep != '\0' ){
+		str = g_strdup_printf( "%c", thousand_sep );
+		regex = g_regex_new( str, 0, 0, NULL );
+		dest2 = g_regex_replace_literal( regex, dest1, -1, 0, "", 0, NULL );
+		g_free( dest1 );
+		dest1 = dest2;
+		g_regex_unref( regex );
+		g_free( str );
+	}
 
 	/* replace the specified decimal separator with a dot '.' */
-	str = g_strdup_printf( "%c", decimal_sep );
-	regex = g_regex_new( str, 0, 0, NULL );
-	dest2 = g_regex_replace_literal( regex, dest1, -1, 0, ".", 0, NULL );
-	g_regex_unref( regex );
-	g_free( str );
+	if( decimal_sep != '.' ){
+		str = g_strdup_printf( "%c", decimal_sep );
+		regex = g_regex_new( str, 0, 0, NULL );
+		dest2 = g_regex_replace_literal( regex, dest1, -1, 0, ".", 0, NULL );
+		g_free( dest1 );
+		dest1 = dest2;
+		g_regex_unref( regex );
+		g_free( str );
+	}
 
-	g_free( dest1 );
-
-	return( dest2 );
+	return( dest1 );
 }
 
 /*
@@ -288,7 +296,11 @@ my_double_to_sql_ex( gdouble value, gint decimals )
 	gdouble temp_double;
 	glong temp_long;
 
-	temp_double = value*exp10( decimals ) + 0.5;
+	if( value >= 0 ){
+		temp_double = value*exp10( decimals ) + 0.5;
+	} else {
+		temp_double = value*exp10( decimals ) - 0.5;
+	}
 	temp_long = ( glong ) temp_double;
 	g_ascii_dtostr( amount_str, G_ASCII_DTOSTR_BUF_SIZE, temp_long );
 	g_strchug( amount_str );
