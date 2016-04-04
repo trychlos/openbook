@@ -1882,25 +1882,27 @@ my_utils_uri_get_content( const gchar *uri, const gchar *from_codeset, guint *er
 
 	g_object_unref( gfile );
 
+	/* BE VERY CAUTIOUS ABOUT THAT AS WE DO IGNORE WHICH IS THE LOADED CHARSET */
 	/* if the returned length is greater that the computed one,
 	 * it is probable that we are facing a badly-formatted content
 	 * so remove '\00' chars */
+	if( 0 ){
+		loaded_len = ( glong ) read_length;
+		computed_len = g_utf8_strlen( content, read_length );
 
-	loaded_len = ( glong ) read_length;
-	computed_len = g_utf8_strlen( content, read_length );
+		/*g_debug( "contents='%s'", contents );
+		g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
+				( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
 
-	/*g_debug( "contents='%s'", contents );
-	g_debug( "length=%d, strlen(-1)=%ld, strlen(length)=%ld",
-			( gint ) length, g_utf8_strlen( contents, -1 ), g_utf8_strlen( contents, ( gint ) length ));*/
-
-	if( loaded_len > computed_len ){
-		for( i=computed_len ; content[i] == '\0' && i<loaded_len ; ++i ){
-			/*g_debug( "i=%ld, contents[i]=%x", i, contents[i] );*/
-			;
+		if( loaded_len > computed_len ){
+			for( i=computed_len ; content[i] == '\0' && i<loaded_len ; ++i ){
+				/*g_debug( "i=%ld, contents[i]=%x", i, contents[i] );*/
+				;
+			}
+			buffer = g_strdup_printf( "%s%s", content, content+i );
+			g_free( content );
+			content = buffer;
 		}
-		buffer = g_strdup_printf( "%s%s", content, content+i );
-		g_free( content );
-		content = buffer;
 	}
 
 	/* convert to UTF-8 if needed */
@@ -1971,6 +1973,14 @@ my_utils_uri_get_lines( const gchar *uri, const gchar *from_codeset, guint *erro
 /*
  * split the content into a GSList of lines
  * taking into account the possible backslashed end-of-lines
+ *
+ * Note
+ * ----
+ * In some files, all lines but the last are 0x0a-terminated.
+ * In some other files, really all lines, including the last one, are
+ * line-feed terminated.
+ * As a consequence the split-on-end-of-line below may introduce a last
+ * empty line in the second case due to the g_strsplit() behavior.
  */
 static GSList *
 split_by_line( const gchar *content )
@@ -1979,20 +1989,20 @@ split_by_line( const gchar *content )
 	gchar **lines, **it_line;
 	gchar *prev, *temp;
 	guint numline;
+	gboolean is_empty;
 
 	/* split on end-of-line
 	 * then re-concatenate segments when end-of-line was backslashed */
 	lines = g_strsplit( content, "\n", -1 );
 	it_line = lines;
-	prev = NULL;
 	eol_list = NULL;
+	prev = NULL;
 	numline = 0;
+	is_empty = TRUE;
 
 	while( *it_line ){
+		is_empty = FALSE;
 		if( prev ){
-			if( 0 ){
-				g_debug( "num=%u line='%s'", numline, prev );
-			}
 			temp = g_utf8_substring( prev, 0, my_strlen( prev )-1 );
 			g_free( prev );
 			prev = temp;
@@ -2002,18 +2012,22 @@ split_by_line( const gchar *content )
 		} else {
 			prev = g_strdup( *it_line );
 		}
-		if( my_strlen( prev ) && !g_str_has_suffix( prev, "\\" )){
+		if( prev && !g_str_has_suffix( prev, "\\" )){
 			numline += 1;
 			eol_list = g_slist_prepend( eol_list, g_strdup( prev ));
-			g_free( prev );
-			prev = NULL;
-		} else if( !my_strlen( prev )){
+			is_empty = ( my_strlen( prev ) == 0 );
 			g_free( prev );
 			prev = NULL;
 		}
 		it_line++;
 	}
+
 	g_strfreev( lines );
+
+	/* remove possible empty last line */
+	if( eol_list && is_empty ){
+		eol_list = eol_list->next;
+	}
 
 	return( g_slist_reverse( eol_list ));
 }
