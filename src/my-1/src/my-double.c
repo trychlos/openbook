@@ -96,7 +96,7 @@ my_double_undecorate( const gchar *text, gunichar thousand_sep, gunichar decimal
 
 	/* remove the specified thousand separator */
 	if( thousand_sep != '\0' ){
-		str = g_strdup_printf( "%c", thousand_sep );
+		str = thousand_sep == '.' ? g_strdup( "\\." ) : g_strdup_printf( "%c", thousand_sep );
 		regex = g_regex_new( str, 0, 0, NULL );
 		dest2 = g_regex_replace_literal( regex, dest1, -1, 0, "", 0, NULL );
 		g_free( dest1 );
