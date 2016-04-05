@@ -39,6 +39,10 @@ libofa_importers_la_SOURCES = \
 	ofa-extension.c									\
 	ofa-importer-csv.c								\
 	ofa-importer-csv.h								\
+	ofa-importer-pdf.c								\
+	ofa-importer-pdf.h								\
+	ofa-importer-pdf-bourso.c						\
+	ofa-importer-pdf-bourso.h						\
 	ofa-importer-txt.c								\
 	ofa-importer-txt.h								\
 	ofa-importer-txt-bourso.c						\

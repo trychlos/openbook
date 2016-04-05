@@ -31,6 +31,7 @@
 #include "api/ofa-extension.h"
 
 #include "importers/ofa-importer-csv.h"
+#include "importers/ofa-importer-pdf-bourso.h"
 #include "importers/ofa-importer-txt-bourso.h"
 #include "importers/ofa-importer-txt-lcl.h"
 
@@ -161,7 +162,7 @@ iident_iface_init( myIIdentInterface *iface )
 static gchar *
 iident_get_canon_name( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup( "Importers" ));
+	return( g_strdup( "Stock importers" ));
 }
 
 static gchar *
@@ -179,7 +180,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
  * Each of these GType types must be addressed in #ofa_extension_list_types().
  * Only the GTypeModule has to be registered from #ofa_extension_startup().
  */
-#define TYPES_COUNT	 4
+#define TYPES_COUNT	 5
 
 /*
  * ofa_extension_startup:
@@ -214,6 +215,7 @@ ofa_extension_list_types( const GType **types )
 
 	types_list[i++] = OFA_TYPE_IMPORTERS_ID;
 	types_list[i++] = OFA_TYPE_IMPORTER_CSV;
+	types_list[i++] = OFA_TYPE_IMPORTER_PDF_BOURSO;
 	types_list[i++] = OFA_TYPE_IMPORTER_TXT_BOURSO;
 	types_list[i++] = OFA_TYPE_IMPORTER_TXT_LCL;
 

@@ -405,20 +405,24 @@ setup_format( ofaStreamFormatDisp *self )
 
 	/* headers */
 	has = ofa_stream_format_get_has_headers( priv->settings );
-	switch( mode ){
-		case OFA_SFMODE_EXPORT:
-			with = ofa_stream_format_get_with_headers( priv->settings );
-			str = g_strdup_printf( "%s", with ? _( "True" ):_( "False" ));
-			break;
+	if( has ){
+		switch( mode ){
+			case OFA_SFMODE_EXPORT:
+				with = ofa_stream_format_get_with_headers( priv->settings );
+				str = g_strdup_printf( "%s", with ? _( "True" ):_( "False" ));
+				break;
 
-		case OFA_SFMODE_IMPORT:
-			count = ofa_stream_format_get_headers_count( priv->settings );
-			str = g_strdup_printf( "%d", count );
-			break;
+			case OFA_SFMODE_IMPORT:
+				count = ofa_stream_format_get_headers_count( priv->settings );
+				str = g_strdup_printf( "%d", count );
+				break;
 
-		default:
-			str = g_strdup_printf( _( "(invalid mode: %d)" ), mode );
-			break;
+			default:
+				str = g_strdup_printf( _( "(invalid mode: %d)" ), mode );
+				break;
+		}
+	} else {
+		str = g_strdup( _( "(none)" ));
 	}
 	gtk_label_set_text( GTK_LABEL( priv->headers_data ), str );
 	g_free( str );

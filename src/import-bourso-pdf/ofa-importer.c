@@ -779,23 +779,119 @@ get_ordered_layout_list( ofaBoursoPdfImporter *importer, PopplerPage *page )
 	static const gchar *thisfn = "ofa_importer_get_ordered_layout_list";
 	PopplerRectangle *rc_layout, *rc;
 	guint rc_count, i;
-	GList *rc_ordered, *it;
+	GList *rc_ordered, *it, *list;
 	gint len;
 	sRC *src;
-	gchar *text;
+	gchar *text, *prev;
+	gint charnum, nberrs;
+	gdouble prev_y1, prev_y2, prev_x2;
+
+	/* find a text : does not work ?
+	 * st_iban -> x1=140.650000, y1=546.137000, x2=176.400000, y2=554.712000, text=Nouveau solde en EUR :
+	 * 'Devise' -> x1=232.550000, y1=586.151000, x2=253.942000, y2=592.626000, text='Nouveau solde en EUR :' */
+	if( 0 ){
+		list = poppler_page_find_text( page, "Devise" );
+		for( it=list ; it ; it=it->next ){
+			rc = ( PopplerRectangle * ) it->data;
+			text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, rc );
+			g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+					thisfn, rc->x1, rc->y1, rc->x2, rc->y2, text );
+		}
+		return( NULL );
+	}
+	/* returns the text (deduplicated) */
+	if( 0 ){
+		text = poppler_page_get_text( page );
+		g_debug( "text='%s'", text );
+		return( NULL );
+	}
+	/* this returns the currency code */
+	if( 0 ){
+		rc = g_new0( PopplerRectangle, 1 );
+		rc->x1 = 232;
+		rc->y1 = 268;
+		rc->x2 = rc->x1 + 3*5.5;
+		rc->y2 = rc->y1 + 6.5;
+		text = poppler_page_get_selected_text( page, POPPLER_SELECTION_WORD, rc );
+		g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+				thisfn, rc->x1, rc->y1, rc->x2, rc->y2, text );
+		return( NULL );
+	}
+	/* this returns: ofa_importer_get_ordered_layout_list: x1=259.000000, y1=267.000000, x2=380.000000, y2=277.000000, text='du
+29/11/2014
+au
+31/12/2014' */
+	if( 0 ){
+		rc = g_new0( PopplerRectangle, 1 );
+		rc->x1 = 259;
+		rc->y1 = 267;
+		rc->x2 = 380;
+		rc->y2 = 277;
+		text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, rc );
+		g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+				thisfn, rc->x1, rc->y1, rc->x2, rc->y2, text );
+		return( NULL );
+	}
 
 	/* extract all the text layout rectangles, only keeping the first
 	 * of each serie - then sort them by line */
 	poppler_page_get_text_layout( page, &rc_layout, &rc_count );
 
+	/* dump all rectangles in poppler order */
 	if( 0 ){
 		for( i=0 ; i<rc_count ; ++i ){
 			rc = &rc_layout[i];
-			text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, rc );
+			//text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, rc );
+			text = poppler_page_get_selected_text( page, POPPLER_SELECTION_WORD, rc );
 			g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
 					thisfn, rc->x1, rc->y1, rc->x2, rc->y2, text );
 			g_free( text );
 		}
+	}
+	/* When selecting by line:
+	 * we have one rectangle per letter of the string with all same y1 and same y2
+	 * (horizontal rectangle)- for two adjacent letters, x2(prev)=x1(next)
+	 * plus a last dot-only rectangle layout
+	 *
+	 * When selecting by word:
+	 */
+	if( 0 ){
+		nberrs = 0;
+		charnum = 0;
+		prev = NULL;
+		prev_y1 = 0;
+		prev_y2 = 0;
+		prev_x2 = 0;
+		for( i=0 ; i<rc_count ; ++i ){
+			rc = &rc_layout[i];
+			text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, rc );
+			len = my_strlen( text );
+			if( my_collate( prev, text )){
+				charnum = 0;
+				g_free( prev );
+				prev = g_strdup( text );
+			} else {
+				charnum += 1;
+				if( charnum < len ){
+					if( prev_y1 != rc->y1 || prev_y2 != rc->y2 || prev_x2 != rc->x1 ){
+						g_debug( "%s: prev_y1=%lf, prev_x2=%lf, prev_y2=%lf, x1=%lf, y1=%lf, x2=%lf, y2=%lf, charnum=%d, text=%s",
+								thisfn, prev_y1, prev_x2, prev_y2, rc->x1, rc->y1, rc->x2, rc->y2, charnum, text );
+						nberrs += 1;
+					}
+				} else if( charnum == len ){
+					if( rc->x1 != rc->x2 || rc->x1 != prev_x2 || rc->y1 != rc->y2 || rc->y1 != prev_y2 ){
+						g_debug( "%s: prev_y1=%lf, prev_x2=%lf, prev_y2=%lf, x1=%lf, y1=%lf, x2=%lf, y2=%lf, charnum=%d, text=%s",
+								thisfn, prev_y1, prev_x2, prev_y2, rc->x1, rc->y1, rc->x2, rc->y2, charnum, text );
+						nberrs += 1;
+					}
+				}
+			}
+			g_free( text );
+			prev_y1 = rc->y1;
+			prev_y2 = rc->y2;
+			prev_x2 = rc->x2;
+		}
+		g_debug( "%s: nberrs=%u", thisfn, nberrs );
 	}
 
 	rc_ordered = NULL;

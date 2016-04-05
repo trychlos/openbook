@@ -47,19 +47,21 @@
  *
  * Bat:
  * - line type = 1
+ * - id
  * - source uri
  * - importer label
  * - rib
  * - currency
- * - beginning date as yyyy-mm-dd
- * - beginning solde (no thousand sep, dot decimal sep)
+ * - beginning date as yyyy-mm-dd (aka sql format)
+ * - beginning solde (no thousand sep, dot decimal sep, aka sql format)
  * - beginning solde set (Y|N)
- * - ending date as yyyy-mm-dd
- * - ending solde (no thousand sep, dot decimal sep)
+ * - ending date as yyyy-mm-dd (aka sql format)
+ * - ending solde (no thousand sep, dot decimal sep, aka sql format)
  * - ending solde set (Y|N)
  *
  * BatLine:
  * - line type = 2
+ * - id
  * - operation date as yyyy-mm-dd
  * - effect date as yyyy-mm-dd
  * - reference

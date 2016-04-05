@@ -1164,6 +1164,7 @@ ofa_stream_format_bin_apply( ofaStreamFormatBin *settings )
 static gboolean
 do_apply( ofaStreamFormatBin *self )
 {
+	static const gchar *thisfn = "ofa_stream_format_bin_do_apply";
 	ofaStreamFormatBinPrivate *priv;
 	gboolean has_charmap, has_date, has_thousand, has_decimal, has_field, has_str, has_headers;
 	gchar *charmap, *thousand_sep, *decimal_sep, *field_sep, *strdelim;
@@ -1196,7 +1197,7 @@ do_apply( ofaStreamFormatBin *self )
 	decimal_sep = has_decimal ? my_decimal_combo_get_selected( priv->decimal_combo ) : g_strdup( "" );
 
 	has_field = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_field ));
-	field_sep = has_field ? my_field_combo_get_selected( priv->field_combo ) : g_strdup( NULL );
+	field_sep = has_field ? my_field_combo_get_selected( priv->field_combo ) : g_strdup( "" );
 
 	has_str = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ));
 	cstr = has_str ? gtk_entry_get_text( GTK_ENTRY( priv->str_delim_entry )) : NULL;
@@ -1208,6 +1209,15 @@ do_apply( ofaStreamFormatBin *self )
 	} else {
 		iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
 	}
+
+	g_debug( "%s: settings=%p, has_charmap=%s, charmap=%s, has_date=%s, datefmt=%u, "
+			"has_thousand=%s, thousand_sep=%s, has_decimal=%s, decimal_sep=%s, "
+			"has_field=%s, field_sep=%s, has_str=%s, strdelim=%s, has_headers=%s, iheaders=%u",
+			thisfn, ( void * ) priv->settings,
+			has_charmap ? "True":"False", charmap, has_date ? "True":"False", datefmt,
+			has_thousand ? "True":"False", thousand_sep, has_decimal ? "True":"False", decimal_sep,
+			has_field ? "True":"False", field_sep, has_str ? "True":"False", strdelim,
+			has_headers ? "True":"False", iheaders );
 
 	ofa_stream_format_set( priv->settings,
 									has_charmap, charmap,
