@@ -398,7 +398,6 @@ SUBDIRS = \
 	api													\
 	core												\
 	css													\
-	import-bourso-pdf									\
 	import-lcl-pdf										\
 	importers											\
 	mysql												\

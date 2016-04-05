@@ -109,7 +109,6 @@ AC_DEFINE([OPENBOOK_DEBUG],["OPENBOOK_DEBUG"],[Debug environment variable])
 PWI_MAINTAINER_CHECK_FOR_DEPRECATED
 
 # built plugins
-have_IMPORT_BOURSO="yes"				# always built
 have_IMPORT_BOURSO_PDF="no"				# requires Poppler libraries
 if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
 	have_IMPORT_BOURSO_PDF="yes"
@@ -148,7 +147,6 @@ AC_CONFIG_FILES([
 	src/api/Makefile
 	src/core/Makefile
 	src/css/Makefile
-	src/import-bourso-pdf/Makefile
 	src/import-lcl-pdf/Makefile
 	src/importers/Makefile
 	src/my-1/Makefile
@@ -173,17 +171,13 @@ $as_echo "
 	Maintainer mode                 ${msg_maintainer_mode}
 	Enable deprecated functions     ${enable_deprecated}
 	Built plugins:"
-if test "${have_IMPORT_BOURSO_PDF}" = "yes"; then
-	$as_echo "	  Import_Boursorama_PDF         ${have_IMPORT_BOURSO_PDF} (with Poppler ${POPPLER_msg_version})"
+if test "${have_POPPLER}" != "yes"; then
+	$as_echo "	  Stock importers               ${haveIMPORTERS} (with Poppler ${POPPLER_msg_version})"
 else
-	$as_echo "	  Import_Boursorama_PDF         ${have_IMPORT_BOURSO_PDF}"
+	$as_echo "	  Stock importers               ${haveIMPORTERS}
+	  Import_Boursorama_PDF         no
+	  Import_LCL_PDF                no"
 fi
-if test "${have_IMPORT_LCL_PDF}" = "yes"; then
-	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF} (with Poppler ${POPPLER_msg_version})"
-else
-	$as_echo "	  Import_LCL_PDF                ${have_IMPORT_LCL_PDF}"
-fi
-	$as_echo "	  Stock importers               ${have_IMPORTERS}"
 if test "${have_MYSQL}" = "yes"; then
 	$as_echo "	  MySQL                         ${have_MYSQL} (with MySQL ${MYSQL_msg_version})"
 else
