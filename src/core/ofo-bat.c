@@ -1755,7 +1755,6 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 		amount = my_double_set_from_str( cstr,
 				ofa_stream_format_get_thousand_sep( parms->format ),
 				ofa_stream_format_get_decimal_sep( parms->format ) );
-		g_debug( "ctr=%s, amount=%lf", cstr, amount );
 		ofo_bat_line_set_amount( batline, amount );
 	}
 
