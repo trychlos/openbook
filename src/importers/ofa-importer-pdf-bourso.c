@@ -519,7 +519,7 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 
 	for( it=rc_list ; it ; it=it->next ){
 		rc = ( ofsPdfRC * ) it->data;
-		if( 1 ){
+		if( 0 ){
 			ofa_importer_pdf_dump_rc( rc, thisfn );
 		}
 
