@@ -96,6 +96,7 @@ my_utils_dump_gslist( const GSList *list )
 	gint numline;
 
 	numline = 0;
+
 	for( itl=list ; itl ; itl=itl->next ){
 		numline += 1;
 		fields = ( const GSList * ) itl->data;
@@ -103,6 +104,31 @@ my_utils_dump_gslist( const GSList *list )
 			cstr = ( const gchar * ) itf->data;
 			g_debug( "%s: numline=%d, str='%s'", thisfn, numline, cstr );
 		}
+	}
+}
+
+void
+my_utils_dump_gslist_str( const GSList *lines )
+{
+	static const gchar *thisfn = "my_utils_dump_gslist_str";
+	const GSList *itl, *fields, *itf;
+	GString *s;
+	guint numline;
+
+	numline = 0;
+
+	for( itl=lines ; itl ; itl=itl->next ){
+		fields = ( const GSList * ) itl->data;
+		s = NULL;
+		for( itf=fields ; itf ; itf=itf->next ){
+			if( !s ){
+				s = g_string_new(( const gchar * ) itf->data );
+			} else {
+				g_string_append_printf( s, ";%s", ( const gchar * ) itf->data );
+			}
+		}
+		g_debug( "%s [%6u]: %s", thisfn, ++numline, s->str );
+		g_string_free( s, TRUE );
 	}
 }
 

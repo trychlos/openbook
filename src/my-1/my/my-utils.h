@@ -52,6 +52,7 @@ gint          my_collate                              ( const gchar *a, const gc
 glong         my_strlen                               ( const gchar *str );
 
 void          my_utils_dump_gslist                    ( const GSList *list );
+void          my_utils_dump_gslist_str                ( const GSList *list );
 
 gchar        *my_utils_quote_single                   ( const gchar *str );
 gchar        *my_utils_quote_regexp                   ( const gchar *str, const gchar *regexp );

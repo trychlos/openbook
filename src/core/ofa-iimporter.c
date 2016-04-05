@@ -355,6 +355,9 @@ ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 		error_count += 1;
 
 	} else if( lines ){
+		if( 1 ){
+			my_utils_dump_gslist_str( lines );
+		}
 		parms->lines_count = g_slist_length( lines );
 		headers_count = ofa_stream_format_get_headers_count( parms->format );
 		count = parms->lines_count - headers_count;
@@ -372,6 +375,11 @@ ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 		}
 
 		g_slist_free_full( lines, ( GDestroyNotify ) free_fields );
+
+	} else {
+		msgerr = g_strdup( _( "empty parsed set" ));
+		ofa_iimporter_progress_text( instance, parms, msgerr );
+		g_free( msgerr );
 	}
 
 	return( error_count );

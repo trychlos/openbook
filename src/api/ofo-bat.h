@@ -52,21 +52,21 @@
  * - importer label
  * - rib
  * - currency
- * - beginning date as yyyy-mm-dd (aka sql format)
- * - beginning solde (no thousand sep, dot decimal sep, aka sql format)
+ * - beginning date
+ * - beginning solde
  * - beginning solde set (Y|N)
- * - ending date as yyyy-mm-dd (aka sql format)
- * - ending solde (no thousand sep, dot decimal sep, aka sql format)
+ * - ending date
+ * - ending solde
  * - ending solde set (Y|N)
  *
  * BatLine:
  * - line type = 2
  * - id
- * - operation date as yyyy-mm-dd
- * - effect date as yyyy-mm-dd
+ * - operation date
+ * - effect date
  * - reference
  * - label
- * - amount (no thousand sep, dot decimal sep)
+ * - amount (<0 if expense)
  * - currency
  *
  * Datas are expected to be provided only if present in the source

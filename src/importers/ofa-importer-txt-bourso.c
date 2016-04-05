@@ -70,8 +70,8 @@ static gboolean         bourso_excel95_v1_check( const ofaImporterTxtBourso *sel
 static GSList          *bourso_excel95_v1_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList *lines );
 static gboolean         parse_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines, const gchar *thisfn );
 static GSList          *parse_v1_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList *lines, const gchar *thisfn );
-static gboolean         parse_v1_header( const ofaStreamFormat *format, GSList **lines, GDate *dbegin, GDate *dend, gchar **rib, gchar **currency );
-static gboolean         parse_v1_line_1( const gchar *line, GDate *dbegin, GDate *dend, const ofaStreamFormat *format );
+static gboolean         parse_v1_header( const ofaStreamFormat *format, GSList **lines, gchar **dbegin, gchar **dend, gchar **rib, gchar **currency );
+static gboolean         parse_v1_line_1( const gchar *line, gchar **dbegin, gchar **dend, const ofaStreamFormat *format );
 static gboolean         parse_v1_line_2( const gchar *line, gchar **rib, gchar **currency, const ofaStreamFormat *format );
 static GSList          *parse_v1_header_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList **lines );
 static GSList          *parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, const gchar *line );
@@ -259,7 +259,6 @@ iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr
 	g_return_val_if_fail( parms->hub && OFA_IS_HUB( parms->hub ), NULL );
 	g_return_val_if_fail( my_strlen( parms->uri ), NULL );
 	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), NULL );
-	g_return_val_if_fail( ofa_stream_format_get_has_field( parms->format ), NULL );
 
 	return( do_parse( OFA_IMPORTER_TXT_BOURSO( instance ), parms, msgerr ));
 }
@@ -351,7 +350,7 @@ static gboolean
 parse_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines, const gchar *thisfn )
 {
 	GSList *itl;
-	GDate dbegin, dend;
+	gchar *sdbegin, *sdend;
 	gchar *rib, *currency;
 	gboolean ok;
 
@@ -359,7 +358,7 @@ parse_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, const o
 	rib = NULL;
 	currency = NULL;
 
-	ok = lines ? parse_v1_header( format, &itl, &dbegin, &dend, &rib, &currency ) : FALSE;
+	ok = lines ? parse_v1_header( format, &itl, &sdbegin, &sdend, &rib, &currency ) : FALSE;
 
 	g_free( rib );
 	g_free( currency );
@@ -393,9 +392,13 @@ parse_v1_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterPa
 	return( g_slist_reverse( output ));
 }
 
+/*
+ * used by check
+ */
 static gboolean
-parse_v1_header( const ofaStreamFormat *format, GSList **lines, GDate *dbegin, GDate *dend, gchar **rib, gchar **currency )
+parse_v1_header( const ofaStreamFormat *format, GSList **lines, gchar **dbegin, gchar **dend, gchar **rib, gchar **currency )
 {
+	static const gchar *thisfn = "ofa_importer_txt_bourso_parse_v1_header";
 	GSList *itl;
 	const gchar *cstr;
 
@@ -415,7 +418,7 @@ parse_v1_header( const ofaStreamFormat *format, GSList **lines, GDate *dbegin, G
 	itl = itl ? itl->next : NULL;
 	cstr = itl ? ( const gchar * ) itl->data : NULL;
 	if( my_strlen( cstr )){
-		//g_debug( "third line is not empty: '%s' strlen=%ld", cstr, my_strlen( cstr ));
+		g_debug( "%s: third line is not empty: '%s' strlen=%ld", thisfn, cstr, my_strlen( cstr ));
 		return( FALSE );
 	}
 
@@ -423,7 +426,7 @@ parse_v1_header( const ofaStreamFormat *format, GSList **lines, GDate *dbegin, G
 	itl = itl ? itl->next : NULL;
 	cstr = itl ? ( const gchar * ) itl->data : NULL;
 	if( !g_ascii_strcasecmp( cstr, "\"DATE OPERATION\"        \"DATE VALEUR\"   \"LIBELLE\"       \"MONTANT\"       \"DEVISE\"" )){
-		//g_debug( "fourth line not recognized" );
+		g_debug( "%s: fourth line not recognized: '%s'", thisfn, cstr );
 		return( FALSE );
 	}
 
@@ -435,30 +438,38 @@ parse_v1_header( const ofaStreamFormat *format, GSList **lines, GDate *dbegin, G
 /*
  * first line:
  * "*** Période : 01/11/2014 - 30/11/2014"
+ *
+ * We check the date validities because this same function is used
+ * when checking if this importer is willing to import the file
  */
 static gboolean
-parse_v1_line_1( const gchar *line, GDate *dbegin, GDate *dend, const ofaStreamFormat *format )
+parse_v1_line_1( const gchar *line, gchar **dbegin, gchar **dend, const ofaStreamFormat *format )
 {
+	static const gchar *thisfn = "ofa_importer_txt_bourso_parse_v1_line_1";
 	gchar *found;
+	GDate date;
 
 	if( !g_str_has_prefix( line, "\"*** P" )){
-		//g_debug( "no p prefix" );
+		g_debug( "%s: no '***P' prefix", thisfn );
 		return( FALSE );
 	}
 	found = g_strstr_len( line, -1, "riode : " );
 	if( !found ){
-		//g_debug( "no riode sufix" );
+		g_debug( "%s: no 'riode' sufix", thisfn );
 		return( FALSE );
 	}
 	/* dd/mm/yyyy - dd/mm/yyyy */
-	my_date_set_from_str( dbegin, found+8, ofa_stream_format_get_date_format( format ));
-	if( !my_date_is_valid( dbegin )){
-		//g_debug( "dbegin is not valid" );
+	*dbegin = g_strstrip( g_strndup( found+8, 10 ));
+	my_date_set_from_str( &date, *dbegin, ofa_stream_format_get_date_format( format ));
+	if( !my_date_is_valid( &date )){
+		g_debug( "%s: beginning date is not recognized: '%s'", thisfn, *dbegin );
 		return( FALSE );
 	}
-	my_date_set_from_str( dend, found+21, ofa_stream_format_get_date_format( format ));
-	if( !my_date_is_valid( dend )){
-		//g_debug( "dend is not valid" );
+
+	*dend = g_strstrip( g_strndup( found+21, 10 ));
+	my_date_set_from_str( &date, *dbegin, ofa_stream_format_get_date_format( format ));
+	if( !my_date_is_valid( &date )){
+		g_debug( "%s: ending date is not recognized: '%s'", thisfn, *dend );
 		return( FALSE );
 	}
 
@@ -468,23 +479,26 @@ parse_v1_line_1( const gchar *line, GDate *dbegin, GDate *dend, const ofaStreamF
 /*
  * second line:
  * "*** Compte : 40618-80264-00040200033    -EUR "
+ *
+ * Also used by check.
  */
 static gboolean
 parse_v1_line_2( const gchar *line, gchar **rib, gchar **currency, const ofaStreamFormat *format )
 {
+	static const gchar *thisfn = "ofa_importer_txt_bourso_parse_v1_line_2";
 	gchar *found;
 
 	*rib = NULL;
 	*currency = NULL;
 
 	if( !g_str_has_prefix( line, "\"*** Compte : " )){
-		//g_debug( "no compte prefix" );
+		g_debug( "%s: no '***Compte' prefix", thisfn );
 		return( FALSE );
 	}
 
 	found = g_strstr_len( line+38, -1, " -" );
 	if( !found ){
-		//g_debug( "tiret not found" );
+		g_debug( "%s: tiret not found", thisfn );
 		return( FALSE );
 	}
 
@@ -498,17 +512,13 @@ static GSList *
 parse_v1_header_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList **lines )
 {
 	GSList *fields;
-	GDate dbegin, dend;
 	gchar *rib, *currency, *sdbegin, *sdend;
 
-	if( !parse_v1_header( parms->format, lines, &dbegin, &dend, &rib, &currency )){
+	if( !parse_v1_header( parms->format, lines, &sdbegin, &sdend, &rib, &currency )){
 		return( NULL );
 	}
 
 	fields = NULL;
-	sdbegin = my_date_to_str( &dbegin, MY_DATE_SQL );
-	//g_debug( "begin=%s", sdbegin );
-	sdend = my_date_to_str( &dend, MY_DATE_SQL );
 
 	fields = g_slist_prepend( fields, g_strdup( "1" ));
 	fields = g_slist_prepend( fields, g_strdup( parms->uri ));
@@ -530,9 +540,7 @@ parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsI
 {
 	GSList *output, *fields, *itf;
 	const gchar *cstr;
-	GDate dope, deffect;
 	gchar *label, *currency, *sdope, *sdeffect, *samount;
-	ofxAmount amount;
 
 	output = NULL;
 
@@ -542,14 +550,12 @@ parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsI
 		/* operation date */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_str( &dope, cstr, ofa_stream_format_get_date_format( parms->format ));
-		sdope = my_date_to_str( &dope, MY_DATE_SQL );
+		sdope = g_strdup( cstr );
 
 		/* effect date */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_str( &deffect, cstr, ofa_stream_format_get_date_format( parms->format ));
-		sdeffect = my_date_to_str( &deffect, MY_DATE_SQL );
+		sdeffect = g_strdup( cstr );
 
 		/* label */
 		itf = itf ? itf->next : NULL;
@@ -559,12 +565,7 @@ parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsI
 		/* amount */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		amount = my_double_set_from_str( cstr,
-							ofa_stream_format_get_thousand_sep( parms->format ),
-							ofa_stream_format_get_decimal_sep( parms->format ));
-		samount = my_double_to_sql( amount );
-		//g_debug( "cstr=%s, amount=%lf, samount=%s", cstr, amount, samount );
-		//cstr=-00000000028.04, amount=-28.040000, samount=-28.039999999999999
+		samount = g_strdup( cstr );
 
 		/* currency */
 		itf = itf ? itf->next : NULL;

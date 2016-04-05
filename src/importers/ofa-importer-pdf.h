@@ -89,6 +89,8 @@ gdouble  ofa_importer_pdf_get_acceptable_diff( void );
 
 void     ofa_importer_pdf_free_layout        ( GList *layout );
 
+void     ofa_importer_pdf_dump_rc            ( const ofsPdfRC *rc, const gchar *label );
+
 void     ofa_importer_pdf_free_rc            ( ofsPdfRC *rc );
 
 G_END_DECLS

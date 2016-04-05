@@ -1641,14 +1641,16 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_set_begin_date( bat, my_date_set_from_str( &date, cstr, MY_DATE_SQL ));
+		ofo_bat_set_begin_date( bat, my_date_set_from_str( &date, cstr, ofa_stream_format_get_date_format( parms->format )));
 	}
 
 	/* begin solde */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_set_begin_solde( bat, my_double_set_from_sql( cstr ));
+		ofo_bat_set_begin_solde( bat, my_double_set_from_str( cstr,
+				ofa_stream_format_get_thousand_sep( parms->format ),
+				ofa_stream_format_get_decimal_sep( parms->format )));
 	}
 
 	/* begin solde set */
@@ -1662,14 +1664,16 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_set_end_date( bat, my_date_set_from_str( &date, cstr, MY_DATE_SQL ));
+		ofo_bat_set_end_date( bat, my_date_set_from_str( &date, cstr, ofa_stream_format_get_date_format( parms->format )));
 	}
 
 	/* end solde */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_set_end_solde( bat, my_double_set_from_sql( cstr ));
+		ofo_bat_set_end_solde( bat, my_double_set_from_str( cstr,
+				ofa_stream_format_get_thousand_sep( parms->format ),
+				ofa_stream_format_get_decimal_sep( parms->format ) ));
 	}
 
 	/* end solde set */
@@ -1702,14 +1706,14 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = fields ? fields->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_line_set_dope( batline, my_date_set_from_str( &dope, cstr, MY_DATE_SQL ));
+		ofo_bat_line_set_dope( batline, my_date_set_from_str( &dope, cstr, ofa_stream_format_get_date_format( parms->format )));
 	}
 
 	/* effect date */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_line_set_deffect( batline, my_date_set_from_str( &deffect, cstr, MY_DATE_SQL ));
+		ofo_bat_line_set_deffect( batline, my_date_set_from_str( &deffect, cstr, ofa_stream_format_get_date_format( parms->format )));
 	}
 
 	/* effect date is mandatory */
@@ -1748,8 +1752,10 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		amount = my_double_set_from_sql( cstr );
-		//g_debug( "ctr=%s, amount=%lf", cstr, amount );
+		amount = my_double_set_from_str( cstr,
+				ofa_stream_format_get_thousand_sep( parms->format ),
+				ofa_stream_format_get_decimal_sep( parms->format ) );
+		g_debug( "ctr=%s, amount=%lf", cstr, amount );
 		ofo_bat_line_set_amount( batline, amount );
 	}
 

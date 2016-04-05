@@ -268,7 +268,6 @@ iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr
 	g_return_val_if_fail( parms->hub && OFA_IS_HUB( parms->hub ), NULL );
 	g_return_val_if_fail( my_strlen( parms->uri ), NULL );
 	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), NULL );
-	g_return_val_if_fail( ofa_stream_format_get_has_field( parms->format ), NULL );
 
 	return( do_parse( OFA_IMPORTER_TXT_LCL( instance ), parms, msgerr ));
 }
@@ -308,6 +307,7 @@ do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms, gchar **msgerr )
 static gboolean
 lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, const ofaStreamFormat *format, const GSList *lines )
 {
+	static const gchar *thisfn = "ofa_importer_txt_lcl_v1_check";
 	GSList *fields, *it;
 	const gchar *cstr;
 	GDate date;
@@ -321,6 +321,7 @@ lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parse
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	my_date_set_from_str( &date, cstr, ofa_stream_format_get_date_format( format ));
 	if( !my_date_is_valid( &date )){
+		g_debug( "%s: unable to parse the date: '%s'", thisfn, cstr );
 		return( FALSE );
 	}
 	/* second field is the amount */
@@ -329,6 +330,7 @@ lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parse
 	amount = my_double_set_from_str( cstr,
 			ofa_stream_format_get_thousand_sep( format ), ofa_stream_format_get_decimal_sep( format ));
 	if( !amount ){
+		g_debug( "%s: unable to parse the amount: '%s'", thisfn, cstr );
 		return( FALSE );
 	}
 	/* other fields may be empty */
@@ -369,8 +371,6 @@ parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms
 {
 	GSList *output, *it;
 	const gchar *cstr;
-	GDate end_date;
-	gdouble end_solde;
 	gchar *rib, *sdate, *ssolde;
 
 	output = NULL;
@@ -378,16 +378,12 @@ parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms
 	/* ending date */
 	it = fields ? fields : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	my_date_set_from_str( &end_date, cstr, ofa_stream_format_get_date_format( parms->format ));
-	sdate = my_date_to_str( &end_date, MY_DATE_SQL );
+	sdate = g_strdup( cstr );
 
 	/* ending solde */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	end_solde = my_double_set_from_str( cstr,
-						ofa_stream_format_get_thousand_sep( parms->format ),
-						ofa_stream_format_get_decimal_sep( parms->format ));
-	ssolde = my_double_to_sql( end_solde );
+	ssolde = g_strdup( cstr );
 
 	/* no reference */
 	it = it ? it->next : NULL;
@@ -418,8 +414,6 @@ parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParm
 {
 	GSList *output, *it;
 	const gchar *cstr;
-	GDate date;
-	gdouble amount;
 	gchar *sdate, *samount, *sref, *tmp, *slabel;
 
 	output = NULL;
@@ -427,16 +421,12 @@ parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParm
 	/* effect date */
 	it = fields ? fields : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	my_date_set_from_str( &date, cstr, ofa_stream_format_get_date_format( parms->format ));
-	sdate = my_date_to_str( &date, MY_DATE_SQL );
+	sdate = g_strdup( cstr );
 
 	/* amount */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	amount = my_double_set_from_str( cstr,
-						ofa_stream_format_get_thousand_sep( parms->format ),
-						ofa_stream_format_get_decimal_sep( parms->format ));
-	samount = my_double_to_sql( amount );
+	samount = g_strdup( cstr );
 
 	/* reference */
 	it = it ? it->next : NULL;
@@ -511,19 +501,25 @@ split_by_field( const ofaImporterTxtLcl *self, const gchar *line, const ofaStrea
 	gchar **tokens, **iter;
 	gchar *str;
 
-	str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( format ));
-	tokens = g_strsplit( line, str, -1 );
-	g_free( str );
-
 	out = NULL;
-	iter = tokens;
 
-	while( *iter ){
-		out = g_slist_prepend( out, g_strstrip( g_strdup( *iter )));
-		iter++;
+	if( ofa_stream_format_get_has_field( format )){
+		str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( format ));
+		tokens = g_strsplit( line, str, -1 );
+		g_free( str );
+
+		iter = tokens;
+
+		while( *iter ){
+			out = g_slist_prepend( out, g_strstrip( g_strdup( *iter )));
+			iter++;
+		}
+
+		g_strfreev( tokens );
+
+	} else {
+		out = g_slist_prepend( out, g_strdup( line ));
 	}
-
-	g_strfreev( tokens );
 
 	return( g_slist_reverse( out ));
 }

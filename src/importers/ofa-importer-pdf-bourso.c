@@ -53,9 +53,9 @@ typedef struct {
 	 */
 	gchar    *iban;
 	gchar    *currency;
-	GDate     begin_date;
-	GDate     end_date;
-	ofxAmount begin_amount;
+	gchar    *begin_date;
+	gchar    *end_date;
+	gchar    *begin_solde;
 }
 	ofaImporterPdfBoursoPrivate;
 
@@ -67,10 +67,10 @@ typedef struct _sParser                    sParser;
 /* a data structure to host head detail line datas
  */
 typedef struct {
-	GDate     dope;
-	gchar    *slabel;
-	GDate     deffect;
-	ofxAmount amount;
+	gchar    *dope;
+	gchar    *label;
+	gchar    *deffect;
+	gchar    *amount;
 	gdouble   y;
 }
 	sLine;
@@ -78,6 +78,7 @@ typedef struct {
 static gdouble  st_x1_periode_begin     = 259;
 static gdouble  st_y1_periode_begin     = 267;
 static gchar   *st_header_extrait       = "Extrait de votre compte en ";
+static gchar   *st_header_banque        = "BOURSORAMA";
 static gchar   *st_header_iban          = "I.B.A.N. ";
 static gchar   *st_header_begin_solde   = "SOLDE AU : ";
 static gchar   *st_footer_end_solde     = "Nouveau solde en ";
@@ -110,6 +111,7 @@ static sParser         *get_willing_to_parser( const ofaImporterPdfBourso *self,
 static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfBourso *self );
 static sLine           *find_line( GList **lines, gdouble acceptable_diff, gdouble y );
 static void             free_line( sLine *line );
+static gchar           *get_amount( ofsPdfRC *rc );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterPdfBourso, ofa_importer_pdf_bourso, OFA_TYPE_IMPORTER_PDF, 0,
 		G_ADD_PRIVATE( ofaImporterPdfBourso )
@@ -148,6 +150,9 @@ importer_pdf_bourso_finalize( GObject *instance )
 
 	g_free( priv->iban );
 	g_free( priv->currency );
+	g_free( priv->begin_date );
+	g_free( priv->end_date );
+	g_free( priv->begin_solde );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_importer_pdf_bourso_parent_class )->finalize( instance );
@@ -316,6 +321,7 @@ do_parse( ofaImporterPdfBourso *self, ofsImporterParms *parms, gchar **msgerr )
 static gboolean
 bourso_pdf_v1_check( const ofaImporterPdfBourso *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri )
 {
+	static const gchar *thisfn = "ofa_importer_pdf_bourso_v1_check";
 	PopplerDocument *doc;
 	PopplerPage *page;
 	GError *error;
@@ -334,10 +340,14 @@ bourso_pdf_v1_check( const ofaImporterPdfBourso *self, const sParser *parser, co
 	text = poppler_page_get_text( page );
 	found = g_strstr_len( text, -1, st_header_extrait );
 	if( found ){
-		found = g_strstr_len( text, -1, "BOURSORAMA" );
+		found = g_strstr_len( text, -1, st_header_banque );
 		if( found ){
 			ok = TRUE;
+		} else {
+			g_debug( "%s: '%s' not found", thisfn, st_header_banque );
 		}
+	} else {
+		g_debug( "%s: '%s' not found", thisfn, st_header_extrait );
 	}
 
 	g_free( text );
@@ -393,6 +403,7 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 		return( NULL );
 	}
 	output = g_slist_prepend( output, fields );
+	//my_utils_dump_gslist_str( output );
 
 	/* then get the lines from bat
 	 */
@@ -466,7 +477,7 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 	}
 #endif
 
-	return( g_slist_reverse( output ));
+	return( output );
 }
 
 /*
@@ -479,6 +490,7 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 static gboolean
 bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list )
 {
+	static const gchar *thisfn = "ofa_importer_pdf_bourso_v1_parse_header_first";
 	ofaImporterPdfBoursoPrivate *priv;
 	gdouble acceptable_diff, periode_x1, periode_y1;
 	GList *it, *it_next;
@@ -488,8 +500,14 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 	priv = ofa_importer_pdf_bourso_get_instance_private( self );
 
 	ok = TRUE;
-	my_date_clear( &priv->begin_date );
-	my_date_clear( &priv->end_date );
+
+	priv->begin_date = NULL;
+	priv->end_date = NULL;
+	priv->currency = NULL;
+	priv->iban = NULL;
+	priv->begin_solde = NULL;
+
+	extrait_found = FALSE;
 	begin_found = FALSE;
 	end_found = FALSE;
 	iban_found = FALSE;
@@ -501,6 +519,9 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 
 	for( it=rc_list ; it ; it=it->next ){
 		rc = ( ofsPdfRC * ) it->data;
+		if( 1 ){
+			ofa_importer_pdf_dump_rc( rc, thisfn );
+		}
 
 		if( !extrait_found ){
 			if( g_str_has_prefix( rc->text, st_header_extrait )){
@@ -513,7 +534,7 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 			if( !my_collate( rc->text, "du" )){
 				it = it->next;
 				rc = ( ofsPdfRC * ) it->data;
-				my_date_set_from_str( &priv->begin_date, rc->text, ofa_stream_format_get_date_format( parms->format ));
+				priv->begin_date = g_strstrip( g_strndup( rc->text, 10 ));
 				begin_found = TRUE;
 			}
 		}
@@ -522,7 +543,7 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 			if( !my_collate( rc->text, "au" )){
 				it = it->next;
 				rc = ( ofsPdfRC * ) it->data;
-				my_date_set_from_str( &priv->end_date, rc->text, ofa_stream_format_get_date_format( parms->format ));
+				priv->end_date = g_strstrip( g_strndup( rc->text, 10 ));
 				end_found = TRUE;
 			}
 		}
@@ -537,12 +558,7 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 		if( !begin_solde_found && g_str_has_prefix( rc->text, st_header_begin_solde )){
 			it_next = it->next;
 			rc_next = ( ofsPdfRC * ) it_next->data;
-			priv->begin_amount = my_double_set_from_str( rc->text,
-											ofa_stream_format_get_thousand_sep( parms->format ),
-											ofa_stream_format_get_decimal_sep( parms->format ));
-			if( rc_next->x1 < st_credit_min_x ){
-				priv->begin_amount *= -1;
-			}
+			priv->begin_solde = get_amount( rc_next );
 			begin_solde_found = TRUE;
 		}
 	}
@@ -592,8 +608,7 @@ bourso_pdf_v1_parse_header_last( ofaImporterPdfBourso *self, const sParser *pars
 	ofsPdfRC *rc;
 	gdouble acceptable_diff, y1;
 	gboolean solde_label_found, end_solde_found;
-	ofxAmount end_amount;
-	gchar *sbegin_date, *send_date, *sbegin_solde, *send_solde;
+	gchar *end_solde;
 
 	g_return_val_if_fail( fields, FALSE );
 
@@ -609,18 +624,13 @@ bourso_pdf_v1_parse_header_last( ofaImporterPdfBourso *self, const sParser *pars
 		rc = ( ofsPdfRC * ) it->data;
 
 		/* search for the end line and get y coordinates */
-		if( !solde_label_found && !my_collate( rc->text, st_footer_end_solde )){
-			y1 = rc->y1 -2*acceptable_diff;
+		if( !solde_label_found && g_str_has_prefix( rc->text, st_footer_end_solde )){
+			y1 = rc->y1;
 			solde_label_found = TRUE;
 		}
 
 		if( solde_label_found && !end_solde_found && fabs( rc->y1 - y1 ) < acceptable_diff && rc->x1 > st_debit_min_x ){
-			end_amount = my_double_set_from_str( rc->text,
-											ofa_stream_format_get_thousand_sep( parms->format ),
-											ofa_stream_format_get_decimal_sep( parms->format ));
-			if( rc->x1 < st_credit_min_x ){
-				end_amount *= -1;
-			}
+			end_solde = get_amount( rc );
 			end_solde_found = TRUE;
 		}
 	}
@@ -633,22 +643,19 @@ bourso_pdf_v1_parse_header_last( ofaImporterPdfBourso *self, const sParser *pars
 		ok = FALSE;
 
 	} else {
-		sbegin_date = my_date_to_str( &priv->begin_date, MY_DATE_SQL );
-		send_date = my_date_to_str( &priv->end_date, MY_DATE_SQL );
-		sbegin_solde = my_double_to_sql( priv->begin_amount );
-		send_solde = my_double_to_sql( end_amount );
-
 		*fields = g_slist_prepend( *fields, g_strdup( "1" ));
 		*fields = g_slist_prepend( *fields, g_strdup( parms->uri ));
 		*fields = g_slist_prepend( *fields, g_strdup( parser->label ));
 		*fields = g_slist_prepend( *fields, g_strdup( priv->iban ));
 		*fields = g_slist_prepend( *fields, g_strdup( priv->currency ));
-		*fields = g_slist_prepend( *fields, sbegin_date );
-		*fields = g_slist_prepend( *fields, sbegin_solde );
+		*fields = g_slist_prepend( *fields, g_strdup( priv->begin_date ));
+		*fields = g_slist_prepend( *fields, g_strdup( priv->begin_solde ));
 		*fields = g_slist_prepend( *fields, g_strdup( "Y" ));
-		*fields = g_slist_prepend( *fields, send_date );
-		*fields = g_slist_prepend( *fields, send_solde );
+		*fields = g_slist_prepend( *fields, g_strdup( priv->end_date ));
+		*fields = g_slist_prepend( *fields, g_strdup( end_solde ));
 		*fields = g_slist_prepend( *fields, g_strdup( "Y" ));
+
+		*fields = g_slist_reverse( *fields );
 	}
 
 	return( ok );
@@ -700,35 +707,32 @@ bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *self, const sParser *pars
 			line = find_line( &lines, acceptable_diff, rc->y1 );
 
 			if( rc->x1 < st_label_min_x ){
-				tmp = g_strndup( rc->text, 10 );
-				my_date_set_from_str( &line->dope, tmp, ofa_stream_format_get_date_format( parms->format ));
-				g_free( tmp );
+				line->dope = g_strstrip( g_strndup( rc->text, 10 ));
 				if( my_strlen( rc->text ) > 10 ){
-					g_free( line->slabel );
-					line->slabel = g_strstrip( g_strdup( rc->text+10 ));
+					line->label = g_strstrip( g_strdup( rc->text+10 ));
+					if( g_str_has_prefix( line->label, "*" )){
+						tmp = g_strdup( line->label+1 );
+						g_free( line->label );
+						line->label = tmp;
+					}
 				}
 
 			} else if( rc->x1 < st_valeur_min_x ){
 				tmp = g_strstrip( g_strdup( rc->text ));
-				if( my_strlen( line->slabel )){
-					str = g_strconcat( line->slabel, " ", tmp, NULL );
+				if( my_strlen( line->label )){
+					str = g_strconcat( line->label, " ", tmp, NULL );
 				} else {
 					str = g_strdup( tmp );
 				}
 				g_free( tmp );
-				g_free( line->slabel );
-				line->slabel = str;
+				g_free( line->label );
+				line->label = str;
 
 			} else if( rc->x1 < st_debit_min_x ){
-				my_date_set_from_str( &line->deffect, rc->text, ofa_stream_format_get_date_format( parms->format ));
+				line->deffect = g_strstrip( g_strndup( rc->text, 10 ));
 
 			} else {
-				line->amount = my_double_set_from_str( rc->text,
-												ofa_stream_format_get_thousand_sep( parms->format ),
-												ofa_stream_format_get_decimal_sep( parms->format ));
-				if( rc->x1 < st_credit_min_x ){
-					line->amount *= -1;
-				}
+				line->amount = get_amount( rc );
 			}
 		}
 	}
@@ -746,7 +750,7 @@ bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *pars
 	GList *it, *lines;
 	gdouble prev_y;
 	sLine *line, *outline, *prev_line;
-	gchar *str, *sdope, *sdeffect;
+	gchar *str;
 
 	lines = NULL;
 	prev_line = NULL;
@@ -760,22 +764,17 @@ bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *pars
 	for( it=rough_list ; it ; it=it->next ){
 		line = ( sLine * ) it->data;
 
-		if( my_date_is_valid( &line->dope )){
+		if( line->dope ){
 
-			if( !my_date_is_valid( &line->deffect ) || line->amount == 0 ){
-
-				sdope = my_date_to_str( &line->dope, MY_DATE_SQL );
-				sdeffect = my_date_to_str( &line->deffect, MY_DATE_SQL );
-				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%lf" ),
-						sdope, line->slabel, sdeffect, line->amount );
+			if( !line->deffect || !line->amount ){
+				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%s" ),
+						line->dope, line->label, line->deffect, line->amount );
 				if( parms->progress ){
 					my_iprogress_set_text( parms->progress, self, str );
 				} else {
 					g_debug( "%s: %s", thisfn, str );
 				}
 				g_free( str );
-				g_free( sdope );
-				g_free( sdeffect );
 
 				parms->parse_errs += 1;
 				if( parms->stop ){
@@ -786,28 +785,24 @@ bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *pars
 			}
 
 			outline = g_new0( sLine, 1 );
-			my_date_set_from_date( &outline->dope, &line->dope );
-			my_date_set_from_date( &outline->deffect, &line->deffect );
-			outline->slabel = g_strdup( line->slabel );
-			outline->amount = line->amount;
+			outline->dope = g_strdup( line->dope );
+			outline->deffect = g_strdup( line->deffect );
+			outline->label = g_strdup( line->label );
+			outline->amount = g_strdup( line->amount );
 			prev_line = outline;
 			prev_y = line->y;
 			lines = g_list_prepend( lines, prev_line );
 
-		} else if( my_date_is_valid( &line->deffect ) || line->amount != 0 || line->y - prev_y > 25){
+		} else if( line->deffect || line->amount || line->y - prev_y > 25){
 
-				sdope = my_date_to_str( &line->dope, MY_DATE_SQL );
-				sdeffect = my_date_to_str( &line->deffect, MY_DATE_SQL );
-				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%lf" ),
-						sdope, line->slabel, sdeffect, line->amount );
+				str = g_strdup_printf( _( "invalid line: operation=%s, label=%s, value=%s, amount=%s" ),
+						line->dope, line->label, line->deffect, line->amount );
 				if( parms->progress ){
 					my_iprogress_set_text( parms->progress, self, str );
 				} else {
 					g_debug( "%s: %s", thisfn, str );
 				}
 				g_free( str );
-				g_free( sdope );
-				g_free( sdeffect );
 
 				parms->parse_errs += 1;
 				if( parms->stop ){
@@ -815,10 +810,12 @@ bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *pars
 				} else {
 					continue;
 				}
+
 		} else {
-			str = g_strdup_printf( "%s / %s", prev_line->slabel, line->slabel );
-			g_free( prev_line->slabel );
-			prev_line->slabel = str;
+			str = g_strdup_printf( "%s / %s", prev_line->label, line->label );
+			g_free( prev_line->label );
+			prev_line->label = str;
+			prev_y = line->y;
 		}
 	}
 
@@ -831,7 +828,6 @@ bourso_pdf_v1_parse_lines_build( ofaImporterPdfBourso *self, const sParser *pars
 	GSList *output, *fields;
 	GList *it;
 	sLine *line;
-	gchar *sdope, *sdeffect, *samount;
 
 	output = NULL;
 
@@ -840,16 +836,13 @@ bourso_pdf_v1_parse_lines_build( ofaImporterPdfBourso *self, const sParser *pars
 		line = ( sLine * ) it->data;
 
 		fields = NULL;
-		sdope = my_date_to_str( &line->dope, MY_DATE_SQL );
-		sdeffect = my_date_to_str( &line->deffect, MY_DATE_SQL );
-		samount = my_double_to_sql( line->amount );
 
 		fields = g_slist_prepend( fields, g_strdup( "2" ));
-		fields = g_slist_prepend( fields, sdope );
-		fields = g_slist_prepend( fields, sdeffect );
+		fields = g_slist_prepend( fields, g_strdup( line->dope ));
+		fields = g_slist_prepend( fields, g_strdup( line->deffect ));
 		fields = g_slist_prepend( fields, g_strdup( "" ));
-		fields = g_slist_prepend( fields, g_strdup( line->slabel ));
-		fields = g_slist_prepend( fields, samount );
+		fields = g_slist_prepend( fields, g_strdup( line->label ));
+		fields = g_slist_prepend( fields, g_strdup( line->amount ));
 		fields = g_slist_prepend( fields, g_strdup( "" ));
 
 		output = g_slist_prepend( output, g_slist_reverse( fields ));
@@ -886,10 +879,10 @@ get_default_stream_format( const ofaImporterPdfBourso *self )
 	ofa_stream_format_set( format,
 			TRUE,  "ISO-8859-15",			/* Western Europe */
 			TRUE,  MY_DATE_DMYY,			/* date format dd/mm/yyyy */
-			FALSE, '\0',					/* no thousand sep */
-			TRUE,  '.',						/* dot decimal sep */
-			TRUE,  '\t',					/* tab field sep */
-			TRUE,  '"',						/* double quote string delim */
+			TRUE,  '.',						/* dot thousand sep */
+			TRUE,  ',',						/* comma decimal sep */
+			FALSE, '\0',					/* no field sep */
+			FALSE, '\0',					/* no string delim */
 			FALSE, 0 );						/* no header */
 
 	return( format );
@@ -922,7 +915,20 @@ find_line( GList **lines, gdouble acceptable_diff, gdouble y )
 static void
 free_line( sLine *line )
 {
-	g_free( line->slabel );
+	g_free( line->dope );
+	g_free( line->deffect );
+	g_free( line->label );
+	g_free( line->amount );
 
 	g_free( line );
+}
+
+static gchar *
+get_amount( ofsPdfRC *rc )
+{
+	gchar *amount;
+
+	amount = rc->x1 < st_credit_min_x ? g_strdup_printf( "-%s", rc->text ) : g_strdup( rc->text );
+
+	return( amount );
 }

@@ -266,6 +266,22 @@ ofa_importer_pdf_free_layout( GList *layout )
 }
 
 /**
+ * ofa_importer_pdf_dump_rc:
+ * @rc: a #ofsPdfRC rectangle.
+ * @label: a prefix to the dumped string.
+ *
+ * Dump the @rc.
+ */
+void
+ofa_importer_pdf_dump_rc( const ofsPdfRC *rc, const gchar *label )
+{
+	static const gchar *thisfn = "ofa_importer_pdf_dump_rc";
+
+	g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+			label ? label : thisfn, rc->x1, rc->y1, rc->x2, rc->y2, rc->text );
+}
+
+/**
  * ofa_importer_pdf_free_rc:
  * @rc: a #ofsPdfRC rectangle.
  *
