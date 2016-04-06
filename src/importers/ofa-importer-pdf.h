@@ -68,11 +68,12 @@ typedef struct {
  * A layout rectangle with its text.
  */
 typedef struct {
-  gdouble x1;
-  gdouble y1;
-  gdouble x2;
-  gdouble y2;
-  gchar  *text;
+	guint   page_num;
+	gdouble x1;
+	gdouble y1;
+	gdouble x2;
+	gdouble y2;
+	gchar  *text;
 }
 	ofsPdfRC;
 
@@ -83,7 +84,8 @@ gboolean ofa_importer_pdf_is_willing_to      ( const ofaImporterPdf *instance,
 													const GList *accepted_contents );
 
 GList   *ofa_importer_pdf_get_layout         ( const ofaImporterPdf *instance,
-													PopplerPage *page );
+													PopplerDocument *doc,
+													guint page_num );
 
 gdouble  ofa_importer_pdf_get_acceptable_diff( void );
 

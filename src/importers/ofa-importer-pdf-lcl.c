@@ -42,27 +42,19 @@
 #include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 
-#include "importers/ofa-importer-pdf-bourso.h"
+#include "importers/ofa-importer-pdf-lcl.h"
 
 /* private instance data
  */
 typedef struct {
 	gboolean  dispose_has_run;
-
-	/* bat datas have to be read both from first and last pages
-	 */
-	gchar    *iban;
-	gchar    *currency;
-	gchar    *begin_date;
-	gchar    *end_date;
-	gchar    *begin_solde;
 }
-	ofaImporterPdfBoursoPrivate;
+	ofaImporterPdfLclPrivate;
 
 typedef struct _sParser                    sParser;
 
-#define IMPORTER_CANON_NAME               "Boursorama.pdf importer"
-#define IMPORTER_VERSION                  "2015.2"
+#define IMPORTER_CANON_NAME               "LCL.pdf importer"
+#define IMPORTER_VERSION                  "2016.2"
 
 /* a data structure to host head detail line datas
  */
@@ -75,19 +67,19 @@ typedef struct {
 }
 	sLine;
 
-static gdouble  st_x1_periode_begin     = 259;
-static gdouble  st_y1_periode_begin     = 267;
-static gchar   *st_header_extrait       = "Extrait de votre compte en ";
-static gchar   *st_header_banque        = "BOURSORAMA";
-static gchar   *st_header_iban          = "I.B.A.N. ";
-static gchar   *st_header_begin_solde   = "SOLDE AU : ";
-static gchar   *st_footer_end_solde     = "Nouveau solde en ";
-static gchar   *st_page_credit          = "Crédit";
+//static gdouble  st_x1_periode_begin     = 259;
+//static gdouble  st_y1_periode_begin     = 267;
+static gchar   *st_header_extrait       = "RELEVE DE COMPTE";
+static gchar   *st_header_banque        = "CREDIT LYONNAIS";
+static gchar   *st_header_iban          = "IBAN : ";
+static gchar   *st_header_begin_solde   = "ANCIEN SOLDE";
+static gchar   *st_footer_end_solde     = "SOLDE EN EUROS";
+static gchar   *st_page_debit           = "DEBIT";
 
-static gdouble  st_label_min_x          = 80;
-static gdouble  st_valeur_min_x         = 300;
-static gdouble  st_debit_min_x          = 355;
-static gdouble  st_credit_min_x         = 446;
+//static gdouble  st_label_min_x          = 80;
+//static gdouble  st_valeur_min_x         = 300;
+//static gdouble  st_debit_min_x          = 355;
+static gdouble  st_credit_min_x         = 482;
 
 static GList   *st_accepted_contents    = NULL;
 
@@ -97,24 +89,23 @@ static gchar           *iident_get_version( const myIIdent *instance, void *user
 static void             iimporter_iface_init( ofaIImporterInterface *iface );
 static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance );
 static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
-static gboolean         is_willing_to_parse( const ofaImporterPdfBourso *self, const gchar *uri );
+static gboolean         is_willing_to_parse( const ofaImporterPdfLcl *self, const gchar *uri );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
-static GSList          *do_parse( ofaImporterPdfBourso *self, ofsImporterParms *parms, gchar **msgerr );
-static gboolean         bourso_pdf_v1_check( const ofaImporterPdfBourso *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri );
-static GSList          *bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms );
-static gboolean         bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list );
-static gboolean         bourso_pdf_v1_parse_header_last( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list, GSList **fields );
-static GList           *bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, guint page_num, GList *rc_list );
-static GList           *bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list );
-static GSList          *bourso_pdf_v1_parse_lines_build( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *filtered_list );
-static sParser         *get_willing_to_parser( const ofaImporterPdfBourso *self, const ofaStreamFormat *format, const gchar *uri );
-static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfBourso *self );
+static GSList          *do_parse( ofaImporterPdfLcl *self, ofsImporterParms *parms, gchar **msgerr );
+static gboolean         lcl_pdf_v1_check( const ofaImporterPdfLcl *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri );
+static GSList          *lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms );
+static GSList          *lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, PopplerDocument *doc );
+static GList           *lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, guint page_num, GList *rc_list );
+static GList           *lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list );
+static GSList          *lcl_pdf_v1_parse_lines_build( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *filtered_list );
+static sParser         *get_willing_to_parser( const ofaImporterPdfLcl *self, const ofaStreamFormat *format, const gchar *uri );
+static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfLcl *self );
 static sLine           *find_line( GList **lines, gdouble acceptable_diff, gdouble y );
 static void             free_line( sLine *line );
 static gchar           *get_amount( ofsPdfRC *rc );
 
-G_DEFINE_TYPE_EXTENDED( ofaImporterPdfBourso, ofa_importer_pdf_bourso, OFA_TYPE_IMPORTER_PDF, 0,
-		G_ADD_PRIVATE( ofaImporterPdfBourso )
+G_DEFINE_TYPE_EXTENDED( ofaImporterPdfLcl, ofa_importer_pdf_lcl, OFA_TYPE_IMPORTER_PDF, 0,
+		G_ADD_PRIVATE( ofaImporterPdfLcl )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTER, iimporter_iface_init ))
 
@@ -125,47 +116,39 @@ G_DEFINE_TYPE_EXTENDED( ofaImporterPdfBourso, ofa_importer_pdf_bourso, OFA_TYPE_
 struct _sParser {
 	const gchar *label;
 	guint        version;
-	gboolean   (*fnTest) ( const ofaImporterPdfBourso *, const sParser *, const ofaStreamFormat *, const gchar * );
-	GSList *   (*fnParse)( ofaImporterPdfBourso *, const sParser *, ofsImporterParms * );
+	gboolean   (*fnTest) ( const ofaImporterPdfLcl *, const sParser *, const ofaStreamFormat *, const gchar * );
+	GSList *   (*fnParse)( ofaImporterPdfLcl *, const sParser *, ofsImporterParms * );
 };
 
 static sParser st_parsers[] = {
-		{ "Boursorama-PDF v1.2015", 1, bourso_pdf_v1_check, bourso_pdf_v1_parse },
+		{ "LCL-PDF v2.2016", 1, lcl_pdf_v1_check, lcl_pdf_v1_parse },
 		{ 0 }
 };
 
 static void
-importer_pdf_bourso_finalize( GObject *instance )
+importer_pdf_lcl_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_bourso_finalize";
-	ofaImporterPdfBoursoPrivate *priv;
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_finalize";
 
-	g_return_if_fail( instance && OFA_IS_IMPORTER_PDF_BOURSO( instance ));
+	g_return_if_fail( instance && OFA_IS_IMPORTER_PDF_LCL( instance ));
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
-	priv = ofa_importer_pdf_bourso_get_instance_private( OFA_IMPORTER_PDF_BOURSO( instance ));
-
-	g_free( priv->iban );
-	g_free( priv->currency );
-	g_free( priv->begin_date );
-	g_free( priv->end_date );
-	g_free( priv->begin_solde );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_importer_pdf_bourso_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_importer_pdf_lcl_parent_class )->finalize( instance );
 }
 
 static void
-importer_pdf_bourso_dispose( GObject *instance )
+importer_pdf_lcl_dispose( GObject *instance )
 {
-	ofaImporterPdfBoursoPrivate *priv;
+	ofaImporterPdfLclPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_IMPORTER_PDF_BOURSO( instance ));
+	g_return_if_fail( instance && OFA_IS_IMPORTER_PDF_LCL( instance ));
 
-	priv = ofa_importer_pdf_bourso_get_instance_private( OFA_IMPORTER_PDF_BOURSO( instance ));
+	priv = ofa_importer_pdf_lcl_get_instance_private( OFA_IMPORTER_PDF_LCL( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -175,34 +158,34 @@ importer_pdf_bourso_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_importer_pdf_bourso_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_importer_pdf_lcl_parent_class )->dispose( instance );
 }
 
 static void
-ofa_importer_pdf_bourso_init( ofaImporterPdfBourso *self )
+ofa_importer_pdf_lcl_init( ofaImporterPdfLcl *self )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_bourso_init";
-	ofaImporterPdfBoursoPrivate *priv;
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_init";
+	ofaImporterPdfLclPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_IMPORTER_PDF_BOURSO( self ));
+	g_return_if_fail( self && OFA_IS_IMPORTER_PDF_LCL( self ));
 
-	priv = ofa_importer_pdf_bourso_get_instance_private( self );
+	priv = ofa_importer_pdf_lcl_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_importer_pdf_bourso_class_init( ofaImporterPdfBoursoClass *klass )
+ofa_importer_pdf_lcl_class_init( ofaImporterPdfLclClass *klass )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_bourso_class_init";
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = importer_pdf_bourso_dispose;
-	G_OBJECT_CLASS( klass )->finalize = importer_pdf_bourso_finalize;
+	G_OBJECT_CLASS( klass )->dispose = importer_pdf_lcl_dispose;
+	G_OBJECT_CLASS( klass )->finalize = importer_pdf_lcl_finalize;
 }
 
 /*
@@ -263,7 +246,7 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
 
 	ok = ofa_importer_pdf_is_willing_to( OFA_IMPORTER_PDF( instance ), uri, iimporter_get_accepted_contents( instance )) &&
 			type == OFO_TYPE_BAT &&
-			is_willing_to_parse( OFA_IMPORTER_PDF_BOURSO( instance ), uri );
+			is_willing_to_parse( OFA_IMPORTER_PDF_LCL( instance ), uri );
 
 	return( ok );
 }
@@ -274,7 +257,7 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-is_willing_to_parse( const ofaImporterPdfBourso *self, const gchar *uri )
+is_willing_to_parse( const ofaImporterPdfLcl *self, const gchar *uri )
 {
 	ofaStreamFormat *format;
 	sParser *parser;
@@ -295,11 +278,11 @@ iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr
 	g_return_val_if_fail( my_strlen( parms->uri ), NULL );
 	g_return_val_if_fail( parms->format && OFA_IS_STREAM_FORMAT( parms->format ), NULL );
 
-	return( do_parse( OFA_IMPORTER_PDF_BOURSO( instance ), parms, msgerr ));
+	return( do_parse( OFA_IMPORTER_PDF_LCL( instance ), parms, msgerr ));
 }
 
 static GSList *
-do_parse( ofaImporterPdfBourso *self, ofsImporterParms *parms, gchar **msgerr )
+do_parse( ofaImporterPdfLcl *self, ofsImporterParms *parms, gchar **msgerr )
 {
 	GSList *output;
 	sParser *parser;
@@ -319,9 +302,9 @@ do_parse( ofaImporterPdfBourso *self, ofsImporterParms *parms, gchar **msgerr )
 }
 
 static gboolean
-bourso_pdf_v1_check( const ofaImporterPdfBourso *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri )
+lcl_pdf_v1_check( const ofaImporterPdfLcl *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_bourso_v1_check";
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_v1_check";
 	PopplerDocument *doc;
 	PopplerPage *page;
 	GError *error;
@@ -358,15 +341,14 @@ bourso_pdf_v1_check( const ofaImporterPdfBourso *self, const sParser *parser, co
 }
 
 static GSList *
-bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms )
+lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms )
 {
-	GSList *output, *fields;
+	GSList *output;
 	PopplerDocument *doc;
 	gint pages_count;
 	guint page_num;
 	GError *error;
 	GList *rc_list, *lines1, *lines2;
-	gboolean ok;
 
 	output = NULL;
 	error = NULL;
@@ -382,190 +364,95 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 
 	pages_count = poppler_document_get_n_pages( doc );
 
-	/* get the bat datas from first and last page
+	/* BAT datas have to be get from first and (one of the) last pages
+	 * so just have to scan *all* pages :(
 	 */
-	rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, 0 );
-	ok = bourso_pdf_v1_parse_header_first( self, parser, parms, rc_list );
-	ofa_importer_pdf_free_layout( rc_list );
-	if( !ok ){
-		return( NULL );
-	}
-
-	rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, pages_count-1 );
-	ok = bourso_pdf_v1_parse_header_last( self, parser, parms, rc_list, &fields );
-	ofa_importer_pdf_free_layout( rc_list );
-	if( !ok ){
-		return( NULL );
-	}
-	output = g_slist_prepend( output, fields );
+	output = g_slist_prepend( output, lcl_pdf_v1_parse_header( self, parser, parms, doc ));
 	//my_utils_dump_gslist_str( output );
+	return( NULL );
 
 	/* then get the lines from bat
 	 */
 	for( page_num=0 ; page_num < pages_count ; ++page_num ){
 		rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, page_num );
-		lines1 = bourso_pdf_v1_parse_lines_rough( self, parser, parms, page_num, rc_list );
+		lines1 = lcl_pdf_v1_parse_lines_rough( self, parser, parms, page_num, rc_list );
 		ofa_importer_pdf_free_layout( rc_list );
-		lines2 = bourso_pdf_v1_parse_lines_merge( self, parser, parms, lines1 );
+		lines2 = lcl_pdf_v1_parse_lines_merge( self, parser, parms, lines1 );
 		g_list_free_full( lines1, ( GDestroyNotify ) free_line );
-		output = g_slist_concat( output, bourso_pdf_v1_parse_lines_build( self, parser, parms, lines2 ));
+		output = g_slist_concat( output, lcl_pdf_v1_parse_lines_build( self, parser, parms, lines2 ));
 		g_list_free_full( lines2, ( GDestroyNotify ) free_line );
 	}
 
 	g_object_unref( doc );
-#if 0
-	ofa_iimportable_set_count( OFA_IIMPORTABLE( importer ), priv->count );
-
-	/* check the totals: this make sure we have all lines with right amounts */
-	if( bat && ( priv->tot_debit || priv->tot_credit )){
-		debit = 0;
-		credit = 0;
-		for( it=bat->details ; it ; it=it->next ){
-			detail = ( ofsBatDetail *  ) it->data;
-			if( detail->amount < 0 ){
-				debit += -1*detail->amount;
-			} else {
-				credit += detail->amount;
-			}
-		}
-
-		if( bat->begin_solde < 0 ){
-			debit += -1*bat->begin_solde;
-		} else {
-			credit += bat->begin_solde;
-		}
-
-		sdebit = ofa_amount_to_str( priv->tot_debit, NULL );
-		scredit = ofa_amount_to_str( priv->tot_credit, NULL );
-		msg = g_strdup_printf( "Bank debit=%s, bank credit=%s", sdebit, scredit );
-		ofa_iimportable_set_message(
-				OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD, msg );
-		g_free( msg );
-		g_free( scredit );
-		g_free( sdebit );
-
-		if( debit == priv->tot_debit && credit == priv->tot_credit ){
-			ofa_iimportable_set_message(
-					OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD,
-					_( "All lines successfully imported" ));
-
-		} else {
-			if( debit != priv->tot_debit ){
-				sdebit = ofa_amount_to_str( debit, NULL );
-				msg = g_strdup_printf( _( "Error detected: computed debit=%s" ), sdebit );
-				ofa_iimportable_set_message(
-						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				g_free( sdebit );
-			}
-			if( credit != priv->tot_credit ){
-				scredit = ofa_amount_to_str( credit, NULL );
-				msg = g_strdup_printf( _( "Error detected: computed credit=%s" ), scredit );
-				ofa_iimportable_set_message(
-						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				g_free( scredit );
-			}
-		}
-	}
-#endif
 
 	return( output );
 }
 
 /*
- * parse the first page to get some datas:
- * - begin and end dates
- * - iban
- * - currency
- * - begin solde
+ * parse all the pages to get BAT header datas
+ * returns: the list of fields
  */
-static gboolean
-bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list )
+static GSList *
+lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, PopplerDocument *doc )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_bourso_v1_parse_header_first";
-	ofaImporterPdfBoursoPrivate *priv;
-	gdouble acceptable_diff, periode_x1, periode_y1;
-	GList *it, *it_next;
-	gboolean ok, begin_found, end_found, extrait_found, iban_found, begin_solde_found;
+	GSList *fields;
+	gint pages_count;
+	guint page_num;
+	GList *rc_list, *it, *it_next;
 	ofsPdfRC *rc, *rc_next;
-
-	priv = ofa_importer_pdf_bourso_get_instance_private( self );
+	gboolean ok, begin_end_found, iban_found, begin_solde_found, end_solde_found;
+	gchar begin_date[88], end_date[88], foo[88];
+	gchar *iban, *begin_solde, *end_solde;
 
 	ok = TRUE;
+	fields = NULL;
+	pages_count = poppler_document_get_n_pages( doc );
 
-	priv->begin_date = NULL;
-	priv->end_date = NULL;
-	priv->currency = NULL;
-	priv->iban = NULL;
-	priv->begin_solde = NULL;
-
-	extrait_found = FALSE;
-	begin_found = FALSE;
-	end_found = FALSE;
+	begin_solde = NULL;
+	end_solde = NULL;
+	begin_end_found = FALSE;
 	iban_found = FALSE;
 	begin_solde_found = FALSE;
 
-	acceptable_diff = ofa_importer_pdf_get_acceptable_diff();
-	periode_x1 = st_x1_periode_begin - 10*acceptable_diff;
-	periode_y1 = st_y1_periode_begin - 10*acceptable_diff;
+	for( page_num=0 ; page_num < pages_count ; ++page_num ){
+		rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, page_num );
+		for( it=rc_list ; it ; it=it->next ){
+			rc = ( ofsPdfRC * ) it->data;
 
-	for( it=rc_list ; it ; it=it->next ){
-		rc = ( ofsPdfRC * ) it->data;
-		if( 0 ){
-			ofa_importer_pdf_dump_rc( rc, thisfn );
-		}
+			if( !begin_end_found ){
+				if( sscanf( rc->text, "du %s au %s - N° %s", begin_date, end_date, foo )){
+					begin_end_found = TRUE;
+				}
+			}
 
-		if( !extrait_found ){
-			if( g_str_has_prefix( rc->text, st_header_extrait )){
-				priv->currency = g_strdup( rc->text+my_strlen( st_header_extrait ));
-				extrait_found = TRUE;
+			if( !iban_found ){
+				if( g_str_has_prefix( rc->text, st_header_iban )){
+					iban = g_strdup( rc->text+my_strlen( st_header_iban ));
+					iban_found = TRUE;
+				}
+			}
+
+			if( !begin_solde_found && !my_collate( rc->text, st_header_begin_solde ) ){
+				it_next = it->next;
+				rc_next = ( ofsPdfRC * ) it_next->data;
+				begin_solde = get_amount( rc_next );
+				begin_solde_found = TRUE;
+			}
+
+			if( !end_solde_found && g_str_has_prefix( rc->text, st_footer_end_solde )){
+				it_next = it->next;
+				rc_next = ( ofsPdfRC * ) it_next->data;
+				end_solde = get_amount( rc_next );
+				end_solde_found = TRUE;
 			}
 		}
-
-		if( !begin_found && rc->x1 > periode_x1 && rc->y1 > periode_y1 ){
-			if( !my_collate( rc->text, "du" )){
-				it = it->next;
-				rc = ( ofsPdfRC * ) it->data;
-				priv->begin_date = g_strstrip( g_strndup( rc->text, 10 ));
-				begin_found = TRUE;
-			}
-		}
-
-		if( begin_found && !end_found && rc->x1 > periode_x1 && rc->y1 > periode_y1 ){
-			if( !my_collate( rc->text, "au" )){
-				it = it->next;
-				rc = ( ofsPdfRC * ) it->data;
-				priv->end_date = g_strstrip( g_strndup( rc->text, 10 ));
-				end_found = TRUE;
-			}
-		}
-
-		if( !iban_found ){
-			if( g_str_has_prefix( rc->text, st_header_iban )){
-				priv->iban = g_strdup( rc->text+my_strlen( st_header_iban ));
-				iban_found = TRUE;
-			}
-		}
-
-		if( !begin_solde_found && g_str_has_prefix( rc->text, st_header_begin_solde )){
-			it_next = it->next;
-			rc_next = ( ofsPdfRC * ) it_next->data;
-			priv->begin_solde = get_amount( rc_next );
-			begin_solde_found = TRUE;
-		}
+		ofa_importer_pdf_free_layout( rc_list );
+		break;
 	}
 
-	if( !begin_found ){
+	if( !begin_end_found ){
 		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "beginning date not found" ));
-		}
-		parms->parse_errs += 1;
-		ok = FALSE;
-	}
-	if( !end_found ){
-		if( parms->progress ){
-			my_iprogress_set_text( parms->progress, self, _( "ending date not found" ));
+			my_iprogress_set_text( parms->progress, self, _( "neither beginning not ending dates found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
@@ -584,92 +471,43 @@ bourso_pdf_v1_parse_header_first( ofaImporterPdfBourso *self, const sParser *par
 		parms->parse_errs += 1;
 		ok = FALSE;
 	}
-
-	return( ok );
-}
-
-/*
- * parse the last page to get the end solde
- * + if ok, setup the list of fields
- */
-static gboolean
-bourso_pdf_v1_parse_header_last( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rc_list, GSList **fields )
-{
-	ofaImporterPdfBoursoPrivate *priv;
-	gboolean ok;
-	GList *it;
-	ofsPdfRC *rc;
-	gdouble acceptable_diff, y1;
-	gboolean solde_label_found, end_solde_found;
-	gchar *end_solde;
-
-	g_return_val_if_fail( fields, FALSE );
-
-	priv = ofa_importer_pdf_bourso_get_instance_private( self );
-
-	ok = TRUE;
-	*fields = NULL;
-	solde_label_found = FALSE;
-	end_solde_found = FALSE;
-	acceptable_diff = ofa_importer_pdf_get_acceptable_diff();
-
-	for( it=rc_list ; it ; it=it->next ){
-		rc = ( ofsPdfRC * ) it->data;
-
-		/* search for the end line and get y coordinates */
-		if( !solde_label_found && g_str_has_prefix( rc->text, st_footer_end_solde )){
-			y1 = rc->y1;
-			solde_label_found = TRUE;
-		}
-
-		if( solde_label_found && !end_solde_found && fabs( rc->y1 - y1 ) < acceptable_diff && rc->x1 > st_debit_min_x ){
-			end_solde = get_amount( rc );
-			end_solde_found = TRUE;
-		}
-	}
-
 	if( !end_solde_found ){
 		if( parms->progress ){
 			my_iprogress_set_text( parms->progress, self, _( "ending solde not found" ));
 		}
 		parms->parse_errs += 1;
 		ok = FALSE;
-
-	} else {
-		*fields = g_slist_prepend( *fields, g_strdup( "1" ));
-		*fields = g_slist_prepend( *fields, g_strdup( parms->uri ));
-		*fields = g_slist_prepend( *fields, g_strdup( parser->label ));
-		*fields = g_slist_prepend( *fields, g_strdup( priv->iban ));
-		*fields = g_slist_prepend( *fields, g_strdup( priv->currency ));
-		*fields = g_slist_prepend( *fields, g_strdup( priv->begin_date ));
-		*fields = g_slist_prepend( *fields, g_strdup( priv->begin_solde ));
-		*fields = g_slist_prepend( *fields, g_strdup( "Y" ));
-		*fields = g_slist_prepend( *fields, g_strdup( priv->end_date ));
-		*fields = g_slist_prepend( *fields, g_strdup( end_solde ));
-		*fields = g_slist_prepend( *fields, g_strdup( "Y" ));
-
-		*fields = g_slist_reverse( *fields );
 	}
 
-	return( ok );
+	if( ok ){
+		fields = g_slist_prepend( fields, g_strdup( "1" ));
+		fields = g_slist_prepend( fields, g_strdup( parms->uri ));
+		fields = g_slist_prepend( fields, g_strdup( parser->label ));
+		fields = g_slist_prepend( fields, g_strdup( iban ));
+		fields = g_slist_prepend( fields, g_strdup( "EUR" ));
+		fields = g_slist_prepend( fields, g_strdup( begin_date ));
+		fields = g_slist_prepend( fields, begin_solde );
+		fields = g_slist_prepend( fields, g_strdup( "Y" ));
+		fields = g_slist_prepend( fields, g_strdup( end_date ));
+		fields = g_slist_prepend( fields, end_solde );
+		fields = g_slist_prepend( fields, g_strdup( "Y" ));
+	}
+	return( g_slist_reverse( fields ));
 }
 
 /*
- * Almost all header informations are found on the beginning of first page
- * (i.e. all but the ending solde which is on the last page)
- * We "just" have to scan all layout rectangles to find the desired datas.
- *
  * Returns: a GList of sLine structure, one for each parsed line
  * (as a consequence, some of them will have to be merged later)
  */
 static GList *
-bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, guint page_num, GList *rc_list )
+lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, guint page_num, GList *rc_list )
 {
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_parse_lines_rough";
 	GList *it, *lines;
 	ofsPdfRC *rc;
 	gdouble acceptable_diff, first_y;
 	sLine *line;
-	gchar *tmp, *str;
+	//gchar *tmp, *str;
 
 	lines = NULL;
 	first_y = 0;
@@ -677,28 +515,36 @@ bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *self, const sParser *pars
 
 	for( it=rc_list ; it ; it=it->next ){
 		rc = ( ofsPdfRC * ) it->data;
+		if( 1 ){
+			ofa_importer_pdf_dump_rc( rc, thisfn );
+		}
 
 		/* do not do anything while we do not have found the begin of
 		 * the array - which is 'SOLDE AU : ' for page zero
 		 * or 'Crédit' for others */
 		if( first_y == 0 ){
-			if( page_num == 0 && g_str_has_prefix( rc->text, st_header_begin_solde ) && rc->x2 < st_debit_min_x ){
-				first_y = rc->y2 + acceptable_diff;
+			if( page_num == 0 && g_str_has_prefix( rc->text, st_header_begin_solde )){
+				first_y = rc->y2;
 			}
-			if( page_num > 0 && g_str_has_prefix( rc->text, st_page_credit ) && rc->x2 < st_debit_min_x ){
-				first_y = rc->y2 + acceptable_diff;
+			if( page_num > 0 && g_str_has_prefix( rc->text, st_page_debit )){
+				first_y = rc->y2;
 			}
 		}
 
 		if( first_y > 0 && rc->y1 > first_y ){
 			/* end of the page */
-			if( g_str_has_prefix( rc->text, st_footer_end_solde )){
+			/*
+			if( rc->y1 ){
 				break;
 			}
+			*/
 
 			/* a transaction field */
+			if( 0 ){
 			line = find_line( &lines, acceptable_diff, rc->y1 );
-
+			free_line( line );
+			}
+/*
 			if( rc->x1 < st_label_min_x ){
 				line->dope = g_strstrip( g_strndup( rc->text, 10 ));
 				if( my_strlen( rc->text ) > 10 ){
@@ -727,6 +573,7 @@ bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *self, const sParser *pars
 			} else {
 				line->amount = get_amount( rc );
 			}
+			*/
 		}
 	}
 
@@ -737,9 +584,9 @@ bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *self, const sParser *pars
  * merge
  */
 static GList *
-bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list )
+lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list )
 {
-	static const gchar *thisfn = "ofa_importer_pdf_bourso_pdf_v1_parse_lines_merge";
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_pdf_v1_parse_lines_merge";
 	GList *it, *lines;
 	gdouble prev_y;
 	sLine *line, *outline, *prev_line;
@@ -816,7 +663,7 @@ bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *pars
 }
 
 static GSList *
-bourso_pdf_v1_parse_lines_build( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *filtered_list )
+lcl_pdf_v1_parse_lines_build( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, GList *filtered_list )
 {
 	GSList *output, *fields;
 	GList *it;
@@ -845,7 +692,7 @@ bourso_pdf_v1_parse_lines_build( ofaImporterPdfBourso *self, const sParser *pars
 }
 
 static sParser *
-get_willing_to_parser( const ofaImporterPdfBourso *self, const ofaStreamFormat *format, const gchar *uri )
+get_willing_to_parser( const ofaImporterPdfLcl *self, const ofaStreamFormat *format, const gchar *uri )
 {
 	sParser *parser;
 	gint i;
@@ -863,7 +710,7 @@ get_willing_to_parser( const ofaImporterPdfBourso *self, const ofaStreamFormat *
 }
 
 static ofaStreamFormat *
-get_default_stream_format( const ofaImporterPdfBourso *self )
+get_default_stream_format( const ofaImporterPdfLcl *self )
 {
 	ofaStreamFormat *format;
 
@@ -871,8 +718,8 @@ get_default_stream_format( const ofaImporterPdfBourso *self )
 
 	ofa_stream_format_set( format,
 			TRUE,  "ISO-8859-15",			/* Western Europe */
-			TRUE,  MY_DATE_DMYY,			/* date format dd/mm/yyyy */
-			TRUE,  '.',						/* dot thousand sep */
+			TRUE,  MY_DATE_DMYDOT,			/* date format dd.mm.yyyy */
+			TRUE,  ' ',						/* space thousand sep */
 			TRUE,  ',',						/* comma decimal sep */
 			FALSE, '\0',					/* no field sep */
 			FALSE, '\0',					/* no string delim */

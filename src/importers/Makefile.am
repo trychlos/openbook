@@ -43,6 +43,8 @@ libofa_importers_la_SOURCES = \
 	ofa-importer-pdf.h								\
 	ofa-importer-pdf-bourso.c						\
 	ofa-importer-pdf-bourso.h						\
+	ofa-importer-pdf-lcl.c							\
+	ofa-importer-pdf-lcl.h							\
 	ofa-importer-txt.c								\
 	ofa-importer-txt.h								\
 	ofa-importer-txt-bourso.c						\

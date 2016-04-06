@@ -897,6 +897,7 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	hub = ofa_igetter_get_hub( priv->getter );
 	importers = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTER );
 	for( it=importers ; it ; it=it->next ){
+		g_debug( "%s: importer=%p (%s)", thisfn, it->data, G_OBJECT_TYPE_NAME( it->data ));
 		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), priv->p1_furi, priv->p2_selected_type )){
 			priv->p3_importers = g_list_prepend( priv->p3_importers, g_object_ref( it->data ));
 			label = ofa_iimporter_get_display_name( OFA_IIMPORTER( it->data ));

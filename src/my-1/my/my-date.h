@@ -37,16 +37,17 @@ G_BEGIN_DECLS
 
 /**
  * myDateFormat:
- * --------------+------------+----------------------------------+
- *               |            |               usage              |
- *               | display as | display | entry | sql | filename |
- * --------------+------------+---------+-------+-----+----------+
- * @MY_DATE_DMMM | d mmm yyyy |    X    |       |     |          |
- * @MY_DATE_MMYY |  Mmm yyyy  |    X    |       |     |          |
- * @MY_DATE_DMYY | dd/mm/yyyy |    X    |   X   |     |          |
- * @MY_DATE_SQL  | yyyy-mm-dd |         |       |  X  |          |
- * @MY_DATE_YYMD |  yyyymmdd  |         |       |     |     X    |
- * --------------+------------+---------+-------+-----+----------+
+ * ----------------+------------+--------------------------------------------+
+ *                 |            |               usage                        |
+ *                 | display as | display | entry | sql | filename | pdf-lcl |
+ * ----------------+------------+---------+-------+-----+----------+---------+
+ * @MY_DATE_DMMM   | d mmm yyyy |    X    |       |     |          |         |
+ * @MY_DATE_MMYY   |  Mmm yyyy  |    X    |       |     |          |         |
+ * @MY_DATE_DMYY   | dd/mm/yyyy |    X    |   X   |     |          |         |
+ * @MY_DATE_SQL    | yyyy-mm-dd |         |       |  X  |          |         |
+ * @MY_DATE_YYMD   |  yyyymmdd  |         |       |     |     X    |         |
+ * @MY_DATE_DMYDOT |  yyyymmdd  |         |       |     |          |    X    |
+ * ----------------+------------+---------+-------+-----+----------+---------+
  *
  * MAINTAINER_NOTE: only add a new format at the end of the list as the
  * format number is stored as a user settings
@@ -60,6 +61,7 @@ typedef enum {
 	MY_DATE_DMYY,
 	MY_DATE_SQL,
 	MY_DATE_YYMD,
+	MY_DATE_DMYDOT,
 	MY_DATE_LAST
 }
 	myDateFormat;

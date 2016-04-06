@@ -40,16 +40,18 @@ typedef struct {
 	sDateFormat;
 
 static const sDateFormat st_date_format[] = {
-		{ MY_DATE_DMMM, N_( "D MMM YYYY" )},
-		{ MY_DATE_MMYY, N_( "MMM YYYY" )},
-		{ MY_DATE_DMYY, N_( "DD/MM/YYYY" )},
-		{ MY_DATE_SQL,  N_( "YYYY-MM-DD" )},
-		{ MY_DATE_YYMD, N_( "YYYYMMDD" )},
+		{ MY_DATE_DMMM,   N_( "D MMM YYYY" )},
+		{ MY_DATE_MMYY,   N_( "MMM YYYY" )},
+		{ MY_DATE_DMYY,   N_( "DD/MM/YYYY" )},
+		{ MY_DATE_SQL,    N_( "YYYY-MM-DD" )},
+		{ MY_DATE_YYMD,   N_( "YYYYMMDD" )},
+		{ MY_DATE_DMYDOT, N_( "DD.MM.YYYY" )},
 		{ 0 }
 };
 
 static gboolean parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year );
 static gboolean parse_yyyymmdd_string( GDate *date, const gchar *string );
+static gboolean parse_dmydot_string( GDate *date, const gchar *string, gint *year );
 
 /**
  * my_date_clear:
@@ -317,7 +319,7 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 }
 
 /*
- * Returns TRUE if the string parses to a valid 'yyyymmdd' date
+ * Returns TRUE if the string parses to a valid 'dd.mm.yyyy' date
  */
 static gboolean
 parse_yyyymmdd_string( GDate *date, const gchar *string )
@@ -358,6 +360,31 @@ parse_yyyymmdd_string( GDate *date, const gchar *string )
 	return( valid );
 }
 
+/*
+ * Returns TRUE if the string parses to a valid 'yyyymmdd' date
+ */
+static gboolean
+parse_dmydot_string( GDate *date, const gchar *string, gint *year )
+{
+	GRegex *regex;
+	gchar *newstr;
+	gboolean valid;
+
+	my_date_clear( date );
+
+	/* replace the '.' dot with a '/' slash */
+	regex = g_regex_new( "\\.", 0, 0, NULL );
+	newstr = g_regex_replace_literal( regex, string, -1, 0, "/", 0, NULL );
+	g_regex_unref( regex );
+
+	/* and convert */
+	valid = parse_ddmmyyyy_string( date, newstr, year );
+
+	g_free( newstr );
+
+	return( valid );
+}
+
 /**
  * my_date_set_from_str_ex:
  * @date: [out]: a not-null pointer to the destination GDate structure
@@ -394,6 +421,12 @@ my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat form
 
 		case MY_DATE_YYMD:
 			if( !parse_yyyymmdd_string( date, fmt_string )){
+				my_date_clear( date );
+			}
+			break;
+
+		case MY_DATE_DMYDOT:
+			if( !parse_dmydot_string( date, fmt_string, year )){
 				my_date_clear( date );
 			}
 			break;

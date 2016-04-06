@@ -42,7 +42,14 @@ typedef struct {
 
 static gdouble st_acceptable_diff       = 1.5;			/* acceptable diff between same boxes */
 
-static gint cmp_rectangles( ofsPdfRC *a, ofsPdfRC *b );
+static gboolean st_debug_poppler        = TRUE;
+static gboolean st_debug_pdf            = TRUE;
+
+static GList    *poppler_sort_rc_layout( PopplerRectangle *rc_layout, guint rc_count );
+static gint      poppler_cmp_rc( PopplerRectangle *a, PopplerRectangle *b );
+static gint      pdf_cmp_rc( ofsPdfRC *a, ofsPdfRC *b );
+static gint      cmp_rc( gdouble ax1, gdouble ay1, gdouble ax2, gdouble ay2, gdouble bx1, gdouble by1, gdouble bx2, gdouble by2 );
+//static ofsPdfRC *find_pdf_rc( GList *list, guint page_num, PopplerRectangle *poppler_rc, const gchar *text );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterPdf, ofa_importer_pdf, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaImporterPdf ))
@@ -146,7 +153,8 @@ ofa_importer_pdf_is_willing_to( const ofaImporterPdf *instance, const gchar *uri
 /**
  * ofa_importer_pdf_get_layout:
  * @instance: a #ofaImporterPdf instance.
- * @page: a #PopplerPage page.
+ * @doc: a #PopplerDocument document.
+ * @page_num: the index of the desired page, counted from zero.
  *
  * Returns: an ordered (from left to right, and from top to bottom)
  * layout of #ofsPdfRC rectangles with text.
@@ -157,16 +165,16 @@ ofa_importer_pdf_is_willing_to( const ofaImporterPdf *instance, const gchar *uri
  * So we prefer get the first rc and its text, then skip the n others.
  */
 GList *
-ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerPage *page )
+ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerDocument *doc, guint page_num )
 {
 	static const gchar *thisfn = "ofa_importer_pdf_get_layout";
 	ofaImporterPdfPrivate *priv;
-	PopplerRectangle *rc_layout, *rc;
-	guint rc_count, i;
-	GList *rc_ordered, *it;
-	gint len;
-	ofsPdfRC *src;
-	gchar *text;
+	PopplerPage *page;
+	PopplerRectangle *rc_layout, *poppler_rc;
+	guint rc_count;
+	GList *rc_list, *rc_ordered, *it;
+	ofsPdfRC *pdf_rc;
+	gchar *prev_text, *text;
 
 	g_return_val_if_fail( instance && OFA_IS_IMPORTER_PDF( instance ), FALSE );
 
@@ -174,51 +182,102 @@ ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerPage *page )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	/* extract all the text layout rectangles, only keeping the first
-	 * of each serie - then sort them by line */
+	/* extract all the poppler layout rectangles
+	 * we get one Poppler rectangle for each glyph of the document
+	 * they have to be sorted before trying to merge them
+	 */
+	page = poppler_document_get_page( doc, page_num );
 	poppler_page_get_text_layout( page, &rc_layout, &rc_count );
+	rc_list = poppler_sort_rc_layout( rc_layout, rc_count );
+	g_free( rc_layout );
 
-	if( 0 ){
-		/* dump the full layout in poppler order */
-		for( i=0 ; i<rc_count ; ++i ){
-			rc = &rc_layout[i];
-			text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, rc );
-			g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
-					thisfn, rc->x1, rc->y1, rc->x2, rc->y2, text );
+	if( st_debug_poppler ){
+		/* dump the sorted layout */
+		for( it=rc_list ; it ; it=it->next ){
+			poppler_rc = ( PopplerRectangle * ) it->data;
+			text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, poppler_rc );
+			g_debug( "%s [poppler]: page_num=%u, x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+					thisfn, page_num, poppler_rc->x1, poppler_rc->y1, poppler_rc->x2, poppler_rc->y2, text );
 			g_free( text );
 		}
 	}
 
 	rc_ordered = NULL;
+	prev_text = NULL;
+	text = NULL;
 
-	for( i=0 ; i<rc_count ; ){
-		src = g_new0( ofsPdfRC, 1 );
-		src->x1 = rc_layout[i].x1;
-		src->y1 = rc_layout[i].y1;
-		src->x2 = rc_layout[i].x2;
-		src->y2 = rc_layout[i].y2;
-		src->text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, &rc_layout[i] );
-		if( 0 ){
-			/* dump the selected layout in poppler order */
-			g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
-					thisfn, src->x1, src->y1, src->x2, src->y2, src->text );
+	for( it=rc_list ; it ; it=it->next ){
+		poppler_rc = ( PopplerRectangle * ) it->data;
+		text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, poppler_rc );
+
+		if( prev_text && !my_collate( prev_text, text )){
+			if( pdf_rc->x2 < poppler_rc->x2 ){
+				pdf_rc->x2 = poppler_rc->x2;
+			}
+			if( pdf_rc->y2 < poppler_rc->y2 ){
+				pdf_rc->y2 = poppler_rc->y2;
+			}
+			rc_ordered = g_list_remove( rc_ordered, pdf_rc );
+
+		} else {
+			pdf_rc = g_new0( ofsPdfRC, 1 );
+			pdf_rc->page_num = page_num;
+			pdf_rc->x1 = poppler_rc->x1;
+			pdf_rc->y1 = poppler_rc->y1;
+			pdf_rc->x2 = poppler_rc->x2;
+			pdf_rc->y2 = poppler_rc->y2;
+			pdf_rc->text = g_strdup( text );
 		}
-		rc_ordered = g_list_insert_sorted( rc_ordered, src, ( GCompareFunc ) cmp_rectangles );
-		len = my_strlen( src->text );
-		i += len+1;
-	}
-	g_free( rc_layout );
 
-	if( 0 ){
+		g_free( prev_text );
+		prev_text = g_strdup( text );
+		g_free( text );
+
+		rc_ordered = g_list_insert_sorted( rc_ordered, pdf_rc, ( GCompareFunc ) pdf_cmp_rc );
+	}
+
+	g_free( prev_text );
+
+	if( st_debug_pdf ){
 		/* dump the ordered selected layout */
 		for( it=rc_ordered ; it ; it=it->next ){
-			src = ( ofsPdfRC * ) it->data;
-			g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
-					thisfn, src->x1, src->y1, src->x2, src->y2, src->text );
+			pdf_rc = ( ofsPdfRC * ) it->data;
+			g_debug( "%s [pdf]: page_num=%u, x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+					thisfn, pdf_rc->page_num, pdf_rc->x1, pdf_rc->y1, pdf_rc->x2, pdf_rc->y2, pdf_rc->text );
 		}
 	}
 
+	g_list_free_full( rc_list, ( GDestroyNotify ) poppler_rectangle_free );
+	g_object_unref( page );
+
 	return( rc_ordered );
+}
+
+/*
+ * a standard text of n characters is most of the time represented here
+ * with n+1 rectangles, one for each glyph plus a last of zero size
+ */
+static GList *
+poppler_sort_rc_layout( PopplerRectangle *rc_layout, guint rc_count )
+{
+	GList *list;
+	guint i;
+
+	list = NULL;
+
+	for( i=0 ; i<rc_count ; ++i ){
+
+		/* if the rectangle is zero size, then ignore */
+		if( fabs( rc_layout[i].x1 - rc_layout[i].x2 ) < 1 && fabs( rc_layout[i].y1 - rc_layout[i].y2 ) < 1 ){
+			g_debug( "poppler_sort_rc_layout: ignoring x1=%lf, y1=%lf, x2=%lf, y2=%lf",
+					rc_layout[i].x1, rc_layout[i].y1, rc_layout[i].x2, rc_layout[i].y2 );
+			continue;
+		}
+
+		list = g_list_insert_sorted( list, poppler_rectangle_copy( &rc_layout[i] ), ( GCompareFunc ) poppler_cmp_rc );
+	}
+
+	return( list );
 }
 
 /*
@@ -226,7 +285,13 @@ ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerPage *page )
  * from left to right
  */
 static gint
-cmp_rectangles( ofsPdfRC *a, ofsPdfRC *b )
+poppler_cmp_rc( PopplerRectangle *a, PopplerRectangle *b )
+{
+	return( cmp_rc( a->x1, a->y1, a->x2, a->y2, b->x1, b->y1, b->x2, b->y2 ));
+}
+
+static gint
+pdf_cmp_rc( ofsPdfRC *a, ofsPdfRC *b )
 {
 	/* not all lines are well aligned - so considered 1 dot diff is equal */
 	if( fabs( a->y1 - b->y1 ) > st_acceptable_diff ){
@@ -240,6 +305,57 @@ cmp_rectangles( ofsPdfRC *a, ofsPdfRC *b )
 
 	return( a->x1 < b->x1 ? -1 : ( a->x1 > b->x1 ? 1 : 0 ));
 }
+
+static gint
+cmp_rc( gdouble ax1, gdouble ay1, gdouble ax2, gdouble ay2, gdouble bx1, gdouble by1, gdouble bx2, gdouble by2 )
+{
+	if( ay2 <= by1 ){
+		return( -1 );
+	}
+	if( ay1 >= by2 ){
+		return( 1 );
+	}
+	return( ax2 <= bx1 ? -1 : ( ax1 >= bx2 ? 1 : 0 ));
+}
+
+#if 0
+/*
+ * find_pdf_rc:
+ * @list: a list of previously allocated #ofsPdfRC structs.
+ * @page_num: the page number, counted from zero.
+ * @poppler_rc: the PopplerRectangle.
+ * @text: the corresponding text.
+ *
+ * Returns: the previously allocated #ofsPdfRC structure which manages
+ * this @text, or %NULL.
+ */
+static ofsPdfRC *
+find_pdf_rc( GList *list, guint page_num, PopplerRectangle *poppler_rc, const gchar *text )
+{
+	ofsPdfRC *pdf_rc;
+	GList *it;
+
+	for( it=list ; it ; it=it->next ){
+		pdf_rc = ( ofsPdfRC * ) it->data;
+		if( pdf_rc->page_num != page_num ){
+			continue;
+		}
+		if( 0 ){
+			if(( fabs( pdf_rc->x1 - poppler_rc->x2 ) > st_acceptable_diff ) && ( fabs( pdf_rc->x2 - poppler_rc->x1 ) > st_acceptable_diff ){
+				continue;
+			}
+			if( fabs( pdf_rc->y1 - poppler_rc->y1 ) > st_acceptable_diff ){
+				continue;
+			}
+		}
+		if( !my_collate( pdf_rc->text, text )){
+			return( pdf_rc );
+		}
+	}
+
+	return( NULL );
+}
+#endif
 
 /**
  * ofa_importer_pdf_get_acceptable_diff:
