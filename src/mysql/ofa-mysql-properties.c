@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include "my/my-iident.h"
+
 #include "api/ofa-iproperties.h"
 
 #include "mysql/ofa-mysql-prefs-bin.h"
@@ -38,6 +40,10 @@ typedef struct {
 }
 	ofaMysqlPropertiesPrivate;
 
+#define IPROPERTIES_CANON_NAME           "MySQL"
+
+static void       iident_iface_init( myIIdentInterface *iface );
+static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static void       iproperties_iface_init( ofaIPropertiesInterface *iface );
 static GtkWidget *iproperties_init( ofaIProperties *instance, myISettings *settings );
 static gboolean   iproperties_get_valid( const ofaIProperties *instance, GtkWidget *widget, gchar **msgerr );
@@ -45,6 +51,7 @@ static void       iproperties_apply( const ofaIProperties *instance, GtkWidget *
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlProperties, ofa_mysql_properties, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlProperties )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPROPERTIES, iproperties_iface_init ))
 
 static void
@@ -106,6 +113,25 @@ ofa_mysql_properties_class_init( ofaMysqlPropertiesClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = mysql_properties_dispose;
 	G_OBJECT_CLASS( klass )->finalize = mysql_properties_finalize;
+}
+
+/*
+ * #myIIdent interface management
+ */
+static void
+iident_iface_init( myIIdentInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_properties_iident_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_canon_name = iident_get_canon_name;
+}
+
+static gchar *
+iident_get_canon_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( IPROPERTIES_CANON_NAME ));
 }
 
 /*

@@ -30,13 +30,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "my/my-iident.h"
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-iprefs-page.h"
-
-#include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-prefs-bin.h"
 #include "ofa-mysql-user-prefs.h"
 
@@ -55,13 +51,10 @@ typedef struct {
 
 	/* runtime data
 	 */
-	const ofaIPrefsProvider *instance;
 	gchar                   *backup_cmdline;
 	gchar                   *restore_cmdline;
 }
 	ofaMySQLPrefsBinPrivate;
-
-#define IPREFS_PAGE_CANON_NAME           "MySQL"
 
 /* signals defined here
  */
@@ -74,13 +67,6 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-prefs-bin.ui";
 
-static void       iident_iface_init( myIIdentInterface *iface );
-static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
-static void       iprefs_page_iface_init( ofaIPrefsPageInterface *iface );
-static guint      iprefs_page_get_interface_version( void );
-static gboolean   iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label, gchar **msgerr );
-static gboolean   iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **msgerr );
-static gboolean   iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr );
 static void       setup_bin( ofaMySQLPrefsBin *self );
 static void       on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
 static void       on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
@@ -88,9 +74,7 @@ static gboolean   get_is_valid( const ofaMySQLPrefsBin *self, gchar **message );
 static void       do_apply( const ofaMySQLPrefsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaMySQLPrefsBin )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPREFS_PAGE, iprefs_page_iface_init ))
+		G_ADD_PRIVATE( ofaMySQLPrefsBin ))
 
 static void
 mysql_prefs_bin_finalize( GObject *instance )
@@ -183,90 +167,6 @@ ofa_mysql_prefs_bin_class_init( ofaMySQLPrefsBinClass *klass )
 				G_TYPE_NONE,
 				0,
 				G_TYPE_NONE );
-}
-
-/*
- * #myIIdent interface management
- */
-static void
-iident_iface_init( myIIdentInterface *iface )
-{
-	static const gchar *thisfn = "ofa_mysql_prefs_bin_iident_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_canon_name = iident_get_canon_name;
-}
-
-static gchar *
-iident_get_canon_name( const myIIdent *instance, void *user_data )
-{
-	return( g_strdup( IPREFS_PAGE_CANON_NAME ));
-}
-
-/*
- * ofaIPrefsPage interface management
- */
-static void
-iprefs_page_iface_init( ofaIPrefsPageInterface *iface )
-{
-	static const gchar *thisfn = "ofa_mysql_page_iprefs_page_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iprefs_page_get_interface_version;
-	iface->init = iprefs_page_init;
-	iface->get_valid = iprefs_page_get_valid;
-	iface->apply = iprefs_page_apply;
-}
-
-static guint
-iprefs_page_get_interface_version( void )
-{
-	return( 1 );
-}
-
-static gboolean
-iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label, gchar **msgerr )
-{
-	ofaMySQLPrefsBinPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ), FALSE );
-
-	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	g_clear_object( &priv->settings );
-	priv->settings = g_object_ref( settings );
-
-	if( label ){
-		*label = ofa_iprefs_page_get_display_name( instance );
-	}
-
-	return( TRUE );
-}
-
-static gboolean
-iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **message )
-{
-	ofaMySQLPrefsBinPrivate *priv;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ), FALSE );
-
-	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( get_is_valid( OFA_MYSQL_PREFS_BIN( instance ), message ));
-}
-
-static gboolean
-iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr )
-{
-	do_apply( OFA_MYSQL_PREFS_BIN( instance ));
-
-	return( TRUE );
 }
 
 /**

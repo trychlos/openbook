@@ -286,6 +286,10 @@ ofa_iproperties_apply( GtkWidget *widget )
  * Returns: the displayable name of the @instance, as a newly
  * allocated string which should be g_free() by the caller, or %NULL.
  *
+ * The returned string is used as the tab label in user preferences
+ * notebook. If %NULL, then the corresponding page will not be
+ * displayed.
+ *
  * This method relies on the #myIIdent identification interface,
  * which is expected to be implemented by the @instance class.
  */

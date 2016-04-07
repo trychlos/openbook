@@ -33,6 +33,7 @@
  New features and improvements:
 
    - ofaMysl: implements ofaIAbout interface.
+   - ofaMysl: implements ofaIProperties interface.
    - ofaPluginManager: displays instanciated objects (todo #1066).
    - ofaPluginManager: displays About page (todo #1066).
    - ofaPluginManager: displays Properties page (todo #1066).

@@ -39,8 +39,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-iprefs-page.h"
-#include "api/ofa-iprefs-provider.h"
+#include "api/ofa-iproperties.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
@@ -96,15 +95,13 @@ typedef struct {
 	/* Import settings
 	 */
 	ofaStreamFormatBin       *import_settings;
-
-	/* UI - Plugin pages
-	 */
-	GList                    *plugs;
 }
 	ofaPreferencesPrivate;
 
 #define SETTINGS_AMOUNT                               "UserAmount"
 #define SETTINGS_DATE                                 "UserDate"
+
+#define IPROPERTIES_PAGE                              "ofaIProperties"
 
 /* a cache for some often used preferences
  */
@@ -131,13 +128,7 @@ static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCance
 
 static const gchar *st_resource_ui                    = "/org/trychlos/openbook/core/ofa-preferences.ui";
 
-typedef struct {
-	ofaIPrefsProvider *provider;
-	ofaIPrefsPage     *page;
-}
-	sPagePlugin;
-
-typedef gboolean ( *pfnPlugin )( ofaPreferences *, gchar **msgerr, ofaIPrefsProvider * );
+typedef gboolean ( *pfnPlugin )( ofaPreferences *, gchar **msgerr, ofaIProperties * );
 
 static void           iwindow_iface_init( myIWindowInterface *iface );
 static void           idialog_iface_init( myIDialogInterface *iface );
@@ -151,7 +142,7 @@ static void           init_locale_sep( ofaPreferences *self, GtkWidget **wentry,
 static void           init_export_page( ofaPreferences *self );
 static void           init_import_page( ofaPreferences *self );
 static gboolean       enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
-static gboolean       init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *plugin );
+static gboolean       init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
 //static void           activate_first_page( ofaPreferences *self );
 static void           on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void           on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
@@ -171,8 +162,7 @@ static void           setup_date_formats( void );
 static void           setup_amount_formats( void );
 static gboolean       do_update_export_page( ofaPreferences *self, gchar **msgerr );
 static gboolean       do_update_import_page( ofaPreferences *self, gchar **msgerr );
-static gboolean       update_prefs_plugin( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *plugin );
-static ofaIPrefsPage *find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *plugin );
+static gboolean       update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPreferences )
@@ -209,8 +199,6 @@ preferences_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_list_free_full( priv->plugs, ( GDestroyNotify ) g_free );
-		priv->plugs = NULL;
 	}
 
 	/* chain up to the parent class */
@@ -628,10 +616,10 @@ enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 	ok = TRUE;
 	hub = ofa_igetter_get_hub( priv->getter );
 	extenders = ofa_hub_get_extender_collection( hub );
-	list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IPREFS_PROVIDER );
+	list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IPROPERTIES );
 
 	for( it=list ; it ; it=it->next ){
-		ok &= ( *pfn )( self, msgerr, OFA_IPREFS_PROVIDER( it->data ));
+		ok &= ( *pfn )( self, msgerr, OFA_IPROPERTIES( it->data ));
 	}
 
 	ofa_extender_collection_free_types( list );
@@ -641,19 +629,17 @@ enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 
 /*
  * @instance: an object maintained by a plugin, which implements our
- *  IPrefsProvider interface.
+ *  IProperties interface.
  *
- * add a page to the notebook for each object type which implements the
- * ofaIPrefsProvider interface
+ * Add a page to the notebook for each object of the list.
+ * Flags the page as being managed by an ofaIProperties instance.
  */
 static gboolean
-init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *instance )
+init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance )
 {
 	static const gchar *thisfn = "ofa_preferences_init_plugin_page";
 	ofaPreferencesPrivate *priv;
-	ofaIPrefsPage *page;
-	GtkWidget *wlabel;
-	sPagePlugin *splug;
+	GtkWidget *page, *wlabel;
 	gchar *label;
 	myISettings *settings;
 	gboolean ok;
@@ -665,21 +651,18 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
 
 	ok = FALSE;
-	page = ofa_iprefs_provider_new_page( instance );
-	if( page ){
-		ok = ofa_iprefs_page_init( page, settings, &label, msgerr );
-	}
+	page = ofa_iproperties_init( instance, settings );
+	label = ofa_iproperties_get_title( instance );
 
-	if( ok ){
+	if( page && my_strlen( label )){
+		g_object_set_data( G_OBJECT( page ), IPROPERTIES_PAGE, IPROPERTIES_PAGE );
+
 		my_utils_widget_set_margins( GTK_WIDGET( page ), 4, 4, 4, 4 );
+
 		wlabel = gtk_label_new( label );
 		g_free( label );
-		gtk_notebook_append_page( GTK_NOTEBOOK( priv->book ), GTK_WIDGET( page ), wlabel );
 
-		splug = g_new0( sPagePlugin, 1 );
-		splug->provider = instance;
-		splug->page = page;
-		priv->plugs = g_list_append( priv->plugs, splug );
+		gtk_notebook_append_page( GTK_NOTEBOOK( priv->book ), GTK_WIDGET( page ), wlabel );
 
 		/* try to identify if the plugin which implements this object is the
 		 * one which has been required */
@@ -688,6 +671,7 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *insta
 				priv->object_page = GTK_WIDGET( page );
 			}
 		}
+		ok = TRUE;
 	}
 
 	return( ok );
@@ -809,7 +793,7 @@ do_update( ofaPreferences *self, gchar **msgerr )
 			do_update_locales_page( self, msgerr ) &&
 			do_update_export_page( self, msgerr ) &&
 			do_update_import_page( self, msgerr ) &&
-			enumerate_prefs_plugins( self, msgerr, update_prefs_plugin );
+			update_prefs_plugin( self, msgerr );
 
 	return( ok );
 }
@@ -1256,39 +1240,26 @@ do_update_import_page( ofaPreferences *self, gchar **msgerr )
 }
 
 static gboolean
-update_prefs_plugin( ofaPreferences *self, gchar **msgerr, ofaIPrefsProvider *instance )
-{
-	ofaIPrefsPage *page;
-	gboolean ok;
-
-	ok = FALSE;
-	page = find_prefs_plugin( self, instance );
-	if( page ){
-		ok = ofa_iprefs_page_apply( page, msgerr );
-	}
-
-	return( ok );
-}
-
-/*
- * returns the #ofaIPrefsPage page which has been provided by this
- * #ofaIPrefsProvider instance.
- */
-static ofaIPrefsPage *
-find_prefs_plugin( ofaPreferences *self, ofaIPrefsProvider *instance )
+update_prefs_plugin( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
-	GList *it;
-	sPagePlugin *splug;
+	gboolean ok;
+	gint pages_count, i;
+	GtkWidget *page;
+	const gchar *cstr;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	for( it=priv->plugs ; it ; it=it->next ){
-		splug = ( sPagePlugin * ) it->data;
-		if( splug->provider == instance ){
-			return( splug->page );
+	ok = FALSE;
+	pages_count = gtk_notebook_get_n_pages( GTK_NOTEBOOK( priv->book ));
+
+	for( i=0 ; i<pages_count ; ++i ){
+		page = gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->book ), i );
+		cstr = g_object_get_data( G_OBJECT( page ), IPROPERTIES_PAGE );
+		if( !my_collate( cstr, IPROPERTIES_PAGE )){
+			ofa_iproperties_apply( page );
 		}
 	}
 
-	return( NULL );
+	return( ok );
 }
