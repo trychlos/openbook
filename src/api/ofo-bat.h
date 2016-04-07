@@ -79,7 +79,6 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofo-base-def.h"
 #include "api/ofo-bat-def.h"
-#include "api/ofs-bat.h"
 
 G_BEGIN_DECLS
 

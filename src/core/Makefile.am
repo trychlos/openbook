@@ -158,7 +158,6 @@ libofa_core_la_SOURCES = \
 	ofo-ope-template.c									\
 	ofo-rate.c											\
 	ofs-account-balance.c								\
-	ofs-bat.c											\
 	ofs-concil-id.c										\
 	ofs-currency.c										\
 	ofs-ope.c											\

@@ -98,7 +98,6 @@ api_include_HEADERS = \
 	ofo-rate-def.h										\
 	\
 	ofs-account-balance.h								\
-	ofs-bat.h											\
 	ofs-concil-id.h										\
 	ofs-currency.h										\
 	ofs-ope.h											\

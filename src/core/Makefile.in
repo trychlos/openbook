@@ -190,8 +190,8 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
 	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
 	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
-	ofs-account-balance.lo ofs-bat.lo ofs-concil-id.lo \
-	ofs-currency.lo ofs-ope.lo
+	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
+	ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -567,7 +567,6 @@ libofa_core_la_SOURCES = \
 	ofo-ope-template.c									\
 	ofo-rate.c											\
 	ofs-account-balance.c								\
-	ofs-bat.c											\
 	ofs-concil-id.c										\
 	ofs-currency.c										\
 	ofs-ope.c											\
@@ -746,7 +745,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-ope-template.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-rate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-account-balance.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-bat.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-concil-id.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-currency.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofs-ope.Plo@am__quote@
