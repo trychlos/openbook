@@ -49,11 +49,11 @@ typedef struct {
 	GModule    *library;
 	GList      *objects;
 
-	/* api                                                             v1
+	/* api                                                                        v1
 	 */
-	gboolean   ( *startup )           ( GTypeModule *module, ofaIGetter *getter );
-	gint       ( *list_types )        ( const GType **types );	/* mandatory */
-	void       ( *shutdown )          ( void );					/* opt. */
+	gboolean ( *startup )   ( GTypeModule *module, ofaIGetter *getter );	/* mandatory */
+	gint     ( *list_types )( const GType **types );						/* mandatory */
+	void     ( *shutdown )  ( void );										/* opt. */
 }
 	ofaExtenderModulePrivate;
 
@@ -362,7 +362,8 @@ plugin_add_type( ofaExtenderModule *self, GType type )
 
 	g_object_weak_ref( object, ( GWeakNotify ) on_object_finalized, self );
 
-	priv->objects = g_list_prepend( priv->objects, object );
+	/* keep the order provided by the module */
+	priv->objects = g_list_append( priv->objects, object );
 }
 
 static void

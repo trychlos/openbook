@@ -417,8 +417,6 @@
                 the extensions ident + have a tab which display the list of
                 provided extensions + tab about + tab properties
 
-1067 2016- 4- 3 rename IExeCloseClose to IExeClose
-
 1069
 
 -----------------------------------------------------------------------
@@ -1085,6 +1083,9 @@
 
 1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
                 which may or may not be changed
+     2016- 4- 7 done
+
+1067 2016- 4- 3 rename IExeCloseClose to IExeClose
      2016- 4- 7 done
 
 1068 2016- 4- 5 review ofoBat import input format (have id placeholder)
