@@ -39,6 +39,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-iabout.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-iproperties.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -419,7 +420,6 @@ plugin_set_about_page( ofaPluginManager *self, ofaExtenderModule *plugin, const 
 			priv->about_page = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 			gtk_notebook_prepend_page( GTK_NOTEBOOK( priv->plugin_book ), priv->about_page, label );
 			content = ofa_iabout_do_init( OFA_IABOUT( it->data ));
-			g_debug( "plugin_set_about_page: content=%p (%s)", content, G_OBJECT_TYPE_NAME( content ));
 			gtk_box_pack_start( GTK_BOX( priv->about_page ), content, TRUE, TRUE, 0 );
 			break;
 		}
@@ -431,6 +431,8 @@ plugin_set_properties_page( ofaPluginManager *self, ofaExtenderModule *plugin, c
 {
 	ofaPluginManagerPrivate *priv;
 	gint page_num;
+	const GList *it;
+	GtkWidget *label, *content;
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
@@ -438,6 +440,19 @@ plugin_set_properties_page( ofaPluginManager *self, ofaExtenderModule *plugin, c
 		page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->plugin_book ), priv->properties_page );
 		gtk_notebook_remove_page( GTK_NOTEBOOK( priv->plugin_book ), page_num );
 		priv->properties_page = NULL;
+	}
+
+	for( it=objects ; it ; it=it->next ){
+		if( OFA_IS_IPROPERTIES( it->data )){
+			label = gtk_label_new_with_mnemonic( _( "_Properties" ));
+			priv->properties_page = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+			gtk_notebook_prepend_page( GTK_NOTEBOOK( priv->plugin_book ), priv->properties_page, label );
+			content = ofa_iproperties_init(
+							OFA_IPROPERTIES( it->data ),
+							ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+			gtk_box_pack_start( GTK_BOX( priv->properties_page ), content, TRUE, TRUE, 0 );
+			break;
+		}
 	}
 }
 

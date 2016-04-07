@@ -34,6 +34,9 @@
 
    - ofaMysl: implements ofaIAbout interface.
    - ofaPluginManager: displays instanciated objects (todo #1066).
+   - ofaPluginManager: displays About page (todo #1066).
+   - ofaPluginManager: displays Properties page (todo #1066).
+ 
 
  Bug fixes:
 
@@ -42,6 +45,7 @@
  Other changes:
 
    - ofaIExeCloseClose interface is renamed to ofaIExeClose (todo #1067).
+   - ofaIProperties: new interface which obsoletes both ofaIPrefsProvider and ofaIPrefsPage.
 
 -----------------------------------------------------------------------
  Version 0.53
