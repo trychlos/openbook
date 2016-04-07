@@ -307,6 +307,7 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 	}
 
 	if( yy < 100 ){
+		g_debug( "%s: setting yy from %u to %u", thisfn, yy, yy+2000 );
 		yy += 2000;
 	}
 
@@ -314,7 +315,6 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 		g_date_set_dmy( date, dd, mm, yy );
 		valid = TRUE;
 		if( year ){
-			g_debug( "%s: setting year to %u", thisfn, yy );
 			*year = yy;
 		}
 	}
@@ -408,29 +408,32 @@ GDate *
 my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat format, gint *year )
 {
 	static const gchar *thisfn = "my_date_set_from_str_ex";
+	gchar *str;
 
 	g_return_val_if_fail( date, NULL);
+
+	str = g_strstrip( g_strdup( fmt_string ));
 
 	switch( format ){
 
 		case MY_DATE_DMYY:
-			if( !parse_ddmmyyyy_string( date, fmt_string, year )){
+			if( !parse_ddmmyyyy_string( date, str, year )){
 				my_date_clear( date );
 			}
 			break;
 
 		case MY_DATE_SQL:
-			my_date_set_from_sql( date, fmt_string );
+			my_date_set_from_sql( date, str );
 			break;
 
 		case MY_DATE_YYMD:
-			if( !parse_yyyymmdd_string( date, fmt_string )){
+			if( !parse_yyyymmdd_string( date, str )){
 				my_date_clear( date );
 			}
 			break;
 
 		case MY_DATE_DMYDOT:
-			if( !parse_dmydot_string( date, fmt_string, year )){
+			if( !parse_dmydot_string( date, str, year )){
 				my_date_clear( date );
 			}
 			break;
@@ -439,6 +442,8 @@ my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat form
 			g_warning( "%s: unhandled format code %u", thisfn, format );
 			break;
 	}
+
+	g_free( str );
 
 	return( date );
 }

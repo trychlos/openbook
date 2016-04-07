@@ -1557,7 +1557,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	total = g_slist_length( lines );
 
 	ofa_iimporter_progress_start( importer, parms );
-	//my_utils_dump_gslist( lines );
+	//my_utils_dump_gslist_str( lines );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 

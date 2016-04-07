@@ -78,6 +78,9 @@ GtkWidget          *ofa_stream_format_bin_get_mode_combo( const ofaStreamFormatB
 void                ofa_stream_format_bin_set_format    ( ofaStreamFormatBin *bin,
 																ofaStreamFormat *format );
 
+void                ofa_stream_format_bin_set_updatable ( ofaStreamFormatBin *bin,
+																gboolean updatable );
+
 gboolean            ofa_stream_format_bin_is_valid      ( ofaStreamFormatBin *bin,
 																gchar **error_message );
 

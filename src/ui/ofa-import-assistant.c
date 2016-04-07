@@ -154,6 +154,7 @@ typedef struct {
 	GtkWidget           *p5_mode;
 	GtkWidget           *p5_stop;
 	ofaStreamFormat     *p5_import_settings;
+	gboolean             p5_updatable;
 	ofaStreamFormatBin  *p5_settings_prefs;
 	GtkWidget           *p5_message;
 
@@ -1170,7 +1171,8 @@ p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
  * p5: stream format
  *
  * These are initialized with the import settings for this name, or
- * with default settings
+ * with default settings - unless the importer itself provides its
+ * own format.
  */
 static void
 p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
@@ -1292,18 +1294,25 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p5_stop ), gettext( priv->p4_stop ? st_stop_true : st_stop_false ));
 
 	/* stream format */
-	found_key = NULL;
-	class_name = g_type_name( priv->p2_selected_type );
-	if( ofa_stream_format_exists( class_name, OFA_SFMODE_IMPORT )){
-		found_key = class_name;
+	priv->p5_updatable = TRUE;
+	g_clear_object( &priv->p5_import_settings );
+
+	priv->p5_import_settings = ofa_iimporter_get_default_format( priv->p3_importer_obj, &priv->p5_updatable );
+
+	if( !priv->p5_import_settings ){
+		found_key = NULL;
+		class_name = g_type_name( priv->p2_selected_type );
+		if( ofa_stream_format_exists( class_name, OFA_SFMODE_IMPORT )){
+			found_key = class_name;
+		}
+		priv->p5_import_settings = ofa_stream_format_new( found_key, OFA_SFMODE_IMPORT );
+		if( !found_key ){
+			ofa_stream_format_set_name( priv->p5_import_settings, class_name );
+		}
 	}
 
-	g_clear_object( &priv->p5_import_settings );
-	priv->p5_import_settings = ofa_stream_format_new( found_key, OFA_SFMODE_IMPORT );
-	if( !found_key ){
-		ofa_stream_format_set_name( priv->p5_import_settings, class_name );
-	}
 	ofa_stream_format_bin_set_format( priv->p5_settings_prefs, priv->p5_import_settings );
+	ofa_stream_format_bin_set_updatable( priv->p5_settings_prefs, priv->p5_updatable );
 
 	p5_check_for_complete( self );
 }

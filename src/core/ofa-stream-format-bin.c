@@ -45,6 +45,7 @@ typedef struct {
 	/* initialization data
 	 */
 	ofaStreamFormat *settings;
+	gboolean         updatable;
 
 	/* UI
 	 */
@@ -130,6 +131,7 @@ static void     headers_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin
 static void     headers_on_with_toggled( GtkToggleButton *button, ofaStreamFormatBin *self );
 static void     headers_on_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self );
 static void     setup_format( ofaStreamFormatBin *bin );
+static void     setup_updatable( ofaStreamFormatBin *self );
 static gboolean is_validable( ofaStreamFormatBin *self, gchar **error_message );
 static gboolean do_apply( ofaStreamFormatBin *self );
 
@@ -189,6 +191,8 @@ ofa_stream_format_bin_init( ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	priv->updatable = TRUE;
 }
 
 static void
@@ -1005,6 +1009,85 @@ setup_format( ofaStreamFormatBin *self )
 			adjust = gtk_adjustment_new( count, 0, 9999, 1, 10, 10 );
 			gtk_spin_button_set_adjustment( GTK_SPIN_BUTTON( priv->headers_count), adjust );
 			gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->headers_count ), count );
+			break;
+
+		default:
+			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
+	}
+}
+
+/**
+ * ofa_stream_format_bin_set_updatable:
+ * @bin: this #ofaStreamFormatBin instance.
+ * @updatable: whether the stream format may be updated by the user.
+ *
+ * Defaults to %TRUE.
+ */
+void
+ofa_stream_format_bin_set_updatable( ofaStreamFormatBin *bin, gboolean updatable )
+{
+	ofaStreamFormatBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ));
+
+	priv = ofa_stream_format_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->updatable = updatable;
+
+	setup_updatable( bin );
+}
+
+static void
+setup_updatable( ofaStreamFormatBin *self )
+{
+	static const gchar *thisfn = "ofa_stream_format_bin_setup_updatable";
+	ofaStreamFormatBinPrivate *priv;
+	ofeSFMode mode;
+
+	priv = ofa_stream_format_bin_get_instance_private( self );
+
+	/* name */
+	gtk_widget_set_sensitive( priv->name_entry, priv->updatable );
+
+	/* mode */
+	gtk_widget_set_sensitive( priv->mode_combo, priv->updatable );
+
+	/* encoding */
+	gtk_widget_set_sensitive( priv->has_encoding, priv->updatable );
+	gtk_widget_set_sensitive( priv->encoding_combo, priv->updatable );
+
+	/* date format */
+	gtk_widget_set_sensitive( priv->has_date, priv->updatable );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->date_combo ), priv->updatable );
+
+	/* thousand separator */
+	gtk_widget_set_sensitive( priv->has_thousand, priv->updatable );
+	gtk_widget_set_sensitive( priv->thousand_entry, priv->updatable );
+
+	/* decimal separator */
+	gtk_widget_set_sensitive( priv->has_decimal, priv->updatable );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->decimal_combo ), priv->updatable );
+
+	/* field separator */
+	gtk_widget_set_sensitive( priv->has_field, priv->updatable );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->field_combo ), priv->updatable );
+
+	/* string delimiter */
+	gtk_widget_set_sensitive( priv->has_strdelim, priv->updatable );
+	gtk_widget_set_sensitive( priv->str_delim_entry, priv->updatable );
+
+	/* headers */
+	mode = priv->settings ? ofa_stream_format_get_mode( priv->settings ) : ofa_stream_format_get_default_mode();
+	gtk_widget_set_sensitive( priv->has_headers, priv->updatable );
+	switch( mode ){
+		case OFA_SFMODE_EXPORT:
+			gtk_widget_set_sensitive( priv->headers_btn, priv->updatable );
+			break;
+
+		case OFA_SFMODE_IMPORT:
+			gtk_widget_set_sensitive( priv->headers_count, priv->updatable );
 			break;
 
 		default:
