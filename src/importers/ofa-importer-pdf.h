@@ -59,6 +59,8 @@ typedef struct {
 
 /**
  * ofsPdfRC:
+ * @page_num: the page number, counted from zero.
+ * @count: the count of PopplerRectangle provided for this text.
  * @x1: x coordinate of lower left corner.
  * @y1: y coordinate of lower left corner.
  * @x2: x coordinate of upper right corner.
@@ -69,6 +71,7 @@ typedef struct {
  */
 typedef struct {
 	guint   page_num;
+	guint   count;
 	gdouble x1;
 	gdouble y1;
 	gdouble x2;
@@ -85,7 +88,8 @@ gboolean ofa_importer_pdf_is_willing_to      ( const ofaImporterPdf *instance,
 
 GList   *ofa_importer_pdf_get_layout         ( const ofaImporterPdf *instance,
 													PopplerDocument *doc,
-													guint page_num );
+													guint page_num,
+													const gchar *charset );
 
 gdouble  ofa_importer_pdf_get_acceptable_diff( void );
 

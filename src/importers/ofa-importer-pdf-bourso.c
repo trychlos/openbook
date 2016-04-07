@@ -384,14 +384,16 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 
 	/* get the bat datas from first and last page
 	 */
-	rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, 0 );
+	rc_list = ofa_importer_pdf_get_layout(
+					OFA_IMPORTER_PDF( self ), doc, 0, ofa_stream_format_get_charmap( parms->format ));
 	ok = bourso_pdf_v1_parse_header_first( self, parser, parms, rc_list );
 	ofa_importer_pdf_free_layout( rc_list );
 	if( !ok ){
 		return( NULL );
 	}
 
-	rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, pages_count-1 );
+	rc_list = ofa_importer_pdf_get_layout(
+					OFA_IMPORTER_PDF( self ), doc, pages_count-1, ofa_stream_format_get_charmap( parms->format ));
 	ok = bourso_pdf_v1_parse_header_last( self, parser, parms, rc_list, &fields );
 	ofa_importer_pdf_free_layout( rc_list );
 	if( !ok ){
@@ -403,7 +405,8 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 	/* then get the lines from bat
 	 */
 	for( page_num=0 ; page_num < pages_count ; ++page_num ){
-		rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, page_num );
+		rc_list = ofa_importer_pdf_get_layout(
+						OFA_IMPORTER_PDF( self ), doc, page_num, ofa_stream_format_get_charmap( parms->format ));
 		lines1 = bourso_pdf_v1_parse_lines_rough( self, parser, parms, page_num, rc_list );
 		ofa_importer_pdf_free_layout( rc_list );
 		lines2 = bourso_pdf_v1_parse_lines_merge( self, parser, parms, lines1 );

@@ -355,7 +355,7 @@ ofa_iimporter_import( ofaIImporter *instance, ofsImporterParms *parms )
 		error_count += 1;
 
 	} else if( lines ){
-		if( 1 ){
+		if( 0 ){
 			my_utils_dump_gslist_str( lines );
 		}
 		parms->lines_count = g_slist_length( lines );

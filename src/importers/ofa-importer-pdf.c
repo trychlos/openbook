@@ -42,14 +42,12 @@ typedef struct {
 
 static gdouble st_acceptable_diff       = 1.5;			/* acceptable diff between same boxes */
 
-static gboolean st_debug_poppler        = TRUE;
-static gboolean st_debug_pdf            = TRUE;
-
-static GList    *poppler_sort_rc_layout( PopplerRectangle *rc_layout, guint rc_count );
-static gint      poppler_cmp_rc( PopplerRectangle *a, PopplerRectangle *b );
-static gint      pdf_cmp_rc( ofsPdfRC *a, ofsPdfRC *b );
-static gint      cmp_rc( gdouble ax1, gdouble ay1, gdouble ax2, gdouble ay2, gdouble bx1, gdouble by1, gdouble bx2, gdouble by2 );
-//static ofsPdfRC *find_pdf_rc( GList *list, guint page_num, PopplerRectangle *poppler_rc, const gchar *text );
+static GList *poppler_sort_rc_layout( PopplerRectangle *rc_layout, guint rc_count );
+static gint   poppler_cmp_rc( PopplerRectangle *a, PopplerRectangle *b );
+static GList *poppler_merge_to_pdf( GList *poppler_list, guint page_num, PopplerPage *page, const gchar *charset );
+static GList *pdf_filter_one_time( GList *pdf_list );
+static gint   pdf_cmp_rc( ofsPdfRC *a, ofsPdfRC *b );
+static gint   cmp_rc( gdouble ax1, gdouble ay1, gdouble ax2, gdouble ay2, gdouble bx1, gdouble by1, gdouble bx2, gdouble by2 );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterPdf, ofa_importer_pdf, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaImporterPdf ))
@@ -155,6 +153,7 @@ ofa_importer_pdf_is_willing_to( const ofaImporterPdf *instance, const gchar *uri
  * @instance: a #ofaImporterPdf instance.
  * @doc: a #PopplerDocument document.
  * @page_num: the index of the desired page, counted from zero.
+ * @charset: the input character set.
  *
  * Returns: an ordered (from left to right, and from top to bottom)
  * layout of #ofsPdfRC rectangles with text.
@@ -165,16 +164,16 @@ ofa_importer_pdf_is_willing_to( const ofaImporterPdf *instance, const gchar *uri
  * So we prefer get the first rc and its text, then skip the n others.
  */
 GList *
-ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerDocument *doc, guint page_num )
+ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerDocument *doc, guint page_num, const gchar *charset )
 {
 	static const gchar *thisfn = "ofa_importer_pdf_get_layout";
 	ofaImporterPdfPrivate *priv;
 	PopplerPage *page;
 	PopplerRectangle *rc_layout, *poppler_rc;
 	guint rc_count;
-	GList *rc_list, *rc_ordered, *it;
+	GList *rc_list, *rc_merged, *rc_filtered, *it;
 	ofsPdfRC *pdf_rc;
-	gchar *prev_text, *text;
+	gchar *text;
 
 	g_return_val_if_fail( instance && OFA_IS_IMPORTER_PDF( instance ), FALSE );
 
@@ -187,11 +186,15 @@ ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerDocument *do
 	 * they have to be sorted before trying to merge them
 	 */
 	page = poppler_document_get_page( doc, page_num );
+
 	poppler_page_get_text_layout( page, &rc_layout, &rc_count );
+	if( 1 ){
+		g_debug( "%s: page_num=%u, got %u PopplerRectangles items", thisfn, page_num, rc_count );
+	}
 	rc_list = poppler_sort_rc_layout( rc_layout, rc_count );
 	g_free( rc_layout );
 
-	if( st_debug_poppler ){
+	if( 0 ){
 		/* dump the sorted layout */
 		for( it=rc_list ; it ; it=it->next ){
 			poppler_rc = ( PopplerRectangle * ) it->data;
@@ -202,55 +205,27 @@ ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerDocument *do
 		}
 	}
 
-	rc_ordered = NULL;
-	prev_text = NULL;
-	text = NULL;
+	/* merge the adjacent PopplerRectangle's for the same text */
+	rc_merged = poppler_merge_to_pdf( rc_list, page_num, page, charset );
 
-	for( it=rc_list ; it ; it=it->next ){
-		poppler_rc = ( PopplerRectangle * ) it->data;
-		text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, poppler_rc );
+	/* remove some rectangles which appear only one time */
+	rc_filtered = pdf_filter_one_time( rc_merged );
 
-		if( prev_text && !my_collate( prev_text, text )){
-			if( pdf_rc->x2 < poppler_rc->x2 ){
-				pdf_rc->x2 = poppler_rc->x2;
-			}
-			if( pdf_rc->y2 < poppler_rc->y2 ){
-				pdf_rc->y2 = poppler_rc->y2;
-			}
-			rc_ordered = g_list_remove( rc_ordered, pdf_rc );
-
-		} else {
-			pdf_rc = g_new0( ofsPdfRC, 1 );
-			pdf_rc->page_num = page_num;
-			pdf_rc->x1 = poppler_rc->x1;
-			pdf_rc->y1 = poppler_rc->y1;
-			pdf_rc->x2 = poppler_rc->x2;
-			pdf_rc->y2 = poppler_rc->y2;
-			pdf_rc->text = g_strdup( text );
-		}
-
-		g_free( prev_text );
-		prev_text = g_strdup( text );
-		g_free( text );
-
-		rc_ordered = g_list_insert_sorted( rc_ordered, pdf_rc, ( GCompareFunc ) pdf_cmp_rc );
-	}
-
-	g_free( prev_text );
-
-	if( st_debug_pdf ){
+	if( 0 ){
 		/* dump the ordered selected layout */
-		for( it=rc_ordered ; it ; it=it->next ){
+		for( it=rc_filtered ; it ; it=it->next ){
 			pdf_rc = ( ofsPdfRC * ) it->data;
-			g_debug( "%s [pdf]: page_num=%u, x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
-					thisfn, pdf_rc->page_num, pdf_rc->x1, pdf_rc->y1, pdf_rc->x2, pdf_rc->y2, pdf_rc->text );
+			g_debug( "%s [pdf]: page_num=%u, count=%u, x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+					thisfn, pdf_rc->page_num, pdf_rc->count,
+					pdf_rc->x1, pdf_rc->y1, pdf_rc->x2, pdf_rc->y2, pdf_rc->text );
 		}
 	}
 
+	g_list_free( rc_merged );
 	g_list_free_full( rc_list, ( GDestroyNotify ) poppler_rectangle_free );
 	g_object_unref( page );
 
-	return( rc_ordered );
+	return( rc_filtered );
 }
 
 /*
@@ -260,21 +235,30 @@ ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerDocument *do
 static GList *
 poppler_sort_rc_layout( PopplerRectangle *rc_layout, guint rc_count )
 {
+	static const gchar *thisfn = "ofa_importer_pdf_poppler_sort_rc_layout";
 	GList *list;
-	guint i;
+	guint i, ignored;
 
 	list = NULL;
+	ignored = 0;
 
 	for( i=0 ; i<rc_count ; ++i ){
 
 		/* if the rectangle is zero size, then ignore */
 		if( fabs( rc_layout[i].x1 - rc_layout[i].x2 ) < 1 && fabs( rc_layout[i].y1 - rc_layout[i].y2 ) < 1 ){
-			g_debug( "poppler_sort_rc_layout: ignoring x1=%lf, y1=%lf, x2=%lf, y2=%lf",
-					rc_layout[i].x1, rc_layout[i].y1, rc_layout[i].x2, rc_layout[i].y2 );
+			if( 0 ){
+				g_debug( "%s: ignoring zero size x1=%lf, y1=%lf, x2=%lf, y2=%lf",
+						thisfn, rc_layout[i].x1, rc_layout[i].y1, rc_layout[i].x2, rc_layout[i].y2 );
+			}
+			ignored += 1;
 			continue;
 		}
 
 		list = g_list_insert_sorted( list, poppler_rectangle_copy( &rc_layout[i] ), ( GCompareFunc ) poppler_cmp_rc );
+	}
+
+	if( 0 ){
+		g_debug( "%s: %u (on %u) ignored zero size rectangles", thisfn, ignored, rc_count );
 	}
 
 	return( list );
@@ -290,20 +274,108 @@ poppler_cmp_rc( PopplerRectangle *a, PopplerRectangle *b )
 	return( cmp_rc( a->x1, a->y1, a->x2, a->y2, b->x1, b->y1, b->x2, b->y2 ));
 }
 
-static gint
-pdf_cmp_rc( ofsPdfRC *a, ofsPdfRC *b )
+/*
+ * @list: a sorted list of PopplerRectangles:
+ *
+ * Returns: a merged list of ofsPdfRC rectangles.
+ */
+static GList *
+poppler_merge_to_pdf( GList *poppler_list, guint page_num, PopplerPage *page, const gchar *charset )
 {
-	/* not all lines are well aligned - so considered 1 dot diff is equal */
-	if( fabs( a->y1 - b->y1 ) > st_acceptable_diff ){
-		if( a->y1 < b->y1 ){
-			return( -1 );
+	PopplerRectangle *poppler_rc;
+	GList *pdf_merged, *it;
+	gchar *text, *prev_text, *tmp, *str;
+	ofsPdfRC *pdf_rc;
+	GError *error;
+
+	pdf_rc = NULL;
+	prev_text = NULL;
+	pdf_merged = NULL;
+
+	/* merge the adjacent PopplerRectangle's for the same text */
+	for( it=poppler_list ; it ; it=it->next ){
+		poppler_rc = ( PopplerRectangle * ) it->data;
+
+		text = poppler_page_get_selected_text( page, POPPLER_SELECTION_LINE, poppler_rc );
+
+		/* convert to UTF-8 if needed */
+		if( text && charset && my_collate( charset, "UTF-8" )){
+			error = NULL;
+			tmp = g_convert( text, -1, "UTF-8", charset, NULL, NULL, &error );
+			if( !tmp ){
+				str = g_strdup_printf( "'%s': unable to convert from %s to UTF-8: %s",
+						text, charset, error->message );
+				g_info( "%s", str );
+				g_free( str );
+			} else {
+				g_free( text );
+				text = tmp;
+			}
 		}
-		if( a->y1 > b->y1 ){
-			return( 1 );
+
+		if( pdf_rc && prev_text && !my_collate( prev_text, text )){
+			if( pdf_rc->x2 < poppler_rc->x2 ){
+				pdf_rc->x2 = poppler_rc->x2;
+			}
+			if( pdf_rc->y2 < poppler_rc->y2 ){
+				pdf_rc->y2 = poppler_rc->y2;
+			}
+			pdf_rc->count += 1;
+			pdf_merged = g_list_remove( pdf_merged, pdf_rc );
+
+		} else {
+			pdf_rc = g_new0( ofsPdfRC, 1 );
+			pdf_rc->page_num = page_num;
+			pdf_rc->count = 1;
+			pdf_rc->x1 = poppler_rc->x1;
+			pdf_rc->y1 = poppler_rc->y1;
+			pdf_rc->x2 = poppler_rc->x2;
+			pdf_rc->y2 = poppler_rc->y2;
+			pdf_rc->text = g_strdup( text );
+		}
+
+		g_free( prev_text );
+		prev_text = g_strdup( text );
+		g_free( text );
+
+		pdf_merged = g_list_insert_sorted( pdf_merged, pdf_rc, ( GCompareFunc ) pdf_cmp_rc );
+	}
+
+	g_free( prev_text );
+
+	return( pdf_merged );
+}
+
+/*
+ * pdf_list: the merged rectangles
+ *
+ * Returns: the same, without one-time occurrences
+ */
+static GList *
+pdf_filter_one_time( GList *pdf_list )
+{
+	GList *pdf_filtered, *it;
+	ofsPdfRC *pdf_rc;
+
+	pdf_filtered = NULL;
+
+	for( it=pdf_list ; it ; it=it->next ){
+		pdf_rc = ( ofsPdfRC * ) it->data;
+
+		if( pdf_rc->count > 1 ){
+			pdf_filtered = g_list_prepend( pdf_filtered, pdf_rc );
+		} else {
+			ofa_importer_pdf_free_rc( pdf_rc );
 		}
 	}
 
-	return( a->x1 < b->x1 ? -1 : ( a->x1 > b->x1 ? 1 : 0 ));
+	return( g_list_reverse( pdf_filtered ));
+}
+
+static gint
+pdf_cmp_rc( ofsPdfRC *a, ofsPdfRC *b )
+{
+	return( cmp_rc( a->x1, a->y1, a->x2, a->y2, b->x1, b->y1, b->x2, b->y2 ));
 }
 
 static gint
@@ -317,45 +389,6 @@ cmp_rc( gdouble ax1, gdouble ay1, gdouble ax2, gdouble ay2, gdouble bx1, gdouble
 	}
 	return( ax2 <= bx1 ? -1 : ( ax1 >= bx2 ? 1 : 0 ));
 }
-
-#if 0
-/*
- * find_pdf_rc:
- * @list: a list of previously allocated #ofsPdfRC structs.
- * @page_num: the page number, counted from zero.
- * @poppler_rc: the PopplerRectangle.
- * @text: the corresponding text.
- *
- * Returns: the previously allocated #ofsPdfRC structure which manages
- * this @text, or %NULL.
- */
-static ofsPdfRC *
-find_pdf_rc( GList *list, guint page_num, PopplerRectangle *poppler_rc, const gchar *text )
-{
-	ofsPdfRC *pdf_rc;
-	GList *it;
-
-	for( it=list ; it ; it=it->next ){
-		pdf_rc = ( ofsPdfRC * ) it->data;
-		if( pdf_rc->page_num != page_num ){
-			continue;
-		}
-		if( 0 ){
-			if(( fabs( pdf_rc->x1 - poppler_rc->x2 ) > st_acceptable_diff ) && ( fabs( pdf_rc->x2 - poppler_rc->x1 ) > st_acceptable_diff ){
-				continue;
-			}
-			if( fabs( pdf_rc->y1 - poppler_rc->y1 ) > st_acceptable_diff ){
-				continue;
-			}
-		}
-		if( !my_collate( pdf_rc->text, text )){
-			return( pdf_rc );
-		}
-	}
-
-	return( NULL );
-}
-#endif
 
 /**
  * ofa_importer_pdf_get_acceptable_diff:
@@ -393,8 +426,9 @@ ofa_importer_pdf_dump_rc( const ofsPdfRC *rc, const gchar *label )
 {
 	static const gchar *thisfn = "ofa_importer_pdf_dump_rc";
 
-	g_debug( "%s: x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
-			label ? label : thisfn, rc->x1, rc->y1, rc->x2, rc->y2, rc->text );
+	g_debug( "%s: page_num=%u, count=%u, x1=%lf, y1=%lf, x2=%lf, y2=%lf, text='%s'",
+			label ? label : thisfn, rc->page_num, rc->count,
+			rc->x1, rc->y1, rc->x2, rc->y2, rc->text );
 }
 
 /**

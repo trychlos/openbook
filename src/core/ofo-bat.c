@@ -94,7 +94,7 @@ static gchar      *iimportable_get_label( const ofaIImportable *instance );
 static guint       iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList      *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static ofoBat     *iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
-static ofoBatLine *iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
+static ofoBatLine *iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields, gint year );
 static void        iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean    bat_get_exists( const ofoBat *bat, const ofaIDBConnect *connect );
 static gchar      *bat_get_where( const ofoBat *bat );
@@ -1547,8 +1547,12 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	gchar *str;
 	ofoBat *bat;
 	ofoBatLine *line;
+	gint year;
+	const GDate *date;
 
+	year = 0;
 	numline = 0;
+	bat = NULL;
 	dataset = NULL;
 	total = g_slist_length( lines );
 
@@ -1578,7 +1582,18 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				}
 				break;
 			case 2:
-				line = iimportable_import_parse_line( importer, parms, numline, itf );
+				if( year == 0 && bat ){
+					date = ofo_bat_get_begin_date( bat );
+					if( my_date_is_valid( date )){
+						year = g_date_get_year( date );
+					} else {
+						date = ofo_bat_get_end_date( bat );
+						if( my_date_is_valid( date )){
+							year = g_date_get_year( date );
+						}
+					}
+				}
+				line = iimportable_import_parse_line( importer, parms, numline, itf, year );
 				if( line ){
 					dataset = g_list_prepend( dataset, line );
 					parms->parsed_count += 1;
@@ -1687,7 +1702,7 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 }
 
 static ofoBatLine *
-iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields )
+iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields, gint year )
 {
 	const gchar *cstr, *sref, *slabel;
 	GSList *itf;
@@ -1702,18 +1717,21 @@ iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, 
 	my_date_clear( &dope );
 	my_date_clear( &deffect );
 
-	/* operation date */
+	/* operation date
+	 * LCL PDF provides an operation date without year */
 	itf = fields ? fields->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_line_set_dope( batline, my_date_set_from_str( &dope, cstr, ofa_stream_format_get_date_format( parms->format )));
+		ofo_bat_line_set_dope( batline,
+				my_date_set_from_str_ex( &dope, cstr, ofa_stream_format_get_date_format( parms->format ), &year ));
 	}
 
 	/* effect date */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_bat_line_set_deffect( batline, my_date_set_from_str( &deffect, cstr, ofa_stream_format_get_date_format( parms->format )));
+		ofo_bat_line_set_deffect( batline,
+				my_date_set_from_str( &deffect, cstr, ofa_stream_format_get_date_format( parms->format )));
 	}
 
 	/* effect date is mandatory */

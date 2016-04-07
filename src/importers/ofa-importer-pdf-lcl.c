@@ -74,12 +74,14 @@ static gchar   *st_header_banque        = "CREDIT LYONNAIS";
 static gchar   *st_header_iban          = "IBAN : ";
 static gchar   *st_header_begin_solde   = "ANCIEN SOLDE";
 static gchar   *st_footer_end_solde     = "SOLDE EN EUROS";
-static gchar   *st_page_debit           = "DEBIT";
+static gchar   *st_page_credit          = "CREDIT";
+static gchar   *st_page_totaux          = "TOTAUX";
 
-//static gdouble  st_label_min_x          = 80;
-//static gdouble  st_valeur_min_x         = 300;
-//static gdouble  st_debit_min_x          = 355;
+static gdouble  st_label_min_x          = 74;
+static gdouble  st_valeur_min_x         = 360;
+static gdouble  st_debit_min_x          = 409;
 static gdouble  st_credit_min_x         = 482;
+static gdouble  st_detail_max_y         = 820;
 
 static GList   *st_accepted_contents    = NULL;
 
@@ -369,12 +371,12 @@ lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterPar
 	 */
 	output = g_slist_prepend( output, lcl_pdf_v1_parse_header( self, parser, parms, doc ));
 	//my_utils_dump_gslist_str( output );
-	return( NULL );
 
 	/* then get the lines from bat
 	 */
 	for( page_num=0 ; page_num < pages_count ; ++page_num ){
-		rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, page_num );
+		rc_list = ofa_importer_pdf_get_layout(
+						OFA_IMPORTER_PDF( self ), doc, page_num, ofa_stream_format_get_charmap( parms->format ));
 		lines1 = lcl_pdf_v1_parse_lines_rough( self, parser, parms, page_num, rc_list );
 		ofa_importer_pdf_free_layout( rc_list );
 		lines2 = lcl_pdf_v1_parse_lines_merge( self, parser, parms, lines1 );
@@ -395,6 +397,7 @@ lcl_pdf_v1_parse( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterPar
 static GSList *
 lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImporterParms *parms, PopplerDocument *doc )
 {
+	static const gchar *thisfn = "ofa_importer_pdf_lcl_parse_header";
 	GSList *fields;
 	gint pages_count;
 	guint page_num;
@@ -413,11 +416,16 @@ lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImpo
 	begin_end_found = FALSE;
 	iban_found = FALSE;
 	begin_solde_found = FALSE;
+	end_solde_found = FALSE;
 
 	for( page_num=0 ; page_num < pages_count ; ++page_num ){
-		rc_list = ofa_importer_pdf_get_layout( OFA_IMPORTER_PDF( self ), doc, page_num );
+		rc_list = ofa_importer_pdf_get_layout(
+							OFA_IMPORTER_PDF( self ), doc, page_num, ofa_stream_format_get_charmap( parms->format ));
 		for( it=rc_list ; it ; it=it->next ){
 			rc = ( ofsPdfRC * ) it->data;
+			if( 0 ){
+				ofa_importer_pdf_dump_rc( rc, thisfn );
+			}
 
 			if( !begin_end_found ){
 				if( sscanf( rc->text, "du %s au %s - N° %s", begin_date, end_date, foo )){
@@ -444,10 +452,10 @@ lcl_pdf_v1_parse_header( ofaImporterPdfLcl *self, const sParser *parser, ofsImpo
 				rc_next = ( ofsPdfRC * ) it_next->data;
 				end_solde = get_amount( rc_next );
 				end_solde_found = TRUE;
+				break;
 			}
 		}
 		ofa_importer_pdf_free_layout( rc_list );
-		break;
 	}
 
 	if( !begin_end_found ){
@@ -507,7 +515,7 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 	ofsPdfRC *rc;
 	gdouble acceptable_diff, first_y;
 	sLine *line;
-	//gchar *tmp, *str;
+	gchar *tmp, *str;
 
 	lines = NULL;
 	first_y = 0;
@@ -515,7 +523,7 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 
 	for( it=rc_list ; it ; it=it->next ){
 		rc = ( ofsPdfRC * ) it->data;
-		if( 1 ){
+		if( 0 ){
 			ofa_importer_pdf_dump_rc( rc, thisfn );
 		}
 
@@ -526,34 +534,30 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 			if( page_num == 0 && g_str_has_prefix( rc->text, st_header_begin_solde )){
 				first_y = rc->y2;
 			}
-			if( page_num > 0 && g_str_has_prefix( rc->text, st_page_debit )){
+			if( page_num > 0 && g_str_has_prefix( rc->text, st_page_credit )){
 				first_y = rc->y2;
 			}
 		}
 
 		if( first_y > 0 && rc->y1 > first_y ){
-			/* end of the page */
-			/*
-			if( rc->y1 ){
+
+			/* end of the n-1 pages */
+			if( rc->y2 >= st_detail_max_y ){
 				break;
 			}
-			*/
+
+			/* end of the last page */
+			if( g_str_has_prefix( rc->text, st_page_totaux )){
+				break;
+			}
 
 			/* a transaction field */
-			if( 0 ){
 			line = find_line( &lines, acceptable_diff, rc->y1 );
-			free_line( line );
-			}
-/*
+
 			if( rc->x1 < st_label_min_x ){
 				line->dope = g_strstrip( g_strndup( rc->text, 10 ));
 				if( my_strlen( rc->text ) > 10 ){
 					line->label = g_strstrip( g_strdup( rc->text+10 ));
-					if( g_str_has_prefix( line->label, "*" )){
-						tmp = g_strdup( line->label+1 );
-						g_free( line->label );
-						line->label = tmp;
-					}
 				}
 
 			} else if( rc->x1 < st_valeur_min_x ){
@@ -573,7 +577,6 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 			} else {
 				line->amount = get_amount( rc );
 			}
-			*/
 		}
 	}
 

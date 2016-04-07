@@ -306,6 +306,10 @@ parse_ddmmyyyy_string( GDate *date, const gchar *string, gint *year )
 		g_strfreev( tokens );
 	}
 
+	if( yy < 100 ){
+		yy += 2000;
+	}
+
 	if( g_date_valid_dmy( dd, mm, yy )){
 		g_date_set_dmy( date, dd, mm, yy );
 		valid = TRUE;
