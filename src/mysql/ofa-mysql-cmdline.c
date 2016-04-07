@@ -48,12 +48,10 @@
 
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-iprefs-provider.h"
 #include "api/ofa-settings.h"
 
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
-#include "ofa-mysql-iprefs-provider.h"
 #include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 #include "ofa-mysql-user-prefs.h"

@@ -28,10 +28,10 @@
 /**
  * SECTION: iprefs
  * @title: ofaIProperties
- * @short_description: The ofaIPrefs Interface
- * @include: openbook/ofa-iprefs-page.h
+ * @short_description: The ofaIProperties Interface
+ * @include: openbook/ofa-iproperties.h
  *
- * The #ofaIPrefsxxx interfaces serie let plugins (and any tierce code)
+ * The #ofaIProperties interface let plugins (and any tierce code)
  * display and manage the user preferences.
  *
  * This is a #GtkWidget built to be added as a new page of the
@@ -42,9 +42,6 @@
 #include <gtk/gtk.h>
 
 #include "my/my-isettings.h"
-
-#include "api/ofa-iprefs-page-def.h"
-#include "api/ofa-iprefs-provider-def.h"
 
 G_BEGIN_DECLS
 

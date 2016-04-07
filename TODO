@@ -411,14 +411,6 @@
 
 1065 2016- 4- 3 CODE ofaIDBProvider::new_meta, new_connect, new_editor methods
                 should have a provider arg.
-                idem for ofaIPageProvider::new_page
-
-1066 2016- 4- 3 PluginManager: 
-                - should show the plugin ident instead of those of one of
-                  the extensions ident: OK
-                + have a tab which display the list of provided extensions: OK
-                + tab about
-                + tab properties
 
 1069
 
@@ -1087,6 +1079,14 @@
 1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
                 which may or may not be changed
      2016- 4- 7 done
+
+1066 2016- 4- 3 PluginManager: 
+                - should show the plugin ident instead of those of one of
+                  the extensions ident: OK
+                + have a tab which display the list of provided extensions: OK
+                + tab about
+                + tab properties
+     2016- 4- 3 done
 
 1067 2016- 4- 3 rename IExeCloseClose to IExeClose
      2016- 4- 7 done

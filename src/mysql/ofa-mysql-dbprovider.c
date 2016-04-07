@@ -37,13 +37,11 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-iprefs-provider.h"
 
 #include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-dbprovider.h"
 #include "mysql/ofa-mysql-editor-display.h"
 #include "mysql/ofa-mysql-editor-enter.h"
-#include "mysql/ofa-mysql-iprefs-provider.h"
 #include "mysql/ofa-mysql-meta.h"
 #include "mysql/ofa-mysql-period.h"
 
@@ -70,8 +68,7 @@ static ofaIDBEditor  *idbprovider_new_editor( gboolean editable );
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDBProvider )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPROVIDER, idbprovider_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPREFS_PROVIDER, ofa_mysql_iprefs_provider_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPROVIDER, idbprovider_iface_init ))
 
 static void
 mysql_dbprovider_finalize( GObject *instance )

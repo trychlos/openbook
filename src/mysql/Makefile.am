@@ -79,8 +79,6 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-editor-display.h							\
 	ofa-mysql-editor-enter.c							\
 	ofa-mysql-editor-enter.h							\
-	ofa-mysql-iprefs-provider.c							\
-	ofa-mysql-iprefs-provider.h							\
 	ofa-mysql-meta.c									\
 	ofa-mysql-meta.h									\
 	ofa-mysql-period.c									\

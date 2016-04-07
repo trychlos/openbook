@@ -56,10 +56,6 @@ api_include_HEADERS = \
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
 	ofa-import-duplicate.h								\
-	ofa-iprefs-page.h									\
-	ofa-iprefs-page-def.h								\
-	ofa-iprefs-provider.h								\
-	ofa-iprefs-provider-def.h							\
 	ofa-iproperties.h									\
 	ofa-isingle-keeper.h								\
 	ofa-istore.h										\

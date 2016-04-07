@@ -46,6 +46,7 @@
  Other changes:
 
    - ofaIExeCloseClose interface is renamed to ofaIExeClose (todo #1067).
+   - ofaIPrefsProvider, ofaIPrefsPage: deprecated interfaces.
    - ofaIProperties: new interface which obsoletes both ofaIPrefsProvider and ofaIPrefsPage.
 
 -----------------------------------------------------------------------

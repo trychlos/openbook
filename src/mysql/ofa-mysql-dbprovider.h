@@ -32,8 +32,7 @@
  * The main class which manages the DBMS provider.
  *
  * The class is instanciated once when loading the module.
- * It implements the #ofaIDBProvider, #ofaIPrefsProvider and the
- * #myIIdent interfaces.
+ * It implements the #ofaIDBProvider and the #myIIdent interfaces.
  */
 
 #include <glib-object.h>
