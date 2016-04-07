@@ -40,6 +40,7 @@
    - VATForm: make it importable (todo #939).
    - ImporterCSV: new general CSV plugin.
    - ImporterPdfBourso: new plugin which replace (obsoleted) ImportBoursoPdf one.
+   - ImporterPdfLcl: new plugin which replace (obsoleted) ImportLCLPdf one.
    - ImporterTxtBourso: new plugin which replace (obsoleted) ImportBourso one.
    - ImporterTxtLcl: new plugin which replace (obsoleted) ImportLcl one.
 

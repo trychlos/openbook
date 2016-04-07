@@ -109,14 +109,6 @@ AC_DEFINE([OPENBOOK_DEBUG],["OPENBOOK_DEBUG"],[Debug environment variable])
 PWI_MAINTAINER_CHECK_FOR_DEPRECATED
 
 # built plugins
-have_IMPORT_BOURSO_PDF="no"				# requires Poppler libraries
-if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
-	have_IMPORT_BOURSO_PDF="yes"
-fi
-have_IMPORT_LCL_PDF="no"				# requires Poppler libraries
-if test "${have_POPPLER}" = "yes" -a "${have_POPPLER_GLIB}" = "yes"; then
-	have_IMPORT_LCL_PDF="yes"
-fi
 have_IMPORTERS="yes"					# always built
 have_POSTGRE="no"						# not built as of 0.35
 AM_CONDITIONAL([HAVE_POSTGRE], [test "${have_POSTGRE}" = "yes"])
@@ -147,7 +139,6 @@ AC_CONFIG_FILES([
 	src/api/Makefile
 	src/core/Makefile
 	src/css/Makefile
-	src/import-lcl-pdf/Makefile
 	src/importers/Makefile
 	src/my-1/Makefile
 	src/my-1/my/Makefile
@@ -171,10 +162,10 @@ $as_echo "
 	Maintainer mode                 ${msg_maintainer_mode}
 	Enable deprecated functions     ${enable_deprecated}
 	Built plugins:"
-if test "${have_POPPLER}" != "yes"; then
-	$as_echo "	  Stock importers               ${haveIMPORTERS} (with Poppler ${POPPLER_msg_version})"
+if test "${have_POPPLER}" = "yes"; then
+	$as_echo "	  Stock importers               ${have_IMPORTERS} (with Poppler ${POPPLER_msg_version})"
 else
-	$as_echo "	  Stock importers               ${haveIMPORTERS}
+	$as_echo "	  Stock importers               ${have_IMPORTERS}
 	  Import_Boursorama_PDF         no
 	  Import_LCL_PDF                no"
 fi

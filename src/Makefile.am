@@ -27,7 +27,6 @@ SUBDIRS = \
 	api													\
 	core												\
 	css													\
-	import-lcl-pdf										\
 	importers											\
 	mysql												\
 	postgre												\
