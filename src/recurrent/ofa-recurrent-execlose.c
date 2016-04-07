@@ -39,7 +39,7 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaIExeCloseClose *instance;
+	const ofaIExeClose *instance;
 	ofaHub                  *hub;
 	const ofaIDBConnect     *connect;
 
@@ -51,39 +51,39 @@ typedef struct {
 }
 	sUpdate;
 
-static guint    iexeclose_close_get_interface_version( void );
-static gchar   *iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowtype );
-static gboolean iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub );
-static gboolean do_task_closing( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub );
-static gboolean do_task_opening( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub );
+static guint    iexe_close_get_interface_version( void );
+static gchar   *iexe_close_add_row( ofaIExeClose *instance, guint rowtype );
+static gboolean iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub );
+static gboolean do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub );
+static gboolean do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub );
 static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
 /*
- * #ofaIExeCloseClose interface setup
+ * #ofaIExeClose interface setup
  */
 void
-ofa_recurrent_execlose_iface_init( ofaIExeCloseCloseInterface *iface )
+ofa_recurrent_execlose_iface_init( ofaIExeCloseInterface *iface )
 {
 	static const gchar *thisfn = "ofa_recurrent_execlose_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iexeclose_close_get_interface_version;
-	iface->add_row = iexeclose_close_add_row;
-	iface->do_task = iexeclose_close_do_task;
+	iface->get_interface_version = iexe_close_get_interface_version;
+	iface->add_row = iexe_close_add_row;
+	iface->do_task = iexe_close_do_task;
 }
 
 /*
- * the version of the #ofaIExeCloseClose interface implemented by the module
+ * the version of the #ofaIExeClose interface implemented by the module
  */
 static guint
-iexeclose_close_get_interface_version( void )
+iexe_close_get_interface_version( void )
 {
 	return( 1 );
 }
 
 static gchar *
-iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowtype )
+iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
 {
 	gchar *text;
 
@@ -103,7 +103,7 @@ iexeclose_close_add_row( ofaIExeCloseClose *instance, guint rowtype )
 }
 
 static gboolean
-iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub )
+iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub )
 {
 	gboolean ok;
 
@@ -126,7 +126,7 @@ iexeclose_close_do_task( ofaIExeCloseClose *instance, guint rowtype, GtkWidget *
  * %NULL label from add_row() method
  */
 static gboolean
-do_task_closing( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub )
+do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
 {
 	GtkWidget *label;
 
@@ -143,7 +143,7 @@ do_task_closing( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub )
  * the pushed ones, to the ARCHREC_T_DELETED_RECORDS table
  */
 static gboolean
-do_task_opening( ofaIExeCloseClose *instance, GtkWidget *box, ofaHub *hub )
+do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
 {
 	gboolean ok;
 	const ofaIDBConnect *connect;

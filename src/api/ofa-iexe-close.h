@@ -22,19 +22,19 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_IEXECLOSE_CLOSE_H__
-#define __OPENBOOK_API_OFA_IEXECLOSE_CLOSE_H__
+#ifndef __OPENBOOK_API_OFA_IEXECLOSE_H__
+#define __OPENBOOK_API_OFA_IEXECLOSE_H__
 
 /**
- * SECTION: iexeclose_close
- * @title: ofaIExeCloseClose
+ * SECTION: iexe_close
+ * @title: ofaIExeClose
  * @short_description: The Exercice Closing Interface
- * @include: openbook/ofa-iexeclose-close.h
+ * @include: openbook/ofa-iexe-close.h
  *
  * The #ofaIExeClosexxx interfaces serie lets a plugin balance, close
  * and archive its data on exercice closing.
  *
- * In particular, this #ofaIExeCloseClose lets a plugin insert its
+ * In particular, this #ofaIExeClose lets a plugin insert its
  * tasks either in the closing exercice, or in the opening exercice.
  *
  * When the plugin wants insert some tasks either before closing the
@@ -62,20 +62,20 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_IEXECLOSE_CLOSE                      ( ofa_iexeclose_close_get_type())
-#define OFA_IEXECLOSE_CLOSE( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IEXECLOSE_CLOSE, ofaIExeCloseClose ))
-#define OFA_IS_IEXECLOSE_CLOSE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IEXECLOSE_CLOSE ))
-#define OFA_IEXECLOSE_CLOSE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IEXECLOSE_CLOSE, ofaIExeCloseCloseInterface ))
+#define OFA_TYPE_IEXECLOSE                      ( ofa_iexe_close_get_type())
+#define OFA_IEXECLOSE( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IEXECLOSE, ofaIExeClose ))
+#define OFA_IS_IEXECLOSE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IEXECLOSE ))
+#define OFA_IEXECLOSE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IEXECLOSE, ofaIExeCloseInterface ))
 
-typedef struct _ofaIExeCloseClose                     ofaIExeCloseClose;
+typedef struct _ofaIExeClose                    ofaIExeClose;
 
 /**
- * ofaIExeCloseCloseInterface:
+ * ofaIExeCloseInterface:
  * @get_interface_version: [should]: returns the implemented version number.
  * @add_row: [should]: insert a row on the page when closing the exercice.
  * @do_task: [should]: do the task.
  *
- * This defines the interface that an #ofaIExeCloseClose may/should implement.
+ * This defines the interface that an #ofaIExeClose may/should implement.
  */
 typedef struct {
 	/*< private >*/
@@ -98,7 +98,7 @@ typedef struct {
 	/*** instance-wide ***/
 	/**
 	 * add_row:
-	 * @instance: the #ofaIExeCloseClose instance.
+	 * @instance: the #ofaIExeClose instance.
 	 * @rowtype: whether we insert on closing exercice N, or on opening
 	 *  exercice N+1.
 	 *
@@ -112,12 +112,12 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gchar *  ( *add_row )              ( ofaIExeCloseClose *instance,
+	gchar *  ( *add_row )              ( ofaIExeClose *instance,
 											guint rowtype );
 
 	/**
 	 * do_task:
-	 * @instance: the #ofaIExeCloseClose instance.
+	 * @instance: the #ofaIExeClose instance.
 	 * @rowtype: whether we insert on closing exercice N, or on opening
 	 *  exercice N+1.
 	 * @box: a #GtkBox available to the plugin.
@@ -127,12 +127,12 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	gboolean ( *do_task )              ( ofaIExeCloseClose *instance,
+	gboolean ( *do_task )              ( ofaIExeClose *instance,
 											guint rowtype,
 											GtkWidget *box,
 											ofaHub *hub );
 }
-	ofaIExeCloseCloseInterface;
+	ofaIExeCloseInterface;
 
 /**
  * Whether this row concerns the closing exercice N, or the opening
@@ -146,26 +146,26 @@ enum {
 /*
  * Interface-wide
  */
-GType    ofa_iexeclose_close_get_type                  ( void );
+GType    ofa_iexe_close_get_type                  ( void );
 
-guint    ofa_iexeclose_close_get_interface_last_version( void );
+guint    ofa_iexe_close_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint    ofa_iexeclose_close_get_interface_version     ( GType type );
+guint    ofa_iexe_close_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-gchar   *ofa_iexeclose_close_add_row                   ( ofaIExeCloseClose *instance,
+gchar   *ofa_iexe_close_add_row                   ( ofaIExeClose *instance,
 															guint rowtype );
 
-gboolean ofa_iexeclose_close_do_task                   ( ofaIExeCloseClose *instance,
+gboolean ofa_iexe_close_do_task                   ( ofaIExeClose *instance,
 															guint rowtype,
 															GtkWidget *box,
 															ofaHub *hub );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_IEXECLOSE_CLOSE_H__ */
+#endif /* __OPENBOOK_API_OFA_IEXECLOSE_H__ */

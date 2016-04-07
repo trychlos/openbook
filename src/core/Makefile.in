@@ -175,7 +175,7 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-icollectionable.lo ofa-icollector.lo ofa-iconcil.lo \
 	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
 	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
-	ofa-idbprovider.lo ofa-iexeclose-close.lo ofa-iexportable.lo \
+	ofa-idbprovider.lo ofa-iexe-close.lo ofa-iexportable.lo \
 	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
 	ofa-import-duplicate.lo ofa-iprefs-page.lo \
 	ofa-iprefs-provider.lo ofa-isingle-keeper.lo ofa-istore.lo \
@@ -514,7 +514,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
-	ofa-iexeclose-close.c								\
+	ofa-iexe-close.c								\
 	ofa-iexportable.c									\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
@@ -703,7 +703,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbperiod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexeclose-close.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexe-close.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iexportable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-igetter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iimportable.Plo@am__quote@

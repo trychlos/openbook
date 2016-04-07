@@ -48,7 +48,7 @@ api_include_HEADERS = \
 	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
-	ofa-iexeclose-close.h								\
+	ofa-iexe-close.h								\
 	ofa-iexportable.h									\
 	ofa-igetter.h										\
 	ofa-igetter-def.h									\

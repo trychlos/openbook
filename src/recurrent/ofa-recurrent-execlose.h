@@ -29,14 +29,14 @@
  * SECTION: ofa_recurrent_execlose
  * @short_description: #ofaRecurrent definition.
  *
- * #ofaIExeCloseClose interface management.
+ * #ofaIExeClose interface management.
  */
 
-#include "api/ofa-iexeclose-close.h"
+#include "api/ofa-iexe-close.h"
 
 G_BEGIN_DECLS
 
-void ofa_recurrent_execlose_iface_init( ofaIExeCloseCloseInterface *iface );
+void ofa_recurrent_execlose_iface_init( ofaIExeCloseInterface *iface );
 
 G_END_DECLS
 

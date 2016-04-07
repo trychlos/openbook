@@ -40,7 +40,7 @@
 
  Other changes:
 
-   - 
+   - ofaIExeCloseClose interface is renamed to ofaIExeClose (todo #1067).
 
 -----------------------------------------------------------------------
  Version 0.53

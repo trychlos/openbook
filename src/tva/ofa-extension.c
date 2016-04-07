@@ -77,7 +77,7 @@ G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaTVAId, ofa_tva_id, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE_DYNAMIC( ofaTVAId )
 		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IDBMODEL, ofa_tva_dbmodel_iface_init )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IEXECLOSE_CLOSE, ofa_tva_execlose_iface_init ))
+		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IEXECLOSE, ofa_tva_execlose_iface_init ))
 
 static void
 ofa_tva_id_class_finalize( ofaTVAIdClass *klass )

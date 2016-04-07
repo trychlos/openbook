@@ -80,7 +80,7 @@ G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaRecurrentId, ofa_recurrent_id, G_TYPE_OBJECT,
 		G_ADD_PRIVATE_DYNAMIC( ofaRecurrentId )
 		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init )
 		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IDBMODEL, ofa_recurrent_dbmodel_iface_init )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IEXECLOSE_CLOSE, ofa_recurrent_execlose_iface_init ))
+		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IEXECLOSE, ofa_recurrent_execlose_iface_init ))
 
 static void
 ofa_recurrent_id_class_finalize( ofaRecurrentIdClass *klass )
