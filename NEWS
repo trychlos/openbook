@@ -38,6 +38,7 @@
    - Import a dynamic list of importable objects (todo #520).
    - VATForm: make it exportable (todo #940).
    - VATForm: make it importable (todo #939).
+   - Import assistant ask for user confirmation before emptying a table (todo #1059).
    - ImporterCSV: new general CSV plugin.
    - ImporterPdfBourso: new plugin which replace (obsoleted) ImportBoursoPdf one.
    - ImporterPdfLcl: new plugin which replace (obsoleted) ImportLCLPdf one.

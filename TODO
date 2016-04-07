@@ -402,12 +402,6 @@
 
 1058 2016- 4- 2 CODE split ofo-entry.c
 
-1059 2016- 4- 2 FEAT ofaIImportable: have a warns_on_empty_on_import() method
-                use case: when importing entries
-
-1060 2016- 4- 2 FEAT ofaIImportable: have a may_duplicates() method
-                use case: when importing entries
-
 1061 2016- 4- 2 FEAT save the table before import, restoring it in case
                 of an error
 
@@ -1078,6 +1072,16 @@
                       ofaIDBPeriod to ofaPortfolioPeriod
      2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
                 ofaIDBMeta and ofaIDBPeriod are left
+
+1059 2016- 4- 2 FEAT ofaIImportable: have a warns_on_empty_on_import() method
+                use case: when importing entries
+     2016- 4- 7 done: the import assistant ask for user confirmation.
+
+1060 2016- 4- 2 FEAT ofaIImportable: have a may_duplicates() method
+                use case: when importing entries
+     2016- 4- 7 cancelled
+                -> duplicate mode is handled by import assistant
+                -> in particular entries can not detect duplicates.
 
 1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
                 which may or may not be changed

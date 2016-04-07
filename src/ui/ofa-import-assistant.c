@@ -1,6 +1,6 @@
 /*
- * Open Freelance Accounting
  * A double-entry accounting application for freelances.
+ * Open Freelance Accounting
  *
  * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
  *
@@ -141,7 +141,7 @@ typedef struct {
 	GtkWidget           *p4_stop_btn;
 	GtkWidget           *p4_message;
 	gboolean             p4_empty;
-	ofeImportDuplicate        p4_import_mode;
+	ofeImportDuplicate   p4_import_mode;
 	gboolean             p4_stop;
 
 	/* p5: stream format
@@ -244,7 +244,9 @@ static void     p5_do_forward( ofaImportAssistant *self, gint page_num, GtkWidge
 static void     p6_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
 static void     p7_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page );
+static gboolean p7_confirm_empty_table( const ofaImportAssistant *self );
 static gboolean p7_do_import( ofaImportAssistant *self );
+static void     p7_do_user_cancelled( ofaImportAssistant *self );
 static void     iprogress_iface_init( myIProgressInterface *iface );
 static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
 static void     iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar );
@@ -1488,63 +1490,44 @@ p7_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p7_phase = 0;
 	priv->p7_bar = NULL;
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-import-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p7_import = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p7_import ));
+	if( !priv->p4_empty || p7_confirm_empty_table( self )){
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-insert-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p7_insert = my_progress_bar_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p7_insert ));
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-import-parent" );
+		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+		priv->p7_import = my_progress_bar_new();
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p7_import ));
 
-	priv->p7_text = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-textview" );
-	g_return_if_fail( priv->p7_text && GTK_IS_TEXT_VIEW( priv->p7_text ));
-	//gtk_widget_set_can_focus( priv->p7_text, FALSE );
+		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-insert-parent" );
+		g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+		priv->p7_insert = my_progress_bar_new();
+		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p7_insert ));
 
-	gtk_widget_show_all( page );
+		priv->p7_text = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p7-textview" );
+		g_return_if_fail( priv->p7_text && GTK_IS_TEXT_VIEW( priv->p7_text ));
+		//gtk_widget_set_can_focus( priv->p7_text, FALSE );
 
-	g_idle_add(( GSourceFunc ) p7_do_import, self );
-}
+		gtk_widget_show_all( page );
 
-#if 0
-static void
-p7_error_no_interface( const ofaImportAssistant *self )
-{
-	ofaImportAssistantPrivate *priv;
-	gchar *str;
-	GtkWidget *label;
-	const gchar *cstr;
+		g_idle_add(( GSourceFunc ) p7_do_import, self );
 
-	priv = ofa_import_assistant_get_instance_private( self );
-
-	/* display an error dialog */
-	if( priv->p7_object ){
-		str = g_strdup_printf(
-					_( "The requested type (%s) does not implement the IImportable interface" ),
-					G_OBJECT_TYPE_NAME( priv->p7_object ));
 	} else {
-		str = g_strdup_printf( _( "Unable to find a plugin to import the specified data" ));
+		p7_do_user_cancelled( self );
 	}
-
-	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, str );
-
-	g_free( str );
-
-	/* prepare the assistant to terminate */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p7-label" );
-
-	cstr = _( "Unfortunately, we have not been able to do anything for "
-			"import the specified file.\n"
-			"You should most probably open a feature request against the "
-			"Openbook maintainer." );
-
-	gtk_label_set_text( GTK_LABEL( label ), cstr );
-	my_utils_widget_set_style( label, "labelerror" );
-
-	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 }
-#endif
+
+static gboolean
+p7_confirm_empty_table( const ofaImportAssistant *self )
+{
+	gboolean ok;
+
+	ok = my_utils_dialog_question(
+				_( "You have asked to fully drop the previously content of the target "
+					"table before importing these new datas.\n"
+					"Are you sure ?" ),
+				_( "_Confirm" ));
+
+	return( ok );
+}
 
 static gboolean
 p7_do_import( ofaImportAssistant *self )
@@ -1615,6 +1598,18 @@ p7_do_import( ofaImportAssistant *self )
 
 	/* do not continue and remove from idle callbacks list */
 	return( FALSE );
+}
+
+static void
+p7_do_user_cancelled( ofaImportAssistant *self )
+{
+	GtkWidget *label;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p7-label" );
+	gtk_label_set_text( GTK_LABEL( label ), _( "Import has been cancelled on user decision." ));
+	my_utils_widget_set_style( label, "labelinfo" );
+
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 }
 
 /*
