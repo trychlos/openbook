@@ -24,6 +24,7 @@ include ../make.inc
 
 my_include_HEADERS = \
 	my.h												\
+	my-char.h											\
 	my-date.h											\
 	my-date-combo.h										\
 	my-date-editable.h									\

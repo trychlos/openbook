@@ -402,6 +402,7 @@ top_srcdir = @top_srcdir@
 my_includedir = $(includedir)/my-1
 my_include_HEADERS = \
 	my.h												\
+	my-char.h											\
 	my-date.h											\
 	my-date-combo.h										\
 	my-date-editable.h									\

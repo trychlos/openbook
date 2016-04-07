@@ -24,6 +24,7 @@
 #ifndef __MY_API_MY_H__
 #define __MY_API_MY_H__
 
+#include <my/my-char.h>
 #include <my/my-date.h>
 #include <my/my-date-combo.h>
 #include <my/my-date-editable.h>

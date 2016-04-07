@@ -58,6 +58,7 @@ nodist_liborgtrychlosmy1_la_OURCES = \
 	$(NULL)
 
 liborgtrychlosmy1_la_SOURCES = \
+	my-char.c											\
 	my-date.c											\
 	my-date-combo.c										\
 	my-date-editable.c									\
