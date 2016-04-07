@@ -166,18 +166,18 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-account-frame-bin.lo ofa-account-properties.lo \
 	ofa-account-select.lo ofa-account-store.lo \
 	ofa-admin-credentials-bin.lo ofa-amount.lo ofa-box.lo \
-	ofa-buttons-box.lo ofa-counter.lo ofa-currency-combo.lo \
-	ofa-currency-store.lo ofa-date-filter-hv-bin.lo \
-	ofa-dbms-root-bin.lo ofa-dossier-delete-prefs-bin.lo \
-	ofa-dossier-prefs.lo ofa-extender-collection.lo \
-	ofa-extender-module.lo ofa-guided-input.lo \
-	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
-	ofa-icollectionable.lo ofa-icollector.lo ofa-iconcil.lo \
-	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
-	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
-	ofa-idbprovider.lo ofa-iexe-close.lo ofa-iexportable.lo \
-	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-import-duplicate.lo ofa-iprefs-page.lo \
+	ofa-buttons-box.lo ofa-core.lo ofa-counter.lo \
+	ofa-currency-combo.lo ofa-currency-store.lo \
+	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
+	ofa-dossier-delete-prefs-bin.lo ofa-dossier-prefs.lo \
+	ofa-extender-collection.lo ofa-extender-module.lo \
+	ofa-guided-input.lo ofa-guided-input-bin.lo ofa-hub.lo \
+	ofa-iabout.lo ofa-icollectionable.lo ofa-icollector.lo \
+	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
+	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbmodel.lo \
+	ofa-idbperiod.lo ofa-idbprovider.lo ofa-iexe-close.lo \
+	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-import-duplicate.lo ofa-iprefs-page.lo \
 	ofa-iprefs-provider.lo ofa-isingle-keeper.lo ofa-istore.lo \
 	ofa-itheme-manager.lo ofa-ledger-combo.lo ofa-ledger-store.lo \
 	ofa-list-store.lo ofa-ope-template-editable.lo \
@@ -484,6 +484,7 @@ libofa_core_la_SOURCES = \
 	ofa-amount.c										\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
+	ofa-core.c											\
 	ofa-counter.c										\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
@@ -514,7 +515,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
-	ofa-iexe-close.c								\
+	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\
@@ -680,6 +681,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-amount.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-buttons-box.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-core.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-counter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-currency-store.Plo@am__quote@

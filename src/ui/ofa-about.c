@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "api/ofa-core.h"
 #include "api/ofa-igetter.h"
 
 #include "ui/ofa-about.h"
@@ -132,20 +133,15 @@ ofa_about_run( ofaIGetter *getter, GtkWindow *parent )
 	application = ofa_igetter_get_application( getter );
 	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
 
-	static const gchar *authors[] = {
-		"Pierre Wieser <pwieser@trychlos.org>",
-		NULL
-	};
-
 	version = g_strdup_printf( _( "version %s" ), PACKAGE_VERSION );
 
 	about = g_object_new(
 			OFA_TYPE_ABOUT,
-			"authors", authors,
+			"authors", ofa_core_get_authors(),
 			"comments", _( "A double-entry, multi-currencies, accounting software.\n"
 							"Primarily designed with french rules in mind, adapted "
 							"to several european countries." ),
-			"copyright", ofa_application_get_copyright( OFA_APPLICATION( application )),
+			"copyright", ofa_core_get_copyright(),
 			"license-type", GTK_LICENSE_GPL_3_0,
 			"version", version,
 			"website", "http://trychlos.github.io/openbook/",

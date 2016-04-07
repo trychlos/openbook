@@ -52,10 +52,9 @@ typedef struct _ofaIAbout                    ofaIAbout;
  *
  * This defines the interface that an #ofaIAbout should implement.
  *
- * The DBMS backend presents two sets of functions:
- * - a first one which addresses the DB server itself,
- * - the second one which manages the inside dossier through the opened
- *   DB server connexion.
+ * When implemented by a dynamically loadable module, the plugin should
+ * take into account the fact #ofaPluginManager only takes care of the
+ * first #ofaIAbout interface found.
  */
 typedef struct {
 	/*< private >*/

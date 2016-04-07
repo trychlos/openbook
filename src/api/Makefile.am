@@ -29,6 +29,7 @@ api_include_HEADERS = \
 	ofa-amount.h										\
 	ofa-box.h											\
 	ofa-buttons-box.h									\
+	ofa-core.h											\
 	ofa-counter.h										\
 	ofa-date-filter-hv-bin.h							\
 	ofa-dossier-prefs.h									\
@@ -48,7 +49,7 @@ api_include_HEADERS = \
 	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
-	ofa-iexe-close.h								\
+	ofa-iexe-close.h									\
 	ofa-iexportable.h									\
 	ofa-igetter.h										\
 	ofa-igetter-def.h									\

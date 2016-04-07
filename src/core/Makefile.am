@@ -75,6 +75,7 @@ libofa_core_la_SOURCES = \
 	ofa-amount.c										\
 	ofa-box.c											\
 	ofa-buttons-box.c									\
+	ofa-core.c											\
 	ofa-counter.c										\
 	ofa-currency-combo.c								\
 	ofa-currency-combo.h								\
@@ -105,7 +106,7 @@ libofa_core_la_SOURCES = \
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
-	ofa-iexe-close.c								\
+	ofa-iexe-close.c									\
 	ofa-iexportable.c									\
 	ofa-igetter.c										\
 	ofa-iimporter.c										\

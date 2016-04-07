@@ -33,6 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
+#include "api/ofa-core.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
@@ -1091,7 +1092,7 @@ static void
 on_version( ofaApplication *application )
 {
 	g_print( "%s v %s\n", PACKAGE_NAME, PACKAGE_VERSION );
-	g_print( "%s.\n", ofa_application_get_copyright( application ));
+	g_print( "%s.\n", ofa_core_get_copyright());
 
 	g_print( "%s is free software, and is provided without any warranty.\n", PACKAGE_NAME );
 	g_print( "You may redistribute copies of %s under the terms of the\n", PACKAGE_NAME );
@@ -1140,24 +1141,6 @@ ofa_application_get_menu_model( const ofaApplication *application )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->menu );
-}
-
-/**
- * ofa_application_get_copyright:
- * @application:
- */
-const gchar *
-ofa_application_get_copyright( const ofaApplication *application )
-{
-	ofaApplicationPrivate *priv;
-
-	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
-
-	priv = ofa_application_get_instance_private( application );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( _( "Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)" ));
 }
 
 /*

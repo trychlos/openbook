@@ -32,7 +32,8 @@
   
  New features and improvements:
 
-   - 
+   - ofaMysl: implements ofaIAbout interface.
+   - ofaPluginManager: displays instanciated objects (todo #1066).
 
  Bug fixes:
 

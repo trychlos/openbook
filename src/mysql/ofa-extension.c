@@ -26,9 +26,14 @@
 #include <config.h>
 #endif
 
-#include "my/my-iident.h"
+#include <glib/gi18n.h>
 
+#include "my/my-iident.h"
+#include "my/my-utils.h"
+
+#include "api/ofa-core.h"
 #include "api/ofa-extension.h"
+#include "api/ofa-iabout.h"
 
 #include "mysql/ofa-mysql-dbmodel.h"
 #include "mysql/ofa-mysql-dbprovider.h"
@@ -38,75 +43,80 @@
  *  for this library.
  * See infra for the software extension API implementation.
  */
-#define OFA_TYPE_MYSQL_ID                ( ofa_mysql_id_get_type())
-#define OFA_MYSQL_ID( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_ID, ofaMysqlId ))
-#define OFA_MYSQL_ID_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_ID, ofaMysqlIdClass ))
-#define OFA_IS_MYSQL_ID( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_ID ))
-#define OFA_IS_MYSQL_ID_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_ID ))
-#define OFA_MYSQL_ID_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_ID, ofaMysqlIdClass ))
+#define OFA_TYPE_MYSQL_MAIN                ( ofa_mysql_main_get_type())
+#define OFA_MYSQL_MAIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_MYSQL_MAIN, ofaMysqlMain ))
+#define OFA_MYSQL_MAIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_MYSQL_MAIN, ofaMysqlMainClass ))
+#define OFA_IS_MYSQL_MAIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_MYSQL_MAIN ))
+#define OFA_IS_MYSQL_MAIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_MYSQL_MAIN ))
+#define OFA_MYSQL_MAIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_MYSQL_MAIN, ofaMysqlMainClass ))
 
 typedef struct {
 	/*< public members >*/
 	GObject      parent;
 }
-	ofaMysqlId;
+	ofaMysqlMain;
 
 typedef struct {
 	/*< public members >*/
 	GObjectClass parent;
 }
-	ofaMysqlIdClass;
+	ofaMysqlMainClass;
 
 /* private instance data
  */
 typedef struct {
 	gboolean dispose_has_run;
 }
-	ofaMysqlIdPrivate;
+	ofaMysqlMainPrivate;
 
-GType ofa_mysql_id_get_type( void );
+GType ofa_mysql_main_get_type( void );
 
-static void   iident_iface_init( myIIdentInterface *iface );
-static gchar *iident_get_canon_name( const myIIdent *instance, void *user_data );
-static gchar *iident_get_display_name( const myIIdent *instance, void *user_data );
-static gchar *iident_get_version( const myIIdent *instance, void *user_data );
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-about.ui";
 
-G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaMysqlId, ofa_mysql_id, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE_DYNAMIC( ofaMysqlId )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init ))
+static void       iident_iface_init( myIIdentInterface *iface );
+static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar     *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar     *iident_get_version( const myIIdent *instance, void *user_data );
+static void       iabout_iface_init( ofaIAboutInterface *iface );
+static GtkWidget *iabout_do_init( const ofaIAbout *instance );
+
+G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaMysqlMain, ofa_mysql_main, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE_DYNAMIC( ofaMysqlMain )
+		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IABOUT, iabout_iface_init ))
 
 static void
-ofa_mysql_id_class_finalize( ofaMysqlIdClass *klass )
+ofa_mysql_main_class_finalize( ofaMysqlMainClass *klass )
 {
-	static const gchar *thisfn = "ofa_mysql_id_class_finalize";
+	static const gchar *thisfn = "ofa_mysql_main_class_finalize";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 }
 
 static void
-mysql_id_finalize( GObject *instance )
+mysql_main_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_id_finalize";
+	static const gchar *thisfn = "ofa_mysql_main_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_ID( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_MAIN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_id_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_mysql_main_parent_class )->finalize( instance );
 }
 
 static void
-mysql_id_dispose( GObject *instance )
+mysql_main_dispose( GObject *instance )
 {
-	ofaMysqlIdPrivate *priv;
+	ofaMysqlMainPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_ID( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_MAIN( instance ));
 
-	priv = ofa_mysql_id_get_instance_private( OFA_MYSQL_ID( instance ));
+	priv = ofa_mysql_main_get_instance_private( OFA_MYSQL_MAIN( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -116,32 +126,32 @@ mysql_id_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_id_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_mysql_main_parent_class )->dispose( instance );
 }
 
 static void
-ofa_mysql_id_init( ofaMysqlId *self )
+ofa_mysql_main_init( ofaMysqlMain *self )
 {
-	static const gchar *thisfn = "ofa_mysql_id_init";
-	ofaMysqlIdPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_main_init";
+	ofaMysqlMainPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	priv = ofa_mysql_id_get_instance_private( self );
+	priv = ofa_mysql_main_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_mysql_id_class_init( ofaMysqlIdClass *klass )
+ofa_mysql_main_class_init( ofaMysqlMainClass *klass )
 {
-	static const gchar *thisfn = "ofa_mysql_id_class_init";
+	static const gchar *thisfn = "ofa_mysql_main_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = mysql_id_dispose;
-	G_OBJECT_CLASS( klass )->finalize = mysql_id_finalize;
+	G_OBJECT_CLASS( klass )->dispose = mysql_main_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_main_finalize;
 }
 
 /*
@@ -150,7 +160,7 @@ ofa_mysql_id_class_init( ofaMysqlIdClass *klass )
 static void
 iident_iface_init( myIIdentInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_id_iident_iface_init";
+	static const gchar *thisfn = "ofa_mysql_main_iident_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -178,6 +188,83 @@ iident_get_version( const myIIdent *instance, void *user_data )
 }
 
 /*
+ * #ofaIAbout interface management
+ */
+static void
+iabout_iface_init( ofaIAboutInterface *iface )
+{
+	static const gchar *thisfn = "ofa_mysql_main_iabout_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->do_init = iabout_do_init;
+}
+
+static GtkWidget *
+iabout_do_init( const ofaIAbout *instance )
+{
+	GtkBuilder *builder;
+	GObject *object;
+	GtkWidget *box, *toplevel, *label, *grid;
+	gchar *str, *tmp;
+	const gchar **authors, **it;
+	gint row;
+
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_widget_set_margins( box, 4, 4, 4, 4 );
+
+	builder = gtk_builder_new_from_resource( st_resource_ui );
+
+	object = gtk_builder_get_object( builder, "top-window" );
+	g_return_val_if_fail( object && GTK_IS_WINDOW( object ), NULL );
+	toplevel = GTK_WIDGET( g_object_ref( object ));
+
+	my_utils_container_attach_from_window( GTK_CONTAINER( box ), GTK_WINDOW( toplevel ), "top" );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "name" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
+	str = iident_get_canon_name( MY_IIDENT( instance ), NULL );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "version" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
+	tmp = iident_get_version( MY_IIDENT( instance ), NULL );
+	str = g_strdup_printf( _( "Version %s" ), tmp );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+	g_free( tmp );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "comment" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
+	str = iident_get_display_name( MY_IIDENT( instance ), NULL );
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "authors-grid" );
+	g_return_val_if_fail( grid && GTK_IS_GRID( grid ), NULL );
+	authors = ofa_core_get_authors();
+	it = authors;
+	row = 0;
+	while( *it ){
+		label = gtk_label_new( *it );
+		gtk_widget_set_hexpand( label, TRUE );
+		gtk_grid_attach( GTK_GRID( grid ), label, 0, row, 1, 1 );
+		it++;
+		row++;
+	}
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( box ), "copyright" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), NULL );
+	gtk_label_set_text( GTK_LABEL( label ), ofa_core_get_copyright());
+
+	gtk_widget_destroy( toplevel );
+	g_object_unref( builder );
+
+	return( box );
+}
+
+/*
  * The part below implements the software extension API
  */
 
@@ -200,7 +287,7 @@ ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 
 	g_debug( "%s: module=%p, getter=%p", thisfn, ( void * ) module, ( void * ) getter  );
 
-	ofa_mysql_id_register_type( module );
+	ofa_mysql_main_register_type( module );
 
 	return( TRUE );
 }
@@ -219,7 +306,7 @@ ofa_extension_list_types( const GType **types )
 
 	g_debug( "%s: types=%p, count=%u", thisfn, ( void * ) types, TYPES_COUNT );
 
-	types_list[i++] = OFA_TYPE_MYSQL_ID;
+	types_list[i++] = OFA_TYPE_MYSQL_MAIN;
 	types_list[i++] = OFA_TYPE_MYSQL_DBMODEL;
 	types_list[i++] = OFA_TYPE_MYSQL_DBPROVIDER;
 
