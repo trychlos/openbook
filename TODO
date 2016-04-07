@@ -411,9 +411,6 @@
 1061 2016- 4- 2 FEAT save the table before import, restoring it in case
                 of an error
 
-1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
-                which may or may not be changed
-
 1063 2016- 4- 3 CODE ofaStreamFormat: define global constants for delimiters
 
 1064 2016- 4- 3 FEAT ofaStreamFormatDisp: display same label than in combo
@@ -1081,6 +1078,10 @@
                       ofaIDBPeriod to ofaPortfolioPeriod
      2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
                 ofaIDBMeta and ofaIDBPeriod are left
+
+1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
+                which may or may not be changed
+     2016- 4- 7 done
 
 1068 2016- 4- 5 review ofoBat import input format (have id placeholder)
      2016- 4- 7 done
