@@ -385,6 +385,29 @@ on_object_finalized( ofaExtenderModule *self, GObject *finalized_object )
 }
 
 /*
+ * ofa_extender_module_get_for_objects:
+ * @module: this #ofaExtenderModule instance.
+ *
+ * Returns: the full list of objects instanciated by @module.
+ *
+ * The returned list is owned by the @module, and should not be
+ * released by the caller.
+ */
+const GList *
+ofa_extender_module_get_objects( const ofaExtenderModule *module )
+{
+	ofaExtenderModulePrivate *priv;
+
+	g_return_val_if_fail( module && OFA_IS_EXTENDER_MODULE( module ), NULL );
+
+	priv = ofa_extender_module_get_instance_private( module );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->objects );
+}
+
+/*
  * ofa_extender_module_get_for_type:
  * @module: this #ofaExtenderModule instance.
  * @type: the serched GType.

@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-idialog.h"
+#include "my/my-iident.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
@@ -56,30 +57,52 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkTreeView   *tview;
-	GtkWidget     *properties_btn;
+	GtkWidget     *plugin_pane;
+	gint           plugin_pane_pos;
+	GtkWidget     *plugin_tview;
+	GtkWidget     *plugin_book;
+	GtkWidget     *about_page;
+	GtkWidget     *properties_page;
+	GtkWidget     *objects_tview;
 }
 	ofaPluginManagerPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-plugin-manager.ui";
 
-/* column ordering in the selection listview
+/* column ordering in the plugin listview
  */
 enum {
-	COL_NAME = 0,
-	COL_VERSION,
-	COL_PLUGIN,
-	N_COLUMNS
+	PLUG_COL_NAME = 0,
+	PLUG_COL_VERSION,
+	PLUG_COL_PLUGIN,
+	PLUG_N_COLUMNS
+};
+
+/* column ordering in the objects listview
+ */
+enum {
+	OBJ_COL_CLASS = 0,
+	OBJ_COL_NAME,
+	OBJ_COL_VERSION,
+	OBJ_COL_OBJECT,
+	OBJ_N_COLUMNS
 };
 
 static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *key );
+static void iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *key );
 static void idialog_iface_init( myIDialogInterface *iface );
 static void idialog_init( myIDialog *instance );
-static void setup_treeview( ofaPluginManager *self );
-static void load_in_treeview( ofaPluginManager *self );
-static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
-static void on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self );
-static void on_properties_clicked( GtkButton *button, ofaPluginManager *self );
+static void plugin_setup_treeview( ofaPluginManager *self );
+static gint plugin_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
+static void plugin_on_selection_changed( GtkTreeSelection *selection, ofaPluginManager *self );
+static void plugin_set_about_page( ofaPluginManager *self, ofaExtenderModule *plugin, const GList *objects );
+static void plugin_set_properties_page( ofaPluginManager *self, ofaExtenderModule *plugin, const GList *objects );
+static void objects_setup_treeview( ofaPluginManager *self );
+static gint objects_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
+static void objects_on_selection_changed( GtkTreeSelection *selection, ofaPluginManager *self );
+static void plugins_load( ofaPluginManager *self );
+static void objects_load( ofaPluginManager *self, const GList *objects );
 
 G_DEFINE_TYPE_EXTENDED( ofaPluginManager, ofa_plugin_manager, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPluginManager )
@@ -137,6 +160,10 @@ ofa_plugin_manager_init( ofaPluginManager *self )
 
 	priv->dispose_has_run = FALSE;
 
+	priv->plugin_pane_pos = 0;
+	priv->about_page = NULL;
+	priv->properties_page = NULL;
+
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
@@ -193,6 +220,54 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_plugin_manager_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->read_settings = iwindow_read_settings;
+	iface->write_settings = iwindow_write_settings;
+}
+
+/*
+ * settings are: plugin_paned;
+ */
+static void
+iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *key )
+{
+	ofaPluginManagerPrivate *priv;
+	GList *slist, *it;
+	const gchar *cstr;
+
+	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
+
+	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, key );
+
+	if( slist ){
+		it = slist;
+		cstr = it ? ( const gchar * ) it->data : NULL;
+		if( my_strlen( cstr )){
+			priv->plugin_pane_pos = atoi( cstr );
+		}
+
+		my_isettings_free_string_list( settings, slist );
+	}
+
+	if( priv->plugin_pane_pos < 150 ){
+		priv->plugin_pane_pos = 150;
+	}
+}
+
+static void
+iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *key )
+{
+	ofaPluginManagerPrivate *priv;
+	gchar *str;
+
+	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
+
+	str = g_strdup_printf( "%d;",
+				gtk_paned_get_position( GTK_PANED( priv->plugin_pane )));
+
+	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, key, str );
+
+	g_free( str );
 }
 
 /*
@@ -213,23 +288,25 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_plugin_manager_idialog_init";
 	ofaPluginManagerPrivate *priv;
-	GtkWidget *button;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "properties-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_properties_clicked ), instance );
-	priv->properties_btn = button;
+	priv->plugin_pane = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "plugin-paned" );
+	g_return_if_fail( priv->plugin_pane && GTK_IS_PANED( priv->plugin_pane ));
+	gtk_paned_set_position( GTK_PANED( priv->plugin_pane ), priv->plugin_pane_pos );
 
-	setup_treeview( OFA_PLUGIN_MANAGER( instance ));
-	load_in_treeview( OFA_PLUGIN_MANAGER( instance ));
+	priv->plugin_book = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "object-notebook" );
+	g_return_if_fail( priv->plugin_book && GTK_IS_NOTEBOOK( priv->plugin_book ));
+
+	plugin_setup_treeview( OFA_PLUGIN_MANAGER( instance ));
+	objects_setup_treeview( OFA_PLUGIN_MANAGER( instance ));
+	plugins_load( OFA_PLUGIN_MANAGER( instance ));
 }
 
 static void
-setup_treeview( ofaPluginManager *self )
+plugin_setup_treeview( ofaPluginManager *self )
 {
 	ofaPluginManagerPrivate *priv;
 	GtkWidget *tview;
@@ -240,19 +317,19 @@ setup_treeview( ofaPluginManager *self )
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "treeview" );
+	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "plugin-treeview" );
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	priv->tview = GTK_TREE_VIEW( tview );
+	priv->plugin_tview = tview;
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
+			PLUG_N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tmodel );
 	g_object_unref( tmodel );
 
 	gtk_tree_sortable_set_default_sort_func(
 			GTK_TREE_SORTABLE( tmodel ),
-			( GtkTreeIterCompareFunc ) on_sort_model, NULL, NULL );
+			( GtkTreeIterCompareFunc ) plugin_on_sort_model, NULL, NULL );
 	gtk_tree_sortable_set_sort_column_id(
 			GTK_TREE_SORTABLE( tmodel ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
@@ -262,7 +339,7 @@ setup_treeview( ofaPluginManager *self )
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Plugin" ),
 			cell,
-			"text", COL_NAME,
+			"text", PLUG_COL_NAME,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
@@ -270,17 +347,182 @@ setup_treeview( ofaPluginManager *self )
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Version" ),
 			cell,
-			"text", COL_VERSION,
+			"text", PLUG_COL_VERSION,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( select, "changed", G_CALLBACK( on_plugin_selected ), self );
+	g_signal_connect( select, "changed", G_CALLBACK( plugin_on_selection_changed ), self );
+}
+
+static gint
+plugin_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data )
+{
+	gchar *aname, *bname;
+	gint cmp;
+
+	gtk_tree_model_get( tmodel, a, PLUG_COL_NAME, &aname, -1 );
+	gtk_tree_model_get( tmodel, b, PLUG_COL_NAME, &bname, -1 );
+
+	cmp = my_collate( aname, bname );
+
+	g_free( aname );
+	g_free( bname );
+
+	return( cmp );
 }
 
 static void
-load_in_treeview( ofaPluginManager *self )
+plugin_on_selection_changed( GtkTreeSelection *selection, ofaPluginManager *self )
+{
+	ofaPluginManagerPrivate *priv;
+	const GList *objects;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofaExtenderModule *plugin;
+
+	priv = ofa_plugin_manager_get_instance_private( self );
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, PLUG_COL_PLUGIN, &plugin, -1 );
+		g_object_unref( plugin );
+
+		objects = ofa_extender_module_get_objects( plugin );
+		objects_load( self, objects );
+		plugin_set_about_page( self, plugin, objects );
+		plugin_set_properties_page( self, plugin, objects );
+
+		gtk_widget_show_all( priv->plugin_book );
+	}
+}
+
+static void
+plugin_set_about_page( ofaPluginManager *self, ofaExtenderModule *plugin, const GList *objects )
+{
+	ofaPluginManagerPrivate *priv;
+	gint page_num;
+	const GList *it;
+	GtkWidget *label, *content;
+
+	priv = ofa_plugin_manager_get_instance_private( self );
+
+	if( priv->about_page ){
+		page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->plugin_book ), priv->about_page );
+		gtk_notebook_remove_page( GTK_NOTEBOOK( priv->plugin_book ), page_num );
+		priv->about_page = NULL;
+	}
+
+	for( it=objects ; it ; it=it->next ){
+		if( OFA_IS_IABOUT( it->data )){
+			label = gtk_label_new_with_mnemonic( _( "_About" ));
+			priv->about_page = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+			gtk_notebook_prepend_page( GTK_NOTEBOOK( priv->plugin_book ), priv->about_page, label );
+			content = ofa_iabout_do_init( OFA_IABOUT( it->data ));
+			gtk_box_pack_start( GTK_BOX( priv->about_page ), content, FALSE, TRUE, 0 );
+			break;
+		}
+	}
+}
+
+static void
+plugin_set_properties_page( ofaPluginManager *self, ofaExtenderModule *plugin, const GList *objects )
+{
+	ofaPluginManagerPrivate *priv;
+	gint page_num;
+
+	priv = ofa_plugin_manager_get_instance_private( self );
+
+	if( priv->properties_page ){
+		page_num = gtk_notebook_page_num( GTK_NOTEBOOK( priv->plugin_book ), priv->properties_page );
+		gtk_notebook_remove_page( GTK_NOTEBOOK( priv->plugin_book ), page_num );
+		priv->properties_page = NULL;
+	}
+}
+
+static void
+objects_setup_treeview( ofaPluginManager *self )
+{
+	ofaPluginManagerPrivate *priv;
+	GtkWidget *tview;
+	GtkTreeModel *tmodel;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+	GtkTreeSelection *select;
+
+	priv = ofa_plugin_manager_get_instance_private( self );
+
+	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "object-treeview" );
+	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+	priv->objects_tview = tview;
+
+	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
+			OBJ_N_COLUMNS,
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
+	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tmodel );
+	g_object_unref( tmodel );
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( tmodel ),
+			( GtkTreeIterCompareFunc ) objects_on_sort_model, NULL, NULL );
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( tmodel ),
+			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID,
+			GTK_SORT_ASCENDING );
+
+	cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Class" ),
+			cell,
+			"text", OBJ_COL_CLASS,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+
+	cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Name" ),
+			cell,
+			"text", OBJ_COL_NAME,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+
+	cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Version" ),
+			cell,
+			"text", OBJ_COL_VERSION,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+
+	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
+	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
+	g_signal_connect( select, "changed", G_CALLBACK( objects_on_selection_changed ), self );
+}
+
+static gint
+objects_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data )
+{
+	gchar *aname, *bname;
+	gint cmp;
+
+	gtk_tree_model_get( tmodel, a, OBJ_COL_CLASS, &aname, -1 );
+	gtk_tree_model_get( tmodel, b, OBJ_COL_CLASS, &bname, -1 );
+
+	cmp = my_collate( aname, bname );
+
+	g_free( aname );
+	g_free( bname );
+
+	return( cmp );
+}
+
+static void
+objects_on_selection_changed( GtkTreeSelection *selection, ofaPluginManager *self )
+{
+}
+
+static void
+plugins_load( ofaPluginManager *self )
 {
 	ofaPluginManagerPrivate *priv;
 	GtkTreeModel *tmodel;
@@ -294,7 +536,7 @@ load_in_treeview( ofaPluginManager *self )
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	tmodel = gtk_tree_view_get_model( priv->tview );
+	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->plugin_tview ));
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
 	hub = ofa_igetter_get_hub( priv->getter );
@@ -305,14 +547,13 @@ load_in_treeview( ofaPluginManager *self )
 		plugin = OFA_EXTENDER_MODULE( it->data );
 		name = ofa_extender_module_get_display_name( plugin );
 		version = ofa_extender_module_get_version( plugin );
-		//g_debug( "load_in_treeview: name=%s, version=%s", name, version );
 		gtk_list_store_insert_with_values(
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
-				COL_NAME,    name,
-				COL_VERSION, version,
-				COL_PLUGIN,  plugin,
+				PLUG_COL_NAME,    name,
+				PLUG_COL_VERSION, version,
+				PLUG_COL_PLUGIN,  plugin,
 				-1 );
 
 		g_free( version );
@@ -320,54 +561,59 @@ load_in_treeview( ofaPluginManager *self )
 	}
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		select = gtk_tree_view_get_selection( priv->tview );
+		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->plugin_tview ));
 		gtk_tree_selection_select_iter( select, &iter );
 	}
 }
 
-static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data )
-{
-	gchar *aname, *bname;
-	gint cmp;
-
-	gtk_tree_model_get( tmodel, a, COL_NAME, &aname, -1 );
-	gtk_tree_model_get( tmodel, b, COL_NAME, &bname, -1 );
-
-	cmp = my_collate( aname, bname );
-
-	g_free( aname );
-	g_free( bname );
-
-	return( cmp );
-}
-
+/*
+ * display the objects instanciated by the current plugin
+ */
 static void
-on_plugin_selected( GtkTreeSelection *selection, ofaPluginManager *self )
+objects_load( ofaPluginManager *self, const GList *objects )
 {
 	ofaPluginManagerPrivate *priv;
-	GList *objects;
 	GtkTreeModel *tmodel;
+	const GList *it;
 	GtkTreeIter iter;
-	ofaExtenderModule *plugin;
+	GtkTreeSelection *select;
+	gchar *name, *version;
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	objects = NULL;
+	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->objects_tview ));
+	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+	for( it=objects ; it ; it=it->next ){
 
-		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
-		g_object_unref( plugin );
+		name = NULL;
+		version = NULL;
+		if( MY_IS_IIDENT( it->data )){
+			name = my_iident_get_display_name( MY_IIDENT( it->data ), NULL );
+			version = my_iident_get_version( MY_IIDENT( it->data ), NULL );
+		}
 
-		objects = ofa_extender_module_get_for_type( plugin, OFA_TYPE_IABOUT );
+		gtk_list_store_insert_with_values(
+				GTK_LIST_STORE( tmodel ),
+				&iter,
+				-1,
+				OBJ_COL_CLASS,   G_OBJECT_TYPE_NAME( it->data ),
+				OBJ_COL_NAME,    name ? name : "",
+				OBJ_COL_VERSION, version ? version : "",
+				OBJ_COL_OBJECT,  it->data,
+				-1 );
+
+		g_free( name );
+		g_free( version );
 	}
 
-	gtk_widget_set_sensitive( priv->properties_btn, g_list_length( objects ) > 0 );
-
-	ofa_extender_collection_free_types( objects );
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->objects_tview ));
+		gtk_tree_selection_select_iter( select, &iter );
+	}
 }
 
+#if 0
 /*
  * display the preferences for the first object type implemented by the
  * plugin
@@ -385,9 +631,9 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	selection = gtk_tree_view_get_selection( priv->tview );
+	selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->plugin_tview ));
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, COL_PLUGIN, &plugin, -1 );
+		gtk_tree_model_get( tmodel, &iter, PLUG_COL_PLUGIN, &plugin, -1 );
 		g_object_unref( plugin );
 
 		objects = ofa_extender_module_get_for_type( plugin, OFA_TYPE_IABOUT );
@@ -413,3 +659,4 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 		ofa_extender_collection_free_types( objects );
 	}
 }
+#endif

@@ -195,6 +195,9 @@ typedef struct {
 	 * Called at initialization time, after window creation and restore
 	 * of size and position, to let the application read its own settings.
 	 *
+	 * In particular, this #read_settings() method is called before the
+	 * #idialog_init() one.
+	 *
 	 * Since: version 1.
 	 */
 	void     ( *read_settings )        ( myIWindow *instance,

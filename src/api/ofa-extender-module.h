@@ -66,6 +66,8 @@ ofaExtenderModule *ofa_extender_module_new             ( ofaIGetter *getter,
 void               ofa_extender_module_free            ( ofaExtenderModule *module,
 																void *user_data );
 
+const GList       *ofa_extender_module_get_objects     ( const ofaExtenderModule *module );
+
 GList             *ofa_extender_module_get_for_type    ( ofaExtenderModule *module,
 															GType type );
 
