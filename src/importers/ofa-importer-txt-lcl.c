@@ -77,6 +77,7 @@ static void             iimporter_iface_init( ofaIImporterInterface *iface );
 static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance );
 static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
 static gboolean         is_willing_to_parse( const ofaImporterTxtLcl *self, const gchar *uri );
+static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, const ofaStreamFormat *format, const GSList *lines );
@@ -211,6 +212,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 
 	iface->get_accepted_contents = iimporter_get_accepted_contents;
 	iface->is_willing_to = iimporter_is_willing_to;
+	iface->get_default_format = iimporter_get_default_format;
 	iface->parse = iimporter_parse;
 }
 
@@ -234,6 +236,20 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
 			is_willing_to_parse( OFA_IMPORTER_TXT_LCL( instance ), uri );
 
 	return( ok );
+}
+
+static ofaStreamFormat *
+iimporter_get_default_format( const ofaIImporter *instance, gboolean *updatable )
+{
+	ofaStreamFormat *format;
+
+	format = get_default_stream_format( OFA_IMPORTER_TXT_LCL( instance ));
+
+	if( updatable ){
+		*updatable = FALSE;
+	}
+
+	return( format );
 }
 
 /*

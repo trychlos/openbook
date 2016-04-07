@@ -98,6 +98,7 @@ static void             iimporter_iface_init( ofaIImporterInterface *iface );
 static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance );
 static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
 static gboolean         is_willing_to_parse( const ofaImporterPdfBourso *self, const gchar *uri );
+static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterPdfBourso *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         bourso_pdf_v1_check( const ofaImporterPdfBourso *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri );
@@ -243,6 +244,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 
 	iface->get_accepted_contents = iimporter_get_accepted_contents;
 	iface->is_willing_to = iimporter_is_willing_to;
+	iface->get_default_format = iimporter_get_default_format;
 	iface->parse = iimporter_parse;
 }
 
@@ -286,6 +288,20 @@ is_willing_to_parse( const ofaImporterPdfBourso *self, const gchar *uri )
 	g_object_unref( format );
 
 	return( parser != NULL );
+}
+
+static ofaStreamFormat *
+iimporter_get_default_format( const ofaIImporter *instance, gboolean *updatable )
+{
+	ofaStreamFormat *format;
+
+	format = get_default_stream_format( OFA_IMPORTER_PDF_BOURSO( instance ));
+
+	if( updatable ){
+		*updatable = FALSE;
+	}
+
+	return( format );
 }
 
 static GSList *
@@ -875,7 +891,7 @@ get_default_stream_format( const ofaImporterPdfBourso *self )
 	format = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
 
 	ofa_stream_format_set( format,
-			TRUE,  "ISO-8859-15",			/* Western Europe */
+			TRUE,  "UTF-8",
 			TRUE,  MY_DATE_DMYY,			/* date format dd/mm/yyyy */
 			TRUE,  '.',						/* dot thousand sep */
 			TRUE,  ',',						/* comma decimal sep */

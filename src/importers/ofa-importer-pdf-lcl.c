@@ -67,8 +67,6 @@ typedef struct {
 }
 	sLine;
 
-//static gdouble  st_x1_periode_begin     = 259;
-//static gdouble  st_y1_periode_begin     = 267;
 static gchar   *st_header_extrait       = "RELEVE DE COMPTE";
 static gchar   *st_header_banque        = "CREDIT LYONNAIS";
 static gchar   *st_header_iban          = "IBAN : ";
@@ -92,6 +90,7 @@ static void             iimporter_iface_init( ofaIImporterInterface *iface );
 static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance );
 static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
 static gboolean         is_willing_to_parse( const ofaImporterPdfLcl *self, const gchar *uri );
+static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterPdfLcl *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         lcl_pdf_v1_check( const ofaImporterPdfLcl *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri );
@@ -228,6 +227,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 
 	iface->get_accepted_contents = iimporter_get_accepted_contents;
 	iface->is_willing_to = iimporter_is_willing_to;
+	iface->get_default_format = iimporter_get_default_format;
 	iface->parse = iimporter_parse;
 }
 
@@ -271,6 +271,20 @@ is_willing_to_parse( const ofaImporterPdfLcl *self, const gchar *uri )
 	g_object_unref( format );
 
 	return( parser != NULL );
+}
+
+static ofaStreamFormat *
+iimporter_get_default_format( const ofaIImporter *instance, gboolean *updatable )
+{
+	ofaStreamFormat *format;
+
+	format = get_default_stream_format( OFA_IMPORTER_PDF_LCL( instance ));
+
+	if( updatable ){
+		*updatable = FALSE;
+	}
+
+	return( format );
 }
 
 static GSList *
@@ -722,7 +736,7 @@ get_default_stream_format( const ofaImporterPdfLcl *self )
 	format = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
 
 	ofa_stream_format_set( format,
-			TRUE,  "ISO-8859-15",			/* Western Europe */
+			TRUE,  "UTF-8",
 			TRUE,  MY_DATE_DMYDOT,			/* date format dd.mm.yyyy */
 			TRUE,  ' ',						/* space thousand sep */
 			TRUE,  ',',						/* comma decimal sep */
