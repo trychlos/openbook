@@ -395,6 +395,7 @@ parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms
 	rib = g_strstrip( g_strdup( cstr ));;
 
 	output = g_slist_prepend( output, g_strdup( "1" ));
+	fields = g_slist_prepend( fields, g_strdup( "" ));					/* id placeholder */
 	output = g_slist_prepend( output, g_strdup( parms->uri ));
 	output = g_slist_prepend( output, g_strdup( parser->label ));
 	output = g_slist_prepend( output, rib );
@@ -443,6 +444,7 @@ parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParm
 	slabel = tmp ? tmp : g_strdup( "" );
 
 	output = g_slist_prepend( output, g_strdup( "2" ));
+	fields = g_slist_prepend( fields, g_strdup( "" ));		/* id placeholder */
 	output = g_slist_prepend( output, g_strdup( "" ));		/* operation date */
 	output = g_slist_prepend( output, sdate );
 	output = g_slist_prepend( output, sref );

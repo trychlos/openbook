@@ -521,6 +521,7 @@ parse_v1_header_to_fields( ofaImporterTxtBourso *self, const sParser *parser, of
 	fields = NULL;
 
 	fields = g_slist_prepend( fields, g_strdup( "1" ));
+	fields = g_slist_prepend( fields, g_strdup( "" ));					/* id placeholder */
 	fields = g_slist_prepend( fields, g_strdup( parms->uri ));
 	fields = g_slist_prepend( fields, g_strdup( parser->label ));
 	fields = g_slist_prepend( fields, rib );
@@ -573,6 +574,7 @@ parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsI
 		currency = g_strstrip( g_strdup( cstr ));
 
 		output = g_slist_prepend( output, g_strdup( "2" ));
+		fields = g_slist_prepend( fields, g_strdup( "" ));			/* id placeholder */
 		output = g_slist_prepend( output, sdope );
 		output = g_slist_prepend( output, sdeffect );
 		output = g_slist_prepend( output, g_strdup( "" ));			/* reference */

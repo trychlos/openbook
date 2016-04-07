@@ -640,6 +640,7 @@ bourso_pdf_v1_parse_header_last( ofaImporterPdfBourso *self, const sParser *pars
 
 	} else {
 		*fields = g_slist_prepend( *fields, g_strdup( "1" ));
+		*fields = g_slist_prepend( *fields, g_strdup( "" ));					/* id placeholder */
 		*fields = g_slist_prepend( *fields, g_strdup( parms->uri ));
 		*fields = g_slist_prepend( *fields, g_strdup( parser->label ));
 		*fields = g_slist_prepend( *fields, g_strdup( priv->iban ));
@@ -834,6 +835,7 @@ bourso_pdf_v1_parse_lines_build( ofaImporterPdfBourso *self, const sParser *pars
 		fields = NULL;
 
 		fields = g_slist_prepend( fields, g_strdup( "2" ));
+		fields = g_slist_prepend( fields, g_strdup( "" ));					/* id placeholder */
 		fields = g_slist_prepend( fields, g_strdup( line->dope ));
 		fields = g_slist_prepend( fields, g_strdup( line->deffect ));
 		fields = g_slist_prepend( fields, g_strdup( "" ));

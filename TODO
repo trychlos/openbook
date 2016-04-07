@@ -428,8 +428,6 @@
 
 1067 2016- 4- 3 rename IExeCloseClose to IExeClose
 
-1068 2016- 4- 5 review ofoBat immport input format (have id placeholder)
-
 1069
 
 -----------------------------------------------------------------------
@@ -1083,6 +1081,9 @@
                       ofaIDBPeriod to ofaPortfolioPeriod
      2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
                 ofaIDBMeta and ofaIDBPeriod are left
+
+1068 2016- 4- 5 review ofoBat import input format (have id placeholder)
+     2016- 4- 7 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

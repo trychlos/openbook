@@ -43,6 +43,7 @@
    - ImporterPdfLcl: new plugin which replace (obsoleted) ImportLCLPdf one.
    - ImporterTxtBourso: new plugin which replace (obsoleted) ImportBourso one.
    - ImporterTxtLcl: new plugin which replace (obsoleted) ImportLcl one.
+   - BAT file import format is reviewed to be compatible with export format (todo #1068).
 
  Bug fixes:
 

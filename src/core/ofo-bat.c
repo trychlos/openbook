@@ -1573,6 +1573,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		type = cstr ? atoi( cstr ) : 0;
 
+		/* identifier is a placeholder on import */
+		itf = itf ? itf->next : NULL;
+
 		switch( type ){
 			case 1:
 				bat = iimportable_import_parse_main( importer, parms, numline, itf );
