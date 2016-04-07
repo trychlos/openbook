@@ -251,26 +251,24 @@ ofa_iproperties_get_valid( GtkWidget *widget, gchar **msgerr )
  * @msgerr: [allow-none][out]: an error message to be returned.
  *
  * Saves the user preferences.
- *
- * Returns: %TRUE if the updates have been successfully applied,
- * %FALSE else.
  */
-gboolean
-ofa_iproperties_apply( GtkWidget *widget, gchar **msgerr )
+void
+ofa_iproperties_apply( GtkWidget *widget )
 {
 	static const gchar *thisfn = "ofa_iproperties_apply";
 	sIProperties *sdata;
 
-	g_debug( "%s: widget=%p (%s), msgerr=%p",
-			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), ( void * ) msgerr );
+	g_debug( "%s: widget=%p (%s)",
+			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ));
 
-	g_return_val_if_fail( widget && GTK_IS_WIDGET( widget ), FALSE );
+	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
 
 	sdata = get_iproperties_data( widget );
 
 	if( sdata && sdata->instance ){
 		if( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->apply ){
-			return( OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->apply( sdata->instance, widget, msgerr ));
+			OFA_IPROPERTIES_GET_INTERFACE( sdata->instance )->apply( sdata->instance, widget );
+			return;
 
 		} else {
 			g_info( "%s: ofaIProperties's %s implementation does not provide 'apply()' method",
@@ -279,8 +277,6 @@ ofa_iproperties_apply( GtkWidget *widget, gchar **msgerr )
 	} else {
 		g_warning( "%s: widget has not been initialized for ofaIProperties use", thisfn );
 	}
-
-	return( FALSE );
 }
 
 /*

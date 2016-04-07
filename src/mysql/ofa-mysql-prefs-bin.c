@@ -74,16 +74,18 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-prefs-bin.ui";
 
-static void     iident_iface_init( myIIdentInterface *iface );
-static gchar   *iident_get_canon_name( const myIIdent *instance, void *user_data );
-static void     iprefs_page_iface_init( ofaIPrefsPageInterface *iface );
-static guint    iprefs_page_get_interface_version( void );
-static gboolean iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label, gchar **msgerr );
-static gboolean iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **msgerr );
-static gboolean iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr );
-static void     setup_bin( ofaMySQLPrefsBin *bin );
-static void     on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin );
-static void     on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin );
+static void       iident_iface_init( myIIdentInterface *iface );
+static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static void       iprefs_page_iface_init( ofaIPrefsPageInterface *iface );
+static guint      iprefs_page_get_interface_version( void );
+static gboolean   iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **label, gchar **msgerr );
+static gboolean   iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **msgerr );
+static gboolean   iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr );
+static void       setup_bin( ofaMySQLPrefsBin *self );
+static void       on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
+static void       on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
+static gboolean   get_is_valid( const ofaMySQLPrefsBin *self, gchar **message );
+static void       do_apply( const ofaMySQLPrefsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMySQLPrefsBin )
@@ -147,6 +149,7 @@ ofa_mysql_prefs_bin_init( ofaMySQLPrefsBin *self )
 	priv = ofa_mysql_prefs_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings = NULL;
 }
 
 static void
@@ -166,7 +169,7 @@ ofa_mysql_prefs_bin_class_init( ofaMySQLPrefsBinClass *klass )
 	 * any of the content changes.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaMySQLPrefsBin *bin,
+	 * void ( *handler )( ofaMySQLPrefsBin *self,
 	 * 						gpointer               user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -234,9 +237,8 @@ iprefs_page_init( const ofaIPrefsPage *instance, myISettings *settings, gchar **
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
+	g_clear_object( &priv->settings );
 	priv->settings = g_object_ref( settings );
-
-	setup_bin( OFA_MYSQL_PREFS_BIN( instance ));
 
 	if( label ){
 		*label = ofa_iprefs_page_get_display_name( instance );
@@ -249,7 +251,6 @@ static gboolean
 iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **message )
 {
 	ofaMySQLPrefsBinPrivate *priv;
-	gboolean ok;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ), FALSE );
 
@@ -257,35 +258,13 @@ iprefs_page_get_valid( const ofaIPrefsPage *instance, gchar **message )
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	ok = TRUE;
-	g_warning( "ofa_mysql_prefs_bin_iprefs_page_get_valid: to be written" );
-
-	if( message ){
-		*message = NULL;
-	}
-
-	return( ok );
+	return( get_is_valid( OFA_MYSQL_PREFS_BIN( instance ), message ));
 }
 
 static gboolean
 iprefs_page_apply( const ofaIPrefsPage *instance, gchar **msgerr )
 {
-	ofaMySQLPrefsBinPrivate *priv;
-	GtkWidget *entry;
-
-	g_return_val_if_fail( instance && OFA_IS_MYSQL_PREFS_BIN( instance ), FALSE );
-
-	priv = ofa_mysql_prefs_bin_get_instance_private( OFA_MYSQL_PREFS_BIN( instance ));
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "mpb-backup-entry" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	ofa_mysql_user_prefs_set_backup_command( gtk_entry_get_text( GTK_ENTRY( entry )));
-
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "mpb-restore-entry" );
-	g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-	ofa_mysql_user_prefs_set_restore_command( gtk_entry_get_text( GTK_ENTRY( entry )));
+	do_apply( OFA_MYSQL_PREFS_BIN( instance ));
 
 	return( TRUE );
 }
@@ -302,11 +281,13 @@ ofa_mysql_prefs_bin_new( void )
 
 	bin = g_object_new( OFA_TYPE_MYSQL_PREFS_BIN, NULL );
 
+	setup_bin( bin );
+
 	return( GTK_WIDGET( bin ));
 }
 
 static void
-setup_bin( ofaMySQLPrefsBin *bin )
+setup_bin( ofaMySQLPrefsBin *self )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 	GtkBuilder *builder;
@@ -314,7 +295,7 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	GtkWidget *toplevel, *entry, *label;
 	gchar *cmdline;
 
-	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+	priv = ofa_mysql_prefs_bin_get_instance_private( self );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -326,22 +307,22 @@ setup_bin( ofaMySQLPrefsBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-backup-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_backup_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-backup-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_backup_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-backup-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	cmdline = ofa_mysql_user_prefs_get_backup_command();
 	gtk_entry_set_text( GTK_ENTRY( entry ), cmdline );
 	g_free( cmdline );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-entry" );
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_restore_changed ), bin );
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "mpb-restore-label" );
+	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_restore_changed ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	cmdline = ofa_mysql_user_prefs_get_restore_command();
@@ -353,27 +334,131 @@ setup_bin( ofaMySQLPrefsBin *bin )
 }
 
 static void
-on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin )
+on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
-	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+	priv = ofa_mysql_prefs_bin_get_instance_private( self );
 
 	g_free( priv->backup_cmdline );
 	priv->backup_cmdline = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( bin, "ofa-changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *bin )
+on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *self )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
-	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+	priv = ofa_mysql_prefs_bin_get_instance_private( self );
 
 	g_free( priv->restore_cmdline );
 	priv->restore_cmdline = g_strdup( gtk_entry_get_text( entry ));
 
-	g_signal_emit_by_name( bin, "ofa-changed" );
+	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+/**
+ * ofa_mysql_prefs_bin_set_settings:
+ * @bin: this #ofaMySQLPrefsBin instance.
+ * @settings: the user settings.
+ *
+ * Set the user settings.
+ */
+void
+ofa_mysql_prefs_bin_set_settings( ofaMySQLPrefsBin *bin, myISettings *settings )
+{
+	ofaMySQLPrefsBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_MYSQL_PREFS_BIN( bin ));
+
+	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_clear_object( &priv->settings );
+	priv->settings = g_object_ref( settings );
+}
+
+/**
+ * ofa_mysql_prefs_bin_get_valid:
+ * @bin: this #ofaMySQLPrefsBin instance.
+ * @message: [allow-none][out]: error message placeholder.
+ *
+ * Returns: %TRUE if the @bin instance is valid.
+ */
+gboolean
+ofa_mysql_prefs_bin_get_valid( const ofaMySQLPrefsBin *bin, gchar **message )
+{
+	ofaMySQLPrefsBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_MYSQL_PREFS_BIN( bin ), FALSE );
+
+	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( get_is_valid( bin, message ));
+}
+
+static gboolean
+get_is_valid( const ofaMySQLPrefsBin *self, gchar **message )
+{
+	ofaMySQLPrefsBinPrivate *priv;
+
+	priv = ofa_mysql_prefs_bin_get_instance_private( self );
+
+	if( message ){
+		*message = NULL;
+	}
+
+	if( !my_strlen( priv->backup_cmdline )){
+		if( message ){
+			*message = g_strdup( _( "Empty backup command-line" ));
+		}
+		return( FALSE );
+	}
+	if( !my_strlen( priv->restore_cmdline )){
+		if( message ){
+			*message = g_strdup( _( "Empty restore command-line" ));
+		}
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/**
+ * ofa_mysql_prefs_bin_apply:
+ * @bin: this #ofaMySQLPrefsBin instance.
+ *
+ * Apply the change, written them to user settings.
+ */
+void
+ofa_mysql_prefs_bin_apply( const ofaMySQLPrefsBin *bin )
+{
+	ofaMySQLPrefsBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_MYSQL_PREFS_BIN( bin ));
+
+	priv = ofa_mysql_prefs_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	return( do_apply( bin ));
+}
+
+static void
+do_apply( const ofaMySQLPrefsBin *self )
+{
+	GtkWidget *entry;
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-backup-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	ofa_mysql_user_prefs_set_backup_command( gtk_entry_get_text( GTK_ENTRY( entry )));
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "mpb-restore-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	ofa_mysql_user_prefs_set_restore_command( gtk_entry_get_text( GTK_ENTRY( entry )));
 }

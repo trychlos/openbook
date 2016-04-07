@@ -40,6 +40,8 @@
 
 #include <gtk/gtk.h>
 
+#include "my/my-isettings.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_PREFS_BIN                ( ofa_mysql_prefs_bin_get_type())
@@ -61,9 +63,17 @@ typedef struct {
 }
 	ofaMySQLPrefsBinClass;
 
-GType      ofa_mysql_prefs_bin_get_type( void ) G_GNUC_CONST;
+GType      ofa_mysql_prefs_bin_get_type    ( void ) G_GNUC_CONST;
 
-GtkWidget *ofa_mysql_prefs_bin_new     ( void );
+GtkWidget *ofa_mysql_prefs_bin_new         ( void );
+
+void       ofa_mysql_prefs_bin_set_settings( ofaMySQLPrefsBin *bin,
+												myISettings *settings );
+
+gboolean   ofa_mysql_prefs_bin_get_valid   ( const ofaMySQLPrefsBin *bin,
+												gchar **msgerr );
+
+void       ofa_mysql_prefs_bin_apply       ( const ofaMySQLPrefsBin *bin );
 
 G_END_DECLS
 

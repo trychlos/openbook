@@ -95,13 +95,14 @@ struct _ofaIPropertiesInterface {
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget * ( *init )                 ( const ofaIProperties *instance,
+	GtkWidget * ( *init )                 ( ofaIProperties *instance,
 												myISettings *settings );
 
 	/**
 	 * get_valid:
 	 * @instance: the #ofaIProperties provider.
-	 * @msgerr: [allow-none][out]: an error message to be returned.
+	 * @widget: the page as returned by init().
+	 * @msgerr: [allow-none][out]: an error message placeholder.
 	 *
 	 * Checks for the Preferences dialog.
 	 *
@@ -117,46 +118,40 @@ struct _ofaIPropertiesInterface {
 	/**
 	 * apply:
 	 * @instance: the #ofaIProperties provider.
-	 * @msgerr: [allow-none][out]: an error message to be returned.
 	 *
 	 * Terminate the Preferences dialog, writing the user preferences
 	 * to the same settings file used at #init() time.
 	 *
-	 * Returns: %TRUE if the updates have been successfully applied,
-	 * %FALSE else.
-	 *
 	 * Since: version 1
 	 */
-	gboolean    ( *apply )                ( const ofaIProperties *instance,
-												GtkWidget *page,
-												gchar **msgerr );
+	void        ( *apply )                ( const ofaIProperties *instance,
+												GtkWidget *page );
 };
 
 /*
  * Interface-wide
  */
-GType              ofa_iproperties_get_type                  ( void );
+GType      ofa_iproperties_get_type                  ( void );
 
-guint              ofa_iproperties_get_interface_last_version( void );
+guint      ofa_iproperties_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint              ofa_iproperties_get_interface_version     ( GType type );
+guint      ofa_iproperties_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-GtkWidget         *ofa_iproperties_init                      ( ofaIProperties *instance,
+GtkWidget *ofa_iproperties_init                      ( ofaIProperties *instance,
 																	myISettings *user_settings );
 
-gboolean           ofa_iproperties_get_valid                 ( GtkWidget *widget,
+gboolean   ofa_iproperties_get_valid                 ( GtkWidget *widget,
 																	gchar **msgerr );
 
-gboolean           ofa_iproperties_apply                     ( GtkWidget *widget,
-																	gchar **msgerr);
+void       ofa_iproperties_apply                     ( GtkWidget *widget );
 
-gchar             *ofa_iproperties_get_title                 ( const ofaIProperties *instance );
+gchar     *ofa_iproperties_get_title                 ( const ofaIProperties *instance );
 
 G_END_DECLS
 

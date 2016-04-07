@@ -181,7 +181,8 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-extension.c ofa-mysql-cmdline.c \
 	ofa-mysql-editor-enter.h ofa-mysql-iprefs-provider.c \
 	ofa-mysql-iprefs-provider.h ofa-mysql-meta.c ofa-mysql-meta.h \
 	ofa-mysql-period.c ofa-mysql-period.h ofa-mysql-prefs-bin.c \
-	ofa-mysql-prefs-bin.h ofa-mysql-user-prefs.c \
+	ofa-mysql-prefs-bin.h ofa-mysql-properties.c \
+	ofa-mysql-properties.h ofa-mysql-user-prefs.c \
 	ofa-mysql-user-prefs.h
 @HAVE_MYSQL_TRUE@am_libofa_mysql_la_OBJECTS = ofa-extension.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-cmdline.lo ofa-mysql-connect.lo \
@@ -191,6 +192,7 @@ am__libofa_mysql_la_SOURCES_DIST = ofa-extension.c ofa-mysql-cmdline.c \
 @HAVE_MYSQL_TRUE@	ofa-mysql-iprefs-provider.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-meta.lo ofa-mysql-period.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.lo \
+@HAVE_MYSQL_TRUE@	ofa-mysql-properties.lo \
 @HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.lo
 @HAVE_MYSQL_TRUE@am__objects_1 = resources.lo
 @HAVE_MYSQL_TRUE@nodist_libofa_mysql_la_OBJECTS = $(am__objects_1)
@@ -491,6 +493,8 @@ top_srcdir = @top_srcdir@
 @HAVE_MYSQL_TRUE@	ofa-mysql-period.h									\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-prefs-bin.h								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-properties.c								\
+@HAVE_MYSQL_TRUE@	ofa-mysql-properties.h								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.c								\
 @HAVE_MYSQL_TRUE@	ofa-mysql-user-prefs.h								\
 @HAVE_MYSQL_TRUE@	$(NULL)
@@ -604,6 +608,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-prefs-bin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-mysql-user-prefs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Plo@am__quote@
 

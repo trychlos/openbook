@@ -87,6 +87,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-period.h									\
 	ofa-mysql-prefs-bin.c								\
 	ofa-mysql-prefs-bin.h								\
+	ofa-mysql-properties.c								\
+	ofa-mysql-properties.h								\
 	ofa-mysql-user-prefs.c								\
 	ofa-mysql-user-prefs.h								\
 	$(NULL)

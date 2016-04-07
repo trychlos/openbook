@@ -37,6 +37,7 @@
 
 #include "mysql/ofa-mysql-dbmodel.h"
 #include "mysql/ofa-mysql-dbprovider.h"
+#include "mysql/ofa-mysql-properties.h"
 
 /*
  * The part below defines and implements the GTypeModule-derived class
@@ -273,7 +274,7 @@ iabout_do_init( const ofaIAbout *instance )
  * Each of these GType types must be addressed in #ofa_extension_list_types().
  * Only the GTypeModule has to be registered from #ofa_extension_startup().
  */
-#define TYPES_COUNT	 3
+#define TYPES_COUNT	 4
 
 /*
  * ofa_extension_startup:
@@ -309,6 +310,7 @@ ofa_extension_list_types( const GType **types )
 	types_list[i++] = OFA_TYPE_MYSQL_MAIN;
 	types_list[i++] = OFA_TYPE_MYSQL_DBMODEL;
 	types_list[i++] = OFA_TYPE_MYSQL_DBPROVIDER;
+	types_list[i++] = OFA_TYPE_MYSQL_PROPERTIES;
 
 	g_return_val_if_fail( i == TYPES_COUNT, 0 );
 	types_list[i] = 0;
