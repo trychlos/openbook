@@ -92,7 +92,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint         ( *get_interface_version )( void );
+	guint             ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
@@ -103,7 +103,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	const GList * ( *get_accepted_contents )( const ofaIImporter *instance );
+	const GList *     ( *get_accepted_contents )( const ofaIImporter *instance );
 
 	/**
 	 * is_willing_to:
@@ -115,9 +115,22 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	gboolean      ( *is_willing_to )        ( const ofaIImporter *instance,
-													const gchar *uri,
-													GType type );
+	gboolean          ( *is_willing_to )        ( const ofaIImporter *instance,
+														const gchar *uri,
+														GType type );
+
+	/**
+	 * get_default_format:
+	 * @instance: the #ofaIImporter provider.
+	 * @is_user_modifiable: whether the returned format is modifiable
+	 *  by the user.
+	 *
+	 * Returns: a new #ofaStreamFormat instance, or %NULL.
+	 *
+	 * Since: version 1.
+	 */
+	ofaStreamFormat * ( *get_default_format )   ( const ofaIImporter *instance,
+														gboolean *is_user_modifiable );
 
 	/**
 	 * import:
@@ -129,9 +142,9 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	GSList *      ( *parse )                ( ofaIImporter *instance,
-													ofsImporterParms *parms,
-													gchar **msgerr );
+	GSList *          ( *parse )                ( ofaIImporter *instance,
+														ofsImporterParms *parms,
+														gchar **msgerr );
 }
 	ofaIImporterInterface;
 
@@ -178,52 +191,55 @@ struct _ofsImporterParms {
 /*
  * Interface-wide
  */
-GType        ofa_iimporter_get_type                  ( void );
+GType            ofa_iimporter_get_type                  ( void );
 
-guint        ofa_iimporter_get_interface_last_version( void );
+guint            ofa_iimporter_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint        ofa_iimporter_get_interface_version     ( GType type );
+guint            ofa_iimporter_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-gchar       *ofa_iimporter_get_canon_name            ( const ofaIImporter *instance );
+gchar           *ofa_iimporter_get_canon_name            ( const ofaIImporter *instance );
 
-gchar       *ofa_iimporter_get_display_name          ( const ofaIImporter *instance );
+gchar           *ofa_iimporter_get_display_name          ( const ofaIImporter *instance );
 
-gchar       *ofa_iimporter_get_version               ( const ofaIImporter *instance );
+gchar           *ofa_iimporter_get_version               ( const ofaIImporter *instance );
 
-const GList *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance );
+const GList     *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance );
 
-gboolean     ofa_iimporter_get_accept_content        ( const ofaIImporter *instance,
+gboolean         ofa_iimporter_get_accept_content        ( const ofaIImporter *instance,
 															const gchar *content );
 
-gboolean     ofa_iimporter_is_willing_to             ( const ofaIImporter *instance,
-															const gchar *uri,
-															GType type );
+gboolean         ofa_iimporter_is_willing_to             ( const ofaIImporter *instance,
+																const gchar *uri,
+																GType type );
 
-guint        ofa_iimporter_import                    ( ofaIImporter *instance,
-															ofsImporterParms *parms );
+ofaStreamFormat *ofa_iimporter_get_default_format        ( const ofaIImporter *instance,
+																gboolean *is_user_modifiable );
 
-void         ofa_iimporter_progress_start            ( ofaIImporter *instance,
-															ofsImporterParms *parms );
+guint            ofa_iimporter_import                    ( ofaIImporter *instance,
+																ofsImporterParms *parms );
 
-void         ofa_iimporter_progress_pulse            ( ofaIImporter *instance,
-															ofsImporterParms *parms,
-															gulong count,
-															gulong total );
+void             ofa_iimporter_progress_start            ( ofaIImporter *instance,
+																ofsImporterParms *parms );
 
-void         ofa_iimporter_progress_num_text         ( ofaIImporter *instance,
-															ofsImporterParms *parms,
-															guint numline,
-															const gchar *text );
+void             ofa_iimporter_progress_pulse            ( ofaIImporter *instance,
+																ofsImporterParms *parms,
+																gulong count,
+																gulong total );
 
-void         ofa_iimporter_progress_text             ( ofaIImporter *instance,
-															ofsImporterParms *parms,
-															const gchar *text );
+void             ofa_iimporter_progress_num_text         ( ofaIImporter *instance,
+																ofsImporterParms *parms,
+																guint numline,
+																const gchar *text );
+
+void             ofa_iimporter_progress_text             ( ofaIImporter *instance,
+																ofsImporterParms *parms,
+																const gchar *text );
 
 G_END_DECLS
 

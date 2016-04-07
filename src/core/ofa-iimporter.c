@@ -288,6 +288,32 @@ ofa_iimporter_get_accept_content( const ofaIImporter *instance, const gchar *con
 }
 
 /**
+ * ofa_iimporter_get_default_format:
+ * @instance: this #ofaIImporter instance.
+ * @is_user_modifiable: [allow-none][out]: whether the returned
+ *  #ofaStreamFormat (if any) is modifiable by the user.
+ *
+ * Returns: a new #ofaStreamFormat instance, or %NULL.
+ *
+ * Since: version 1.
+ */
+ofaStreamFormat *
+ofa_iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_user_modifiable )
+{
+	static const gchar *thisfn = "ofa_iimporter_get_default_format";
+
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+
+	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_default_format ){
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_default_format( instance, is_user_modifiable ));
+	}
+
+	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_default_format()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
  * ofa_iimporter_is_willing_to:
  * @instance: this #ofaIImporter instance.
  * @uri: [allow-none]: the uri of the stream to be imported.
