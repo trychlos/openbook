@@ -876,7 +876,7 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_import_assistant_p3_do_display";
 	ofaImportAssistantPrivate *priv;
 	ofaHub *hub;
-	GList *importers, *it;
+	GList *it;
 	gchar *label, *version;
 	GtkTreeIter iter;
 
@@ -898,25 +898,20 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	}
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	importers = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTER );
-	for( it=importers ; it ; it=it->next ){
-		g_debug( "%s: importer=%p (%s)", thisfn, it->data, G_OBJECT_TYPE_NAME( it->data ));
-		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), priv->p1_furi, priv->p2_selected_type )){
-			priv->p3_importers = g_list_prepend( priv->p3_importers, g_object_ref( it->data ));
-			label = ofa_iimporter_get_display_name( OFA_IIMPORTER( it->data ));
-			version = ofa_iimporter_get_version( OFA_IIMPORTER( it->data ));
-			if( my_strlen( label )){
-				gtk_list_store_insert_with_values( priv->p3_import_store, &iter, -1,
-						IMP_COL_LABEL,   label,
-						IMP_COL_VERSION, version ? version : "",
-						IMP_COL_OBJECT,  it->data,
-						-1 );
-			}
-			g_free( version );
-			g_free( label );
+	priv->p3_importers = ofa_iimporter_find_willing_to( hub, priv->p1_furi, priv->p2_selected_type );
+	for( it=priv->p3_importers ; it ; it=it->next ){
+		label = ofa_iimporter_get_display_name( OFA_IIMPORTER( it->data ));
+		version = ofa_iimporter_get_version( OFA_IIMPORTER( it->data ));
+		if( my_strlen( label )){
+			gtk_list_store_insert_with_values( priv->p3_import_store, &iter, -1,
+					IMP_COL_LABEL,   label,
+					IMP_COL_VERSION, version ? version : "",
+					IMP_COL_OBJECT,  it->data,
+					-1 );
 		}
+		g_free( version );
+		g_free( label );
 	}
-	g_list_free_full( importers, ( GDestroyNotify ) g_object_unref );
 
 	p3_check_for_complete( self );
 }

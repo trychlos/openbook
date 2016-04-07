@@ -68,7 +68,6 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIImportableInterface *klass );
 static void          interface_base_finalize( ofaIImportableInterface *klass );
-static gboolean      iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const ofaStreamFormat *settings );
 static void          render_progress( ofaIImportable *importable, sIImportable *sdata, guint number, guint phase );
 static sIImportable *get_iimportable_data( ofaIImportable *importable );
 static void          on_importable_finalized( sIImportable *sdata, GObject *finalized_object );
@@ -270,82 +269,6 @@ ofa_iimportable_get_label( const ofaIImportable *importable )
 	g_info( "%s: ofaIImportable's %s implementation does not provide 'get_label()' method",
 			thisfn, G_OBJECT_TYPE_NAME( importable ));
 	return( NULL );
-}
-
-/**
- * ofa_iimportable_find_willing_to:
- * @hub:
- * @uri:
- * @settings:
- *
- * Returns: a new reference on a module willing to import the specified
- * @uri. The returned reference should be g_object_unref() by the caller
- * after import.
- */
-ofaIImportable *
-ofa_iimportable_find_willing_to( ofaHub *hub, const gchar *uri, const ofaStreamFormat *settings )
-{
-	static const gchar *thisfn = "ofa_iimportable_find_willing_to";
-	ofaExtenderCollection *extenders;
-	GList *modules, *it;
-	ofaIImportable *found;
-
-	found = NULL;
-	extenders = ofa_hub_get_extender_collection( hub );
-	modules = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IIMPORTABLE );
-	g_debug( "%s: uri=%s, settings=%p, modules=%p, count=%d",
-			thisfn, uri, ( void * ) settings, ( void * ) modules, g_list_length( modules ));
-
-	for( it=modules ; it ; it=it->next ){
-		if( iimportable_is_willing_to( OFA_IIMPORTABLE( it->data ), uri, settings )){
-			found = g_object_ref( OFA_IIMPORTABLE( it->data ));
-			break;
-		}
-	}
-
-	ofa_extender_collection_free_types( modules );
-
-	return( found );
-}
-
-/*
- * ofa_iimportable_is_willing_to:
- * @importable: this #ofaIImportable instance.
- * @uri: the URI to be imported.
- * @settings: an #ofaStreamFormat object.
- *
- * Returns: %TRUE if the provider is willing to import the file.
- */
-static gboolean
-iimportable_is_willing_to( ofaIImportable *importable, const gchar *uri, const ofaStreamFormat *settings )
-{
-	static const gchar *thisfn = "ofa_iimportable_is_willing_to";
-	sIImportable *sdata;
-	gboolean ok;
-
-	g_return_val_if_fail( importable && OFA_IS_IIMPORTABLE( importable ), FALSE );
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
-
-	sdata = get_iimportable_data( importable );
-	g_return_val_if_fail( sdata, FALSE );
-
-	sdata->uri = g_strdup( uri );
-	sdata->settings = settings;
-
-	if( OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to ){
-		ok = OFA_IIMPORTABLE_GET_INTERFACE( importable )->is_willing_to(
-					importable, sdata->uri, sdata->settings, &sdata->ref, &sdata->count );
-
-		g_debug( "%s: importable=%p (%s), ok=%s, count=%u",
-				thisfn,
-				( void * ) importable, G_OBJECT_TYPE_NAME( importable ), ok ? "True":"False", sdata->count );
-
-		return( ok );
-	}
-
-	g_info( "%s: ofaIImportable's %s implementation does not provide 'is_willing_to()' method",
-			thisfn, G_OBJECT_TYPE_NAME( importable ));
-	return( FALSE );
 }
 
 /**

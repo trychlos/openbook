@@ -135,22 +135,6 @@ typedef struct {
 												ofaHub *hub );
 
 	/**
-	 * is_willing_to:
-	 * @instance: the #ofaIImportable provider.
-	 * @uri: the URI to be imported.
-	 * @settings: the (supposed) input file format.
-	 * @ref: [out]: the internal ref of the provider
-	 * @count: [out]: the count of records to be imported.
-	 *
-	 * Return: %TRUE if the provider is willing to import this file.
-	 */
-	gboolean ( *is_willing_to )        ( ofaIImportable *instance,
-												const gchar *uri,
-												const ofaStreamFormat *settings,
-												void **ref,
-												guint *count );
-
-	/**
 	 * import_uri:
 	 * @instance: the #ofaIImportable provider.
 	 * @ref: the internal ref of the provider as returned from #is_willing_to().
@@ -212,10 +196,6 @@ guint           ofa_iimportable_import                    ( GType type,
  * Instance-wide
  */
 gchar          *ofa_iimportable_get_label                 ( const ofaIImportable *importable );
-
-ofaIImportable *ofa_iimportable_find_willing_to   ( ofaHub *hub,
-															const gchar *uri,
-															const ofaStreamFormat *settings );
 
 gint            ofa_iimportable_old_import            ( ofaIImportable *importable,
 															GSList *lines,

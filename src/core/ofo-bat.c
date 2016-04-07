@@ -1867,6 +1867,9 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				if( bat_do_insert( OFO_BAT( object ), parms->hub )){
 					parms->inserted_count += 1;
 					bat_id = ofo_bat_get_id( OFO_BAT( object ));
+					if( parms->importable_data ){
+						(( ofsImportedBat * ) parms->importable_data )->bat_id = bat_id;
+					}
 				} else {
 					parms->insert_errs += 1;
 				}

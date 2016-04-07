@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <string.h>
 
 #include "my/my-utils.h"
 
@@ -35,6 +36,7 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
+#include "api/ofo-bat.h"
 
 #include "ui/ofa-bat-utils.h"
 
@@ -55,10 +57,12 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 	static const gchar *thisfn = "ofa_bat_utils_import";
 	ofxCounter imported_id;
 	GtkWidget *file_chooser;
-	ofaStreamFormat *settings;
-	ofaIImportable *importable;
+	GList *importers;
+	ofaIImporter *importer;
 	ofaHub *hub;
 	gchar *uri, *str;
+	ofsImporterParms parms;
+	ofsImportedBat sbat;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), 0 );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), 0 );
@@ -75,27 +79,37 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 
 	if( gtk_dialog_run( GTK_DIALOG( file_chooser )) == GTK_RESPONSE_OK ){
 
-		settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
-		ofa_stream_format_set( settings, TRUE, "UTF-8", FALSE, 0, FALSE, '\0', TRUE, ',', TRUE, ' ', TRUE, '\0', TRUE, 0 );
-
 		/* take the uri before clearing bat lines */
 		uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( file_chooser ));
 
 		hub = ofa_igetter_get_hub( getter );
 		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), 0 );
 
-		importable = ofa_iimportable_find_willing_to( hub, uri, settings );
+		importers = ofa_iimporter_find_willing_to( hub, uri, OFO_TYPE_BAT );
+		importer = importers ? g_object_ref( importers->data ) : NULL;
+		g_list_free_full( importers, ( GDestroyNotify ) g_object_unref );
 
-		if( importable ){
-			if( ofa_iimportable_old_import_uri( importable, hub, NULL, &imported_id ) > 0 ){
-				imported_id = 0;
+		if( importer ){
+			memset( &parms, '\0', sizeof( parms ));
+			parms.version = 1;
+			parms.hub = hub;
+			parms.empty = FALSE;
+			parms.mode = OFA_IDUPLICATE_ABORT;
+			parms.stop = TRUE;
+			parms.uri = uri;
+			parms.type = OFO_TYPE_BAT;
+			parms.format = ofa_iimporter_get_default_format( importer, NULL );
+			parms.importable_data = &sbat;
+
+			if( ofa_iimporter_import( importer, &parms ) == 0 ){
+				imported_id = (( ofsImportedBat * ) parms.importable_data )->bat_id;
 			}
 
-			g_debug( "%s: importable=%p (%s) ref_count=%d, imported_id=%ld",
-					thisfn, ( void * ) importable,
-					G_OBJECT_TYPE_NAME( importable ), G_OBJECT( importable )->ref_count, imported_id );
+			g_debug( "%s: importer=%p (%s), parsed=%u, errs=%u, bat_id=%ld",
+					thisfn, ( void * ) importer, G_OBJECT_TYPE_NAME( importer ),
+					parms.parsed_count, parms.parse_errs+parms.insert_errs, imported_id );
 
-			g_object_unref( importable );
+			g_object_unref( importer );
 
 		} else {
 			str = g_strdup_printf(
@@ -106,7 +120,6 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 		}
 
 		g_free( uri );
-		g_object_unref( settings );
 	}
 
 	gtk_widget_destroy( file_chooser );

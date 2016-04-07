@@ -131,6 +131,38 @@ ofa_iimporter_get_interface_last_version( void )
 }
 
 /**
+ * ofa_iimporter_find_willing_to:
+ * @hub: the #ofaHub object of the application.
+ * @uri: [allow-none]: the uri of the stream to be imported.
+ * @type: [allow-none]: the candidate target GType.
+ *
+ * Returns: a #GList of willing-to importers, as new references which
+ * should be #g_list_free_full( list, ( GDestroyNotify ) g_object_unref )
+ * by the caller.
+ */
+GList *
+ofa_iimporter_find_willing_to( ofaHub *hub, const gchar *uri, GType type )
+{
+	static const gchar *thisfn = "ofa_iimporter_find_willing_to";
+	GList *willing_to, *importers, *it;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	willing_to = NULL;
+
+	importers = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTER );
+	for( it=importers ; it ; it=it->next ){
+		g_debug( "%s: importer=%p (%s)", thisfn, it->data, G_OBJECT_TYPE_NAME( it->data ));
+		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), uri, type )){
+			willing_to = g_list_prepend( willing_to, g_object_ref( it->data ));
+		}
+	}
+	g_list_free_full( importers, ( GDestroyNotify ) g_object_unref );
+
+	return( willing_to );
+}
+
+/**
  * ofa_iimporter_get_interface_version:
  * @type: the implementation's GType.
  *

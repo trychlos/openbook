@@ -166,6 +166,8 @@ typedef struct {
  * @import_errs: [out]: the count of import errors.
  * @insert_errs: [out]: the count of insert errors.
  * @progress: [allow-none]: a #myIProgress instance.
+ * @importable_data: [allow-none][out]: the #ofaIImportable
+ *  implementation may returns here some data for the caller.
  *
  * The data structure which hosts #ofa_iimporter_import() arguments.
  */
@@ -186,6 +188,7 @@ struct _ofsImporterParms {
 	guint              parse_errs;
 	guint              insert_errs;
 	myIProgress       *progress;
+	void              *importable_data;
 };
 
 /*
@@ -194,6 +197,10 @@ struct _ofsImporterParms {
 GType            ofa_iimporter_get_type                  ( void );
 
 guint            ofa_iimporter_get_interface_last_version( void );
+
+GList           *ofa_iimporter_find_willing_to           ( ofaHub *hub,
+																const gchar *uri,
+																GType type );
 
 /*
  * Implementation-wide

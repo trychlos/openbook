@@ -105,6 +105,20 @@ typedef struct {
 }
 	ofoBatClass;
 
+/**
+ * ofsImportedBat:
+ *
+ * Some datas returned after import.
+ *
+ * The #ofoBat implementation of the #ofaIImportable interface makes
+ * use of the ofsImporterParms::importable_data pointer to hold this
+ * data structure, and return informations to the caller.
+ */
+typedef struct {
+	ofxCounter bat_id;
+}
+	ofsImportedBat;
+
 GType           ofo_bat_get_type                   ( void ) G_GNUC_CONST;
 
 void            ofo_bat_connect_to_hub_signaling_system
