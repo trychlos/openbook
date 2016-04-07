@@ -409,9 +409,6 @@
 
 1064 2016- 4- 3 FEAT ofaStreamFormatDisp: display same label than in combo
 
-1065 2016- 4- 3 CODE ofaIDBProvider::new_meta, new_connect, new_editor methods
-                should have a provider arg.
-
 1069
 
 -----------------------------------------------------------------------
@@ -1078,6 +1075,10 @@
 
 1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
                 which may or may not be changed
+     2016- 4- 7 done
+
+1065 2016- 4- 3 CODE ofaIDBProvider::new_meta, new_connect, new_editor methods
+                should have a provider arg.
      2016- 4- 7 done
 
 1066 2016- 4- 3 PluginManager: 

@@ -228,7 +228,7 @@ ofa_idbprovider_get_interface_version( GType type )
  * g_object_unref() by the caller.
  */
 ofaIDBMeta *
-ofa_idbprovider_new_meta( const ofaIDBProvider *instance )
+ofa_idbprovider_new_meta( ofaIDBProvider *instance )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_meta";
 	ofaIDBMeta *meta;
@@ -238,7 +238,7 @@ ofa_idbprovider_new_meta( const ofaIDBProvider *instance )
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta ){
-		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta();
+		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta( instance );
 		ofa_idbmeta_set_provider( meta, instance );
 		return( meta );
 	}
@@ -256,7 +256,7 @@ ofa_idbprovider_new_meta( const ofaIDBProvider *instance )
  * g_object_unref() by the caller.
  */
 ofaIDBConnect *
-ofa_idbprovider_new_connect( const ofaIDBProvider *instance )
+ofa_idbprovider_new_connect( ofaIDBProvider *instance )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_connect";
 	ofaIDBConnect *connect;
@@ -266,7 +266,7 @@ ofa_idbprovider_new_connect( const ofaIDBProvider *instance )
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_connect ){
-		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_connect();
+		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_connect( instance );
 		ofa_idbconnect_set_provider( connect, instance );
 		return( connect );
 	}
@@ -294,7 +294,7 @@ ofa_idbprovider_new_connect( const ofaIDBProvider *instance )
  * should not keep any reference on this container.
  */
 ofaIDBEditor *
-ofa_idbprovider_new_editor( const ofaIDBProvider *instance, gboolean editable )
+ofa_idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_editor";
 	ofaIDBEditor *editor;
@@ -305,7 +305,7 @@ ofa_idbprovider_new_editor( const ofaIDBProvider *instance, gboolean editable )
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_editor ){
-		editor = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_editor( editable );
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_editor( instance, editable );
 		ofa_idbeditor_set_provider( editor, instance );
 		return( editor );
 	}

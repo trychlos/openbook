@@ -99,24 +99,27 @@ struct _ofaIDBProviderInterface {
 	/*** instance-wide ***/
 	/**
 	 * new_meta:
+	 * @instance: this #ofaIDBProvider instance.
 	 *
 	 * Returns: a newly defined #ofaIDBMeta object.
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBMeta *    ( *new_meta )             ( void );
+	ofaIDBMeta *    ( *new_meta )             ( ofaIDBProvider *instance );
 
 	/**
 	 * new_connect:
+	 * @instance: this #ofaIDBProvider instance.
 	 *
 	 * Returns: a newly defined #ofaIDBConnect object.
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect * ( *new_connect )          ( void );
+	ofaIDBConnect * ( *new_connect )          ( ofaIDBProvider *instance );
 
 	/**
 	 * new_editor:
+	 * @instance: this #ofaIDBProvider instance.
 	 * @editable: whether the returned widget should handle informations
 	 *  for edit or only display.
 	 *
@@ -126,7 +129,8 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBEditor *  ( *new_editor )           ( gboolean editable );
+	ofaIDBEditor *  ( *new_editor )           ( ofaIDBProvider *instance,
+													gboolean editable );
 };
 
 /*
@@ -147,11 +151,11 @@ guint           ofa_idbprovider_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-ofaIDBMeta     *ofa_idbprovider_new_meta                  ( const ofaIDBProvider *instance );
+ofaIDBMeta     *ofa_idbprovider_new_meta                  ( ofaIDBProvider *instance );
 
-ofaIDBConnect  *ofa_idbprovider_new_connect               ( const ofaIDBProvider *instance );
+ofaIDBConnect  *ofa_idbprovider_new_connect               ( ofaIDBProvider *instance );
 
-ofaIDBEditor   *ofa_idbprovider_new_editor                ( const ofaIDBProvider *instance,
+ofaIDBEditor   *ofa_idbprovider_new_editor                ( ofaIDBProvider *instance,
 																gboolean editable );
 
 gchar          *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *instance );

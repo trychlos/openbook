@@ -61,9 +61,9 @@ static gchar         *iident_get_canon_name( const myIIdent *instance, void *use
 static gchar         *iident_get_display_name( const myIIdent *instance, void *user_data );
 static gchar         *iident_get_version( const myIIdent *instance, void *user_data );
 static void           idbprovider_iface_init( ofaIDBProviderInterface *iface );
-static ofaIDBMeta    *idbprovider_new_meta( void );
-static ofaIDBConnect *idbprovider_new_connect( void );
-static ofaIDBEditor  *idbprovider_new_editor( gboolean editable );
+static ofaIDBMeta    *idbprovider_new_meta( ofaIDBProvider *instance );
+static ofaIDBConnect *idbprovider_new_connect( ofaIDBProvider *instance );
+static ofaIDBEditor  *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDBProvider )
@@ -183,7 +183,7 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
  * instanciates a new ofaIDBMeta object
  */
 static ofaIDBMeta *
-idbprovider_new_meta( void )
+idbprovider_new_meta( ofaIDBProvider *instance )
 {
 	ofaMySQLMeta *meta;
 
@@ -196,7 +196,7 @@ idbprovider_new_meta( void )
  * instanciates a new ofaIDBConnect object
  */
 static ofaIDBConnect *
-idbprovider_new_connect( void )
+idbprovider_new_connect( ofaIDBProvider *instance )
 {
 	ofaMySQLConnect *connect;
 
@@ -206,7 +206,7 @@ idbprovider_new_connect( void )
 }
 
 static ofaIDBEditor *
-idbprovider_new_editor( gboolean editable )
+idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable )
 {
 	GtkWidget *widget;
 
