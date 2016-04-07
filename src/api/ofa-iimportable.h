@@ -67,8 +67,6 @@ typedef struct _ofaIImportable                    ofaIImportable;
  *                                  interface that the plugin implements.
  * @get_label:             [should] returns the label asssociated to the class.
  * @import:                [should] imports an input stream.
- * @is_willing_to:         [should] is this instance willing to import the uri ?
- * @import uri:            [should] tries to import a file.
  *
  * This defines the interface that an #ofaIImportable should implement.
  */
@@ -115,44 +113,6 @@ typedef struct {
 	 * Returns: the label to be associated to the class.
 	 */
 	gchar *  ( *get_label )            ( const ofaIImportable *instance );
-
-	/**
-	 * import:
-	 * @instance: the #ofaIImportable provider.
-	 * @lines: the lines of the imported file, as a #GSList list of
-	 *  lines, where line->data is a #GSList of fields values.
-	 * @hub: the current #ofaHub object.
-	 *
-	 * Import the dataset from the provided content.
-	 *
-	 * Return: the count of found errors.
-	 *
-	 * The recordset must be left unchanged if an error is found.
-	 */
-	gint     ( *old_import )               ( ofaIImportable *instance,
-												GSList *lines,
-												const ofaStreamFormat *settings,
-												ofaHub *hub );
-
-	/**
-	 * import_uri:
-	 * @instance: the #ofaIImportable provider.
-	 * @ref: the internal ref of the provider as returned from #is_willing_to().
-	 * @hub: the current #ofaHub object.
-	 * @imported_id: [allow-none][out]: if non %NULL, then must point to an
-	 *  #ofxCounter which will be set to the identifier of the newly
-	 *  allocated #ofoBat object.
-	 *
-	 * Import the specified @uri.
-	 *
-	 * Return: the count of errors.
-	 */
-	guint    ( *import_uri )           ( ofaIImportable *instance,
-												void *ref,
-												const gchar *uri,
-												const ofaStreamFormat *settings,
-												ofaHub *hub,
-												ofxCounter *imported_id );
 }
 	ofaIImportableInterface;
 
@@ -196,39 +156,6 @@ guint           ofa_iimportable_import                    ( GType type,
  * Instance-wide
  */
 gchar          *ofa_iimportable_get_label                 ( const ofaIImportable *importable );
-
-gint            ofa_iimportable_old_import            ( ofaIImportable *importable,
-															GSList *lines,
-															const ofaStreamFormat *settings,
-															ofaHub *hub,
-															void *caller );
-
-guint           ofa_iimportable_old_import_uri        ( ofaIImportable *importable,
-															ofaHub *hub,
-															void *caller,
-															ofxCounter *imported_id );
-
-guint           ofa_iimportable_get_count         ( ofaIImportable *importable );
-
-void            ofa_iimportable_set_count         ( ofaIImportable *importable,
-															guint count );
-
-/* an importable-oriented API
- */
-gchar          *ofa_iimportable_get_string        ( GSList **it,
-															const ofaStreamFormat *settings );
-
-void            ofa_iimportable_pulse             ( ofaIImportable *importable,
-															ofeImportablePhase phase );
-
-void            ofa_iimportable_increment_progress( ofaIImportable *importable,
-															ofeImportablePhase phase,
-															guint count );
-
-void            ofa_iimportable_set_message       ( ofaIImportable *importable,
-															guint line_number,
-															ofeImportableMsg status,
-															const gchar *msg );
 
 G_END_DECLS
 

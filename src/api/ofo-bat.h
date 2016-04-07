@@ -169,8 +169,6 @@ gboolean        ofo_bat_insert                     ( ofoBat *bat, ofaHub *hub );
 gboolean        ofo_bat_update                     ( ofoBat *bat );
 gboolean        ofo_bat_delete                     ( ofoBat *bat );
 
-gboolean        ofo_bat_import                     ( ofaIImportable *importable, ofsBat *sbat, ofaHub *hub, ofxCounter *id );
-
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFO_BAT_H__ */
