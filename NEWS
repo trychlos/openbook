@@ -47,6 +47,7 @@
 
  Bug fixes:
 
+   - my_utils_uri_get_lines(): get rid of all empty lines at end of file.
    - ofaPreferences: plugins no more prevent the dialog closing.
    - ofaStreamFormatBin: if has string delimiter, then it must not be empty.
 

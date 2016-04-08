@@ -2005,8 +2005,9 @@ my_utils_uri_get_lines( const gchar *uri, const gchar *from_codeset, guint *erro
  * In some files, all lines but the last are 0x0a-terminated.
  * In some other files, really all lines, including the last one, are
  * line-feed terminated.
- * As a consequence the split-on-end-of-line below may introduce a last
- * empty line in the second case due to the g_strsplit() behavior.
+ * As a consequence the split-on-end-of-line below would may introduce
+ * a last empty line in the second case due to the g_strsplit() behavior.
+ * We get rid here of this last empty line.
  */
 static GSList *
 split_by_line( const gchar *content )
@@ -2015,7 +2016,6 @@ split_by_line( const gchar *content )
 	gchar **lines, **it_line;
 	gchar *prev, *temp;
 	guint numline;
-	gboolean is_empty;
 
 	/* split on end-of-line
 	 * then re-concatenate segments when end-of-line was backslashed */
@@ -2024,10 +2024,8 @@ split_by_line( const gchar *content )
 	eol_list = NULL;
 	prev = NULL;
 	numline = 0;
-	is_empty = TRUE;
 
 	while( *it_line ){
-		is_empty = FALSE;
 		if( prev ){
 			temp = g_utf8_substring( prev, 0, my_strlen( prev )-1 );
 			g_free( prev );
@@ -2041,7 +2039,6 @@ split_by_line( const gchar *content )
 		if( prev && !g_str_has_suffix( prev, "\\" )){
 			numline += 1;
 			eol_list = g_slist_prepend( eol_list, g_strdup( prev ));
-			is_empty = ( my_strlen( prev ) == 0 );
 			g_free( prev );
 			prev = NULL;
 		}
@@ -2050,8 +2047,8 @@ split_by_line( const gchar *content )
 
 	g_strfreev( lines );
 
-	/* remove possible empty last line */
-	if( eol_list && is_empty ){
+	/* remove possible empty last line(s) */
+	while( eol_list && !my_strlen( eol_list->data )){
 		eol_list = eol_list->next;
 	}
 
