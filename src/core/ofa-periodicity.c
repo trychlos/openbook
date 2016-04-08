@@ -125,24 +125,22 @@ static gint           get_weekday( const gchar *detail );
  * ofa_periodicity_get_label:
  * @periodicity: the unlocalized periodicity code.
  *
- * Returns: the corresponding localized label as a newly allocated string
- * which should be g_free() by the caller.
+ * Returns: the corresponding label.
  */
-gchar *
+const gchar *
 ofa_periodicity_get_label( const gchar *periodicity )
 {
 	gint i;
-	gchar *str;
 
-	for( i=0 ; st_labels[i].code ; ++i ){
-		if( !my_collate( st_labels[i].code, periodicity )){
-			return( g_strdup( st_labels[i].label ));
+	if( my_strlen( periodicity )){
+		for( i=0 ; st_labels[i].code ; ++i ){
+			if( !my_collate( st_labels[i].code, periodicity )){
+				return( gettext( st_labels[i].label ));
+			}
 		}
 	}
 
-	str = g_strdup_printf( _( "Unknown periodicity code: %s" ), periodicity );
-
-	return( str );
+	return( NULL );
 }
 
 /**
@@ -153,11 +151,10 @@ ofa_periodicity_get_label( const gchar *periodicity )
  * Returns: the corresponding localized label as a newly allocated string
  * which should be g_free() by the caller.
  */
-gchar *
+const gchar *
 ofa_periodicity_get_detail_label( const gchar *periodicity, const gchar *detail )
 {
 	gint i;
-	gchar *str;
 	const sLabels *labels;
 
 	labels = get_labels_for_periodicity( periodicity );
@@ -165,16 +162,12 @@ ofa_periodicity_get_detail_label( const gchar *periodicity, const gchar *detail 
 	if( labels ){
 		for( i=0 ; labels[i].code ; ++i ){
 			if( !my_collate( labels[i].code, detail )){
-				return( g_strdup( labels[i].label ));
+				return( gettext( labels[i].label ));
 			}
 		}
-		str = g_strdup_printf( _( "Unknown detail code %s for %s periodicity" ), detail, periodicity );
-		return( str );
 	}
 
-	str = g_strdup_printf( _( "Unknown periodicity code: %s" ), periodicity );
-
-	return( str );
+	return( NULL );
 }
 
 /**

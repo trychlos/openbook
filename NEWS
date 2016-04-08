@@ -47,6 +47,7 @@
    - ofaStreamFormatBin: homogeneize character display (todo #1063).
    - ofaStreamFormatDisp: homogeneize character display (todo #1064).
    - ofoRecurrentModel: is exportable (todo #1048).
+   - ofoRecurrentModel: is importable (todo #1049).
  
  Bug fixes:
 

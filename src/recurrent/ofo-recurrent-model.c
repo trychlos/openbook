@@ -38,6 +38,8 @@
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-iimportable.h"
+#include "api/ofa-periodicity.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-ope-template.h"
@@ -125,11 +127,20 @@ static void               iexportable_iface_init( ofaIExportableInterface *iface
 static guint              iexportable_get_interface_version( void );
 static gchar             *iexportable_get_label( const ofaIExportable *instance );
 static gboolean           iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
+static void               iimportable_iface_init( ofaIImportableInterface *iface );
+static guint              iimportable_get_interface_version( void );
+static gchar             *iimportable_get_label( const ofaIImportable *instance );
+static guint              iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList             *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void               iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean           model_get_exists( const ofoRecurrentModel *model, const ofaIDBConnect *connect );
+static gboolean           model_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentModel )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
 static void
 recurrent_model_finalize( GObject *instance )
@@ -988,4 +999,275 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
 	}
 
 	return( TRUE );
+}
+
+/*
+ * ofaIImportable interface management
+ */
+static void
+iimportable_iface_init( ofaIImportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_iimportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iimportable_get_interface_version;
+	iface->get_label = iimportable_get_label;
+	iface->import = iimportable_import;
+}
+
+static guint
+iimportable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static gchar *
+iimportable_get_label( const ofaIImportable *instance )
+{
+	return( iexportable_get_label( OFA_IEXPORTABLE( instance )));
+}
+
+/*
+ * ofo_recurrent_model_iimportable_import:
+ * @importer: the #ofaIImporter instance.
+ * @parms: the #ofsImporterParms arguments.
+ * @lines: the list of fields-splitted lines.
+ *
+ * Receives a GSList of lines, where data are GSList of fields.
+ * Fields must be:
+ * - mnemo id
+ * - label
+ * - ope template
+ * - periodicity
+ * - periodicity detail
+ * - notes (opt)
+ *
+ * Returns: the total count of errors.
+ */
+static guint
+iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+	gchar *bck_table;
+
+	dataset = iimportable_import_parse( importer, parms, lines );
+
+	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "REC_T_MODELS" );
+		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs == 0 ){
+			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_RECURRENT_MODEL );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_MODEL );
+
+		} else {
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "REC_T_MODELS" );
+		}
+
+		g_free( bck_table );
+	}
+
+	if( dataset ){
+		g_list_free_full( dataset, ( GDestroyNotify ) g_object_unref );
+	}
+
+	return( parms->parse_errs+parms->insert_errs );
+}
+
+static GList *
+iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
+{
+	GList *dataset;
+	guint numline, total;
+	const gchar *cstr, *clabel, *cperiod;
+	GSList *itl, *fields, *itf;
+	ofoRecurrentModel *model;
+	gchar *str, *splitted;
+
+	numline = 0;
+	dataset = NULL;
+	total = g_slist_length( lines );
+
+	ofa_iimporter_progress_start( importer, parms );
+
+	for( itl=lines ; itl ; itl=itl->next ){
+
+		if( parms->stop && parms->parse_errs > 0 ){
+			break;
+		}
+
+		numline += 1;
+		fields = ( GSList * ) itl->data;
+		model = ofo_recurrent_model_new();
+
+		/* mnemo */
+		itf = fields;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty model mnemonic" ));
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_recurrent_model_set_mnemo( model, cstr );
+
+		/* label */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty model label" ));
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_recurrent_model_set_label( model, cstr );
+
+		/* ope template */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty target operation template" ));
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_recurrent_model_set_ope_template( model, cstr );
+
+		/* periodicity */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty model periodicity" ));
+			parms->parse_errs += 1;
+			continue;
+		}
+		clabel = ofa_periodicity_get_label( cstr );
+		if( !my_strlen( clabel )){
+			str = g_strdup_printf( _( "unknown periodicity code: %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_recurrent_model_set_periodicity( model, cstr );
+		cperiod = cstr;
+
+		/* periodicity detail */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( !my_strlen( cstr )){
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty model detail periodicity" ));
+			parms->parse_errs += 1;
+			continue;
+		}
+		clabel = ofa_periodicity_get_detail_label( cperiod, cstr );
+		if( !my_strlen( clabel )){
+			str = g_strdup_printf( _( "unknown detail periodicity code: %s" ), cstr );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_free( str );
+			parms->parse_errs += 1;
+			continue;
+		}
+		ofo_recurrent_model_set_periodicity_detail( model, cstr );
+
+		/* notes
+		 * we are tolerant on the last field... */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		splitted = my_utils_import_multi_lines( cstr );
+		ofo_recurrent_model_set_notes( model, splitted );
+		g_free( splitted );
+
+		dataset = g_list_prepend( dataset, model );
+		parms->parsed_count += 1;
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
+	}
+
+	return( dataset );
+}
+
+static void
+iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset )
+{
+	GList *it;
+	const ofaIDBConnect *connect;
+	const gchar *model_id;
+	gboolean insert;
+	guint total;
+	ofoRecurrentModel *model;
+	gchar *str;
+
+	total = g_list_length( dataset );
+	connect = ofa_hub_get_connect( parms->hub );
+	ofa_iimporter_progress_start( importer, parms );
+
+	if( parms->empty && total > 0 ){
+		model_drop_content( connect );
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+
+		if( parms->stop && parms->insert_errs > 0 ){
+			break;
+		}
+
+		str = NULL;
+		insert = TRUE;
+		model = OFO_RECURRENT_MODEL( it->data );
+
+		if( model_get_exists( model, connect )){
+			parms->duplicate_count += 1;
+			model_id = ofo_recurrent_model_get_mnemo( model );
+
+			switch( parms->mode ){
+				case OFA_IDUPLICATE_REPLACE:
+					str = g_strdup_printf( _( "%s: duplicate model, replacing previous one" ), model_id );
+					model_do_delete( model, connect );
+					break;
+				case OFA_IDUPLICATE_IGNORE:
+					str = g_strdup_printf( _( "%s: duplicate model, ignored (skipped)" ), model_id );
+					insert = FALSE;
+					total -= 1;
+					break;
+				case OFA_IDUPLICATE_ABORT:
+					str = g_strdup_printf( _( "%s: erroneous duplicate model" ), model_id );
+					insert = FALSE;
+					total -= 1;
+					parms->insert_errs += 1;
+					break;
+			}
+
+			ofa_iimporter_progress_text( importer, parms, str );
+			g_free( str );
+		}
+
+		if( insert ){
+			if( model_do_insert( model, connect )){
+				parms->inserted_count += 1;
+			} else {
+				parms->insert_errs += 1;
+			}
+		}
+
+		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->inserted_count, ( gulong ) total );
+	}
+}
+
+static gboolean
+model_get_exists( const ofoRecurrentModel *model, const ofaIDBConnect *connect )
+{
+	const gchar *model_id;
+	gint count;
+	gchar *str;
+
+	count = 0;
+	model_id = ofo_recurrent_model_get_mnemo( model );
+	str = g_strdup_printf( "SELECT COUNT(*) FROM REC_T_MODELS WHERE REC_MNEMO='%s'", model_id );
+	ofa_idbconnect_query_int( connect, str, &count, FALSE );
+
+	return( count > 0 );
+}
+
+static gboolean
+model_drop_content( const ofaIDBConnect *connect )
+{
+	return( ofa_idbconnect_query( connect, "DELETE FROM REC_T_MODELS", TRUE ));
 }

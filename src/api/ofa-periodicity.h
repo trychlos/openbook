@@ -68,24 +68,24 @@ typedef void (*PeriodicityEnumCb)( const gchar *code, const gchar *label, void *
  */
 typedef void (*PeriodicityDatesCb)( const GDate *date, void *user_data );
 
-gchar *ofa_periodicity_get_label         ( const gchar *periodicity );
+const gchar *ofa_periodicity_get_label         ( const gchar *periodicity );
 
-gchar *ofa_periodicity_get_detail_label  ( const gchar *periodicity,
-												const gchar *detail );
+const gchar *ofa_periodicity_get_detail_label  ( const gchar *periodicity,
+													const gchar *detail );
 
-void   ofa_periodicity_enum              ( PeriodicityEnumCb fn,
-												void *user_data );
+void         ofa_periodicity_enum              ( PeriodicityEnumCb fn,
+													void *user_data );
 
-void   ofa_periodicity_enum_detail       ( const gchar *periodicity,
-												PeriodicityEnumCb fn,
-												void *user_data );
+void         ofa_periodicity_enum_detail       ( const gchar *periodicity,
+													PeriodicityEnumCb fn,
+													void *user_data );
 
-void   ofa_periodicity_enum_dates_between( const gchar *periodicity,
-												const gchar *detail,
-												const GDate *begin,
-												const GDate *end,
-												PeriodicityDatesCb cb,
-												void *user_data );
+void         ofa_periodicity_enum_dates_between( const gchar *periodicity,
+													const gchar *detail,
+													const GDate *begin,
+													const GDate *end,
+													PeriodicityDatesCb cb,
+													void *user_data );
 
 G_END_DECLS
 

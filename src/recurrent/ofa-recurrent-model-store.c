@@ -284,13 +284,14 @@ insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *
 static void
 set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model, GtkTreeIter *iter )
 {
-	gchar *stamp, *sper, *sdet;
+	gchar *stamp;
+	const gchar *csper, *csdet;
 	const gchar *periodicity;
 
 	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 	periodicity = ofo_recurrent_model_get_periodicity( model );
-	sper = ofa_periodicity_get_label( periodicity );
-	sdet = ofa_periodicity_get_detail_label( periodicity, ofo_recurrent_model_get_periodicity_detail( model ));
+	csper = ofa_periodicity_get_label( periodicity );
+	csdet = ofa_periodicity_get_detail_label( periodicity, ofo_recurrent_model_get_periodicity_detail( model ));
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
@@ -298,8 +299,8 @@ set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *mod
 			REC_MODEL_COL_MNEMO,              ofo_recurrent_model_get_mnemo( model ),
 			REC_MODEL_COL_LABEL,              ofo_recurrent_model_get_label( model ),
 			REC_MODEL_COL_OPE_TEMPLATE,       ofo_recurrent_model_get_ope_template( model ),
-			REC_MODEL_COL_PERIODICITY,        sper,
-			REC_MODEL_COL_PERIODICITY_DETAIL, sdet,
+			REC_MODEL_COL_PERIODICITY,        csper ? csper : "",
+			REC_MODEL_COL_PERIODICITY_DETAIL, csdet ? csdet : "",
 			REC_MODEL_COL_UPD_USER,           ofo_recurrent_model_get_upd_user( model ),
 			REC_MODEL_COL_UPD_STAMP,          stamp,
 			REC_MODEL_COL_OBJECT,             model,
