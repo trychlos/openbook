@@ -32,6 +32,7 @@
   
  New features and improvements:
 
+   - myThousandCombo: new class for thousand separator selection.
    - ofaMysl: implements ofaIAbout interface.
    - ofaMysl: implements ofaIProperties interface.
    - ofaPluginManager: displays instanciated objects (todo #1066).
