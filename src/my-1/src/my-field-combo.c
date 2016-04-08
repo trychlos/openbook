@@ -26,8 +26,7 @@
 #include <config.h>
 #endif
 
-#include <glib/gi18n.h>
-
+#include "my/my-char.h"
 #include "my/my-field-combo.h"
 
 /* private instance data
@@ -37,7 +36,7 @@ typedef struct {
 }
 	myFieldComboPrivate;
 
-/* column ordering in the date combobox
+/* column ordering in the field_separator combobox
  */
 enum {
 	COL_LABEL = 0,						/* the displayable label */
@@ -45,17 +44,14 @@ enum {
 	N_COLUMNS
 };
 
-typedef struct {
-	const gchar *code;
-	const gchar *label;
-}
-	sDec;
-
-static const sDec st_dec[] = {
-		{ "\t", N_( "\\t	(tab)" )},
-		{ ";",  N_( ";	(semi-colon)" )},
-		{ "|",  N_( "|	(pipe)" )},
-		{ 0 }
+/* Characters which are usable as field separator
+ * Have to be defined in myChar.
+ */
+static const gunichar st_chars[] = {
+		MY_CHAR_TAB,
+		MY_CHAR_SCOLON,
+		MY_CHAR_PIPE,
+		0
 };
 
 /* signals defined here
@@ -205,18 +201,21 @@ populate_combo( myFieldCombo *combo )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gint i;
+	gchar *str;
 
 	tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 	g_return_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ));
 
-	for( i=0 ; st_dec[i].code ; ++i ){
+	for( i=0 ; st_chars[i] ; ++i ){
+		str = g_strdup_printf( "%c", st_chars[i] );
 		gtk_list_store_insert_with_values(
 				GTK_LIST_STORE( tmodel ),
 				&iter,
 				-1,
-				COL_LABEL,   st_dec[i].label,
-				COL_CHARSEP, st_dec[i].code,
+				COL_LABEL,   my_char_get_label( st_chars[i] ),
+				COL_CHARSEP, str,
 				-1 );
+		g_free( str );
 	}
 }
 

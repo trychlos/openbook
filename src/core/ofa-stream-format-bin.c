@@ -33,6 +33,7 @@
 #include "my/my-date-combo.h"
 #include "my/my-decimal-combo.h"
 #include "my/my-field-combo.h"
+#include "my/my-thousand-combo.h"
 #include "my/my-utils.h"
 
 #include "ofa-stream-format-bin.h"
@@ -45,6 +46,7 @@ typedef struct {
 	/* initialization data
 	 */
 	ofaStreamFormat *settings;
+	gboolean         mode_sensitive;
 	gboolean         updatable;
 
 	/* UI
@@ -56,7 +58,7 @@ typedef struct {
 	GtkWidget       *has_date;
 	myDateCombo     *date_combo;
 	GtkWidget       *has_thousand;
-	GtkWidget       *thousand_entry;
+	myThousandCombo *thousand_combo;
 	GtkWidget       *has_decimal;
 	myDecimalCombo  *decimal_combo;
 	GtkWidget       *has_field;
@@ -106,6 +108,7 @@ static void     name_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
 static void     mode_init( ofaStreamFormatBin *self );
 static void     mode_insert_row( ofaStreamFormatBin *self, GtkListStore *store, ofeSFMode mode );
 static void     mode_on_changed( GtkComboBox *combo, ofaStreamFormatBin *self );
+static void     mode_set_sensitive( ofaStreamFormatBin *self );
 static void     encoding_init( ofaStreamFormatBin *self );
 static GList   *encoding_get_available( void );
 static gchar   *encoding_get_selected( ofaStreamFormatBin *self );
@@ -116,7 +119,7 @@ static void     date_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *s
 static void     date_on_changed( myDateCombo *combo, myDateFormat format, ofaStreamFormatBin *self );
 static void     thousand_sep_init( ofaStreamFormatBin *self );
 static void     thousand_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
-static void     thousand_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
+static void     thousand_on_changed( myThousandCombo *combo, const gchar *thousand_sep, ofaStreamFormatBin *self );
 static void     decimal_dot_init( ofaStreamFormatBin *self );
 static void     decimal_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
 static void     decimal_on_changed( myDecimalCombo *combo, const gchar *decimal_sep, ofaStreamFormatBin *self );
@@ -192,6 +195,7 @@ ofa_stream_format_bin_init( ofaStreamFormatBin *self )
 
 	priv->dispose_has_run = FALSE;
 
+	priv->mode_sensitive = TRUE;
 	priv->updatable = TRUE;
 }
 
@@ -413,6 +417,16 @@ mode_on_changed( GtkComboBox *box, ofaStreamFormatBin *self )
 }
 
 static void
+mode_set_sensitive( ofaStreamFormatBin *self )
+{
+	ofaStreamFormatBinPrivate *priv;
+
+	priv = ofa_stream_format_bin_get_instance_private( self );
+
+	gtk_widget_set_sensitive( priv->mode_combo, priv->mode_sensitive && priv->updatable );
+}
+
+static void
 encoding_init( ofaStreamFormatBin *self )
 {
 	ofaStreamFormatBinPrivate *priv;
@@ -533,7 +547,7 @@ encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( priv->encoding_combo, active );
+	gtk_widget_set_sensitive( priv->encoding_combo, active && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -580,7 +594,7 @@ date_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->date_combo ), active );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->date_combo ), active && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -595,18 +609,22 @@ static void
 thousand_sep_init( ofaStreamFormatBin *self )
 {
 	ofaStreamFormatBinPrivate *priv;
-	GtkWidget *label;
+	GtkWidget *parent, *label;
 
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
-	priv->thousand_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-thousand" );
-	g_return_if_fail( priv->thousand_entry && GTK_IS_ENTRY( priv->thousand_entry ));
+	priv->thousand_combo = my_thousand_combo_new();
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-thousand-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->thousand_combo ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-thousand-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->thousand_entry );
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->thousand_combo ));
 
-	g_signal_connect( priv->thousand_entry, "changed", G_CALLBACK( thousand_on_changed ), self );
+	g_signal_connect( priv->thousand_combo, "my-changed", G_CALLBACK( thousand_on_changed ), self );
 
 	priv->has_thousand = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-has-thousand" );
 	g_return_if_fail( priv->has_thousand && GTK_IS_CHECK_BUTTON( priv->has_thousand ));
@@ -623,13 +641,13 @@ thousand_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( priv->thousand_entry, active );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->thousand_combo ), active && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
-thousand_on_changed( GtkEntry *entry, ofaStreamFormatBin *self )
+thousand_on_changed( myThousandCombo *combo, const gchar *thousand_sep, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -670,7 +688,7 @@ decimal_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->decimal_combo ), active );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->decimal_combo ), active && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -717,7 +735,7 @@ field_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->field_combo ), active );
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->field_combo ), active && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -760,7 +778,7 @@ str_delim_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( priv->str_delim_entry, active );
+	gtk_widget_set_sensitive( priv->str_delim_entry, active && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -802,14 +820,28 @@ headers_init( ofaStreamFormatBin *self )
 static void
 headers_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 {
+	static const gchar *thisfn = "ofa_stream_format_bin_headers_on_has_toggled";
 	ofaStreamFormatBinPrivate *priv;
 	gboolean active;
+	ofeSFMode mode;
 
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( priv->headers_btn, active );
-	gtk_widget_set_sensitive( priv->headers_count, active );
+	mode = priv->settings ? ofa_stream_format_get_mode( priv->settings ) : ofa_stream_format_get_default_mode();
+
+	switch( mode ){
+		case OFA_SFMODE_EXPORT:
+			gtk_widget_set_sensitive( priv->headers_btn, active && priv->updatable );
+			break;
+
+		case OFA_SFMODE_IMPORT:
+			gtk_widget_set_sensitive( priv->headers_count, active && priv->updatable );
+			break;
+
+		default:
+			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
+	}
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -877,23 +909,24 @@ ofa_stream_format_bin_get_name_entry( const ofaStreamFormatBin *bin )
 }
 
 /**
- * ofa_stream_format_bin_get_mode_combo:
+ * ofa_stream_format_bin_set_mode_sensitive:
  * @bin: this #ofaStreamFormatBin instance.
- *
- * Returns: the #GtkComboBox which managed the mode of the format.
+ * @sensitive: whether the mode may be modified.
  */
-GtkWidget *
-ofa_stream_format_bin_get_mode_combo( const ofaStreamFormatBin *bin )
+void
+ofa_stream_format_bin_set_mode_sensitive( ofaStreamFormatBin *bin, gboolean sensitive )
 {
 	ofaStreamFormatBinPrivate *priv;
 
-	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), NULL );
+	g_return_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ));
 
 	priv = ofa_stream_format_bin_get_instance_private( bin );
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_if_fail( !priv->dispose_has_run);
 
-	return( priv->mode_combo );
+	priv->mode_sensitive = sensitive;
+
+	mode_set_sensitive( bin );
 }
 
 /**
@@ -962,9 +995,7 @@ setup_format( ofaStreamFormatBin *self )
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_thousand ), has );
 	thousand_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_thousand ), self );
 	str = g_strdup_printf( "%c", ofa_stream_format_get_thousand_sep( priv->settings ));
-	if( my_strlen( str )){
-		gtk_entry_set_text( GTK_ENTRY( priv->thousand_entry ), str );
-	}
+	my_thousand_combo_set_selected( MY_THOUSAND_COMBO( priv->thousand_combo ), str );
 	g_free( str );
 
 	/* decimal separator */
@@ -1042,9 +1073,7 @@ ofa_stream_format_bin_set_updatable( ofaStreamFormatBin *bin, gboolean updatable
 static void
 setup_updatable( ofaStreamFormatBin *self )
 {
-	static const gchar *thisfn = "ofa_stream_format_bin_setup_updatable";
 	ofaStreamFormatBinPrivate *priv;
-	ofeSFMode mode;
 
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
@@ -1052,47 +1081,35 @@ setup_updatable( ofaStreamFormatBin *self )
 	gtk_widget_set_sensitive( priv->name_entry, priv->updatable );
 
 	/* mode */
-	gtk_widget_set_sensitive( priv->mode_combo, priv->updatable );
+	mode_set_sensitive( self );
 
 	/* encoding */
 	gtk_widget_set_sensitive( priv->has_encoding, priv->updatable );
-	gtk_widget_set_sensitive( priv->encoding_combo, priv->updatable );
+	encoding_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_encoding ), self );
 
 	/* date format */
 	gtk_widget_set_sensitive( priv->has_date, priv->updatable );
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->date_combo ), priv->updatable );
+	date_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_date ), self );
 
 	/* thousand separator */
 	gtk_widget_set_sensitive( priv->has_thousand, priv->updatable );
-	gtk_widget_set_sensitive( priv->thousand_entry, priv->updatable );
+	thousand_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_thousand ), self );
 
 	/* decimal separator */
 	gtk_widget_set_sensitive( priv->has_decimal, priv->updatable );
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->decimal_combo ), priv->updatable );
+	decimal_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_decimal ), self );
 
 	/* field separator */
 	gtk_widget_set_sensitive( priv->has_field, priv->updatable );
-	gtk_widget_set_sensitive( GTK_WIDGET( priv->field_combo ), priv->updatable );
+	field_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_field ), self );
 
 	/* string delimiter */
 	gtk_widget_set_sensitive( priv->has_strdelim, priv->updatable );
-	gtk_widget_set_sensitive( priv->str_delim_entry, priv->updatable );
+	str_delim_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_strdelim ), self );
 
 	/* headers */
-	mode = priv->settings ? ofa_stream_format_get_mode( priv->settings ) : ofa_stream_format_get_default_mode();
 	gtk_widget_set_sensitive( priv->has_headers, priv->updatable );
-	switch( mode ){
-		case OFA_SFMODE_EXPORT:
-			gtk_widget_set_sensitive( priv->headers_btn, priv->updatable );
-			break;
-
-		case OFA_SFMODE_IMPORT:
-			gtk_widget_set_sensitive( priv->headers_count, priv->updatable );
-			break;
-
-		default:
-			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
-	}
+	headers_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_headers ), self );
 }
 
 /**
@@ -1124,7 +1141,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 	ofaStreamFormatBinPrivate *priv;
 	const gchar *cstr;
 	ofeSFMode mode;
-	gchar *charmap, *decimal_sep, *field_sep;
+	gchar *charmap, *thousand_sep, *decimal_sep, *field_sep;
 	gint ivalue;
 	gboolean has;
 
@@ -1185,7 +1202,19 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		}
 	}
 
-	/* thousand separator - empty is valid */
+	/* thousand separator */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_thousand ));
+	if( has ){
+		thousand_sep = my_thousand_combo_get_selected( priv->thousand_combo );
+		if( !my_strlen( thousand_sep )){
+			g_free( thousand_sep );
+			if( error_message ){
+				*error_message = g_strdup( _( "Invalid or unknown thousand separator" ));
+			}
+			return( FALSE );
+		}
+		g_free( thousand_sep );
+	}
 
 	/* decimal separator */
 	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_decimal ));
@@ -1273,8 +1302,7 @@ do_apply( ofaStreamFormatBin *self )
 	datefmt = has_date ? my_date_combo_get_selected( priv->date_combo ) : 0;
 
 	has_thousand = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_thousand ));
-	cstr = has_thousand ? gtk_entry_get_text( GTK_ENTRY( priv->thousand_entry )) : NULL;
-	thousand_sep = g_strdup( cstr ? cstr : "" );
+	thousand_sep = has_thousand ? my_thousand_combo_get_selected( priv->thousand_combo ) : g_strdup( "" );
 
 	has_decimal = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_decimal ));
 	decimal_sep = has_decimal ? my_decimal_combo_get_selected( priv->decimal_combo ) : g_strdup( "" );

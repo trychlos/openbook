@@ -37,6 +37,7 @@
    - ofaPluginManager: displays instanciated objects (todo #1066).
    - ofaPluginManager: displays About page (todo #1066).
    - ofaPluginManager: displays Properties page (todo #1066).
+   - ofaStreamFormat: homogeneize character display (todo #1063).
  
 
  Bug fixes:

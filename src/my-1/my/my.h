@@ -45,6 +45,7 @@
 #include <my/my-progress-bar.h>
 #include <my/my-settings.h>
 #include <my/my-tab.h>
+#include <my/my-thousand-combo.h>
 #include <my/my-timeout.h>
 #include <my/my-utils.h>
 

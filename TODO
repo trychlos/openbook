@@ -405,8 +405,6 @@
 1061 2016- 4- 2 FEAT save the table before import, restoring it in case
                 of an error
 
-1063 2016- 4- 3 CODE ofaStreamFormat: define global constants for delimiters
-
 1064 2016- 4- 3 FEAT ofaStreamFormatDisp: display same label than in combo
 
 1069
@@ -1076,6 +1074,9 @@
 1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
                 which may or may not be changed
      2016- 4- 7 done
+
+1063 2016- 4- 3 CODE ofaStreamFormat: define global constants for delimiters
+     2016- 4- 8 done with myChar introduction
 
 1065 2016- 4- 3 CODE ofaIDBProvider::new_meta, new_connect, new_editor methods
                 should have a provider arg.

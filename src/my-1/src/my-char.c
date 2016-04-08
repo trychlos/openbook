@@ -44,7 +44,7 @@ static const sChar st_chars[] = {
 		{ MY_CHAR_SCOLON, N_( ";	(semi-colon)" )},
 		{ MY_CHAR_SPACE,  N_( " 	(space)" )},
 		{ MY_CHAR_TAB,    N_( "\\t	(tab)" )},
-		{ MY_CHAR_ZERO,   N_( "\0	(null)" )},
+		{ MY_CHAR_ZERO,   N_( "(none)" )},
 		{ -1 }
 };
 

@@ -267,20 +267,6 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkEntry" id="ffb-thousand">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="halign">start</property>
-                    <property name="max_length">1</property>
-                    <property name="width_chars">2</property>
-                    <property name="max_width_chars">2</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">2</property>
-                    <property name="top_attach">4</property>
-                  </packing>
-                </child>
-                <child>
                   <object class="GtkCheckButton" id="ffb-has-charmap">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
@@ -403,6 +389,20 @@
                   <packing>
                     <property name="left_attach">1</property>
                     <property name="top_attach">8</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkBox" id="ffb-thousand-parent">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">4</property>
                   </packing>
                 </child>
                 <child>

@@ -28,9 +28,11 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-char.h"
 #include "my/my-date.h"
 #include "my/my-decimal-combo.h"
 #include "my/my-field-combo.h"
+#include "my/my-thousand-combo.h"
 #include "my/my-utils.h"
 
 #include "ofa-stream-format-disp.h"
@@ -350,9 +352,8 @@ setup_format( ofaStreamFormatDisp *self )
 	/* thousand sep */
 	has = ofa_stream_format_get_has_thousand( priv->settings );
 	ch = has ? ofa_stream_format_get_thousand_sep( priv->settings ) : 0;
-	str = ch ? g_strdup_printf( "%c (0x%2.2x)", ch, ch ) : g_strdup( _( "(none)" ));
-	gtk_label_set_text( GTK_LABEL( priv->thousand_data ), str );
-	g_free( str );
+	cstr = my_char_get_label( ch );
+	gtk_label_set_text( GTK_LABEL( priv->thousand_data ), cstr );
 	gtk_widget_set_sensitive( priv->thousand_label, has );
 	if( has ){
 		my_utils_widget_set_style( priv->thousand_data, "labelinfo" );
@@ -364,9 +365,8 @@ setup_format( ofaStreamFormatDisp *self )
 	/* decimal sep */
 	has = ofa_stream_format_get_has_decimal( priv->settings );
 	ch = has ? ofa_stream_format_get_decimal_sep( priv->settings ) : 0;
-	str = ch ? g_strdup_printf( "%c (0x%2.2x)", ch, ch ) : g_strdup( _( "(none)" ));
-	gtk_label_set_text( GTK_LABEL( priv->decimal_data ), str );
-	g_free( str );
+	cstr = my_char_get_label( ch );
+	gtk_label_set_text( GTK_LABEL( priv->decimal_data ), cstr );
 	gtk_widget_set_sensitive( priv->decimal_label, has );
 	if( has ){
 		my_utils_widget_set_style( priv->decimal_data, "labelinfo" );
@@ -378,9 +378,8 @@ setup_format( ofaStreamFormatDisp *self )
 	/* field sep */
 	has = ofa_stream_format_get_has_field( priv->settings );
 	ch = has ? ofa_stream_format_get_field_sep( priv->settings ) : 0;
-	str = ch ? g_strdup_printf( "%c (0x%2.2x)", ch, ch ) : g_strdup( _( "(none)" ));
-	gtk_label_set_text( GTK_LABEL( priv->field_data ), str );
-	g_free( str );
+	cstr = my_char_get_label( ch );
+	gtk_label_set_text( GTK_LABEL( priv->field_data ), cstr );
 	gtk_widget_set_sensitive( priv->field_label, has );
 	if( has ){
 		my_utils_widget_set_style( priv->field_data, "labelinfo" );

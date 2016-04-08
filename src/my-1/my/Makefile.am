@@ -45,6 +45,7 @@ my_include_HEADERS = \
 	my-progress-bar.h									\
 	my-settings.h										\
 	my-tab.h											\
+	my-thousand-combo.h									\
 	my-timeout.h										\
 	my-utils.h											\
 	$(NULL)

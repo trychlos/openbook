@@ -79,6 +79,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-tab.c											\
+	my-thousand-combo.c									\
 	my-timeout.c										\
 	my-utils.c											\
 	$(NULL)

@@ -64,27 +64,28 @@ typedef struct {
 }
 	ofaStreamFormatBinClass;
 
-GType               ofa_stream_format_bin_get_type      ( void ) G_GNUC_CONST;
+GType               ofa_stream_format_bin_get_type          ( void ) G_GNUC_CONST;
 
-ofaStreamFormatBin *ofa_stream_format_bin_new           ( ofaStreamFormat *format );
+ofaStreamFormatBin *ofa_stream_format_bin_new               ( ofaStreamFormat *format );
 
-GtkSizeGroup       *ofa_stream_format_bin_get_size_group( const ofaStreamFormatBin *bin,
+GtkSizeGroup       *ofa_stream_format_bin_get_size_group    ( const ofaStreamFormatBin *bin,
 																guint col_number );
 
-GtkWidget          *ofa_stream_format_bin_get_name_entry( const ofaStreamFormatBin *bin );
+GtkWidget          *ofa_stream_format_bin_get_name_entry    ( const ofaStreamFormatBin *bin );
 
-GtkWidget          *ofa_stream_format_bin_get_mode_combo( const ofaStreamFormatBin *bin );
+void                ofa_stream_format_bin_set_mode_sensitive( ofaStreamFormatBin *bin,
+																	gboolean sensitive );
 
-void                ofa_stream_format_bin_set_format    ( ofaStreamFormatBin *bin,
+void                ofa_stream_format_bin_set_format        ( ofaStreamFormatBin *bin,
 																ofaStreamFormat *format );
 
-void                ofa_stream_format_bin_set_updatable ( ofaStreamFormatBin *bin,
+void                ofa_stream_format_bin_set_updatable     ( ofaStreamFormatBin *bin,
 																gboolean updatable );
 
-gboolean            ofa_stream_format_bin_is_valid      ( ofaStreamFormatBin *bin,
+gboolean            ofa_stream_format_bin_is_valid          ( ofaStreamFormatBin *bin,
 																gchar **error_message );
 
-gboolean            ofa_stream_format_bin_apply         ( ofaStreamFormatBin *bin );
+gboolean            ofa_stream_format_bin_apply             ( ofaStreamFormatBin *bin );
 
 G_END_DECLS
 

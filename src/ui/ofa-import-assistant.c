@@ -1176,7 +1176,7 @@ p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p5_do_init";
 	ofaImportAssistantPrivate *priv;
-	GtkWidget *parent, *label, *combo;
+	GtkWidget *parent, *label;
 	GtkSizeGroup *hgroup;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -1252,10 +1252,6 @@ p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	my_utils_size_group_add_size_group(
 			hgroup, ofa_stream_format_bin_get_size_group( priv->p5_settings_prefs, 0 ));
 
-	combo = ofa_stream_format_bin_get_mode_combo( priv->p5_settings_prefs );
-	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
-	gtk_widget_set_sensitive( combo, FALSE );
-
 	g_signal_connect(
 			priv->p5_settings_prefs, "ofa-changed", G_CALLBACK( p5_on_settings_changed ), self );
 
@@ -1309,6 +1305,7 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	}
 
 	ofa_stream_format_bin_set_format( priv->p5_settings_prefs, priv->p5_import_settings );
+	ofa_stream_format_bin_set_mode_sensitive( priv->p5_settings_prefs, FALSE );
 	ofa_stream_format_bin_set_updatable( priv->p5_settings_prefs, priv->p5_updatable );
 
 	p5_check_for_complete( self );

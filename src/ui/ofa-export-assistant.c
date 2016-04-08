@@ -592,7 +592,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p2_do_init";
 	ofaExportAssistantPrivate *priv;
-	GtkWidget *label, *parent, *button, *combo;
+	GtkWidget *label, *parent, *button;
 	GtkSizeGroup *hgroup;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -606,14 +606,12 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-settings-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
 	priv->p2_settings_prefs = ofa_stream_format_bin_new( NULL );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_settings_prefs ));
+	ofa_stream_format_bin_set_mode_sensitive( priv->p2_settings_prefs, FALSE );
 
 	g_signal_connect( priv->p2_settings_prefs, "ofa-changed", G_CALLBACK( p2_on_settings_changed ), self );
-
-	combo = ofa_stream_format_bin_get_mode_combo( priv->p2_settings_prefs );
-	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
-	gtk_widget_set_sensitive( combo, FALSE );
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
