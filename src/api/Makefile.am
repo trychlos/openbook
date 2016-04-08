@@ -35,6 +35,7 @@ api_include_HEADERS = \
 	ofa-dossier-prefs.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-module.h								\
+	ofa-formula.h										\
 	ofa-hub.h											\
 	ofa-hub-def.h										\
 	ofa-iabout.h										\

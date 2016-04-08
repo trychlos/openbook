@@ -59,6 +59,7 @@
  Other changes:
 
    - my_utils_window_position_get_has_pos(): new function.
+   - ofa_formula_eval(): new function.
    - ofa_hub_disconnect_handlers: improve and generalize use (todo #1055).
    - ofaIDBProvider: all methods get an instance argument (todo #1065).
    - ofaIExeCloseClose interface is renamed to ofaIExeClose (todo #1067).

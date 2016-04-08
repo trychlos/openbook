@@ -373,6 +373,7 @@
                      wrong
 
 1010 2016- 2-25 FEAT Ope: formula interpretation should be recursive
+     2016- 4- 8 have a formula engine
 
 1012 2016- 2-25 FEAT GuidedInput: when a row is moved up or down, then
                      the indexes should be updated accordingly
