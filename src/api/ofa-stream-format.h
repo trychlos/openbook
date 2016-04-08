@@ -109,7 +109,6 @@ typedef enum {
 	OFA_SFHAS_DECIMALSEP  = 1 << 3,
 	OFA_SFHAS_FIELDSEP    = 1 << 4,
 	OFA_SFHAS_STRDELIM    = 1 << 5,
-	OFA_SFHAS_HEADERS     = 1 << 6,
 	OFA_SFHAS_ALL         = 0xffff,
 }
 	ofeSFHas;
@@ -150,7 +149,6 @@ gchar            ofa_stream_format_get_field_sep     ( const ofaStreamFormat *se
 gboolean         ofa_stream_format_get_has_strdelim  ( const ofaStreamFormat *settings );
 gchar            ofa_stream_format_get_string_delim  ( const ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_has_headers   ( const ofaStreamFormat *settings );
 gboolean         ofa_stream_format_get_with_headers  ( const ofaStreamFormat *settings );
 gint             ofa_stream_format_get_headers_count ( const ofaStreamFormat *settings );
 
@@ -161,7 +159,7 @@ void             ofa_stream_format_set               ( ofaStreamFormat *settings
 															gboolean has_decimal_sep, gchar decimal_sep,
 															gboolean has_field_sep, gchar field_sep,
 															gboolean has_string_delim, gchar string_delim,
-															gboolean has_headers, gint count_headers );
+															gint count_headers );
 
 void             ofa_stream_format_set_name          ( ofaStreamFormat *settings, const gchar *name );
 void             ofa_stream_format_set_mode          ( ofaStreamFormat *settings, ofeSFMode mode );

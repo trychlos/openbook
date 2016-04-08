@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-char.h"
 #include "my/my-date.h"
 #include "my/my-double.h"
 #include "my/my-iident.h"
@@ -630,11 +631,11 @@ get_default_stream_format( const ofaImporterTxtBourso *self )
 	ofa_stream_format_set( format,
 			TRUE,  "ISO-8859-15",			/* Western Europe */
 			TRUE,  MY_DATE_DMYY,			/* date format dd/mm/yyyy */
-			FALSE, '\0',					/* no thousand sep */
-			TRUE,  '.',						/* dot decimal sep */
-			TRUE,  '\t',					/* tab field sep */
-			TRUE,  '"',						/* double quote string delim */
-			FALSE, 0 );						/* no header */
+			FALSE, MY_CHAR_ZERO,			/* no thousand sep */
+			TRUE,  MY_CHAR_DOT,				/* dot decimal sep */
+			TRUE,  MY_CHAR_TAB,				/* tab field sep */
+			TRUE,  MY_CHAR_DQUOTE,			/* double quote string delim */
+			0 );							/* no header */
 
 	return( format );
 }

@@ -30,6 +30,7 @@
 #include <math.h>
 #include <poppler.h>
 
+#include "my/my-char.h"
 #include "my/my-date.h"
 #include "my/my-double.h"
 #include "my/my-iident.h"
@@ -893,11 +894,11 @@ get_default_stream_format( const ofaImporterPdfBourso *self )
 	ofa_stream_format_set( format,
 			TRUE,  "UTF-8",
 			TRUE,  MY_DATE_DMYY,			/* date format dd/mm/yyyy */
-			TRUE,  '.',						/* dot thousand sep */
-			TRUE,  ',',						/* comma decimal sep */
-			FALSE, '\0',					/* no field sep */
-			FALSE, '\0',					/* no string delim */
-			FALSE, 0 );						/* no header */
+			TRUE,  MY_CHAR_DOT,				/* dot thousand sep */
+			TRUE,  MY_CHAR_COMMA,			/* comma decimal sep */
+			FALSE, MY_CHAR_ZERO,			/* no field sep */
+			FALSE, MY_CHAR_ZERO,			/* no string delim */
+			0 );							/* no header */
 
 	return( format );
 }

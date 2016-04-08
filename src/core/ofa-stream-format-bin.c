@@ -67,7 +67,6 @@ typedef struct {
 	GtkWidget       *field_label;
 	GtkWidget       *has_strdelim;
 	GtkWidget       *str_delim_entry;
-	GtkWidget       *has_headers;
 	GtkWidget       *headers_btn;
 	GtkWidget       *headers_label;
 	GtkWidget       *headers_count;
@@ -130,9 +129,9 @@ static void     str_delimiter_init( ofaStreamFormatBin *self );
 static void     str_delim_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
 static void     str_delim_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
 static void     headers_init( ofaStreamFormatBin *self );
-static void     headers_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
 static void     headers_on_with_toggled( GtkToggleButton *button, ofaStreamFormatBin *self );
 static void     headers_on_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self );
+static void     headers_set_sensitive( ofaStreamFormatBin *self );
 static void     setup_format( ofaStreamFormatBin *bin );
 static void     setup_updatable( ofaStreamFormatBin *self );
 static gboolean is_validable( ofaStreamFormatBin *self, gchar **error_message );
@@ -810,40 +809,6 @@ headers_init( ofaStreamFormatBin *self )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( priv->headers_label ), priv->headers_count );
 
 	g_signal_connect( priv->headers_count, "value-changed", G_CALLBACK( headers_on_count_changed ), self );
-
-	priv->has_headers = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-has-headers" );
-	g_return_if_fail( priv->has_headers && GTK_IS_CHECK_BUTTON( priv->has_headers ));
-
-	g_signal_connect( priv->has_headers, "toggled", G_CALLBACK( headers_on_has_toggled ), self );
-}
-
-static void
-headers_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
-{
-	static const gchar *thisfn = "ofa_stream_format_bin_headers_on_has_toggled";
-	ofaStreamFormatBinPrivate *priv;
-	gboolean active;
-	ofeSFMode mode;
-
-	priv = ofa_stream_format_bin_get_instance_private( self );
-
-	active = gtk_toggle_button_get_active( btn );
-	mode = priv->settings ? ofa_stream_format_get_mode( priv->settings ) : ofa_stream_format_get_default_mode();
-
-	switch( mode ){
-		case OFA_SFMODE_EXPORT:
-			gtk_widget_set_sensitive( priv->headers_btn, active && priv->updatable );
-			break;
-
-		case OFA_SFMODE_IMPORT:
-			gtk_widget_set_sensitive( priv->headers_count, active && priv->updatable );
-			break;
-
-		default:
-			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
-	}
-
-	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 static void
@@ -856,6 +821,31 @@ static void
 headers_on_count_changed( GtkSpinButton *button, ofaStreamFormatBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
+}
+
+static void
+headers_set_sensitive( ofaStreamFormatBin *self )
+{
+	static const gchar *thisfn = "ofa_stream_format_bin_headers_st_sensitive";
+	ofaStreamFormatBinPrivate *priv;
+	ofeSFMode mode;
+
+	priv = ofa_stream_format_bin_get_instance_private( self );
+
+	mode = priv->settings ? ofa_stream_format_get_mode( priv->settings ) : ofa_stream_format_get_default_mode();
+
+	switch( mode ){
+		case OFA_SFMODE_EXPORT:
+			gtk_widget_set_sensitive( priv->headers_btn, priv->updatable );
+			break;
+
+		case OFA_SFMODE_IMPORT:
+			gtk_widget_set_sensitive( priv->headers_count, priv->updatable );
+			break;
+
+		default:
+			g_warning( "%s: mode=%d is not Export not Import", thisfn, mode );
+	}
 }
 
 /**
@@ -1025,9 +1015,6 @@ setup_format( ofaStreamFormatBin *self )
 	g_free( str );
 
 	/* headers */
-	has = ofa_stream_format_get_has_headers( priv->settings );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_headers ), has );
-	headers_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_headers ), self );
 	switch( mode ){
 		case OFA_SFMODE_EXPORT:
 			bvalue = ofa_stream_format_get_with_headers( priv->settings );
@@ -1108,8 +1095,7 @@ setup_updatable( ofaStreamFormatBin *self )
 	str_delim_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_strdelim ), self );
 
 	/* headers */
-	gtk_widget_set_sensitive( priv->has_headers, priv->updatable );
-	headers_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_headers ), self );
+	headers_set_sensitive( self );
 }
 
 /**
@@ -1278,7 +1264,7 @@ do_apply( ofaStreamFormatBin *self )
 {
 	static const gchar *thisfn = "ofa_stream_format_bin_do_apply";
 	ofaStreamFormatBinPrivate *priv;
-	gboolean has_charmap, has_date, has_thousand, has_decimal, has_field, has_str, has_headers;
+	gboolean has_charmap, has_date, has_thousand, has_decimal, has_field, has_str;
 	gchar *charmap, *thousand_sep, *decimal_sep, *field_sep, *strdelim;
 	gint datefmt, iheaders;
 	ofeSFMode mode;
@@ -1314,7 +1300,6 @@ do_apply( ofaStreamFormatBin *self )
 	cstr = has_str ? gtk_entry_get_text( GTK_ENTRY( priv->str_delim_entry )) : NULL;
 	strdelim = g_strdup( cstr ? cstr : "");
 
-	has_headers = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_headers ));
 	if( mode == OFA_SFMODE_EXPORT ){
 		iheaders = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->headers_btn ));
 	} else {
@@ -1323,12 +1308,12 @@ do_apply( ofaStreamFormatBin *self )
 
 	g_debug( "%s: settings=%p, has_charmap=%s, charmap=%s, has_date=%s, datefmt=%u, "
 			"has_thousand=%s, thousand_sep=%s, has_decimal=%s, decimal_sep=%s, "
-			"has_field=%s, field_sep=%s, has_str=%s, strdelim=%s, has_headers=%s, iheaders=%u",
+			"has_field=%s, field_sep=%s, has_str=%s, strdelim=%s, iheaders=%u",
 			thisfn, ( void * ) priv->settings,
 			has_charmap ? "True":"False", charmap, has_date ? "True":"False", datefmt,
 			has_thousand ? "True":"False", thousand_sep, has_decimal ? "True":"False", decimal_sep,
 			has_field ? "True":"False", field_sep, has_str ? "True":"False", strdelim,
-			has_headers ? "True":"False", iheaders );
+			iheaders );
 
 	ofa_stream_format_set( priv->settings,
 									has_charmap, charmap,
@@ -1337,7 +1322,7 @@ do_apply( ofaStreamFormatBin *self )
 									has_decimal, decimal_sep[0],
 									has_field, field_sep[0],
 									has_str, strdelim[0],
-									has_headers, iheaders );
+									iheaders );
 
 	g_free( strdelim );
 	g_free( field_sep );

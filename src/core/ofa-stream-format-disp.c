@@ -403,33 +403,22 @@ setup_format( ofaStreamFormatDisp *self )
 	gtk_widget_set_sensitive( priv->strdelim_data, has );
 
 	/* headers */
-	has = ofa_stream_format_get_has_headers( priv->settings );
-	if( has ){
-		switch( mode ){
-			case OFA_SFMODE_EXPORT:
-				with = ofa_stream_format_get_with_headers( priv->settings );
-				str = g_strdup_printf( "%s", with ? _( "True" ):_( "False" ));
-				break;
+	switch( mode ){
+		case OFA_SFMODE_EXPORT:
+			with = ofa_stream_format_get_with_headers( priv->settings );
+			str = g_strdup_printf( "%s", with ? _( "True" ):_( "False" ));
+			break;
 
-			case OFA_SFMODE_IMPORT:
-				count = ofa_stream_format_get_headers_count( priv->settings );
-				str = g_strdup_printf( "%d", count );
-				break;
+		case OFA_SFMODE_IMPORT:
+			count = ofa_stream_format_get_headers_count( priv->settings );
+			str = g_strdup_printf( "%d", count );
+			break;
 
-			default:
-				str = g_strdup_printf( _( "(invalid mode: %d)" ), mode );
-				break;
-		}
-	} else {
-		str = g_strdup( _( "(none)" ));
+		default:
+			str = g_strdup_printf( _( "(invalid mode: %d)" ), mode );
+			break;
 	}
 	gtk_label_set_text( GTK_LABEL( priv->headers_data ), str );
 	g_free( str );
-	gtk_widget_set_sensitive( priv->headers_label, has );
-	if( has ){
-		my_utils_widget_set_style( priv->headers_data, "labelinfo" );
-	} else {
-		my_utils_widget_remove_style( priv->headers_data, "labelinfo" );
-	}
-	gtk_widget_set_sensitive( priv->headers_data, has );
+	my_utils_widget_set_style( priv->headers_data, "labelinfo" );
 }

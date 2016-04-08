@@ -29,6 +29,7 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "my/my-char.h"
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
@@ -76,9 +77,9 @@ static sLabels st_labels[] = {
 
 static const gchar *st_def_charmap      = "UTF-8";
 static const gint   st_def_date         = MY_DATE_SQL;
-static const gchar *st_def_thousand     = "";
-static const gchar *st_def_decimal      = ".";
-static const gchar *st_def_field_sep    = ";";
+static const gchar  st_def_thousand     = MY_CHAR_ZERO;
+static const gchar  st_def_decimal      = MY_CHAR_DOT;
+static const gchar  st_def_field_sep    = MY_CHAR_SCOLON;
 static const gchar *st_def_headers      = "True";
 static const gchar *st_def_string_delim = "\"";
 
@@ -321,26 +322,20 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	/* thousand separator */
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
-	text = g_strdup( cstr ? cstr : st_def_thousand );
-	priv->thousand_sep = atoi( text );
-	g_free( text );
+	priv->thousand_sep = cstr ? atoi( cstr ) : st_def_thousand;
 	//g_debug( "do_init: thousand_sep=%d", priv->thousand_sep );
 
 	/* decimal separator */
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
 	/*g_debug( "do_init: decimal_sep='%s'", cstr );*/
-	text = g_strdup( cstr ? cstr : st_def_decimal );
-	priv->decimal_sep = atoi( text );
-	g_free( text );
+	priv->decimal_sep = cstr ? atoi( cstr ) : st_def_decimal;
 
 	/* field separator */
 	it = it ? it->next : NULL;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
 	/*g_debug( "do_init: field_sep='%s'", cstr );*/
-	text = g_strdup( cstr ? cstr : st_def_field_sep );
-	priv->field_sep = atoi( text );
-	g_free( text );
+	priv->field_sep = cstr ? atoi( cstr ) : st_def_field_sep;
 
 	/* with headers */
 	it = it ? it->next : NULL;
@@ -607,23 +602,6 @@ ofa_stream_format_get_string_delim( const ofaStreamFormat *settings )
 }
 
 /**
- * ofa_stream_format_get_has_headers:
- */
-gboolean
-ofa_stream_format_get_has_headers( const ofaStreamFormat *settings )
-{
-	ofaStreamFormatPrivate *priv;
-
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
-
-	priv = ofa_stream_format_get_instance_private( settings );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	return( priv->indicators & OFA_SFHAS_HEADERS );
-}
-
-/**
  * ofa_stream_format_get_with_headers:
  */
 gboolean
@@ -679,7 +657,7 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 								gboolean has_decimal_sep, gchar decimal_sep,
 								gboolean has_field_sep, gchar field_sep,
 								gboolean has_string_delim, gchar string_delim,
-								gboolean has_headers, gint count_headers )
+								gint count_headers )
 {
 	static const gchar *thisfn = "ofa_stream_format_set";
 	ofaStreamFormatPrivate *priv;
@@ -749,18 +727,12 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 
 	/* with headers */
 	priv->h.count_headers = 0;
-	priv->indicators &= ~OFA_SFHAS_HEADERS;
-	if( has_headers ){
-		if( priv->mode == OFA_SFMODE_EXPORT ){
-			priv->h.with_headers = count_headers > 0;
-			sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
-		} else {
-			priv->h.count_headers = count_headers;
-			sheaders = g_strdup_printf( "%d", priv->h.count_headers );
-		}
-		priv->indicators |= OFA_SFHAS_HEADERS;
+	if( priv->mode == OFA_SFMODE_EXPORT ){
+		priv->h.with_headers = count_headers > 0;
+		sheaders = g_strdup_printf( "%s", priv->h.with_headers ? "True":"False" );
 	} else {
-		sheaders = g_strdup( "" );
+		priv->h.count_headers = count_headers;
+		sheaders = g_strdup_printf( "%d", priv->h.count_headers );
 	}
 	prefs_list = g_list_append( prefs_list, sheaders );
 
