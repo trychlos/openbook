@@ -52,6 +52,7 @@
 #include "api/ofo-rate.h"
 
 #include "core/ofa-stream-format-bin.h"
+#include "core/ofa-stream-format-disp.h"
 
 #include "ui/ofa-export-assistant.h"
 
@@ -63,46 +64,50 @@
  * + one result page (page '5')
  */
 typedef struct {
-	gboolean            dispose_has_run;
+	gboolean             dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter         *getter;
-	ofaIDBMeta         *meta;
+	ofaIGetter          *getter;
+	ofaIDBMeta          *meta;
 
 	/* p0: introduction
 	 */
 
 	/* p1: select data type to be exported
 	 */
-	GList              *p1_exportables;
-	GtkWidget          *p1_parent;
-	gint                p1_row;
-	GtkWidget          *p1_selected_btn;
-	gchar              *p1_selected_class;
-	gchar              *p1_selected_label;
+	GList               *p1_exportables;
+	GtkWidget           *p1_parent;
+	gint                 p1_row;
+	GtkWidget           *p1_selected_btn;
+	gchar               *p1_selected_class;
+	gchar               *p1_selected_label;
 
 	/* p2: select format
 	 */
-	GtkWidget          *p2_datatype;
-	ofaStreamFormat    *p2_export_settings;
-	ofaStreamFormatBin *p2_settings_prefs;
-	GtkWidget          *p2_message;
-	gchar              *p2_format;
+	GtkWidget           *p2_datatype;
+	ofaStreamFormat     *p2_export_settings;
+	ofaStreamFormatBin  *p2_settings_prefs;
+	GtkWidget           *p2_message;
+	gchar               *p2_format;
 
 	/* p3: output file
 	 */
-	GtkWidget          *p3_datatype;
-	GtkWidget          *p3_format;
-	GtkFileChooser     *p3_chooser;
-	gchar              *p3_furi;			/* the output file URI */
-	gchar              *p3_last_folder;
+	GtkWidget           *p3_datatype;
+	GtkWidget           *p3_format;
+	GtkFileChooser      *p3_chooser;
+	gchar               *p3_furi;			/* the output file URI */
+	gchar               *p3_last_folder;
+
+	/* p4: confirm
+	 */
+	ofaStreamFormatDisp *p4_format;
 
 	/* p5: apply
 	 */
-	myProgressBar      *p5_bar;
-	ofaIExportable     *p5_base;
-	GtkWidget          *p5_page;
+	myProgressBar       *p5_bar;
+	ofaIExportable      *p5_base;
+	GtkWidget           *p5_page;
 }
 	ofaExportAssistantPrivate;
 
@@ -170,6 +175,7 @@ static void      p3_on_selection_changed( GtkFileChooser *chooser, ofaExportAssi
 static void      p3_on_file_activated( GtkFileChooser *chooser, ofaExportAssistant *self );
 static gboolean  p3_check_for_complete( ofaExportAssistant *self );
 static void      p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void      p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static void      p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static gboolean  p3_confirm_overwrite( const ofaExportAssistant *self, const gchar *fname );
 static void      p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
@@ -202,7 +208,7 @@ static const ofsIAssistant st_pages_cb [] = {
 				( myIAssistantCb ) p3_do_display,
 				( myIAssistantCb ) p3_do_forward },
 		{ ASSIST_PAGE_CONFIRM,
-				NULL,
+				( myIAssistantCb ) p4_do_init,
 				( myIAssistantCb ) p4_do_display,
 				NULL },
 		{ ASSIST_PAGE_DONE,
@@ -918,13 +924,49 @@ p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
  * ask the user to confirm the operation
  */
 static void
+p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
+{
+	static const gchar *thisfn = "ofa_export_assistant_p4_do_init";
+	ofaExportAssistantPrivate *priv;
+	GtkWidget *label, *parent;
+	GtkSizeGroup *group;
+
+	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
+			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
+
+	priv = ofa_export_assistant_get_instance_private( self );
+
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-content-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-format-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( group, label );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-target-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( group, label );
+
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-stream-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	priv->p4_format = ofa_stream_format_disp_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p4_format ));
+	my_utils_size_group_add_size_group(
+			group, ofa_stream_format_disp_get_size_group( priv->p4_format, 0 ));
+
+	g_object_unref( group );
+}
+
+static void
 p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_export_assistant_p5_do_prepare_confirm";
+	static const gchar *thisfn = "ofa_export_assistant_p4_do_display";
 	ofaExportAssistantPrivate *priv;
 	GtkWidget *label;
-	gchar *str;
-	gint format;
 	gboolean complete;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
@@ -937,50 +979,7 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	my_utils_widget_set_style( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p1_selected_label );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-format" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	gtk_label_set_text( GTK_LABEL( label ), priv->p2_format );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-charmap" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	gtk_label_set_text( GTK_LABEL( label ), ofa_stream_format_get_charmap( priv->p2_export_settings ));
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-date" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	format = ofa_stream_format_get_date_format( priv->p2_export_settings );
-	gtk_label_set_text( GTK_LABEL( label ), my_date_get_format_str( format ));
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-decimal" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	str = g_strdup_printf( "%c", ofa_stream_format_get_decimal_sep( priv->p2_export_settings ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-field" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( priv->p2_export_settings ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-strdelim" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	str = g_strdup_printf( "%c", ofa_stream_format_get_string_delim( priv->p2_export_settings ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-headers" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
-	str = g_strdup(
-			ofa_stream_format_get_with_headers( priv->p2_export_settings ) ? _( "True" ) : _( "False" ));
-	gtk_label_set_text( GTK_LABEL( label ), str );
-	g_free( str );
+	ofa_stream_format_disp_set_format( priv->p4_format, priv->p2_export_settings );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

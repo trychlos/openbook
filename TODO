@@ -398,14 +398,10 @@
 1056 2016- 3-31 FEAT use gtk_scrollable_get_vadjustment() in GtkTextView
                      (ofaIDBModel, ofaImportAssistant, others ?)
 
-1057 2016- 4- 1 CODE ofaExportAssistant: use ofaStreamFormatDisp
-
 1058 2016- 4- 2 CODE split ofo-entry.c
 
 1061 2016- 4- 2 FEAT save the table before import, restoring it in case
                 of an error
-
-1064 2016- 4- 3 FEAT ofaStreamFormatDisp: display same label than in combo
 
 1069
 
@@ -1061,6 +1057,9 @@
      2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
                 ofaIDBMeta and ofaIDBPeriod are left
 
+1057 2016- 4- 1 CODE ofaExportAssistant: use ofaStreamFormatDisp
+     2016- 4- 8 done
+
 1059 2016- 4- 2 FEAT ofaIImportable: have a warns_on_empty_on_import() method
                 use case: when importing entries
      2016- 4- 7 done: the import assistant ask for user confirmation.
@@ -1077,6 +1076,9 @@
 
 1063 2016- 4- 3 CODE ofaStreamFormat: define global constants for delimiters
      2016- 4- 8 done with myChar introduction
+
+1064 2016- 4- 3 FEAT ofaStreamFormatDisp: display same label than in combo
+     2016- 4- 8 done
 
 1065 2016- 4- 3 CODE ofaIDBProvider::new_meta, new_connect, new_editor methods
                 should have a provider arg.

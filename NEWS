@@ -36,10 +36,13 @@
    - myThousandCombo: new class for thousand separator selection.
    - ofaMysl: implements ofaIAbout interface.
    - ofaMysl: implements ofaIProperties interface.
+   - ofaExportAssistant: makes use of ofaStreamformatDisp (todo #1057).
    - ofaPluginManager: displays instanciated objects (todo #1066).
    - ofaPluginManager: displays About page (todo #1066).
    - ofaPluginManager: displays Properties page (todo #1066).
-   - ofaStreamFormat: homogeneize character display (todo #1063).
+   - ofaStreamFormat: remove 'has headers' indicator.
+   - ofaStreamFormatBin: homogeneize character display (todo #1063).
+   - ofaStreamFormatDisp: homogeneize character display (todo #1064).
  
 
  Bug fixes:
