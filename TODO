@@ -386,8 +386,6 @@
 
 1049 2016- 3-23 FEAT make ofaRecurrentModel importable
 
-1050 2016- 3-25 CODE merge the importers
-
 1053 2016- 3-26 CODE review the menu distribution
 
 1054 2016- 3-28 BUG  size and position of a myIWindow should not depend
@@ -397,8 +395,6 @@
 
 1056 2016- 3-31 FEAT use gtk_scrollable_get_vadjustment() in GtkTextView
                      (ofaIDBModel, ofaImportAssistant, others ?)
-
-1058 2016- 4- 2 CODE split ofo-entry.c
 
 1069
 
@@ -1044,6 +1040,9 @@
                      of the progress bar (as in check balances)
      2016- 3-22
 
+1050 2016- 3-25 CODE merge the importers
+     2016- 4- 8 done
+
 1051 2016- 3-26 FEAT add account import on dossier creation
      2016- 3-27 done
 
@@ -1056,6 +1055,9 @@
 
 1057 2016- 4- 1 CODE ofaExportAssistant: use ofaStreamFormatDisp
      2016- 4- 8 done
+
+1058 2016- 4- 2 CODE split ofo-entry.c
+     2016- 4- 8 cancelled
 
 1059 2016- 4- 2 FEAT ofaIImportable: have a warns_on_empty_on_import() method
                 use case: when importing entries

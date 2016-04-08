@@ -99,7 +99,7 @@ void         ofa_settings_set_uint_list              ( ofaSettingsTarget target,
 															const gchar *key,
 															const GList *value );
 
-#define      ofa_settings_free_uint_list(L)          g_list_free( L )
+#define      ofa_settings_free_uint_list(L)          if( L ) g_list_free( L )
 
 gchar       *ofa_settings_get_string                 ( ofaSettingsTarget target,
 															const gchar *group,
@@ -119,7 +119,7 @@ void         ofa_settings_set_string_list            ( ofaSettingsTarget target,
 															const gchar *key,
 															const GList *value );
 
-#define      ofa_settings_free_string_list(L)        g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+#define      ofa_settings_free_string_list(L)        if( L ) g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
 /* user preferences management
  */

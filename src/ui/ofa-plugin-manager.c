@@ -240,15 +240,13 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, key );
 
-	if( slist ){
-		it = slist;
-		cstr = it ? ( const gchar * ) it->data : NULL;
-		if( my_strlen( cstr )){
-			priv->plugin_pane_pos = atoi( cstr );
-		}
-
-		my_isettings_free_string_list( settings, slist );
+	it = slist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->plugin_pane_pos = atoi( cstr );
 	}
+
+	my_isettings_free_string_list( settings, slist );
 
 	if( priv->plugin_pane_pos < 150 ){
 		priv->plugin_pane_pos = 150;

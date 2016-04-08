@@ -454,30 +454,28 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
 
-	if( slist ){
-		it = slist;
-		cstr = it ? ( const gchar * ) it->data : NULL;
-		if( my_strlen( cstr )){
-			priv->p2_selected_type = g_type_from_name( cstr );
-		}
-		it = it ? it->next : NULL;
-		cstr = it ? ( const gchar * ) it->data : NULL;
-		if( my_strlen( cstr )){
-			priv->p4_empty = my_utils_boolean_from_str( cstr );
-		}
-		it = it ? it->next : NULL;
-		cstr = it ? ( const gchar * ) it->data : NULL;
-		if( my_strlen( cstr )){
-			priv->p4_import_mode = atoi( cstr );
-		}
-		it = it ? it->next : NULL;
-		cstr = it ? ( const gchar * ) it->data : NULL;
-		if( my_strlen( cstr )){
-			priv->p4_stop = my_utils_boolean_from_str( cstr );
-		}
-
-		my_isettings_free_string_list( settings, slist );
+	it = slist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p2_selected_type = g_type_from_name( cstr );
 	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_empty = my_utils_boolean_from_str( cstr );
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_import_mode = atoi( cstr );
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_stop = my_utils_boolean_from_str( cstr );
+	}
+
+	my_isettings_free_string_list( settings, slist );
 
 	priv->p1_folder = ofa_settings_dossier_get_string( priv->meta, st_import_folder );
 }

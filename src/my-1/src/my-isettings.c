@@ -720,12 +720,11 @@ my_isettings_free_string_list( const myISettings *instance, GList *string_list )
 	g_debug( "%s: instance=%p, string_list=%p", thisfn, ( void * ) instance, ( void * ) string_list );
 
 	g_return_if_fail( instance && MY_IS_ISETTINGS( instance ));
-	g_return_if_fail( string_list );
 
 	if( MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list ){
 		MY_ISETTINGS_GET_INTERFACE( instance )->free_string_list( string_list );
 
-	} else {
+	} else if( string_list ){
 		g_list_free_full( string_list, ( GDestroyNotify ) g_free );
 	}
 }

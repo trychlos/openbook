@@ -379,15 +379,13 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
 
-	if( slist ){
-		it = slist;
-		cstr = it ? it->data : NULL;
-		if( my_strlen( cstr )){
-			priv->p1_selected_class = g_strdup( cstr );
-		}
-
-		my_isettings_free_string_list( settings, slist );
+	it = slist;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p1_selected_class = g_strdup( cstr );
 	}
+
+	my_isettings_free_string_list( settings, slist );
 
 	priv->p3_furi = ofa_settings_dossier_get_string( priv->meta, st_export_folder );
 }
