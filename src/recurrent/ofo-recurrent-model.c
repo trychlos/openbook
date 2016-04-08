@@ -37,6 +37,7 @@
 #include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-iexportable.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-ope-template.h"
@@ -120,10 +121,15 @@ static gint               recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a
 static void               icollectionable_iface_init( ofaICollectionableInterface *iface );
 static guint              icollectionable_get_interface_version( void );
 static GList             *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static void               iexportable_iface_init( ofaIExportableInterface *iface );
+static guint              iexportable_get_interface_version( void );
+static gchar             *iexportable_get_label( const ofaIExportable *instance );
+static gboolean           iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentModel )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ))
 
 static void
 recurrent_model_finalize( GObject *instance )
@@ -910,4 +916,76 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 					hub );
 
 	return( dataset );
+}
+
+/*
+ * ofaIExportable interface management
+ */
+static void
+iexportable_iface_init( ofaIExportableInterface *iface )
+{
+	static const gchar *thisfn = "ofo_recurrent_model_iexportable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iexportable_get_interface_version;
+	iface->get_label = iexportable_get_label;
+	iface->export = iexportable_export;
+}
+
+static guint
+iexportable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static gchar *
+iexportable_get_label( const ofaIExportable *instance )
+{
+	return( g_strdup( _( "_Recurrent operation definitions" )));
+}
+
+/*
+ * iexportable_export:
+ *
+ * Exports the models.
+ *
+ * Returns: TRUE at the end if no error has been detected
+ */
+static gboolean
+iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+{
+	gchar *str;
+	GList *dataset, *it;
+	gboolean with_headers, ok;
+	gulong count;
+
+	dataset = ofo_recurrent_model_get_dataset( hub );
+	with_headers = ofa_stream_format_get_with_headers( settings );
+
+	count = ( gulong ) g_list_length( dataset );
+	if( with_headers ){
+		count += 1;
+	}
+	ofa_iexportable_set_count( exportable, count );
+
+	if( with_headers ){
+		str = ofa_box_csv_get_header( st_boxed_defs, settings );
+		ok = ofa_iexportable_set_line( exportable, str );
+		g_free( str );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	for( it=dataset ; it ; it=it->next ){
+		str = ofa_box_csv_get_line( OFO_BASE( it->data )->prot->fields, settings );
+		ok = ofa_iexportable_set_line( exportable, str );
+		g_free( str );
+		if( !ok ){
+			return( FALSE );
+		}
+	}
+
+	return( TRUE );
 }

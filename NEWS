@@ -46,8 +46,8 @@
    - ofaStreamFormat: remove 'has headers' indicator.
    - ofaStreamFormatBin: homogeneize character display (todo #1063).
    - ofaStreamFormatDisp: homogeneize character display (todo #1064).
+   - ofoRecurrentModel: is exportable (todo #1048).
  
-
  Bug fixes:
 
    - my_isettings_free_string_list(), ofa_settings_free_string_list(): be NULL-tolerant.
