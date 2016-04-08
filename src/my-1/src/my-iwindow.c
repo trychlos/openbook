@@ -697,7 +697,7 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 		g_free( key_prefix );
 		key_prefix = get_default_identifier( instance );
 	}
-	if( !my_utils_window_restore_position( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
+	if( !my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
 		iwindow_set_default_size( instance );
 	}
 	g_free( key_prefix );
@@ -709,12 +709,12 @@ position_save( myIWindow *instance, sIWindow *sdata )
 	gchar *key_prefix, *default_key;
 
 	key_prefix = iwindow_get_key_prefix( instance );
-	my_utils_window_save_position( GTK_WINDOW( instance ), sdata->settings, key_prefix );
+	my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, key_prefix );
 	g_free( key_prefix );
 
 	default_key = get_default_identifier( instance );
 	if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
-		my_utils_window_save_position( GTK_WINDOW( instance ), sdata->settings, default_key );
+		my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, default_key );
 	}
 }
 

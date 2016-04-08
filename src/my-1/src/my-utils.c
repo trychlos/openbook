@@ -51,7 +51,7 @@ static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static gboolean utils_css_provider_setup( void );
-static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
+static void     position_set_from_int_list( GList *list, gint *x, gint *y, gint *width, gint *height );
 static gchar   *position_get_key( const gchar *name );
 static GSList  *split_by_line( const gchar *content );
 static gboolean is_dir( GFile *file );
@@ -1613,7 +1613,7 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
 }
 
 /**
- * my_utils_window_restore_position:
+ * my_utils_window_position_restore:
  * @toplevel: a #GtkWindow whose size and position has to be restored
  *  from the settings.
  * @settings: the #myISettings implementation which holds these settings.
@@ -1623,9 +1623,9 @@ my_utils_pango_layout_ellipsize( PangoLayout *layout, gint max_width )
  * Returns: %TRUE if size and position have been set, %FALSE else.
  */
 gboolean
-my_utils_window_restore_position( GtkWindow *toplevel, myISettings *settings, const gchar *name )
+my_utils_window_position_restore( GtkWindow *toplevel, myISettings *settings, const gchar *name )
 {
-	static const gchar *thisfn = "my_utils_window_restore_position";
+	static const gchar *thisfn = "my_utils_window_position_restore";
 	gchar *key;
 	GList *list;
 	gint x=0, y=0, width=0, height=0;
@@ -1641,7 +1641,7 @@ my_utils_window_restore_position( GtkWindow *toplevel, myISettings *settings, co
 	set = ( list != NULL );
 
 	if( list ){
-		int_list_to_position( list, &x, &y, &width, &height );
+		position_set_from_int_list( list, &x, &y, &width, &height );
 		g_debug( "%s: name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
 		my_isettings_free_uint_list( settings, list );
 
@@ -1656,7 +1656,7 @@ my_utils_window_restore_position( GtkWindow *toplevel, myISettings *settings, co
  * extract the position of the window from the list of unsigned integers
  */
 static void
-int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height )
+position_set_from_int_list( GList *list, gint *x, gint *y, gint *width, gint *height )
 {
 	GList *it;
 	int i;
@@ -1685,7 +1685,7 @@ int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height )
 }
 
 /**
- * my_utils_window_save_position:
+ * my_utils_window_position_save:
  * @toplevel: a #GtkWindow whose size and position has to be saved to
  *  the settings.
  * @settings: the #myISettings implementation which holds these settings.
@@ -1695,9 +1695,9 @@ int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height )
  * Save size and position of @toplevel to @settings.
  */
 void
-my_utils_window_save_position( GtkWindow *toplevel, myISettings *settings, const gchar *name )
+my_utils_window_position_save( GtkWindow *toplevel, myISettings *settings, const gchar *name )
 {
-	static const gchar *thisfn = "my_utils_window_save_position";
+	static const gchar *thisfn = "my_utils_window_position_save";
 	gint x, y, width, height;
 	gchar *key, *str;
 

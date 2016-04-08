@@ -388,10 +388,6 @@
 
 1053 2016- 3-26 CODE review the menu distribution
 
-1054 2016- 3-28 BUG  size and position of a myIWindow should not depend
-                     of the identifier but only of the class
-     2016- 4- 8 done by rather defining a suitable default
-
 1069
 
 -----------------------------------------------------------------------
@@ -1048,6 +1044,10 @@
                       ofaIDBPeriod to ofaPortfolioPeriod
      2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
                 ofaIDBMeta and ofaIDBPeriod are left
+
+1054 2016- 3-28 BUG  size and position of a myIWindow should not depend
+                     of the identifier but only of the class
+     2016- 4- 8 done by rather defining a suitable default
 
 1055 2016- 3-31 CODE use ofa_hub_disconnect_handlers
      2016- 4- 8 done

@@ -508,7 +508,7 @@ do_execute_async( const gchar *template,
 			gtk_dialog_run( GTK_DIALOG( infos->window ));
 
 			settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
-			my_utils_window_save_position( GTK_WINDOW( infos->window ), settings, st_window_name );
+			my_utils_window_position_save( GTK_WINDOW( infos->window ), settings, st_window_name );
 
 		} else {
 			g_main_loop_run( infos->loop );
@@ -568,7 +568,7 @@ async_create_window( sExecuteInfos *infos, const gchar *window_title )
 	gtk_widget_set_sensitive( infos->close_btn, FALSE );
 
 	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
-	my_utils_window_restore_position( GTK_WINDOW( infos->window ), settings, st_window_name );
+	my_utils_window_position_restore( GTK_WINDOW( infos->window ), settings, st_window_name );
 
 	gtk_widget_show_all( infos->window );
 }

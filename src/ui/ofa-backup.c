@@ -107,7 +107,7 @@ backup_dispose( GObject *instance )
 
 		/* unref object members here */
 		settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
-		my_utils_window_save_position( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
+		my_utils_window_position_save( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
 
 		gtk_widget_destroy( priv->dialog );
 
@@ -205,7 +205,7 @@ init_dialog( ofaBackup *self )
 							NULL );
 
 	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
-	my_utils_window_restore_position( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
+	my_utils_window_position_restore( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
 
 	gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( priv->dialog ), TRUE );
 

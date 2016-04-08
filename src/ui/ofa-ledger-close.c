@@ -573,7 +573,7 @@ do_close( ofaLedgerClose *self )
 					_( "_Close" ), GTK_RESPONSE_OK,
 					NULL );
 
-	my_utils_window_restore_position( GTK_WINDOW( dialog ),
+	my_utils_window_position_restore( GTK_WINDOW( dialog ),
 			ofa_settings_get_settings( SETTINGS_TARGET_USER ), "ofaLedgerClosing" );
 
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
@@ -608,7 +608,7 @@ do_close( ofaLedgerClose *self )
 	gtk_widget_set_sensitive( button, TRUE );
 	gtk_dialog_run( GTK_DIALOG( dialog ));
 
-	my_utils_window_save_position( GTK_WINDOW( dialog ),
+	my_utils_window_position_save( GTK_WINDOW( dialog ),
 			ofa_settings_get_settings( SETTINGS_TARGET_USER ), "ofaLedgerClosing" );
 
 	gtk_widget_destroy( dialog );

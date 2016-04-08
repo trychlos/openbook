@@ -33,6 +33,7 @@
  New features and improvements:
 
    - myIDialog: provides  a default error message.
+   - myIWindow: improve size and position management (todo #1054).
    - myThousandCombo: new class for thousand separator selection.
    - ofaMysl: implements ofaIAbout interface.
    - ofaMysl: implements ofaIProperties interface.
@@ -327,7 +328,7 @@
    - my_utils_unquote_regexp(): new function.
    - my_utils_uri_get_content(): new function.
    - my_utils_widget_set_margin(): renamed as my_utils_widget_set_margins().
-   - my_utils_window_restore_position(): now returns %TRUE is a position has been restored.
+   - my_utils_window_position_restore(): now returns %TRUE is a position has been restored.
    - ofaBox: have to/from string, to/from dbms (todo #1029).
    - ofaBox: refactoring exports with ofaStreamFormat (todo #1030).
    - ofa_file_set_mode(): new method.
