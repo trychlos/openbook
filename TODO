@@ -400,9 +400,6 @@
 
 1058 2016- 4- 2 CODE split ofo-entry.c
 
-1061 2016- 4- 2 FEAT save the table before import, restoring it in case
-                of an error
-
 1069
 
 -----------------------------------------------------------------------
@@ -1069,6 +1066,10 @@
      2016- 4- 7 cancelled
                 -> duplicate mode is handled by import assistant
                 -> in particular entries can not detect duplicates.
+
+1061 2016- 4- 2 FEAT save the table before import, restoring it in case
+                of an error
+     2016- 4- 8 done
 
 1062 2016- 4- 2 FEAT ofaIImporter may provide their own ofaStreamFormat
                 which may or may not be changed

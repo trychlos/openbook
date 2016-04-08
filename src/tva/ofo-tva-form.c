@@ -1752,16 +1752,29 @@ static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
 	GList *dataset;
+	gchar *bck_table, *bck_det_table, *bck_bool_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "TVA_T_FORMS" );
+		bck_det_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "TVA_T_FORMS_DET" );
+		bck_bool_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "TVA_T_FORMS_BOOL" );
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
 			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_TVA_FORM );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
+
+		} else {
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "TVA_T_FORMS" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_det_table, "TVA_T_FORMS_DET" );
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_bool_table, "TVA_T_FORMS_BOOL" );
 		}
+
+		g_free( bck_table );
+		g_free( bck_det_table );
+		g_free( bck_bool_table );
 	}
 
 	if( dataset ){

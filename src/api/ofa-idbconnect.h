@@ -335,6 +335,13 @@ gboolean        ofa_idbconnect_query_int                 ( const ofaIDBConnect *
 gboolean        ofa_idbconnect_has_table                 ( const ofaIDBConnect *connect,
 																const gchar *table );
 
+gchar          *ofa_idbconnect_table_backup              ( const ofaIDBConnect *connect,
+																const gchar *table );
+
+gboolean        ofa_idbconnect_table_restore             ( const ofaIDBConnect *connect,
+																const gchar *table_src,
+																const gchar *table_dest );
+
 #define         ofa_idbconnect_free_results( L )         g_debug( "ofa_idbconnect_free_results" ); \
 																g_slist_foreach(( L ), ( GFunc ) g_slist_free_full, g_free ); \
 																g_slist_free( L )

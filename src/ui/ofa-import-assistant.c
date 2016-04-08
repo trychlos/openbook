@@ -1567,7 +1567,7 @@ p7_do_import( ofaImportAssistant *self )
 
 	} else if( parms.parse_errs > 0 ){
 		text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors "
-				"during analyse and import phase.\n"
+				"during analyse and parsing phase.\n"
 				"The « %s » recordset has been left unchanged.\n"
 				"Please fix these errors, and retry." ), priv->p1_furi, priv->p2_selected_label );
 		style = "labelerror";
@@ -1575,7 +1575,7 @@ p7_do_import( ofaImportAssistant *self )
 	} else if( parms.insert_errs > 0 ){
 		text = g_strdup_printf( _( "Unfortunately, '%s' import has encountered errors "
 				"during insertion phase.\n"
-				"The « %s » recordset may have been modified.\n"
+				"The « %s » recordset has been restored to its initial state.\n"
 				"Please fix these errors, and retry." ), priv->p1_furi, priv->p2_selected_label );
 		style = "labelerror";
 	}

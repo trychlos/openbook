@@ -37,6 +37,7 @@
    - ofaMysl: implements ofaIAbout interface.
    - ofaMysl: implements ofaIProperties interface.
    - ofaExportAssistant: makes use of ofaStreamformatDisp (todo #1057).
+   - ofaImport: save table before insertion, restoring it on error (todo #1061).
    - ofaPluginManager: displays instanciated objects (todo #1066).
    - ofaPluginManager: displays About page (todo #1066).
    - ofaPluginManager: displays Properties page (todo #1066).

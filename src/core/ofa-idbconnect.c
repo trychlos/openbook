@@ -670,6 +670,82 @@ ofa_idbconnect_has_table( const ofaIDBConnect *connect, const gchar *table )
 	return( found );
 }
 
+/**
+ * ofa_idbconnect_table_backup:
+ * @connect: this #ofaIDBConnect instance.
+ * @table: the name of the table to be saved.
+ *
+ * Backup the @table table.
+ *
+ * Returns: the name of the backup table, as a newly allocated string
+ * which should be g_free() by the caller.
+ */
+gchar *
+ofa_idbconnect_table_backup( const ofaIDBConnect *connect, const gchar *table )
+{
+	gchar *output, *query;
+	gboolean ok;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+	g_return_val_if_fail( my_strlen( table ), NULL );
+
+	output = g_strdup_printf( "BACKUP_%s", table );
+	ok = TRUE;
+
+	if( ok ){
+		query = g_strdup_printf( "DROP TABLE IF EXISTS %s", output );
+		ok = ofa_idbconnect_query( connect, query, FALSE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup_printf( "CREATE TABLE %s SELECT * FROM %s ", output, table );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+	}
+	if( !ok ){
+		g_free( output );
+		output = NULL;
+	}
+
+	return( output );
+}
+
+/**
+ * ofa_idbconnect_table_restore:
+ * @connect: this #ofaIDBConnect instance.
+ * @table_src: the source of the restoration.
+ * @table_dest: the target of the restoration.
+ *
+ * Restore @table_src to @table_dest.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_table_restore( const ofaIDBConnect *connect, const gchar *table_src, const gchar *table_dest )
+{
+	gboolean ok;
+	gchar *query;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+	g_return_val_if_fail( my_strlen( table_src ), FALSE );
+	g_return_val_if_fail( my_strlen( table_dest ), FALSE );
+
+	ok = TRUE;
+
+	if( ok ){
+		query = g_strdup_printf( "DROP TABLE IF EXISTS %s", table_dest );
+		ok = ofa_idbconnect_query( connect, query, FALSE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup_printf( "CREATE TABLE %s SELECT * FROM %s ", table_dest, table_src );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+	}
+
+	return( ok );
+}
+
 static void
 audit_query( const ofaIDBConnect *connect, const gchar *query )
 {

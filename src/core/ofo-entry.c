@@ -2910,11 +2910,19 @@ static guint
 iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
 	GList *dataset;
+	gchar *bck_table;
 
 	dataset = iimportable_import_parse( importer, parms, lines );
 
 	if( parms->parse_errs == 0 && parms->parsed_count > 0 ){
+		bck_table = ofa_idbconnect_table_backup( ofa_hub_get_connect( parms->hub ), "OFA_T_ENTRIES" );
 		iimportable_import_insert( importer, parms, dataset );
+
+		if( parms->insert_errs > 0 ){
+			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_ENTRIES" );
+		}
+
+		g_free( bck_table );
 	}
 
 	if( dataset ){
