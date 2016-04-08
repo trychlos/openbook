@@ -1685,6 +1685,7 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 	GtkTextBuffer *buffer;
 	GtkTextIter iter;
 	gchar *str;
+	GtkAdjustment* adjustment;
 
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
@@ -1693,6 +1694,9 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 	gtk_text_buffer_get_end_iter( buffer, &iter );
 	gtk_text_buffer_insert( buffer, &iter, str, -1 );
 	g_free( str );
+
+	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->p7_text ));
+	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
 
 	/* let Gtk update the display */
 	while( gtk_events_pending()){

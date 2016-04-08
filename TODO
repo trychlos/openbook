@@ -393,9 +393,6 @@
 
 1055 2016- 3-31 CODE use ofa_hub_disconnect_handlers
 
-1056 2016- 3-31 FEAT use gtk_scrollable_get_vadjustment() in GtkTextView
-                     (ofaIDBModel, ofaImportAssistant, others ?)
-
 1069
 
 -----------------------------------------------------------------------
@@ -1052,6 +1049,10 @@
                       ofaIDBPeriod to ofaPortfolioPeriod
      2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
                 ofaIDBMeta and ofaIDBPeriod are left
+
+1056 2016- 3-31 FEAT use gtk_scrollable_get_vadjustment() in GtkTextView
+                     (ofaIDBModel, ofaImportAssistant, others ?)
+     2016- 4- 8 done
 
 1057 2016- 4- 1 CODE ofaExportAssistant: use ofaStreamFormatDisp
      2016- 4- 8 done

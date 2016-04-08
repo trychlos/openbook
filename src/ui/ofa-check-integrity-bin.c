@@ -80,6 +80,7 @@ typedef struct {
 	GtkWidget     *upper_viewport;
 	GtkWidget     *objects_grid;
 	gint           objects_row;
+	GtkWidget     *text_view;
 	GtkTextBuffer *text_buffer;
 }
 	ofaCheckIntegrityBinPrivate;
@@ -1165,17 +1166,17 @@ static void
 iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text )
 {
 	ofaCheckIntegrityBinPrivate *priv;
-	GtkWidget *view;
 	GtkTextIter iter;
 	gchar *str;
+	GtkAdjustment* adjustment;
 
 	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
 	if( priv->display ){
 		if( !priv->text_buffer ){
-			view = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "textview" );
-			g_return_if_fail( view && GTK_IS_TEXT_VIEW( view ));
-			priv->text_buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( view ));
+			priv->text_view = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "textview" );
+			g_return_if_fail( priv->text_view && GTK_IS_TEXT_VIEW( priv->text_view ));
+			priv->text_buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->text_view ));
 		}
 		g_return_if_fail( priv->text_buffer && GTK_IS_TEXT_BUFFER( priv->text_buffer ));
 
@@ -1184,6 +1185,9 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 		str = g_strdup_printf( "%s\n", text );
 		gtk_text_buffer_insert( priv->text_buffer, &iter, str, -1 );
 		g_free( str );
+
+		adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->text_view ));
+		gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
 	}
 }
 

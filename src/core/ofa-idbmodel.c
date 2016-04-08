@@ -1128,6 +1128,7 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 	ofaDBModelWindowPrivate *priv;
 	GtkTextIter iter;
 	gchar *str;
+	GtkAdjustment* adjustment;
 
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
@@ -1136,6 +1137,9 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 	str = g_strdup_printf( "%s\n", text );
 	gtk_text_buffer_insert( priv->text_buffer, &iter, str, -1 );
 	g_free( str );
+
+	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->textview ));
+	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
 }
 
 static sWorker *
