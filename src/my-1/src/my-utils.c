@@ -52,6 +52,7 @@ static void     my_utils_container_dump_rec( GtkContainer *container, const gcha
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
 static gboolean utils_css_provider_setup( void );
 static void     int_list_to_position( GList *list, gint *x, gint *y, gint *width, gint *height );
+static gchar   *position_get_key( const gchar *name );
 static GSList  *split_by_line( const gchar *content );
 static gboolean is_dir( GFile *file );
 static gboolean is_readable_gfile( GFile *file );
@@ -1633,7 +1634,7 @@ my_utils_window_restore_position( GtkWindow *toplevel, myISettings *settings, co
 	/*g_debug( "%s: toplevel=%p (%s), name=%s",
 			thisfn, ( void * ) toplevel, G_OBJECT_TYPE_NAME( toplevel ), name );*/
 
-	key = g_strdup_printf( "%s-pos", name );
+	key = position_get_key( name );
 	list = my_isettings_get_uint_list( settings, st_save_restore_group, key );
 	g_free( key );
 	g_debug( "%s: list=%p (count=%d)", thisfn, ( void * ) list, g_list_length( list ));
@@ -1704,13 +1705,54 @@ my_utils_window_save_position( GtkWindow *toplevel, myISettings *settings, const
 	gtk_window_get_size( toplevel, &width, &height );
 	g_debug( "%s: wsp_name=%s, x=%d, y=%d, width=%d, height=%d", thisfn, name, x, y, width, height );
 
-	key = g_strdup_printf( "%s-pos", name );
+	key = position_get_key( name );
 	str = g_strdup_printf( "%d;%d;%d;%d;", x, y, width, height );
 
 	my_isettings_set_string( settings, st_save_restore_group, key, str );
 
 	g_free( str );
 	g_free( key );
+}
+
+/*
+ * position_get_key:
+ * @name: the prefix of the key in the settings; the actual key name
+ *  will be "@name-pos".
+ *
+ * Returns: the actual key to be used, as a newly allocated string
+ * which should be g_free() by the user.
+ */
+static gchar *
+position_get_key( const gchar *name )
+{
+	gchar *key;
+
+	key = g_strdup_printf( "%s-pos", name );
+
+	return( key );
+}
+
+/**
+ * my_utils_window_position_get_has_pos:
+ * @settings: the #myISettings implementation which holds these settings.
+ * @name: the prefix of the key in the settings; the actual key name
+ *  will be "@name-pos".
+ *
+ * Returns: %TRUE if this @name already has a saved size-position.
+ */
+gboolean
+my_utils_window_position_get_has_pos( myISettings *settings, const gchar *name )
+{
+	gboolean has_value;
+	gchar *key;
+
+	has_value = FALSE;
+
+	key = position_get_key( name );
+	has_value = my_isettings_has_key( settings, st_save_restore_group, key );
+	g_free( key );
+
+	return( has_value );
 }
 
 /**

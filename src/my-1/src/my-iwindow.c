@@ -60,9 +60,12 @@ static gboolean   iwindow_quit_on_escape( const myIWindow *instance );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance );
 static gchar     *iwindow_get_identifier( const myIWindow *instance );
+static gchar     *get_default_identifier( const myIWindow *instance );
 static gchar     *iwindow_get_key_prefix( const myIWindow *instance );
 static void       iwindow_set_default_size( myIWindow *instance );
 static void       iwindow_set_transient_for( myIWindow *instance );
+static void       position_restore( myIWindow *instance, sIWindow *sdata );
+static void       position_save( myIWindow *instance, sIWindow *sdata );
 static sIWindow  *get_iwindow_data( const myIWindow *instance );
 static void       on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow );
 
@@ -359,15 +362,9 @@ iwindow_init_application( myIWindow *instance )
 static void
 iwindow_init_window( myIWindow *instance, sIWindow *sdata )
 {
-	gchar *key_prefix;
-
 	iwindow_set_transient_for( instance );
 
-	key_prefix = iwindow_get_key_prefix( instance );
-	if( !my_utils_window_restore_position( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
-		iwindow_set_default_size( instance );
-	}
-	g_free( key_prefix );
+	position_restore( instance, sdata );
 
 	application_do_read_settings( instance, sdata );
 
@@ -557,7 +554,6 @@ do_close( myIWindow *instance )
 {
 	static const gchar *thisfn = "my_iwindow_do_close";
 	sIWindow *sdata;
-	gchar *key_prefix;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -565,9 +561,7 @@ do_close( myIWindow *instance )
 
 	application_do_write_settings( instance, sdata );
 
-	key_prefix = iwindow_get_key_prefix( instance );
-	my_utils_window_save_position( GTK_WINDOW( instance ), sdata->settings, key_prefix );
-	g_free( key_prefix );
+	position_save( instance, sdata );
 
 	if( sdata->hide_on_close ){
 		gtk_widget_hide( GTK_WIDGET( instance ));
@@ -598,6 +592,12 @@ iwindow_get_identifier( const myIWindow *instance )
 	g_info( "%s: myIWindow's %s implementation does not provide 'get_identifier()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 
+	return( get_default_identifier( instance ));
+}
+
+static gchar *
+get_default_identifier( const myIWindow *instance )
+{
 	return( g_strdup( G_OBJECT_TYPE_NAME( instance )));
 }
 
@@ -680,6 +680,42 @@ my_iwindow_msg_dialog( myIWindow *instance, GtkMessageType type, const gchar *ms
 	g_return_if_fail( my_strlen( msg ));
 
 	my_utils_msg_dialog( GTK_WINDOW( instance ), type, msg );
+}
+
+/*
+ * Save/restore the size and position for each identified myIWindow.
+ * Have a default to ClassName
+ */
+static void
+position_restore( myIWindow *instance, sIWindow *sdata )
+{
+	gchar *key_prefix;
+
+	key_prefix = iwindow_get_key_prefix( instance );
+
+	if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
+		g_free( key_prefix );
+		key_prefix = get_default_identifier( instance );
+	}
+	if( !my_utils_window_restore_position( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
+		iwindow_set_default_size( instance );
+	}
+	g_free( key_prefix );
+}
+
+static void
+position_save( myIWindow *instance, sIWindow *sdata )
+{
+	gchar *key_prefix, *default_key;
+
+	key_prefix = iwindow_get_key_prefix( instance );
+	my_utils_window_save_position( GTK_WINDOW( instance ), sdata->settings, key_prefix );
+	g_free( key_prefix );
+
+	default_key = get_default_identifier( instance );
+	if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
+		my_utils_window_save_position( GTK_WINDOW( instance ), sdata->settings, default_key );
+	}
 }
 
 static sIWindow *

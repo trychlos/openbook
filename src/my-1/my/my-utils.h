@@ -142,6 +142,7 @@ void          my_utils_pango_layout_ellipsize         ( PangoLayout *layout, gin
 
 gboolean      my_utils_window_restore_position        ( GtkWindow *window, myISettings *settings, const gchar *name );
 void          my_utils_window_save_position           ( GtkWindow *window, myISettings *settings, const gchar *name );
+gboolean      my_utils_window_position_get_has_pos    ( myISettings *settings, const gchar *name );
 
 gboolean      my_utils_file_exists                    ( const gchar *filename );
 gboolean      my_utils_file_is_readable_file          ( const gchar *filename );

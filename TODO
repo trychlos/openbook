@@ -390,6 +390,7 @@
 
 1054 2016- 3-28 BUG  size and position of a myIWindow should not depend
                      of the identifier but only of the class
+     2016- 4- 8 done by rather defining a suitable default
 
 1069
 
