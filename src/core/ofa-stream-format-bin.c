@@ -66,7 +66,7 @@ typedef struct {
 	GtkWidget       *field_parent;
 	GtkWidget       *field_label;
 	GtkWidget       *has_strdelim;
-	GtkWidget       *str_delim_entry;
+	GtkWidget       *strdelim_entry;
 	GtkWidget       *headers_btn;
 	GtkWidget       *headers_label;
 	GtkWidget       *headers_count;
@@ -753,14 +753,14 @@ str_delimiter_init( ofaStreamFormatBin *self )
 
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
-	priv->str_delim_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-string-delimiter" );
-	g_return_if_fail( priv->str_delim_entry && GTK_IS_ENTRY( priv->str_delim_entry ));
+	priv->strdelim_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-string-delimiter" );
+	g_return_if_fail( priv->strdelim_entry && GTK_IS_ENTRY( priv->strdelim_entry ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-string-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->str_delim_entry );
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->strdelim_entry );
 
-	g_signal_connect( priv->str_delim_entry, "changed", G_CALLBACK( str_delim_on_changed ), self );
+	g_signal_connect( priv->strdelim_entry, "changed", G_CALLBACK( str_delim_on_changed ), self );
 
 	priv->has_strdelim = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "ffb-has-strdelim" );
 	g_return_if_fail( priv->has_strdelim && GTK_IS_CHECK_BUTTON( priv->has_strdelim ));
@@ -777,7 +777,7 @@ str_delim_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( btn );
-	gtk_widget_set_sensitive( priv->str_delim_entry, active && priv->updatable );
+	gtk_widget_set_sensitive( priv->strdelim_entry, active && priv->updatable );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
@@ -1010,7 +1010,7 @@ setup_format( ofaStreamFormatBin *self )
 	str_delim_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_strdelim ), self );
 	str = g_strdup_printf( "%c", ofa_stream_format_get_string_delim( priv->settings ));
 	if( my_strlen( str )){
-		gtk_entry_set_text( GTK_ENTRY( priv->str_delim_entry ), str );
+		gtk_entry_set_text( GTK_ENTRY( priv->strdelim_entry ), str );
 	}
 	g_free( str );
 
@@ -1230,6 +1230,18 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		g_free( field_sep );
 	}
 
+	/* string delimiter */
+	has = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ));
+	if( has ){
+		cstr = gtk_entry_get_text( GTK_ENTRY( priv->strdelim_entry ));
+		if( !my_strlen( cstr )){
+			if( error_message ){
+				*error_message = g_strdup( _( "Invalid or unknown string delimiter" ));
+			}
+			return( FALSE );
+		}
+	}
+
 	return( TRUE );
 }
 
@@ -1297,7 +1309,7 @@ do_apply( ofaStreamFormatBin *self )
 	field_sep = has_field ? my_field_combo_get_selected( priv->field_combo ) : g_strdup( "" );
 
 	has_str = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ));
-	cstr = has_str ? gtk_entry_get_text( GTK_ENTRY( priv->str_delim_entry )) : NULL;
+	cstr = has_str ? gtk_entry_get_text( GTK_ENTRY( priv->strdelim_entry )) : NULL;
 	strdelim = g_strdup( cstr ? cstr : "");
 
 	if( mode == OFA_SFMODE_EXPORT ){
