@@ -781,6 +781,7 @@ check_for_activable_dlg( ofaPreferences *self )
 static gboolean
 do_update( ofaPreferences *self, gchar **msgerr )
 {
+	static const gchar *thisfn = "ofa_preferences_do_update";
 	gboolean ok;
 
 	ok = do_update_quitting_page( self, msgerr ) &&
@@ -790,6 +791,8 @@ do_update( ofaPreferences *self, gchar **msgerr )
 			do_update_export_page( self, msgerr ) &&
 			do_update_import_page( self, msgerr ) &&
 			update_prefs_plugin( self, msgerr );
+
+	g_debug( "%s: ok=%s", thisfn, ok ? "True":"False" );
 
 	return( ok );
 }
@@ -1239,14 +1242,12 @@ static gboolean
 update_prefs_plugin( ofaPreferences *self, gchar **msgerr )
 {
 	ofaPreferencesPrivate *priv;
-	gboolean ok;
 	gint pages_count, i;
 	GtkWidget *page;
 	const gchar *cstr;
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	ok = FALSE;
 	pages_count = gtk_notebook_get_n_pages( GTK_NOTEBOOK( priv->book ));
 
 	for( i=0 ; i<pages_count ; ++i ){
@@ -1257,5 +1258,5 @@ update_prefs_plugin( ofaPreferences *self, gchar **msgerr )
 		}
 	}
 
-	return( ok );
+	return( TRUE );
 }
