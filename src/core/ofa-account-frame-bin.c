@@ -210,13 +210,17 @@ account_frame_bin_dispose( GObject *instance )
 		/* unref object members here */
 
 		/* disconnect from ofaHub signaling system */
-		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 
 		/* disconnect from ofaAccountStore */
 		if( priv->store && OFA_IS_ACCOUNT_STORE( priv->store )){
 			for( it=priv->store_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
 			}
+		}
+		if( priv->store_handlers ){
+			g_list_free( priv->store_handlers );
+			priv->store_handlers = NULL;
 		}
 	}
 

@@ -290,7 +290,7 @@ guided_input_bin_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */

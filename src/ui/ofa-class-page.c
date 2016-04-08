@@ -125,7 +125,7 @@ classes_page_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( instance ));
 
-		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */

@@ -186,7 +186,7 @@ dossier_properties_dispose( GObject *instance )
 
 		/* unref object members here */
 		hub = ofa_igetter_get_hub( priv->getter );
-		ofa_hub_disconnect_handlers( hub, priv->hub_handlers );
+		ofa_hub_disconnect_handlers( hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */

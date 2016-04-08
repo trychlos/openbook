@@ -196,13 +196,17 @@ ope_template_frame_bin_dispose( GObject *instance )
 		g_clear_object( &priv->meta );
 
 		/* disconnect from ofaHub signaling system */
-		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 
 		/* disconnect from ofaOpeTemplateStore */
 		if( priv->store && OFA_IS_OPE_TEMPLATE_STORE( priv->store )){
 			for( it=priv->store_handlers ; it ; it=it->next ){
 				g_signal_handler_disconnect( priv->store, ( gulong ) it->data );
 			}
+		}
+		if( priv->store_handlers ){
+			g_list_free( priv->store_handlers );
+			priv->store_handlers = NULL;
 		}
 	}
 

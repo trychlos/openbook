@@ -130,7 +130,7 @@ ofaIImporter           *ofa_hub_get_willing_to            ( ofaHub *hub,
 																GType type );
 
 void                    ofa_hub_disconnect_handlers       ( ofaHub *hub,
-																GList *handlers );
+																GList **handlers );
 
 G_END_DECLS
 

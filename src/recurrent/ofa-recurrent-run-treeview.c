@@ -145,7 +145,6 @@ static void
 recurrent_run_treeview_dispose( GObject *instance )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
-	GList *it;
 
 	g_return_if_fail( instance && OFA_IS_RECURRENT_RUN_TREEVIEW( instance ));
 
@@ -158,9 +157,7 @@ recurrent_run_treeview_dispose( GObject *instance )
 		/* unref object members here */
 
 		/* disconnect from hub signaling system */
-		for( it=priv->hub_handlers ; it ; it=it->next ){
-			g_signal_handler_disconnect( priv->hub, ( gulong ) it->data );
-		}
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */

@@ -148,7 +148,7 @@ guided_ex_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ofa_guided_ex_get_instance_private( OFA_GUIDED_EX( instance ));
 
-		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */

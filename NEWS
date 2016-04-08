@@ -56,6 +56,7 @@
 
  Other changes:
 
+   - ofa_hub_disconnect_handlers: improve and generalize use (todo #1055).
    - ofaIDBProvider: all methods get an instance argument (todo #1065).
    - ofaIExeCloseClose interface is renamed to ofaIExeClose (todo #1067).
    - ofaIPrefsProvider, ofaIPrefsPage: deprecated interfaces.

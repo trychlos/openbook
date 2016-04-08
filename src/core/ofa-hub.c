@@ -911,26 +911,32 @@ ofa_hub_get_willing_to( ofaHub *hub, const gchar *uri, GType type )
  *  to the hub signaling system
  *
  * Disconnect the specified @handlers from the signaling system.
+ * Free the list and clear the @handlers pointer.
  *
  * Rationale: an object should disconnect its signals when it disappears
  * while the signal emitter is still alive, i.e. to prevent the signal
  * emitter to keep sending signals to a now-disappeared object.
  */
 void
-ofa_hub_disconnect_handlers( ofaHub *hub, GList *handlers )
+ofa_hub_disconnect_handlers( ofaHub *hub, GList **handlers )
 {
 	static const gchar *thisfn = "ofa_hub_disconnect_handlers";
 	ofaHubPrivate *priv;
 	GList *it;
 
 	g_debug( "%s: hub=%p, handlers=%p (count=%d)",
-			thisfn, ( void * ) hub, ( void * ) handlers, g_list_length( handlers ));
+			thisfn, ( void * ) hub, ( void * ) handlers, g_list_length( *handlers ));
 
 	priv = ofa_hub_get_instance_private( hub );
 
 	if( !priv->dispose_has_run ){
-		for( it=handlers ; it ; it=it->next ){
+		for( it=( *handlers ) ; it ; it=it->next ){
 			g_signal_handler_disconnect( hub, ( gulong ) it->data );
 		}
+	}
+
+	if( *handlers ){
+		g_list_free( *handlers );
+		*handlers = NULL;
 	}
 }

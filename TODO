@@ -391,8 +391,6 @@
 1054 2016- 3-28 BUG  size and position of a myIWindow should not depend
                      of the identifier but only of the class
 
-1055 2016- 3-31 CODE use ofa_hub_disconnect_handlers
-
 1069
 
 -----------------------------------------------------------------------
@@ -1049,6 +1047,9 @@
                       ofaIDBPeriod to ofaPortfolioPeriod
      2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
                 ofaIDBMeta and ofaIDBPeriod are left
+
+1055 2016- 3-31 CODE use ofa_hub_disconnect_handlers
+     2016- 4- 8 done
 
 1056 2016- 3-31 FEAT use gtk_scrollable_get_vadjustment() in GtkTextView
                      (ofaIDBModel, ofaImportAssistant, others ?)

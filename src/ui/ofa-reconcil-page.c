@@ -381,7 +381,7 @@ reconciliation_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( instance ));
 
-		ofa_hub_disconnect_handlers( priv->hub, priv->hub_handlers );
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 
 		if( priv->bats ){
 			g_list_free( priv->bats );
