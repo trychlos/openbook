@@ -504,7 +504,11 @@ do_update( myIDialog *instance )
 		if( ok ){
 			my_iwindow_close( MY_IWINDOW( instance ));
 
-		} else if( my_strlen( msgerr )){
+		} else {
+			if( !my_strlen( msgerr )){
+				g_free( msgerr );
+				msgerr = g_strdup( _( "Undefined error on update" ));
+			}
 			my_iwindow_msg_dialog( MY_IWINDOW( instance ), GTK_MESSAGE_WARNING, msgerr );
 			g_free( msgerr );
 		}

@@ -32,6 +32,7 @@
   
  New features and improvements:
 
+   - myIDialog: provides  a default error message.
    - myThousandCombo: new class for thousand separator selection.
    - ofaMysl: implements ofaIAbout interface.
    - ofaMysl: implements ofaIProperties interface.
