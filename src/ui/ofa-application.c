@@ -813,7 +813,7 @@ application_activate( GApplication *application )
 
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
-	if( 0 ){
+	if( 1 ){
 		maintainer_test_function();
 	}
 
@@ -901,6 +901,9 @@ maintainer_test_function( void )
 		g_debug( "%s: cstr=%s", thisfn, cstr );
 		g_debug( "%s: query=%s", thisfn, query );
 	}
+#endif
+#if 0
+	ofa_formula_test();
 #endif
 }
 /*                                                                   */

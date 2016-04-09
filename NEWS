@@ -32,6 +32,8 @@
   
  New features and improvements:
 
+   New formula engine.
+
    - myIDialog: provides  a default error message.
    - myIWindow: improve size and position management (todo #1054).
    - myThousandCombo: new class for thousand separator selection.
