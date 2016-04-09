@@ -42,6 +42,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-ope-template.h"
 
 #include "mysql/ofa-mysql-dbmodel.h"
 
@@ -109,6 +110,8 @@ static gboolean dbmodel_v28( ofaMysqlDBModel *self, gint version );
 static gulong   count_v28( ofaMysqlDBModel *self );
 static gboolean dbmodel_v29( ofaMysqlDBModel *self, gint version );
 static gulong   count_v29( ofaMysqlDBModel *self );
+static gboolean dbmodel_v30( ofaMysqlDBModel *self, gint version );
+static gulong   count_v30( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -121,6 +124,7 @@ static sMigration st_migrates[] = {
 		{ 27, dbmodel_v27, count_v27 },
 		{ 28, dbmodel_v28, count_v28 },
 		{ 29, dbmodel_v29, count_v29 },
+		{ 30, dbmodel_v30, count_v30 },
 		{ 0 }
 };
 
@@ -1616,4 +1620,49 @@ static gulong
 count_v29( ofaMysqlDBModel *self )
 {
 	return( 2 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v30:
+ *
+ * - Update ofaOpeTemplate rules for new formula engine.
+ */
+static gboolean
+dbmodel_v30( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v30";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET SET OTE_DET_ACCOUNT=CONCAT('=',OTE_DET_ACCOUNT) WHERE OTE_DET_ACCOUNT LIKE '%\\%%'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET SET OTE_DET_LABEL=CONCAT('=',OTE_DET_LABEL) WHERE OTE_DET_LABEL LIKE '%\\%%'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET SET OTE_DET_DEBIT=CONCAT('=',OTE_DET_DEBIT) WHERE OTE_DET_DEBIT LIKE '%\\%%'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"UPDATE OFA_T_OPE_TEMPLATES_DET SET OTE_DET_CREDIT=CONCAT('=',OTE_DET_CREDIT) WHERE OTE_DET_CREDIT LIKE '%\\%%'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v30( ofaMysqlDBModel *self )
+{
+	return( 4 );
 }

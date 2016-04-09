@@ -34,6 +34,7 @@
 
    New formula engine.
 
+   - DDL Core v 30
    - myIDialog: provides  a default error message.
    - myIWindow: improve size and position management (todo #1054).
    - myThousandCombo: new class for thousand separator selection.
