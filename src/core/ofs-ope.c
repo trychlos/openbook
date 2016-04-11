@@ -35,6 +35,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
+#include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -48,14 +49,29 @@
 #include "api/ofs-currency.h"
 #include "api/ofs-ope.h"
 
-/* an helper structure when computing formulas
+/* sEvalDef:
+ * @name: the name of the function.
+ * @args_count: the expected count of arguments, -1 for do not check.
+ * @eval: the evaluation function which provides the replacement string.
+ *
+ * Defines the evaluation callback functions.
  */
 typedef struct {
-	ofsOpe     *ope;
-	gint        comp_row;				/* counted from zero */
-	gint        comp_column;
+	const gchar *name;
+	gint         args_count;
+	gchar *   ( *eval )( ofsFormulaHelper * );
 }
-	sHelper;
+	sEvalDef;
+
+/* an helper structure when computing formulas
+ * @row: row number, counted from zero
+ */
+typedef struct {
+	ofsOpe *ope;
+	gint    row;
+	gint    column;
+}
+	sOpeHelper;
 
 /* an helper structure when checking operation
  */
@@ -67,40 +83,85 @@ typedef struct {
 }
 	sChecker;
 
-static GRegex  *st_regex                = NULL;
-static GRegex  *st_regex_detail_ref     = NULL;
-static GRegex  *st_regex_global_ref     = NULL;
-static GRegex  *st_regex_fn             = NULL;
+static gboolean     st_debug                     = FALSE;
+#define DEBUG                                    if( st_debug ) g_debug
 
-static gboolean st_debug                = FALSE;
-#define DEBUG                           if( st_debug ) g_debug
+/* operation template accepts:
+ * - Ai, Li, Ci, Di as shortcuts to ACCOUNT(i), LABEL(i), DEBIT(i), CREDIT(i)
+ * Defining here two subpatterns let this regex be evaluated with the
+ * same one than 'std_function' above.
+ */
+static const gchar      *st_aldc_shortcuts_def   = "([ALDC])([0-9]+)";
+static GRegex           *st_aldc_shortcuts_regex = NULL;
 
-static void         ope_free_detail( ofsOpeDetail *detail );
-static void         alloc_regex( void );
-static void         compute_simple_formulas( sHelper *helper );
-static void         compute_dates( sHelper *helper );
-static gchar       *compute_formula( sHelper *helper, const gchar *formula, gint row, gint column );
-static gboolean     eval_formula_cb( const GMatchInfo *match_info, GString *result, sHelper *helper );
-static gboolean     is_detail_ref( const gchar *token, sHelper *helper, gchar **str );
-static gboolean     is_global_ref( const gchar *token, sHelper *helper, gchar **str );
-static gboolean     is_rate( const gchar *token, sHelper *helper, gchar **str );
-static const gchar *get_ledger_label( sHelper *helper );
-static gdouble      compute_solde( sHelper *helper );
-static gchar       *get_prev( sHelper *helper );
-static gboolean     eval_function_cb( const GMatchInfo *match_info, GString *result, sHelper *helper );
-static gboolean     is_function( const gchar *token, sHelper *helper, gchar **str );
-static const gchar *get_account_label( sHelper *helper, const gchar *content );
-static const gchar *get_account_currency( sHelper *helper, const gchar *content );
-static gdouble      eval( sHelper *helper, const gchar *content );
-static gchar      **eval_rec( const gchar *content, gchar **iter, gdouble *amount, gint count );
-static gdouble      rate( sHelper *helper, const gchar *content );
-static gchar       *get_closing_account( sHelper *helper, const gchar *content );
-static gboolean     check_for_ledger( sChecker *checker );
-static gboolean     check_for_dates( sChecker *checker );
-static gboolean     check_for_all_entries( sChecker *checker );
-static gboolean     check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num );
-static gboolean     check_for_currencies( sChecker *checker );
-static void         ope_dump_detail( ofsOpeDetail *detail, void *empty );
+static ofaFormulaEngine *st_engine               = NULL;
+
+static void             compute_simple_formulas( sOpeHelper *helper );
+static void             compute_dates( sOpeHelper *helper );
+static gchar           *compute_formula( const gchar *formula, sOpeHelper *helper );
+static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOpeHelper *helper );
+static gchar           *eval_aldc_shortcuts( ofsFormulaHelper *helper );
+static gchar           *eval_a_shortcut( ofsFormulaHelper *helper, const gchar *rowstr );
+static gchar           *eval_c_shortcut( ofsFormulaHelper *helper, const gchar *rowstr );
+static gchar           *eval_d_shortcut( ofsFormulaHelper *helper, const gchar *rowstr );
+static gchar           *eval_l_shortcut( ofsFormulaHelper *helper, const gchar *rowstr );
+static gchar           *eval_account( ofsFormulaHelper *helper );
+static gchar           *eval_accl( ofsFormulaHelper *helper );
+static gchar           *eval_accu( ofsFormulaHelper *helper );
+static gchar           *eval_acla( ofsFormulaHelper *helper );
+static gchar           *eval_amount( ofsFormulaHelper *helper );
+static gchar           *eval_code( ofsFormulaHelper *helper );
+static gchar           *eval_credit( ofsFormulaHelper *helper );
+static gchar           *eval_debit( ofsFormulaHelper *helper );
+static gchar           *eval_deffect( ofsFormulaHelper *helper );
+static gchar           *eval_dope( ofsFormulaHelper *helper );
+static gchar           *eval_domy( ofsFormulaHelper *helper );
+static gchar           *eval_eval( ofsFormulaHelper *helper );
+static gchar           *eval_idem( ofsFormulaHelper *helper );
+static gchar           *eval_label( ofsFormulaHelper *helper );
+static gchar           *eval_lela( ofsFormulaHelper *helper );
+static gchar           *eval_lemn( ofsFormulaHelper *helper );
+static gchar           *eval_opmn( ofsFormulaHelper *helper );
+static gchar           *eval_opla( ofsFormulaHelper *helper );
+static gchar           *eval_rate( ofsFormulaHelper *helper );
+static gchar           *eval_rate_by_name( ofsFormulaHelper *helper );
+static gchar           *eval_ref( ofsFormulaHelper *helper );
+static gchar           *eval_solde( ofsFormulaHelper *helper );
+static ofsOpeDetail    *get_ope_detail( const gchar *row_str, ofsFormulaHelper *helper );
+static gchar           *get_rate_by_name( const gchar *name, ofsFormulaHelper *helper );
+static gboolean         check_for_ledger( sChecker *checker );
+static gboolean         check_for_dates( sChecker *checker );
+static gboolean         check_for_all_entries( sChecker *checker );
+static gboolean         check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num );
+static gboolean         check_for_currencies( sChecker *checker );
+static void             ope_dump_detail( ofsOpeDetail *detail, void *empty );
+static void             ope_free_detail( ofsOpeDetail *detail );
+
+static const sEvalDef st_formula_fns[] = {
+		{ "ACCOUNT", 1, eval_account },
+		{ "ACCL",    1, eval_accl },
+		{ "ACCU",    1, eval_accu },
+		{ "ACLA",    1, eval_acla },
+		{ "AMOUNT",  1, eval_amount },
+		{ "CODE",    1, eval_code },
+		{ "CREDIT",  1, eval_credit },
+		{ "DEBIT",   1, eval_debit },
+		{ "DEFFECT", 0, eval_deffect },
+		{ "DOPE",    0, eval_dope },
+		{ "DOMY",    0, eval_domy },
+		{ "EVAL",    1, eval_eval },
+		{ "IDEM",    0, eval_idem },
+		{ "LABEL",   1, eval_label },
+		{ "LELA",    0, eval_lela },
+		{ "LEMN",    0, eval_lemn },
+		{ "OPMN",    0, eval_opmn },
+		{ "OPLA",    0, eval_opla },
+		{ "RATE",    1, eval_rate },
+		{ "REF",     0, eval_ref },
+		{ "SOLDE",   0, eval_solde },
+		{ 0 }
+};
+
 
 /**
  * ofs_ope_new:
@@ -137,15 +198,18 @@ void
 ofs_ope_apply_template( ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_apply_template";
-	sHelper *helper;
+	sOpeHelper *helper;
 
 	g_debug( "%s: entering:", thisfn );
 	ofs_ope_dump( ope );
 
-	helper = g_new0( sHelper, 1 );
+	if( !st_engine ){
+		st_engine = ofa_formula_engine_new();
+	}
+
+	helper = g_new0( sOpeHelper, 1 );
 	helper->ope = ope;
 
-	alloc_regex();
 	compute_simple_formulas( helper );
 
 	g_free( helper );
@@ -154,36 +218,8 @@ ofs_ope_apply_template( ofsOpe *ope )
 	ofs_ope_dump( ope );
 }
 
-/*
- * A formula is something like:
- *  blah blah %[A-Z]+ \(? ... \)?
- */
 static void
-alloc_regex( void )
-{
-	static const gchar *st_detail_ref = "%([ALDC])([0-9]+)";
-	static const gchar *st_global_ref = "%(OPMN|OPLA|LEMN|LELA|DOPE|DOMY|DEFFECT|REF|SOLDE|IDEM)";
-	static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE|ACCL)\\(\\s*([^()]+)\\s*\\)";
-	/*static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE)\\(\\s*";*/
-
-	if( !st_regex ){
-		/* the general regex to identify simple formulas, either to
-		 * global fields or to individual from details */
-		st_regex = g_regex_new( "%[A-Z]+[0-9]*", G_REGEX_EXTENDED, 0, NULL );
-
-		/* the regex to identify references to detail fields */
-		st_regex_detail_ref = g_regex_new( st_detail_ref, G_REGEX_EXTENDED, 0, NULL );
-
-		/* the regex to identify references to global fields */
-		st_regex_global_ref = g_regex_new( st_global_ref, G_REGEX_EXTENDED, 0, NULL );
-
-		/* a regex to identify references to functions */
-		st_regex_fn = g_regex_new( st_function, G_REGEX_EXTENDED, 0, NULL );
-	}
-}
-
-static void
-compute_simple_formulas( sHelper *helper )
+compute_simple_formulas( sOpeHelper *helper )
 {
 	static const gchar *thisfn = "ofs_ope_compute_simple_formulas";
 	ofsOpe *ope;
@@ -194,15 +230,17 @@ compute_simple_formulas( sHelper *helper )
 
 	ope = helper->ope;
 	template = ope->ope_template;
+	helper->row = -1;
+	helper->column = -1;
 
 	if( !ope->ledger_user_set ){
 		g_free( ope->ledger );
-		ope->ledger = compute_formula( helper, ofo_ope_template_get_ledger( template ), -1, -1 );
+		ope->ledger = compute_formula( ofo_ope_template_get_ledger( template ), helper );
 	}
 
 	if( !ope->ref_user_set ){
 		g_free( ope->ref );
-		ope->ref = compute_formula( helper, ofo_ope_template_get_ref( template ), -1, -1 );
+		ope->ref = compute_formula( ofo_ope_template_get_ref( template ), helper );
 	}
 
 	compute_dates( helper );
@@ -210,30 +248,31 @@ compute_simple_formulas( sHelper *helper )
 	count = ofo_ope_template_get_detail_count( template );
 	for( i=0 ; i<count ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, i );
+		helper->row = i;
 		DEBUG( "%s: i=%d", thisfn, i );
 
 		if( !detail->account_user_set ){
 			g_free( detail->account );
-			detail->account = compute_formula(
-					helper, ofo_ope_template_get_detail_account( template, i ), i, OPE_COL_ACCOUNT );
+			helper->column = OPE_COL_ACCOUNT;
+			detail->account = compute_formula( ofo_ope_template_get_detail_account( template, i ), helper );
 		}
 
 		if( !detail->label_user_set ){
 			g_free( detail->label );
-			detail->label = compute_formula(
-					helper, ofo_ope_template_get_detail_label( template, i ), i, OPE_COL_LABEL );
+			helper->column = OPE_COL_LABEL;
+			detail->label = compute_formula( ofo_ope_template_get_detail_label( template, i ), helper );
 		}
 
 		if( !detail->debit_user_set ){
-			str = compute_formula(
-					helper, ofo_ope_template_get_detail_debit( template, i ), i, OPE_COL_DEBIT );
+			helper->column = OPE_COL_DEBIT;
+			str = compute_formula( ofo_ope_template_get_detail_debit( template, i ), helper );
 			detail->debit = ofa_amount_from_str( str );
 			g_free( str );
 		}
 
 		if( !detail->credit_user_set ){
-			str = compute_formula(
-					helper, ofo_ope_template_get_detail_credit( template, i ), i, OPE_COL_CREDIT );
+			helper->column = OPE_COL_CREDIT;
+			str = compute_formula( ofo_ope_template_get_detail_credit( template, i ), helper );
 			detail->credit = ofa_amount_from_str( str );
 			g_free( str );
 		}
@@ -241,7 +280,7 @@ compute_simple_formulas( sHelper *helper )
 }
 
 static void
-compute_dates( sHelper *helper )
+compute_dates( sOpeHelper *helper )
 {
 	ofsOpe *ope;
 	ofaHub *hub;
@@ -281,40 +320,645 @@ compute_dates( sHelper *helper )
  *  blah blah %[A-Z]+ \(? ... \)?
  */
 static gchar *
-compute_formula( sHelper *helper, const gchar *formula, gint row, gint column )
+compute_formula( const gchar *formula, sOpeHelper *helper )
 {
 	static const gchar *thisfn = "ofs_ope_compute_formula";
-	gchar *str1, *str2, *str3;
+	gchar *res;
+	GList *msg;
 
-	str3 = NULL;
-	helper->comp_row = row;
-	helper->comp_column = column;
+	res = NULL;
 
-	if( formula ){
-		str1 = g_regex_replace_eval( st_regex,
-					formula, -1, 0, 0, ( GRegexEvalCallback ) eval_formula_cb, helper, NULL );
-
-		str2 = g_regex_replace_eval( st_regex_fn,
-					str1, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, helper, NULL );
-
-		if( column == OPE_COL_DEBIT || column == OPE_COL_CREDIT ){
-			str3 = ofa_amount_to_str( eval( helper, str2 ), NULL );
-
-		} else {
-			str3 = g_strdup( str2 );
+	if( my_strlen( formula )){
+		res = ofa_formula_engine_eval( st_engine, formula, ( ofaFormulaFindFn ) get_formula_eval_fn, helper, &msg );
+		g_debug( "%s: formula='%s', returns with msg count=%d", thisfn, formula, g_list_length( msg ));
+		/*
+		for( it=msg ; it ; it=it->next ){
+			g_debug( "%s: %s", thisfn, ( const gchar * ) it->data );
 		}
-
-		g_free( str1 );
-		g_free( str2 );
-
-		DEBUG( "%s: formula=%s, row=%d, column=%d, str3=%s", thisfn, formula, row, column, str3 );
+		*/
+		g_list_free_full( msg, ( GDestroyNotify ) g_free );
 	}
 
-	return( str3 );
+	return( res );
 }
 
+/*
+ * this is a ofaFormula callback
+ * Returns: the evaluation function for the name + expected args count
+ */
+static ofaFormulaEvalFn
+get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOpeHelper *helper )
+{
+	static const gchar *thisfn = "ofs_ope_get_formula_eval_fn";
+	gint i;
+	ofaHub *hub;
+	ofoRate *rate;
+	GError *error;
+
+	*count = -1;
+
+	for( i=0 ; st_formula_fns[i].name ; ++i ){
+		if( !my_collate( st_formula_fns[i].name, name )){
+			*count = st_formula_fns[i].args_count;
+			g_debug( "%s: name=%s, found count=%d", thisfn, name, *count );
+			return(( ofaFormulaEvalFn ) st_formula_fns[i].eval );
+		}
+	}
+
+	/* if not a predefined name, is it a rate ?
+	 * because we do accept %TVAN as a shortcut to %RATE( TVAN )
+	 */
+	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+	rate = ofo_rate_get_by_mnemo( hub, name );
+	if( rate ){
+		*count = 0;
+		g_debug( "%s: name=%s, found rate", thisfn, name );
+		return(( ofaFormulaEvalFn ) eval_rate_by_name );
+	}
+
+	/* if not a predefined name nor a rate, is it an ALDC shortcut ?
+	 */
+	if( !st_aldc_shortcuts_regex ){
+		error = NULL;
+		st_aldc_shortcuts_regex = g_regex_new( st_aldc_shortcuts_def, G_REGEX_EXTENDED, 0, &error );
+		if( !st_aldc_shortcuts_regex ){
+			g_warning( "%s: aldc_shortcuts: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+	}
+	if( st_aldc_shortcuts_regex ){
+		if( g_regex_match( st_aldc_shortcuts_regex, name, 0, NULL )){
+			*count = 0;
+			g_debug( "%s: name=%s, found aldc shortcut", thisfn, name );
+			return(( ofaFormulaEvalFn ) eval_aldc_shortcuts );
+		}
+	}
+
+	return( NULL );
+}
+
+/*
+ * evaluate an ALDC shortcut
+ */
+static gchar *
+eval_aldc_shortcuts( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GMatchInfo *info;
+	gchar *field, *number;
+	GList *list;
+
+	res = NULL;
+
+	if( g_regex_match( st_aldc_shortcuts_regex, helper->match_zero, 0, &info )){
+
+		field = g_match_info_fetch( info, 1 );
+		number = g_match_info_fetch( info, 2 );
+		list = g_list_prepend( NULL, number );
+		helper->args_count = 1;
+		helper->args_list = list;
+
+		if( !my_collate( field, "A" )){
+			res = eval_a_shortcut( helper, number );
+
+		} else if( !my_collate( field, "L" )){
+			res = eval_l_shortcut( helper, number );
+
+		} else if( !my_collate( field, "D" )){
+			res = eval_d_shortcut( helper, number );
+
+		} else if( !my_collate( field, "C" )){
+			res = eval_c_shortcut( helper, number );
+		}
+
+		g_list_free( helper->args_list );
+		helper->args_list = NULL;
+		helper->args_count = 0;
+		g_free( field );
+		g_free( number );
+	}
+
+	g_match_info_free( info );
+
+	return( res );
+}
+
+/*
+ * %Ai == %ACCOUNT(i)
+ * Returns: the account id found on row <i>
+ */
+static gchar *
+eval_a_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
+{
+	gchar *res;
+	ofsOpeDetail *detail;
+
+	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
+	res = detail ? g_strdup( detail->account ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %Ci == %CREDIT(i)
+ * Returns: the credit found on row <i>
+ */
+static gchar *
+eval_c_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
+{
+	gchar *res;
+	ofsOpeDetail *detail;
+
+	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->credit, detail->currency ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %Di == %DEBIT(i)
+ * Returns: the debit found on row <i>
+ */
+static gchar *
+eval_d_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
+{
+	gchar *res;
+	ofsOpeDetail *detail;
+
+	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->debit, detail->currency ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %Li == %LABEL(i)
+ * Returns: the label found on row <i>
+ */
+static gchar *
+eval_l_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
+{
+	gchar *res;
+	ofsOpeDetail *detail;
+
+	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
+	res = detail ? g_strdup( detail->label ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %ACCOUNT(i)
+ * Returns: the account id found on row <i>
+ */
+static gchar *
+eval_account( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofsOpeDetail *detail;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
+	res = detail ? g_strdup( detail->account ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %ACCL( <account_id> )
+ * Returns: the closing account for the currency of the account
+ */
+static gchar *
+eval_accl( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofaHub *hub;
+	ofoAccount *account;
+	const gchar *currency, *solding;
+	ofoDossier * dossier;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	currency = ( account && !ofo_account_is_root( account )) ? ofo_account_get_currency( account ) : NULL;
+	dossier = ofa_hub_get_dossier( hub );
+	solding = currency ? ofo_dossier_get_sld_account( dossier, currency ) : NULL;
+	res = g_strdup( solding ? solding : "" );
+
+	return( res );
+}
+
+/*
+ * %ACCU( <account_id> )
+ * Returns: the currency of the account
+ */
+static gchar *
+eval_accu( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofaHub *hub;
+	ofoAccount *account;
+	const gchar *currency;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	currency = ( account && !ofo_account_is_root( account )) ? ofo_account_get_currency( account ) : NULL;
+	res = g_strdup( currency ? currency : "" );
+
+	return( res );
+}
+
+/*
+ * %ACLA( <account_id> )
+ * Returns: the label of the account
+ */
+static gchar *
+eval_acla( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofaHub *hub;
+	ofoAccount *account;
+	const gchar *label;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	label = account ? ofo_account_get_label( account ) : NULL;
+	res = g_strdup( label ? label : "" );
+
+	return( res );
+}
+
+static gchar *
+eval_amount( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	gdouble a;
+
+	res = NULL;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		a = g_strtod( cstr, NULL );
+		res = g_strdup_printf( "%lf", 1.1 * a );
+	}
+
+	return( res );
+}
+
+static gchar *
+eval_code( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+
+	res = NULL;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		res = g_strdup_printf( "%s", cstr );
+	}
+
+	return( res );
+}
+
+/*
+ * %Ci is a shortcut to %CREDIT(i)
+ * Returns: the credit found on row <i>
+ */
+static gchar *
+eval_credit( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofsOpeDetail *detail;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->credit, detail->currency ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %DEBIT( <row_number> ), where row_number is counted from 1
+ */
+static gchar *
+eval_debit( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofsOpeDetail *detail;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->debit, detail->currency ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %DOMY: operation date as mmm yyyy
+ */
+static gchar *
+eval_domy( ofsFormulaHelper *helper )
+{
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, MY_DATE_MMYY ));
+}
+
+/*
+ * %DOPE: operation date user_prefs format
+ */
+static gchar *
+eval_dope( ofsFormulaHelper *helper )
+{
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_display()));
+}
+
+/*
+ * %DEFFECT: effect date user_prefs format
+ */
+static gchar *
+eval_deffect( ofsFormulaHelper *helper )
+{
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->deffect, ofa_prefs_date_display()));
+}
+
+/*
+ * %EVAL( expression ): just returns the expression
+ */
+static gchar *
+eval_eval( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	res = g_strdup( cstr ? cstr : "" );
+
+	return( res );
+}
+
+/*
+ * %IDEM: returns the value of same column, previous row
+ */
+static gchar *
+eval_idem( ofsFormulaHelper *helper )
+{
+	sOpeHelper *ope_helper;
+	ofsOpeDetail *prev;
+	gchar *res;
+
+	res = NULL;
+	ope_helper = ( sOpeHelper * ) helper->user_data;
+
+	if( ope_helper->row > 0 ){
+		prev = ( ofsOpeDetail * ) g_list_nth_data( ope_helper->ope->detail, ope_helper->row-1 );
+		switch( ope_helper->column ){
+			case OPE_COL_ACCOUNT:
+				res = g_strdup( prev->account );
+				break;
+			case OPE_COL_LABEL:
+				res = g_strdup( prev->label );
+				break;
+			case OPE_COL_DEBIT:
+				res = ofa_amount_to_str( prev->debit, prev->currency );
+				break;
+			case OPE_COL_CREDIT:
+				res = ofa_amount_to_str( prev->credit, prev->currency );
+				break;
+		}
+	}
+
+	g_debug( "eval_idem: col=%d, row=%d, returns '%s'", ope_helper->column, ope_helper->row, res );
+
+	return( res );
+}
+
+/*
+ * %LABEL(i)
+ * Returns: the label found on row <i>
+ */
+static gchar *
+eval_label( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofsOpeDetail *detail;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
+	res = detail ? g_strdup( detail->label ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %LELA
+ * Returns: the ledger label
+ */
+static gchar *
+eval_lela( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	ofaHub *hub;
+	ofoLedger *ledger;
+
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	ledger = ofo_ledger_get_by_mnemo( hub, (( sOpeHelper * ) helper->user_data )->ope->ledger );
+	res = ledger ? g_strdup( ofo_ledger_get_label( ledger )) : NULL;
+
+	return( res );
+}
+
+/*
+ * %LEMN
+ * Returns: the ledger mnemonic
+ */
+static gchar *
+eval_lemn( ofsFormulaHelper *helper )
+{
+	return( g_strdup((( sOpeHelper * ) helper->user_data )->ope->ledger ));
+}
+
+/*
+ * %OPLA
+ * Returns: the operation template label
+ */
+static gchar *
+eval_opla( ofsFormulaHelper *helper )
+{
+	return( g_strdup( ofo_ope_template_get_label((( sOpeHelper * ) helper->user_data )->ope->ope_template )));
+}
+
+/*
+ * %OPMN
+ * Returns: the operation template mnemonic
+ */
+static gchar *
+eval_opmn( ofsFormulaHelper *helper )
+{
+	return( g_strdup( ofo_ope_template_get_mnemo((( sOpeHelper * ) helper->user_data )->ope->ope_template )));
+}
+
+/*
+ * %RATE( <rate_id> )
+ * returns the rate_id rate at DOPE date
+ */
+static gchar *
+eval_rate( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	res = my_strlen( cstr ) ? get_rate_by_name( cstr, helper ) : NULL;
+
+	return( res );
+}
+
+/*
+ * %<rate_id>
+ * e.g. %TVAN as a shortcut to %RATE( TVAN )
+ */
+static gchar *
+eval_rate_by_name( ofsFormulaHelper *helper )
+{
+	return( get_rate_by_name( helper->match_name, helper ));
+}
+
+/*
+ * %REF
+ * Returns: the operation reference
+ */
+static gchar *
+eval_ref( ofsFormulaHelper *helper )
+{
+	return( g_strdup((( sOpeHelper * ) helper->user_data )->ope->ref ));
+}
+
+/*
+ * %SOLDE
+ * Returns: the solde of the operation as a user-displayable string
+ */
+static gchar *
+eval_solde( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	sOpeHelper *ope_helper;
+	gdouble dsold, csold, solde;
+	ofsOpeDetail *detail;
+	gint i;
+
+	csold = 0.0;
+	dsold = 0.0;
+	ope_helper = ( sOpeHelper * ) helper->user_data;
+
+	for( i=0 ; i<g_list_length( ope_helper->ope->detail ) ; ++i ){
+		detail = ( ofsOpeDetail * ) g_list_nth_data( ope_helper->ope->detail, i );
+		if( ope_helper->row != i || ope_helper->column != OPE_COL_DEBIT ){
+			dsold += detail->debit;
+		}
+		if( ope_helper->row != i || ope_helper->column != OPE_COL_CREDIT ){
+			csold += detail->credit;
+		}
+	}
+
+	solde = fabs( csold-dsold );
+	res = ofa_amount_to_str( solde, NULL );
+
+	return( res );
+}
+
+static ofsOpeDetail *
+get_ope_detail( const gchar *row_str, ofsFormulaHelper *helper )
+{
+	static const gchar *thisfn = "ofs_ope_get_ope_detail";
+	gint num;
+	sOpeHelper *ope_helper;
+	gchar *str;
+
+	num = atoi( row_str );
+	ope_helper = ( sOpeHelper * ) helper->user_data;
+
+	if( num >= 1 && num <= g_list_length( ope_helper->ope->detail )){
+		return(( ofsOpeDetail * ) g_list_nth_data( ope_helper->ope->detail, num-1 ));
+
+	} else {
+		str = g_strdup_printf( _( "%s: unable to find a valid operation detail for row=%s" ), thisfn, row_str );
+		helper->msg = g_list_append( helper->msg, str );
+	}
+
+	return( NULL );
+}
+
+static gchar *
+get_rate_by_name( const gchar *name, ofsFormulaHelper *helper )
+{
+	static const gchar *thisfn = "ofs_ope_get_rate_by_name";
+	gchar *res;
+	sOpeHelper *ope_helper;
+	ofaHub *hub;
+	ofoRate *rate;
+	ofxAmount amount;
+	gchar *str;
+
+	res = NULL;
+	g_debug( "%s: rate=%s", thisfn, name );
+	ope_helper = ( sOpeHelper * ) helper->user_data;
+	hub = ofo_base_get_hub( OFO_BASE( ope_helper->ope->ope_template ));
+	rate = ofo_rate_get_by_mnemo( hub, name );
+	if( rate ){
+		if( my_date_is_valid( &ope_helper->ope->dope )){
+			amount = ofo_rate_get_rate_at_date( rate, &ope_helper->ope->dope )/( gdouble ) 100;
+			res = my_double_to_str( amount,
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 3 );
+
+		} else {
+			str = g_strdup_printf( _( "%s: unable to get a rate value while operation date is invalid" ), thisfn );
+			helper->msg = g_list_append( helper->msg, str );
+		}
+
+	} else {
+		str = g_strdup_printf( _( "%s: unknown rate: %s" ), thisfn, name );
+		helper->msg = g_list_append( helper->msg, str );
+	}
+
+	return( res );
+}
+
+#if 0
 static gboolean
-eval_formula_cb( const GMatchInfo *match_info, GString *result, sHelper *helper )
+eval_formula_cb( const GMatchInfo *match_info, GString *result, sOpeHelper *helper )
 {
 	static const gchar *thisfn = "ofs_ope_eval_formula_cb";
 	gchar *match;
@@ -351,8 +995,36 @@ eval_formula_cb( const GMatchInfo *match_info, GString *result, sHelper *helper 
 	return( FALSE );
 }
 
+/*
+ * A formula is something like:
+ *  blah blah %[A-Z]+ \(? ... \)?
+ */
+static void
+alloc_regex( void )
+{
+	static const gchar *st_detail_ref = "%([ALDC])([0-9]+)";
+	static const gchar *st_global_ref = "%(OPMN|OPLA|LEMN|LELA|DOPE|DOMY|DEFFECT|REF|SOLDE|IDEM)";
+	static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE|ACCL)\\(\\s*([^()]+)\\s*\\)";
+	/*static const gchar *st_function = "%(ACLA|ACCU|EVAL|RATE)\\(\\s*";*/
+
+	if( !st_regex ){
+		/* the general regex to identify simple formulas, either to
+		 * global fields or to individual from details */
+		st_regex = g_regex_new( "%[A-Z]+[0-9]*", G_REGEX_EXTENDED, 0, NULL );
+
+		/* the regex to identify references to detail fields */
+		st_regex_detail_ref = g_regex_new( st_detail_ref, G_REGEX_EXTENDED, 0, NULL );
+
+		/* the regex to identify references to global fields */
+		st_regex_global_ref = g_regex_new( st_global_ref, G_REGEX_EXTENDED, 0, NULL );
+
+		/* a regex to identify references to functions */
+		st_regex_fn = g_regex_new( st_function, G_REGEX_EXTENDED, 0, NULL );
+	}
+}
+
 static gboolean
-is_detail_ref( const gchar *token, sHelper *helper, gchar **str )
+is_detail_ref( const gchar *token, sOpeHelper *helper, gchar **str )
 {
 	static const gchar *thisfn = "ofs_ope_is_detail_ref";
 	gboolean ok;
@@ -402,8 +1074,56 @@ is_detail_ref( const gchar *token, sHelper *helper, gchar **str )
 	return( ok );
 }
 
+static const gchar *
+get_ledger_label( sOpeHelper *helper )
+{
+	ofaHub *hub;
+	ofoLedger *ledger;
+	const gchar *label;
+
+	label = NULL;
+
+	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+	ledger = ofo_ledger_get_by_mnemo( hub, helper->ope->ledger );
+	if( ledger ){
+		label = ofo_ledger_get_label( ledger );
+	}
+
+	return( label );
+}
+
+/*
+ * compute solde without taking into account the currently computed
+ * debit/credit field
+ */
+static gdouble
+compute_solde( sOpeHelper *helper )
+{
+	static const gchar *thisfn = "ofs_ope_compute_solde";
+	gdouble dsold, csold, solde;
+	ofsOpeDetail *detail;
+	gint i;
+
+	csold = 0.0;
+	dsold = 0.0;
+	for( i=0 ; i<g_list_length( helper->ope->detail ) ; ++i ){
+		detail = ( ofsOpeDetail * ) g_list_nth_data( helper->ope->detail, i );
+		if( helper->row != i || helper->column != OPE_COL_DEBIT ){
+			dsold += detail->debit;
+		}
+		if( helper->row != i || helper->column != OPE_COL_CREDIT ){
+			csold += detail->credit;
+		}
+	}
+
+	solde = fabs( csold-dsold );
+	DEBUG( "%s: solde=%.5lf", thisfn, solde );
+
+	return( solde );
+}
+
 static gboolean
-is_global_ref( const gchar *token, sHelper *helper, gchar **str )
+is_global_ref( const gchar *token, sOpeHelper *helper, gchar **str )
 {
 	static const gchar *thisfn = "ofs_ope_is_global_ref";
 	gboolean ok;
@@ -463,92 +1183,17 @@ is_global_ref( const gchar *token, sHelper *helper, gchar **str )
 	return( ok );
 }
 
-static gboolean
-is_rate( const gchar *token, sHelper *helper, gchar **str )
-{
-	static const gchar *thisfn = "ofs_ope_is_rate";
-	ofaHub *hub;
-	gboolean ok;
-	ofoRate *rate;
-	ofxAmount amount;
-
-	ok = FALSE;
-	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
-	rate = ofo_rate_get_by_mnemo( hub, token+1 );
-	if( rate ){
-		ok = TRUE;
-		if( my_date_is_valid( &helper->ope->dope )){
-			amount = ofo_rate_get_rate_at_date( rate, &helper->ope->dope )/( gdouble ) 100;
-			*str = my_double_to_str( amount,
-						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 5 );
-			g_debug( "%s: amount=%.5lf, str=%s", thisfn, amount, *str );
-		}
-	}
-
-	DEBUG( "%s: token=%s, str=%s, ok=%s", thisfn, token, *str, ok ? "True":"False" );
-	return( ok );
-}
-
-static const gchar *
-get_ledger_label( sHelper *helper )
-{
-	ofaHub *hub;
-	ofoLedger *ledger;
-	const gchar *label;
-
-	label = NULL;
-
-	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
-	ledger = ofo_ledger_get_by_mnemo( hub, helper->ope->ledger );
-	if( ledger ){
-		label = ofo_ledger_get_label( ledger );
-	}
-
-	return( label );
-}
-
-/*
- * compute solde without taking into account the currently computed
- * debit/credit field
- */
-static gdouble
-compute_solde( sHelper *helper )
-{
-	static const gchar *thisfn = "ofs_ope_compute_solde";
-	gdouble dsold, csold, solde;
-	ofsOpeDetail *detail;
-	gint i;
-
-	csold = 0.0;
-	dsold = 0.0;
-	for( i=0 ; i<g_list_length( helper->ope->detail ) ; ++i ){
-		detail = ( ofsOpeDetail * ) g_list_nth_data( helper->ope->detail, i );
-		if( helper->comp_row != i || helper->comp_column != OPE_COL_DEBIT ){
-			dsold += detail->debit;
-		}
-		if( helper->comp_row != i || helper->comp_column != OPE_COL_CREDIT ){
-			csold += detail->credit;
-		}
-	}
-
-	solde = fabs( csold-dsold );
-	DEBUG( "%s: solde=%.5lf", thisfn, solde );
-
-	return( solde );
-}
-
 static gchar *
-get_prev( sHelper *helper )
+get_prev( sOpeHelper *helper )
 {
 	ofsOpeDetail *prev;
 	gchar *str;
 
 	str = NULL;
 
-	if( helper->comp_row > 0 ){
-		prev = ( ofsOpeDetail * ) g_list_nth_data( helper->ope->detail, helper->comp_row-1 );
-		switch( helper->comp_column ){
+	if( helper->row > 0 ){
+		prev = ( ofsOpeDetail * ) g_list_nth_data( helper->ope->detail, helper->row-1 );
+		switch( helper->column ){
 			case OPE_COL_ACCOUNT:
 				str = g_strdup( prev->account );
 				break;
@@ -568,7 +1213,7 @@ get_prev( sHelper *helper )
 }
 
 static gboolean
-eval_function_cb( const GMatchInfo *match_info, GString *result, sHelper *helper )
+eval_function_cb( const GMatchInfo *match_info, GString *result, sOpeHelper *helper )
 {
 	static const gchar *thisfn = "ofs_ope_eval_function_cb";
 	gchar *match;
@@ -593,8 +1238,74 @@ eval_function_cb( const GMatchInfo *match_info, GString *result, sHelper *helper
 	return( FALSE );
 }
 
+static const gchar *
+get_account_label( sOpeHelper *helper, const gchar *content )
+{
+	ofaHub *hub;
+	ofoAccount *account;
+	const gchar *label;
+
+	label = NULL;
+
+	if( content ){
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		account = ofo_account_get_by_number( hub, content );
+		if( account ){
+			label = ofo_account_get_label( account );
+		}
+	}
+
+	return( label );
+}
+
+static const gchar *
+get_account_currency( sOpeHelper *helper, const gchar *content )
+{
+	ofaHub *hub;
+	ofoAccount *account;
+	const gchar *currency;
+
+	currency = NULL;
+
+	if( content ){
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		account = ofo_account_get_by_number( hub, content );
+		if( account ){
+			currency = ofo_account_get_currency( account );
+		}
+	}
+
+	return( currency );
+}
+
+static gchar *
+get_closing_account( sOpeHelper *helper, const gchar *content )
+{
+	ofaHub *hub;
+	ofoDossier *dossier;
+	ofoAccount *account;
+	const gchar *currency;
+	gchar *str;
+
+	str = NULL;
+
+	if( content ){
+		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
+		account = ofo_account_get_by_number( hub, content );
+		if( account && !ofo_account_is_root( account )){
+			currency = ofo_account_get_currency( account );
+			dossier = ofa_hub_get_dossier( hub );
+			str = g_strdup( ofo_dossier_get_sld_account( dossier, currency ));
+		}
+	}
+
+	g_debug( "ofs_ope_get_closing_account: content=%s, str=%s", content, str );
+
+	return( str );
+}
+
 static gboolean
-is_function( const gchar *token, sHelper *helper, gchar **str )
+is_function( const gchar *token, sOpeHelper *helper, gchar **str )
 {
 	static const gchar *thisfn = "ofs_ope_is_function";
 	gboolean ok;
@@ -646,51 +1357,11 @@ is_function( const gchar *token, sHelper *helper, gchar **str )
 	return( ok );
 }
 
-static const gchar *
-get_account_label( sHelper *helper, const gchar *content )
-{
-	ofaHub *hub;
-	ofoAccount *account;
-	const gchar *label;
-
-	label = NULL;
-
-	if( content ){
-		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
-		account = ofo_account_get_by_number( hub, content );
-		if( account ){
-			label = ofo_account_get_label( account );
-		}
-	}
-
-	return( label );
-}
-
-static const gchar *
-get_account_currency( sHelper *helper, const gchar *content )
-{
-	ofaHub *hub;
-	ofoAccount *account;
-	const gchar *currency;
-
-	currency = NULL;
-
-	if( content ){
-		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
-		account = ofo_account_get_by_number( hub, content );
-		if( account ){
-			currency = ofo_account_get_currency( account );
-		}
-	}
-
-	return( currency );
-}
-
 /*
  * %EVAL(...) recursively evaluates the (..) between parenthesis content
  */
 static gdouble
-eval( sHelper *helper, const gchar *content )
+eval( sOpeHelper *helper, const gchar *content )
 {
 	static const gchar *thisfn = "ofs_ope_eval";
 	gchar **tokens, **iter;
@@ -787,7 +1458,7 @@ eval_rec( const gchar *content, gchar **iter, gdouble *amount, gint count )
 }
 
 static gdouble
-rate( sHelper *helper, const gchar *content )
+rate( sOpeHelper *helper, const gchar *content )
 {
 	ofaHub *hub;
 	ofoRate *rate;
@@ -804,32 +1475,7 @@ rate( sHelper *helper, const gchar *content )
 
 	return( amount );
 }
-
-static gchar *
-get_closing_account( sHelper *helper, const gchar *content )
-{
-	ofaHub *hub;
-	ofoDossier *dossier;
-	ofoAccount *account;
-	const gchar *currency;
-	gchar *str;
-
-	str = NULL;
-
-	if( content ){
-		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
-		account = ofo_account_get_by_number( hub, content );
-		if( account && !ofo_account_is_root( account )){
-			currency = ofo_account_get_currency( account );
-			dossier = ofa_hub_get_dossier( hub );
-			str = g_strdup( ofo_dossier_get_sld_account( dossier, currency ));
-		}
-	}
-
-	g_debug( "ofs_ope_get_closing_account: content=%s, str=%s", content, str );
-
-	return( str );
-}
+#endif
 
 /**
  * ofs_ope_is_valid:

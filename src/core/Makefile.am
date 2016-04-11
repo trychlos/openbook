@@ -89,7 +89,7 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-prefs.c									\
 	ofa-extender-collection.c							\
 	ofa-extender-module.c								\
-	ofa-formula.c										\
+	ofa-formula-engine.c								\
 	ofa-guided-input.c									\
 	ofa-guided-input.h									\
 	ofa-guided-input-bin.c								\

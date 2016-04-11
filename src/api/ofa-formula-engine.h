@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_FORMULA_H__
-#define __OPENBOOK_API_OFA_FORMULA_H__
+#ifndef __OPENBOOK_API_OFA_FORMULA_ENGINE_H__
+#define __OPENBOOK_API_OFA_FORMULA_ENGINE_H__
 
 /**
- * SECTION: ofa_formula
- * @short_description: Formula functions
- * @include: openbook/ofa-formula.h
+ * SECTION: ofa_formula_engine
+ * @short_description: ofaFormulaEngine class definition
+ * @include: openbook/ofa-formula-engine.h
  *
  * The formula engine is able to evaluate formulas which are found in
  * operation template, VAT forms and so on.
@@ -37,7 +37,8 @@
  *
  * The evaluation of a formula gives a string, which may or may not be
  * evaluated depending of whether we have been able to get all needed
- * datas.
+ * datas. Dates and amounts are evaluated as displayable strings, using
+ * set user preferences.
  *
  * A formula begins with equal ('=') sign. To begin any string with an
  * equal sign without tranforming it in a formula, just prefix it with
@@ -69,7 +70,8 @@
  * formula.
  *
  * Formula evaluation may return with a set of error messages.
- * This set must be released by the caller with #g_list_free_full( list, ( GDestroyNotify ) g_free ).
+ * This set must be released by the caller with
+ *  #g_list_free_full( list, ( GDestroyNotify ) g_free ).
  *
  * v54 known functions
  * -------------------
@@ -136,37 +138,73 @@
 
 G_BEGIN_DECLS
 
+#define OFA_TYPE_FORMULA_ENGINE                ( ofa_formula_engine_get_type())
+#define OFA_FORMULA_ENGINE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_FORMULA_ENGINE, ofaFormulaEngine ))
+#define OFA_FORMULA_ENGINE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_FORMULA_ENGINE, ofaFormulaEngineClass ))
+#define OFA_IS_FORMULA_ENGINE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_FORMULA_ENGINE ))
+#define OFA_IS_FORMULA_ENGINE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_FORMULA_ENGINE ))
+#define OFA_FORMULA_ENGINE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_FORMULA_ENGINE, ofaFormulaEngineClass ))
+
+typedef struct {
+	/*< public members >*/
+	GObject      parent;
+}
+ 	 ofaFormulaEngine;
+
+typedef struct {
+	/*< public members >*/
+	GObjectClass parent;
+}
+	ofaFormulaEngineClass;
+
+/**
+ * OFA_FORMULA_ARG_SEP:
+ *
+ * The arguments separator when a function takes several arguments.
+ * It has been chosen to be compatible wich potential thousand and
+ * decimal separators.
+ */
+#define OFA_FORMULA_ARG_SEP             ";"
+
 typedef struct _ofsFormulaHelper ofsFormulaHelper;
 
 /**
- * ofsFormulaFn:
- * @name: the name of the function.
- * @args_count: the expected count of arguments, -1 for do not check.
- * @eval: the evaluation function which provides the replacement string.
+ * ofaFormulaEvalFn:
  *
- * Defines the evaluation callback functions.
+ * The prototype for formula evaluation functions.
+ *
+ * The evaluation functions receive a #ofsFormulaHelper data structure
+ * which describe the current match, and must return the string to be
+ * substituted, as a newly allocated string which will be g_free() by
+ * the ofaFormula code.
  */
-typedef struct {
-	const gchar *name;
-	gint         args_count;
-	gchar *   ( *eval )( ofsFormulaHelper * );
-}
-	ofsFormulaFn;
+typedef gchar * ( *ofaFormulaEvalFn )( ofsFormulaHelper * );
+
+/**
+ * ofaFormulaFindFn:
+ * @name: the found name.
+ * @count: [out]: should be set to the expected arguments count, or -1.
+ * @match_info: the current #GMatchInfo instance.
+ * @user_data: the user data.
+ *
+ * A callback which should return a pointer to the function which will
+ * provide the @name evaluation.
+ */
+typedef ofaFormulaEvalFn ( *ofaFormulaFindFn )( const gchar *, gint *, const GMatchInfo *, void * );
 
 /**
  * ofsFormulaHelper:
  *
- * => a copy of #ofa_formula_eval() original arguments
+ * => a copy of #ofa_formula_engine_eval() original arguments
  *
- * @fns: the list of callbacks.
  * @user_data: the user data pointer.
  * @msg: the output #GList of messages.
  *
  * => the arguments for the current match
  *
  * @match_info: the current #GMatchInfo instance.
- * @match_str: the current #GMatchInfo match at index 0.
- * @match_fn: the found #ofsFormulaFn struct.
+ * @match_zero: the match at index 0.
+ * @match_name: the macro or function name (match at index 1).
  * @args_list: the current arguments list.
  * @args_count: the count of found arguments in the @args_list.
  *
@@ -174,23 +212,33 @@ typedef struct {
  */
 struct _ofsFormulaHelper {
 
-	const ofsFormulaFn *fns;
 	void               *user_data;
-	GList             **msg;
+	GList              *msg;
 
 	const GMatchInfo   *match_info;
-	gchar              *match_str;
-	const ofsFormulaFn *match_fn;
+	gchar              *match_zero;
+	gchar              *match_name;
 	GList              *args_list;
 	guint               args_count;
 };
 
-#define OFA_FORMULA_ARG_SEP             ";"
+GType             ofa_formula_engine_get_type  ( void ) G_GNUC_CONST;
 
-gchar *ofa_formula_eval( const gchar *formula, const ofsFormulaFn *fns, void *user_data, GList **msg );
+ofaFormulaEngine *ofa_formula_engine_new       ( void );
 
-void   ofa_formula_test( void );
+void              ofa_formula_engine_set_format( ofaFormulaEngine *engine,
+														gunichar thousand_sep,
+														gunichar decimal_sep,
+														guint digits );
+
+gchar            *ofa_formula_engine_eval      ( ofaFormulaEngine *engine,
+														const gchar *formula,
+														ofaFormulaFindFn finder,
+														void *user_data,
+														GList **msg );
+
+void              ofa_formula_test             ( void );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_FORMULA_H__ */
+#endif /* __OPENBOOK_API_OFA_FORMULA_ENGINE_H__ */
