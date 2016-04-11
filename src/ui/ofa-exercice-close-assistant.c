@@ -859,7 +859,7 @@ p5_on_backup_clicked( GtkButton *button, ofaExerciceCloseAssistant *self )
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	main_window = ofa_igetter_get_main_window( priv->getter );
-	ofa_main_window_backup_dossier( OFA_MAIN_WINDOW( main_window ));
+	ofa_main_window_dossier_backup( OFA_MAIN_WINDOW( main_window ));
 	priv->p5_backuped = TRUE;
 
 	p5_check_for_complete( self );

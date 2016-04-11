@@ -1267,13 +1267,13 @@ do_backup( ofaMainWindow *self )
 }
 
 /**
- * ofa_main_window_backup_dossier:
+ * ofa_main_window_dossier_backup:
  * @main_window: this #ofaMainWindow instance.
  *
  * Backup the currently opened dossier.
  */
 void
-ofa_main_window_backup_dossier( ofaMainWindow *main_window )
+ofa_main_window_dossier_backup( ofaMainWindow *main_window )
 {
 	ofaMainWindowPrivate *priv;
 

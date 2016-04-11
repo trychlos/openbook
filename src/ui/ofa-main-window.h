@@ -132,7 +132,7 @@ ofaMainWindow *ofa_main_window_new               ( ofaApplication *application )
 
 gboolean       ofa_main_window_is_willing_to_quit( const ofaMainWindow *window );
 
-void           ofa_main_window_backup_dossier    ( ofaMainWindow *window );
+void           ofa_main_window_dossier_backup    ( ofaMainWindow *window );
 
 void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
 
