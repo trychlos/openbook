@@ -188,7 +188,7 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 										ofaIDBMeta *meta, ofaIDBPeriod *period,
 										const gchar *account, const gchar *password )
 {
-	static const gchar *thisfn = "ofa_dossier_open_run_with_parent";
+	static const gchar *thisfn = "ofa_dossier_open_run";
 	ofaDossierOpen *self;
 	ofaDossierOpenPrivate *priv;
 	gboolean opened;

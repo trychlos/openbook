@@ -79,32 +79,38 @@
 /* private instance data
  */
 typedef struct {
-	gboolean        dispose_has_run;
+	gboolean         dispose_has_run;
 
 	/* internals
 	 */
-	gchar          *orig_title;
-	GtkGrid        *grid;
-	GtkMenuBar     *menubar;
-	GtkAccelGroup  *accel_group;
-	GMenuModel     *menu;				/* the menu model when a dossier is opened */
-	GtkPaned       *pane;
-	guint           last_theme;
+	gchar           *orig_title;
+	GtkGrid         *grid;
+	GtkMenuBar      *menubar;
+	GtkAccelGroup   *accel_group;
+
+	/* when a dossier is opened
+	 */
+	GMenuModel      *menu;
+	GtkPaned        *pane;
+	guint            last_theme;
+	cairo_surface_t *background_image;
+	gint             background_image_width;
+	gint             background_image_height;
 
 	/* menu items enabled status
 	 */
-	gboolean        dossier_begin;		/* whether the exercice beginning date is valid */
+	gboolean         dossier_begin;		/* whether the exercice beginning date is valid */
 
-	GSimpleAction  *action_guided_input;
-	GSimpleAction  *action_settlement;
-	GSimpleAction  *action_reconciliation;
-	GSimpleAction  *action_close_ledger;
-	GSimpleAction  *action_close_exercice;
-	GSimpleAction  *action_import;
+	GSimpleAction   *action_guided_input;
+	GSimpleAction   *action_settlement;
+	GSimpleAction   *action_reconciliation;
+	GSimpleAction   *action_close_ledger;
+	GSimpleAction   *action_close_exercice;
+	GSimpleAction   *action_import;
 
 	/* ofaIThemeManager interface
 	 */
-	GList          *themes;					/* registered themes */
+	GList           *themes;			/* registered themes */
 }
 	ofaMainWindowPrivate;
 
@@ -267,6 +273,7 @@ static void                  window_store_ref( ofaMainWindow *self, GtkBuilder *
 static void                  init_themes( ofaMainWindow *self );
 static void                  hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
 static void                  hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
+static void                  hub_on_dossier_properties( ofaHub *hub, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
@@ -278,8 +285,9 @@ static void                  on_dossier_properties( ofaMainWindow *window, gpoin
 static void                  pane_restore_position( GtkPaned *pane );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
 static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
-static void                  pane_right_add_empty_notebook( ofaMainWindow *window );
+static void                  pane_right_add_empty_notebook( ofaMainWindow *window, ofaHub *hub );
 static void                  on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
+static void                  do_reset_background_image( ofaMainWindow *self, ofaHub *hub );
 static void                  do_update_menubar_items( ofaMainWindow *self );
 static void                  enable_action_guided_input( ofaMainWindow *window, gboolean enable );
 static void                  enable_action_settlement( ofaMainWindow *window, gboolean enable );
@@ -292,6 +300,7 @@ static GtkNotebook          *notebook_get_book( const ofaMainWindow *window );
 static ofaPage              *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
 static ofaPage              *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
 static void                  notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
+static gboolean              notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
 static void                  on_tab_close_clicked( myTab *tab, ofaPage *page );
 static void                  do_close( ofaPage *page );
 static void                  on_tab_pin_clicked( myTab *tab, ofaPage *page );
@@ -606,6 +615,7 @@ ofa_main_window_new( ofaApplication *application )
 	hub = ofa_igetter_get_hub( OFA_IGETTER( window ));
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_OPENED, G_CALLBACK( hub_on_dossier_opened ), window );
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CLOSED, G_CALLBACK( hub_on_dossier_closed ), window );
+	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_PROPERTIES, G_CALLBACK( hub_on_dossier_properties ), window );
 
 	/* let the plugins update these menu map/model
 	 * (here because application is not yet set in constructed() */
@@ -658,6 +668,16 @@ hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window )
 }
 
 /*
+ * the dossier has advertized the hub that its properties has been
+ * modified by the user
+ */
+static void
+hub_on_dossier_properties( ofaHub *hub, ofaMainWindow *main_window )
+{
+	do_reset_background_image( main_window, hub );
+}
+
+/*
  * triggered when the user clicks on the top right [X] button
  * returns %TRUE to stop the signal to be propagated (which would cause
  * the window to be destroyed); instead we gracefully quit the application.
@@ -703,7 +723,8 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
 	pane_restore_position( priv->pane );
 	pane_left_add_treeview( self );
-	pane_right_add_empty_notebook( self );
+	pane_right_add_empty_notebook( self, hub );
+	do_reset_background_image( self, hub );
 
 	set_menubar( self, priv->menu );
 
@@ -759,8 +780,11 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 static void
 do_close_dossier( ofaMainWindow *self, ofaHub *hub )
 {
+	static const gchar *thisfn = "ofa_main_window_do_close_dossier";
 	ofaMainWindowPrivate *priv;
 	GtkApplication *application;
+
+	g_debug( "%s: self=%p, hub=%p", thisfn, ( void * ) self, ( void * ) hub );
 
 	if( GTK_IS_WINDOW( self ) && ofa_hub_get_dossier( hub )){
 
@@ -769,6 +793,11 @@ do_close_dossier( ofaMainWindow *self, ofaHub *hub )
 
 		priv = ofa_main_window_get_instance_private( self );
 
+		if( priv->background_image ){
+			cairo_surface_destroy( priv->background_image );
+			priv->background_image = NULL;
+		}
+
 		gtk_widget_destroy( GTK_WIDGET( priv->pane ));
 		priv->pane = NULL;
 
@@ -776,32 +805,6 @@ do_close_dossier( ofaMainWindow *self, ofaHub *hub )
 		set_menubar( self, ofa_application_get_menu_model( OFA_APPLICATION( application )));
 		set_window_title( self );
 	}
-}
-
-/**
- * ofa_main_window_close_dossier:
- * main_window: this #ofaMainWindow instance.
- *
- * Clears both the IHubber and our private references on the #ofaHub
- * object.
- */
-void
-ofa_main_window_close_dossier( ofaMainWindow *main_window )
-{
-	static const gchar *thisfn = "ofa_main_window_close_dossier";
-	ofaMainWindowPrivate *priv;
-	ofaHub *hub;
-
-	g_debug( "%s: main_window=%p", thisfn, ( void * ) main_window );
-
-	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-	priv = ofa_main_window_get_instance_private( main_window );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	hub = ofa_igetter_get_hub( OFA_IGETTER( main_window ));
-	do_close_dossier( main_window, hub );
 }
 
 /**
@@ -1092,19 +1095,22 @@ pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewCo
 }
 
 static void
-pane_right_add_empty_notebook( ofaMainWindow *window )
+pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 {
 	ofaMainWindowPrivate *priv;
 	GtkNotebook *book;
 
-	priv = ofa_main_window_get_instance_private( window );
+	priv = ofa_main_window_get_instance_private( self );
 
 	book = GTK_NOTEBOOK( gtk_notebook_new());
 	my_utils_widget_set_margins( GTK_WIDGET( book ), 4, 4, 2, 4 );
 	gtk_notebook_set_scrollable( book, TRUE );
 	gtk_notebook_popup_enable( book );
+	gtk_widget_set_hexpand( GTK_WIDGET( book ), TRUE );
+	gtk_widget_set_vexpand( GTK_WIDGET( book ), TRUE );
 
-	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), window );
+	g_signal_connect( book, "draw", G_CALLBACK( notebook_on_draw ), self );
+	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), self );
 
 	gtk_paned_pack2( priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
 }
@@ -1118,6 +1124,39 @@ on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty )
 {
 	set_window_title( window );
 	do_update_menubar_items( window );
+}
+
+static void
+do_reset_background_image( ofaMainWindow *self, ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_main_window_do_reset_background_image";
+	ofaMainWindowPrivate *priv;
+	ofaDossierPrefs *prefs;
+	gchar *background_uri, *filename;
+	GtkNotebook *book;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	if( priv->background_image ){
+		cairo_surface_destroy( priv->background_image );
+	}
+
+	prefs = ofa_hub_dossier_get_prefs( hub );
+	background_uri = ofa_dossier_prefs_get_background_img( prefs );
+
+	if( my_strlen( background_uri )){
+		filename = g_filename_from_uri( background_uri, NULL, NULL );
+		priv->background_image = cairo_image_surface_create_from_png( filename );
+		g_free( filename );
+		priv->background_image_width = cairo_image_surface_get_width( priv->background_image );
+		priv->background_image_height = cairo_image_surface_get_height ( priv->background_image );
+		g_debug( "%s: uri=%s, width=%d, height=%d",
+				thisfn, background_uri, priv->background_image_width, priv->background_image_height );
+	}
+	g_free( background_uri );
+
+	book = notebook_get_book( self );
+	gtk_widget_queue_draw( GTK_WIDGET( book ));
 }
 
 static void
@@ -1282,7 +1321,7 @@ on_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_main_window_close_dossier( OFA_MAIN_WINDOW( user_data ));
+	ofa_hub_dossier_close( ofa_igetter_get_hub( OFA_IGETTER( user_data )));
 }
 
 static void
@@ -1663,6 +1702,35 @@ notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage 
 		g_return_if_fail( GTK_IS_WIDGET( widget ));
 		gtk_widget_grab_focus( widget );
 	}
+}
+
+/*
+ * notebook 'draw' signal handler
+ *
+ * Returns: TRUE to stop other handlers from being invoked for the event.
+ *  % FALSE to propagate the event further.
+ */
+static gboolean
+notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self )
+{
+	ofaMainWindowPrivate *priv;
+	gint width, height;
+	gdouble sx, sy;
+
+	priv = ofa_main_window_get_instance_private( self );
+
+	if( priv->background_image ){
+		width = gtk_widget_get_allocated_width( widget );
+		height = gtk_widget_get_allocated_height( widget );
+		sx = ( gdouble ) width / ( gdouble ) priv->background_image_width;
+		sy = ( gdouble ) height / ( gdouble ) priv->background_image_height;
+		//g_debug( "on_draw: width=%d, height=%d, sx=%lf, sy=%lf", width, height, sx, sy );
+		cairo_scale( cr, sx, sy );
+		cairo_set_source_surface( cr, priv->background_image, 0, 0 );
+		cairo_paint( cr );
+	}
+
+	return( FALSE );
 }
 
 static void

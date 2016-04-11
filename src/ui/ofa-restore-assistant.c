@@ -1184,7 +1184,6 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_p6_do_display";
 	ofaRestoreAssistantPrivate *priv;
-	GtkApplicationWindow *main_window;
 
 	g_return_if_fail( OFA_IS_RESTORE_ASSISTANT( self ));
 
@@ -1202,11 +1201,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
-		main_window = ofa_igetter_get_main_window( priv->getter );
-		g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
-
-		ofa_main_window_close_dossier( OFA_MAIN_WINDOW( main_window ));
-
+		ofa_hub_dossier_close( ofa_igetter_get_hub( priv->getter ));
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
 	}
 }

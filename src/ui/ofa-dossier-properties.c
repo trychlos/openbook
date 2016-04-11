@@ -131,6 +131,7 @@ static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *se
 static void      on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
 static void      on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self );
 static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
+static void      background_image_on_file_set( GtkFileChooserButton *button, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
@@ -603,9 +604,10 @@ static void
 init_preferences_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GtkWidget *parent;
+	GtkWidget *parent, *background_btn;
 	gboolean notes, nonempty, props, bals, integ;
 	ofaHub *hub;
+	gchar *uri;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
@@ -626,6 +628,17 @@ init_preferences_page( ofaDossierProperties *self )
 	integ = ofa_dossier_prefs_get_integrity( priv->prefs );
 
 	ofa_open_prefs_bin_set_data( priv->prefs_bin, notes, nonempty, props, bals, integ );
+
+	background_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-filechooserbutton" );
+	g_return_if_fail( background_btn && GTK_IS_FILE_CHOOSER_BUTTON( background_btn ));
+
+	g_signal_connect( background_btn, "file-set", G_CALLBACK( background_image_on_file_set ), self );
+
+	uri = ofa_dossier_prefs_get_background_img( priv->prefs );
+	if( my_strlen( uri )){
+		gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( background_btn ), uri );
+	}
+	g_free( uri );
 }
 
 static void
@@ -748,6 +761,25 @@ on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self )
 	gtk_text_buffer_get_end_iter( buffer, &end );
 	g_free( priv->exe_notes );
 	priv->exe_notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+}
+
+static void
+background_image_on_file_set( GtkFileChooserButton *button, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	gchar *uri;
+	ofaHub *hub;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button ));
+
+	ofa_dossier_prefs_set_background_img( priv->prefs, uri );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_PROPERTIES );
+
+	g_free( uri );
 }
 
 static void

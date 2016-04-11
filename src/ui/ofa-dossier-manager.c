@@ -374,8 +374,7 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 			}
 			g_object_unref( dossier_meta );
 			if( cmp == 0 ){
-				ofa_main_window_close_dossier(
-						OFA_MAIN_WINDOW( ofa_igetter_get_main_window( priv->getter )));
+				ofa_hub_dossier_close( ofa_igetter_get_hub( priv->getter ));
 			}
 		}
 		ofa_idbmeta_remove_period( meta, period );

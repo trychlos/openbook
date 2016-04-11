@@ -77,6 +77,7 @@ enum {
 	RELOAD_DATASET,
 	DOSSIER_OPENED,
 	DOSSIER_CLOSED,
+	DOSSIER_PROPERTIES,
 	ENTRY_STATUS_COUNT,
 	ENTRY_STATUS_CHANGE,
 	EXE_DATES_CHANGED,
@@ -305,6 +306,28 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 */
 	st_signals[ DOSSIER_CLOSED ] = g_signal_new_class_handler(
 				SIGNAL_HUB_DOSSIER_CLOSED,
+				OFA_TYPE_HUB,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				0,
+				G_TYPE_NONE );
+
+	/**
+	 * ofaHub::hub-dossier-properties:
+	 *
+	 * This signal is sent on the hub when the properties of the dossier
+	 * has been modified by the user.
+	 *
+	 * Handler is of type:
+	 * 		void user_handler( ofaHub   *hub,
+	 * 							gpointer user_data );
+	 */
+	st_signals[ DOSSIER_PROPERTIES ] = g_signal_new_class_handler(
+				SIGNAL_HUB_DOSSIER_PROPERTIES,
 				OFA_TYPE_HUB,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -717,14 +740,16 @@ ofa_hub_dossier_close( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CLOSED );
-
-	dossier_do_close( hub );
+	if( priv->dossier ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CLOSED );
+		dossier_do_close( hub );
+	}
 }
 
 static void
 dossier_do_close( ofaHub *hub )
 {
+	static const gchar *thisfn = "ofa_hub_dossier_do_close";
 	ofaHubPrivate *priv;
 
 	priv = ofa_hub_get_instance_private( hub );
@@ -732,6 +757,8 @@ dossier_do_close( ofaHub *hub )
 	g_clear_object( &priv->connect );
 	g_clear_object( &priv->dossier );
 	g_clear_object( &priv->dossier_prefs );
+
+	g_debug( "%s: dossier=%p", thisfn, ( void * ) priv->dossier );
 }
 
 /*

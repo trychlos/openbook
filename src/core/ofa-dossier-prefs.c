@@ -43,15 +43,17 @@ typedef struct {
 
 	/* runtime
 	 */
-
 	gboolean    notes;
 	gboolean    nonempty;
 	gboolean    properties;
 	gboolean    balances;
 	gboolean    integrity;
+
+	gchar      *background_uri;
 }
 	ofaDossierPrefsPrivate;
 
+static const gchar *st_background_img   = "ofa-BackgroundImage";
 static const gchar *st_prefs_settings   = "ofa-UserPreferences-settings";
 
 static void  get_dossier_settings( ofaDossierPrefs *self );
@@ -64,6 +66,7 @@ static void
 dossier_prefs_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_prefs_finalize";
+	ofaDossierPrefsPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -71,6 +74,9 @@ dossier_prefs_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_DOSSIER_PREFS( instance ));
 
 	/* free data members here */
+	priv = ofa_dossier_prefs_get_instance_private( OFA_DOSSIER_PREFS( instance ));
+
+	g_free( priv->background_uri );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_prefs_parent_class )->finalize( instance );
@@ -110,6 +116,7 @@ ofa_dossier_prefs_init( ofaDossierPrefs *self )
 	priv = ofa_dossier_prefs_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->background_uri = NULL;
 }
 
 static void
@@ -347,6 +354,56 @@ ofa_dossier_prefs_set_integrity( ofaDossierPrefs *prefs, gboolean integrity )
 	set_dossier_settings( prefs );
 }
 
+/**
+ * ofa_dossier_prefs_get_background_img:
+ * @prefs:
+ *
+ * Returns: the background image URI, as a newly allocated string which
+ * should be g_free() by the caller.
+ */
+gchar *
+ofa_dossier_prefs_get_background_img( const ofaDossierPrefs *prefs )
+{
+	ofaDossierPrefsPrivate *priv;
+
+	g_return_val_if_fail( prefs && OFA_IS_DOSSIER_PREFS( prefs ), FALSE );
+
+	priv = ofa_dossier_prefs_get_instance_private( prefs );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( g_strdup( priv->background_uri ));
+}
+
+/**
+ * ofa_dossier_prefs_set_background_img:
+ * @prefs:
+ * @uri:
+ */
+void
+ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
+{
+	ofaDossierPrefsPrivate *priv;
+	const ofaIDBConnect *connect;
+	ofaIDBMeta *meta;
+
+	g_return_if_fail( prefs && OFA_IS_DOSSIER_PREFS( prefs ));
+
+	priv = ofa_dossier_prefs_get_instance_private( prefs );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->background_uri );
+	priv->background_uri = g_strdup( uri );
+
+	connect = ofa_hub_get_connect( priv->hub );
+	meta = ofa_idbconnect_get_meta( connect );
+
+	ofa_settings_dossier_set_string( meta, st_background_img, priv->background_uri );
+
+	g_object_unref( meta );
+}
+
 /*
  * dossier settings: open_notes;only_when_non_empty;properties;balances;integrity;
  */
@@ -358,6 +415,7 @@ get_dossier_settings( ofaDossierPrefs *self )
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	const gchar *cstr;
+	gchar *str;
 
 	priv = ofa_dossier_prefs_get_instance_private( self );
 
@@ -386,6 +444,11 @@ get_dossier_settings( ofaDossierPrefs *self )
 	priv->integrity = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
 
 	ofa_settings_free_string_list( list );
+
+	str = ofa_settings_dossier_get_string( meta, st_background_img );
+	g_free( priv->background_uri );
+	priv->background_uri = str;
+
 	g_object_unref( meta );
 }
 

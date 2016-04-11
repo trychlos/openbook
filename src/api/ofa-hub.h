@@ -88,6 +88,7 @@ typedef struct {
 #define SIGNAL_HUB_RELOAD               "hub-dataset-reload"
 #define SIGNAL_HUB_DOSSIER_OPENED       "hub-dossier-opened"
 #define SIGNAL_HUB_DOSSIER_CLOSED       "hub-dossier-closed"
+#define SIGNAL_HUB_DOSSIER_PROPERTIES   "hub-dossier-properties"
 #define SIGNAL_HUB_STATUS_COUNT         "hub-status-count"
 #define SIGNAL_HUB_STATUS_CHANGE        "hub-status-change"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"

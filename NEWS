@@ -38,8 +38,9 @@
    - myIDialog: provides  a default error message.
    - myIWindow: improve size and position management (todo #1054).
    - myThousandCombo: new class for thousand separator selection.
-   - ofaMysl: implements ofaIAbout interface.
-   - ofaMysl: implements ofaIProperties interface.
+   - ofaMainWindow: may display an image on a per-dossier basis (todo #669).
+   - ofaMysql: implements ofaIAbout interface.
+   - ofaMysql: implements ofaIProperties interface.
    - ofaExportAssistant: makes use of ofaStreamformatDisp (todo #1057).
    - ofaIDBModel, ofaCheckIntegrityBin, ofaImportAssistant: scroll textview when adding text (todo #1056).
    - ofaImport: save table before insertion, restoring it on error (todo #1061).
@@ -68,6 +69,7 @@
    - ofaIExeCloseClose interface is renamed to ofaIExeClose (todo #1067).
    - ofaIPrefsProvider, ofaIPrefsPage: deprecated interfaces.
    - ofaIProperties: new interface which obsoletes both ofaIPrefsProvider and ofaIPrefsPage.
+   - ofa_main_window_close_dossier(): removed method.
    - ofsBat: deprecated data structure.
 
 -----------------------------------------------------------------------

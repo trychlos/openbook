@@ -219,9 +219,6 @@
      2015- 2-20 this requires to implement DnD on some non-modal windows
      2016- 3-20 ofaNonModalPage is a temporary work-around
 
- 669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
-                color, a logo, etc.)
-
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
@@ -339,10 +336,6 @@
                      + let restore on a selected exercice rather than on
                      the current one
 
- 933 2015-12-15 ARCH rename ofa-preferences (too close of
-                     ofa-ipreferences) while these are rather shortcuts
-                     to user preferences
-
  938 2015-12-21 ARCH distinguish a core api with core objects (eg. for
                      command-line only tools) and a ui api which contains
                      some base classes and interfaces which would be useful
@@ -382,7 +375,12 @@
 
 1053 2016- 3-26 CODE review the menu distribution
 
-1069
+1069 2016- 4-11 move OFA_DOSSIER signals to hub
+
+1070 2016- 4-11 OFA_DOSSIER_CHANGED on dossier is the same than 
+                SIGNAL_DOSSIER_PROPERTIES on the hub 
+
+1071
 
 -----------------------------------------------------------------------
  DONE
@@ -468,6 +466,10 @@
                 non-modal (use case: consult rates)
      2016- 1-27 ofaOpeTemplateProperties: done
      2016- 1-27 ofaGuidedInput: done
+
+ 669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
+                color, a logo, etc.)
+     2016- 4-11 done
 
  677 2015- 2-19 preferences for the dossier should be set in the dbms
                 (e.g. order of ope_templates pages)
@@ -586,6 +588,11 @@
  919 2015-12-10 GTK  my_utils_dialog_info/warning: have a transient parent
      2016- 3-11 this has been done at least for myIWindow implementations;
                 seems to be rather difficult for others...
+
+ 933 2015-12-15 ARCH rename ofa-preferences (too close of
+                     ofa-ipreferences) while these are rather shortcuts
+                     to user preferences
+     2016- 4-11 cancelled as ofa-ipreferences no more exists
 
  935 2015-12-17 DDLUpdate: does not show remediation when creating a
                 new dossier ?

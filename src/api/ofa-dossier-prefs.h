@@ -58,34 +58,39 @@ typedef struct {
 }
 	ofaDossierPrefsClass;
 
-GType            ofa_dossier_prefs_get_type      ( void ) G_GNUC_CONST;
+GType            ofa_dossier_prefs_get_type          ( void ) G_GNUC_CONST;
 
-ofaDossierPrefs *ofa_dossier_prefs_new           ( ofaHub *hub );
+ofaDossierPrefs *ofa_dossier_prefs_new               ( ofaHub *hub );
 
-gboolean         ofa_dossier_prefs_get_open_notes( const ofaDossierPrefs *prefs );
+gboolean         ofa_dossier_prefs_get_open_notes    ( const ofaDossierPrefs *prefs );
 
-void             ofa_dossier_prefs_set_open_notes( ofaDossierPrefs *prefs,
-														gboolean open );
+void             ofa_dossier_prefs_set_open_notes    ( ofaDossierPrefs *prefs,
+															gboolean open );
 
-gboolean         ofa_dossier_prefs_get_nonempty  ( const ofaDossierPrefs *prefs );
+gboolean         ofa_dossier_prefs_get_nonempty      ( const ofaDossierPrefs *prefs );
 
-void             ofa_dossier_prefs_set_nonempty  ( ofaDossierPrefs *prefs,
-														gboolean nonempty );
+void             ofa_dossier_prefs_set_nonempty      ( ofaDossierPrefs *prefs,
+															gboolean nonempty );
 
-gboolean         ofa_dossier_prefs_get_properties( const ofaDossierPrefs *prefs );
+gboolean         ofa_dossier_prefs_get_properties    ( const ofaDossierPrefs *prefs );
 
-void             ofa_dossier_prefs_set_properties( ofaDossierPrefs *prefs,
-														gboolean properties );
+void             ofa_dossier_prefs_set_properties    ( ofaDossierPrefs *prefs,
+															gboolean properties );
 
-gboolean         ofa_dossier_prefs_get_balances  ( const ofaDossierPrefs *prefs );
+gboolean         ofa_dossier_prefs_get_balances      ( const ofaDossierPrefs *prefs );
 
-void             ofa_dossier_prefs_set_balances  ( ofaDossierPrefs *prefs,
-														gboolean balances );
+void             ofa_dossier_prefs_set_balances      ( ofaDossierPrefs *prefs,
+															gboolean balances );
 
-gboolean         ofa_dossier_prefs_get_integrity ( const ofaDossierPrefs *prefs );
+gboolean         ofa_dossier_prefs_get_integrity     ( const ofaDossierPrefs *prefs );
 
-void             ofa_dossier_prefs_set_integrity ( ofaDossierPrefs *prefs,
-														gboolean integrity );
+void             ofa_dossier_prefs_set_integrity     ( ofaDossierPrefs *prefs,
+															gboolean integrity );
+
+gchar           *ofa_dossier_prefs_get_background_img( const ofaDossierPrefs *prefs );
+
+void             ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs,
+															const gchar *uri );
 
 G_END_DECLS
 
