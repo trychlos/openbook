@@ -486,7 +486,11 @@ isettings_set_string( myISettings *instance, const gchar *group, const gchar *ke
 	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->keyfile );
 
-	g_key_file_set_string( priv->keyfile, group, key, value );
+	if( my_strlen( value )){
+		g_key_file_set_string( priv->keyfile, group, key, value );
+	} else {
+		g_key_file_remove_key( priv->keyfile, group, key, NULL );
+	}
 	write_key_file( MY_SETTINGS( instance ));
 }
 

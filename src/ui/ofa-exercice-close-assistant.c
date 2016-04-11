@@ -616,7 +616,6 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 {
 	ofaExerciceCloseAssistantPrivate *priv;
 	const GDate *begin_cur, *end_cur;
-	GtkApplicationWindow *main_window;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
@@ -627,12 +626,11 @@ p1_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	ofo_dossier_set_exe_end( priv->dossier, end_cur );
 	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_EXE_DATES_CHANGED, begin_cur, end_cur );
 
-	main_window = ofa_igetter_get_main_window( priv->getter );
-	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
-
 	ofa_closing_parms_bin_apply( priv->p1_closing_parms );
 
 	ofo_dossier_update( priv->dossier );
+
+	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
 }
 
 static void
@@ -1425,7 +1423,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	}
 
 	/* re-emit the changed signal after changes */
-	g_signal_emit_by_name( main_window, OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
+	g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
 
 	return( ok );
 }

@@ -377,9 +377,6 @@
 
 1069 2016- 4-11 move OFA_DOSSIER signals to hub
 
-1070 2016- 4-11 OFA_DOSSIER_CHANGED on dossier is the same than 
-                SIGNAL_DOSSIER_PROPERTIES on the hub 
-
 1071
 
 -----------------------------------------------------------------------
@@ -1114,6 +1111,10 @@
 
 1068 2016- 4- 5 review ofoBat import input format (have id placeholder)
      2016- 4- 7 done
+
+1070 2016- 4-11 OFA_DOSSIER_CHANGED on dossier is the same than 
+                SIGNAL_DOSSIER_PROPERTIES on the hub
+     2016- 4-11 both signal are merged into ofaHub::SIGNAL_HUB_DOSSIER_CHANGED
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

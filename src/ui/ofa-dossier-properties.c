@@ -1021,8 +1021,7 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	g_free( uri );
 
 	/* last, advertize the dossier changes */
-	g_signal_emit_by_name(
-			ofa_igetter_get_main_window( priv->getter ), OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
+	g_signal_emit_by_name( ofa_igetter_get_hub( priv->getter ), SIGNAL_HUB_DOSSIER_CHANGED );
 
 	return( ok );
 }

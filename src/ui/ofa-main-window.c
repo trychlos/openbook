@@ -118,7 +118,6 @@ typedef struct {
  */
 enum {
 	DOSSIER_PROPERTIES = 0,
-	DOSSIER_CHANGED,
 	DIALOG_INIT,
 	ADD_THEME,
 	ACTIVATE_THEME,
@@ -287,7 +286,6 @@ static void                  pane_restore_position( GtkPaned *pane );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
 static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static void                  pane_right_add_empty_notebook( ofaMainWindow *window, ofaHub *hub );
-static void                  on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
 static void                  background_image_update( ofaMainWindow *self, ofaHub *hub );
 static void                  background_image_set_uri( ofaMainWindow *self, const gchar *uri );
 static void                  do_update_menubar_items( ofaMainWindow *self );
@@ -476,8 +474,6 @@ main_window_constructed( GObject *instance )
 		/* connect the action signals
 		 */
 		g_signal_connect( instance,
-				OFA_SIGNAL_DOSSIER_CHANGED, G_CALLBACK( on_dossier_changed ), NULL );
-		g_signal_connect( instance,
 				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
 
 		/* set the default icon for all windows of the application */
@@ -563,31 +559,6 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				0 );
-
-	/**
-	 * ofaMainWindow::ofa-dossier-changed:
-	 *
-	 * This signal is sent on the main window when the dossier is opened
-	 * and when dossier properties have changed.
-	 * The #ofaMainWindow handler takes advantage of it to update the
-	 * window title and the menubar items sensitivity.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 *                      ofoDossier  *dossier,
-	 * 						gpointer     user_data );
-	 */
-	st_signals[ DOSSIER_CHANGED ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DOSSIER_CHANGED,
-				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				1,
-				G_TYPE_OBJECT );
 }
 
 /**
@@ -659,15 +630,15 @@ init_themes( ofaMainWindow *self )
 }
 
 static void
-hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *main_window )
+hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self )
 {
-	do_open_dossier( main_window, hub );
+	do_open_dossier( self, hub );
 }
 
 static void
-hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window )
+hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self )
 {
-	do_close_dossier( main_window, hub );
+	do_close_dossier( self, hub );
 }
 
 /*
@@ -675,18 +646,20 @@ hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window )
  * modified (or may have been modified) by the user
  */
 static void
-hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window )
+hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *self )
 {
-	background_image_update( main_window, hub );
+	set_window_title( self );
+	do_update_menubar_items( self );
+	background_image_update( self, hub );
 }
 
 /*
  * set a background image
  */
 static void
-hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window )
+hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *self )
 {
-	background_image_set_uri( main_window, uri );
+	background_image_set_uri( self, uri );
 }
 
 /*
@@ -748,7 +721,7 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 		warning_exercice_unset( self );
 	}
 
-	g_signal_emit_by_name( self, OFA_SIGNAL_DOSSIER_CHANGED, dossier );
+	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CHANGED );
 
 	prefs = ofa_hub_dossier_get_prefs( hub );
 
@@ -1125,17 +1098,6 @@ pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), self );
 
 	gtk_paned_pack2( priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
-}
-
-/*
- * signal sent after the dossier properties have changed
- * this may be used to update the window title and the menubar items
- */
-static void
-on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty )
-{
-	set_window_title( window );
-	do_update_menubar_items( window );
 }
 
 static void
