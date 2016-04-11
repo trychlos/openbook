@@ -153,7 +153,7 @@ ofo_base_load_dataset( const ofsBoxDef *defs, const gchar *from, GType type, ofa
 		dataset = g_list_prepend( dataset, object );
 	}
 	g_list_free( rows );
-	g_debug( "%s: dataset count=%d", thisfn, g_list_length( dataset ));
+	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 
 	return( g_list_reverse( dataset ));
 }
