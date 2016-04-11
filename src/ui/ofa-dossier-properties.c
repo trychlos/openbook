@@ -88,12 +88,16 @@ typedef struct {
 	gboolean            end_empty;
 	gint                duree;
 	gchar              *exe_notes;
+	gchar              *background_orig_uri;
 
 	/* UI
 	 */
 	GtkWidget          *siren_entry;
 	ofaClosingParmsBin *closing_parms;
 	ofaOpenPrefsBin    *prefs_bin;
+	GtkWidget          *background_btn;
+	GtkWidget          *background_clear;
+	GtkWidget          *background_preview;
 	GtkWidget          *msgerr;
 	GtkWidget          *ok_btn;
 
@@ -132,9 +136,12 @@ static void      on_date_changed( ofaDossierProperties *self, GtkEditable *edita
 static void      on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self );
 static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
 static void      background_image_on_file_set( GtkFileChooserButton *button, ofaDossierProperties *self );
+static void      background_image_on_clear_clicked( GtkButton *button, ofaDossierProperties *self );
+static void      background_image_on_preview_clicked( GtkButton *button, ofaDossierProperties *self );
 static void      check_for_enable_dlg( ofaDossierProperties *self );
 static gboolean  is_dialog_valid( ofaDossierProperties *self );
 static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
+static void      on_cancel( GtkButton *button, ofaDossierProperties *self );
 static gboolean  do_update( ofaDossierProperties *self, gchar **msgerr );
 static gboolean  confirm_remediation( ofaDossierProperties *self, gint count );
 static void      display_progress_init( ofaDossierProperties *self );
@@ -166,6 +173,7 @@ dossier_properties_finalize( GObject *instance )
 	g_free( priv->import_ledger );
 	g_free( priv->exe_notes );
 	g_free( priv->siren );
+	g_free( priv->background_orig_uri );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_dossier_properties_parent_class )->finalize( instance );
@@ -296,6 +304,7 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_dossier_properties_idialog_init";
 	ofaDossierPropertiesPrivate *priv;
 	ofaHub *hub;
+	GtkWidget *btn;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -304,6 +313,10 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-cancel" );
+	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
+	g_signal_connect( btn, "clicked", G_CALLBACK( on_cancel ), instance );
 
 	priv->msgerr = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "px-msgerr" );
 
@@ -604,7 +617,7 @@ static void
 init_preferences_page( ofaDossierProperties *self )
 {
 	ofaDossierPropertiesPrivate *priv;
-	GtkWidget *parent, *background_btn;
+	GtkWidget *parent, *label;
 	gboolean notes, nonempty, props, bals, integ;
 	ofaHub *hub;
 	gchar *uri;
@@ -629,16 +642,31 @@ init_preferences_page( ofaDossierProperties *self )
 
 	ofa_open_prefs_bin_set_data( priv->prefs_bin, notes, nonempty, props, bals, integ );
 
-	background_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-filechooserbutton" );
-	g_return_if_fail( background_btn && GTK_IS_FILE_CHOOSER_BUTTON( background_btn ));
+	/* background image */
+	priv->background_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-filechooserbutton" );
+	g_return_if_fail( priv->background_btn && GTK_IS_FILE_CHOOSER_BUTTON( priv->background_btn ));
+	g_signal_connect( priv->background_btn, "file-set", G_CALLBACK( background_image_on_file_set ), self );
 
-	g_signal_connect( background_btn, "file-set", G_CALLBACK( background_image_on_file_set ), self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-background-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->background_btn );
+
+	priv->background_clear = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-clear" );
+	g_return_if_fail( priv->background_clear && GTK_IS_BUTTON( priv->background_clear ));
+	g_signal_connect( priv->background_clear, "clicked", G_CALLBACK( background_image_on_clear_clicked ), self );
+
+	priv->background_preview = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-preview" );
+	g_return_if_fail( priv->background_preview && GTK_IS_BUTTON( priv->background_preview ));
+	g_signal_connect( priv->background_preview, "clicked", G_CALLBACK( background_image_on_preview_clicked ), self );
 
 	uri = ofa_dossier_prefs_get_background_img( priv->prefs );
+	priv->background_orig_uri = g_strdup( uri );
 	if( my_strlen( uri )){
-		gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( background_btn ), uri );
+		gtk_file_chooser_set_uri( GTK_FILE_CHOOSER( priv->background_btn ), uri );
 	}
 	g_free( uri );
+
+	background_image_on_file_set( GTK_FILE_CHOOSER_BUTTON( priv->background_btn ), self );
 }
 
 static void
@@ -768,16 +796,46 @@ background_image_on_file_set( GtkFileChooserButton *button, ofaDossierProperties
 {
 	ofaDossierPropertiesPrivate *priv;
 	gchar *uri;
-	ofaHub *hub;
+	gboolean has_uri;
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
 	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( button ));
+	has_uri = ( my_strlen( uri ) > 0 );
 
-	ofa_dossier_prefs_set_background_img( priv->prefs, uri );
+	gtk_widget_set_sensitive( priv->background_clear, has_uri );
+
+	g_free( uri );
+}
+
+static void
+background_image_on_clear_clicked( GtkButton *button, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	gchar *uri;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->background_btn ));
+	if( uri ){
+		gtk_file_chooser_unselect_uri( GTK_FILE_CHOOSER( priv->background_btn ), uri );
+	}
+	g_free( uri );
+}
+
+static void
+background_image_on_preview_clicked( GtkButton *button, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	gchar *uri;
+	ofaHub *hub;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->background_btn ));
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_PROPERTIES );
+	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_PREVIEW, uri );
 
 	g_free( uri );
 }
@@ -861,6 +919,21 @@ set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
 	}
 }
 
+/*
+ * on cancel, restore the original background image
+ */
+static void
+on_cancel( GtkButton *button, ofaDossierProperties *self )
+{
+	ofaDossierPropertiesPrivate *priv;
+	ofaHub *hub;
+
+	priv = ofa_dossier_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_PREVIEW, priv->background_orig_uri );
+}
+
 static gboolean
 do_update( ofaDossierProperties *self, gchar **msgerr )
 {
@@ -870,6 +943,7 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	gboolean ok;
 	gboolean prefs_notes, prefs_nonempty, prefs_props, prefs_bals, prefs_integ;
 	ofaHub *hub;
+	gchar *uri;
 
 	g_return_val_if_fail( is_dialog_valid( self ), FALSE );
 
@@ -933,9 +1007,6 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 		display_progress_end( self );
 	}
 
-	g_signal_emit_by_name(
-			ofa_igetter_get_main_window( priv->getter ), OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
-
 	/* record settings */
 	ofa_open_prefs_bin_get_data( priv->prefs_bin, &prefs_notes, &prefs_nonempty, &prefs_props, &prefs_bals, &prefs_integ );
 	ofa_dossier_prefs_set_open_notes( priv->prefs, prefs_notes );
@@ -943,6 +1014,15 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 	ofa_dossier_prefs_set_properties( priv->prefs, prefs_props );
 	ofa_dossier_prefs_set_balances( priv->prefs, prefs_bals );
 	ofa_dossier_prefs_set_integrity( priv->prefs, prefs_integ );
+
+	/* background image */
+	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->background_btn ));
+	ofa_dossier_prefs_set_background_img( priv->prefs, uri );
+	g_free( uri );
+
+	/* last, advertize the dossier changes */
+	g_signal_emit_by_name(
+			ofa_igetter_get_main_window( priv->getter ), OFA_SIGNAL_DOSSIER_CHANGED, priv->dossier );
 
 	return( ok );
 }

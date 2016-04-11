@@ -947,7 +947,7 @@
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkGrid" id="grid2">
+                          <object class="GtkGrid" id="grid52">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">12</property>
@@ -957,7 +957,7 @@
                             <property name="row_spacing">3</property>
                             <property name="column_spacing">4</property>
                             <child>
-                              <object class="GtkLabel" id="label7">
+                              <object class="GtkLabel" id="p5-background-label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="label" translatable="yes">Background _image :</property>
@@ -977,6 +977,32 @@
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
+                                <property name="top_attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="p5-clear">
+                                <property name="label">gtk-clear</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <property name="use_stock">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">2</property>
+                                <property name="top_attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="p5-preview">
+                                <property name="label" translatable="yes">_Preview</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <property name="use_underline">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">3</property>
                                 <property name="top_attach">0</property>
                               </packing>
                             </child>

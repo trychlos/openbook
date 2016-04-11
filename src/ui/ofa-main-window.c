@@ -273,7 +273,8 @@ static void                  window_store_ref( ofaMainWindow *self, GtkBuilder *
 static void                  init_themes( ofaMainWindow *self );
 static void                  hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
 static void                  hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
-static void                  hub_on_dossier_properties( ofaHub *hub, ofaMainWindow *main_window );
+static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window );
+static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
@@ -287,7 +288,8 @@ static void                  pane_left_add_treeview( ofaMainWindow *window );
 static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static void                  pane_right_add_empty_notebook( ofaMainWindow *window, ofaHub *hub );
 static void                  on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty );
-static void                  do_reset_background_image( ofaMainWindow *self, ofaHub *hub );
+static void                  background_image_update( ofaMainWindow *self, ofaHub *hub );
+static void                  background_image_set_uri( ofaMainWindow *self, const gchar *uri );
 static void                  do_update_menubar_items( ofaMainWindow *self );
 static void                  enable_action_guided_input( ofaMainWindow *window, gboolean enable );
 static void                  enable_action_settlement( ofaMainWindow *window, gboolean enable );
@@ -615,7 +617,8 @@ ofa_main_window_new( ofaApplication *application )
 	hub = ofa_igetter_get_hub( OFA_IGETTER( window ));
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_OPENED, G_CALLBACK( hub_on_dossier_opened ), window );
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CLOSED, G_CALLBACK( hub_on_dossier_closed ), window );
-	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_PROPERTIES, G_CALLBACK( hub_on_dossier_properties ), window );
+	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( hub_on_dossier_changed ), window );
+	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_PREVIEW, G_CALLBACK( hub_on_dossier_preview ), window );
 
 	/* let the plugins update these menu map/model
 	 * (here because application is not yet set in constructed() */
@@ -632,7 +635,7 @@ ofa_main_window_new( ofaApplication *application )
 }
 
 /*
- * the main window initialization of theme manager:
+ * the main window initialization of the theme manager:
  * - define the themes for the main window
  * - then declare the theme manager general availability
  */
@@ -669,12 +672,21 @@ hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *main_window )
 
 /*
  * the dossier has advertized the hub that its properties has been
- * modified by the user
+ * modified (or may have been modified) by the user
  */
 static void
-hub_on_dossier_properties( ofaHub *hub, ofaMainWindow *main_window )
+hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window )
 {
-	do_reset_background_image( main_window, hub );
+	background_image_update( main_window, hub );
+}
+
+/*
+ * set a background image
+ */
+static void
+hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window )
+{
+	background_image_set_uri( main_window, uri );
 }
 
 /*
@@ -724,7 +736,7 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 	pane_restore_position( priv->pane );
 	pane_left_add_treeview( self );
 	pane_right_add_empty_notebook( self, hub );
-	do_reset_background_image( self, hub );
+	background_image_update( self, hub );
 
 	set_menubar( self, priv->menu );
 
@@ -1127,33 +1139,53 @@ on_dossier_changed( ofaMainWindow *window, ofoDossier *dossier, void *empty )
 }
 
 static void
-do_reset_background_image( ofaMainWindow *self, ofaHub *hub )
+background_image_update( ofaMainWindow *self, ofaHub *hub )
 {
-	static const gchar *thisfn = "ofa_main_window_do_reset_background_image";
-	ofaMainWindowPrivate *priv;
 	ofaDossierPrefs *prefs;
-	gchar *background_uri, *filename;
+	gchar *background_uri;
+
+	prefs = ofa_hub_dossier_get_prefs( hub );
+	background_uri = ofa_dossier_prefs_get_background_img( prefs );
+	background_image_set_uri( self, background_uri );
+	g_free( background_uri );
+}
+
+static void
+background_image_set_uri( ofaMainWindow *self, const gchar *uri )
+{
+	static const gchar *thisfn = "ofa_main_window_background_image_set_uri";
+	ofaMainWindowPrivate *priv;
+	gchar *filename;
 	GtkNotebook *book;
+	cairo_surface_t *surface;
+	gint width, height;
 
 	priv = ofa_main_window_get_instance_private( self );
 
 	if( priv->background_image ){
 		cairo_surface_destroy( priv->background_image );
+		priv->background_image = NULL;
 	}
 
-	prefs = ofa_hub_dossier_get_prefs( hub );
-	background_uri = ofa_dossier_prefs_get_background_img( prefs );
-
-	if( my_strlen( background_uri )){
-		filename = g_filename_from_uri( background_uri, NULL, NULL );
-		priv->background_image = cairo_image_surface_create_from_png( filename );
+	if( my_strlen( uri )){
+		filename = g_filename_from_uri( uri, NULL, NULL );
+		surface = cairo_image_surface_create_from_png( filename );
 		g_free( filename );
-		priv->background_image_width = cairo_image_surface_get_width( priv->background_image );
-		priv->background_image_height = cairo_image_surface_get_height ( priv->background_image );
-		g_debug( "%s: uri=%s, width=%d, height=%d",
-				thisfn, background_uri, priv->background_image_width, priv->background_image_height );
+		width = cairo_image_surface_get_width( surface );
+		height = cairo_image_surface_get_height ( surface );
+
+		if( width > 0 && height > 0 ){
+			priv->background_image = surface;
+			priv->background_image_width = width;
+			priv->background_image_height = height;
+			g_debug( "%s: uri=%s, width=%d, height=%d",
+					thisfn, uri, priv->background_image_width, priv->background_image_height );
+
+		} else {
+			cairo_surface_destroy( surface );
+			g_debug( "%s: unable to load %s", thisfn, uri );
+		}
 	}
-	g_free( background_uri );
 
 	book = notebook_get_book( self );
 	gtk_widget_queue_draw( GTK_WIDGET( book ));

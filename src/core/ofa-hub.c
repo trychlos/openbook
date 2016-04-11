@@ -77,7 +77,8 @@ enum {
 	RELOAD_DATASET,
 	DOSSIER_OPENED,
 	DOSSIER_CLOSED,
-	DOSSIER_PROPERTIES,
+	DOSSIER_CHANGED,
+	DOSSIER_PREVIEW,
 	ENTRY_STATUS_COUNT,
 	ENTRY_STATUS_CHANGE,
 	EXE_DATES_CHANGED,
@@ -317,17 +318,17 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_NONE );
 
 	/**
-	 * ofaHub::hub-dossier-properties:
+	 * ofaHub::hub-dossier-changed:
 	 *
 	 * This signal is sent on the hub when the properties of the dossier
-	 * has been modified by the user.
+	 * has been modified (or may have been modified) by the user.
 	 *
 	 * Handler is of type:
 	 * 		void user_handler( ofaHub   *hub,
 	 * 							gpointer user_data );
 	 */
-	st_signals[ DOSSIER_PROPERTIES ] = g_signal_new_class_handler(
-				SIGNAL_HUB_DOSSIER_PROPERTIES,
+	st_signals[ DOSSIER_CHANGED ] = g_signal_new_class_handler(
+				SIGNAL_HUB_DOSSIER_CHANGED,
 				OFA_TYPE_HUB,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -337,6 +338,31 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_NONE,
 				0,
 				G_TYPE_NONE );
+
+	/**
+	 * ofaHub::hub-dossier-preview:
+	 * @uri: [allow-none]:
+	 *
+	 * This signal is sent on the hub to set a new background image.
+	 * The sender is responsible to restore the original image if the
+	 * user cancels the update.
+	 *
+	 * Handler is of type:
+	 * 		void user_handler( ofaHub       *hub,
+	 * 							const gchar *uri,
+	 * 							gpointer     user_data );
+	 */
+	st_signals[ DOSSIER_PREVIEW ] = g_signal_new_class_handler(
+				SIGNAL_HUB_DOSSIER_PREVIEW,
+				OFA_TYPE_HUB,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_STRING );
 
 	/**
 	 * ofaHub::hub-status-count:
