@@ -568,7 +568,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 
 			if( priv->b_properties ){
 				main_window = ofa_igetter_get_main_window( priv->getter );
-				g_signal_emit_by_name( G_OBJECT( main_window ), OFA_SIGNAL_DOSSIER_PROPERTIES );
+				ofa_main_window_dossier_properties( OFA_MAIN_WINDOW( main_window ));
 			}
 		} else {
 			ok = FALSE;

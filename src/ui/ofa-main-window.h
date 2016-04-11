@@ -116,16 +116,6 @@ enum {
 	THM_LAST_THEME
 };
 
-/**
- * OFA_SIGNAL_DOSSIER_PROPERTIES:
- *  Action signal to be sent to the main window in order to update the
- *  properties of the currently opened dossier.
- *  Args: none.
- *  Use case: DossierNew: display the properties right after having
- *  opened the new dossier.
- */
-#define OFA_SIGNAL_DOSSIER_PROPERTIES   "ofa-dossier-properties"
-
 GType          ofa_main_window_get_type          ( void ) G_GNUC_CONST;
 
 ofaMainWindow *ofa_main_window_new               ( ofaApplication *application );
@@ -133,6 +123,8 @@ ofaMainWindow *ofa_main_window_new               ( ofaApplication *application )
 gboolean       ofa_main_window_is_willing_to_quit( const ofaMainWindow *window );
 
 void           ofa_main_window_dossier_backup    ( ofaMainWindow *window );
+
+void           ofa_main_window_dossier_properties( ofaMainWindow *window );
 
 void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
 

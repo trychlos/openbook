@@ -114,16 +114,6 @@ typedef struct {
 }
 	ofaMainWindowPrivate;
 
-/* signals defined here
- */
-enum {
-	DOSSIER_PROPERTIES = 0,
-	DIALOG_INIT,
-	ADD_THEME,
-	ACTIVATE_THEME,
-	N_SIGNALS
-};
-
 static void on_properties            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_backup                ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_close                 ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -265,8 +255,6 @@ static const gchar *st_resource_dosmenu = "/org/trychlos/openbook/ui/ofa-dos-men
 static const gchar *st_dosmenu_id       = "dos-menu";
 static const gchar *st_icon_fname       = ICONFNAME;
 
-static guint        st_signals[ N_SIGNALS ] = { 0 };
-
 static void                  pane_save_position( GtkPaned *pane );
 static void                  window_store_ref( ofaMainWindow *self, GtkBuilder *builder, const gchar *placeholder );
 static void                  init_themes( ofaMainWindow *self );
@@ -281,7 +269,6 @@ static void                  set_menubar( ofaMainWindow *window, GMenuModel *mod
 static void                  extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
 static void                  set_window_title( const ofaMainWindow *window );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
-static void                  on_dossier_properties( ofaMainWindow *window, gpointer user_data );
 static void                  pane_restore_position( GtkPaned *pane );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
 static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
@@ -296,6 +283,7 @@ static void                  enable_action_close_ledger( ofaMainWindow *window, 
 static void                  enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
 static void                  enable_action_import( ofaMainWindow *window, gboolean enable );
 static void                  do_backup( ofaMainWindow *self );
+static void                  do_properties( const ofaMainWindow *self );
 static GtkNotebook          *notebook_get_book( const ofaMainWindow *window );
 static ofaPage              *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
 static ofaPage              *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
@@ -306,7 +294,6 @@ static void                  do_close( ofaPage *page );
 static void                  on_tab_pin_clicked( myTab *tab, ofaPage *page );
 static void                  on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *self );
 static void                  close_all_pages( ofaMainWindow *self );
-static void                  do_dossier_properties( ofaMainWindow *self );
 static void                  igetter_iface_init( ofaIGetterInterface *iface );
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
@@ -471,11 +458,6 @@ main_window_constructed( GObject *instance )
 		 */
 		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), NULL );
 
-		/* connect the action signals
-		 */
-		g_signal_connect( instance,
-				OFA_SIGNAL_DOSSIER_PROPERTIES, G_CALLBACK( on_dossier_properties ), NULL );
-
 		/* set the default icon for all windows of the application */
 		error = NULL;
 		gtk_window_set_default_icon_from_file( st_icon_fname, &error );
@@ -538,27 +520,6 @@ ofa_main_window_class_init( ofaMainWindowClass *klass )
 	G_OBJECT_CLASS( klass )->constructed = main_window_constructed;
 	G_OBJECT_CLASS( klass )->dispose = main_window_dispose;
 	G_OBJECT_CLASS( klass )->finalize = main_window_finalize;
-
-	/**
-	 * ofaMainWindow::ofa-dossier-properties:
-	 *
-	 * This signal is to be sent to the main window for updating the
-	 * dossier properties (as an alternative to the menu item).
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaMainWindow *window,
-	 * 						gpointer     user_data );
-	 */
-	st_signals[ DOSSIER_PROPERTIES ] = g_signal_new_class_handler(
-				OFA_SIGNAL_DOSSIER_PROPERTIES,
-				OFA_TYPE_MAIN_WINDOW,
-				G_SIGNAL_RUN_CLEANUP | G_SIGNAL_ACTION,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0 );
 }
 
 /**
@@ -754,7 +715,7 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 
 	/* display dossier properties */
 	if( ofa_prefs_dossier_open_properties() || ofa_dossier_prefs_get_properties( prefs )){
-		g_signal_emit_by_name( self, OFA_SIGNAL_DOSSIER_PROPERTIES );
+		do_properties( self );
 	}
 }
 
@@ -954,7 +915,7 @@ set_window_title( const ofaMainWindow *self )
  * warning_exercice_unset:
  */
 static void
-warning_exercice_unset( const ofaMainWindow *window )
+warning_exercice_unset( const ofaMainWindow *self )
 {
 	GtkWidget *dialog;
 	gchar *str;
@@ -982,7 +943,7 @@ warning_exercice_unset( const ofaMainWindow *window )
 	gtk_widget_destroy( dialog );
 
 	if( resp == 1 ){
-		g_signal_emit_by_name(( gpointer ) window, OFA_SIGNAL_DOSSIER_PROPERTIES );
+		do_properties( self );
 	}
 }
 
@@ -1232,18 +1193,24 @@ enable_action_import( ofaMainWindow *window, gboolean enable )
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_import, "import", enable );
 }
 
-/*
- * DOSSIER_PROPERTIES signal handler
+/**
+ * ofa_main_window_dossier_backup:
+ * @main_window: this #ofaMainWindow instance.
+ *
+ * Backup the currently opened dossier.
  */
-static void
-on_dossier_properties( ofaMainWindow *window, void *empty )
+void
+ofa_main_window_dossier_backup( ofaMainWindow *main_window )
 {
-	static const gchar *thisfn = "ofa_main_window_on_dossier_properties";
+	ofaMainWindowPrivate *priv;
 
-	g_debug( "%s: window=%p, empty=%p",
-			thisfn, ( void * ) window, ( void * ) empty );
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
 
-	do_dossier_properties( window );
+	priv = ofa_main_window_get_instance_private( main_window );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	do_backup( main_window );
 }
 
 static void
@@ -1267,13 +1234,13 @@ do_backup( ofaMainWindow *self )
 }
 
 /**
- * ofa_main_window_dossier_backup:
+ * ofa_main_window_dossier_properties:
  * @main_window: this #ofaMainWindow instance.
  *
- * Backup the currently opened dossier.
+ * Display the Properties dialog box.
  */
 void
-ofa_main_window_dossier_backup( ofaMainWindow *main_window )
+ofa_main_window_dossier_properties( ofaMainWindow *main_window )
 {
 	ofaMainWindowPrivate *priv;
 
@@ -1283,7 +1250,7 @@ ofa_main_window_dossier_backup( ofaMainWindow *main_window )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	do_backup( main_window );
+	do_properties( main_window );
 }
 
 static void
@@ -1296,11 +1263,11 @@ on_properties( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	do_dossier_properties( OFA_MAIN_WINDOW( user_data ));
+	do_properties( OFA_MAIN_WINDOW( user_data ));
 }
 
 static void
-do_dossier_properties( ofaMainWindow *self )
+do_properties( const ofaMainWindow *self )
 {
 	ofa_dossier_properties_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
 }

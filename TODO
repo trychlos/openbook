@@ -375,8 +375,6 @@
 
 1053 2016- 3-26 CODE review the menu distribution
 
-1069 2016- 4-11 move OFA_DOSSIER signals to hub
-
 1071
 
 -----------------------------------------------------------------------
@@ -1111,6 +1109,9 @@
 
 1068 2016- 4- 5 review ofoBat import input format (have id placeholder)
      2016- 4- 7 done
+
+1069 2016- 4-11 move OFA_DOSSIER signals to hub
+     2016- 4-11 remove last OFA_SIGNAL_DOSSIER_PROPERTIES signal
 
 1070 2016- 4-11 OFA_DOSSIER_CHANGED on dossier is the same than 
                 SIGNAL_DOSSIER_PROPERTIES on the hub
