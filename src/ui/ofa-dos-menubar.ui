@@ -86,8 +86,12 @@
       </item>
       <section>
         <item>
-          <attribute name="label" translatable="yes">Intermediate _ledgers closing...</attribute>
+          <attribute name="label" translatable="yes">_Ledgers closing...</attribute>
           <attribute name="action">win.ledclosing</attribute>
+        </item>
+        <item>
+          <attribute name="label" translatable="yes">_Period closing...</attribute>
+          <attribute name="action">win.perclosing</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">E_xercice closing...</attribute>

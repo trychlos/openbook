@@ -182,7 +182,7 @@ ofa_ledger_close_class_init( ofaLedgerCloseClass *klass )
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
  *
- * Run an intermediate closing on selected ledgers
+ * Close the selected ledgers.
  */
 void
 ofa_ledger_close_run( ofaIGetter *getter, GtkWindow *parent )
@@ -206,6 +206,21 @@ ofa_ledger_close_run( ofaIGetter *getter, GtkWindow *parent )
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
+}
+
+/**
+ * ofa_ledger_close_do_close_all:
+ * @getter: a #ofaIGetter instance.
+ * @parent: [allow-none]: the #GtkWindow parent.
+ *
+ * Close all ledgers.
+ */
+void
+ofa_ledger_close_do_close_all( ofaIGetter *getter, GtkWindow *parent )
+{
+	static const gchar *thisfn = "ofa_ledger_close_do_close_all";
+
+	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 }
 
 /*

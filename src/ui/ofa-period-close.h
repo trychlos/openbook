@@ -36,7 +36,9 @@
  * specified date. The difference is that even a newly created ledger
  * will not allowed to enter an entry before the closing date.
  *
- * On option, the vallidated accounts balances may be saved for this
+ * All ledgers will all be closed for the date.
+ *
+ * On option, the validated accounts balances may be saved for this
  * date.
  *
  * Development rules:

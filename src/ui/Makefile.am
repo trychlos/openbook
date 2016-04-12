@@ -190,6 +190,8 @@ openbook_SOURCES = \
 	ofa-nomodal-page.h									\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
+	ofa-period-close.c									\
+	ofa-period-close.h									\
 	ofa-plugin-manager.c								\
 	ofa-plugin-manager.h								\
 	ofa-rate-page.c										\

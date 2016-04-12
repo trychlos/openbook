@@ -73,6 +73,7 @@
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-nomodal-page.h"
 #include "ui/ofa-ope-template-page.h"
+#include "ui/ofa-period-close.h"
 #include "ui/ofa-rate-page.h"
 #include "ui/ofa-reconcil-render.h"
 #include "ui/ofa-reconcil-page.h"
@@ -107,6 +108,7 @@ typedef struct {
 	GSimpleAction   *action_settlement;
 	GSimpleAction   *action_reconciliation;
 	GSimpleAction   *action_close_ledger;
+	GSimpleAction   *action_close_period;
 	GSimpleAction   *action_close_exercice;
 	GSimpleAction   *action_import;
 
@@ -124,6 +126,7 @@ static void on_ope_entry_page        ( GSimpleAction *action, GVariant *paramete
 static void on_ope_concil            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_settlement        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_ledger_close      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ope_period_close      ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_exercice_close    ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_import            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ope_export            ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -151,6 +154,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "concil",                 on_ope_concil,             NULL, NULL, NULL },
 		{ "settlement",             on_ope_settlement,         NULL, NULL, NULL },
 		{ "ledclosing",             on_ope_ledger_close,       NULL, NULL, NULL },
+		{ "perclosing",             on_ope_period_close,       NULL, NULL, NULL },
 		{ "execlosing",             on_ope_exercice_close,     NULL, NULL, NULL },
 		{ "import",                 on_ope_import,             NULL, NULL, NULL },
 		{ "export",                 on_ope_export,             NULL, NULL, NULL },
@@ -1294,6 +1298,19 @@ on_ope_ledger_close( GSimpleAction *action, GVariant *parameter, gpointer user_d
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_ledger_close_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
+}
+
+static void
+on_ope_period_close( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ope_period_close";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_period_close_run( OFA_IGETTER( user_data ), GTK_WINDOW( user_data ));
 }
 
 static void

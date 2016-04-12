@@ -63,10 +63,13 @@ typedef struct {
 }
 	ofaLedgerCloseClass;
 
-GType    ofa_ledger_close_get_type( void ) G_GNUC_CONST;
+GType    ofa_ledger_close_get_type    ( void ) G_GNUC_CONST;
 
-void     ofa_ledger_close_run     ( ofaIGetter *getter,
-										GtkWindow *parent );
+void     ofa_ledger_close_run         ( ofaIGetter *getter,
+											GtkWindow *parent );
+
+void     ofa_ledger_close_do_close_all( ofaIGetter *getter,
+											GtkWindow *parent );
 
 G_END_DECLS
 
