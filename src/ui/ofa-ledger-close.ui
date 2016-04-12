@@ -5,7 +5,7 @@
   <template class="ofaLedgerClose" parent="GtkDialog">
     <property name="can_focus">False</property>
     <property name="border_width">5</property>
-    <property name="title" translatable="yes">Intermediate ledgers closing</property>
+    <property name="title" translatable="yes">Ledgers closing</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">
       <object class="GtkBox" id="dialog-vbox1">
@@ -32,7 +32,7 @@
             </child>
             <child>
               <object class="GtkButton" id="btn-ok">
-                <property name="label" translatable="yes">Do intermediate _closing</property>
+                <property name="label" translatable="yes">D_o ledger closing</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -166,7 +166,7 @@
                   <object class="GtkLabel" id="p2-frame-label">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes"> _Closing date </property>
+                    <property name="label" translatable="yes"> Closing _date </property>
                     <property name="use_markup">True</property>
                     <property name="use_underline">True</property>
                   </object>

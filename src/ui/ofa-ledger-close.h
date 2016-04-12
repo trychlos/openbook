@@ -35,13 +35,12 @@
  * Development rules:
  * - type:       non-modal dialog
  * - settings:   yes
- * - current:    no
+ * - current:    yes
  */
 
 #include <gtk/gtk.h>
 
 #include "api/ofa-igetter-def.h"
-#include "api/ofo-ledger-def.h"
 
 G_BEGIN_DECLS
 
