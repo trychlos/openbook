@@ -287,7 +287,9 @@ ofa_formula_engine_eval( ofaFormulaEngine *engine, const gchar *formula, ofaForm
 	priv->formula = g_strdup( formula );
 	priv->finder = finder;
 	priv->user_data = user_data;
-	priv->msg = *msg;
+	if( msg ){
+		priv->msg = *msg;
+	}
 
 	if( !is_a_formula( engine, &str )){
 		return( str );
