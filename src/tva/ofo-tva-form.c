@@ -102,6 +102,22 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
+static const ofsBoxDef st_boolean_defs[] = {
+		{ OFA_BOX_CSV( TFO_MNEMO ),
+				OFA_TYPE_STRING,
+				TRUE,					/* importable */
+				FALSE },				/* export zero as empty */
+		{ OFA_BOX_CSV( TFO_BOOL_ROW ),
+				OFA_TYPE_INTEGER,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_BOOL_LABEL ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ 0 }
+};
+
 static const ofsBoxDef st_detail_defs[] = {
 		{ OFA_BOX_CSV( TFO_MNEMO ),
 				OFA_TYPE_STRING,
@@ -136,22 +152,6 @@ static const ofsBoxDef st_detail_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_DET_AMOUNT ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ 0 }
-};
-
-static const ofsBoxDef st_boolean_defs[] = {
-		{ OFA_BOX_CSV( TFO_MNEMO ),
-				OFA_TYPE_STRING,
-				TRUE,					/* importable */
-				FALSE },				/* export zero as empty */
-		{ OFA_BOX_CSV( TFO_BOOL_ROW ),
-				OFA_TYPE_INTEGER,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( TFO_BOOL_LABEL ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -1833,10 +1833,17 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				if( bool ){
 					form = form_find_by_mnemo( dataset, mnemo );
 					if( form ){
+						parms->parsed_count += 1;
 						ofa_box_set_int( bool, TFO_BOOL_ROW, 1+ofo_tva_form_boolean_get_count( form ));
 						form_boolean_add( form, bool );
-						total -= 1;
 						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
+					} else {
+						str = g_strdup_printf( _( "invalid mnemo: %s" ), mnemo );
+						ofa_iimporter_progress_num_text( importer, parms, numline, str );
+						parms->parse_errs += 1;
+						g_free( str );
+						ofa_box_free_fields_list( bool );
+						return( NULL );
 					}
 					g_free( mnemo );
 				}
@@ -1847,10 +1854,17 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				if( rule ){
 					form = form_find_by_mnemo( dataset, mnemo );
 					if( form ){
-						ofa_box_set_int( rule, TFO_BOOL_ROW, 1+ofo_tva_form_detail_get_count( form ));
+						parms->parsed_count += 1;
+						ofa_box_set_int( rule, TFO_DET_ROW, 1+ofo_tva_form_detail_get_count( form ));
 						form_detail_add( form, rule );
-						total -= 1;
 						ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
+					} else {
+						str = g_strdup_printf( _( "invalid mnemo: %s" ), mnemo );
+						ofa_iimporter_progress_num_text( importer, parms, numline, str );
+						parms->parse_errs += 1;
+						g_free( str );
+						ofa_box_free_fields_list( rule );
+						return( NULL );
 					}
 					g_free( mnemo );
 				}
@@ -1953,6 +1967,8 @@ iimportable_import_parse_rule( ofaIImporter *importer, ofsImporterParms *parms, 
 	GList *detail;
 	const gchar *cstr;
 	GSList *itf;
+	gint level;
+	gchar *str;
 
 	detail = ofa_box_init_fields_list( st_detail_defs );
 
@@ -1974,7 +1990,17 @@ iimportable_import_parse_rule( ofaIImporter *importer, ofsImporterParms *parms, 
 	/* level */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, TFO_DET_LEVEL, cstr );
+	level = cstr ? atoi( cstr ) : 0;
+	if( level <= 0 ){
+		str = g_strdup_printf( _( "invalid level: %s, should be greater than zero" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		parms->parse_errs += 1;
+		g_free( str );
+		ofa_box_free_fields_list( detail );
+		return( NULL );
+	} else {
+		ofa_box_set_int( detail, TFO_DET_LEVEL, level );
+	}
 
 	/* code */
 	itf = itf ? itf->next : NULL;
@@ -1989,7 +2015,16 @@ iimportable_import_parse_rule( ofaIImporter *importer, ofsImporterParms *parms, 
 	/* has base */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, TFO_DET_HAS_BASE, cstr );
+	if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
+		str = g_strdup_printf( _( "invalid indicator: %s, should be 'Y' or 'N'" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		parms->parse_errs += 1;
+		g_free( str );
+		ofa_box_free_fields_list( detail );
+		return( NULL );
+	} else {
+		ofa_box_set_string( detail, TFO_DET_HAS_BASE, cstr );
+	}
 
 	/* base */
 	itf = itf ? itf->next : NULL;
@@ -1999,7 +2034,16 @@ iimportable_import_parse_rule( ofaIImporter *importer, ofsImporterParms *parms, 
 	/* has amount */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofa_box_set_string( detail, TFO_DET_HAS_AMOUNT, cstr );
+	if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
+		str = g_strdup_printf( _( "invalid indicator: %s, should be 'Y' or 'N'" ), cstr );
+		ofa_iimporter_progress_num_text( importer, parms, numline, str );
+		parms->parse_errs += 1;
+		g_free( str );
+		ofa_box_free_fields_list( detail );
+		return( NULL );
+	} else {
+		ofa_box_set_string( detail, TFO_DET_HAS_AMOUNT, cstr );
+	}
 
 	/* amount */
 	itf = itf ? itf->next : NULL;
