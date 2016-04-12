@@ -391,10 +391,17 @@ static gboolean
 do_close( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
+	ofaHub *hub;
+	ofoDossier *dossier;
 
 	priv = ofa_period_close_get_instance_private( self );
 
-	ofa_ledger_close_do_close_all( priv->getter, GTK_WINDOW( self ));
+	ofa_ledger_close_do_close_all( priv->getter, GTK_WINDOW( self ), &priv->closing );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
+	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
+	ofo_dossier_update( dossier );
 
 	return( TRUE );
 }

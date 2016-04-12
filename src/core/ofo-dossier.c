@@ -898,11 +898,13 @@ ofo_dossier_get_prev_exe_last_entry( const ofoDossier *dossier )
  * Computes the minimal effect date valid for the considered dossier and
  * ledger.
  *
- * This minimal effect date is:
- * - at least the begin of the exercice (if set)
- * - or the last ledger closing date (if set, and greater than the previous) + 1
+ * This minimal effect date is the greater of:
+ * - the begin of the exercice (if set)
+ * - last ledger closing date (if set) + 1
+ * - the last period closing date + 1.
  *
- * Returns: the @date #GDate pointer.
+ * Returns: the @date #GDate pointer. It should never be %NULL (unless the
+ * provided @date be itself %NULL), but may be invalid.
  */
 GDate *
 ofo_dossier_get_min_deffect( const ofoDossier *dossier, const ofoLedger *ledger, GDate *date )
@@ -912,18 +914,40 @@ ofo_dossier_get_min_deffect( const ofoDossier *dossier, const ofoLedger *ledger,
 
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
 	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, NULL );
+	g_return_val_if_fail( date, NULL );
 
 	if( ledger ){
 		g_return_val_if_fail( OFO_IS_LEDGER( ledger ), NULL );
 	}
 
-	last_clo = ledger ? ofo_ledger_get_last_close( ledger ) : NULL;
 	my_date_set_from_date( date, ofo_dossier_get_exe_begin( dossier ));
+
+	/* compare against the ledger closing */
+	last_clo = ledger ? ofo_ledger_get_last_close( ledger ) : NULL;
 	to_add = 0;
 
 	if( my_date_is_valid( date )){
 		if( my_date_is_valid( last_clo )){
-			if( my_date_compare( date, last_clo ) < 0 ){
+			if( my_date_compare( date, last_clo ) <= 0 ){
+				my_date_set_from_date( date, last_clo );
+				to_add = 1;
+			}
+		}
+	} else if( my_date_is_valid( last_clo )){
+		my_date_set_from_date( date, last_clo );
+		to_add = 1;
+	}
+
+	if( my_date_is_valid( date )){
+		g_date_add_days( date, to_add );
+	}
+
+	/* compare against the period closing */
+	last_clo = ofo_dossier_get_last_closing_date( dossier );
+
+	if( my_date_is_valid( date )){
+		if( my_date_is_valid( last_clo )){
+			if( my_date_compare( date, last_clo ) <= 0 ){
 				my_date_set_from_date( date, last_clo );
 				to_add = 1;
 			}

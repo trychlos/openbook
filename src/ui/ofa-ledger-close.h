@@ -69,7 +69,8 @@ void     ofa_ledger_close_run         ( ofaIGetter *getter,
 											GtkWindow *parent );
 
 void     ofa_ledger_close_do_close_all( ofaIGetter *getter,
-											GtkWindow *parent );
+											GtkWindow *parent,
+											const GDate *closing_date );
 
 G_END_DECLS
 

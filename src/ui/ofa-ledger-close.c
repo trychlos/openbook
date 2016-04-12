@@ -54,8 +54,7 @@ typedef struct {
 
 	ofaIGetter         *getter;
 	ofaHub             *hub;
-	GList              *hub_handlers;
-	gboolean            done;			/* whether we have actually done something */
+	gboolean            done;				/* whether we have actually done something */
 	GDate               closing;
 
 	/* UI
@@ -69,13 +68,30 @@ typedef struct {
 	/* during the iteration on each selected ledger
 	 */
 	gboolean            all_ledgers;
-	gint                count;			/* count of ledgers */
-	gint                uncloseable;
-	guint               entries_count;	/* count of validated entries for the ledger */
-	guint               entries_num;
-	myProgressBar      *bar;
+	guint               uncloseable;
+	guint               count;
 }
 	ofaLedgerClosePrivate;
+
+/* a data structure to handle the iteration on ledgers
+ */
+typedef struct {
+	/* input data
+	 */
+	ofaHub        *hub;
+	GtkWindow     *parent;
+	GList         *ledgers;
+	const GDate   *closing_date;
+	GList         *hub_handlers;
+
+	/* running data
+	 */
+	guint          count;
+	myProgressBar *bar;
+	guint          entries_count;			/* count of validated entries for the ledger */
+	guint          entries_num;
+}
+	sClose;
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-ledger-close.ui";
 static const gchar  *st_settings        = "LedgerClose";
@@ -95,11 +111,12 @@ static gboolean  is_dialog_validable( ofaLedgerClose *self, GList *selected );
 static void      check_foreach_ledger( ofaLedgerClose *self, const gchar *ledger );
 static void      on_ok_clicked( GtkButton *button, ofaLedgerClose *self );
 static gboolean  do_close( ofaLedgerClose *self );
-static void      prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
-static gboolean  close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid );
-static void      do_end_close( ofaLedgerClose *self );
-static void      on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, ofaLedgerClose *self );
-static void      on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self );
+static void      do_close_ledgers( sClose *close_data );
+static void      prepare_grid( sClose *close_data, const gchar *mnemo, GtkWidget *grid );
+static gboolean  close_foreach_ledger( sClose *close_data, const gchar *mnemo, GtkWidget *grid );
+static void      do_end_close( sClose *close_data );
+static void      on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *close_data );
+static void      on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *close_data );
 static void      load_settings( ofaLedgerClose *self );
 static void      set_settings( ofaLedgerClose *self );
 
@@ -138,7 +155,6 @@ ledger_close_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -212,15 +228,41 @@ ofa_ledger_close_run( ofaIGetter *getter, GtkWindow *parent )
  * ofa_ledger_close_do_close_all:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
+ * @closing_date: the closing date.
  *
  * Close all ledgers.
  */
 void
-ofa_ledger_close_do_close_all( ofaIGetter *getter, GtkWindow *parent )
+ofa_ledger_close_do_close_all( ofaIGetter *getter, GtkWindow *parent, const GDate *closing_date )
 {
 	static const gchar *thisfn = "ofa_ledger_close_do_close_all";
+	ofaHub *hub;
+	GList *led_mnemos, *dataset, *it;
+	sClose *close_data;
 
 	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
+
+	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
+	g_return_if_fail( my_date_is_valid( closing_date ));
+
+	hub = ofa_igetter_get_hub( getter );
+	dataset = ofo_ledger_get_dataset( hub );
+	led_mnemos = NULL;
+	for( it=dataset ; it ; it=it->next ){
+		led_mnemos = g_list_prepend( led_mnemos, ( gpointer ) ofo_ledger_get_mnemo( OFO_LEDGER( it->data )));
+	}
+
+	close_data = g_new0( sClose, 1 );
+	close_data->hub = hub;
+	close_data->parent = parent;
+	close_data->ledgers = led_mnemos;
+	close_data->closing_date = closing_date;
+
+	do_close_ledgers( close_data );
+
+	g_free( close_data );
+	g_list_free( led_mnemos );
 }
 
 /*
@@ -257,7 +299,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_close_idialog_init";
 	ofaLedgerClosePrivate *priv;
-	gulong handler;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -269,20 +310,6 @@ idialog_init( myIDialog *instance )
 	setup_ledgers_treeview( OFA_LEDGER_CLOSE( instance ));
 	setup_date( OFA_LEDGER_CLOSE( instance ));
 	setup_others( OFA_LEDGER_CLOSE( instance ));
-
-	handler = g_signal_connect(
-					priv->hub,
-					SIGNAL_HUB_STATUS_COUNT,
-					G_CALLBACK( on_hub_entry_status_count ),
-					instance );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect(
-					priv->hub,
-					SIGNAL_HUB_STATUS_CHANGE,
-					G_CALLBACK( on_hub_entry_status_change ),
-					instance );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 	load_settings( OFA_LEDGER_CLOSE( instance ));
 }
@@ -571,9 +598,9 @@ static gboolean
 do_close( ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
-	GList *selected, *it;
+	GList *selected;
 	gboolean ok;
-	GtkWidget *dialog, *content, *grid, *button;
+	sClose *close_data;
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
@@ -581,9 +608,41 @@ do_close( ofaLedgerClose *self )
 	ok = is_dialog_validable( self, selected );
 	g_return_val_if_fail( ok, FALSE );
 
+
+	close_data = g_new0( sClose, 1 );
+	close_data->hub = priv->hub;
+	close_data->parent = GTK_WINDOW( self );
+	close_data->closing_date = &priv->closing;
+	close_data->ledgers = selected;
+
+	do_close_ledgers( close_data );
+
+	g_free( close_data );
+	ofa_ledger_treeview_free_selected( selected );
+
+	return( TRUE );
+}
+
+static void
+do_close_ledgers( sClose *close_data )
+{
+	GList *it;
+	GtkWidget *dialog, *content, *grid, *button;
+	gulong handler;
+
+	handler = g_signal_connect(
+					close_data->hub, SIGNAL_HUB_STATUS_COUNT,
+					G_CALLBACK( on_hub_entry_status_count ), close_data );
+	close_data->hub_handlers = g_list_prepend( close_data->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect(
+					close_data->hub, SIGNAL_HUB_STATUS_CHANGE,
+					G_CALLBACK( on_hub_entry_status_change ), close_data );
+	close_data->hub_handlers = g_list_prepend( close_data->hub_handlers, ( gpointer ) handler );
+
 	dialog = gtk_dialog_new_with_buttons(
 					_( "Closing ledger" ),
-					GTK_WINDOW( self ),
+					close_data->parent,
 					GTK_DIALOG_MODAL,
 					_( "_Close" ), GTK_RESPONSE_OK,
 					NULL );
@@ -592,12 +651,12 @@ do_close( ofaLedgerClose *self )
 			ofa_settings_get_settings( SETTINGS_TARGET_USER ), "ofaLedgerClosing" );
 
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
-	g_return_val_if_fail( button && GTK_IS_BUTTON( button ), FALSE );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	my_utils_widget_set_margins( button, 4, 4, 0, 8 );
 	gtk_widget_set_sensitive( button, FALSE );
 
 	content = gtk_dialog_get_content_area( GTK_DIALOG( dialog ));
-	g_return_val_if_fail( content && GTK_IS_CONTAINER( content ), FALSE );
+	g_return_if_fail( content && GTK_IS_CONTAINER( content ));
 
 	grid = gtk_grid_new();
 	my_utils_widget_set_margin_left( grid, 8 );
@@ -605,20 +664,19 @@ do_close( ofaLedgerClose *self )
 	gtk_grid_set_column_spacing( GTK_GRID( grid ), 4 );
 	gtk_container_add( GTK_CONTAINER( content ), grid );
 
-	priv->count = 0;
-	for( it=selected ; it ; it=it->next ){
-		prepare_grid( self, ( const gchar * ) it->data, grid );
+	close_data->count = 0;
+	for( it=close_data->ledgers ; it ; it=it->next ){
+		prepare_grid( close_data, ( const gchar * ) it->data, grid );
 	}
 
 	gtk_widget_show_all( dialog );
 
-	priv->count = 0;
-	for( it=selected ; it ; it=it->next ){
-		close_foreach_ledger( self, ( const gchar * ) it->data, grid );
+	close_data->count = 0;
+	for( it=close_data->ledgers ; it ; it=it->next ){
+		close_foreach_ledger( close_data, ( const gchar * ) it->data, grid );
 	}
 
-	ofa_ledger_treeview_free_selected( selected );
-	do_end_close( self );
+	do_end_close( close_data );
 
 	gtk_widget_set_sensitive( button, TRUE );
 	gtk_dialog_run( GTK_DIALOG( dialog ));
@@ -628,76 +686,67 @@ do_close( ofaLedgerClose *self )
 
 	gtk_widget_destroy( dialog );
 
-	return( TRUE );
+	ofa_hub_disconnect_handlers( close_data->hub, &close_data->hub_handlers );
 }
 
 static void
-prepare_grid( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
+prepare_grid( sClose *close_data, const gchar *mnemo, GtkWidget *grid )
 {
-	ofaLedgerClosePrivate *priv;
 	gchar *str;
 	GtkWidget *label;
 	myProgressBar *bar;
-
-	priv = ofa_ledger_close_get_instance_private( self );
 
 	str = g_strdup_printf( "%s :", mnemo );
 	label = gtk_label_new( str );
 	g_free( str );
 	gtk_widget_set_halign( label, GTK_ALIGN_START );
 	gtk_widget_set_valign( label, GTK_ALIGN_END );
-	gtk_grid_attach( GTK_GRID( grid ), label, 0, priv->count, 1, 1 );
+	gtk_grid_attach( GTK_GRID( grid ), label, 0, close_data->count, 1, 1 );
 
 	bar = my_progress_bar_new();
 	my_utils_widget_set_margins( GTK_WIDGET( bar ), 2, 2, 0, 10 );
-	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( bar ), 1, priv->count, 1, 1 );
+	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( bar ), 1, close_data->count, 1, 1 );
 
-	priv->count += 1;
+	close_data->count += 1;
 }
 
 static gboolean
-close_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo, GtkWidget *grid )
+close_foreach_ledger( sClose *close_data, const gchar *mnemo, GtkWidget *grid )
 {
-	ofaLedgerClosePrivate *priv;
 	GtkWidget *bar;
 	ofoLedger *ledger;
 	gboolean ok;
 
-	priv = ofa_ledger_close_get_instance_private( self );
-
-	bar = gtk_grid_get_child_at( GTK_GRID( grid ), 1, priv->count );
+	bar = gtk_grid_get_child_at( GTK_GRID( grid ), 1, close_data->count );
 	g_return_val_if_fail( bar && MY_IS_PROGRESS_BAR( bar ), FALSE );
-	priv->bar = MY_PROGRESS_BAR( bar );
+	close_data->bar = MY_PROGRESS_BAR( bar );
 
-	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( close_data->hub, mnemo );
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 
-	ok = ofo_ledger_close( ledger, &priv->closing );
+	ok = ofo_ledger_close( ledger, close_data->closing_date );
 
-	priv->count += 1;
+	close_data->count += 1;
 
 	return( ok );
 }
 
 static void
-do_end_close( ofaLedgerClose *self )
+do_end_close( sClose *close_data )
 {
-	ofaLedgerClosePrivate *priv;
 	gchar *str;
 
-	priv = ofa_ledger_close_get_instance_private( self );
-
-	if( priv->count == 0 ){
+	if( close_data->count == 0 ){
 		str = g_strdup( _( "No closed ledger" ));
 
-	} else if( priv->count == 1 ){
+	} else if( close_data->count == 1 ){
 		str = g_strdup( _( "Ledger has been successfully closed" ));
 
 	} else {
-		str = g_strdup_printf( _( "%u ledgers have been successfully closed" ), priv->count );
+		str = g_strdup_printf( _( "%u ledgers have been successfully closed" ), close_data->count );
 	}
 
-	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
+	my_utils_msg_dialog( close_data->parent, GTK_MESSAGE_INFO, str );
 
 	g_free( str );
 }
@@ -706,39 +755,32 @@ do_end_close( ofaLedgerClose *self )
  * SIGNAL_HUB_STATUS_COUNT signal handler
  */
 static void
-on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, ofaLedgerClose *self )
+on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *close_data )
 {
-	ofaLedgerClosePrivate *priv;
+	close_data->entries_count = count;
 
-	priv = ofa_ledger_close_get_instance_private( self );
-
-	priv->entries_count = count;
-
-	if( priv->entries_count == 0 ){
-		g_signal_emit_by_name( priv->bar, "my-text", "0/0" );
+	if( close_data->entries_count == 0 ){
+		g_signal_emit_by_name( close_data->bar, "my-text", "0/0" );
 	}
 
-	priv->entries_num = 0;
+	close_data->entries_num = 0;
 }
 
 /*
  * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
-on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaLedgerClose *self )
+on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *close_data )
 {
-	ofaLedgerClosePrivate *priv;
 	gdouble progress;
 	gchar *text;
 
-	priv = ofa_ledger_close_get_instance_private( self );
+	close_data->entries_num += 1;
+	progress = ( gdouble ) close_data->entries_num / ( gdouble ) close_data->entries_count;
+	g_signal_emit_by_name( close_data->bar, "my-double", progress );
 
-	priv->entries_num += 1;
-	progress = ( gdouble ) priv->entries_num / ( gdouble ) priv->entries_count;
-	g_signal_emit_by_name( priv->bar, "my-double", progress );
-
-	text = g_strdup_printf( "%u/%u", priv->entries_num, priv->entries_count );
-	g_signal_emit_by_name( priv->bar, "my-text", text );
+	text = g_strdup_printf( "%u/%u", close_data->entries_num, close_data->entries_count );
+	g_signal_emit_by_name( close_data->bar, "my-text", text );
 	g_free( text );
 }
 

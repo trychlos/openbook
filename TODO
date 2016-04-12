@@ -354,7 +354,11 @@
                      + should have its own messaging system
                        on add/remove actions (update/reload cannot be managed here)
 
-1072
+1072 2016- 4-12 FEAT+DDL store the closing date of the previous exercice
+                + check that beegining date of next exercice cannot be
+                  modified when previous_end is set (have a DOS_PREVEXE_END)
+
+1073
 
 -----------------------------------------------------------------------
  DONE
