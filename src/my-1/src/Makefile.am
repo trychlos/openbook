@@ -58,6 +58,7 @@ nodist_liborgtrychlosmy1_la_OURCES = \
 	$(NULL)
 
 liborgtrychlosmy1_la_SOURCES = \
+	my-accel-group.c									\
 	my-char.c											\
 	my-date.c											\
 	my-date-combo.c										\
@@ -69,6 +70,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-double-renderer.c								\
 	my-field-combo.c									\
 	my-file-monitor.c									\
+	my-iaction-map.c									\
 	my-iassistant.c										\
 	my-idialog.c										\
 	my-iident.c											\

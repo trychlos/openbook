@@ -24,6 +24,7 @@ include ../make.inc
 
 my_include_HEADERS = \
 	my.h												\
+	my-accel-group.h									\
 	my-char.h											\
 	my-date.h											\
 	my-date-combo.h										\
@@ -35,6 +36,7 @@ my_include_HEADERS = \
 	my-double-renderer.h								\
 	my-field-combo.h									\
 	my-file-monitor.h									\
+	my-iaction-map.h									\
 	my-iassistant.h										\
 	my-idialog.h										\
 	my-iident.h											\

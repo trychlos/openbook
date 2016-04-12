@@ -24,6 +24,7 @@
 #ifndef __MY_API_MY_H__
 #define __MY_API_MY_H__
 
+#include <my/my-accel-group.h>
 #include <my/my-char.h>
 #include <my/my-date.h>
 #include <my/my-date-combo.h>
@@ -35,6 +36,7 @@
 #include <my/my-double-renderer.h>
 #include <my/my-field-combo.h>
 #include <my/my-file-monitor.h>
+#include <my/my-iaction-map.h>
 #include <my/my-iassistant.h>
 #include <my/my-idialog.h>
 #include <my/my-igridlist.h>

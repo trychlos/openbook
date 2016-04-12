@@ -187,17 +187,19 @@ typedef enum {
 }
 	ofaExitCode;
 
-GType           ofa_application_get_type      ( void ) G_GNUC_CONST;
+GType               ofa_application_get_type          ( void ) G_GNUC_CONST;
 
-ofaApplication *ofa_application_new           ( void );
+ofaApplication     *ofa_application_new               ( void );
 
-int             ofa_application_run_with_args ( ofaApplication *application,
+int                 ofa_application_run_with_args     ( ofaApplication *application,
 																	int argc,
 																	GStrv argv );
 
-ofaHub         *ofa_application_get_hub       ( const ofaApplication *application );
+ofaHub             *ofa_application_get_hub           ( const ofaApplication *application );
 
-GMenuModel     *ofa_application_get_menu_model( const ofaApplication *application );
+GMenuModel         *ofa_application_get_menu_model    ( const ofaApplication *application );
+
+const GActionEntry *ofa_application_get_action_entries( const ofaApplication *application );
 
 G_END_DECLS
 

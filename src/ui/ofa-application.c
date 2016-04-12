@@ -30,6 +30,7 @@
 #include <glib/gi18n.h>
 #include <string.h>
 
+#include "my/my-iaction-map.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
@@ -134,7 +135,6 @@ static       GOptionEntry st_option_entries[]   = {
 static void                  init_i18n( ofaApplication *application );
 static gboolean              init_gtk_args( ofaApplication *application );
 static gboolean              manage_options( ofaApplication *application );
-
 static void                  application_startup( GApplication *application );
 static void                  appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
 static void                  application_activate( GApplication *application );
@@ -143,6 +143,7 @@ static void                  maintainer_test_function( void );
 
 static void                  on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaApplication *application );
 static void                  enable_action_open( ofaApplication *application, gboolean enable );
+
 static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -159,8 +160,15 @@ static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
 static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
 
+static void                  iaction_map_iface_init( myIActionMapInterface *iface );
+static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
+static const gchar          *iaction_map_get_action_target( const myIActionMap *instance );
+static guint                 iaction_map_get_action_count( const myIActionMap *instance );
+static const GActionEntry   *iaction_map_get_action_entries( const myIActionMap *instance );
+
 G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0,
 		G_ADD_PRIVATE( ofaApplication )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init ))
 
 static const GActionEntry st_app_entries[] = {
@@ -1113,7 +1121,7 @@ on_version( ofaApplication *application )
  * Returns: the #ofaHub object of the application.
  *
  * This method should not be called by normal code. It is only meant to
- * be used by the ofaMainWindow implementatin of the ofaIGetter interface.
+ * be used by the ofaMainWindow implementation of the ofaIGetter interface.
  */
 ofaHub *
 ofa_application_get_hub( const ofaApplication *application )
@@ -1131,6 +1139,7 @@ ofa_application_get_hub( const ofaApplication *application )
 
 /**
  * ofa_application_get_menu_model:
+ * @application: this #ofaApplication instance.
  */
 GMenuModel *
 ofa_application_get_menu_model( const ofaApplication *application )
@@ -1144,6 +1153,24 @@ ofa_application_get_menu_model( const ofaApplication *application )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->menu );
+}
+
+/**
+ * ofa_application_get_action_entries:
+ * @application: this #ofaApplication instance.
+ */
+const GActionEntry *
+ofa_application_get_action_entries( const ofaApplication *application )
+{
+	ofaApplicationPrivate *priv;
+
+	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
+
+	priv = ofa_application_get_instance_private( application );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( st_app_entries );
 }
 
 /*
@@ -1199,4 +1226,48 @@ igetter_get_theme_manager( const ofaIGetter *instance )
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
 
 	return( OFA_ITHEME_MANAGER( priv->main_window ));
+}
+
+/*
+ * myIActionMap interface management
+ */
+static void
+iaction_map_iface_init( myIActionMapInterface *iface )
+{
+	static const gchar *thisfn = "ofa_application_iaction_map_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_menu_model = iaction_map_get_menu_model;
+	iface->get_action_target = iaction_map_get_action_target;
+	iface->get_action_count = iaction_map_get_action_count;
+	iface->get_action_entries = iaction_map_get_action_entries;
+}
+
+static GMenuModel *
+iaction_map_get_menu_model( const myIActionMap *instance )
+{
+	ofaApplicationPrivate *priv;
+
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
+
+	return( priv->menu );
+}
+
+static const gchar *
+iaction_map_get_action_target( const myIActionMap *instance )
+{
+	return( "app" );
+}
+
+static guint
+iaction_map_get_action_count( const myIActionMap *instance )
+{
+	return( G_N_ELEMENTS( st_app_entries ));
+}
+
+static const GActionEntry *
+iaction_map_get_action_entries( const myIActionMap *instance )
+{
+	return( st_app_entries );
 }

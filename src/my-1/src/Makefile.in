@@ -183,14 +183,15 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 liborgtrychlosmy1_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_liborgtrychlosmy1_la_OBJECTS = my-char.lo my-date.lo \
-	my-date-combo.lo my-date-editable.lo my-date-renderer.lo \
-	my-decimal-combo.lo my-double.lo my-double-editable.lo \
-	my-double-renderer.lo my-field-combo.lo my-file-monitor.lo \
-	my-iassistant.lo my-idialog.lo my-iident.lo my-igridlist.lo \
-	my-iprogress.lo my-isettings.lo my-iwindow.lo \
-	my-progress-bar.lo my-settings.lo my-tab.lo \
-	my-thousand-combo.lo my-timeout.lo my-utils.lo
+am_liborgtrychlosmy1_la_OBJECTS = my-accel-group.lo my-char.lo \
+	my-date.lo my-date-combo.lo my-date-editable.lo \
+	my-date-renderer.lo my-decimal-combo.lo my-double.lo \
+	my-double-editable.lo my-double-renderer.lo my-field-combo.lo \
+	my-file-monitor.lo my-iaction-map.lo my-iassistant.lo \
+	my-idialog.lo my-iident.lo my-igridlist.lo my-iprogress.lo \
+	my-isettings.lo my-iwindow.lo my-progress-bar.lo \
+	my-settings.lo my-tab.lo my-thousand-combo.lo my-timeout.lo \
+	my-utils.lo
 liborgtrychlosmy1_la_OBJECTS = $(am_liborgtrychlosmy1_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -465,6 +466,7 @@ nodist_liborgtrychlosmy1_la_OURCES = \
 	$(NULL)
 
 liborgtrychlosmy1_la_SOURCES = \
+	my-accel-group.c									\
 	my-char.c											\
 	my-date.c											\
 	my-date-combo.c										\
@@ -476,6 +478,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-double-renderer.c								\
 	my-field-combo.c									\
 	my-file-monitor.c									\
+	my-iaction-map.c									\
 	my-iassistant.c										\
 	my-idialog.c										\
 	my-iident.c											\
@@ -590,6 +593,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-accel-group.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-char.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date-editable.Plo@am__quote@
@@ -601,6 +605,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-double.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-field-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-file-monitor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iaction-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iassistant.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-idialog.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-igridlist.Plo@am__quote@

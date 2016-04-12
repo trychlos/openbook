@@ -30,7 +30,9 @@
 #include <glib/gi18n.h>
 #include <stdlib.h>
 
+#include "my/my-accel-group.h"
 #include "my/my-date.h"
+#include "my/my-iaction-map.h"
 #include "my/my-iwindow.h"
 #include "my/my-tab.h"
 #include "my/my-utils.h"
@@ -86,7 +88,7 @@ typedef struct {
 	gchar           *orig_title;
 	GtkGrid         *grid;
 	GtkMenuBar      *menubar;
-	GtkAccelGroup   *accel_group;
+	myAccelGroup    *accel_group;
 
 	/* when a dossier is opened
 	 */
@@ -265,8 +267,7 @@ static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *u
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
-static void                  set_menubar( ofaMainWindow *window, GMenuModel *model );
-static void                  extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group );
+static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
 static void                  set_window_title( const ofaMainWindow *window );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
 static void                  pane_restore_position( GtkPaned *pane );
@@ -304,9 +305,15 @@ static void                  itheme_manager_define( ofaIThemeManager *instance, 
 static ofaPage              *itheme_manager_activate( ofaIThemeManager *instance, GType type );
 static sThemeDef            *theme_get_by_type( GList **list, GType type );
 static void                  theme_free( sThemeDef *def );
+static void                  iaction_map_iface_init( myIActionMapInterface *iface );
+static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
+static const gchar          *iaction_map_get_action_target( const myIActionMap *instance );
+static guint                 iaction_map_get_action_count( const myIActionMap *instance );
+static const GActionEntry   *iaction_map_get_action_entries( const myIActionMap *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITHEME_MANAGER, itheme_manager_iface_init ))
 
@@ -561,7 +568,7 @@ ofa_main_window_new( ofaApplication *application )
 
 	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
 
-	set_menubar( window, ofa_application_get_menu_model( application ));
+	menubar_setup( window, MY_IACTION_MAP( application ));
 
 	return( window );
 }
@@ -672,7 +679,7 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub )
 	pane_right_add_empty_notebook( self, hub );
 	background_image_update( self, hub );
 
-	set_menubar( self, priv->menu );
+	menubar_setup( self, MY_IACTION_MAP( self ));
 
 	/* warns if begin or end of exercice is not set */
 	dossier = ofa_hub_get_dossier( hub );
@@ -748,7 +755,8 @@ do_close_dossier( ofaMainWindow *self, ofaHub *hub )
 		priv->pane = NULL;
 
 		application = gtk_window_get_application( GTK_WINDOW( self ));
-		set_menubar( self, ofa_application_get_menu_model( OFA_APPLICATION( application )));
+		menubar_setup( self, MY_IACTION_MAP( application ));
+
 		set_window_title( self );
 	}
 }
@@ -770,11 +778,12 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
 }
 
 static void
-set_menubar( ofaMainWindow *window, GMenuModel *model )
+menubar_setup( ofaMainWindow *window, myIActionMap *map )
 {
-	static const gchar *thisfn = "ofa_main_window_set_menubar";
+	static const gchar *thisfn = "ofa_main_window_menubar_setup";
 	ofaMainWindowPrivate *priv;
 	GtkWidget *menubar;
+	GMenuModel *model;
 
 	priv = ofa_main_window_get_instance_private( window );
 
@@ -784,19 +793,16 @@ set_menubar( ofaMainWindow *window, GMenuModel *model )
 	}
 
 	if( priv->accel_group ){
-		gtk_window_remove_accel_group( GTK_WINDOW( window ), priv->accel_group );
+		gtk_window_remove_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
 		g_object_unref( priv->accel_group );
 		priv->accel_group = NULL;
 	}
 
-	/*accels = gtk_accel_groups_from_object( G_OBJECT( model ));
-	 *accels = gtk_accel_groups_from_object( G_OBJECT( menubar ));
-	 * return nil */
+	priv->accel_group = my_accel_group_new();
+	my_accel_group_setup_accels( priv->accel_group, map );
+	gtk_window_add_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
 
-	priv->accel_group = gtk_accel_group_new();
-	extract_accels_rec( window, model, priv->accel_group );
-	gtk_window_add_accel_group( GTK_WINDOW( window ), priv->accel_group );
-
+	model = my_iaction_map_get_menu_model( map );
 	menubar = gtk_menu_bar_new_from_model( model );
 
 	g_debug( "%s: model=%p (%s), menubar=%p, grid=%p (%s)",
@@ -807,64 +813,6 @@ set_menubar( ofaMainWindow *window, GMenuModel *model )
 	gtk_grid_attach( priv->grid, menubar, 0, 0, 1, 1 );
 	priv->menubar = GTK_MENU_BAR( menubar );
 	gtk_widget_show_all( GTK_WIDGET( window ));
-}
-
-static void
-extract_accels_rec( ofaMainWindow *window, GMenuModel *model, GtkAccelGroup *accel_group )
-{
-	static const gchar *thisfn = "ofa_main_window_extract_accels_rec";
-	GMenuLinkIter *lter;
-	GMenuAttributeIter *ater;
-	gint i;
-	const gchar *aname, *lname;
-	GMenuModel *lv;
-	GVariant *av;
-	guint accel_key;
-	GdkModifierType accel_mods;
-
-	g_debug( "%s: window=%p, model=%p, accel_group=%p",
-			thisfn, ( void * ) window, ( void * ) model, ( void * ) accel_group );
-
-	/* only attribute of the two first items of the GMenuModel is 'label'
-	 * only link of the two first items of the GMenuModel are named 'submenu'
-	 * the GMenuModel pointed to by 'submenu' link has no attribute
-	 * but a link to a 'section'
-	 * GMenuModel[attribute] = (label)
-	 * GMenuModel[link] = (submenu)
-	 * GMenuModel->submenu[attribute] = NULL
-	 * GMenuModel->submenu[link] = (section)
-	 * GMenuModel->submenu->section[attribute] = (action,label,accel)
-	 * GMenuModel->submenu->section[link] = NULL
-	 *
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x2069b30: found link at i=0 to 0x206a690
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a690: found link at i=0 to 0x206a750
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a750: found accel at i=0: <Control>n
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a750: found accel at i=1: <Control>o
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206a690: found link at i=1 to 0x206b410
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x206b410: found accel at i=0: <Control>q
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x2069b30: found link at i=1 to 0x7f36cc00a000
-(openbook:20242): OFA-DEBUG: ofa_main_window_extract_accels: model=0x7f36cc00a000: found link at i=0 to 0x7f36cc009f00
-	 */
-	for( i=0 ; i<g_menu_model_get_n_items( model ) ; ++i ){
-		ater = g_menu_model_iterate_item_attributes( model, i );
-		while( g_menu_attribute_iter_get_next( ater, &aname, &av )){
-			if( !strcmp( aname, "accel" )){
-				g_debug(
-						"ofa_main_window_extract_accels: model=%p: found accel at i=%d: %s",
-						( void * ) model, i, g_variant_get_string( av, NULL ));
-				gtk_accelerator_parse( g_variant_get_string( av, NULL ), &accel_key, &accel_mods );
-			}
-			g_variant_unref( av );
-		}
-		g_object_unref( ater );
-		lter = g_menu_model_iterate_item_links( model, i );
-		while( g_menu_link_iter_get_next( lter, &lname, &lv )){
-			/*g_debug( "ofa_main_window_extract_accels: model=%p: found link at i=%d to %p", ( void * ) model, i, ( void * ) lv );*/
-			extract_accels_rec( window, lv, accel_group );
-			g_object_unref( lv );
-		}
-		g_object_unref( lter );
-	}
 }
 
 static void
@@ -1922,4 +1870,48 @@ theme_free( sThemeDef *def )
 {
 	g_free( def->label );
 	g_free( def );
+}
+
+/*
+ * myIActionMap interface management
+ */
+static void
+iaction_map_iface_init( myIActionMapInterface *iface )
+{
+	static const gchar *thisfn = "ofa_main_window_iaction_map_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_menu_model = iaction_map_get_menu_model;
+	iface->get_action_target = iaction_map_get_action_target;
+	iface->get_action_count = iaction_map_get_action_count;
+	iface->get_action_entries = iaction_map_get_action_entries;
+}
+
+static GMenuModel *
+iaction_map_get_menu_model( const myIActionMap *instance )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
+
+	return( priv->menu );
+}
+
+static const gchar *
+iaction_map_get_action_target( const myIActionMap *instance )
+{
+	return( "win" );
+}
+
+static guint
+iaction_map_get_action_count( const myIActionMap *instance )
+{
+	return( G_N_ELEMENTS( st_dos_entries ));
+}
+
+static const GActionEntry *
+iaction_map_get_action_entries( const myIActionMap *instance )
+{
+	return( st_dos_entries );
 }

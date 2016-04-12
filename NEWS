@@ -62,6 +62,8 @@
 
  Other changes:
 
+   - myAccelGroup: new GtkAccelGroup extension class.
+   - myIActionMap: new GActionMap extension interface.
    - my_utils_window_position_get_has_pos(): new function.
    - ofaFormulaEngine: new class (todo #1010).
    - ofa_hub_disconnect_handlers: improve and generalize use (todo #1055).
