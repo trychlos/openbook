@@ -26,8 +26,6 @@
      2014- 7-14 when using an existing database, have an option to
                 reinitialize it, or to use it as is
 
-  40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
-
   41 2014- 5-12 ofaMainWindow: set menu tooltips
 
   43 2014- 5-12 ofaMainWindow left pane: should display a big icon and
@@ -380,6 +378,9 @@
 -----------------------------------------------------------------------
  DONE
  ====
+
+  40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
+     2016- 4-12 done
 
  213 2014- 6-13 recurrente entries
      2014- 6-16 to be built as a plugin

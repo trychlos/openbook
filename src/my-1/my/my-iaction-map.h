@@ -87,26 +87,6 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	const gchar *        ( *get_action_target )    ( const myIActionMap *instance );
-
-	/**
-	 * get_action_count:
-	 * @instance: the #myIActionMap instance.
-	 *
-	 * Returns: the count of #GActionEntry's for the @instance.
-	 *
-	 * Since: version 1.
-	 */
-	guint                ( *get_action_count )     ( const myIActionMap *instance );
-
-	/**
-	 * get_action_entries:
-	 * @instance: the #myIActionMap instance.
-	 *
-	 * Returns: the #GActionEntry's for the @instance.
-	 *
-	 * Since: version 1.
-	 */
-	const GActionEntry * ( *get_action_entries )   ( const myIActionMap *instance );
 }
 	myIActionMapInterface;
 
@@ -127,8 +107,8 @@ guint               my_iaction_map_get_interface_version     ( GType type );
  */
 GMenuModel         *my_iaction_map_get_menu_model            ( const myIActionMap *instance );
 
-const GActionEntry *my_iaction_map_get_action_entry          ( const myIActionMap *instance,
-																	const gchar *action );
+GAction            *my_iaction_map_lookup_action             ( myIActionMap *instance,
+																	const gchar *name );
 
 G_END_DECLS
 

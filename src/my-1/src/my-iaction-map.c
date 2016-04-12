@@ -37,8 +37,6 @@ static GType               register_type( void );
 static void                interface_base_init( myIActionMapInterface *klass );
 static void                interface_base_finalize( myIActionMapInterface *klass );
 static const gchar        *iaction_map_get_action_target( const myIActionMap *instance );
-static guint               iaction_map_get_action_count( const myIActionMap *instance );
-static const GActionEntry *iaction_map_get_action_entries( const myIActionMap *instance );
 
 /**
  * my_iaction_map_get_type:
@@ -84,7 +82,7 @@ register_type( void )
 
 	type = g_type_register_static( G_TYPE_INTERFACE, "myIActionMap", &info, 0 );
 
-	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
+	g_type_interface_add_prerequisite( type, G_TYPE_ACTION_MAP );
 
 	return( type );
 }
@@ -186,38 +184,31 @@ my_iaction_map_get_menu_model( const myIActionMap *instance )
 }
 
 /**
- * my_iaction_map_get_action_entry:
+ * my_iaction_map_lookup_action:
  * @instance: this #myIActionMap instance.
- * @action: the searched action.
+ * @action: the detailed name of the action.
  *
- * Returns: the #GActionEntry definition of the @action.
+ * Returns: the corresponding #GAction, or %NULL.
  */
-const GActionEntry *
-my_iaction_map_get_action_entry( const myIActionMap *instance, const gchar *action )
+GAction *
+my_iaction_map_lookup_action( myIActionMap *instance, const gchar *action_name )
 {
-	guint i, count;
-	const GActionEntry *entries, *found;
+	GAction *action;
 	const gchar *target, *searched;
 	gchar *target_dot;
 
-	found = NULL;
+	g_return_val_if_fail( instance && MY_IS_IACTION_MAP( instance ), NULL );
+	g_return_val_if_fail( my_strlen( action_name ), NULL );
+
 	target = iaction_map_get_action_target( instance );
-	count = iaction_map_get_action_count( instance );
-	entries = iaction_map_get_action_entries( instance );
+	g_return_val_if_fail( my_strlen( target ), NULL );
 
-	if( my_strlen( target ) && count && entries ){
-		target_dot = g_strdup_printf( "%s.", target );
-		searched = g_str_has_prefix( action, target_dot ) ? action + my_strlen( target_dot ) : action;
-		for( i=0 ; i<count ; ++i ){
-			if( !my_collate( entries[i].name, searched )){
-				found = &entries[i];
-				break;
-			}
-		}
-		g_free( target_dot );
-	}
+	target_dot = g_strdup_printf( "%s.", target );
+	searched = g_str_has_prefix( action_name, target_dot ) ? action_name + my_strlen( target_dot ) : action_name;
 
-	return( found );
+	action = g_action_map_lookup_action( G_ACTION_MAP( instance ), searched );
+
+	return( action );
 }
 
 /*
@@ -236,46 +227,6 @@ iaction_map_get_action_target( const myIActionMap *instance )
 	}
 
 	g_info( "%s: myIActionMap's %s implementation does not provide 'get_action_target()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
-}
-
-/*
- * iaction_map_get_action_count:
- * @instance: this #myIActionMap instance.
- *
- * Returns: the count of #GActionEntry of the @instance.
- */
-static guint
-iaction_map_get_action_count( const myIActionMap *instance )
-{
-	static const gchar *thisfn = "my_iaction_map_get_action_count";
-
-	if( MY_IACTION_MAP_GET_INTERFACE( instance )->get_action_count ){
-		return( MY_IACTION_MAP_GET_INTERFACE( instance )->get_action_count( instance ));
-	}
-
-	g_info( "%s: myIActionMap's %s implementation does not provide 'get_action_count()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 0 );
-}
-
-/*
- * my_iaction_map_get_action_entries:
- * @instance: this #myIActionMap instance.
- *
- * Returns: the #GActionEntry definitions of the @instance.
- */
-static const GActionEntry *
-iaction_map_get_action_entries( const myIActionMap *instance )
-{
-	static const gchar *thisfn = "my_iaction_map_get_action_entries";
-
-	if( MY_IACTION_MAP_GET_INTERFACE( instance )->get_action_entries ){
-		return( MY_IACTION_MAP_GET_INTERFACE( instance )->get_action_entries( instance ));
-	}
-
-	g_info( "%s: myIActionMap's %s implementation does not provide 'get_action_entries()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

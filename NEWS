@@ -38,6 +38,7 @@
    - myIDialog: provides  a default error message.
    - myIWindow: improve size and position management (todo #1054).
    - myThousandCombo: new class for thousand separator selection.
+   - ofaMainWindow: setup accelerators (todo #40).
    - ofaMainWindow: may display an image on a per-dossier basis (todo #669).
    - ofaMysql: implements ofaIAbout interface.
    - ofaMysql: implements ofaIProperties interface.

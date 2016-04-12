@@ -308,8 +308,6 @@ static void                  theme_free( sThemeDef *def );
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
 static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
 static const gchar          *iaction_map_get_action_target( const myIActionMap *instance );
-static guint                 iaction_map_get_action_count( const myIActionMap *instance );
-static const GActionEntry   *iaction_map_get_action_entries( const myIActionMap *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
@@ -1884,8 +1882,6 @@ iaction_map_iface_init( myIActionMapInterface *iface )
 
 	iface->get_menu_model = iaction_map_get_menu_model;
 	iface->get_action_target = iaction_map_get_action_target;
-	iface->get_action_count = iaction_map_get_action_count;
-	iface->get_action_entries = iaction_map_get_action_entries;
 }
 
 static GMenuModel *
@@ -1902,16 +1898,4 @@ static const gchar *
 iaction_map_get_action_target( const myIActionMap *instance )
 {
 	return( "win" );
-}
-
-static guint
-iaction_map_get_action_count( const myIActionMap *instance )
-{
-	return( G_N_ELEMENTS( st_dos_entries ));
-}
-
-static const GActionEntry *
-iaction_map_get_action_entries( const myIActionMap *instance )
-{
-	return( st_dos_entries );
 }

@@ -235,9 +235,27 @@ static gboolean
 on_accel_activated( myAccelGroup *group, GObject *acceleratable, guint keyval, GdkModifierType modifier, sAccel *accel_data )
 {
 	static const gchar *thisfn = "my_accel_group_on_accel_activated";
+	GAction *action;
+	const GVariantType *type;
 
 	g_debug( "%s:  group=%p, acceleratable=%p, keyval=%u, modified=%d, accel_data=%p, action=%s",
 			thisfn, ( void * ) group, ( void * ) acceleratable, keyval, modifier, ( void * ) accel_data, accel_data->action );
+
+	action = my_iaction_map_lookup_action( accel_data->map, accel_data->action );
+	if( !action ){
+		return( FALSE );
+	}
+
+	g_debug( "%s: action=%p (%s)", thisfn, ( void * ) action, G_OBJECT_TYPE_NAME( action ));
+	if( g_action_get_enabled( action )){
+		type = g_action_get_parameter_type( action );
+		if( type != NULL ){
+			g_warning( "%s: unmanaged action parameter type for '%s' action", thisfn, accel_data->action );
+			return( FALSE );
+		}
+
+		g_action_activate( action, NULL );
+	}
 
 	return( TRUE );
 }
