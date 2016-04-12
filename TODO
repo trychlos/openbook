@@ -52,9 +52,6 @@
 
  153 2014- 6- 3 import ofx/ofc files
 
- 161 2014- 6- 5 Reconciliation: display the bank account balance if
-                present
-
  195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
                 OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
                  times on a journal selection in journal_treeview from
@@ -87,19 +84,6 @@
 
  273 2014- 6-29 ofa.css: hack ofaTabLabel/GtkGrid/GtkButton/GtkImage 
                 styles
-
- 296 2014- 7-20 creating a new dossier from an existing database needs
-                to insert the new admin user from root account (else
-                the new user will not be able to connect for updating
-                the model)
-     2015- 1-22 this is removed from now: only able to create a new
-                database when restoring an exercice
-
- 303 2014- 8-15 dropping the administrative accounts when deleting a
-                dossier is not possible without first checking that
-                none of the candidate admin accounts are used in
-                any of the databases of the DB server
-                -> so the dossier manager should take care of that
 
  312 2014- 9-22 myEditableAmount: should limit the count of decimals
 
@@ -147,12 +131,6 @@
  462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
      2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
                 the ofaIExportable interface - so it is not urgent
-
- 469 2014-11-28 ExportSettings: the field separator should be free 
-                (but not empty nor space) instead of having to select
-                among predefined values
-     2015- 4- 1 when done, review the Preferences which becomes non
-                validable if export field separator is empty
 
  494 2014-12- 4 ExeClosing: have a dossier option to have only one  
                 centralisation entry when balancing the accounts, or
@@ -298,9 +276,6 @@
  812 2015- 4-17 FEAT libellé des écritures d'amortissement: ajouter le
                      numéro d'annuité et le nb total (#7 - 3/4)
 
- 814 2015- 4-17 FEAT Dossier: have list of classes allowed to be
-                     reconciliated + classes allowed to be settled
-
  821 2015- 4-27 ARCH check that concenating strings doesn't override the
                      limit (as the MySQL truncation may make the string
                      invalid utf-8) and take care to truncate to a valid
@@ -373,7 +348,13 @@
 
 1053 2016- 3-26 CODE review the menu distribution
 
-1071
+1071 2016- 4-12 CODE ofaICollectionable	-> myICollectionable
+                     ofaICollector		-> myICollectioner
+                     ofaISingleKeeper	-> mergeable with myICollectioner
+                     + should have its own messaging system
+                       on add/remove actions (update/reload cannot be managed here)
+
+1072
 
 -----------------------------------------------------------------------
  DONE
@@ -382,10 +363,29 @@
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
      2016- 4-12 done
 
+ 161 2014- 6- 5 Reconciliation: display the bank account balance if
+                present
+     2016- 4-12 done
+
  213 2014- 6-13 recurrente entries
      2014- 6-16 to be built as a plugin
      2015- 3-17 define new 'recurrent' plugin - git #4affe14
      2016- 3-17 done
+
+ 296 2014- 7-20 creating a new dossier from an existing database needs
+                to insert the new admin user from root account (else
+                the new user will not be able to connect for updating
+                the model)
+     2015- 1-22 this is removed from now: only able to create a new
+                database when restoring an exercice
+     2016- 4-12 cancelled
+
+ 303 2014- 8-15 dropping the administrative accounts when deleting a
+                dossier is not possible without first checking that
+                none of the candidate admin accounts are used in
+                any of the databases of the DB server
+                -> so the dossier manager should take care of that
+     2016- 4-12 cancelled
 
  311 2014- 9-21 editing CA12 VAT declaration
      2015-11-14 due to new VAT declaration rules, must also provide a
@@ -411,6 +411,14 @@
                 so it is not urgent
      2015- 1- 8 nonetheless required to correctly implement field sep
      2016- 3-20 done
+
+ 469 2014-11-28 ExportSettings: the field separator should be free 
+                (but not empty nor space) instead of having to select
+                among predefined values
+     2015- 4- 1 when done, review the Preferences which becomes non
+                validable if export field separator is empty
+     2016- 4-12 field separator is now handled by a standard combo box
+                (cf. ofaStreamFormat)
 
  472 2014-11-29 set dialogs readonly if not current exercice
      2015- 2- 5 done for properties
@@ -537,6 +545,10 @@
                 is the settings key, is rather clean - and actually
                 enough clean
                 -> cancelled
+
+ 814 2015- 4-17 FEAT Dossier: have list of classes allowed to be
+                     reconciliated + classes allowed to be settled
+     2016- 4-12 cancelled as no use case
 
  826 2015- 9-22 PACK use GResource
      2016- 3- 9 done
