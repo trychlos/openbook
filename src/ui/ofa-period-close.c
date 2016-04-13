@@ -38,6 +38,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -231,8 +232,20 @@ setup_date( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
 	GtkWidget *label;
+	gchar *str;
+	ofoDossier *dossier;
+	ofaHub *hub;
 
 	priv = ofa_period_close_get_instance_private( self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-closing" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
+	str = my_date_to_str( ofo_dossier_get_last_closing_date( dossier ), ofa_prefs_date_display());
+	gtk_label_set_text( GTK_LABEL( label ), str );
+	g_free( str );
 
 	priv->closing_date = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-date" );
 	g_return_if_fail( priv->closing_date && GTK_IS_ENTRY( priv->closing_date ));
@@ -393,6 +406,8 @@ do_close( ofaPeriodClose *self )
 	ofaPeriodClosePrivate *priv;
 	ofaHub *hub;
 	ofoDossier *dossier;
+	gboolean archive;
+	GList *dataset, *it;
 
 	priv = ofa_period_close_get_instance_private( self );
 
@@ -402,6 +417,16 @@ do_close( ofaPeriodClose *self )
 	dossier = ofa_hub_get_dossier( hub );
 	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
 	ofo_dossier_update( dossier );
+
+	archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn ));
+	if( archive ){
+		dataset = ofo_account_get_dataset( hub );
+		for( it=dataset ; it ; it=it->next ){
+			if( !ofo_account_is_root( OFO_ACCOUNT( it->data ))){
+				ofo_account_archive_balances( OFO_ACCOUNT( it->data ), &priv->closing );
+			}
+		}
+	}
 
 	return( TRUE );
 }
