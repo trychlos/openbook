@@ -1415,6 +1415,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				ofo_dossier_set_current( priv->dossier, TRUE );
 				ofo_dossier_set_exe_begin( priv->dossier, begin_next );
 				ofo_dossier_set_exe_end( priv->dossier, end_next );
+				ofo_dossier_set_prevexe_end( priv->dossier, end_old );
 				ofo_dossier_update( priv->dossier );
 			}
 		}
