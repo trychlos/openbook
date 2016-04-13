@@ -138,6 +138,11 @@ gboolean        ofo_account_is_allowed              ( const ofoAccount *account,
 
 gboolean        ofo_account_archive_balances        ( ofoAccount *account, const GDate *date );
 
+guint           ofo_account_archive_get_count       ( const ofoAccount *account );
+const GDate    *ofo_account_archive_get_date        ( const ofoAccount *account, guint idx );
+ofxAmount       ofo_account_archive_get_debit       ( const ofoAccount *account, guint idx );
+ofxAmount       ofo_account_archive_get_credit      ( const ofoAccount *account, guint idx );
+
 void            ofo_account_set_number              ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label               ( ofoAccount *account, const gchar *label );
 void            ofo_account_set_currency            ( ofoAccount *account, const gchar *devise );

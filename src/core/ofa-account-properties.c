@@ -84,6 +84,11 @@ typedef struct {
 	GtkWidget           *currency_combo;
 	GtkWidget           *msg_label;
 	GtkWidget           *ok_btn;
+	GtkSizeGroup        *p2_group0;
+	GtkSizeGroup        *p2_group1;
+	GtkSizeGroup        *p2_group2;
+	GtkSizeGroup        *p2_group3;
+	GtkSizeGroup        *p2_group4;
 
 	/* account data
 	 */
@@ -112,7 +117,8 @@ static void      idialog_init( myIDialog *instance );
 static void      init_ui( ofaAccountProperties *dialog );
 static void      remove_balances_page( ofaAccountProperties *self );
 static void      init_balances_page( ofaAccountProperties *self );
-static void      set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur );
+static void      set_current_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur, GtkSizeGroup *sg_amount, GtkSizeGroup *sg_cur );
+static void      set_archived_amount( ofaAccountProperties *self, guint i, GtkGrid *grid );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self );
@@ -165,6 +171,11 @@ account_properties_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_object_unref( priv->p2_group0 );
+		g_object_unref( priv->p2_group1 );
+		g_object_unref( priv->p2_group2 );
+		g_object_unref( priv->p2_group3 );
+		g_object_unref( priv->p2_group4 );
 	}
 
 	/* chain up to the parent class */
@@ -502,47 +513,139 @@ static void
 init_balances_page( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
+	guint count, i;
+	GtkWidget *grid, *label;
 
 	priv = ofa_account_properties_get_instance_private( self );
 
-	set_amount( self,
+	priv->p2_group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	priv->p2_group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	priv->p2_group2 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	priv->p2_group3 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	priv->p2_group4 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-validated-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( priv->p2_group0, label );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-rough-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( priv->p2_group0, label );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-future-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( priv->p2_group0, label );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-debit-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( priv->p2_group1, label );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p21-credit-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_size_group_add_widget( priv->p2_group3, label );
+
+	/* current validated balance */
+	set_current_amount( self,
 			ofo_account_get_val_debit( priv->account ),
-			"p2-val-debit", "p2-val-debit-cur" );
-	set_amount( self,
+			"p2-val-debit", "p2-val-debit-cur",
+			priv->p2_group1, priv->p2_group2 );
+	set_current_amount( self,
 			ofo_account_get_val_credit( priv->account ),
-			"p2-val-credit", "p2-val-credit-cur" );
+			"p2-val-credit", "p2-val-credit-cur",
+			priv->p2_group3, priv->p2_group4 );
 
-	set_amount( self,
+	/* current rough balance */
+	set_current_amount( self,
 			ofo_account_get_rough_debit( priv->account ),
-			"p2-rough-debit", "p2-rough-debit-cur" );
-	set_amount( self,
+			"p2-rough-debit", "p2-rough-debit-cur",
+			priv->p2_group1, priv->p2_group2 );
+	set_current_amount( self,
 			ofo_account_get_rough_credit( priv->account ),
-			"p2-rough-credit", "p2-rough-credit-cur" );
+			"p2-rough-credit", "p2-rough-credit-cur",
+			priv->p2_group3, priv->p2_group4 );
 
-	set_amount( self,
+	/* current future balance */
+	set_current_amount( self,
 			ofo_account_get_futur_debit( priv->account ),
-			"p2-futur-debit", "p2-fut-debit-cur" );
-	set_amount( self,
+			"p2-futur-debit", "p2-fut-debit-cur",
+
+			priv->p2_group1, priv->p2_group2 );
+	set_current_amount( self,
 			ofo_account_get_futur_credit( priv->account ),
-			"p2-futur-credit", "p2-fut-credit-cur" );
+			"p2-futur-credit", "p2-fut-credit-cur", priv->p2_group3, priv->p2_group4 );
+
+	count = ofo_account_archive_get_count( priv->account );
+
+	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
+	g_return_if_fail( grid && GTK_IS_GRID( grid ));
+
+	for( i=0 ; i<count ; ++i ){
+		set_archived_amount( self, i, GTK_GRID( grid ));
+	}
 }
 
 static void
-set_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur )
+set_current_amount( ofaAccountProperties *self,
+		gdouble amount, const gchar *wname, const gchar *wname_cur, GtkSizeGroup *sg_amount, GtkSizeGroup *sg_cur )
 {
 	ofaAccountPropertiesPrivate *priv;
-	GtkLabel *label;
+	GtkWidget *label;
 	gchar *str;
 
 	priv = ofa_account_properties_get_instance_private( self );
 
-	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname );
 	str = ofa_amount_to_str( amount, priv->cur_object );
-	gtk_label_set_text( label, str );
+	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
+	gtk_size_group_add_widget( sg_amount, label );
 
-	label = GTK_LABEL( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname_cur ));
-	gtk_label_set_text( label, priv->cur_symbol );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname_cur );
+	gtk_label_set_text( GTK_LABEL( label ), priv->cur_symbol );
+	gtk_size_group_add_widget( sg_cur, label );
+}
+
+static void
+set_archived_amount( ofaAccountProperties *self, guint i, GtkGrid *grid )
+{
+	ofaAccountPropertiesPrivate *priv;
+	GtkWidget *label;
+	gchar *str;
+	guint col;
+
+	priv = ofa_account_properties_get_instance_private( self );
+
+	col = 0;
+
+	str = my_date_to_str( ofo_account_archive_get_date( priv->account, i ), ofa_prefs_date_display());
+	label = gtk_label_new( str );
+	gtk_grid_attach( grid, label, col++, i, 1, 1 );
+	g_free( str );
+	gtk_size_group_add_widget( priv->p2_group0, label );
+
+	str = ofa_amount_to_str( ofo_account_archive_get_debit( priv->account, i ), priv->cur_object );
+	label = gtk_label_new( str );
+	gtk_widget_set_hexpand( label, TRUE );
+	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
+	gtk_grid_attach( grid, label, col++, i, 1, 1 );
+	g_free( str );
+	gtk_size_group_add_widget( priv->p2_group1, label );
+
+	label = gtk_label_new( priv->cur_symbol );
+	gtk_grid_attach( grid, label, col++, i, 1, 1 );
+	gtk_size_group_add_widget( priv->p2_group2, label );
+
+	str = ofa_amount_to_str( ofo_account_archive_get_credit( priv->account, i ), priv->cur_object );
+	label = gtk_label_new( str );
+	gtk_widget_set_hexpand( label, TRUE );
+	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
+	gtk_grid_attach( grid, label, col++, i, 1, 1 );
+	g_free( str );
+	gtk_size_group_add_widget( priv->p2_group3, label );
+
+	label = gtk_label_new( priv->cur_symbol );
+	gtk_grid_attach( grid, label, col++, i, 1, 1 );
+	gtk_size_group_add_widget( priv->p2_group4, label );
 }
 
 static void

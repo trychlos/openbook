@@ -204,6 +204,8 @@ typedef struct {
 }
 	sChildren;
 
+static void         archives_list_free_detail( GList *fields );
+static void         archives_list_free( ofoAccount *account );
 static void         on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
 static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
@@ -216,7 +218,8 @@ static gint         account_count_for_like( const ofaIDBConnect *connect, const 
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static gboolean     do_add_archive_balances( ofoAccount *account, const GDate *date, ofaHub *hub );
+static gboolean     do_add_archive_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
+static void         do_add_archive_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
@@ -249,6 +252,25 @@ G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
 static void
+archives_list_free_detail( GList *fields )
+{
+	ofa_box_free_fields_list( fields );
+}
+
+static void
+archives_list_free( ofoAccount *account )
+{
+	ofoAccountPrivate *priv;
+
+	priv = ofo_account_get_instance_private( account );
+
+	if( priv->archives ){
+		g_list_free_full( priv->archives, ( GDestroyNotify ) archives_list_free_detail );
+		priv->archives = NULL;
+	}
+}
+
+static void
 account_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofo_account_finalize";
@@ -261,6 +283,7 @@ account_finalize( GObject *instance )
 	g_return_if_fail( instance && OFO_IS_ACCOUNT( instance ));
 
 	/* free data members here */
+	archives_list_free( OFO_ACCOUNT( instance ));
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofo_account_parent_class )->finalize( instance );
@@ -1370,39 +1393,43 @@ gboolean
 ofo_account_archive_balances( ofoAccount *account, const GDate *date )
 {
 	gboolean ok;
-	ofaHub *hub;
+	ofxAmount debit, credit;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( account ));
-	ok = do_add_archive_balances( account, date, hub );
+	debit = ofo_account_get_rough_debit( account )+ofo_account_get_val_debit( account );
+	credit = ofo_account_get_rough_credit( account )+ofo_account_get_val_credit( account );
+	ok = do_add_archive_dbms( account, date, debit, credit );
+
+	if( ok ){
+		do_add_archive_list( account, date, debit, credit );
+	}
 
 	return( ok );
 }
 
 static gboolean
-do_add_archive_balances( ofoAccount *account, const GDate *date, ofaHub *hub )
+do_add_archive_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
 {
+	ofaHub *hub;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
 	gchar *query, *sdate, *sdebit, *scredit;
-	ofxAmount debit, credit;
 	gboolean ok;
+
+	hub = ofo_base_get_hub( OFO_BASE( account ));
 
 	cur_code = ofo_account_get_currency( account );
 	cur_obj = ofo_currency_get_by_code( hub, cur_code );
 	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
 
 	connect = ofa_hub_get_connect( hub );
+
 	sdate = my_date_to_str( date, MY_DATE_SQL );
-
-	debit = ofo_account_get_rough_debit( account )+ofo_account_get_val_debit( account );
 	sdebit = ofa_amount_to_sql( debit, cur_obj );
-
-	credit = ofo_account_get_rough_credit( account )+ofo_account_get_val_credit( account );
 	scredit = ofa_amount_to_sql( credit, cur_obj );
 
 	query = g_strdup_printf(
@@ -1414,9 +1441,126 @@ do_add_archive_balances( ofoAccount *account, const GDate *date, ofaHub *hub )
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 
+	g_free( sdate );
+	g_free( sdebit );
+	g_free( scredit );
 	g_free( query );
 
 	return( ok );
+}
+
+static void
+do_add_archive_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
+{
+	ofoAccountPrivate *priv;
+	GList *fields;
+
+	priv = ofo_account_get_instance_private( account );
+
+	fields = ofa_box_init_fields_list( st_archive_defs );
+	ofa_box_set_string( fields, ACC_NUMBER, ofo_account_get_number( account ));
+	ofa_box_set_date( fields, ACC_ARC_DATE, date );
+	ofa_box_set_amount( fields, ACC_ARC_DEBIT, debit );
+	ofa_box_set_amount( fields, ACC_ARC_CREDIT, credit );
+
+	priv->archives = g_list_append( priv->archives, fields );
+}
+
+/**
+ * ofo_account_archive_get_count:
+ * @account: the #ofoAccount account.
+ *
+ * Returns: the count of archived balances.
+ */
+guint
+ofo_account_archive_get_count( const ofoAccount *account )
+{
+	ofoAccountPrivate *priv;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
+
+	priv = ofo_account_get_instance_private( account );
+
+	return( g_list_length( priv->archives ));
+}
+
+/**
+ * ofo_account_archive_get_date:
+ * @account: the #ofoAccount account.
+ * @idx: the desired index, counted from zero.
+ *
+ * Returns: the effect date of the balance.
+ */
+const GDate *
+ofo_account_archive_get_date( const ofoAccount *account, guint idx )
+{
+	ofoAccountPrivate *priv;
+	GList *nth;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, NULL );
+
+	priv = ofo_account_get_instance_private( account );
+
+	nth = g_list_nth( priv->archives, idx );
+	if( nth ){
+		return( ofa_box_get_date( nth->data, ACC_ARC_DATE ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_account_archive_get_debit:
+ * @account: the #ofoAccount account.
+ * @idx: the desired index, counted from zero.
+ *
+ * Returns: the archived debit.
+ */
+ofxAmount
+ofo_account_archive_get_debit( const ofoAccount *account, guint idx )
+{
+	ofoAccountPrivate *priv;
+	GList *nth;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
+
+	priv = ofo_account_get_instance_private( account );
+
+	nth = g_list_nth( priv->archives, idx );
+	if( nth ){
+		return( ofa_box_get_amount( nth->data, ACC_ARC_DEBIT ));
+	}
+
+	return( 0 );
+}
+
+/**
+ * ofo_account_archive_get_credit:
+ * @account: the #ofoAccount account.
+ * @idx: the desired index, counted from zero.
+ *
+ * Returns: the archived credit.
+ */
+ofxAmount
+ofo_account_archive_get_credit( const ofoAccount *account, guint idx )
+{
+	ofoAccountPrivate *priv;
+	GList *nth;
+
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), 0 );
+	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, 0 );
+
+	priv = ofo_account_get_instance_private( account );
+
+	nth = g_list_nth( priv->archives, idx );
+	if( nth ){
+		return( ofa_box_get_amount( nth->data, ACC_ARC_CREDIT ));
+	}
+
+	return( 0 );
 }
 
 /**
