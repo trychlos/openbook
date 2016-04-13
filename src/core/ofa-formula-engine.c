@@ -62,7 +62,7 @@ typedef struct {
 
 /* A macro name of Function name + args
  */
-static const gchar *st_names_def                    = "(?<!\\\\)%([a-zA-Z][a-zA-Z0-9_]*)(?:\\(\\s*([^()]+)\\s*\\))?";
+static const gchar *st_names_def                    = "(?<!\\\\)%(?:([a-zA-Z][a-zA-Z0-9_]*)(?:\\(\\s*([^()]+)\\s*\\))|([a-zA-Z][a-zA-Z0-9_]*)\b(?!\\())";
 static GRegex      *st_names_regex                  = NULL;
 
 /* when we have replaced all macros and functions by their values, we
@@ -77,6 +77,19 @@ static GRegex      *st_nested_regex                = NULL;
 static const gchar *st_operator_def                = "\\s*(?<!\\\\)[+-/*]\\s*";
 static GRegex      *st_operator_regex              = NULL;
 
+static const gchar *st_minusminus_def              = "--";
+static GRegex      *st_minusminus_regex            = NULL;
+
+static const gchar *st_minusplus_def               = "-+";
+static GRegex      *st_minusplus_regex             = NULL;
+
+/* the %IF(...) function
+ * It is hardcoded in this formula engine, and does not have to be
+ * provided by the caller.
+ */
+static const gchar *st_if_def                      = "(.*)([<=>!]+)(.*)";
+static GRegex      *st_if_regex                    = NULL;
+
 /* at the end, we replace the backslasged characters by their nominal
  * equivalent
  */
@@ -90,8 +103,13 @@ static gboolean  evaluate_args( ofaFormulaEngine *self, ofsFormulaHelper *helper
 static gchar    *do_evaluate_nested( ofaFormulaEngine *self, const gchar *formula );
 static gboolean  evaluate_nested_cb( const GMatchInfo *match_info, GString *result, ofaFormulaEngine *self );
 static gchar    *evaluate_expression( ofaFormulaEngine *self, const gchar *input );
-static gchar    *eval_with_operators( ofaFormulaEngine *self, const gchar *input );
-static gchar    *apply_operator( ofaFormulaEngine *self, const gchar *oper, const gchar *left, const gchar *right );
+static gchar    *eval_with_cmp_op( ofaFormulaEngine *self, const gchar *input );
+static gboolean  eval_with_cmp_op_cb( const GMatchInfo *match_info, GString *result, ofaFormulaEngine *self );
+static gchar    *eval_with_oper_op( ofaFormulaEngine *self, const gchar *input );
+static gchar    *apply_oper_op( ofaFormulaEngine *self, const gchar *oper, const gchar *left, const gchar *right );
+static gchar    *eval_if( ofsFormulaHelper *helper );
+static gboolean  eval_if_cb( const GMatchInfo *match_info, GString *result, ofsFormulaHelper *helper );
+static gboolean  eval_if_true( ofaFormulaEngine *self, const gchar *left, const gchar *op, const gchar *right );
 static gchar    *remove_backslashes( ofaFormulaEngine *self, const gchar *input );
 static gboolean  is_a_formula( ofaFormulaEngine *self, gchar **returned );
 
@@ -199,6 +217,33 @@ regex_allocate( void )
 		st_operator_regex = g_regex_new( st_operator_def, G_REGEX_EXTENDED, 0, &error );
 		if( !st_operator_regex ){
 			g_warning( "%s: operator: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+	}
+
+	if( !st_minusminus_regex ){
+		error = NULL;
+		st_minusminus_regex = g_regex_new( st_minusminus_def, G_REGEX_EXTENDED, 0, &error );
+		if( !st_minusminus_regex ){
+			g_warning( "%s: minusminus: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+	}
+
+	if( !st_minusplus_regex ){
+		error = NULL;
+		st_minusplus_regex = g_regex_new( st_minusplus_def, G_REGEX_EXTENDED, 0, &error );
+		if( !st_minusplus_regex ){
+			g_warning( "%s: minusplus: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+	}
+
+	if( !st_if_regex ){
+		error = NULL;
+		st_if_regex = g_regex_new( st_if_def, G_REGEX_EXTENDED, 0, &error );
+		if( !st_if_regex ){
+			g_warning( "%s: if: %s", thisfn, error->message );
 			g_error_free( error );
 		}
 	}
@@ -404,9 +449,16 @@ evaluate_name_cb( const GMatchInfo *match_info, GString *result, ofaFormulaEngin
 		name = g_match_info_fetch( match_info, 1 );
 		g_return_val_if_fail( my_strlen( name ), FALSE );
 
-		fn_ptr = ( *priv->finder )( name, &fn_count, match_info, priv->user_data );
+		if( !my_collate( name, "IF" )){
+			fn_ptr = eval_if;
+			fn_count = 3;
+		} else {
+			fn_ptr = ( *priv->finder )( name, &fn_count, match_info, priv->user_data );
+		}
+
 		if( fn_ptr ){
 			helper = g_new0( ofsFormulaHelper, 1 );
+			helper->engine = self;
 			helper->user_data = priv->user_data;
 			helper->match_info = match_info;
 			helper->match_zero = match;
@@ -564,26 +616,124 @@ evaluate_nested_cb( const GMatchInfo *match_info, GString *result, ofaFormulaEng
 
 /*
  * evaluate a string which may (or not) contain simple operations
+ * The string may be a %IF condition, so extract the operators
  */
 static gchar *
 evaluate_expression( ofaFormulaEngine *self, const gchar *input )
 {
-	gchar *res;
+	gchar *res, *tmp;
 
 	res = g_strdup( input );
 
-	if( g_regex_match( st_operator_regex, input, 0, NULL )){
+	/* resolve comparison operator
+	 */
+	if( g_regex_match( st_if_regex, res, 0, NULL )){
+		tmp = eval_with_cmp_op( self, res );
 		g_free( res );
-		res = eval_with_operators( self, input );
+		res = tmp;
+
+	/* or resolve operation operator
+	 */
+	} else if( g_regex_match( st_operator_regex, res, 0, NULL )){
+
+		/* remove double-minus */
+		if( g_regex_match( st_minusminus_regex, res, 0, NULL )){
+			tmp = g_regex_replace_literal( st_minusminus_regex, res, -1, 0, "", 0, NULL );
+			g_free( res );
+			res = tmp;
+		}
+
+		/* replace -+ by - */
+		if( g_regex_match( st_minusplus_regex, res, 0, NULL )){
+			tmp = g_regex_replace_literal( st_minusplus_regex, res, -1, 0, "-", 0, NULL );
+			g_free( res );
+			res = tmp;
+		}
+
+		tmp = eval_with_oper_op( self, res );
+		g_free( res );
+		res = tmp;
 	}
 
 	return( res );
 }
 
+/*
+ * Enter here because the @input expression contains a comparison
+ *  operator: evaluate the two members independantly
+ *  e.g.: " 133+24 > 54-67*2" returns "157 > -80"
+ */
 static gchar *
-eval_with_operators( ofaFormulaEngine *self, const gchar *input )
+eval_with_cmp_op( ofaFormulaEngine *self, const gchar *input )
 {
-	static const gchar *thisfn = "ofa_formula_engine_eval_with_operators";
+	gchar *res;
+
+	res = g_regex_replace_eval(
+					st_if_regex, input, -1, 0, 0,
+					( GRegexEvalCallback ) eval_with_cmp_op_cb, self, NULL );
+
+	return( res );
+}
+
+/*
+ * parse the condition
+ * expects <something> <op> <something>
+ * returns: "1" if true, "0" if false.
+ */
+static gboolean
+eval_with_cmp_op_cb( const GMatchInfo *match_info, GString *result, ofaFormulaEngine *self )
+{
+	static const gchar *thisfn = "ofa_formula_engine_eval_with_cmp_op_cb";
+	ofaFormulaEnginePrivate *priv;
+	guint count;
+	gchar *match, *str, *res, *left, *op, *right;
+	gchar *leftres, *rightres;
+
+	priv = ofa_formula_engine_get_instance_private( self );
+
+	res = g_strdup( "0" );
+	match = g_match_info_fetch( match_info, 0 );
+	count = g_match_info_get_match_count( match_info );
+
+	if( count != 4 ){
+		str = g_strdup_printf( _( "%s [error] match='%s', count=%d" ), thisfn, match, count );
+		priv->msg = g_list_append( priv->msg, str );
+
+	} else {
+		leftres = NULL;
+		rightres = NULL;
+		left = g_match_info_fetch( match_info, 1 );
+		op = g_match_info_fetch( match_info, 2 );
+		right = g_match_info_fetch( match_info, 3 );
+
+		if( !my_strlen( left ) || !my_strlen( op ) || !my_strlen( right )){
+			str = g_strdup_printf( _( "%s [error] left='%s', op='%s', right='%s'" ), thisfn, left, op, right );
+			priv->msg = g_list_append( priv->msg, str );
+
+		} else {
+			leftres = evaluate_expression( self, left );
+			rightres = evaluate_expression( self, right );
+			res = g_strdup_printf( "%s%s%s", leftres, op, rightres );
+		}
+
+		g_free( right );
+		g_free( op );
+		g_free( left );
+		g_free( rightres );
+		g_free( leftres );
+	}
+
+	g_string_append( result, res );
+	g_free( res );
+	g_free( match );
+
+	return( FALSE );
+}
+
+static gchar *
+eval_with_oper_op( ofaFormulaEngine *self, const gchar *input )
+{
+	static const gchar *thisfn = "ofa_formula_engine_eval_with_oper_op";
 	const gchar *begin, *p;
 	gchar *str, *res;
 	gunichar ch;
@@ -630,7 +780,7 @@ eval_with_operators( ofaFormulaEngine *self, const gchar *input )
 			left = itprev ? ( const gchar * ) itprev->data : NULL;
 			itnext = it->next;
 			right = itnext ? ( const gchar * ) itnext->data : NULL;
-			res = apply_operator( self, it->data, left, right );
+			res = apply_oper_op( self, it->data, left, right );
 			g_free( it->data );
 			it->data = res;
 			list0 = g_list_remove_link( list0, itprev );
@@ -658,7 +808,7 @@ eval_with_operators( ofaFormulaEngine *self, const gchar *input )
 			left = itprev ? ( const gchar * ) itprev->data : NULL;
 			itnext = it->next;
 			right = itnext ? ( const gchar * ) itnext->data : NULL;
-			res = apply_operator( self, it->data, left, right );
+			res = apply_oper_op( self, it->data, left, right );
 			g_free( it->data );
 			it->data = res;
 			list0 = g_list_remove_link( list0, itprev );
@@ -686,7 +836,7 @@ eval_with_operators( ofaFormulaEngine *self, const gchar *input )
 }
 
 static gchar *
-apply_operator( ofaFormulaEngine *self, const gchar *oper, const gchar *left, const gchar *right )
+apply_oper_op( ofaFormulaEngine *self, const gchar *oper, const gchar *left, const gchar *right )
 {
 	ofaFormulaEnginePrivate *priv;
 	gchar *res;
@@ -712,6 +862,130 @@ apply_operator( ofaFormulaEngine *self, const gchar *oper, const gchar *left, co
 	res = my_double_to_str( c, priv->thousand_sep, priv->decimal_sep, priv->digits );
 
 	return( res );
+}
+
+/*
+ * A standard function '%IF(...) embedded in the formula engine
+ * Syntax: =%IF( <condition> ; <result_if_true> ; <result_if_false> )
+ */
+static gchar *
+eval_if( ofsFormulaHelper *helper )
+{
+	static const gchar *thisfn = "ofa_formula_engine_eval_if";
+	gchar *res;
+	const gchar *condition, *iftrue, *iffalse;
+	GList *it;
+	gboolean bres;
+
+	it = helper->args_list;
+	condition = it ? ( const gchar * ) it->data : NULL;
+	it = it ? it->next : NULL;
+	iftrue = it ? ( const gchar * ) it->data : NULL;
+	it = it ? it->next : NULL;
+	iffalse = it ? ( const gchar * ) it->data : NULL;
+
+	res = g_regex_replace_eval(
+					st_if_regex, condition, -1, 0, 0,
+					( GRegexEvalCallback ) eval_if_cb, helper, NULL );
+
+	bres = my_utils_boolean_from_str( res );
+	g_free( res );
+	res = g_strdup( bres ? iftrue : iffalse );
+
+	if( DEBUG_REGEX_EVALUATION ){
+		g_debug( "%s: condition=%s, res=%s", thisfn, condition, res );
+	}
+
+	return( res );
+}
+
+/*
+ * parse the condition
+ * expects <something> <op> <something>
+ * returns: "1" if true, "0" if false.
+ */
+static gboolean
+eval_if_cb( const GMatchInfo *match_info, GString *result, ofsFormulaHelper *helper )
+{
+	static const gchar *thisfn = "ofa_formula_engine_eval_if_cb";
+	guint count;
+	gchar *match, *str, *res, *left, *op, *right;
+
+	res = g_strdup( "0" );
+	match = g_match_info_fetch( match_info, 0 );
+	count = g_match_info_get_match_count( match_info );
+
+	if( count != 4 ){
+		str = g_strdup_printf( _( "%s [error] match='%s', count=%d" ), thisfn, match, count );
+		helper->msg = g_list_append( helper->msg, str );
+
+	} else {
+		left = g_match_info_fetch( match_info, 1 );
+		op = g_match_info_fetch( match_info, 2 );
+		right = g_match_info_fetch( match_info, 3 );
+		if( !my_strlen( left ) || !my_strlen( op ) || !my_strlen( right )){
+			str = g_strdup_printf( _( "%s [error] left='%s', op='%s', right='%s'" ), thisfn, left, op, right );
+			helper->msg = g_list_append( helper->msg, str );
+
+		} else {
+			if( DEBUG_REGEX_EVALUATION ){
+				g_debug( "%s left='%s', op='%s', right='%s'", thisfn, left, op, right );
+			}
+			if( eval_if_true( helper->engine, left, op, right )){
+				g_free( res );
+				res = g_strdup( "1" );
+			}
+		}
+
+		g_free( right );
+		g_free( op );
+		g_free( left );
+	}
+
+	g_string_append( result, res );
+	g_free( res );
+	g_free( match );
+
+	return( FALSE );
+}
+
+static gboolean
+eval_if_true( ofaFormulaEngine *self, const gchar *left, const gchar *op, const gchar *right )
+{
+	static const gchar *thisfn = "ofa_formula_engine_eval_if_true";
+	ofaFormulaEnginePrivate *priv;
+	gboolean is_true;
+	gdouble a, b;
+
+	priv = ofa_formula_engine_get_instance_private( self );
+
+	a = my_double_set_from_str( left, priv->thousand_sep, priv->decimal_sep );
+	b = my_double_set_from_str( right, priv->thousand_sep, priv->decimal_sep );
+
+	is_true = TRUE;
+
+	if( !my_collate( op, "<>" )){
+		is_true = ( a != b );
+	} else if( !my_collate( op, "<" )){
+		is_true = ( a < b );
+	} else if( !my_collate( op, "<=" )){
+		is_true = ( a <= b );
+	} else if( !my_collate( op, ">" )){
+		is_true = ( a > b );
+	} else if( !my_collate( op, ">=" )){
+		is_true = ( a >= b );
+	} else if( !my_collate( op, "=" )){
+		is_true = ( a == b );
+	}
+	if( g_strrstr( op, "!" )){
+		is_true = !is_true;
+	}
+
+	if( DEBUG_REGEX_EVALUATION ){
+		g_debug( "%s: left=%s, op=%s, right=%s, is_true=%s", thisfn, left, op, right, is_true ? "True":"False" );
+	}
+
+	return( is_true );
 }
 
 static gchar *

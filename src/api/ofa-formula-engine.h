@@ -76,6 +76,14 @@
  * v54 known functions
  * -------------------
  *
+ * Formula engine
+ *
+ *    The formula engine itself provides some standard functions, which
+ *    are so available to all callers:
+ *
+ *    - %IF( condition; if_true; if_false ): evaluates the condition,
+ *      returning 'if_true' or 'if_false' strings.
+ *
  * Operation template
  *
  *    A reference to another field of the operation;
@@ -212,6 +220,7 @@ typedef ofaFormulaEvalFn ( *ofaFormulaFindFn )( const gchar *, gint *, const GMa
  */
 struct _ofsFormulaHelper {
 
+	ofaFormulaEngine   *engine;
 	void               *user_data;
 	GList              *msg;
 
