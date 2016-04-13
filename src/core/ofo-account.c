@@ -71,8 +71,6 @@ enum {
 	ACC_VAL_CREDIT,
 	ACC_ROUGH_DEBIT,
 	ACC_ROUGH_CREDIT,
-	ACC_OPEN_DEBIT,
-	ACC_OPEN_CREDIT,
 	ACC_FUT_DEBIT,
 	ACC_FUT_CREDIT,
 };
@@ -143,14 +141,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE,
 				FALSE },
 		{ OFA_BOX_CSV( ACC_ROUGH_CREDIT ),
-				OFA_TYPE_AMOUNT,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ACC_OPEN_DEBIT ),
-				OFA_TYPE_AMOUNT,
-				FALSE,
-				FALSE },
-		{ OFA_BOX_CSV( ACC_OPEN_CREDIT ),
 				OFA_TYPE_AMOUNT,
 				FALSE,
 				FALSE },
@@ -891,7 +881,7 @@ ofo_account_get_rough_credit( const ofoAccount *account )
 ofxAmount
 ofo_account_get_open_debit( const ofoAccount *account )
 {
-	account_get_amount( ACC_OPEN_DEBIT );
+	return( 0 );
 }
 
 /**
@@ -901,7 +891,7 @@ ofo_account_get_open_debit( const ofoAccount *account )
 ofxAmount
 ofo_account_get_open_credit( const ofoAccount *account )
 {
-	account_get_amount( ACC_OPEN_CREDIT );
+	return( 0 );
 }
 
 /**
@@ -1418,7 +1408,10 @@ ofo_account_archive_open_balances( ofoAccount *account )
 
 	} else {
 		hub = ofo_base_get_hub( OFO_BASE( account ));
-		ok = do_archive_open_balances( account, hub );
+		if( 0 ){
+			ok = do_archive_open_balances( account, hub );
+		}
+		ok = TRUE;
 	}
 
 	return( ok );
@@ -1628,7 +1621,7 @@ ofo_account_set_rough_credit( ofoAccount *account, ofxAmount amount )
 static void
 account_set_open_debit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_OPEN_DEBIT, amount );
+	//account_set_amount( ACC_OPEN_DEBIT, amount );
 }
 
 /*
@@ -1638,7 +1631,7 @@ account_set_open_debit( ofoAccount *account, ofxAmount amount )
 static void
 account_set_open_credit( ofoAccount *account, ofxAmount amount )
 {
-	account_set_amount( ACC_OPEN_CREDIT, amount );
+	//account_set_amount( ACC_OPEN_CREDIT, amount );
 }
 
 /**

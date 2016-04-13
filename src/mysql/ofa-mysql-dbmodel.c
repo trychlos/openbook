@@ -112,6 +112,8 @@ static gboolean dbmodel_v29( ofaMysqlDBModel *self, gint version );
 static gulong   count_v29( ofaMysqlDBModel *self );
 static gboolean dbmodel_v30( ofaMysqlDBModel *self, gint version );
 static gulong   count_v30( ofaMysqlDBModel *self );
+static gboolean dbmodel_v31( ofaMysqlDBModel *self, gint version );
+static gulong   count_v31( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -125,6 +127,7 @@ static sMigration st_migrates[] = {
 		{ 28, dbmodel_v28, count_v28 },
 		{ 29, dbmodel_v29, count_v29 },
 		{ 30, dbmodel_v30, count_v30 },
+		{ 31, dbmodel_v31, count_v31 },
 		{ 0 }
 };
 
@@ -450,6 +453,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* ACC_TYPE is renamed to ACC_ROOT in v27 */
 	/* ACC_FORWARD is renamed to ACC_FORWARDABLE in v27 */
 	/* Identifiers and labels are resized in v28 */
+	/* ACC_OPEN_DEBIT and ACC_OPEN_CREDIT dropped in v31 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS ("
 			"	ACC_NUMBER          VARCHAR(20) BINARY NOT NULL UNIQUE COMMENT 'Account number',"
@@ -583,8 +587,13 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	}
 
 	/* n° 6 */
+	/* DOS_LAST_CONCIL added in v25 */
+	/* DOS_LAST_CLOSING and DOS_PREVEXE_ENTRY added in v26 */
+	/* DOS_SIRET added in v27 */
 	/* DOS_STATUS is renamed to DOS_CURRENT in v27 */
 	/* Identifiers and labels are resized in v28 */
+	/* DOS_LAST_OPE added in v29 */
+	/* DOS_PREVEXE_END added in v31 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_DOSSIER ("
 			"	DOS_ID               INTEGER   NOT NULL UNIQUE       COMMENT 'Row identifier',"
@@ -1663,6 +1672,65 @@ dbmodel_v30( ofaMysqlDBModel *self, gint version )
  */
 static gulong
 count_v30( ofaMysqlDBModel *self )
+{
+	return( 4 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v31:
+ *
+ * - ofoDossier: have previous exercice end date.
+ * - ofoAccountsArchive: new accounts archives table
+ */
+static gboolean
+dbmodel_v31( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v31";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_DOSSIER "
+			"	ADD COLUMN DOS_PREVEXE_END        DATE                COMMENT 'End date of previoous exercice'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_ACCOUNTS_ARC ("
+			"	ACC_NUMBER          VARCHAR(64)    BINARY NOT NULL    COMMENT 'Account identifier',"
+			"	ACC_ARC_DATE        DATE                  NOT NULL    COMMENT 'Archive effect date',"
+			"	ACC_ARC_DEBIT       DECIMAL(20,5)                     COMMENT 'Archived debit',"
+			"	ACC_ARC_CREDIT      DECIMAL(20,5)                     COMMENT 'Archived credit',"
+			"	UNIQUE (ACC_NUMBER,ACC_ARC_DATE)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"INSERT INTO OFA_T_ACCOUNTS_ARC "
+			"	(ACC_NUMBER,ACC_ARC_DATE,ACC_ARC_DEBIT,ACC_ARC_CREDIT) "
+			"	SELECT a.ACC_NUMBER,d.DOS_EXE_BEGIN,a.ACC_OPEN_DEBIT,a.ACC_OPEN_CREDIT "
+			"		FROM OFA_T_ACCOUNTS a, OFA_T_DOSSIER d "
+			"		WHERE a.ACC_OPEN_DEBIT>0 OR a.ACC_OPEN_CREDIT>0" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ACCOUNTS "
+			"	DROP COLUMN ACC_OPEN_DEBIT,"
+			"	DROP COLUMN ACC_OPEN_CREDIT" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v31( ofaMysqlDBModel *self )
 {
 	return( 4 );
 }

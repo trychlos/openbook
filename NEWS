@@ -33,6 +33,7 @@
   
  New features and improvements:
 
+   - DDL Core v 31
    - ofaFormulaEngine: now has a %IF() function.
    - ofaGuidedInput: add a title to the dialog.
    - ofaPeriodClose: let the period be closed independantly of the ledgers (todo #798).

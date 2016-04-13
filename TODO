@@ -239,17 +239,6 @@
                      (subgroup) use case: when printing accounts book,
                      have a subtotal per class
 
- 798 2015- 4-13 FEAT creating a new ledger let the user enter an entry
-                     at any effect date, even if all other ledgers has
-                     been previously closed - this may or may not be
-                     wanted - so we have to distinguish:
-                     - closing a ledger at a given date
-                     - closing a period at a given date
-                     (+ closing an exercice)
-     2015-10- 8      DOS_LAST_CLOSING is date of last closed period and
-                     has been introduced with DB model v26; it is not
-                     used at this time
-
  799 2015- 4-13 DISP AccountsBook account top and bottom reports:
                      - add a label [bottom report] or [top report] ?
                      - in italic ?
@@ -353,10 +342,6 @@
                      ofaISingleKeeper	-> mergeable with myICollectioner
                      + should have its own messaging system
                        on add/remove actions (update/reload cannot be managed here)
-
-1072 2016- 4-12 FEAT+DDL store the closing date of the previous exercice
-                + check that beegining date of next exercice cannot be
-                  modified when previous_end is set (have a DOS_PREVEXE_END)
 
 1073
 
@@ -549,6 +534,18 @@
                 is the settings key, is rather clean - and actually
                 enough clean
                 -> cancelled
+
+ 798 2015- 4-13 FEAT creating a new ledger let the user enter an entry
+                     at any effect date, even if all other ledgers has
+                     been previously closed - this may or may not be
+                     wanted - so we have to distinguish:
+                     - closing a ledger at a given date
+                     - closing a period at a given date
+                     (+ closing an exercice)
+     2015-10- 8      DOS_LAST_CLOSING is date of last closed period and
+                     has been introduced with DB model v26; it is not
+                     used at this time
+     2016- 4-12 done
 
  814 2015- 4-17 FEAT Dossier: have list of classes allowed to be
                      reconciliated + classes allowed to be settled
@@ -1133,6 +1130,11 @@
 1070 2016- 4-11 OFA_DOSSIER_CHANGED on dossier is the same than 
                 SIGNAL_DOSSIER_PROPERTIES on the hub
      2016- 4-11 both signal are merged into ofaHub::SIGNAL_HUB_DOSSIER_CHANGED
+
+1072 2016- 4-12 FEAT+DDL store the closing date of the previous exercice
+                + check that beegining date of next exercice cannot be
+                  modified when previous_end is set (have a DOS_PREVEXE_END)
+     2016- 4-13 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -80,6 +80,7 @@ typedef struct {
 	 */
 	gchar              *label;
 	gchar              *siren;
+	gchar              *siret;
 	gchar              *currency;
 	gchar              *import_ledger;
 	GDate               begin;
@@ -93,6 +94,7 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget          *siren_entry;
+	GtkWidget          *siret_entry;
 	ofaClosingParmsBin *closing_parms;
 	ofaOpenPrefsBin    *prefs_bin;
 	GtkWidget          *background_btn;
@@ -390,6 +392,19 @@ init_properties_page( ofaDossierProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
+	/* siret identifier */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-siret-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->siret = g_strdup( ofo_dossier_get_siret( priv->dossier ));
+	if( priv->siret ){
+		gtk_entry_set_text( GTK_ENTRY( entry ), priv->siret );
+	}
+	priv->siret_entry = entry;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-siret-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
 	/* default currency */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-currency-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -486,10 +501,19 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_set_from_date( &priv->end_init, ofo_dossier_get_exe_end( priv->dossier ));
 
 	/* last closed periode */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-per-closed" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	last_closed = ofo_dossier_get_last_closing_date( priv->dossier );
+	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_display()) : NULL;
+	gtk_label_set_text( GTK_LABEL( label ), str ? str : "" );
+	g_free( str );
+
+	/* last closed exercice */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	last_closed = ofo_dossier_get_prevexe_end( priv->dossier );
 	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_display()) : NULL;
 	gtk_label_set_text( GTK_LABEL( label ), str ? str : "" );
 	g_free( str );
@@ -592,7 +616,7 @@ init_counters_page( ofaDossierProperties *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-last-entry" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	str = ofa_counter_to_str( ofo_dossier_get_prev_exe_last_entry( priv->dossier ));
+	str = ofa_counter_to_str( ofo_dossier_get_prevexe_last_entry( priv->dossier ));
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
@@ -953,6 +977,7 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 
 	ofo_dossier_set_label( priv->dossier, priv->label );
 	ofo_dossier_set_siren( priv->dossier, gtk_entry_get_text( GTK_ENTRY( priv->siren_entry )));
+	ofo_dossier_set_siret( priv->dossier, gtk_entry_get_text( GTK_ENTRY( priv->siret_entry )));
 	ofo_dossier_set_default_currency( priv->dossier, priv->currency );
 	ofo_dossier_set_import_ledger( priv->dossier, priv->import_ledger );
 	ofo_dossier_set_exe_length( priv->dossier, priv->duree );

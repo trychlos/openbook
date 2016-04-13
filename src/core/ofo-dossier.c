@@ -72,6 +72,7 @@ enum {
 	DOS_CURRENT,
 	DOS_LAST_CLOSING,
 	DOS_PREVEXE_ENTRY,
+	DOS_PREVEXE_END,
 	DOS_CURRENCY,
 	DOS_SLD_ACCOUNT,
 };
@@ -175,6 +176,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE },
 		{ OFA_BOX_CSV( DOS_PREVEXE_ENTRY ),
 				OFA_TYPE_COUNTER,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( DOS_PREVEXE_END ),
+				OFA_TYPE_DATE,
 				FALSE,
 				FALSE },
 		{ 0 }
@@ -351,6 +356,7 @@ on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const 
 
 /*
  * SIGNAL_HUB_EXE_DATES_CHANGED signal handler
+ * @dossier: this #ofoDossier instance.
  *
  * Changing beginning or ending exercice dates is only possible for
  * the current exercice.
@@ -375,6 +381,7 @@ on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDat
 
 /**
  * ofo_dossier_use_account:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: %TRUE if the dossier makes use of this account, thus
  * preventing its deletion.
@@ -393,6 +400,7 @@ ofo_dossier_use_account( const ofoDossier *dossier, const gchar *account )
 
 /**
  * ofo_dossier_use_currency:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: %TRUE if the dossier makes use of this currency, thus
  * preventing its deletion.
@@ -419,6 +427,7 @@ ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
 
 /**
  * ofo_dossier_use_ledger:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: %TRUE if the dossier makes use of this ledger, thus
  * preventing its deletion.
@@ -501,6 +510,7 @@ dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gch
 
 /**
  * ofo_dossier_get_default_currency:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the default currency of the dossier.
  */
@@ -512,6 +522,7 @@ ofo_dossier_get_default_currency( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_exe_begin:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the date of the beginning of the exercice.
  */
@@ -523,6 +534,7 @@ ofo_dossier_get_exe_begin( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_exe_end:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the date of the end of the exercice.
  */
@@ -534,6 +546,7 @@ ofo_dossier_get_exe_end( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_exe_length:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the length of the exercice, in months.
  */
@@ -545,6 +558,7 @@ ofo_dossier_get_exe_length( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_exe_notes:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the notes associated to the exercice.
  */
@@ -556,6 +570,7 @@ ofo_dossier_get_exe_notes( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_forward_ope:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the forward ope of the dossier.
  */
@@ -567,6 +582,7 @@ ofo_dossier_get_forward_ope( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_import_ledger:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the default import ledger of the dossier.
  */
@@ -578,6 +594,7 @@ ofo_dossier_get_import_ledger( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_label:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the label of the dossier. This is the 'raison sociale' for
  * the dossier.
@@ -590,6 +607,7 @@ ofo_dossier_get_label( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_notes:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the notes attached to the dossier.
  */
@@ -601,6 +619,7 @@ ofo_dossier_get_notes( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_siren:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the siren of the dossier.
  */
@@ -612,6 +631,7 @@ ofo_dossier_get_siren( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_siret:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the siret of the dossier.
  */
@@ -623,6 +643,7 @@ ofo_dossier_get_siret( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_sld_ope:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the sld ope of the dossier.
  */
@@ -634,6 +655,7 @@ ofo_dossier_get_sld_ope( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_upd_user:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the identifier of the user who has last updated the
  * properties of the dossier.
@@ -646,6 +668,7 @@ ofo_dossier_get_upd_user( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_stamp:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the timestamp when a user has last updated the properties
  * of the dossier.
@@ -658,6 +681,7 @@ ofo_dossier_get_upd_stamp( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_status:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the status of the dossier as a const string suitable for
  * display.
@@ -677,6 +701,7 @@ ofo_dossier_get_status( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_last_bat:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last bat number allocated in the exercice.
  */
@@ -688,6 +713,7 @@ ofo_dossier_get_last_bat( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_last_batline:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last bat_line number allocated in the exercice.
  */
@@ -699,6 +725,7 @@ ofo_dossier_get_last_batline( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_last_entry:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last entry number allocated in the exercice.
  */
@@ -710,6 +737,7 @@ ofo_dossier_get_last_entry( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_last_ope:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last operation number allocated in the exercice.
  */
@@ -721,6 +749,7 @@ ofo_dossier_get_last_ope( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_last_settlement:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last settlement number allocated in the exercice.
  */
@@ -732,6 +761,7 @@ ofo_dossier_get_last_settlement( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_last_concil:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last reconciliation id. allocated.
  */
@@ -743,6 +773,7 @@ ofo_dossier_get_last_concil( const ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_next_bat:
+ * @dossier: this #ofoDossier instance.
  */
 ofxCounter
 ofo_dossier_get_next_bat( ofoDossier *dossier )
@@ -763,6 +794,7 @@ ofo_dossier_get_next_bat( ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_next_batline:
+ * @dossier: this #ofoDossier instance.
  */
 ofxCounter
 ofo_dossier_get_next_batline( ofoDossier *dossier )
@@ -783,6 +815,7 @@ ofo_dossier_get_next_batline( ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_next_entry:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the next entry number to be allocated in the dossier.
  */
@@ -805,6 +838,7 @@ ofo_dossier_get_next_entry( ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_next_settlement:
+ * @dossier: this #ofoDossier instance.
  */
 ofxCounter
 ofo_dossier_get_next_settlement( ofoDossier *dossier )
@@ -825,6 +859,7 @@ ofo_dossier_get_next_settlement( ofoDossier *dossier )
 
 /**
  * ofo_dossier_get_next_concil:
+ * @dossier: this #ofoDossier instance.
  */
 ofxCounter
 ofo_dossier_get_next_concil( ofoDossier *dossier )
@@ -867,7 +902,7 @@ dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter n
 
 /**
  * ofo_dossier_get_last_closing_date:
- * @dossier:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last period closing date.
  */
@@ -878,20 +913,32 @@ ofo_dossier_get_last_closing_date( const ofoDossier *dossier )
 }
 
 /**
- * ofo_dossier_get_prev_exe_last_entry:
- * @dossier:
+ * ofo_dossier_get_prevexe_last_entry:
+ * @dossier: this #ofoDossier instance.
  *
  * Returns: the last entry number of the previous exercice.
  */
 ofxCounter
-ofo_dossier_get_prev_exe_last_entry( const ofoDossier *dossier )
+ofo_dossier_get_prevexe_last_entry( const ofoDossier *dossier )
 {
 	ofo_base_getter( DOSSIER, dossier, counter, 0, DOS_PREVEXE_ENTRY );
 }
 
 /**
+ * ofo_dossier_get_prevexe_end:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the end date of the previous exercice, or %NULL.
+ */
+const GDate *
+ofo_dossier_get_prevexe_end( const ofoDossier *dossier )
+{
+	ofo_base_getter( DOSSIER, dossier, date, NULL, DOS_PREVEXE_END );
+}
+
+/**
  * ofo_dossier_get_min_deffect:
- * @dossier: this dossier.
+ * @dossier: this #ofoDossier instance.
  * @ledger: [allow-none]: the imputed ledger.
  * @date: [out]: the #GDate date to be set.
  *
@@ -1357,11 +1404,11 @@ ofo_dossier_set_last_closing_date( ofoDossier *dossier, const GDate *last_closin
 }
 
 /**
- * ofo_dossier_set_prev_exe_last_entry:
+ * ofo_dossier_set_prevexe_last_entry:
  * @dossier:
  */
 void
-ofo_dossier_set_prev_exe_last_entry( ofoDossier *dossier )
+ofo_dossier_set_prevexe_last_entry( ofoDossier *dossier )
 {
 	ofxCounter last;
 
@@ -1378,6 +1425,17 @@ static void
 dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter last_entry )
 {
 	ofo_base_setter( DOSSIER, dossier, counter, DOS_PREVEXE_ENTRY, last_entry );
+}
+
+/**
+ * dossier_set_prev_exe_end:
+ * @dossier: this #ofoDossier instance.
+ * @date: the end date of the previous exercice.
+ */
+void
+ofo_dossier_set_prevexe_end( ofoDossier *dossier, const GDate *date )
+{
+	ofo_base_setter( DOSSIER, dossier, date, DOS_PREVEXE_END, date );
 }
 
 /**
@@ -1595,11 +1653,20 @@ do_update_properties( ofoDossier *dossier )
 		query = g_string_append( query, "DOS_LAST_CLOSING=NULL," );
 	}
 
-	number = ofo_dossier_get_prev_exe_last_entry( dossier );
+	number = ofo_dossier_get_prevexe_last_entry( dossier );
 	if( number > 0 ){
 		g_string_append_printf( query, "DOS_PREVEXE_ENTRY=%ld,", number );
 	} else {
 		query = g_string_append( query, "DOS_PREVEXE_ENTRY=NULL," );
+	}
+
+	date = ofo_dossier_get_prevexe_end( dossier );
+	if( my_date_is_valid( date )){
+		sdate = my_date_to_str( date, MY_DATE_SQL );
+		g_string_append_printf( query, "DOS_PREVEXE_END='%s',", sdate );
+		g_free( sdate );
+	} else {
+		query = g_string_append( query, "DOS_PREVEXE_END=NULL," );
 	}
 
 	current = ofo_dossier_is_current( dossier );
