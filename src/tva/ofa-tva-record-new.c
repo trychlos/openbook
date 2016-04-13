@@ -380,11 +380,22 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 	ofaIThemeManager *manager;
 	ofaPage *page;
 	GtkWindow *toplevel;
+	GDate last_end;
+	const gchar *mnemo;
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	manager = ofa_igetter_get_theme_manager( priv->getter );
+
+	/* setup a default begin date
+	 * = previous end date + 1 */
+	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
+	ofo_tva_record_get_last_end( hub, mnemo, &last_end );
+	if( my_date_is_valid( &last_end )){
+		g_date_add_days( &last_end, 1 );
+		ofo_tva_record_set_begin( priv->tva_record, &last_end );
+	}
 
 	ok = ofo_tva_record_insert( priv->tva_record, hub );
 	if( !ok ){

@@ -37,6 +37,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
+#include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
@@ -84,14 +85,10 @@ typedef struct {
 	GDate         end_date;
 	gboolean      has_correspondence;
 	gboolean      is_validated;
-
-	/* computing the declaration
-	 */
-	GRegex       *regex_fn;
 }
 	ofaTVARecordPropertiesPrivate;
 
-static gboolean st_debug                = FALSE;
+static gboolean st_debug                = TRUE;
 #define DEBUG                           if( st_debug ) g_debug
 
 enum {
@@ -103,35 +100,56 @@ enum {
 	DET_COL_PADDING
 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-record-properties.ui";
+/* sEvalDef:
+ * @name: the name of the function.
+ * @args_count: the expected count of arguments, -1 for do not check.
+ * @eval: the evaluation function which provides the replacement string.
+ *
+ * Defines the evaluation callback functions.
+ */
+typedef struct {
+	const gchar *name;
+	gint         args_count;
+	gchar *   ( *eval )( ofsFormulaHelper * );
+}
+	sEvalDef;
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      init_properties( ofaTVARecordProperties *self );
-static void      init_booleans( ofaTVARecordProperties *self );
-static void      init_taxes( ofaTVARecordProperties *self );
-static void      init_correspondence( ofaTVARecordProperties *self );
-static void      on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
-static void      on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
-static void      on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
-static void      on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
-static void      on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
-static void      check_for_enable_dlg( ofaTVARecordProperties *self );
-static void      set_dialog_title( ofaTVARecordProperties *self );
-static gboolean  do_update( ofaTVARecordProperties *self, gchar **msgerr );
-static void      on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static void      alloc_regex( ofaTVARecordProperties *self );
-static gchar    *eval_rule( ofaTVARecordProperties *self, const gchar *rule );
-static gboolean  eval_function_cb( const GMatchInfo *match_info, GString *result, ofaTVARecordProperties *self );
-static gboolean  is_function( const gchar *token, ofaTVARecordProperties *self, gchar **str );
-static gchar    *get_code_amount( ofaTVARecordProperties *self, const gchar *content );
-static gchar    *get_account_balance( ofaTVARecordProperties *self, const gchar *content );
-static gdouble   eval_opes( ofaTVARecordProperties *self, const gchar *content );
-static gchar   **eval_opes_rec( const gchar *content, gchar **iter, gdouble *amount, gint count );
-static void      on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static void      set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
+static ofaFormulaEngine *st_engine      = NULL;
+
+static const gchar      *st_resource_ui = "/org/trychlos/openbook/tva/ofa-tva-record-properties.ui";
+
+static void             iwindow_iface_init( myIWindowInterface *iface );
+static gchar           *iwindow_get_identifier( const myIWindow *instance );
+static void             idialog_iface_init( myIDialogInterface *iface );
+static void             idialog_init( myIDialog *instance );
+static void             init_properties( ofaTVARecordProperties *self );
+static void             init_booleans( ofaTVARecordProperties *self );
+static void             init_taxes( ofaTVARecordProperties *self );
+static void             init_correspondence( ofaTVARecordProperties *self );
+static void             on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void             on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void             on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
+static void             on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
+static void             on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
+static void             check_for_enable_dlg( ofaTVARecordProperties *self );
+static void             set_dialog_title( ofaTVARecordProperties *self );
+static gboolean         do_update( ofaTVARecordProperties *self, gchar **msgerr );
+static void             on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, ofaTVARecordProperties *self );
+static gchar           *eval_account( ofsFormulaHelper *helper );
+static gchar           *eval_amount( ofsFormulaHelper *helper );
+static gchar           *eval_base( ofsFormulaHelper *helper );
+static gchar           *eval_code( ofsFormulaHelper *helper );
+static void             on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static void             set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
+
+static const sEvalDef st_formula_fns[] = {
+		{ "ACCOUNT", 1, eval_account },
+		{ "AMOUNT",  1, eval_amount },
+		{ "BASE",    1, eval_base },
+		{ "CODE",    1, eval_code },
+		{ 0 }
+};
 
 G_DEFINE_TYPE_EXTENDED( ofaTVARecordProperties, ofa_tva_record_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaTVARecordProperties )
@@ -172,10 +190,6 @@ tva_record_properties_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
-		if( priv->regex_fn ){
-			g_regex_unref( priv->regex_fn );
-		}
 	}
 
 	/* chain up to the parent class */
@@ -786,6 +800,7 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	guint idx, row, count;
 	const gchar *rule;
 	gchar *result;
+	ofxAmount amount;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
@@ -806,159 +821,57 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	gtk_widget_destroy( dialog );
 
 	if( resp == GTK_RESPONSE_OK ){
-		alloc_regex( self );
+		if( !st_engine ){
+			st_engine = ofa_formula_engine_new();
+		}
 		count = ofo_tva_record_detail_get_count( priv->tva_record );
 
 		for( idx=0, row=1 ; idx<count ; ++idx, ++row ){
 			if( ofo_tva_record_detail_get_has_base( priv->tva_record, idx )){
 				rule = ofo_tva_record_detail_get_base_rule( priv->tva_record, idx );
 				if( my_strlen( rule )){
-					result = eval_rule( self, rule );
+					result = ofa_formula_engine_eval( st_engine, rule, ( ofaFormulaFindFn ) get_formula_eval_fn, self, NULL );
 					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
 					g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 					my_double_editable_set_string( GTK_EDITABLE( entry ), result );
 					g_free( result );
+					amount = my_double_editable_get_amount( GTK_EDITABLE( entry ));
+					ofo_tva_record_detail_set_base( priv->tva_record, idx, amount );
 				}
 			}
 			if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
 				rule = ofo_tva_record_detail_get_amount_rule( priv->tva_record, idx );
 				if( my_strlen( rule )){
-					result = eval_rule( self, rule );
+					result = ofa_formula_engine_eval( st_engine, rule, ( ofaFormulaFindFn ) get_formula_eval_fn, self, NULL );
 					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
 					g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 					my_double_editable_set_string( GTK_EDITABLE( entry ), result );
 					g_free( result );
+					amount = my_double_editable_get_amount( GTK_EDITABLE( entry ));
+					ofo_tva_record_detail_set_amount( priv->tva_record, idx, amount );
 				}
 			}
 		}
 	}
 }
 
-static void
-alloc_regex( ofaTVARecordProperties *self )
-{
-	ofaTVARecordPropertiesPrivate *priv;
-	static const gchar *st_functions = "%(COD|ACC)\\(\\s*([^()]+)\\s*\\)";
-
-	priv = ofa_tva_record_properties_get_instance_private( self );
-
-	if( !priv->regex_fn ){
-		/* a regex to identify functions */
-		priv->regex_fn = g_regex_new( st_functions, G_REGEX_EXTENDED, 0, NULL );
-	}
-}
-
-static gchar *
-eval_rule( ofaTVARecordProperties *self, const gchar *rule )
-{
-	ofaTVARecordPropertiesPrivate *priv;
-	gchar *str1, *str2;
-
-	priv = ofa_tva_record_properties_get_instance_private( self );
-
-	str1 = g_regex_replace_eval( priv->regex_fn,
-				rule, -1, 0, 0, ( GRegexEvalCallback ) eval_function_cb, self, NULL );
-	str2 = ofa_amount_to_str( eval_opes( self, str1 ), NULL );
-
-	g_free( str1 );
-	return( str2 );
-}
-
-static gboolean
-eval_function_cb( const GMatchInfo *match_info, GString *result, ofaTVARecordProperties *self )
-{
-	static const gchar *thisfn = "ofa_tva_record_properties_eval_function_cb";
-	gchar *match;
-	gchar *str;
-
-	str = NULL;
-	match = g_match_info_fetch( match_info, 0 );
-	DEBUG( "%s: match=%s", thisfn, match );
-
-	if( is_function( match, self, &str )){
-		if( str ){
-			g_string_append( result, str );
-			g_free( str );
-		}
-
-	} else {
-		g_string_append( result, match );
-	}
-
-	g_free( match );
-
-	return( FALSE );
-}
-
-static gboolean
-is_function( const gchar *token, ofaTVARecordProperties *self, gchar **str )
-{
-	static const gchar *thisfn = "ofa_tva_record_properties_is_function";
-	ofaTVARecordPropertiesPrivate *priv;
-	gboolean ok;
-	GMatchInfo *info;
-	gchar *field, *content;
-
-	field = NULL;
-	priv = ofa_tva_record_properties_get_instance_private( self );
-
-	ok = g_regex_match( priv->regex_fn, token, 0, &info );
-	DEBUG( "%s: token=%s, g_regex_match=%s", thisfn, token, ok ? "True":"False" );
-	if( ok ){
-		ok = g_match_info_matches( info );
-		DEBUG( "%s: g_match_info_matches=%s", thisfn, ok ? "True":"False" );
-	}
-	if( ok ){
-		field = g_match_info_fetch( info, 1 );
-		content = g_match_info_fetch( info, 2 );
-		DEBUG( "%s: field=%s, content=%s", thisfn, field, content );
-
-		if( !g_utf8_collate( field, "COD" )){
-			*str = get_code_amount( self, content );
-
-		} else if( !g_utf8_collate( field, "ACC" )){
-			*str = get_account_balance( self, content );
-
-		} else {
-			ok = FALSE;
-		}
-	}
-
-	g_free( field );
-	g_match_info_free( info );
-
-	DEBUG( "%s: token=%s, str=%s, ok=%s", thisfn, token, *str, ok ? "True":"False" );
-	return( ok );
-}
-
 /*
- * return the amount of the row whose the code is provided by @content
+ * this is a ofaFormula callback
+ * Returns: the evaluation function for the name + expected args count
  */
-static gchar *
-get_code_amount( ofaTVARecordProperties *self, const gchar *content )
+static ofaFormulaEvalFn
+get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, ofaTVARecordProperties *self )
 {
-	static const gchar *thisfn = "ofa_tva_record_properties_get_code_amount";
-	ofaTVARecordPropertiesPrivate *priv;
-	guint idx, row, count;
-	GtkWidget *entry;
-	const gchar *code, *ctext;
+	static const gchar *thisfn = "ofa_tva_record_properties_get_formula_eval_fn";
+	gint i;
 
-	priv = ofa_tva_record_properties_get_instance_private( self );
+	*count = -1;
 
-	count = ofo_tva_record_detail_get_count( priv->tva_record );
-
-	for( idx=0, row=1 ; idx<count ; ++idx, ++row ){
-		if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
-			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_CODE, row );
-			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-			code = gtk_entry_get_text( GTK_ENTRY( entry ));
-			if( !g_utf8_collate( code, content )){
-				entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
-				g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), NULL );
-				ctext = gtk_entry_get_text( GTK_ENTRY( entry ));
-				DEBUG( "%s: COD(%s)=%s", thisfn, content, ctext );
-				return( g_strdup( ctext ));
-			}
+	for( i=0 ; st_formula_fns[i].name ; ++i ){
+		if( !my_collate( st_formula_fns[i].name, name )){
+			*count = st_formula_fns[i].args_count;
+			g_debug( "%s: found name=%s, expected args count=%d", thisfn, name, *count );
+			return(( ofaFormulaEvalFn ) st_formula_fns[i].eval );
 		}
 	}
 
@@ -966,150 +879,161 @@ get_code_amount( ofaTVARecordProperties *self, const gchar *content )
 }
 
 /*
- * returns the rough+validated balance of the account specified by
- * @content, between beginning and ending dates
+ * %ACCOUNT(begin[;end])
+ * Returns: the rough+validated balances for the begin[;end] account(s)
  */
 static gchar *
-get_account_balance( ofaTVARecordProperties *self, const gchar *content )
+eval_account( ofsFormulaHelper *helper )
 {
-	static const gchar *thisfn = "ofa_tva_record_properties_get_account_balance";
+	static const gchar *thisfn = "ofa_tva_record_properties_eval_account";
 	ofaTVARecordPropertiesPrivate *priv;
-	GList *list, *it;
-	ofsAccountBalance *sbal;
-	ofxAmount amount;
-	gchar *begin_id, *end_id;
-	gchar **array;
+	gchar *res;
+	GList *it, *dataset;
+	const gchar *cstr;
+	gchar **tokens, **iter;
+	gchar *begin, *end;
 	ofaHub *hub;
+	ofxAmount amount;
+	ofsAccountBalance  *sbal;
 
-	priv = ofa_tva_record_properties_get_instance_private( self );
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( helper->user_data ));
 
-	array = g_strsplit( content, "-", 2 );
-	begin_id = g_strdup( *array );
-	end_id = g_strdup( *( array+1 ));
-	g_strfreev( array );
-	if( !my_strlen( end_id )){
-		g_free( end_id );
-		end_id = g_strdup( begin_id );
+	res = NULL;
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	tokens = cstr ? g_strsplit( cstr, OFA_FORMULA_ARG_SEP, 2 ) : NULL;
+
+	/* extract begin and end accounts */
+	iter = tokens;
+	begin = NULL;
+	end = NULL;
+	if( *iter ){
+		begin = g_strdup( *iter );
+		iter++;
+		if( *iter ){
+			end = g_strdup( *iter );
+		}
 	}
-	DEBUG( "%s: begin_id=%s, endid=%s", thisfn, begin_id, end_id );
+	g_strfreev( tokens );
+	if( !end ){
+		end = g_strdup( begin );
+	}
+	DEBUG( "%s: begin=%s, end=%s", thisfn, begin, end );
 
 	hub = ofa_igetter_get_hub( priv->getter );
 
-	list = ofo_entry_get_dataset_balance_rough_validated(
-				hub, begin_id, end_id, &priv->begin_date, &priv->end_date );
+	dataset = ofo_entry_get_dataset_balance_rough_validated(
+					hub, begin, end, &priv->begin_date, &priv->end_date );
 	amount = 0;
-	for( it=list ; it ; it=it->next ){
+	for( it=dataset ; it ; it=it->next ){
 		sbal = ( ofsAccountBalance * ) it->data;
 		/* credit is -, debit is + */
 		amount -= sbal->credit;
 		amount += sbal->debit;
 	}
 
-	g_free( begin_id );
-	g_free( end_id );
+	g_free( begin );
+	g_free( end );
 
-	DEBUG( "%s: ACC(%s)=%lf", thisfn, content, amount );
-	return( ofa_amount_to_str( amount, NULL ));
+	res = ofa_amount_to_str( amount, NULL );
+
+	DEBUG( "%s: ACCOUNT(%s)=%s", thisfn, cstr, res );
+
+	return( res );
 }
 
 /*
- * %EVAL(...) recursively evaluates the (..) between parenthesis content
+ * %AMOUNT(i])
+ * Returns: the amount found at row i.
  */
-static gdouble
-eval_opes( ofaTVARecordProperties *self, const gchar *content )
+static gchar *
+eval_amount( ofsFormulaHelper *helper )
 {
-	static const gchar *thisfn = "ofa_tva_record_properties_eval_opes";
-	gchar **tokens, **iter;
-	gdouble amount;
+	static const gchar *thisfn = "ofa_tva_record_properties_eval_amount";
+	ofaTVARecordPropertiesPrivate *priv;
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofxAmount amount;
+	gint row;
 
-	DEBUG( "%s: content=%s", thisfn, content );
-	if( g_str_has_prefix( content, "%EVAL(" )){
-		tokens = g_regex_split_simple( "([-+*/\\(\\)])", content+5, 0, 0 );
-	} else {
-		tokens = g_regex_split_simple( "([-+*/\\(\\)])", content, 0, 0 );
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( helper->user_data ));
+
+	res = NULL;
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	row = cstr ? atoi( cstr ) : 0;
+	if( row > 0 && ofo_tva_record_detail_get_has_amount( priv->tva_record, row-1 )){
+		amount = ofo_tva_record_detail_get_amount( priv->tva_record, row-1 );
+		res = ofa_amount_to_str( amount, NULL );
 	}
-	iter = tokens;
-	eval_opes_rec( content, iter, &amount, 1 );
-	g_strfreev( tokens );
-	DEBUG( "%s: amount=%lf", thisfn, amount );
 
-	return( amount );
+	DEBUG( "%s: cstr=%s, res=%s", thisfn, cstr, res );
+
+	return( res );
 }
 
 /*
- * this is used to evaluate the content between two parenthesis:
- * the first time, we enter here even if not parenthesis is found (count=1)
- * then, we re-enter for each opening parenthesis
- *  and we return from here for each closing parenthesis, returning
- *   the new iter position, with the computed amount
+ * %BASE(i)
+ * Returns: the base amount found at row i.
  */
-static gchar **
-eval_opes_rec( const gchar *content, gchar **iter, gdouble *amount, gint count )
+static gchar *
+eval_base( ofsFormulaHelper *helper )
 {
-	static const gchar *thisfn = "ofa_tva_record_properties_eval_opes_rec";
-	gdouble amount_iter;
-	gboolean first_iter, expect_operator;
-	const gchar *oper;
+	ofaTVARecordPropertiesPrivate *priv;
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	gint row;
+	ofxAmount amount;
 
-	DEBUG( "%s: count=%d", thisfn, count );
-	*amount = 0;
-	first_iter = TRUE;
-	expect_operator = TRUE;
-	oper = NULL;
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( helper->user_data ));
 
-	while( *iter ){
-		if( my_strlen( *iter )){
-			DEBUG( "%s: *iter=%s", thisfn, *iter );
-			if( expect_operator ){
-				if( !g_utf8_collate( *iter, "-" )){
-					oper = "-";
-				} else if( !g_utf8_collate( *iter, "+" )){
-					oper = "+";
-				} else if( !g_utf8_collate( *iter, "*" )){
-					oper = "*";
-				} else if( !g_utf8_collate( *iter, "/" )){
-					oper = "/";
-				} else if( first_iter ){
-					oper = "+";
-					expect_operator = FALSE;
-				} else if( !g_utf8_collate( *iter, ")" )){
-					iter++;
-					return( iter );
-				} else {
-					g_warning( "%s: formula='%s': found token='%s' while an operator was expected",
-							thisfn, content, *iter );
-					break;
-				}
-			}
-			if( !expect_operator ){
-				if( !g_utf8_collate( *iter, "(" )){
-					iter++;
-					iter = eval_opes_rec( content, iter, &amount_iter, 1+count );
-					DEBUG( "%s: count=%d, amount=%lf, oper=%s, amount_iter=%lf", thisfn, count, *amount, oper, amount_iter );
-				} else {
-					amount_iter = ofa_amount_from_str( *iter );
-				}
-				if( !g_utf8_collate( oper, "-" )){
-					*amount -= amount_iter;
-				} else if( !g_utf8_collate( oper, "+" )){
-					*amount += amount_iter;
-				} else if( !g_utf8_collate( oper, "*" )){
-					*amount *= amount_iter;
-				} else if( !g_utf8_collate( oper, "/" )){
-					*amount /= amount_iter;
-				}
-				amount_iter = 0;
-				DEBUG( "%s: count=%d, amount=%lf", thisfn, count, *amount );
-			}
-			first_iter = FALSE;
-			expect_operator = !expect_operator;
-		}
-		if( *iter ){
-			iter++;
+	res = NULL;
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	row = cstr ? atoi( cstr ) : 0;
+	if( row > 0 && ofo_tva_record_detail_get_has_base( priv->tva_record, row-1 )){
+		amount = ofo_tva_record_detail_get_base( priv->tva_record, row-1 );
+		res = ofa_amount_to_str( amount, NULL );
+	}
+
+	return( res );
+}
+
+/*
+ * %CODE(s)
+ * Returns: the row number which holds the code
+ */
+static gchar *
+eval_code( ofsFormulaHelper *helper )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_eval_code";
+	ofaTVARecordPropertiesPrivate *priv;
+	gchar *res;
+	GList *it;
+	const gchar *cstr, *code;
+	guint i, count;
+
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( helper->user_data ));
+
+	res = NULL;
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+
+	count = ofo_tva_record_detail_get_count( priv->tva_record );
+
+	for( i=0 ; i<count ; ++i ){
+		code = ofo_tva_record_detail_get_code( priv->tva_record, i );
+		if( !my_collate( code, cstr )){
+			res = g_strdup_printf( "%u", i+1 );
+			break;
 		}
 	}
 
-	return( iter );
+	DEBUG( "%s: cstr=%s, res=%s", thisfn, cstr, res );
+
+	return( res );
 }
 
 /*

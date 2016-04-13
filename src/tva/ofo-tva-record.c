@@ -370,6 +370,45 @@ ofo_tva_record_get_dataset( ofaHub *hub )
 }
 
 /**
+ * ofo_tva_record_get_last_end:
+ * @hub: the #ofaHub object of the application.
+ * @mnemo: the VAT record mnemonic.
+ * @date: [out]: the date to be set.
+ *
+ * Set the last end declaration for the @mnemo VAT form.
+ *
+ * Returns: the provided @date.
+ */
+GDate *
+ofo_tva_record_get_last_end( ofaHub *hub, const gchar *mnemo, GDate *date )
+{
+	gchar *query;
+	const ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+	const gchar *cstr;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( my_strlen( mnemo ), NULL );
+	g_return_val_if_fail( date, NULL );
+
+	query = g_strdup_printf( "SELECT MAX(TFO_END) FROM TVA_T_RECORDS WHERE TFO_MNEMO='%s'", mnemo );
+	connect = ofa_hub_get_connect( hub );
+	my_date_clear( date );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
+		irow = result;
+		icol = irow ? ( GSList * ) irow->data : NULL;
+		cstr = icol ? ( const gchar * ) icol->data : NULL;
+		if( my_strlen( cstr )){
+			my_date_set_from_sql( date, ( const gchar * ) icol->data );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+
+	return( date );
+}
+
+/**
  * ofo_tva_record_get_by_key:
  * @dossier:
  * @mnemo:

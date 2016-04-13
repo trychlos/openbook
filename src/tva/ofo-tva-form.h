@@ -50,16 +50,19 @@
  * Tokens may be:
  *
  * 1/ a function, arguments being passed between parenthesis:
- *    - '%COD()': returns the amount of the row whose code name is
- *                identified by the argument
- *    - '%ACC()': returns the rough+validated balance of the
- *                entries imputed on the specified account with an
- *                effect date between the declaration begin and end
- *                dates (included).
- *                The account may be specified as begin[-end] to indicate
- *                that we must consider all acounts between 'begin' and
- *                'end' (included) numbers.
- *    The opening parenthesis must immediately follow the function name.
+ *    - %CODE():    returns the line number (counted from 1) which holds
+ *                  the code.
+ *    - %AMOUNT():  returns the amount of the given line, counted from 1.
+ *    - %BASE():    returns the base of the given line, counted from 1.
+ *    - %ACCOUNT(begin[;end]): returns the rough+validated balance of the
+ *                  entries imputed on the specified account with an
+ *                  effect date between the declaration begin and end
+ *                  dates (included).
+ *                  The account may be specified as begin[-end] to indicate
+ *                  that we must consider all acounts between 'begin' and
+ *                  'end' (included) identifiers.
+ *
+ * The opening parenthesis must immediately follow the function name.
  */
 
 #include "api/ofa-hub-def.h"
