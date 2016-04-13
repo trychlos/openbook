@@ -35,11 +35,22 @@
  * a grid with a variable set of rows, which may be added, removed
  * or moved.
  *
- * The managed grid is expected to have a header row at index 0.
- * Each detail row has:
+ * All methods must identify the #myIGridList instance (e.g. the dialog)
+ * and the concerned #GtkGrid.
+ *
+ * The managed grid is expected to have a header row at index 0, and
+ * the interface adds an empty row with only a '+' (Add) button at the
+ * end of the grid.
+ * An empty grid from the user point of view has so exacty two rows:
+ * the headers row + the Add row.
+ * A grid which has n detail lines has so n+2 rows.
+ * Details lines are numbered from 1 to n, which happens to be the row
+ * index in the managed grid.
+ *
+ * Each row has:
  * - either a Add button or the row number at column 0
  * - the detail widgets to be provided by the implementation
- * - the Up, Down and Remove buttons on right columns
+ * - the Up, Down and Remove buttons on last right columns
  */
 
 #include <gtk/gtk.h>
@@ -92,7 +103,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void       ( *set_row )              ( const myIGridList *instance,
+	void       ( *setup_row )            ( const myIGridList *instance,
 												GtkGrid *grid,
 												guint row );
 }
@@ -115,23 +126,25 @@ guint      my_igridlist_get_interface_version     ( GType type );
  */
 void       my_igridlist_init                      ( const myIGridList *instance,
 														GtkGrid *grid,
-														gboolean is_current,
+														gboolean has_header,
+														gboolean writable,
 														guint columns_count );
 
 guint      my_igridlist_add_row                   ( const myIGridList *instance,
 														GtkGrid *grid );
 
-GtkWidget *my_igridlist_add_button                ( const myIGridList *instance,
+void       my_igridlist_set_widget                ( const myIGridList *instance,
 														GtkGrid *grid,
-														const gchar *stock_id,
+														GtkWidget *widget,
 														guint column,
 														guint row,
-														guint right_margin,
-														GCallback cb,
-														void *user_data );
+														guint width,
+														guint height );
 
 guint      my_igridlist_get_rows_count            ( const myIGridList *instance,
 														GtkGrid *grid );
+
+guint      my_igridlist_get_row_index             ( GtkWidget *widget );
 
 G_END_DECLS
 

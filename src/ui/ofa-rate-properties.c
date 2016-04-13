@@ -98,8 +98,8 @@ static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
 static void      igridlist_iface_init( myIGridListInterface *iface );
 static guint     igridlist_get_interface_version( void );
-static void      igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
-static void      set_detail_widgets( ofaRateProperties *self, guint row );
+static void      igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
+static void      setup_detail_widgets( ofaRateProperties *self, guint row );
 static void      set_detail_values( ofaRateProperties *self, guint row );
 static void      on_mnemo_changed( GtkEntry *entry, ofaRateProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaRateProperties *self );
@@ -347,8 +347,11 @@ idialog_init( myIDialog *instance )
 	/* set detail rows after general sensitivity */
 	priv->grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p2-grid" );
 	g_return_if_fail( priv->grid && GTK_IS_GRID( priv->grid ));
+
 	my_igridlist_init(
-			MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ), priv->is_current, N_COLUMNS );
+			MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ),
+			TRUE, priv->is_current, N_COLUMNS );
+
 	count = ofo_rate_get_val_count( priv->rate );
 	for( idx=0 ; idx<count ; ++idx ){
 		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ));
@@ -368,7 +371,7 @@ igridlist_iface_init( myIGridListInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = igridlist_get_interface_version;
-	iface->set_row = igridlist_set_row;
+	iface->setup_row = igridlist_setup_row;
 }
 
 static guint
@@ -378,7 +381,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
+igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row )
 {
 	ofaRatePropertiesPrivate *priv;
 
@@ -388,12 +391,12 @@ igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
 
 	g_return_if_fail( grid == GTK_GRID( priv->grid ));
 
-	set_detail_widgets( OFA_RATE_PROPERTIES( instance ), row );
+	setup_detail_widgets( OFA_RATE_PROPERTIES( instance ), row );
 	set_detail_values( OFA_RATE_PROPERTIES( instance ), row );
 }
 
 static void
-set_detail_widgets( ofaRateProperties *self, guint row )
+setup_detail_widgets( ofaRateProperties *self, guint row )
 {
 	ofaRatePropertiesPrivate *priv;
 	GtkWidget *entry, *label;
@@ -402,10 +405,11 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_grid_attach( GTK_GRID( priv->grid ), entry, 1+COL_BEGIN, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
+			entry, 1+COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
@@ -414,14 +418,17 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 	my_utils_widget_set_margin_right( label, 4 );
 	my_utils_widget_set_xalign( label, 0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
-	gtk_grid_attach( GTK_GRID( priv->grid ), label, 1+COL_BEGIN_LABEL, row, 1, 1 );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
+			label, 1+COL_BEGIN_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_grid_attach( GTK_GRID( priv->grid ), entry, 1+COL_END, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
+			entry, 1+COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
@@ -430,18 +437,21 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 	my_utils_widget_set_margin_right( label, 4 );
 	my_utils_widget_set_xalign( label, 0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 10 );
-	gtk_grid_attach( GTK_GRID( priv->grid ), label, 1+COL_END_LABEL, row, 1, 1 );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
+			label, 1+COL_END_LABEL, row, 1, 1 );
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
 			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), DEFAULT_RATE_DECIMALS );
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
-	gtk_grid_attach( GTK_GRID( priv->grid ), entry, 1+COL_RATE, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
+			entry, 1+COL_RATE, row, 1, 1 );
 
 	label = gtk_label_new( "" );
 	gtk_widget_set_sensitive( label, FALSE );
@@ -449,7 +459,9 @@ set_detail_widgets( ofaRateProperties *self, guint row )
 	my_utils_widget_set_margin_right( label, 4 );
 	my_utils_widget_set_xalign( label, 0 );
 	gtk_label_set_width_chars( GTK_LABEL( label ), 7 );
-	gtk_grid_attach( GTK_GRID( priv->grid ), label, 1+COL_RATE_LABEL, row, 1, 1 );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
+			label, 1+COL_RATE_LABEL, row, 1, 1 );
 }
 
 static void
@@ -542,7 +554,7 @@ set_grid_line_comment( ofaRateProperties *self, GtkWidget *widget, const gchar *
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
-	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( widget ), DATA_ROW ));
+	row = my_igridlist_get_row_index( widget );
 	label = GTK_LABEL( gtk_grid_get_child_at( GTK_GRID( priv->grid ), column, row ));
 	markup = g_markup_printf_escaped( "<span style=\"italic\">%s</span>", comment );
 	gtk_label_set_markup( label, markup );

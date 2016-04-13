@@ -39,11 +39,13 @@
  
  Bug fixes:
 
+   - myIGridList: fix the line removing.
    - myIWindow: fix key value when saving default position.
    - ofoTVAForm: fix import.
 
  Other changes:
 
+   - myIGridList: review the interface.
    - ofaPeriodClose: new dialog.
 
 -----------------------------------------------------------------------

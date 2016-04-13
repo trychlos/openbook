@@ -77,8 +77,6 @@ typedef struct {
 }
 	ofaTVAFormPropertiesPrivate;
 
-#define DATA_COLUMN                     "ofa-data-column"
-#define DATA_ROW                        "ofa-data-row"
 #define DET_SPIN_WIDTH                  2
 #define DET_SPIN_MAX_WIDTH              2
 #define DET_CODE_MAX_LENGTH             64
@@ -114,10 +112,10 @@ static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     igridlist_iface_init( myIGridListInterface *iface );
 static guint    igridlist_get_interface_version( void );
-static void     igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row );
-static void     set_detail_widgets( ofaTVAFormProperties *self, guint row );
+static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
+static void     setup_detail_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_detail_values( ofaTVAFormProperties *self, guint row );
-static void     set_boolean_widgets( ofaTVAFormProperties *self, guint row );
+static void     setup_boolean_widgets( ofaTVAFormProperties *self, guint row );
 static void     set_boolean_values( ofaTVAFormProperties *self, guint row );
 static void     on_mnemo_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
@@ -374,7 +372,8 @@ idialog_init( myIDialog *instance )
 	priv->det_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p2-grid" );
 	g_return_if_fail( priv->det_grid && GTK_IS_GRID( priv->det_grid ));
 	my_igridlist_init(
-			MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ), priv->is_current, N_DET_COLUMNS );
+			MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ),
+			TRUE, priv->is_current, N_DET_COLUMNS );
 	count = ofo_tva_form_detail_get_count( priv->tva_form );
 	for( idx=0 ; idx<count ; ++idx ){
 		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ));
@@ -383,7 +382,8 @@ idialog_init( myIDialog *instance )
 	priv->bool_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p3-grid" );
 	g_return_if_fail( priv->bool_grid && GTK_IS_GRID( priv->bool_grid ));
 	my_igridlist_init(
-			MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ), priv->is_current, N_BOOL_COLUMNS );
+			MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ),
+			TRUE, priv->is_current, N_BOOL_COLUMNS );
 	count = ofo_tva_form_boolean_get_count( priv->tva_form );
 	for( idx=0 ; idx<count ; ++idx ){
 		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ));
@@ -409,7 +409,7 @@ igridlist_iface_init( myIGridListInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = igridlist_get_interface_version;
-	iface->set_row = igridlist_set_row;
+	iface->setup_row = igridlist_setup_row;
 }
 
 static guint
@@ -419,7 +419,7 @@ igridlist_get_interface_version( void )
 }
 
 static void
-igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
+igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 
@@ -428,11 +428,11 @@ igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
 	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
 
 	if( grid == GTK_GRID( priv->det_grid )){
-		set_detail_widgets( OFA_TVA_FORM_PROPERTIES( instance ), row );
+		setup_detail_widgets( OFA_TVA_FORM_PROPERTIES( instance ), row );
 		set_detail_values( OFA_TVA_FORM_PROPERTIES( instance ), row );
 	}
 	if( grid == GTK_GRID( priv->bool_grid )){
-		set_boolean_widgets( OFA_TVA_FORM_PROPERTIES( instance ), row );
+		setup_boolean_widgets( OFA_TVA_FORM_PROPERTIES( instance ), row );
 		set_boolean_values( OFA_TVA_FORM_PROPERTIES( instance ), row );
 	}
 }
@@ -442,7 +442,7 @@ igridlist_set_row( const myIGridList *instance, GtkGrid *grid, guint row )
  * so corresponding ofoTVAForm detail index is row-1
  */
 static void
-set_detail_widgets( ofaTVAFormProperties *self, guint row )
+setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 	GtkWidget *entry, *toggle, *spin;
@@ -453,61 +453,68 @@ set_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* level */
 	adjustment = gtk_adjustment_new( 1.0, 1.0, ( gdouble ) G_MAXUINT, 1.0, 10.0, 0.0 );
 	spin = gtk_spin_button_new( adjustment, 1.0, 0 );
-	g_object_set_data( G_OBJECT( spin ), DATA_ROW, GUINT_TO_POINTER( row ));
 	gtk_entry_set_width_chars( GTK_ENTRY( spin ), DET_SPIN_WIDTH );
 	gtk_entry_set_max_width_chars( GTK_ENTRY( spin ), DET_SPIN_MAX_WIDTH );
 	gtk_spin_button_set_numeric( GTK_SPIN_BUTTON( spin ), TRUE );
-	gtk_grid_attach( GTK_GRID( priv->det_grid ), spin, 1+COL_DET_LEVEL, row, 1, 1 );
 	gtk_widget_set_sensitive( spin, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			spin, 1+COL_DET_LEVEL, row, 1, 1 );
 
 	/* code */
 	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_code_changed ), self );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_CODE_MAX_LENGTH );
-	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_CODE, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			entry, 1+COL_DET_CODE, row, 1, 1 );
 
 	/* label */
 	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_label_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_LABEL_MAX_LENGTH );
-	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_LABEL, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			entry, 1+COL_DET_LABEL, row, 1, 1 );
 
 	/* has base */
 	toggle = gtk_check_button_new();
-	g_object_set_data( G_OBJECT( toggle ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_base_toggled ), self );
-	gtk_grid_attach( GTK_GRID( priv->det_grid ), toggle, 1+COL_DET_HAS_BASE, row, 1, 1 );
 	gtk_widget_set_sensitive( toggle, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			toggle, 1+COL_DET_HAS_BASE, row, 1, 1 );
 
 	/* base */
 	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_base_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_BASE_MAX_LENGTH );
-	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_BASE, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, FALSE );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			entry, 1+COL_DET_BASE, row, 1, 1 );
 
 	/* has amount */
 	toggle = gtk_check_button_new();
-	g_object_set_data( G_OBJECT( toggle ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_amount_toggled ), self );
-	gtk_grid_attach( GTK_GRID( priv->det_grid ), toggle, 1+COL_DET_HAS_AMOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( toggle, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			toggle, 1+COL_DET_HAS_AMOUNT, row, 1, 1 );
 
 	/* amount */
 	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_amount_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_AMOUNT_MAX_LENGTH );
-	gtk_grid_attach( GTK_GRID( priv->det_grid ), entry, 1+COL_DET_AMOUNT, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, FALSE );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			entry, 1+COL_DET_AMOUNT, row, 1, 1 );
 }
 
 static void
@@ -576,7 +583,7 @@ set_detail_values( ofaTVAFormProperties *self, guint row )
 }
 
 static void
-set_boolean_widgets( ofaTVAFormProperties *self, guint row )
+setup_boolean_widgets( ofaTVAFormProperties *self, guint row )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 	GtkWidget *entry;
@@ -585,12 +592,13 @@ set_boolean_widgets( ofaTVAFormProperties *self, guint row )
 
 	/* label */
 	entry = gtk_entry_new();
-	g_object_set_data( G_OBJECT( entry ), DATA_ROW, GUINT_TO_POINTER( row ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_bool_label_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), BOOL_LABEL_MAX_LENGTH );
-	gtk_grid_attach( GTK_GRID( priv->bool_grid ), entry, 1+COL_BOOL_LABEL, row, 1, 1 );
 	gtk_widget_set_sensitive( entry, priv->is_current );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ),
+			entry, 1+COL_BOOL_LABEL, row, 1, 1 );
 }
 
 static void
@@ -662,7 +670,7 @@ on_det_has_base_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	checked = gtk_toggle_button_get_active( button );
-	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
+	row = my_igridlist_get_row_index( GTK_WIDGET( button ));
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, row );
 	gtk_widget_set_sensitive( entry, checked && priv->is_current );
 	//g_debug( "on_det_has_base_toggled: row=%u, checked=%s", row, checked ? "True":"False" );
@@ -687,7 +695,7 @@ on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	checked = gtk_toggle_button_get_active( button );
-	row = GPOINTER_TO_UINT( g_object_get_data( G_OBJECT( button ), DATA_ROW ));
+	row = my_igridlist_get_row_index( GTK_WIDGET( button ));
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, row );
 	gtk_widget_set_sensitive( entry, checked && priv->is_current );
 	//g_debug( "on_det_has_amount_toggled: row=%u, checked=%s", row, checked ? "True":"False" );
