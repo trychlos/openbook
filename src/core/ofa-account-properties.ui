@@ -377,18 +377,6 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="label16">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Exercice opening balance :</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkLabel" id="label19">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
@@ -397,7 +385,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">2</property>
+                        <property name="top_attach">1</property>
                       </packing>
                     </child>
                     <child>
@@ -409,7 +397,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">3</property>
+                        <property name="top_attach">2</property>
                       </packing>
                     </child>
                     <child>
@@ -421,29 +409,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p2-open-debit">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p2-open-credit">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">3</property>
-                        <property name="top_attach">1</property>
+                        <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
@@ -454,7 +420,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">3</property>
-                        <property name="top_attach">2</property>
+                        <property name="top_attach">1</property>
                       </packing>
                     </child>
                     <child>
@@ -465,7 +431,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">3</property>
-                        <property name="top_attach">3</property>
+                        <property name="top_attach">2</property>
                       </packing>
                     </child>
                     <child>
@@ -476,7 +442,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">3</property>
-                        <property name="top_attach">4</property>
+                        <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
@@ -487,7 +453,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">4</property>
+                        <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
@@ -498,7 +464,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">3</property>
+                        <property name="top_attach">2</property>
                       </packing>
                     </child>
                     <child>
@@ -509,17 +475,6 @@
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">2</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p2-open-debit-cur">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">2</property>
                         <property name="top_attach">1</property>
                       </packing>
                     </child>
@@ -531,7 +486,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">2</property>
-                        <property name="top_attach">2</property>
+                        <property name="top_attach">1</property>
                       </packing>
                     </child>
                     <child>
@@ -542,7 +497,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">2</property>
-                        <property name="top_attach">3</property>
+                        <property name="top_attach">2</property>
                       </packing>
                     </child>
                     <child>
@@ -553,7 +508,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">2</property>
-                        <property name="top_attach">4</property>
+                        <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
@@ -564,7 +519,7 @@
                       </object>
                       <packing>
                         <property name="left_attach">4</property>
-                        <property name="top_attach">4</property>
+                        <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
@@ -575,22 +530,11 @@
                       </object>
                       <packing>
                         <property name="left_attach">4</property>
-                        <property name="top_attach">3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p2-val-credit-cur">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">4</property>
                         <property name="top_attach">2</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p2-open-credit-cur">
+                      <object class="GtkLabel" id="p2-val-credit-cur">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="xalign">0</property>

@@ -64,8 +64,8 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 		G_TYPE_BOOLEAN, G_TYPE_STRING, 0,				/* root, notes, notes_png */
 		G_TYPE_STRING,									/* upd_user */
 		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
-		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* rough_debit, rough_credit, open_debit */
-		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* open_credit, fut_debit, fut_credit */
+		G_TYPE_STRING,  G_TYPE_STRING,					/* rough_debit, rough_credit */
+		G_TYPE_STRING,  G_TYPE_STRING,					/* fut_debit, fut_credit */
 		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
 		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
 		G_TYPE_STRING,  								/* exe_solde */
@@ -277,7 +277,7 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 	const gchar *currency_code, *notes;
 	ofoCurrency *currency_obj;
 	gchar *stamp;
-	gchar *svdeb, *svcre, *srdeb, *srcre, *sodeb, *socre, *sfdeb, *sfcre, *sedeb, *secre, *sesol;
+	gchar *svdeb, *svcre, *srdeb, *srcre, *sfdeb, *sfcre, *sedeb, *secre, *sesol;
 	gchar *str;
 	ofxAmount val_debit, val_credit, rough_debit, rough_credit, fut_debit, fut_credit, exe_solde;
 	GdkPixbuf *notes_png;
@@ -299,8 +299,6 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 		svcre = ofa_amount_to_str( val_credit, currency_obj );
 		srdeb = ofa_amount_to_str( rough_debit, currency_obj );
 		srcre = ofa_amount_to_str( rough_credit, currency_obj );
-		sodeb = ofa_amount_to_str( ofo_account_get_open_debit( account ), currency_obj );
-		socre = ofa_amount_to_str( ofo_account_get_open_credit( account ), currency_obj );
 		sfdeb = ofa_amount_to_str( fut_debit, currency_obj );
 		sfcre = ofa_amount_to_str( fut_credit, currency_obj );
 
@@ -322,8 +320,6 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 		svcre = g_strdup( "" );
 		srdeb = g_strdup( "" );
 		srcre = g_strdup( "" );
-		sodeb = g_strdup( "" );
-		socre = g_strdup( "" );
 		sfdeb = g_strdup( "" );
 		sfcre = g_strdup( "" );
 		sedeb = g_strdup( "" );
@@ -354,8 +350,6 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 			ACCOUNT_COL_VAL_CREDIT,    svcre,
 			ACCOUNT_COL_ROUGH_DEBIT,   srdeb,
 			ACCOUNT_COL_ROUGH_CREDIT,  srcre,
-			ACCOUNT_COL_OPEN_DEBIT,    sodeb,
-			ACCOUNT_COL_OPEN_CREDIT,   socre,
 			ACCOUNT_COL_FUT_DEBIT,     sfdeb,
 			ACCOUNT_COL_FUT_CREDIT,    sfcre,
 			ACCOUNT_COL_SETTLEABLE,    ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE : "",
@@ -371,8 +365,6 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 	g_free( svcre );
 	g_free( srdeb );
 	g_free( srcre );
-	g_free( sodeb );
-	g_free( socre );
 	g_free( sfdeb );
 	g_free( sfcre );
 	g_free( sedeb );

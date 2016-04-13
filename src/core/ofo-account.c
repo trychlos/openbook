@@ -73,6 +73,9 @@ enum {
 	ACC_ROUGH_CREDIT,
 	ACC_FUT_DEBIT,
 	ACC_FUT_CREDIT,
+	ACC_ARC_DATE,
+	ACC_ARC_DEBIT,
+	ACC_ARC_CREDIT,
 };
 
 /*
@@ -155,8 +158,28 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ 0 }
 };
 
+static const ofsBoxDef st_archive_defs[] = {
+		{ OFA_BOX_CSV( ACC_NUMBER ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_ARC_DATE ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_ARC_DEBIT ),
+				OFA_TYPE_AMOUNT,
+				FALSE,
+				FALSE },
+		{ OFA_BOX_CSV( ACC_ARC_CREDIT ),
+				OFA_TYPE_AMOUNT,
+				FALSE,
+				FALSE },
+		{ 0 }
+};
+
 typedef struct {
-	void *empty;						/* so that gcc -pedantic is happy */
+	GList *archives;					/* archived balances of the account */
 }
 	ofoAccountPrivate;
 
@@ -193,11 +216,9 @@ static gint         account_count_for_like( const ofaIDBConnect *connect, const 
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static gboolean     do_archive_open_balances( ofoAccount *account, ofaHub *hub );
+static gboolean     do_add_archive_balances( ofoAccount *account, const GDate *date, ofaHub *hub );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
-static void         account_set_open_debit( ofoAccount *account, ofxAmount amount );
-static void         account_set_open_credit( ofoAccount *account, ofxAmount amount );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
 static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
 static gboolean     account_do_update_amounts( ofoAccount *account, ofaHub *hub );
@@ -875,26 +896,6 @@ ofo_account_get_rough_credit( const ofoAccount *account )
 }
 
 /**
- * ofo_account_get_open_debit:
- * @account: the #ofoAccount account
- */
-ofxAmount
-ofo_account_get_open_debit( const ofoAccount *account )
-{
-	return( 0 );
-}
-
-/**
- * ofo_account_get_open_credit:
- * @account: the #ofoAccount account
- */
-ofxAmount
-ofo_account_get_open_credit( const ofoAccount *account )
-{
-	return( 0 );
-}
-
-/**
  * ofo_account_get_futur_debit:
  * @account: the #ofoAccount account
  */
@@ -1359,101 +1360,61 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowables )
 }
 
 /**
- * ofo_account_has_open_balances:
- * @hub: the current #ofaHub object.
- *
- * Returns: %TRUE if at least one account has an opening balance.
- * This means that there has been an archived exercice before this one,
- * and thus that the beginning date of the exercice cannot be modified.
- */
-gboolean
-ofo_account_has_open_balance( const ofaHub *hub )
-{
-	gint count;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	ofa_idbconnect_query_int(
-			ofa_hub_get_connect( hub ),
-			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_OPEN_DEBIT>0 OR ACC_OPEN_CREDIT>0",
-			&count, TRUE );
-
-	return( count > 0 );
-}
-
-/**
- * ofo_account_archive_open_balances:
+ * ofo_account_archive_balances:
  * @account: this #ofoAccount object.
- * @hub: the current #ofaHub object.
+ * @date: the archived date.
  *
- * As part of the closing of the exercice N, we archive the balances
- * of the accounts at the beginning of the exercice N+1. These balances
- * take into account the carried forward entries (fr: reports à
- * nouveau).
- *
- * At this time, all ledgers on exercice N should have been closed, and
- * no entries should have been recorded in ledgers for exercice N+1.
+ * Archive the current rough+validated balances.
  */
 gboolean
-ofo_account_archive_open_balances( ofoAccount *account )
+ofo_account_archive_balances( ofoAccount *account, const GDate *date )
 {
 	gboolean ok;
 	ofaHub *hub;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
-	if( ofo_account_is_root( account )){
-		ok = TRUE;
-
-	} else {
-		hub = ofo_base_get_hub( OFO_BASE( account ));
-		if( 0 ){
-			ok = do_archive_open_balances( account, hub );
-		}
-		ok = TRUE;
-	}
+	hub = ofo_base_get_hub( OFO_BASE( account ));
+	ok = do_add_archive_balances( account, date, hub );
 
 	return( ok );
 }
 
 static gboolean
-do_archive_open_balances( ofoAccount *account, ofaHub *hub )
+do_add_archive_balances( ofoAccount *account, const GDate *date, ofaHub *hub )
 {
-	GString *query;
-	gchar *samount;
-	ofxAmount amount;
-	gboolean ok;
 	const gchar *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
+	gchar *query, *sdate, *sdebit, *scredit;
+	ofxAmount debit, credit;
+	gboolean ok;
 
 	cur_code = ofo_account_get_currency( account );
 	cur_obj = ofo_currency_get_by_code( hub, cur_code );
 	g_return_val_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ), FALSE );
 
 	connect = ofa_hub_get_connect( hub );
+	sdate = my_date_to_str( date, MY_DATE_SQL );
 
-	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
+	debit = ofo_account_get_rough_debit( account )+ofo_account_get_val_debit( account );
+	sdebit = ofa_amount_to_sql( debit, cur_obj );
 
-	amount = ofo_account_get_rough_debit( account )+ofo_account_get_val_debit( account );
-	account_set_open_debit( account, amount );
-	samount = ofa_amount_to_sql( amount, cur_obj );
-	g_string_append_printf( query, "ACC_OPEN_DEBIT=%s,", samount );
-	g_free( samount );
+	credit = ofo_account_get_rough_credit( account )+ofo_account_get_val_credit( account );
+	scredit = ofa_amount_to_sql( credit, cur_obj );
 
-	amount = ofo_account_get_rough_credit( account )+ofo_account_get_val_credit( account );
-	account_set_open_credit( account, amount );
-	samount = ofa_amount_to_sql( amount, cur_obj );
-	g_string_append_printf( query, "ACC_OPEN_CREDIT=%s ", samount );
-	g_free( samount );
+	query = g_strdup_printf(
+				"INSERT INTO OFA_T_ACCOUNTS_ARC "
+				"	(ACC_NUMBER, ACC_ARC_DATE, ACC_ARC_DEBIT, ACC_ARC_CREDIT) VALUES "
+				"	('%s','%s',%s,%s)",
+				ofo_account_get_number( account ),
+				sdate, sdebit, scredit );
 
-	g_string_append_printf( query,
-			"WHERE ACC_NUMBER='%s'", ofo_account_get_number( account ));
+	ok = ofa_idbconnect_query( connect, query, TRUE );
 
-	ok = ofa_idbconnect_query( connect, query->str, TRUE );
-
-	g_string_free( query, TRUE );
+	g_free( query );
 
 	return( ok );
 }
@@ -1612,26 +1573,6 @@ void
 ofo_account_set_rough_credit( ofoAccount *account, ofxAmount amount )
 {
 	account_set_amount( ACC_ROUGH_CREDIT, amount );
-}
-
-/*
- * ofo_account_set_open_debit:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_debit( ofoAccount *account, ofxAmount amount )
-{
-	//account_set_amount( ACC_OPEN_DEBIT, amount );
-}
-
-/*
- * ofo_account_set_open_credit:
- * @account: the #ofoAccount account
- */
-static void
-account_set_open_credit( ofoAccount *account, ofxAmount amount )
-{
-	//account_set_amount( ACC_OPEN_CREDIT, amount );
 }
 
 /**
@@ -2068,15 +2009,29 @@ icollectionable_get_interface_version( void )
 static GList *
 icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
 {
-	GList *list;
+	GList *dataset, *it;
+	ofoAccount *account;
+	ofoAccountPrivate *priv;
+	gchar *from;
 
-	list = ofo_base_load_dataset(
+	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
 					OFO_TYPE_ACCOUNT,
 					hub );
 
-	return( list );
+	for( it=dataset ; it ; it=it->next ){
+		account = OFO_ACCOUNT( it->data );
+		priv = ofo_account_get_instance_private( account );
+		from = g_strdup_printf(
+				"OFA_T_ACCOUNTS_ARC WHERE ACC_NUMBER='%s' ORDER BY ACC_ARC_DATE ASC",
+				ofo_account_get_number( account ));
+		priv->archives =
+				ofo_base_load_rows( st_archive_defs, ofa_hub_get_connect( hub ), from );
+		g_free( from );
+	}
+
+	return( dataset );
 }
 
 /*

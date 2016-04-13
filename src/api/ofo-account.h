@@ -117,8 +117,6 @@ ofxAmount       ofo_account_get_val_debit           ( const ofoAccount *account 
 ofxAmount       ofo_account_get_val_credit          ( const ofoAccount *account );
 ofxAmount       ofo_account_get_rough_debit         ( const ofoAccount *account );
 ofxAmount       ofo_account_get_rough_credit        ( const ofoAccount *account );
-ofxAmount       ofo_account_get_open_debit          ( const ofoAccount *account );
-ofxAmount       ofo_account_get_open_credit         ( const ofoAccount *account );
 ofxAmount       ofo_account_get_futur_debit         ( const ofoAccount *account );
 ofxAmount       ofo_account_get_futur_credit        ( const ofoAccount *account );
 
@@ -138,8 +136,7 @@ GList          *ofo_account_get_children            ( const ofoAccount *account 
 gboolean        ofo_account_is_child_of             ( const ofoAccount *account, const ofoAccount *candidate );
 gboolean        ofo_account_is_allowed              ( const ofoAccount *account, gint allowables );
 
-gboolean        ofo_account_has_open_balance        ( const ofaHub *hub );
-gboolean        ofo_account_archive_open_balances   ( ofoAccount *account );
+gboolean        ofo_account_archive_balances        ( ofoAccount *account, const GDate *date );
 
 void            ofo_account_set_number              ( ofoAccount *account, const gchar *number );
 void            ofo_account_set_label               ( ofoAccount *account, const gchar *label );

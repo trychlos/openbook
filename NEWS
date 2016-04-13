@@ -50,6 +50,7 @@
  Other changes:
 
    - myIGridList: review the interface.
+   - ofo_account_archive_open_balances(): moved to ofo_account_archive_balances(). 
    - ofaPeriodClose: new dialog.
 
 -----------------------------------------------------------------------

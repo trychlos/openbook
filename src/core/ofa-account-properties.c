@@ -506,13 +506,6 @@ init_balances_page( ofaAccountProperties *self )
 	priv = ofa_account_properties_get_instance_private( self );
 
 	set_amount( self,
-			ofo_account_get_open_debit( priv->account ),
-			"p2-open-debit", "p2-open-debit-cur" );
-	set_amount( self,
-			ofo_account_get_open_credit( priv->account ),
-			"p2-open-credit", "p2-open-credit-cur" );
-
-	set_amount( self,
 			ofo_account_get_val_debit( priv->account ),
 			"p2-val-debit", "p2-val-debit-cur" );
 	set_amount( self,

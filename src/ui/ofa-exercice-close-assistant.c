@@ -1675,6 +1675,7 @@ p6_open( ofaExerciceCloseAssistant *self )
 	guint count, i;
 	GList *accounts, *it;
 	ofoAccount *account;
+	const GDate *begin_next;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
@@ -1684,9 +1685,13 @@ p6_open( ofaExerciceCloseAssistant *self )
 	bar = get_new_bar( self, "p6-open" );
 	gtk_widget_show_all( priv->p6_page );
 
+	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
+
 	for( it=accounts ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
-		ofo_account_archive_open_balances( account );
+		if( !ofo_account_is_root( account )){
+			ofo_account_archive_balances( account, begin_next );
+		}
 		update_bar( bar, &i, count, thisfn );
 	}
 
