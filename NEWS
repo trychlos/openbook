@@ -39,6 +39,7 @@
  
  Bug fixes:
 
+   - myIWindow: fix key value when saving default position.
    - ofoTVAForm: fix import.
 
  Other changes:

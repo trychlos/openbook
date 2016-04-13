@@ -713,7 +713,7 @@ position_save( myIWindow *instance, sIWindow *sdata )
 	g_free( key_prefix );
 
 	default_key = get_default_identifier( instance );
-	if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
+	if( !my_utils_window_position_get_has_pos( sdata->settings, default_key )){
 		my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, default_key );
 	}
 }
