@@ -74,6 +74,7 @@ typedef struct {
 	GDate               begin_init;
 	GDate               end_init;
 	GDate               min_end;
+	GDate               prevexe_end;
 	ofaDossierPrefs    *prefs;
 
 	/* data
@@ -95,6 +96,7 @@ typedef struct {
 	 */
 	GtkWidget          *siren_entry;
 	GtkWidget          *siret_entry;
+	GtkWidget          *begin_entry;
 	ofaClosingParmsBin *closing_parms;
 	ofaOpenPrefsBin    *prefs_bin;
 	GtkWidget          *background_btn;
@@ -341,6 +343,8 @@ idialog_init( myIDialog *instance )
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
 	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+	gtk_widget_set_sensitive( priv->begin_entry, priv->is_current && !my_date_is_valid( &priv->prevexe_end ));
+
 	if( !priv->is_current ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
@@ -365,6 +369,7 @@ init_properties_page( ofaDossierProperties *self )
 	priv = ofa_dossier_properties_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
+	my_date_set_from_date( &priv->prevexe_end, ofo_dossier_get_prevexe_end( priv->dossier ));
 
 	/* dossier name */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
@@ -454,6 +459,7 @@ init_properties_page( ofaDossierProperties *self )
 	/* beginning date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->begin_entry = entry;
 
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-begin-prompt" );
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
@@ -474,7 +480,8 @@ init_properties_page( ofaDossierProperties *self )
 
 	/* beginning date of the exercice cannot be modified if at least one
 	 * account has an opening balance (main reason is that we do not know
-	 * how to remediate this ;) */
+	 * how to remediate this ;)
+	 * it cannot be modified either if the end date of the previous exercice is set */
 	my_date_set_from_date( &priv->begin_init, ofo_dossier_get_exe_begin( priv->dossier ));
 
 	/* ending date */
@@ -513,8 +520,7 @@ init_properties_page( ofaDossierProperties *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-exe-closed" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	last_closed = ofo_dossier_get_prevexe_end( priv->dossier );
-	str = my_date_is_valid( last_closed ) ? my_date_to_str( last_closed, ofa_prefs_date_display()) : NULL;
+	str = my_date_is_valid( &priv->prevexe_end ) ? my_date_to_str( &priv->prevexe_end, ofa_prefs_date_display()) : NULL;
 	gtk_label_set_text( GTK_LABEL( label ), str ? str : "" );
 	g_free( str );
 

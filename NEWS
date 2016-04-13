@@ -34,6 +34,8 @@
  New features and improvements:
 
    - DDL Core v 31
+   - ofaDossierProperties: cannot modify begin date if end of previous exercice is set.
+   - ofaExerciceCloseAssistant: records the end date of the prevous exercice.
    - ofaFormulaEngine: now has a %IF() function.
    - ofaGuidedInput: add a title to the dialog.
    - ofaPeriodClose: let the period be closed independantly of the ledgers (todo #798).

@@ -1132,7 +1132,7 @@
      2016- 4-11 both signal are merged into ofaHub::SIGNAL_HUB_DOSSIER_CHANGED
 
 1072 2016- 4-12 FEAT+DDL store the closing date of the previous exercice
-                + check that beegining date of next exercice cannot be
+                + check that begining date of next exercice cannot be
                   modified when previous_end is set (have a DOS_PREVEXE_END)
      2016- 4-13 done
 
