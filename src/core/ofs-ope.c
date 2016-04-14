@@ -83,7 +83,7 @@ typedef struct {
 }
 	sChecker;
 
-static gboolean     st_debug                     = FALSE;
+static gboolean     st_debug                     = TRUE;
 #define DEBUG                                    if( st_debug ) g_debug
 
 /* operation template accepts:
@@ -360,7 +360,7 @@ get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOp
 	for( i=0 ; st_formula_fns[i].name ; ++i ){
 		if( !my_collate( st_formula_fns[i].name, name )){
 			*count = st_formula_fns[i].args_count;
-			g_debug( "%s: name=%s, found count=%d", thisfn, name, *count );
+			DEBUG( "%s: found name=%s, args_count=%d", thisfn, name, *count );
 			return(( ofaFormulaEvalFn ) st_formula_fns[i].eval );
 		}
 	}
@@ -372,7 +372,7 @@ get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOp
 	rate = ofo_rate_get_by_mnemo( hub, name );
 	if( rate ){
 		*count = 0;
-		g_debug( "%s: name=%s, found rate", thisfn, name );
+		DEBUG( "%s: found rate for name=%s", thisfn, name );
 		return(( ofaFormulaEvalFn ) eval_rate_by_name );
 	}
 
@@ -389,11 +389,12 @@ get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOp
 	if( st_aldc_shortcuts_regex ){
 		if( g_regex_match( st_aldc_shortcuts_regex, name, 0, NULL )){
 			*count = 0;
-			g_debug( "%s: name=%s, found aldc shortcut", thisfn, name );
+			DEBUG( "%s: found aldc shortcut for name=%s", thisfn, name );
 			return(( ofaFormulaEvalFn ) eval_aldc_shortcuts );
 		}
 	}
 
+	DEBUG( "%s: name=%s: nothing found", thisfn, name );
 	return( NULL );
 }
 
@@ -1220,6 +1221,7 @@ check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num )
 	}
 
 	if( detail->account_is_valid && detail->label_is_valid && detail->amounts_are_valid ){
+		g_debug( "check_for_entry: currency=%s, debit=%lf, credit=%lf", currency, detail->debit, detail->credit );
 		ofs_currency_add_by_object( &checker->currencies, detail->currency, detail->debit, detail->credit );
 	}
 

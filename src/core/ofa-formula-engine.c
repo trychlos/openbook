@@ -60,10 +60,14 @@ typedef struct {
 #define DEBUG_REGEX_EVALUATION                      1
 #define DEBUG_OPERATOR_EVALUATION                   1
 
-/* A macro name of Function name + args
+/* A macro name or function name + args
  */
-static const gchar *st_names_def                    = "(?<!\\\\)%(?:([a-zA-Z][a-zA-Z0-9_]*)(?:\\(\\s*([^()]+)\\s*\\))|([a-zA-Z][a-zA-Z0-9_]*)\b(?!\\())";
-static GRegex      *st_names_regex                  = NULL;
+//static const gchar *st_functions_def               = "(?<!\\\\)%(?:([a-zA-Z][a-zA-Z0-9_]*)(?:\\(\\s*([^()]+)\\s*\\)))|(?:([a-zA-Z][a-zA-Z0-9_]*)\b(?!\\())";
+static const gchar *st_functions_def               = "(?<!\\\\)%([a-zA-Z][a-zA-Z0-9_]*)\\(\\s*([^()]+)\\s*\\)";
+static GRegex      *st_functions_regex             = NULL;
+
+static const gchar *st_macros_def                  = "(?<!\\\\)%(\\w+)\\b(?!\\()";
+static GRegex      *st_macros_regex                = NULL;
 
 /* when we have replaced all macros and functions by their values, we
  * deal with nested parenthesis which may override the operator
@@ -194,10 +198,19 @@ regex_allocate( void )
 	static const gchar *thisfn = "ofa_formula_engine_regex_allocate";
 	GError *error;
 
-	if( !st_names_regex ){
+	if( !st_functions_regex ){
 		error = NULL;
-		st_names_regex = g_regex_new( st_names_def, G_REGEX_EXTENDED, 0, &error );
-		if( !st_names_regex ){
+		st_functions_regex = g_regex_new( st_functions_def, G_REGEX_EXTENDED, 0, &error );
+		if( !st_functions_regex ){
+			g_warning( "%s: std_name: %s", thisfn, error->message );
+			g_error_free( error );
+		}
+	}
+
+	if( !st_macros_regex ){
+		error = NULL;
+		st_macros_regex = g_regex_new( st_macros_def, G_REGEX_EXTENDED, 0, &error );
+		if( !st_macros_regex ){
 			g_warning( "%s: std_name: %s", thisfn, error->message );
 			g_error_free( error );
 		}
@@ -382,7 +395,12 @@ do_evaluate_names( ofaFormulaEngine *self, const gchar *formula )
 			g_debug( "%s: str='%s'", thisfn, str );
 		}
 		res = g_regex_replace_eval(
-						st_names_regex, str, -1, 0, 0,
+						st_macros_regex, str, -1, 0, 0,
+						( GRegexEvalCallback ) evaluate_name_cb, self, NULL );
+		g_free( str );
+		str = res;
+		res = g_regex_replace_eval(
+						st_functions_regex, str, -1, 0, 0,
 						( GRegexEvalCallback ) evaluate_name_cb, self, NULL );
 		if( DEBUG_REGEX_EVALUATION ){
 			g_debug( "%s: res='%s'", thisfn, res );

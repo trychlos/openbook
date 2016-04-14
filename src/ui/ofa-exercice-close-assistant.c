@@ -47,6 +47,7 @@
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -1084,16 +1085,16 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	gchar *msg;
 	ofoAccount *account;
 	ofoOpeTemplate *sld_template, *for_template;
-	const gchar *sld_ope, *for_ope, *acc_number;
-	ofxAmount debit, credit;
+	const gchar *sld_ope, *for_ope, *acc_number, *acc_cur;
 	const GDate *end_cur, *begin_next;
 	gboolean is_ran;
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
 	gint errors;
-	gdouble precision;
 	ofxCounter counter;
 	ofoEntry *entry;
+	ofoCurrency *cur_obj;
+	ofsCurrency *scur;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -1104,7 +1105,6 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	accounts = ofo_account_get_dataset_for_solde( priv->hub );
 	count = g_list_length( accounts );
 	i = 0;
-	precision = 1/PRECISION;
 
 	if( with_ui ){
 		bar = get_new_bar( self, "p6-balancing" );
@@ -1126,10 +1126,16 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	for( it=accounts ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
-		debit = ofo_account_get_val_debit( account );
-		credit = ofo_account_get_val_credit( account );
 
-		if( fabs( debit-credit ) > precision ){
+		/* setup ofsCurrency */
+		acc_cur = ofo_account_get_currency( account );
+		cur_obj = ofo_currency_get_by_code( priv->hub, acc_cur );
+		scur = g_new0( ofsCurrency, 1 );
+		scur->currency = cur_obj;
+		scur->debit = ofo_account_get_val_debit( account );
+		scur->credit = ofo_account_get_val_credit( account );
+
+		if( !ofs_currency_is_balanced( scur )){
 
 			acc_number = ofo_account_get_number( account );
 			sld_entries = NULL;
@@ -1144,11 +1150,11 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			detail = ( ofsOpeDetail * ) ope->detail->data;
 			detail->account = g_strdup( acc_number );
 			detail->account_user_set = TRUE;
-			if( debit > credit ){
-				detail->credit = debit-credit;
+			if( scur->debit > scur->credit ){
+				detail->credit = scur->debit - scur->credit;
 				detail->credit_user_set = TRUE;
 			} else {
-				detail->debit = credit-debit;
+				detail->debit = scur->credit - scur->debit;
 				detail->debit_user_set = TRUE;
 			}
 
@@ -1177,11 +1183,11 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				detail = ( ofsOpeDetail * ) ope->detail->data;
 				detail->account = g_strdup( acc_number );
 				detail->account_user_set = TRUE;
-				if( debit > credit ){
-					detail->debit = debit-credit;
+				if( scur->debit > scur->credit ){
+					detail->debit = scur->debit - scur->credit;
 					detail->debit_user_set = TRUE;
 				} else {
-					detail->credit = credit-debit;
+					detail->credit = scur->credit - scur->debit;
 					detail->credit_user_set = TRUE;
 				}
 
@@ -1227,6 +1233,8 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				priv->p6_forwards = g_list_prepend( priv->p6_forwards, entry );
 			}
 		}
+
+		g_free( scur );
 
 		if( with_ui ){
 			update_bar( bar, &i, count, thisfn );
@@ -1454,6 +1462,25 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	query = g_strdup( "TRUNCATE TABLE OFA_T_AUDIT" );
 	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 	g_free( query );
+
+	/* cleanup archived accounts balances of the previous exercice
+	 */
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_ACCOUNTS_ARC" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_ACCOUNTS_ARC "
+					"SELECT * FROM OFA_T_ACCOUNTS_ARC" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DELETE FROM OFA_T_ACCOUNTS_ARC" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
 
 	/* archive deleted (non-reported) entries
 	 * i.e. those which are tight to an unsettleable or an unreconcilable
