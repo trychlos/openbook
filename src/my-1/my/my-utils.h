@@ -54,6 +54,7 @@ glong         my_strlen                               ( const gchar *str );
 void          my_utils_dump_gslist                    ( const GSList *list );
 void          my_utils_dump_gslist_str                ( const GSList *list );
 
+gchar        *my_utils_quote_sql                      ( const gchar *str );
 gchar        *my_utils_quote_single                   ( const gchar *str );
 gchar        *my_utils_quote_regexp                   ( const gchar *str, const gchar *regexp );
 gchar        *my_utils_unquote_regexp                 ( const gchar *str, const gchar *regexp );

@@ -1367,8 +1367,8 @@ ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect )
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_ledger_get_label( ledger ));
-	notes = my_utils_quote_single( ofo_ledger_get_notes( ledger ));
+	label = my_utils_quote_sql( ofo_ledger_get_label( ledger ));
+	notes = my_utils_quote_sql( ofo_ledger_get_notes( ledger ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -1450,8 +1450,8 @@ ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnec
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_ledger_get_label( ledger ));
-	notes = my_utils_quote_single( ofo_ledger_get_notes( ledger ));
+	label = my_utils_quote_sql( ofo_ledger_get_label( ledger ));
+	notes = my_utils_quote_sql( ofo_ledger_get_notes( ledger ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 

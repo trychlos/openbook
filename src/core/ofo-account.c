@@ -1855,8 +1855,8 @@ account_do_insert( ofoAccount *account, const ofaIDBConnect *connect )
 	ok = FALSE;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_account_get_label( account ));
-	notes = my_utils_quote_single( ofo_account_get_notes( account ));
+	label = my_utils_quote_sql( ofo_account_get_label( account ));
+	notes = my_utils_quote_sql( ofo_account_get_notes( account ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -1958,8 +1958,8 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 	ok = FALSE;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_account_get_label( account ));
-	notes = my_utils_quote_single( ofo_account_get_notes( account ));
+	label = my_utils_quote_sql( ofo_account_get_label( account ));
+	notes = my_utils_quote_sql( ofo_account_get_notes( account ));
 	new_number = ofo_account_get_number( account );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );

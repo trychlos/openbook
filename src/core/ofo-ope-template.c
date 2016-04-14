@@ -1230,9 +1230,9 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_ope_template_get_label( model ));
-	ref = my_utils_quote_single( ofo_ope_template_get_ref( model ));
-	notes = my_utils_quote_single( ofo_ope_template_get_notes( model ));
+	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
+	ref = my_utils_quote_sql( ofo_ope_template_get_ref( model ));
+	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -1338,7 +1338,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, gint 
 			"	VALUES('%s',%d,",
 			ofo_ope_template_get_mnemo( model ), rang );
 
-	comment = my_utils_quote_single( ofa_box_get_string( details, OTE_DET_COMMENT ));
+	comment = my_utils_quote_sql( ofa_box_get_string( details, OTE_DET_COMMENT ));
 	if( my_strlen( comment )){
 		g_string_append_printf( query, "'%s',", comment );
 	} else {
@@ -1346,7 +1346,7 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, gint 
 	}
 	g_free( comment );
 
-	account = my_utils_quote_single( ofa_box_get_string( details, OTE_DET_ACCOUNT ));
+	account = my_utils_quote_sql( ofa_box_get_string( details, OTE_DET_ACCOUNT ));
 	if( my_strlen( account )){
 		g_string_append_printf( query, "'%s',", account );
 	} else {
@@ -1356,7 +1356,8 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, gint 
 
 	g_string_append_printf( query, "'%s',", ofa_box_get_string( details, OTE_DET_ACCOUNT_LOCKED ));
 
-	label = my_utils_quote_single( ofa_box_get_string( details, OTE_DET_LABEL ));
+	label = my_utils_quote_sql( ofa_box_get_string( details, OTE_DET_LABEL ));
+	g_debug( "model_insert_details: cstr='%s', quote_sql='%s'", ofa_box_get_string( details, OTE_DET_LABEL ), label );
 	if( my_strlen( label )){
 		g_string_append_printf( query, "'%s',", label );
 	} else {
@@ -1444,9 +1445,9 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_ope_template_get_label( model ));
-	ref = my_utils_quote_single( ofo_ope_template_get_ref( model ));
-	notes = my_utils_quote_single( ofo_ope_template_get_notes( model ));
+	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
+	ref = my_utils_quote_sql( ofo_ope_template_get_ref( model ));
+	notes = my_utils_quote_sql( ofo_ope_template_get_notes( model ));
 	new_mnemo = ofo_ope_template_get_mnemo( model );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );

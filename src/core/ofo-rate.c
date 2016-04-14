@@ -809,8 +809,8 @@ rate_insert_main( ofoRate *rate, const ofaIDBConnect *connect )
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_rate_get_label( rate ));
-	notes = my_utils_quote_single( ofo_rate_get_notes( rate ));
+	label = my_utils_quote_sql( ofo_rate_get_label( rate ));
+	notes = my_utils_quote_sql( ofo_rate_get_notes( rate ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -987,8 +987,8 @@ rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *c
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_rate_get_label( rate ));
-	notes = my_utils_quote_single( ofo_rate_get_notes( rate ));
+	label = my_utils_quote_sql( ofo_rate_get_label( rate ));
+	notes = my_utils_quote_sql( ofo_rate_get_notes( rate ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 

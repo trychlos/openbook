@@ -994,7 +994,7 @@ bat_insert_main( ofoBat *bat, ofaHub *hub )
 
 	ok = FALSE;
 	my_utils_stamp_set_now( &stamp );
-	suri = my_utils_quote_single( ofo_bat_get_uri( bat ));
+	suri = my_utils_quote_sql( ofo_bat_get_uri( bat ));
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	userid = ofa_idbconnect_get_account( connect );
 
@@ -1009,7 +1009,7 @@ bat_insert_main( ofoBat *bat, ofaHub *hub )
 
 	g_free( suri );
 
-	str = my_utils_quote_single( ofo_bat_get_format( bat ));
+	str = my_utils_quote_sql( ofo_bat_get_format( bat ));
 	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
@@ -1064,7 +1064,7 @@ bat_insert_main( ofoBat *bat, ofaHub *hub )
 		query = g_string_append( query, "NULL," );
 	}
 
-	str = my_utils_quote_single( ofo_bat_get_notes( bat ));
+	str = my_utils_quote_sql( ofo_bat_get_notes( bat ));
 	if( my_strlen( str )){
 		g_string_append_printf( query, "'%s',", str );
 	} else {
@@ -1129,7 +1129,7 @@ bat_do_update( ofoBat *bat, const ofaIDBConnect *connect )
 	const gchar *caccount;
 
 	ok = FALSE;
-	notes = my_utils_quote_single( ofo_bat_get_notes( bat ));
+	notes = my_utils_quote_sql( ofo_bat_get_notes( bat ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	userid = ofa_idbconnect_get_account( connect );

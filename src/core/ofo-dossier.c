@@ -1585,7 +1585,7 @@ do_update_properties( ofoDossier *dossier )
 	g_string_append_printf( query,
 			"DOS_EXE_LENGTH=%d,", ofo_dossier_get_exe_length( dossier ));
 
-	notes = my_utils_quote_single( ofo_dossier_get_exe_notes( dossier ));
+	notes = my_utils_quote_sql( ofo_dossier_get_exe_notes( dossier ));
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "DOS_EXE_NOTES='%s',", notes );
 	} else {
@@ -1607,7 +1607,7 @@ do_update_properties( ofoDossier *dossier )
 		query = g_string_append( query, "DOS_IMPORT_LEDGER=NULL," );
 	}
 
-	label = my_utils_quote_single( ofo_dossier_get_label( dossier ));
+	label = my_utils_quote_sql( ofo_dossier_get_label( dossier ));
 	if( my_strlen( label )){
 		g_string_append_printf( query, "DOS_LABEL='%s',", label );
 	} else {
@@ -1615,7 +1615,7 @@ do_update_properties( ofoDossier *dossier )
 	}
 	g_free( label );
 
-	notes = my_utils_quote_single( ofo_dossier_get_notes( dossier ));
+	notes = my_utils_quote_sql( ofo_dossier_get_notes( dossier ));
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "DOS_NOTES='%s',", notes );
 	} else {

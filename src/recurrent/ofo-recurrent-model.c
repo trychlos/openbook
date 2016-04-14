@@ -656,9 +656,9 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_recurrent_model_get_label( model ));
-	template = my_utils_quote_single( ofo_recurrent_model_get_ope_template( model ));
-	notes = my_utils_quote_single( ofo_recurrent_model_get_notes( model ));
+	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
+	template = my_utils_quote_sql( ofo_recurrent_model_get_ope_template( model ));
+	notes = my_utils_quote_sql( ofo_recurrent_model_get_notes( model ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -769,8 +769,8 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_recurrent_model_get_label( model ));
-	notes = my_utils_quote_single( ofo_recurrent_model_get_notes( model ));
+	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
+	notes = my_utils_quote_sql( ofo_recurrent_model_get_notes( model ));
 	new_mnemo = ofo_recurrent_model_get_mnemo( model );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );

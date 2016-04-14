@@ -477,8 +477,8 @@ class_do_insert( ofoClass *class, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_CLASSES " );
 
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_class_get_label( class ));
-	notes = my_utils_quote_single( ofo_class_get_notes( class ));
+	label = my_utils_quote_sql( ofo_class_get_label( class ));
+	notes = my_utils_quote_sql( ofo_class_get_notes( class ));
 
 	g_string_append_printf( query,
 			"	(CLA_NUMBER,CLA_LABEL,CLA_NOTES,"
@@ -552,8 +552,8 @@ class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect )
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_single( ofo_class_get_label( class ));
-	notes = my_utils_quote_single( ofo_class_get_notes( class ));
+	label = my_utils_quote_sql( ofo_class_get_label( class ));
+	notes = my_utils_quote_sql( ofo_class_get_notes( class ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 

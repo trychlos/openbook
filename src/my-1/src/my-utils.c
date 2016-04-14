@@ -45,6 +45,7 @@ static const gchar    *st_cssfile               = PKGCSSDIR "/ofa.css";
 static GtkCssProvider *st_css_provider          = NULL;
 static const gchar    *st_save_restore_group    = "orgtrychlosmy";
 
+static gchar   *quote_backslashes( const gchar *str );
 static gboolean utils_quote_cb( const GMatchInfo *info, GString *res, gpointer data );
 static gboolean utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer data );
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
@@ -134,9 +135,63 @@ my_utils_dump_gslist_str( const GSList *lines )
 }
 
 /**
+ * my_utils_quote_sql:
+ *
+ * Backslash:
+ * - backslashes
+ * - single quotes
+ */
+gchar *
+my_utils_quote_sql( const gchar *str )
+{
+	gchar *str1, *str2;
+
+	str1 = quote_backslashes( str );
+	str2 = my_utils_quote_single( str1 );
+
+	g_free( str1 );
+
+	return( str2 );
+}
+
+/*
+ */
+static gchar *
+quote_backslashes( const gchar *str )
+{
+	static const gchar *thisfn = "my_utils_quote_backslashes";
+	static GRegex *st_regex;
+	GError *error;
+	gchar *res;
+
+	res = NULL;
+
+	if( str ){
+		error = NULL;
+		if( !st_regex ){
+			st_regex = g_regex_new( "\\\\", 0, 0, &error );
+			if( error ){
+				g_warning( "%s: g_regex_new=%s", thisfn, error->message );
+				g_error_free( error );
+				return( NULL );
+			}
+		}
+		g_return_val_if_fail( st_regex, NULL );
+		res = g_regex_replace_literal( st_regex, str, -1, 0, "\\\\", 0, &error );
+		if( error ){
+			g_warning( "%s: g_regex_replace_literal=%s", thisfn, error->message );
+			g_error_free( error );
+			return( NULL );
+		}
+	}
+
+	return( res );
+}
+
+/**
  * my_utils_quote_single:
  *
- * Replace "'" quote characters with "\\'" before executing SQL queries
+ * Replace "'" quote characters with "\'" before executing SQL queries
  */
 gchar *
 my_utils_quote_single( const gchar *str )
