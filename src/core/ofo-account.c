@@ -52,6 +52,7 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
+#include "api/ofs-account-balance.h"
 
 /* priv instance data
  */
@@ -220,6 +221,7 @@ static void         account_get_children( const ofoAccount *account, sChildren *
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
 static gboolean     do_add_archive_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
 static void         do_add_archive_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
+static gint         get_last_archive_index( ofoAccount *account );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
@@ -1387,20 +1389,56 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowables )
  * @account: this #ofoAccount object.
  * @date: the archived date.
  *
- * Archive the current rough+validated balances.
+ * Archiving an account balance is only relevant when user is sure that
+ * no more entries will be set on this account (e.g. because the user
+ * has closed the period).
+ *
+ * If we have a last archive, then the new archive balance is the
+ * previous balance + the balance of entries between the two dates.
+ *
+ * If we do not have a last archive, then we get all entries until the
+ * asked date.
  */
 gboolean
 ofo_account_archive_balances( ofoAccount *account, const GDate *date )
 {
 	gboolean ok;
+	ofaHub *hub;
 	ofxAmount debit, credit;
+	gint last_index;
+	GDate from_date;
+	GList *list;
+	ofsAccountBalance *sbal;
+	const gchar *acc_id;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
-	debit = ofo_account_get_rough_debit( account )+ofo_account_get_val_debit( account );
-	credit = ofo_account_get_rough_credit( account )+ofo_account_get_val_credit( account );
+	my_date_clear( &from_date );
+	last_index = get_last_archive_index( account );
+	if( last_index >= 0 ){
+		my_date_set_from_date( &from_date, ofo_account_archive_get_date( account, last_index ));
+		if( my_date_is_valid( &from_date )){
+			g_date_add_days( &from_date, 1 );
+		}
+	}
+
+	/* get balance of entries between two dates */
+	acc_id = ofo_account_get_number( account );
+	hub = ofo_base_get_hub( OFO_BASE( account ));
+	list = ofo_entry_get_dataset_balance( hub, acc_id, acc_id, &from_date, date );
+	sbal = list ? ( ofsAccountBalance * ) list->data : NULL;
+	debit = sbal ? sbal->debit : 0;
+	credit = sbal ? sbal->credit : 0;
+	ofs_account_balance_list_free( &list );
+
+	/* increment with last balance if any */
+	if( last_index >= 0 ){
+		debit += ofo_account_archive_get_debit( account, last_index );
+		credit += ofo_account_archive_get_credit( account, last_index );
+	}
+
 	ok = do_add_archive_dbms( account, date, debit, credit );
 
 	if( ok ){
@@ -1561,6 +1599,34 @@ ofo_account_archive_get_credit( const ofoAccount *account, guint idx )
 	}
 
 	return( 0 );
+}
+
+/*
+ * Returns the index in archives list of the most recent archive,
+ * or -1 if list is empty.
+ */
+static gint
+get_last_archive_index( ofoAccount *account )
+{
+	ofoAccountPrivate *priv;
+	GDate max_date;
+	const GDate *it_date;
+	gint i, found;
+
+	priv = ofo_account_get_instance_private( account );
+
+	found = -1;
+	my_date_clear( &max_date );
+
+	for( i=0 ; i<g_list_length( priv->archives ) ; ++i ){
+		it_date = ofo_account_archive_get_date( account, i );
+		if( my_date_compare_ex( &max_date, it_date, TRUE ) < 0 ){
+			my_date_set_from_date( &max_date, it_date );
+			found = i;
+		}
+	}
+
+	return( found );
 }
 
 /**
@@ -2168,7 +2234,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 		account = OFO_ACCOUNT( it->data );
 		priv = ofo_account_get_instance_private( account );
 		from = g_strdup_printf(
-				"OFA_T_ACCOUNTS_ARC WHERE ACC_NUMBER='%s' ORDER BY ACC_ARC_DATE ASC",
+				"OFA_T_ACCOUNTS_ARC WHERE ACC_NUMBER='%s' ORDER BY ACC_ARC_DATE DESC",
 				ofo_account_get_number( account ));
 		priv->archives =
 				ofo_base_load_rows( st_archive_defs, ofa_hub_get_connect( hub ), from );

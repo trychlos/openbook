@@ -54,6 +54,7 @@ typedef struct {
 	gboolean            dispose_has_run;
 
 	ofaIGetter         *getter;
+	GDate               prev_closing;
 	GDate               closing;
 
 	/* UI
@@ -243,7 +244,12 @@ setup_date( ofaPeriodClose *self )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
-	str = my_date_to_str( ofo_dossier_get_last_closing_date( dossier ), ofa_prefs_date_display());
+	my_date_set_from_date( &priv->prev_closing, ofo_dossier_get_last_closing_date( dossier ));
+	if( my_date_is_valid( &priv->prev_closing )){
+		str = my_date_to_str( &priv->prev_closing, ofa_prefs_date_display());
+	} else {
+		str = g_strdup( "" );
+	}
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
@@ -345,15 +351,19 @@ is_dialog_validable( ofaPeriodClose *self )
 
 	} else {
 		exe_begin = ofo_dossier_get_exe_begin( dossier );
-		if( my_date_is_valid( exe_begin ) && my_date_compare( &priv->closing, exe_begin ) < 0 ){
+		if( my_date_is_valid( exe_begin ) && my_date_compare( &priv->closing, exe_begin ) <= 0 ){
 			gtk_label_set_text( GTK_LABEL( priv->message_label ),
-					_( "Closing date must be greater or equal to the beginning of exercice" ));
+					_( "Closing date must be greater to the beginning of exercice" ));
 
 		} else {
 			exe_end = ofo_dossier_get_exe_end( dossier );
 			if( my_date_is_valid( exe_end ) && my_date_compare( &priv->closing, exe_end ) >= 0 ){
 				gtk_label_set_text( GTK_LABEL( priv->message_label ),
 						_( "Closing date must be lesser than the end of exercice" ));
+
+			} else if( my_date_is_valid( &priv->prev_closing ) && my_date_compare( &priv->prev_closing, &priv->closing ) >= 0 ){
+					gtk_label_set_text( GTK_LABEL( priv->message_label ),
+							_( "Closing date must be greater than the previous one" ));
 
 			} else {
 				ok = TRUE;
@@ -406,8 +416,10 @@ do_close( ofaPeriodClose *self )
 	ofaPeriodClosePrivate *priv;
 	ofaHub *hub;
 	ofoDossier *dossier;
-	gboolean archive;
+	gboolean do_archive;
 	GList *dataset, *it;
+	guint count;
+	gchar *msg;
 
 	priv = ofa_period_close_get_instance_private( self );
 
@@ -418,14 +430,19 @@ do_close( ofaPeriodClose *self )
 	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
 	ofo_dossier_update( dossier );
 
-	archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn ));
-	if( archive ){
+	do_archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn ));
+	if( do_archive ){
+		count = 0;
 		dataset = ofo_account_get_dataset( hub );
 		for( it=dataset ; it ; it=it->next ){
 			if( !ofo_account_is_root( OFO_ACCOUNT( it->data ))){
+				count += 1;
 				ofo_account_archive_balances( OFO_ACCOUNT( it->data ), &priv->closing );
 			}
 		}
+		msg = g_strdup_printf( _( "%u accounts successfully archived" ), count );
+		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, msg );
+		g_free( msg );
 	}
 
 	return( TRUE );

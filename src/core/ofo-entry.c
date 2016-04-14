@@ -869,14 +869,14 @@ ofo_entry_get_dataset_for_print_balance( ofaHub *hub,
 }
 
 /**
- * ofo_entry_get_dataset_balance_rough_validated:
+ * ofo_entry_get_dataset_balance:
  * @hub: the current #ofaHub object.
  * @from_account: the starting account.
  * @to_account: the ending account.
  * @from_date: the starting effect date.
  * @to_date: the ending effect date.
  *
- * Returns the dataset of rough/validated entries for the given
+ * Returns the balances for non-deleted entries for the given
  * accounts, between the specified effect dates, as a GList of newly
  * allocated #ofsAccountBalance structures, that the user should
  * #ofs_account_balance_list_free().
@@ -884,11 +884,11 @@ ofo_entry_get_dataset_for_print_balance( ofaHub *hub,
  * The returned dataset is ordered by ascending account.
  */
 GList *
-ofo_entry_get_dataset_balance_rough_validated( ofaHub *hub,
+ofo_entry_get_dataset_balance( ofaHub *hub,
 											const gchar *from_account, const gchar *to_account,
 											const GDate *from_date, const GDate *to_date )
 {
-	static const gchar *thisfn = "ofo_entry_get_dataset_balance_rough_validated";
+	static const gchar *thisfn = "ofo_entry_get_dataset_balance";
 	GList *dataset;
 	GString *query;
 	gboolean first;
@@ -936,7 +936,7 @@ ofo_entry_get_dataset_balance_rough_validated( ofaHub *hub,
 	if( first ){
 		query = g_string_append( query, "AND " );
 	}
-	g_string_append_printf( query, "(ENT_STATUS=%u OR ENT_STATUS=%u)", ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
 	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
 
 	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query->str, &result, TRUE )){
