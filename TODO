@@ -338,10 +338,12 @@
 1053 2016- 3-26 CODE review the menu distribution
 
 1071 2016- 4-12 CODE ofaICollectionable	-> myICollectionable
-                     ofaICollector		-> myICollectioner
+                     ofaICollector		-> myICollector
                      ofaISingleKeeper	-> mergeable with myICollectioner
                      + should have its own messaging system
                        on add/remove actions (update/reload cannot be managed here)
+                     + instances should be provided by IGetter
+                     + on end, dump the content
 
 1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
 
@@ -351,17 +353,15 @@
 
 1077 2016- 4-14 BUG  after opening the new exercice, balances are not ok
 
-1078 2016- 4-14 BUG  ExerciceClose: add check balances and dbms integrity
+1078 2016- 4-14 BUG  ExerciceClose: re-add check balances and dbms integrity
 
 1079 2016- 4-14 BUG  ExerciceClose: VAT plugin display two lines 
                      (and first is incomplete)
 
 1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
 
-1082 2016- 4-14 ISingleKeeper: review the relevance of this interface:
-                it is expected to be able to store one instance of any
-                datatype
-                but: ISingleKeeper instance itself should be provided by IGetter
+1082 2016- 4-14 BUG v31 DDL refactoring does not rightly consider '%'
+                    (maybe when it is not the first char ?)
 
 1083 2016- 4-14 BUG connect_to_hub_signaling_system seems to be called
                  on dossier opening, instead of on hub instanciation

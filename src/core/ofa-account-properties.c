@@ -646,6 +646,11 @@ set_archived_amount( ofaAccountProperties *self, guint i, GtkGrid *grid )
 	label = gtk_label_new( priv->cur_symbol );
 	gtk_grid_attach( grid, label, col++, i, 1, 1 );
 	gtk_size_group_add_widget( priv->p2_group4, label );
+
+	/* last column is just  placeholder */
+	label = gtk_label_new( "" );
+	gtk_label_set_width_chars( GTK_LABEL( label ), 1 );
+	gtk_grid_attach( grid, label, col++, i, 1, 1 );
 }
 
 static void
