@@ -1177,6 +1177,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			}
 
 			ofs_ope_apply_template( ope );
+			//ofs_ope_dump( ope );
 
 			if( ofs_ope_is_valid( ope, &msg, &currencies )){
 				sld_entries = ofs_ope_generate_entries( ope );
@@ -1187,8 +1188,8 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 				ofs_currency_list_dump( currencies );
 				errors += 1;
 			}
-			ofs_currency_list_free( &currencies );
 
+			ofs_currency_list_free( &currencies );
 			ofs_ope_free( ope );
 
 			/* create forward operation
@@ -1712,7 +1713,8 @@ p6_forward( ofaExerciceCloseAssistant *self )
 /*
  * archive begin of exercice accounts balance
  *
- * open=rough+validated, but at this time we only have:
+ * open=rough+validated+future whose effect date is less or equal the
+ * beginning of the exercice, but at this time we only have:
  * - past entries (unreconciliated or unsettled from previous exercice)
  * - forward entries (which are in 'validated' status)
  */

@@ -349,7 +349,27 @@
 
 1075 2016- 4-14 have a message bar
 
-1076
+1077 2016- 4-14 BUG  after opening the new exercice, balances are not ok
+
+1078 2016- 4-14 BUG  ExerciceClose: add check balances and dbms integrity
+
+1079 2016- 4-14 BUG  ExerciceClose: VAT plugin display two lines 
+                     (and first is incomplete)
+
+1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
+
+1082 2016- 4-14 ISingleKeeper: review the relevance of this interface:
+                it is expected to be able to store one instance of any
+                datatype
+                but: ISingleKeeper instance itself should be provided by IGetter
+
+1083 2016- 4-14 BUG connect_to_hub_signaling_system seems to be called
+                 on dossier opening, instead of on hub instanciation
+
+1084 2016- 4-14 BUG ofsOpe should backslash the string it returns
+                     when it contains operators [-+/*]
+
+1085
 
 -----------------------------------------------------------------------
  DONE
@@ -1141,6 +1161,12 @@
                 + check that begining date of next exercice cannot be
                   modified when previous_end is set (have a DOS_PREVEXE_END)
      2016- 4-13 done
+
+1076 2016- 4-14 BUG  ExerciceClose: solde entries does not have right label
+     2016- 4-14 this was a formula syntax error - fixed
+
+1080 2016- 4-14 BUG  ExerciceClose: 6X nor 7X accounts are zero-ed
+     2016- 4-14 fixed with ofaICollector and ofaISingleKeeper free_all().
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

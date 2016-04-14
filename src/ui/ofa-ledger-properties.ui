@@ -232,6 +232,7 @@
                               <object class="GtkLabel" id="label211">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="hexpand">True</property>
                                 <property name="label" translatable="yes">Debit</property>
                                 <property name="width_chars">12</property>
                                 <property name="xalign">1</property>
@@ -245,6 +246,7 @@
                               <object class="GtkLabel" id="label212">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
+                                <property name="hexpand">True</property>
                                 <property name="label" translatable="yes">Credit</property>
                                 <property name="width_chars">12</property>
                                 <property name="xalign">1</property>

@@ -35,7 +35,8 @@
 #define ICOLLECTOR_DATA                   "ofa-icollector-data"
 
 /* a data structure attached to the implementation
- * @collections: the collections of #ofaICollectionable objects.
+ * @collections: the collections of #ofaICollectionable objects,
+ *               maintained as a GList of sCollection data structures.
  */
 typedef struct {
 	GList *collections;
@@ -375,6 +376,24 @@ ofa_icollector_free_collection( ofaICollector *instance, GType type )
 		data->collections = g_list_remove( data->collections, collection );
 		free_collection( collection );
 	}
+}
+
+/**
+ * ofa_icollector_free_all:
+ * @instance: this #ofaICollector instance.
+ *
+ * Free all the current collections.
+ */
+void
+ofa_icollector_free_all( ofaICollector *instance )
+{
+	sICollector *data;
+
+	g_return_if_fail( instance && OFA_IS_ICOLLECTOR( instance ));
+
+	data = get_collector_data( instance );
+	g_list_free_full( data->collections, ( GDestroyNotify ) free_collection );
+	data->collections = NULL;
 }
 
 static sICollector *

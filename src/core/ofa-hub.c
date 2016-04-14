@@ -775,7 +775,6 @@ ofa_hub_dossier_close( ofaHub *hub )
 static void
 dossier_do_close( ofaHub *hub )
 {
-	static const gchar *thisfn = "ofa_hub_dossier_do_close";
 	ofaHubPrivate *priv;
 
 	priv = ofa_hub_get_instance_private( hub );
@@ -784,7 +783,8 @@ dossier_do_close( ofaHub *hub )
 	g_clear_object( &priv->dossier );
 	g_clear_object( &priv->dossier_prefs );
 
-	g_debug( "%s: dossier=%p", thisfn, ( void * ) priv->dossier );
+	ofa_isingle_keeper_free_all( OFA_ISINGLE_KEEPER( hub ));
+	ofa_icollector_free_all( OFA_ICOLLECTOR( hub ));
 }
 
 /*

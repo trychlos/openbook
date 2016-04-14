@@ -100,6 +100,8 @@ GObject *ofa_isingle_keeper_get_object                ( const ofaISingleKeeper *
 void     ofa_isingle_keeper_set_object                ( ofaISingleKeeper *instance,
 															void *object );
 
+void     ofa_isingle_keeper_free_all                  ( ofaISingleKeeper *instance );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_ISINGLE_KEEPER_H__ */

@@ -123,6 +123,8 @@ void     ofa_icollector_sort_collection           ( ofaICollector *instance,
 void     ofa_icollector_free_collection           ( ofaICollector *instance,
 														GType type );
 
+void     ofa_icollector_free_all                  ( ofaICollector *instance );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_ICOLLECTOR_H__ */

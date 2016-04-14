@@ -53,9 +53,10 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType           register_type( void );
 static void            interface_base_init( ofaISingleKeeperInterface *klass );
 static void            interface_base_finalize( ofaISingleKeeperInterface *klass );
-static sKept          *find_object_by_type( GList *kepts, GType type );
+static sKept          *find_kept_by_type( GList *kepts, GType type );
 static sISingleKeeper *get_isingle_keeper_data( const ofaISingleKeeper *instance );
 static void            on_instance_finalized( sISingleKeeper *sdata, GObject *finalized_single_keeper );
+static void            on_object_finalized( sISingleKeeper *sdata, GObject *finalized_object );
 static void            free_kept( sKept *kept );
 
 /**
@@ -205,14 +206,14 @@ ofa_isingle_keeper_get_object( const ofaISingleKeeper *instance, GType type )
 	g_return_val_if_fail( instance && OFA_IS_ISINGLE_KEEPER( instance ), NULL );
 
 	sdata = get_isingle_keeper_data( instance );
-	kept = find_object_by_type( sdata->kepts, type );
+	kept = find_kept_by_type( sdata->kepts, type );
 	found = kept ? kept->object : NULL;
 
 	return( found );
 }
 
 static sKept *
-find_object_by_type( GList *kepts, GType type )
+find_kept_by_type( GList *kepts, GType type )
 {
 	GList *it;
 	sKept *kept;
@@ -244,16 +245,37 @@ ofa_isingle_keeper_set_object( ofaISingleKeeper *instance, void *object )
 	g_return_if_fail( !object || G_IS_OBJECT( object ));
 
 	sdata = get_isingle_keeper_data( instance );
-	kept = find_object_by_type( sdata->kepts, G_OBJECT_TYPE( object ));
+	kept = find_kept_by_type( sdata->kepts, G_OBJECT_TYPE( object ));
 
 	if( kept ){
+		g_clear_object( &kept->object );
 		kept->object = object;
+
 	} else {
 		kept = g_new0( sKept, 1 );
 		kept->type = G_OBJECT_TYPE( object );
 		kept->object = object;
 		sdata->kepts = g_list_prepend( sdata->kepts, kept );
+		g_object_weak_ref( G_OBJECT( object ), ( GWeakNotify ) on_object_finalized, sdata );
 	}
+}
+
+/**
+ * ofa_isingle_keeper_free_all:
+ * @instance: this #ofaISingleKeeper instance.
+ *
+ * Free all the current objects.
+ */
+void
+ofa_isingle_keeper_free_all( ofaISingleKeeper *instance )
+{
+	sISingleKeeper *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ISINGLE_KEEPER( instance ));
+
+	sdata = get_isingle_keeper_data( instance );
+	g_list_free_full( sdata->kepts, ( GDestroyNotify ) free_kept );
+	sdata->kepts = NULL;
 }
 
 static sISingleKeeper *
@@ -285,8 +307,27 @@ on_instance_finalized( sISingleKeeper *sdata, GObject *finalized_single_keeper )
 }
 
 static void
+on_object_finalized( sISingleKeeper *sdata, GObject *finalized_object )
+{
+	static const gchar *thisfn = "ofa_isinglee_keeper_on_object_finalized";
+	sKept *kept;
+
+	g_debug( "%s: sdata=%p, finalized_object=%p",
+			thisfn, ( void * ) sdata, ( void * ) finalized_object );
+
+	kept = find_kept_by_type( sdata->kepts, G_OBJECT_TYPE( finalized_object ));
+	if( kept ){
+		sdata->kepts = g_list_remove( sdata->kepts, kept );
+		g_free( kept );
+	}
+}
+
+static void
 free_kept( sKept *kept )
 {
+	if( G_IS_OBJECT( kept->object )){
+		g_object_unref( kept->object );
+	}
 	//g_clear_object( &kept->object );
 	g_free( kept );
 }
