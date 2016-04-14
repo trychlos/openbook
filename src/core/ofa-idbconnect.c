@@ -896,6 +896,8 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore ){
+		ok = FALSE;
+
 		if( period ){
 			target_period = ( ofaIDBPeriod * ) period;
 		} else {
@@ -903,11 +905,15 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 			g_return_val_if_fail( data->meta && OFA_IS_IDBMETA( data->meta ), FALSE );
 			target_period = ofa_idbmeta_get_current_period( data->meta );
 		}
-		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri ) &&
-				idbconnect_set_admin_credentials( connect, target_period, adm_account, adm_password );
+
+		if( target_period ){
+			ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->restore( connect, target_period, uri ) &&
+					idbconnect_set_admin_credentials( connect, target_period, adm_account, adm_password );
+		}
 		if( !period ){
 			g_clear_object( &target_period );
 		}
+
 		return( ok );
 	}
 

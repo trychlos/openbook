@@ -78,7 +78,8 @@ static GRegex      *st_nested_regex                = NULL;
 
 /* the operator regex
  */
-static const gchar *st_operator_def                = "\\s*(?<!\\\\)[+-/*]\\s*";
+//static const gchar *st_operator_def                = "\\s*(?<!\\\\)[+-/*]\\s*";
+static const gchar *st_operator_def                = "\\s*([^+-/*]*)(?<!\\\\)([+-/*])\\s*(.*)";
 static GRegex      *st_operator_regex              = NULL;
 
 static const gchar *st_minusminus_def              = "--";
@@ -653,6 +654,7 @@ evaluate_expression( ofaFormulaEngine *self, const gchar *input )
 	/* or resolve operation operator
 	 */
 	} else if( g_regex_match( st_operator_regex, res, 0, NULL )){
+		g_debug( "match operator: %s", input );
 
 		/* remove double-minus */
 		if( g_regex_match( st_minusminus_regex, res, 0, NULL )){
@@ -754,12 +756,13 @@ eval_with_oper_op( ofaFormulaEngine *self, const gchar *input )
 	static const gchar *thisfn = "ofa_formula_engine_eval_with_oper_op";
 	const gchar *begin, *p;
 	gchar *str, *res;
-	gunichar ch;
+	gunichar ch, prev_ch;
 	GList *list0, *it, *itnext, *itprev;
 	const gchar *left, *right;
 
 	/* extract all the arguments */
 	list0 = NULL;
+	prev_ch = '\0';
 	begin = input;
 	p = begin;
 	while( p ){
@@ -769,7 +772,7 @@ eval_with_oper_op( ofaFormulaEngine *self, const gchar *input )
 			list0 = g_list_append( list0, str );
 			break;
 
-		} else if( ch == '+' || ch == '-' || ch == '/' || ch == '*' ){
+		} else if(( ch == '+' || ch == '-' || ch == '/' || ch == '*' ) && prev_ch != '\\' ){
 			str = ( p == begin ) ? g_strdup( "" ) : g_strstrip( g_strndup( begin, p-begin ));
 			list0 = g_list_append( list0, str );
 			str = g_strdup_printf( "%c", ch );
@@ -780,6 +783,7 @@ eval_with_oper_op( ofaFormulaEngine *self, const gchar *input )
 		} else {
 			p = g_utf8_next_char( p );
 		}
+		prev_ch = ch;
 	}
 
 	if( DEBUG_OPERATOR_EVALUATION ){

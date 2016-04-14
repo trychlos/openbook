@@ -293,16 +293,18 @@ compute_dates( sOpeHelper *helper )
 	/* if dope is set, but not deffect:
 	 * set minimal deffect depending of dossier and ledger
 	 */
-	if( ope->dope_user_set && !ope->deffect_user_set ){
+	if( ope->dope_user_set && !ope->deffect_user_set && my_date_is_valid( &ope->dope )){
 		hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
 		dossier = ofa_hub_get_dossier( hub );
 		ledger = ofo_ledger_get_by_mnemo( hub, ope->ledger );
 		if( ledger ){
 			ofo_dossier_get_min_deffect( dossier, ledger, &date );
-			if( my_date_compare( &date, &ope->dope ) < 0 ){
-				my_date_set_from_date( &ope->deffect, &ope->dope );
-			} else {
-				my_date_set_from_date( &ope->deffect, &date );
+			if( my_date_is_valid( &date )){
+				if( my_date_compare( &date, &ope->dope ) < 0 ){
+					my_date_set_from_date( &ope->deffect, &ope->dope );
+				} else {
+					my_date_set_from_date( &ope->deffect, &date );
+				}
 			}
 		}
 	}
@@ -330,7 +332,7 @@ compute_formula( const gchar *formula, sOpeHelper *helper )
 
 	if( my_strlen( formula )){
 		res = ofa_formula_engine_eval( st_engine, formula, ( ofaFormulaFindFn ) get_formula_eval_fn, helper, &msg );
-		g_debug( "%s: formula='%s', returns with msg count=%d", thisfn, formula, g_list_length( msg ));
+		g_debug( "%s: formula='%s', res='%s', msg_count=%d", thisfn, formula, res, g_list_length( msg ));
 
 		for( it=msg ; it ; it=it->next ){
 			g_info( "%s: %s", thisfn, ( const gchar * ) it->data );

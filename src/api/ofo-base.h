@@ -70,7 +70,7 @@ typedef struct {
 
 /**
  * ofo_base_getter:
- * @C: the class mnemonic (e.g. 'ACCOUNT')
+ * @C: the class radical (e.g. 'ACCOUNT')
  * @V: the variable name (e.g. 'account')
  * @T: the type of required data (e.g. 'amount')
  * @R: the returned data in case of an error (e.g. '0')

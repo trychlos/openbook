@@ -155,6 +155,7 @@ my_utils_quote_sql( const gchar *str )
 }
 
 /*
+ * Replace every single backslash by two backslashes
  */
 static gchar *
 quote_backslashes( const gchar *str )

@@ -1357,7 +1357,6 @@ model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, gint 
 	g_string_append_printf( query, "'%s',", ofa_box_get_string( details, OTE_DET_ACCOUNT_LOCKED ));
 
 	label = my_utils_quote_sql( ofa_box_get_string( details, OTE_DET_LABEL ));
-	g_debug( "model_insert_details: cstr='%s', quote_sql='%s'", ofa_box_get_string( details, OTE_DET_LABEL ), label );
 	if( my_strlen( label )){
 		g_string_append_printf( query, "'%s',", label );
 	} else {
@@ -2004,6 +2003,9 @@ iimportable_import_parse_detail( ofaIImporter *importer, ofsImporterParms *parms
 	}
 	*mnemo = g_strdup( cstr );
 	ofa_box_set_string( detail, OTE_MNEMO, cstr );
+
+	/* row number (placeholder) */
+	itf = itf ? itf->next : NULL;
 
 	/* detail comment */
 	itf = itf ? itf->next : NULL;

@@ -343,7 +343,13 @@
                      + should have its own messaging system
                        on add/remove actions (update/reload cannot be managed here)
 
-1073
+1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
+
+1074 2016- 4-14 may have external commands to backup/restore ?
+
+1075 2016- 4-14 have a message bar
+
+1076
 
 -----------------------------------------------------------------------
  DONE

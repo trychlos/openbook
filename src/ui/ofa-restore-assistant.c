@@ -144,6 +144,7 @@ typedef struct {
 	GtkWidget              *p6_page;
 	GtkWidget              *p6_label1;
 	GtkWidget              *p6_label2;
+	gboolean                is_destroy_allowed;
 }
 	ofaRestoreAssistantPrivate;
 
@@ -174,6 +175,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-restore
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
+static gboolean iwindow_is_destroy_allowed( const myIWindow *instance );
 static void     set_settings( ofaRestoreAssistant *self );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
@@ -314,6 +316,8 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 
 	priv->dispose_has_run = FALSE;
 
+	priv->is_destroy_allowed = TRUE;
+
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
 
@@ -367,18 +371,19 @@ ofa_restore_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 static void
 iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_export_assistant_iwindow_iface_init";
+	static const gchar *thisfn = "ofa_restore_assistant_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
 	iface->read_settings = iwindow_read_settings;
+	iface->is_destroy_allowed = iwindow_is_destroy_allowed;
 }
 
 static void
 iwindow_init( myIWindow *instance )
 {
-	static const gchar *thisfn = "ofa_export_assistant_iwindow_init";
+	static const gchar *thisfn = "ofa_restore_assistant_iwindow_init";
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -421,6 +426,19 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 	my_isettings_free_string_list( settings, list );
 }
 
+static gboolean
+iwindow_is_destroy_allowed( const myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_restore_assistant_iwindow_is_destroy_allowed";
+	ofaRestoreAssistantPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
+
+	return( priv->is_destroy_allowed );
+}
+
 static void
 set_settings( ofaRestoreAssistant *self )
 {
@@ -448,7 +466,7 @@ set_settings( ofaRestoreAssistant *self )
 static void
 iassistant_iface_init( myIAssistantInterface *iface )
 {
-	static const gchar *thisfn = "ofa_export_assistant_iassistant_iface_init";
+	static const gchar *thisfn = "ofa_restore_assistant_iassistant_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -1201,7 +1219,11 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
+		/* prevent the window manager to close this assistant */
+		priv->is_destroy_allowed = FALSE;
 		ofa_hub_dossier_close( ofa_igetter_get_hub( priv->getter ));
+		priv->is_destroy_allowed = TRUE;
+
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );
 	}
 }

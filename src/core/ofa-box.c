@@ -865,7 +865,7 @@ set_decimal_point( gchar *str, gchar decimal_sep )
  * @fields_list: the list of elementary datas of the record
  * @id: the identifier of the searched for elementary data
  *
- * Free the elementary datas of a record.
+ * Returns: the attached value..
  */
 gconstpointer
 ofa_box_get_value( const GList *fields_list, gint id )

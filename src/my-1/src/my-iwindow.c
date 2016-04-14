@@ -46,6 +46,7 @@ typedef struct {
 	myISettings *settings;
 	gboolean     initialized;
 	gboolean     hide_on_close;
+	gboolean     closed;
 }
 	sIWindow;
 
@@ -58,7 +59,8 @@ static void       application_do_read_settings( myIWindow *instance, sIWindow *s
 static void       application_do_write_settings( myIWindow *instance, sIWindow *sdata );
 static gboolean   iwindow_quit_on_escape( const myIWindow *instance );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
-static void       do_close( myIWindow *instance );
+static void       do_close( myIWindow *instance, gboolean destroy_hidden );
+static gboolean   is_destroy_allowed( const myIWindow *instance );
 static gchar     *iwindow_get_identifier( const myIWindow *instance );
 static gchar     *get_default_identifier( const myIWindow *instance );
 static gchar     *iwindow_get_key_prefix( const myIWindow *instance );
@@ -461,7 +463,7 @@ my_iwindow_present( myIWindow *instance )
 	g_free( instance_id );
 
 	if( found ){
-		do_close( instance );
+		do_close( instance, FALSE );
 
 	} else {
 		my_iwindow_init( instance );
@@ -486,7 +488,7 @@ my_iwindow_close( myIWindow *instance )
 {
 	g_return_if_fail( instance && MY_IWINDOW( instance ));
 
-	do_close( instance );
+	do_close( instance, FALSE );
 }
 
 /**
@@ -497,14 +499,30 @@ my_iwindow_close( myIWindow *instance )
 void
 my_iwindow_close_all( void )
 {
-	static const gchar *thisfn = "my_iwindow_close_all";
-	void *it;
+	sIWindow *sdata;
+	GList *it;
+	gboolean has_closed_something;
 
-	while( st_live_list ){
-		it = st_live_list->data;
-		g_debug( "%s: closing iwindow=%p (%s)",
-				thisfn, ( void * ) it, G_OBJECT_TYPE_NAME( it ));
-		do_close( MY_IWINDOW( it ));
+	/* first reset the closing indicator */
+	for( it=st_live_list ; it ; it=it->next ){
+		sdata = get_iwindow_data( MY_IWINDOW( it->data ));
+		sdata->closed = FALSE;
+	}
+
+	/* then close all allowed window */
+	has_closed_something = TRUE;
+	while( has_closed_something ){
+		has_closed_something = FALSE;
+
+		for( it=st_live_list ; it ; it=it->next ){
+			sdata = get_iwindow_data( MY_IWINDOW( it->data ));
+			if( !sdata->closed ){
+				sdata->closed = TRUE;
+				do_close( MY_IWINDOW( it->data ), TRUE );
+				has_closed_something = TRUE;
+				break;
+			}
+		}
 	}
 }
 
@@ -540,7 +558,7 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
 			thisfn, ( void * ) widget, ( void * ) event, ( void * ) instance );
 
 	if( iwindow_quit_on_escape( instance )){
-		do_close( instance );
+		do_close( instance, FALSE );
 	}
 
 	return( TRUE );
@@ -550,25 +568,56 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
  * this closes the GtkWindow without any user confirmation
  */
 static void
-do_close( myIWindow *instance )
+do_close( myIWindow *instance, gboolean destroy_hidden )
 {
 	static const gchar *thisfn = "my_iwindow_do_close";
 	sIWindow *sdata;
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-
 	sdata = get_iwindow_data( instance );
 
 	application_do_write_settings( instance, sdata );
-
 	position_save( instance, sdata );
 
-	if( sdata->hide_on_close ){
+	if( sdata->hide_on_close && !destroy_hidden ){
+		g_debug( "%s: hidding instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_hide( GTK_WIDGET( instance ));
 
-	} else {
+	} else if( is_destroy_allowed( instance )){
+		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_destroy( GTK_WIDGET( instance ));
 	}
+}
+
+/*
+ * is_destroy_allowed:
+ * @instance: this #myIWindow instance.
+ *
+ * This should only be used when a window is sure to want to keep being
+ * displayed while another window wants close it (or wants close all).
+ *
+ * Returns: %TRUE if the @instance accepts to be destroyed.
+ *
+ * Defaults to %TRUE.
+ */
+static gboolean
+is_destroy_allowed( const myIWindow *instance )
+{
+	static const gchar *thisfn = "my_iwindow_is_destroy_allowed";
+	gboolean allowed;
+
+	if( MY_IWINDOW_GET_INTERFACE( instance )->is_destroy_allowed ){
+		allowed = MY_IWINDOW_GET_INTERFACE( instance )->is_destroy_allowed( instance );
+		if( !allowed ){
+			g_debug( "%s: instance=%p (%s) does not allow its destruction",
+					thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+		}
+		return( allowed );
+	}
+
+	g_info( "%s: myIWindow's %s implementation does not provide 'is_destroy_allowed()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
+	return( TRUE );
 }
 
 /*

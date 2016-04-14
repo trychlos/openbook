@@ -45,6 +45,11 @@
 
    - myIGridList: fix the line removing.
    - myIWindow: fix key value when saving default position.
+   - myIWindow: does not close currently running window when closing the dossier.
+   - ofaFormulaEngine: fix operation operator backslashing.
+   - ofaIDBConnect: does not try to restore when no period is found.
+   - ofsOpe: make sure the operation is valid before compare.
+   - ofoOpeTemplate: takes into account the row number placeholder. 
    - ofoTVAForm: fix import.
 
  Other changes:

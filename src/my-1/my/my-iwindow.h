@@ -219,6 +219,16 @@ typedef struct {
 	void     ( *write_settings )       ( myIWindow *instance,
 												myISettings *settings,
 												const gchar *keyname );
+
+	/**
+	 * is_destroy_allowed:
+	 * @instance: the #myIWindow instance.
+	 *
+	 * Returns: %TRUE if the @instance accepts to be destroyed.
+	 *
+	 * Since: version 1.
+	 */
+	gboolean ( *is_destroy_allowed )   ( const myIWindow *instance );
 }
 	myIWindowInterface;
 

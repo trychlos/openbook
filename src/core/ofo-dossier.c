@@ -372,6 +372,9 @@ on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDat
 	meta = ofa_idbconnect_get_meta( connect );
 	period = ofa_idbconnect_get_period( connect );
 
+	g_debug( "on_hub_exe_dates_changed: hub=%p, prev_begin=%p, prev_end=%p, dossier=%p",
+			hub, prev_begin, prev_end, dossier );
+
 	ofa_idbmeta_update_period( meta, period,
 			TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
 
