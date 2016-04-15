@@ -351,8 +351,6 @@
 
 1075 2016- 4-14 have a message bar
 
-1078 2016- 4-14 BUG  ExerciceClose: re-add check balances and dbms integrity
-
 1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
 
 1084 2016- 4-14 BUG ofsOpe should backslash the string it returns
@@ -1170,6 +1168,9 @@
 
 1077 2016- 4-14 BUG  after opening the new exercice, balances are not ok
      2016- 4-15 fixed by #1083
+
+1078 2016- 4-14 BUG  ExerciceClose: re-add check balances and dbms integrity
+     2016- 4-15 done
 
 1079 2016- 4-14 BUG  ExerciceClose: VAT plugin display two lines 
                      (and first is incomplete)
