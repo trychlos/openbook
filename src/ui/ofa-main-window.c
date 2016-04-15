@@ -272,7 +272,7 @@ static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *eve
 static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
-static void                  set_window_title( const ofaMainWindow *window );
+static void                  set_window_title( const ofaMainWindow *window, gboolean with_dossier );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
 static void                  pane_restore_position( GtkPaned *pane );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
@@ -620,7 +620,7 @@ hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self )
 static void
 hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *self )
 {
-	set_window_title( self );
+	set_window_title( self, TRUE );
 	do_update_menubar_items( self );
 	background_image_update( self, hub );
 }
@@ -761,7 +761,7 @@ do_close_dossier( ofaMainWindow *self, ofaHub *hub )
 		application = gtk_window_get_application( GTK_WINDOW( self ));
 		menubar_setup( self, MY_IACTION_MAP( application ));
 
-		set_window_title( self );
+		set_window_title( self, FALSE );
 	}
 }
 
@@ -819,8 +819,12 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 	gtk_widget_show_all( GTK_WIDGET( window ));
 }
 
+/*
+ * do not rely on the ofa_hub_get_dossier() here
+ * because it has not yet been reset when closing the dossier
+ */
 static void
-set_window_title( const ofaMainWindow *self )
+set_window_title( const ofaMainWindow *self, gboolean with_dossier )
 {
 	ofaMainWindowPrivate *priv;
 	ofaHub *hub;
@@ -833,7 +837,7 @@ set_window_title( const ofaMainWindow *self )
 	priv = ofa_main_window_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	dossier = ofa_hub_get_dossier( hub );
+	dossier = with_dossier ? ofa_hub_get_dossier( hub ) : NULL;
 
 	if( dossier ){
 		connect = ofa_hub_get_connect( hub );

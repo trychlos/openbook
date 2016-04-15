@@ -57,6 +57,7 @@
    - ofaICollector: free the collections when closing the dossier (todo #1080).
    - ofaIDBConnect: does not try to restore when no period is found.
    - ofaISingleKeeper: release the objects when closing the dossier (todo #1080).
+   - ofaMainWindow: reset the window title when closing the dossier (todo #1090).
    - ofsOpe: make sure the operation is valid before compare.
    - ofoOpeTemplate: takes into account the row number placeholder. 
    - ofoTVAForm: fix import.

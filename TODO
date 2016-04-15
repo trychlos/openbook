@@ -364,8 +364,6 @@
                 + should review its initialization which is a bit
                 laborious..
 
-1090 2016- 4-15 BUG  CloseDossier does not reset the mainwindow title
-
 1091
 
 -----------------------------------------------------------------------
@@ -1197,6 +1195,9 @@
                 Has to be done in the exercice closing to make sure the
                 user does not lose any data.
      2016- 4-15 done
+
+1090 2016- 4-15 BUG  CloseDossier does not reset the mainwindow title
+     2016- 4-15 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
