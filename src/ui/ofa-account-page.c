@@ -127,8 +127,6 @@ v_setup_page( ofaPage *page )
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
 
-	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
-
 	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_NEW, TRUE );
 	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_PROPERTIES, TRUE );
 	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_DELETE, TRUE );
@@ -136,6 +134,8 @@ v_setup_page( ofaPage *page )
 	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_VIEW_ENTRIES, TRUE );
 	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_SETTLEMENT, TRUE );
 	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_RECONCILIATION, TRUE );
+
+	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 }
 
 static GtkWidget *

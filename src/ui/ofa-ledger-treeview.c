@@ -638,8 +638,8 @@ ofa_ledger_treeview_set_hexpand( ofaLedgerTreeview *view, gboolean hexpand )
 	priv = ofa_ledger_treeview_get_instance_private( view );
 
 	g_return_if_fail( !priv->dispose_has_run );
-
 	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
+
 	gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), hexpand );
 }
 

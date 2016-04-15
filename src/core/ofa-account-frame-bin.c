@@ -537,6 +537,8 @@ book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaAcco
 	GtkTreeSelection *select;
 
 	tview = my_utils_container_get_child_by_type( GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW );
+	//g_debug( "book_on_page_switched: npage=%u", npage );
+
 	if( tview ){
 		g_return_if_fail( GTK_IS_TREE_VIEW( tview ));
 		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
@@ -639,7 +641,8 @@ page_add_treeview( ofaAccountFrameBin *self, GtkWidget *page )
 	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), TRUE );
 
 	tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( priv->store ), NULL );
-	g_debug( "%s: store=%p, tfilter=%p", thisfn, ( void * ) priv->store, ( void * ) tfilter );
+	g_debug( "%s: store=%p, tfilter=%p, tview=%p",
+			thisfn, ( void * ) priv->store, ( void * ) tfilter, ( void * ) tview );
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( tfilter ),
 			( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, page, NULL );
@@ -783,13 +786,15 @@ page_get_treeview( const ofaAccountFrameBin *self )
 	priv = ofa_account_frame_bin_get_instance_private( self );
 	tview = NULL;
 	page_n = gtk_notebook_get_current_page( GTK_NOTEBOOK( priv->notebook ));
-
+	if( page_n < 0 ){
+		gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), 0 );
+		page_n = 0;
+	}
 	if( page_n >= 0 ){
 		page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), page_n );
 		g_return_val_if_fail( page_w && GTK_IS_CONTAINER( page_w ), NULL );
 
-		tview = my_utils_container_get_child_by_type(
-								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+		tview = my_utils_container_get_child_by_type( GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
 		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), NULL );
 	}
 
@@ -818,6 +823,8 @@ ofa_account_frame_bin_get_current_treeview( const ofaAccountFrameBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	tview = page_get_treeview( bin );
+
+	g_debug ("%s: tview=%p", thisfn, ( void * ) tview );
 
 	return( tview );
 }

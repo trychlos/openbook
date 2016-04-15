@@ -520,6 +520,7 @@ book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeT
 	GtkTreeSelection *select;
 
 	tview = my_utils_container_get_child_by_type( GTK_CONTAINER( wpage ), GTK_TYPE_TREE_VIEW );
+
 	if( tview ){
 		g_return_if_fail( GTK_IS_TREE_VIEW( tview ));
 		select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
@@ -624,8 +625,7 @@ page_get_treeview( const ofaOpeTemplateFrameBin *self )
 		page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), page_n );
 		g_return_val_if_fail( page_w && GTK_IS_CONTAINER( page_w ), NULL );
 
-		tview = my_utils_container_get_child_by_type(
-								GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
+		tview = my_utils_container_get_child_by_type( GTK_CONTAINER( page_w ), GTK_TYPE_TREE_VIEW );
 		g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), NULL );
 	}
 
@@ -791,8 +791,6 @@ tview_on_row_selected( GtkTreeSelection *selection, ofaOpeTemplateFrameBin *self
 			g_free( mnemo );
 		}
 	}
-
-	/*update_buttons_sensitivity( bin, account );*/
 }
 
 static void
