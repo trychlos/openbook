@@ -355,9 +355,6 @@
 
 1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
 
-1082 2016- 4-14 BUG v31 DDL refactoring does not rightly consider '%'
-                    (maybe when it is not the first char ?)
-
 1084 2016- 4-14 BUG ofsOpe should backslash the string it returns
                      when it contains operators [-+/*]
                      Ratherr: re-use %EVAL() to evaluate expressions
@@ -1180,6 +1177,10 @@
 
 1080 2016- 4-14 BUG  ExerciceClose: 6X nor 7X accounts are zero-ed
      2016- 4-14 fixed with ofaICollector and ofaISingleKeeper free_all().
+
+1082 2016- 4-14 BUG v30 DDL refactoring does not rightly consider '%'
+                    (maybe when it is not the first char ?)
+     2016- 4-15 nope: this is rather due to the import of an old file.
 
 1083 2016- 4-14 BUG connect_to_hub_signaling_system seems to be called
                  on dossier opening, instead of on hub instanciation

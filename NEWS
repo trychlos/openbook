@@ -47,6 +47,7 @@
    - myIGridList: fix the line removing.
    - myIWindow: fix key value when saving default position.
    - myIWindow: does not close currently running window when closing the dossier.
+   - ofaExerciceCloseAssistant: fix future entries management.
    - ofaExerciceCloseAssistant: correctly display plugins tasks (todo #1079).
    - ofaFormulaEngine: fix operation operator backslashing.
    - ofaHub: signaling system is initialized by the application (todo #1077 and #1083).

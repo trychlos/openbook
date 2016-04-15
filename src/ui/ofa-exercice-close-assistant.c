@@ -1570,8 +1570,14 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 					"		(ACC_SETTLEABLE='Y' AND ENT_STLMT_NUMBER IS NULL) OR "
 					"		(ACC_RECONCILIABLE='Y' AND ENT_NUMBER NOT IN ("
 					"			SELECT REC_IDS_OTHER FROM OFA_T_CONCIL_IDS WHERE REC_IDS_TYPE='E'))) AND "
-					"		ENT_STATUS!=%d AND ENT_STATUS!=%d",
-					ENT_STATUS_DELETED, ENT_STATUS_FUTURE );
+					"		ENT_STATUS!=%d",
+					ENT_STATUS_DELETED );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup_printf( "INSERT INTO ARCHIVE_T_KEEP_ENTRIES "
+					"SELECT ENT_NUMBER FROM OFA_T_ENTRIES WHERE ENT_STATUS=%d", ENT_STATUS_FUTURE );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
