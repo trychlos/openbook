@@ -44,6 +44,7 @@
  
  Bug fixes:
 
+   - myIActionMap: activate application accelerators even after dossier opening (todo #1088).
    - myIGridList: fix the line removing.
    - myIWindow: fix key value when saving default position.
    - myIWindow: does not close currently running window when closing the dossier.

@@ -326,6 +326,8 @@ ofa_application_init( ofaApplication *self )
 	priv = ofa_application_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	my_iaction_map_register( MY_IACTION_MAP( self ));
 }
 
 static void

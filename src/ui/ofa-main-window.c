@@ -517,6 +517,8 @@ ofa_main_window_init( ofaMainWindow *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->last_theme = THM_LAST_THEME;
+
+	my_iaction_map_register( MY_IACTION_MAP( self ));
 }
 
 static void

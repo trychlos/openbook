@@ -105,10 +105,12 @@ guint               my_iaction_map_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
+void                my_iaction_map_register                  ( const myIActionMap *instance );
+
 GMenuModel         *my_iaction_map_get_menu_model            ( const myIActionMap *instance );
 
 GAction            *my_iaction_map_lookup_action             ( myIActionMap *instance,
-																	const gchar *name );
+																	const gchar *detailed_name );
 
 G_END_DECLS
 
