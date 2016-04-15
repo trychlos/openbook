@@ -478,6 +478,7 @@ ofa_application_new( void )
 	ofa_hub_set_extender_collection( priv->hub, extenders );
 
 	ofa_hub_register_types( priv->hub );
+	ofa_hub_init_signaling_system( priv->hub );
 
 	ofa_box_register_types();
 

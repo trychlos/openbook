@@ -91,7 +91,6 @@ static void  icollector_iface_init( ofaICollectorInterface *iface );
 static guint icollector_get_interface_version( void );
 static void  isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
 static void  dossier_do_close( ofaHub *hub );
-static void  init_signaling_system( ofaHub *hub );
 static void  check_db_vs_settings( const ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
@@ -535,10 +534,56 @@ ofa_hub_set_extender_collection( ofaHub *hub, ofaExtenderCollection *collection 
 }
 
 /**
+ * ofa_hub_init_signaling_system:
+ * @hub: this #ofaHub instance.
+ *
+ * Initialize the hub signaling system.
+ *
+ * Be sure object class handlers are connected to the dossier signaling
+ * system, as they may be needed before the class has the opportunity
+ * to initialize itself
+ *
+ * Example of a use case: the intermediate closing by ledger may be run
+ * without having first loaded the accounts, but the accounts should be
+ * connected in order to update themselves.
+ */
+void
+ofa_hub_init_signaling_system( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofa_hub_init_signaling_system";
+	ofaHubPrivate *priv;
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	ofo_account_connect_to_hub_signaling_system( hub );
+	ofo_bat_connect_to_hub_signaling_system( hub );
+	ofo_class_connect_to_hub_signaling_system( hub );
+	ofo_concil_connect_to_hub_signaling_system( hub );
+	ofo_currency_connect_to_hub_signaling_system( hub );
+	ofo_entry_connect_to_hub_signaling_system( hub );
+	ofo_ledger_connect_to_hub_signaling_system( hub );
+	ofo_ope_template_connect_to_hub_signaling_system( hub );
+	ofo_rate_connect_to_hub_signaling_system( hub );
+
+	ofa_idbmodel_init_hub_signaling_system( hub );
+}
+
+/**
  * ofa_hub_register_types:
  * @hub: this #ofaHub instance.
  *
  * Registers all #ofoBase derived types provided by the core library.
+ *
+ * This method, plus #ofa_hub_get_for_type() below, are in particular
+ * used to get a dynamic list of importable or exportable types, and
+ * more generally to be able to get a dynamic list of any known (and
+ * registered) type.
  */
 void
 ofa_hub_register_types( ofaHub *hub )
@@ -732,7 +777,6 @@ ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent )
 	if( ofa_idbmodel_update( hub, parent )){
 		priv->dossier = ofo_dossier_new( hub );
 		if( priv->dossier ){
-			init_signaling_system( hub );
 			priv->dossier_prefs = ofa_dossier_prefs_new( hub );
 			ok = TRUE;
 		}
@@ -785,35 +829,6 @@ dossier_do_close( ofaHub *hub )
 
 	ofa_isingle_keeper_free_all( OFA_ISINGLE_KEEPER( hub ));
 	ofa_icollector_free_all( OFA_ICOLLECTOR( hub ));
-}
-
-/*
- * Be sure object class handlers are connected to the dossier signaling
- * system, as they may be needed before the class has the opportunity
- * to initialize itself
- *
- * Example of a use case: the intermediate closing by ledger may be run
- * without having first loaded the accounts, but the accounts should be
- * connected in order to update themselves.
- */
-static void
-init_signaling_system( ofaHub *hub )
-{
-	static const gchar *thisfn = "ofa_hub_init_signaling_system";
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	ofo_account_connect_to_hub_signaling_system( hub );
-	ofo_bat_connect_to_hub_signaling_system( hub );
-	ofo_class_connect_to_hub_signaling_system( hub );
-	ofo_concil_connect_to_hub_signaling_system( hub );
-	ofo_currency_connect_to_hub_signaling_system( hub );
-	ofo_entry_connect_to_hub_signaling_system( hub );
-	ofo_ledger_connect_to_hub_signaling_system( hub );
-	ofo_ope_template_connect_to_hub_signaling_system( hub );
-	ofo_rate_connect_to_hub_signaling_system( hub );
-
-	ofa_idbmodel_init_hub_signaling_system( hub );
 }
 
 /*

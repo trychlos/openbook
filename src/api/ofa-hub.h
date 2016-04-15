@@ -103,6 +103,8 @@ ofaExtenderCollection  *ofa_hub_get_extender_collection   ( const ofaHub *hub );
 void                    ofa_hub_set_extender_collection   ( ofaHub *hub,
 																ofaExtenderCollection *collection );
 
+void                    ofa_hub_init_signaling_system     ( ofaHub *hub );
+
 void                    ofa_hub_register_types            ( ofaHub *hub );
 
 GList                  *ofa_hub_get_for_type              ( ofaHub *hub,

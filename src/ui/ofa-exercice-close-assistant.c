@@ -1084,12 +1084,11 @@ p6_solde_accounts( ofaExerciceCloseAssistant *self )
 }
 
 /*
- * balance the detail accounts - for validated soldes only
+ * Balance the detail accounts with for validated soldes.
+ * As all remaining rough entries have been previously validated, the
+ * accounts rough balances should be zero.
  *
- * It shouldn't remain any amount on daily soldes, but we do not take
- * care of that here.
- *
- * Note: forward entries on setlleable accounts are automatically set
+ * Note: forward entries on settleable accounts are automatically set
  * as settled, being balanced with the corresponding solde entry
  */
 static gint
@@ -1302,7 +1301,7 @@ p6_set_forward_settlement_number( GList *entries, const gchar *account, ofxCount
 }
 
 /*
- * close all the ledgers
+ * close all the ledgers on the being-closed exercice
  */
 static gboolean
 p6_close_ledgers( ofaExerciceCloseAssistant *self )
@@ -1529,12 +1528,12 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_ENTRIES" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_ENTRIES" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_DELETED_ENTRIES "
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_ENTRIES "
 					"SELECT * FROM OFA_T_ENTRIES WHERE "
 					"	ENT_NUMBER NOT IN (SELECT ENT_NUMBER FROM ARCHIVE_T_KEEP_ENTRIES)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
@@ -1551,7 +1550,7 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	/* set previous exercice entries status to 'past' */
 	if( ok ){
 		query = g_strdup_printf( "UPDATE OFA_T_ENTRIES SET "
-					"ENT_STATUS=%d WHERE ENT_STATUS!=%d", ENT_STATUS_PAST, ENT_STATUS_FUTURE );
+					"ENT_STATUS=%d WHERE ENT_STATUS=%d", ENT_STATUS_PAST, ENT_STATUS_VALIDATED );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
@@ -1574,24 +1573,24 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_BATS" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_BATS" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_DELETED_BATS "
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_BATS "
 					"SELECT * FROM OFA_T_BAT "
 					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM ARCHIVE_T_KEEP_BATS)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_BAT_LINES" );
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_BAT_LINES" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 		g_free( query );
 	}
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHIVE_T_DELETED_BAT_LINES "
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_BAT_LINES "
 					"SELECT * FROM OFA_T_BAT_LINES "
 					"	WHERE BAT_ID NOT IN (SELECT BAT_ID FROM ARCHIVE_T_KEEP_BATS)" );
 		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
@@ -1717,6 +1716,7 @@ p6_forward( ofaExerciceCloseAssistant *self )
  * beginning of the exercice, but at this time we only have:
  * - past entries (unreconciliated or unsettled from previous exercice)
  * - forward entries (which are in 'validated' status)
+ * - entries which were future in the previous exercice and are still future
  */
 static gboolean
 p6_open( ofaExerciceCloseAssistant *self )

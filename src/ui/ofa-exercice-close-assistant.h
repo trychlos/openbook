@@ -32,24 +32,16 @@
  *
  * Close the current exercice.
  *
- * Closing an exercice involves following steps:
- * - clear personal accounts: they must have a nul balance
- * - clear third party accounts, reconducting non pointed entries
- *   option: keep non settled third party entries
- *   option: keep non reconciliated entries
- *
- * Some of the accounts must be balanced for closing the exercice:
- * -> this is an account property
- *    if yes, then we must have a balance account for recording debit
- *    and credit entries
- *
  * Some of the accounts may benefit of the reconciliation process:
- * -> if yes, then the "keep non reconciliated entries" option applies
+ * -> if yes, then the "keep unreconciliated entries" option applies.
  *
  * Some of the accounts may benefit of the settling (settlement,
  * settled) process:
- * -> if yes, then the "keep non settled third party entries" option
- *    applies
+ * -> if yes, then the "keep unsettled entries" option applies.
+ *
+ * Some of the accounts start the exercice with a solde equal to those
+ * at the end of the previous exercice (e.g. bank accounts):
+ * -> if yes, then the "create carried forward entries" option applies.
  *
  * From "EBP Compta Fr":
  *   La clôture de l'exercice a pour but de calculer le résultat de
@@ -63,22 +55,55 @@
  *   - procéder à une sauvegarde des données.
  *
  * From Openbook point of view:
+ *
  * 1 - recall the prerequired operation as above
- * 2 - after confirmation, and for all accounts:
- *     a) do the security and integrity checks
- *        entries and ledgers are sane (equilibrated)
- *        ledgers are closed ?
- *        all detail accounts may be set in a closing category
- * 3 - enter required parameters (which may have been configured):
+ *
+ * 2 - enter required parameters (which may have been configured):
  *     date of the end of current exercice
  *     dates of the beginning and the end of the next exercice
  *     the operation template for balancing entries, or
  *      the account and the ledger
+ *
+ * 3 - after confirmation, run the security and integrity checks:
+ *     a) accounts, ledgers and entries are balanced
+ *     b) dbms integrity os ok
+ *
  * 4 - after a new user confirmation:
- *     b1) balancing the account (so no balance carried forward), or
- *     b2) generate a balance entry for the new exercice
- *     c) archive all tables so that we may reaccess them later when
- *        consulting a closed exercice
+ *     let the user backup the dossier on option
+ *
+ * 5 - close the exercice:
+ *     a) as soon as the ending date of the exercice is set, some
+ *        entries may have to be remediated (from future to rough or
+ *        from rough to future)
+ *     b) validate remaining rough entries on the exercice
+ *     c) balance all detail accounts
+ *        this means writing a solde entry on the account, balancing
+ *        it to a general balance account;
+ *        -> on settleable accounts, these solde entries are marked
+ *           settled;
+ *        -> on reconciliable accounts, these solde entries are marked
+ *           reconciliated;
+ *        -> on forwardable accounts, a new couple of entries is prepared
+ *           for later insertion in the new exercice, balanced with the
+ *           same balance account.
+ *     d) close all ledgers
+ *        this validates the new solde entries, and update ledgers balances
+ *     e) archive the being-closed dossier
+ *        - update the settings
+ *        - update the 'current' flag in the OFA_T_DOSSIER table
+ *     f) open the new dossier
+ *        - is a raw copy of the closed dossier
+ *        - update the settings
+ *        - update dossier properties with this new exercice
+ *     g) cleanup this new dossier of now-obsolete datas
+ *        - empty audit table (no archive)
+ *        - archive and empty accounts archived balances
+ *        - archive entries, only keeping unsettled and unreconciliable
+ *          ones + set them as 'past'
+ *        - archive bat, only keeping those which are not fully
+ *          reconciliated
+ *        - reset accounts and ledgers rough and validated balances to zero
+ *        - insert prepared forward entries and validates them
  */
 
 #include <gtk/gtk.h>

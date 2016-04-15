@@ -36,7 +36,8 @@
  * @kepts: a list of kept objects as sKept structures
  */
 typedef struct {
-	GList *kepts;
+	GList   *kepts;
+	gboolean finalized_instance;
 }
 	sISingleKeeper;
 
@@ -220,7 +221,7 @@ find_kept_by_type( GList *kepts, GType type )
 
 	for( it=kepts ; it ; it=it->next ){
 		kept = ( sKept * ) it->data;
-		if( kept->type == type ){
+		if( kept && kept->type == type ){
 			return( kept );
 		}
 	}
@@ -289,6 +290,7 @@ get_isingle_keeper_data( const ofaISingleKeeper *instance )
 		sdata = g_new0( sISingleKeeper, 1 );
 		g_object_set_data( G_OBJECT( instance ), ISINGLE_KEEPER_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+		sdata->finalized_instance = FALSE;
 	}
 
 	return( sdata );
@@ -302,6 +304,7 @@ on_instance_finalized( sISingleKeeper *sdata, GObject *finalized_single_keeper )
 	g_debug( "%s: sdata=%p, finalized_single_keeper=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_single_keeper );
 
+	sdata->finalized_instance = TRUE;
 	g_list_free_full( sdata->kepts, ( GDestroyNotify ) free_kept );
 	g_free( sdata );
 }
@@ -315,19 +318,22 @@ on_object_finalized( sISingleKeeper *sdata, GObject *finalized_object )
 	g_debug( "%s: sdata=%p, finalized_object=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_object );
 
-	kept = find_kept_by_type( sdata->kepts, G_OBJECT_TYPE( finalized_object ));
-	if( kept ){
-		sdata->kepts = g_list_remove( sdata->kepts, kept );
-		g_free( kept );
+	if( !sdata->finalized_instance ){
+		kept = find_kept_by_type( sdata->kepts, G_OBJECT_TYPE( finalized_object ));
+		if( kept ){
+			sdata->kepts = g_list_remove( sdata->kepts, kept );
+			g_free( kept );
+		}
 	}
 }
 
 static void
 free_kept( sKept *kept )
 {
+	/*
 	if( G_IS_OBJECT( kept->object )){
 		g_object_unref( kept->object );
-	}
+	}*/
 	//g_clear_object( &kept->object );
 	g_free( kept );
 }
