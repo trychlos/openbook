@@ -36,6 +36,7 @@
    - DDL Core v 31
    - ofaDossierProperties: cannot modify begin date if end of previous exercice is set.
    - ofaExerciceCloseAssistant: records the end date of the prevous exercice.
+   - ofaExerciceCloseAssistant: cleanup obsolete tables from the DBMS (todo #1089).
    - ofaFormulaEngine: now has a %IF() function.
    - ofaGuidedInput: add a title to the dialog.
    - ofaPeriodClose: let the period be closed independantly of the ledgers (todo #798).
@@ -46,6 +47,7 @@
    - myIGridList: fix the line removing.
    - myIWindow: fix key value when saving default position.
    - myIWindow: does not close currently running window when closing the dossier.
+   - ofaExerciceCloseAssistant: correctly display plugins tasks (todo #1079).
    - ofaFormulaEngine: fix operation operator backslashing.
    - ofaHub: signaling system is initialized by the application (todo #1077 and #1083).
    - ofaICollector: free the collections when closing the dossier (todo #1080).

@@ -353,9 +353,6 @@
 
 1078 2016- 4-14 BUG  ExerciceClose: re-add check balances and dbms integrity
 
-1079 2016- 4-14 BUG  ExerciceClose: VAT plugin display two lines 
-                     (and first is incomplete)
-
 1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
 
 1082 2016- 4-14 BUG v31 DDL refactoring does not rightly consider '%'
@@ -377,8 +374,6 @@
 
 1088 2016- 4-15 BUG Application accelerators are not active after a
                     dossier has been opened
-
-1089 2016- 4-15 v31 DDL remediation: remove obsolete archive and keep tables
 
 1090
 
@@ -1179,12 +1174,21 @@
 1077 2016- 4-14 BUG  after opening the new exercice, balances are not ok
      2016- 4-15 fixed by #1083
 
+1079 2016- 4-14 BUG  ExerciceClose: VAT plugin display two lines 
+                     (and first is incomplete)
+     2016- 4-15 fixed
+
 1080 2016- 4-14 BUG  ExerciceClose: 6X nor 7X accounts are zero-ed
      2016- 4-14 fixed with ofaICollector and ofaISingleKeeper free_all().
 
 1083 2016- 4-14 BUG connect_to_hub_signaling_system seems to be called
                  on dossier opening, instead of on hub instanciation
      2016- 4-15 fixed, which also fix #1077.
+
+1089 2016- 4-15 v31 DDL remediation: remove obsolete archive and keep tables
+                Has to be done in the exercice closing to make sure the
+                user does not lose any data.
+     2016- 4-15 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

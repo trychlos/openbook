@@ -1487,6 +1487,54 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
 	g_free( query );
 
+	/* cleanup obsolete tables
+	 */
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BATS" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_BAT_LINES" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_DELETED_ENTRIES" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_BATS" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS OFA_T_KEEP_ENTRIES" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_BATS" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_BAT_LINES" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_DELETED_ENTRIES" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_KEEP_ACCOUNTS_ARC" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+
 	/* cleanup archived accounts balances of the previous exercice
 	 */
 	if( ok ){

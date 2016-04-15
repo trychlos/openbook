@@ -54,7 +54,6 @@ typedef struct {
 static guint    iexe_close_get_interface_version( void );
 static gchar   *iexe_close_add_row( ofaIExeClose *instance, guint rowtype );
 static gboolean iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHub *hub );
-static gboolean do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub );
 static gboolean do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub );
 static void     update_bar( myProgressBar *bar, guint *count, guint total );
 
@@ -87,16 +86,14 @@ iexe_close_add_row( ofaIExeClose *instance, guint rowtype )
 {
 	gchar *text;
 
+	text = NULL;
+
 	switch( rowtype ){
-		case EXECLOSE_CLOSING:
-			//text = g_strdup( _( "VAT task on closing exercice N :" ));
-			text = NULL;
-			break;
 		case EXECLOSE_OPENING:
-			text = g_strdup( _( "VAT tasks on N+1 period opening :" ));
+			text = g_strdup( _( "Recurrent tasks on N+1 period opening :" ));
 			break;
 		default:
-			g_return_val_if_reached( NULL );
+			break;
 	}
 
 	return( text );
@@ -107,35 +104,17 @@ iexe_close_do_task( ofaIExeClose *instance, guint rowtype, GtkWidget *box, ofaHu
 {
 	gboolean ok;
 
+	ok = FALSE;
+
 	switch( rowtype ){
-		case EXECLOSE_CLOSING:
-			ok = do_task_closing( instance, box, hub );
-			break;
 		case EXECLOSE_OPENING:
 			ok = do_task_opening( instance, box, hub );
 			break;
 		default:
-			g_return_val_if_reached( FALSE );
+			break;;
 	}
 
 	return( ok );
-}
-
-/*
- * This task is expected not to be called since we are returning a
- * %NULL label from add_row() method
- */
-static gboolean
-do_task_closing( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
-{
-	GtkWidget *label;
-
-	label = gtk_label_new( _( "Nothing to do" ));
-	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-	gtk_container_add( GTK_CONTAINER( box ), label );
-	gtk_widget_show_all( box );
-
-	return( TRUE );
 }
 
 /*
@@ -155,19 +134,30 @@ do_task_opening( ofaIExeClose *instance, GtkWidget *box, ofaHub *hub )
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( bar ));
 	gtk_widget_show_all( box );
 
-	total = 5;							/* queries count */
+	total = 3;							/* queries count */
 	count = 0;
 	ok = TRUE;
 	connect = ofa_hub_get_connect( hub );
 
+	/* cleanup obsolete tables
+	 */
 	if( ok ){
 		query = g_strdup( "DROP TABLE IF EXISTS ARCHREC_T_DELETED_RECORDS" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
 		g_free( query );
 		update_bar( bar, &count, total );
 	}
+
+	/* archive records
+	 */
 	if( ok ){
-		query = g_strdup( "CREATE TABLE ARCHREC_T_DELETED_RECORDS "
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_REC_RUN" );
+		ok = ofa_idbconnect_query( connect, query, TRUE );
+		g_free( query );
+		update_bar( bar, &count, total );
+	}
+	if( ok ){
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_REC_RUN "
 					"SELECT * FROM REC_T_RUN "
 					"	WHERE REC_STATUS!='%s'" );
 		ok = ofa_idbconnect_query( connect, query, TRUE );
