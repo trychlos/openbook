@@ -406,7 +406,7 @@ get_iconcil_data( const ofaIConcil *instance, gboolean search )
 			hub = ofo_base_get_hub( OFO_BASE( instance ));
 			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-			collection = my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_CONCIL, hub );
+			collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_CONCIL, hub );
 			sdata->concil = get_concil_from_collection( collection, sdata->type, iconcil_get_id( instance ));
 
 			if( !sdata->concil ){

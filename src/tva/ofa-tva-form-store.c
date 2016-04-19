@@ -29,7 +29,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-isingle-keeper.h"
 
 #include "tva/ofa-tva-form-store.h"
 #include "tva/ofo-tva-form.h"
@@ -141,10 +140,12 @@ ofaTVAFormStore *
 ofa_tva_form_store_new( ofaHub *hub )
 {
 	ofaTVAFormStore *store;
+	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaTVAFormStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_TVA_FORM_STORE );
+	collector = ofa_hub_get_collector( hub );
+	store = ( ofaTVAFormStore * ) my_icollector_single_get_object( collector, OFA_TYPE_TVA_FORM_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_TVA_FORM_STORE( store ), NULL );
@@ -164,7 +165,7 @@ ofa_tva_form_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
+		my_icollector_single_set_object( collector, store );
 
 		load_dataset( store, hub );
 

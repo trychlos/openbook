@@ -37,7 +37,6 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-iexportable.h"
-#include "api/ofa-isingle-keeper.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-class.h"
@@ -89,14 +88,12 @@ static gint st_signals[ N_SIGNALS ]     = { 0 };
 
 static void  icollector_iface_init( myICollectorInterface *iface );
 static guint icollector_get_interface_version( void );
-static void  isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
 static void  dossier_do_close( ofaHub *hub );
 static void  check_db_vs_settings( const ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTOR, icollector_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISINGLE_KEEPER, isingle_keeper_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTOR, icollector_iface_init ))
 
 static void
 hub_finalize( GObject *instance )
@@ -461,17 +458,6 @@ static guint
 icollector_get_interface_version( void )
 {
 	return( 1 );
-}
-
-/*
- * ofaISingleKeeper interface management
- */
-static void
-isingle_keeper_iface_init( ofaISingleKeeperInterface *iface )
-{
-	static const gchar *thisfn = "ofa_hub_isingle_keeper_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
 
 /**
@@ -841,7 +827,6 @@ dossier_do_close( ofaHub *hub )
 	g_clear_object( &priv->dossier );
 	g_clear_object( &priv->dossier_prefs );
 
-	ofa_isingle_keeper_free_all( OFA_ISINGLE_KEEPER( hub ));
 	my_icollector_free_all( ofa_hub_get_collector( hub ));
 }
 

@@ -278,7 +278,7 @@ ofo_rate_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_RATE, hub ));
+	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_RATE, hub ));
 }
 
 /**
@@ -778,7 +778,7 @@ ofo_rate_insert( ofoRate *rate, ofaHub *hub )
 
 	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( rate ), hub );
-		my_icollector_add_object(
+		my_icollector_collection_add_object(
 				ofa_hub_get_collector( hub ),
 				MY_ICOLLECTIONABLE( rate ), ( GCompareFunc ) rate_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, rate );
@@ -957,7 +957,7 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 	ok = FALSE;
 
 	if( rate_do_update( rate, prev_mnemo, ofa_hub_get_connect( hub ))){
-		my_icollector_sort_collection(
+		my_icollector_collection_sort(
 				ofa_hub_get_collector( hub ),
 				OFO_TYPE_RATE, ( GCompareFunc ) rate_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, rate, prev_mnemo );
@@ -1046,7 +1046,7 @@ ofo_rate_delete( ofoRate *rate )
 
 	if( rate_do_delete( rate, ofa_hub_get_connect( hub ))){
 		g_object_ref( rate );
-		my_icollector_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( rate ));
+		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( rate ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, rate );
 		g_object_unref( rate );
 		ok = TRUE;
@@ -1412,7 +1412,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_free_collection( ofa_hub_get_collector( parms->hub ), OFO_TYPE_RATE );
+			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_RATE );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
 
 		} else {

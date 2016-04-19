@@ -361,8 +361,6 @@
 1094 2016- 4-19 FEAT dump the content of ICollector at the end of the
                      application
 
-1095 2016- 4-19 CODE merge ofaISingleKeeper with myICollector
-
 1096
 
 -----------------------------------------------------------------------
@@ -1208,6 +1206,9 @@
      2016- 4-15 fixed
 
 1092 2016- 4-19 CODE ICollector instance should be provided by ofaHub
+     2016- 4-19 done
+
+1095 2016- 4-19 CODE merge ofaISingleKeeper with myICollector
      2016- 4-19 done
 
 -----------------------------------------------------------------------

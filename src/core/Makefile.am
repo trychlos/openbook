@@ -112,7 +112,6 @@ libofa_core_la_SOURCES = \
 	ofa-iimportable.c									\
 	ofa-import-duplicate.c								\
 	ofa-iproperties.c									\
-	ofa-isingle-keeper.c								\
 	ofa-istore.c										\
 	ofa-itheme-manager.c								\
 	ofa-ledger-combo.c									\

@@ -29,7 +29,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-isingle-keeper.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -147,10 +146,12 @@ ofa_ope_template_store_new( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_new";
 	ofaOpeTemplateStore *store;
+	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaOpeTemplateStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_OPE_TEMPLATE_STORE );
+	collector = ofa_hub_get_collector( hub );
+	store = ( ofaOpeTemplateStore * ) my_icollector_single_get_object( collector, OFA_TYPE_OPE_TEMPLATE_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_OPE_TEMPLATE_STORE( store ), NULL );
@@ -171,7 +172,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
+		my_icollector_single_set_object( collector, store );
 
 		connect_to_hub_signaling_system( store, hub );
 

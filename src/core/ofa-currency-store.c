@@ -29,7 +29,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-isingle-keeper.h"
 #include "api/ofo-currency.h"
 
 #include "core/ofa-currency-store.h"
@@ -143,10 +142,12 @@ ofaCurrencyStore *
 ofa_currency_store_new( ofaHub *hub )
 {
 	ofaCurrencyStore *store;
+	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaCurrencyStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_CURRENCY_STORE );
+	collector = ofa_hub_get_collector( hub );
+	store = ( ofaCurrencyStore * ) my_icollector_single_get_object( collector, OFA_TYPE_CURRENCY_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_CURRENCY_STORE( store ), NULL );
@@ -166,7 +167,7 @@ ofa_currency_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
+		my_icollector_single_set_object( collector, store );
 
 		load_dataset( store, hub );
 		setup_signaling_connect( store, hub );

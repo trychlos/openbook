@@ -30,7 +30,6 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-isingle-keeper.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -146,10 +145,12 @@ ofaLedgerStore *
 ofa_ledger_store_new( ofaHub *hub )
 {
 	ofaLedgerStore *store;
+	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	store = ( ofaLedgerStore * ) ofa_isingle_keeper_get_object( OFA_ISINGLE_KEEPER( hub ), OFA_TYPE_LEDGER_STORE );
+	collector = ofa_hub_get_collector( hub );
+	store = ( ofaLedgerStore * ) my_icollector_single_get_object( collector, OFA_TYPE_LEDGER_STORE );
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_LEDGER_STORE( store ), NULL );
@@ -169,7 +170,7 @@ ofa_ledger_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		ofa_isingle_keeper_set_object( OFA_ISINGLE_KEEPER( hub ), store );
+		my_icollector_single_set_object( collector, store );
 
 		load_dataset( store, hub );
 		setup_signaling_connect( store, hub );

@@ -31,9 +31,10 @@
  * @short_description: The ICollector Interface
  * @include: openbook/my-icollector.h
  *
- * The #myICollector interface lets an object manage collection(s) of
- * other objects.
- * It works by associating a GList of objects to a GType.
+ * The #myICollector interface lets an object manage collection(s)
+ * (resp. single) objects.
+ * It works by associating a #GList of objects (resp. a #GObject)
+ * to a GType.
  *
  * It is expected that these other objects (whose collections are
  * managed by this #myICollector interface) implement themselves the
@@ -42,9 +43,6 @@
  * For Openbook needs, the #myICollector interface is implemented by
  * the #ofaHub class, so that it is able to manage the collections of
  * accounts, classes, currencies, and so on.
- *
- * Rather see #ofaISingleKeeper interface to associate a GType with a
- * single object.
  */
 
 #include "my/my-icollectionable.h"
@@ -103,24 +101,30 @@ guint    my_icollector_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-GList   *my_icollector_get_collection            ( myICollector *instance,
+GList   *my_icollector_collection_get            ( myICollector *instance,
 														GType type,
 														void *user_data );
 
-void     my_icollector_add_object                ( myICollector *instance,
+void     my_icollector_collection_add_object     ( myICollector *instance,
 														myICollectionable *object,
 														GCompareFunc func,
 														void *user_data );
 
-void     my_icollector_remove_object             ( myICollector *instance,
+void     my_icollector_collection_remove_object  ( myICollector *instance,
 														const myICollectionable *object );
 
-void     my_icollector_sort_collection           ( myICollector *instance,
+void     my_icollector_collection_sort           ( myICollector *instance,
 														GType type,
 														GCompareFunc func );
 
-void     my_icollector_free_collection           ( myICollector *instance,
+void     my_icollector_collection_free           ( myICollector *instance,
 														GType type );
+
+GObject *my_icollector_single_get_object         ( myICollector *instance,
+														GType type );
+
+void     my_icollector_single_set_object         ( myICollector *instance,
+														void *object );
 
 void     my_icollector_free_all                  ( myICollector *instance );
 

@@ -207,7 +207,7 @@ ofo_class_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_CLASS, hub ));
+	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_CLASS, hub ));
 }
 
 /**
@@ -456,7 +456,7 @@ ofo_class_insert( ofoClass *class, ofaHub *hub )
 	ok = FALSE;
 	if( class_do_insert( class, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( class ), hub );
-		my_icollector_add_object(
+		my_icollector_collection_add_object(
 				ofa_hub_get_collector( hub ),
 				MY_ICOLLECTIONABLE( class ), ( GCompareFunc ) class_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, class );
@@ -533,7 +533,7 @@ ofo_class_update( ofoClass *class, gint prev_id )
 
 	if( class_do_update( class, prev_id, ofa_hub_get_connect( hub ))){
 		str = g_strdup_printf( "%d", prev_id );
-		my_icollector_sort_collection(
+		my_icollector_collection_sort(
 				ofa_hub_get_collector( hub ),
 				OFO_TYPE_CLASS, ( GCompareFunc ) class_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, class, str );
@@ -610,7 +610,7 @@ ofo_class_delete( ofoClass *class )
 
 	if( class_do_delete( class, ofa_hub_get_connect( hub ))){
 		g_object_ref( class );
-		my_icollector_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( class ));
+		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( class ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, class );
 		g_object_unref( class );
 		ok = TRUE;
@@ -826,7 +826,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_free_collection( ofa_hub_get_collector( parms->hub ), OFO_TYPE_CLASS );
+			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_CLASS );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CLASS );
 
 		} else {
