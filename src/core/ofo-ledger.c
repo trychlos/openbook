@@ -192,7 +192,7 @@ static gint       ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint       ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
-static GList     *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
+static GList     *icollectionable_load_collection( void *user_data );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( void );
 static gchar     *iexportable_get_label( const ofaIExportable *instance );
@@ -1688,7 +1688,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const myICollectionable *instance, void *user_data )
+icollectionable_load_collection( void *user_data )
 {
 	ofoLedgerPrivate *priv;
 	GList *dataset, *it;

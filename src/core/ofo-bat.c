@@ -87,7 +87,7 @@ static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
-static GList      *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
+static GList      *icollectionable_load_collection( void *user_data );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -1317,7 +1317,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const myICollectionable *instance, void *user_data )
+icollectionable_load_collection( void *user_data )
 {
 	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;

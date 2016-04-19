@@ -83,8 +83,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	GList * ( *load_collection )      ( const myICollectionable *instance,
-											void *user_data );
+	GList * ( *load_collection )      ( void *user_data );
 }
 	myICollectionableInterface;
 
@@ -100,12 +99,12 @@ guint  my_icollectionable_get_interface_last_version( void );
  */
 guint  my_icollectionable_get_interface_version     ( GType type );
 
+GList *my_icollectionable_load_collection           ( GType type,
+															void *user_data );
+
 /*
  * Instance-wide
  */
-GList *my_icollectionable_load_collection           ( const myICollectionable *instance,
-															void *user_data );
-
 G_END_DECLS
 
 #endif /* __MY_API_MY_ICOLLECTIONABLE_H__ */

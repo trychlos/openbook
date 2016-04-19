@@ -231,7 +231,7 @@ static gint          record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar
 static gint          tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b );
 static void          icollectionable_iface_init( myICollectionableInterface *iface );
 static guint         icollectionable_get_interface_version( void );
-static GList        *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
+static GList        *icollectionable_load_collection( void *user_data );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
@@ -1798,7 +1798,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const myICollectionable *instance, void *user_data )
+icollectionable_load_collection( void *user_data )
 {
 	static const gchar *thisfn = "ofo_tva_record_load_dataset";
 	ofoTVARecordPrivate *priv;

@@ -176,23 +176,33 @@ my_icollectionable_get_interface_version( GType type )
 
 /**
  * my_icollectionable_load_collection:
- * @instance: this #myICollectionable instance.
+ * @type: the implementation's GType.
  * @user_data: user data to be passed to the @instance.
  *
  * Returns: the collection of desired objects, or %NULL.
  */
 GList *
-my_icollectionable_load_collection( const myICollectionable *instance, void *user_data )
+my_icollectionable_load_collection( GType type, void *user_data )
 {
-	static const gchar *thisfn = "my_icollectionable_load_collection";
+	gpointer klass, iface;
+	GList *list;
 
-	g_return_val_if_fail( instance && MY_IS_ICOLLECTIONABLE( instance ), NULL );
+	klass = g_type_class_ref( type );
+	g_return_val_if_fail( klass, NULL );
 
-	if( MY_ICOLLECTIONABLE_GET_INTERFACE( instance )->load_collection ){
-		return( MY_ICOLLECTIONABLE_GET_INTERFACE( instance )->load_collection( instance, user_data ));
+	iface = g_type_interface_peek( klass, MY_TYPE_ICOLLECTIONABLE );
+
+	list = NULL;
+
+	if( iface && (( myICollectionableInterface * ) iface )->load_collection ){
+		list = (( myICollectionableInterface * ) iface )->load_collection( user_data );
+
+	} else {
+		g_info( "%s implementation does not provide 'load_collection()' method",
+				g_type_name( type ));
 	}
 
-	g_info( "%s: myICollectionable's %s implementation does not provide 'load_collection()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
+	g_type_class_unref( klass );
+
+	return( list );
 }

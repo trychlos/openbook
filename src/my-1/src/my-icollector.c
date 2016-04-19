@@ -254,23 +254,17 @@ static sTyped *
 load_collection( myICollector *instance, GType type, void *user_data )
 {
 	sTyped *typed;
-	GObject *fake;
 	GList *dataset;
 
 	typed = NULL;
-	fake = g_object_new( type, NULL );
+	dataset = my_icollectionable_load_collection( type, user_data );
 
-	if( MY_IS_ICOLLECTIONABLE( fake )){
-		dataset = my_icollectionable_load_collection( MY_ICOLLECTIONABLE( fake ), user_data );
-
-		if( dataset && g_list_length( dataset )){
-			typed = g_new0( sTyped, 1 );
-			typed->type = type;
-			typed->is_collection = TRUE;
-			typed->t.list = dataset;
-		}
+	if( dataset && g_list_length( dataset )){
+		typed = g_new0( sTyped, 1 );
+		typed->type = type;
+		typed->is_collection = TRUE;
+		typed->t.list = dataset;
 	}
-	g_object_unref( fake );
 
 	return( typed );
 }
@@ -469,7 +463,10 @@ my_icollector_single_set_object( myICollector *instance, void *object )
 void
 my_icollector_free_all( myICollector *instance )
 {
+	static const gchar *thisfn = "my_icollector_free_all";
 	sCollector *sdata;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_if_fail( instance && MY_IS_ICOLLECTOR( instance ));
 
@@ -527,11 +524,11 @@ on_instance_finalized( sCollector *sdata, GObject *finalized_collector )
 static void
 on_single_object_finalized( sCollector *sdata, GObject *finalized_object )
 {
-	static const gchar *thisfn = "ofa_isinglee_keeper_on_object_finalized";
+	static const gchar *thisfn = "my_icollector_on_object_finalized";
 	sTyped *typed;
 
-	g_debug( "%s: sdata=%p, finalized_object=%p",
-			thisfn, ( void * ) sdata, ( void * ) finalized_object );
+	g_debug( "%s: sdata=%p, finalized_object=%p (%s)",
+			thisfn, ( void * ) sdata, ( void * ) finalized_object, G_OBJECT_TYPE_NAME( finalized_object ));
 
 	if( !sdata->finalizing_instance ){
 		typed = find_typed_by_type( sdata, G_OBJECT_TYPE( finalized_object ));
@@ -548,6 +545,7 @@ free_typed( sTyped *typed )
 	if( typed->is_collection ){
 		g_list_free_full( typed->t.list, ( GDestroyNotify ) g_object_unref );
 	} else {
+		g_debug( "free_typed: about to unref object at %p", ( void * ) typed->t.object );
 		//g_object_unref( typed->t.object );
 	}
 

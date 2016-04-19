@@ -116,7 +116,7 @@ static gint     model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *
 static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void     icollectionable_iface_init( myICollectionableInterface *iface );
 static guint    icollectionable_get_interface_version( void );
-static GList   *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
+static GList   *icollectionable_load_collection( void *user_data );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentRun )
@@ -678,7 +678,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const myICollectionable *instance, void *user_data )
+icollectionable_load_collection( void *user_data )
 {
 	GList *dataset;
 

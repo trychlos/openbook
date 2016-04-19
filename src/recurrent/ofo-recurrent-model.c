@@ -122,7 +122,7 @@ static gint               model_cmp_by_mnemo( const ofoRecurrentModel *a, const 
 static gint               recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a, const ofoRecurrentModel *b );
 static void               icollectionable_iface_init( myICollectionableInterface *iface );
 static guint              icollectionable_get_interface_version( void );
-static GList             *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
+static GList             *icollectionable_load_collection( void *user_data );
 static void               iexportable_iface_init( ofaIExportableInterface *iface );
 static guint              iexportable_get_interface_version( void );
 static gchar             *iexportable_get_label( const ofaIExportable *instance );
@@ -918,7 +918,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const myICollectionable *instance, void *user_data )
+icollectionable_load_collection( void *user_data )
 {
 	GList *dataset;
 

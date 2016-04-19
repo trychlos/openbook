@@ -352,14 +352,10 @@
                 + should review its initialization which is a bit
                 laborious..
 
-1091 2016- 4-19 CODE my_icollectionable_load_collection() is a GType method
-
 1093 2016- 4-19 CODE ICollector should have its own messaging system
                      on add/remove actions (update/reload cannot be managed
                      here)
-
-1094 2016- 4-19 FEAT dump the content of ICollector at the end of the
-                     application
+     2016- 4-19 find a use case
 
 1096
 
@@ -1205,8 +1201,15 @@
 1090 2016- 4-15 BUG  CloseDossier does not reset the mainwindow title
      2016- 4-15 fixed
 
+1091 2016- 4-19 CODE my_icollectionable_load_collection() is a GType method
+     2016- 4-19 done
+
 1092 2016- 4-19 CODE ICollector instance should be provided by ofaHub
      2016- 4-19 done
+
+1094 2016- 4-19 FEAT dump the content of ICollector at the end of the
+                     application
+     2016- 4-19 this is a non-sense as the list itself if freed -> cancelled
 
 1095 2016- 4-19 CODE merge ofaISingleKeeper with myICollector
      2016- 4-19 done

@@ -66,6 +66,7 @@
  Other changes:
 
    - myIGridList: review the interface.
+   - my_icollectionable_load_collection(): is now a class method (todo #1091).
    - my_utils_quote_sql(): new function.
    - ofo_account_archive_open_balances(): moved to ofo_account_archive_balances().
    - ofaICollectionable: renamed to myICollectionable and moved to my-1 library (todo #1071).

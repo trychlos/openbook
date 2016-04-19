@@ -121,7 +121,7 @@ static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *cod
 static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
 static void         icollectionable_iface_init( myICollectionableInterface *iface );
 static guint        icollectionable_get_interface_version( void );
-static GList       *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
+static GList       *icollectionable_load_collection( void *user_data );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
@@ -742,7 +742,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const myICollectionable *instance, void *user_data )
+icollectionable_load_collection( void *user_data )
 {
 	GList *list;
 
