@@ -34,10 +34,10 @@
 
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
@@ -223,7 +223,7 @@ ofo_currency_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_CURRENCY ));
+	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_CURRENCY, hub ));
 }
 
 /**
@@ -513,8 +513,8 @@ ofo_currency_insert( ofoCurrency *currency, ofaHub *hub )
 
 	if( currency_do_insert( currency, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( currency ), hub );
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( currency ), ( GCompareFunc ) currency_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( currency ), ( GCompareFunc ) currency_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, currency );
 		ok = TRUE;
 	}
@@ -601,8 +601,8 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 	hub = ofo_base_get_hub( OFO_BASE( currency ));
 
 	if( currency_do_update( currency, prev_code, ofa_hub_get_connect( hub ))){
-		ofa_icollector_sort_collection(
-				OFA_ICOLLECTOR( hub ), OFO_TYPE_CURRENCY, ( GCompareFunc ) currency_cmp_by_ptr );
+		my_icollector_sort_collection(
+				MY_ICOLLECTOR( hub ), OFO_TYPE_CURRENCY, ( GCompareFunc ) currency_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, currency, prev_code );
 		ok = TRUE;
 	}
@@ -680,7 +680,7 @@ ofo_currency_delete( ofoCurrency *currency )
 
 	if( currency_do_delete( currency, ofa_hub_get_connect( hub ))){
 		g_object_ref( currency );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( currency ));
+		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( currency ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, currency );
 		g_object_unref( currency );
 		ok = TRUE;
@@ -884,7 +884,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_CURRENCY );
+			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_CURRENCY );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_CURRENCY );
 
 		} else {

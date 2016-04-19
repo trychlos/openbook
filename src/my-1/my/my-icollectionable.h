@@ -32,7 +32,7 @@
  * @include: my/my-icollectionable.h
  *
  * The #myICollectionable interface should be implemented by all the
- * classes which wish the the #ofaICollector implementation maintains
+ * classes which wish the the #myICollector implementation maintains
  * a collection of their objects.
  */
 

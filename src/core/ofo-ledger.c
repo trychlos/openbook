@@ -33,11 +33,11 @@
 #include "my/my-date.h"
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
@@ -415,7 +415,7 @@ on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar 
 
 	g_free( query );
 
-	ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_LEDGER );
+	my_icollector_free_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_LEDGER );
 
 	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
 }
@@ -492,7 +492,7 @@ ofo_ledger_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_LEDGER ));
+	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_LEDGER, hub ));
 }
 
 /**
@@ -1341,8 +1341,8 @@ ofo_ledger_insert( ofoLedger *ledger, ofaHub *hub )
 
 	if( ledger_do_insert( ledger, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( ledger ), hub );
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( ledger ), ( GCompareFunc ) ledger_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ledger ), ( GCompareFunc ) ledger_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ledger );
 		ok = TRUE;
 	}
@@ -1429,8 +1429,8 @@ ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 
 	if( ledger_do_update( ledger, prev_mnemo, ofa_hub_get_connect( hub ))){
-		ofa_icollector_sort_collection(
-				OFA_ICOLLECTOR( hub ), OFO_TYPE_LEDGER, ( GCompareFunc ) ledger_cmp_by_ptr );
+		my_icollector_sort_collection(
+				MY_ICOLLECTOR( hub ), OFO_TYPE_LEDGER, ( GCompareFunc ) ledger_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ledger, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1616,7 +1616,7 @@ ofo_ledger_delete( ofoLedger *ledger )
 
 	if( ledger_do_delete( ledger, ofa_hub_get_connect( hub ))){
 		g_object_ref( ledger );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ledger ));
+		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ledger ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, ledger );
 		g_object_unref( ledger );
 		ok = TRUE;
@@ -1911,7 +1911,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_LEDGER );
+			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_LEDGER );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
 
 		} else {

@@ -55,7 +55,7 @@
    - ofaExerciceCloseAssistant: correctly display plugins tasks (todo #1079).
    - ofaFormulaEngine: fix operation operator backslashing.
    - ofaHub: signaling system is initialized by the application (todo #1077 and #1083).
-   - ofaICollector: free the collections when closing the dossier (todo #1080).
+   - myICollector: free the collections when closing the dossier (todo #1080).
    - ofaIDBConnect: does not try to restore when no period is found.
    - ofaISingleKeeper: release the objects when closing the dossier (todo #1080).
    - ofaMainWindow: reset the window title when closing the dossier (todo #1090).
@@ -68,7 +68,8 @@
    - myIGridList: review the interface.
    - my_utils_quote_sql(): new function.
    - ofo_account_archive_open_balances(): moved to ofo_account_archive_balances().
-   - ofaICollectionable: renamed to myICollectionable and moved to my-1 library.
+   - ofaICollectionable: renamed to myICollectionable and moved to my-1 library (todo #1071).
+   - ofaICollector: renamed to myICollector and moved to my-1 library (todo #1071).
    - ofaPeriodClose: new dialog.
 
 -----------------------------------------------------------------------
@@ -492,7 +493,7 @@
 
    - ofaBatTreeview: add unused count to page (todo #754).
    - ofaHub: new hub management class (todo #948).
-   - myICollectionable, ofaICollector: new interfaces.
+   - myICollectionable, myICollector: new interfaces.
    - ofaIExeCloseClose: new interface for exercice closing in the plugins.
    - ofaIHubber: new interface for ofaHub management (todo #941).
    - TVA: compute the VAT rules (todo #311).
@@ -905,7 +906,7 @@
    - Have my_collate() function (todo #770).
    - entry_load_dataset() now has an order clause argument (todo #764).
    - ofa_bat_utils_import(): new function.
-   - ofaICollector, ofaIConcil: new interfaces.
+   - myICollector, ofaIConcil: new interfaces.
    - ofoConcil: new class.
    - review ofoBat and ofoBatLine public APIs.
    - update DBMS to version 25.

@@ -33,11 +33,11 @@
 #include "my/my-date.h"
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
@@ -278,7 +278,7 @@ ofo_rate_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_RATE ));
+	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_RATE, hub ));
 }
 
 /**
@@ -778,8 +778,8 @@ ofo_rate_insert( ofoRate *rate, ofaHub *hub )
 
 	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( rate ), hub );
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( rate ), ( GCompareFunc ) rate_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( rate ), ( GCompareFunc ) rate_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, rate );
 		ok = TRUE;
 	}
@@ -956,8 +956,8 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 	ok = FALSE;
 
 	if( rate_do_update( rate, prev_mnemo, ofa_hub_get_connect( hub ))){
-		ofa_icollector_sort_collection(
-				OFA_ICOLLECTOR( hub ), OFO_TYPE_RATE, ( GCompareFunc ) rate_cmp_by_ptr );
+		my_icollector_sort_collection(
+				MY_ICOLLECTOR( hub ), OFO_TYPE_RATE, ( GCompareFunc ) rate_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, rate, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1044,7 +1044,7 @@ ofo_rate_delete( ofoRate *rate )
 
 	if( rate_do_delete( rate, ofa_hub_get_connect( hub ))){
 		g_object_ref( rate );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( rate ));
+		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( rate ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, rate );
 		g_object_unref( rate );
 		ok = TRUE;
@@ -1410,7 +1410,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_RATE );
+			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_RATE );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RATE );
 
 		} else {

@@ -73,6 +73,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iaction-map.c									\
 	my-iassistant.c										\
 	my-icollectionable.c								\
+	my-icollector.c										\
 	my-idialog.c										\
 	my-iident.c											\
 	my-igridlist.c										\

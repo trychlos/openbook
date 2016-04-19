@@ -417,6 +417,7 @@ my_include_HEADERS = \
 	my-iaction-map.h									\
 	my-iassistant.h										\
 	my-icollectionable.h								\
+	my-icollector.h										\
 	my-idialog.h										\
 	my-iident.h											\
 	my-igridlist.h										\

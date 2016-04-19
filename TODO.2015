@@ -343,7 +343,7 @@
  761 2015- 3-22 in the warning displayed when restoring to a database,
                 display the target database in bold (or red)
 
- 766 2015- 3-26 replace ofaIDataset interface by ofaICollector
+ 766 2015- 3-26 replace ofaIDataset interface by myICollector
 
  783 2015- 4- 3 have a summary of unsettle/unreconciliated entries which
                 will be reported after exercice closing

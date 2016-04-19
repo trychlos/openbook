@@ -26,10 +26,10 @@
 #include <config.h>
 #endif
 
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofo-base.h"
 #include "api/ofo-concil.h"
 #include "api/ofo-dossier.h"
@@ -406,7 +406,7 @@ get_iconcil_data( const ofaIConcil *instance, gboolean search )
 			hub = ofo_base_get_hub( OFO_BASE( instance ));
 			g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-			collection = ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_CONCIL );
+			collection = my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_CONCIL, hub );
 			sdata->concil = get_concil_from_collection( collection, sdata->type, iconcil_get_id( instance ));
 
 			if( !sdata->concil ){

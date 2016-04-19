@@ -34,7 +34,7 @@
  * The #ofaISingleKeeper interface lets an implementor object associate
  * a GType with a single, global, GObject.
  *
- * Rather see #ofaICollector interface to associate a GType with a
+ * Rather see #myICollector interface to associate a GType with a
  * GList of objects.
  */
 

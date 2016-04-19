@@ -31,11 +31,11 @@
 #include <string.h>
 
 #include "my/my-icollectionable.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -241,7 +241,7 @@ hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gc
 
 	g_free( query );
 
-	ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_RUN );
+	my_icollector_free_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_RUN );
 	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_RUN );
 
 	return( ok );
@@ -261,7 +261,7 @@ ofo_recurrent_run_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_RECURRENT_RUN ));
+	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_RUN, hub ));
 }
 
 /**
@@ -490,8 +490,8 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run, ofaHub *hub )
 
 	if( model_do_insert( recurrent_run, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( recurrent_run ), hub );
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( recurrent_run ), ( GCompareFunc ) recurrent_run_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( recurrent_run ), ( GCompareFunc ) recurrent_run_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_run );
 		ok = TRUE;
 	}
@@ -578,8 +578,8 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 	hub = ofo_base_get_hub( OFO_BASE( recurrent_run ));
 
 	if( model_do_update( recurrent_run, ofa_hub_get_connect( hub ))){
-		ofa_icollector_sort_collection(
-				OFA_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_MODEL, ( GCompareFunc ) recurrent_run_cmp_by_ptr );
+		my_icollector_sort_collection(
+				MY_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_MODEL, ( GCompareFunc ) recurrent_run_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_run, NULL );
 		ok = TRUE;
 	}

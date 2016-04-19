@@ -770,8 +770,8 @@
 	* src/core/ofa-collection.h,
 	* src/core/ofa-concil-collection.c,
 	* src/core/ofa-concil-collection.h,
-	* src/core/ofa-icollector.c,
-	* src/core/ofa-icollector.h,
+	* src/core/my-icollector.c,
+	* src/core/my-icollector.h,
 	* src/core/ofa-iconcil.c,
 	* src/core/ofa-iconcil.h: new files.
 

@@ -33,12 +33,12 @@
 #include "my/my-date.h"
 #include "my/my-double.h"
 #include "my/my-icollectionable.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
@@ -473,7 +473,7 @@ on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar 
 
 	g_free( query );
 
-	collection = ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_ACCOUNT );
+	collection = my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, hub );
 	if( collection && g_list_length( collection )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
 	}
@@ -561,7 +561,7 @@ ofo_account_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_ACCOUNT ));
+	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, hub ));
 }
 
 /**
@@ -1834,8 +1834,8 @@ ofo_account_insert( ofoAccount *account, ofaHub *hub )
 
 	if( account_do_insert( account, connect )){
 		ofo_base_set_hub( OFO_BASE( account ), hub );
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( account ), ( GCompareFunc ) account_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( account ), ( GCompareFunc ) account_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, account );
 		ok = TRUE;
 	}
@@ -1933,8 +1933,8 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 	hub = ofo_base_get_hub( OFO_BASE( account ));
 
 	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number )){
-		ofa_icollector_sort_collection(
-				OFA_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, ( GCompareFunc ) account_cmp_by_ptr );
+		my_icollector_sort_collection(
+				MY_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, ( GCompareFunc ) account_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, account, prev_number );
 		ok = TRUE;
 	}
@@ -2157,7 +2157,7 @@ ofo_account_delete( ofoAccount *account )
 
 	if( account_do_delete( account, ofa_hub_get_connect( hub ))){
 		g_object_ref( account );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( account ));
+		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( account ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, account );
 		g_object_unref( account );
 		ok = TRUE;
@@ -2414,7 +2414,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_ACCOUNT );
+			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_ACCOUNT );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
 
 		} else {

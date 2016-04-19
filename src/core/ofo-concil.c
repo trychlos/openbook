@@ -30,10 +30,10 @@
 
 #include "my/my-date.h"
 #include "my/my-icollectionable.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
@@ -259,9 +259,9 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 		}
 		g_free( query2 );
 
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ),
-				hub, MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ),
+				MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
 	}
 
@@ -537,9 +537,9 @@ ofo_concil_insert( ofoConcil *concil, ofaHub *hub )
 
 	if( concil_do_insert( concil, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( concil ), hub );
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ),
-				hub, MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ),
+				MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
 		ok = TRUE;
 	}
@@ -658,7 +658,7 @@ ofo_concil_delete( ofoConcil *concil )
 
 	if( concil_do_delete( concil, ofa_hub_get_connect( hub ))){
 		g_object_ref( concil );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( concil ));
+		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( concil ));
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETED, concil );
 		g_object_unref( concil );
 		ok = TRUE;

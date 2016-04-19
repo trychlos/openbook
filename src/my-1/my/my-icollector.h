@@ -22,24 +22,24 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_ICOLLECTOR_H__
-#define __OPENBOOK_API_OFA_ICOLLECTOR_H__
+#ifndef __OPENBOOK_API_MY_ICOLLECTOR_H__
+#define __OPENBOOK_API_MY_ICOLLECTOR_H__
 
 /**
  * SECTION: icollector
- * @title: ofaICollector
+ * @title: myICollector
  * @short_description: The ICollector Interface
- * @include: openbook/ofa-icollector.h
+ * @include: openbook/my-icollector.h
  *
- * The #ofaICollector interface lets an object manage collection(s) of
+ * The #myICollector interface lets an object manage collection(s) of
  * other objects.
  * It works by associating a GList of objects to a GType.
  *
  * It is expected that these other objects (whose collections are
- * managed by this #ofaICollector interface) implement themselves the
+ * managed by this #myICollector interface) implement themselves the
  * #myICollectionable interface.
  *
- * For Openbook needs, the #ofaICollector interface is implemented by
+ * For Openbook needs, the #myICollector interface is implemented by
  * the #ofaHub class, so that it is able to manage the collections of
  * accounts, classes, currencies, and so on.
  *
@@ -49,23 +49,21 @@
 
 #include "my/my-icollectionable.h"
 
-#include "api/ofa-hub-def.h"
-
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ICOLLECTOR                      ( ofa_icollector_get_type())
-#define OFA_ICOLLECTOR( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_ICOLLECTOR, ofaICollector ))
-#define OFA_IS_ICOLLECTOR( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_ICOLLECTOR ))
-#define OFA_ICOLLECTOR_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_ICOLLECTOR, ofaICollectorInterface ))
+#define MY_TYPE_ICOLLECTOR                      ( my_icollector_get_type())
+#define MY_ICOLLECTOR( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, MY_TYPE_ICOLLECTOR, myICollector ))
+#define MY_IS_ICOLLECTOR( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, MY_TYPE_ICOLLECTOR ))
+#define MY_ICOLLECTOR_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_ICOLLECTOR, myICollectorInterface ))
 
-typedef struct _ofaICollector                    ofaICollector;
+typedef struct _myICollector                    myICollector;
 
 /**
- * ofaICollectorInterface:
+ * myICollectorInterface:
  * @get_interface_version: [should]: get the version number of the
  *                                   interface implementation.
  *
- * This defines the interface that an #ofaICollector may/should
+ * This defines the interface that an #myICollector may/should
  * implement.
  */
 typedef struct {
@@ -88,44 +86,44 @@ typedef struct {
 
 	/*** instance-wide ***/
 }
-	ofaICollectorInterface;
+	myICollectorInterface;
 
 /*
  * Interface-wide
  */
-GType    ofa_icollector_get_type                  ( void );
+GType    my_icollector_get_type                  ( void );
 
-guint    ofa_icollector_get_interface_last_version( void );
+guint    my_icollector_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint    ofa_icollector_get_interface_version     ( GType type );
+guint    my_icollector_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-GList   *ofa_icollector_get_collection            ( ofaICollector *instance,
-														ofaHub *hub,
-														GType type );
+GList   *my_icollector_get_collection            ( myICollector *instance,
+														GType type,
+														void *user_data );
 
-void     ofa_icollector_add_object                ( ofaICollector *instance,
-														ofaHub *hub,
+void     my_icollector_add_object                ( myICollector *instance,
 														myICollectionable *object,
-														GCompareFunc func );
+														GCompareFunc func,
+														void *user_data );
 
-void     ofa_icollector_remove_object             ( ofaICollector *instance,
+void     my_icollector_remove_object             ( myICollector *instance,
 														const myICollectionable *object );
 
-void     ofa_icollector_sort_collection           ( ofaICollector *instance,
+void     my_icollector_sort_collection           ( myICollector *instance,
 														GType type,
 														GCompareFunc func );
 
-void     ofa_icollector_free_collection           ( ofaICollector *instance,
+void     my_icollector_free_collection           ( myICollector *instance,
 														GType type );
 
-void     ofa_icollector_free_all                  ( ofaICollector *instance );
+void     my_icollector_free_all                  ( myICollector *instance );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_ICOLLECTOR_H__ */
+#endif /* __OPENBOOK_API_MY_ICOLLECTOR_H__ */

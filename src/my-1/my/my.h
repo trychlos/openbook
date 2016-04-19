@@ -39,6 +39,7 @@
 #include <my/my-iaction-map.h>
 #include <my/my-iassistant.h>
 #include <my/my-icollectionable.h>
+#include <my/my-icollector.h>
 #include <my/my-idialog.h>
 #include <my/my-igridlist.h>
 #include <my/my-iident.h>

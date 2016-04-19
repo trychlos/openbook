@@ -29,10 +29,10 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbperiod.h"
@@ -87,7 +87,7 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
-static void  icollector_iface_init( ofaICollectorInterface *iface );
+static void  icollector_iface_init( myICollectorInterface *iface );
 static guint icollector_get_interface_version( void );
 static void  isingle_keeper_iface_init( ofaISingleKeeperInterface *iface );
 static void  dossier_do_close( ofaHub *hub );
@@ -95,7 +95,7 @@ static void  check_db_vs_settings( const ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTOR, icollector_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTOR, icollector_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISINGLE_KEEPER, isingle_keeper_iface_init ))
 
 static void
@@ -445,10 +445,10 @@ ofa_hub_class_init( ofaHubClass *klass )
 }
 
 /*
- * ofaICollector interface management
+ * myICollector interface management
  */
 static void
-icollector_iface_init( ofaICollectorInterface *iface )
+icollector_iface_init( myICollectorInterface *iface )
 {
 	static const gchar *thisfn = "ofa_hub_icollector_iface_init";
 
@@ -828,7 +828,7 @@ dossier_do_close( ofaHub *hub )
 	g_clear_object( &priv->dossier_prefs );
 
 	ofa_isingle_keeper_free_all( OFA_ISINGLE_KEEPER( hub ));
-	ofa_icollector_free_all( OFA_ICOLLECTOR( hub ));
+	my_icollector_free_all( MY_ICOLLECTOR( hub ));
 }
 
 /*

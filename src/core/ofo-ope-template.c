@@ -31,11 +31,11 @@
 #include <string.h>
 
 #include "my/my-icollectionable.h"
+#include "my/my-icollector.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
@@ -367,7 +367,7 @@ on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 
 	g_free( query );
 
-	ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_OPE_TEMPLATE );
+	my_icollector_free_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_OPE_TEMPLATE );
 
 	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
 
@@ -425,7 +425,7 @@ on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 			g_free( etp_mnemo );
 		}
 
-		ofa_icollector_free_collection( OFA_ICOLLECTOR( hub ), OFO_TYPE_OPE_TEMPLATE );
+		my_icollector_free_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_OPE_TEMPLATE );
 
 		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
 	}
@@ -447,7 +447,7 @@ ofo_ope_template_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( ofa_icollector_get_collection( OFA_ICOLLECTOR( hub ), hub, OFO_TYPE_OPE_TEMPLATE ));
+	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_OPE_TEMPLATE, hub ));
 }
 
 /**
@@ -1204,8 +1204,8 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofaHub *hub )
 
 	if( model_do_insert( ope_template, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( ope_template ), hub );
-		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( ope_template ), ( GCompareFunc ) ope_template_cmp_by_ptr );
+		my_icollector_add_object(
+				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ope_template ), ( GCompareFunc ) ope_template_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ope_template );
 		ok = TRUE;
 	}
@@ -1417,8 +1417,8 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, const gchar *prev_mnemo )
 	hub = ofo_base_get_hub( OFO_BASE( ope_template ));
 
 	if( model_do_update( ope_template, ofa_hub_get_connect( hub ), prev_mnemo )){
-		ofa_icollector_sort_collection(
-				OFA_ICOLLECTOR( hub ), OFO_TYPE_OPE_TEMPLATE, ( GCompareFunc ) ope_template_cmp_by_ptr );
+		my_icollector_sort_collection(
+				MY_ICOLLECTOR( hub ), OFO_TYPE_OPE_TEMPLATE, ( GCompareFunc ) ope_template_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ope_template, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1517,7 +1517,7 @@ ofo_ope_template_delete( ofoOpeTemplate *ope_template )
 
 	if( model_do_delete( ope_template, ofa_hub_get_connect( hub ))){
 		g_object_ref( ope_template );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ope_template ));
+		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ope_template ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, ope_template );
 		g_object_unref( ope_template );
 		ok = TRUE;
@@ -1819,7 +1819,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			ofa_icollector_free_collection( OFA_ICOLLECTOR( parms->hub ), OFO_TYPE_OPE_TEMPLATE );
+			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_OPE_TEMPLATE );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
 
 		} else {
