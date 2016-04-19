@@ -473,7 +473,7 @@ on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar 
 
 	g_free( query );
 
-	collection = my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, hub );
+	collection = my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub );
 	if( collection && g_list_length( collection )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
 	}
@@ -561,7 +561,7 @@ ofo_account_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, hub ));
+	return( my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub ));
 }
 
 /**
@@ -1835,7 +1835,8 @@ ofo_account_insert( ofoAccount *account, ofaHub *hub )
 	if( account_do_insert( account, connect )){
 		ofo_base_set_hub( OFO_BASE( account ), hub );
 		my_icollector_add_object(
-				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( account ), ( GCompareFunc ) account_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ),
+				MY_ICOLLECTIONABLE( account ), ( GCompareFunc ) account_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, account );
 		ok = TRUE;
 	}
@@ -1934,7 +1935,8 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 
 	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number )){
 		my_icollector_sort_collection(
-				MY_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, ( GCompareFunc ) account_cmp_by_ptr );
+				ofa_hub_get_collector( hub ),
+				OFO_TYPE_ACCOUNT, ( GCompareFunc ) account_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, account, prev_number );
 		ok = TRUE;
 	}
@@ -2157,7 +2159,7 @@ ofo_account_delete( ofoAccount *account )
 
 	if( account_do_delete( account, ofa_hub_get_connect( hub ))){
 		g_object_ref( account );
-		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( account ));
+		my_icollector_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( account ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, account );
 		g_object_unref( account );
 		ok = TRUE;
@@ -2414,7 +2416,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_ACCOUNT );
+			my_icollector_free_collection( ofa_hub_get_collector( parms->hub ), OFO_TYPE_ACCOUNT );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
 
 		} else {

@@ -203,7 +203,7 @@ ofo_bat_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_BAT, hub ));
+	return( my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_BAT, hub ));
 }
 
 /**
@@ -959,7 +959,8 @@ ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 	if( bat_do_insert( bat, hub )){
 		ofo_base_set_hub( OFO_BASE( bat ), hub );
 		my_icollector_add_object(
-				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( bat ), ( GCompareFunc ) bat_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ),
+				MY_ICOLLECTIONABLE( bat ), ( GCompareFunc ) bat_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, bat );
 		ok = TRUE;
 	}
@@ -1107,7 +1108,8 @@ ofo_bat_update( ofoBat *bat )
 
 	if( bat_do_update( bat, ofa_hub_get_connect( hub ))){
 		my_icollector_sort_collection(
-				MY_ICOLLECTOR( hub ), OFO_TYPE_BAT, ( GCompareFunc ) bat_cmp_by_ptr );
+				ofa_hub_get_collector( hub ),
+				OFO_TYPE_BAT, ( GCompareFunc ) bat_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, bat, NULL );
 		ok = TRUE;
 	}
@@ -1190,7 +1192,7 @@ ofo_bat_delete( ofoBat *bat )
 
 	if( bat_do_delete_main( bat, connect ) &&  bat_do_delete_lines( bat, connect )){
 		g_object_ref( bat );
-		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( bat ));
+		my_icollector_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( bat ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, bat );
 		g_object_unref( bat );
 		ok = TRUE;
@@ -1456,7 +1458,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_BAT );
+			my_icollector_free_collection( ofa_hub_get_collector( parms->hub ), OFO_TYPE_BAT );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_BAT );
 
 		} else {

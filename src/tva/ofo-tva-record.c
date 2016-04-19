@@ -366,7 +366,7 @@ ofo_tva_record_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_TVA_RECORD, hub ));
+	return( my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_RECORD, hub ));
 }
 
 /**
@@ -1309,7 +1309,8 @@ ofo_tva_record_insert( ofoTVARecord *tva_record, ofaHub *hub )
 	if( record_do_insert( tva_record, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( tva_record ), hub );
 		my_icollector_add_object(
-				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( tva_record ), ( GCompareFunc ) tva_record_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ),
+				MY_ICOLLECTIONABLE( tva_record ), ( GCompareFunc ) tva_record_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_record );
 		ok = TRUE;
 	}
@@ -1602,7 +1603,8 @@ ofo_tva_record_update( ofoTVARecord *tva_record )
 
 	if( record_do_update( tva_record, ofa_hub_get_connect( hub ))){
 		my_icollector_sort_collection(
-				MY_ICOLLECTOR( hub ), OFO_TYPE_ACCOUNT, ( GCompareFunc ) tva_record_cmp_by_ptr );
+				ofa_hub_get_collector( hub ),
+				OFO_TYPE_ACCOUNT, ( GCompareFunc ) tva_record_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_record, NULL );
 		ok = TRUE;
 	}
@@ -1708,7 +1710,7 @@ ofo_tva_record_delete( ofoTVARecord *tva_record )
 
 	if( record_do_delete( tva_record, ofa_hub_get_connect( hub ))){
 		g_object_ref( tva_record );
-		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( tva_record ));
+		my_icollector_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_record ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, tva_record );
 		g_object_unref( tva_record );
 		ok = TRUE;

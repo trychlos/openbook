@@ -534,6 +534,20 @@ ofa_hub_set_extender_collection( ofaHub *hub, ofaExtenderCollection *collection 
 }
 
 /**
+ * ofa_hub_get_collector:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the object which implement #myICollector interface.
+ */
+myICollector *
+ofa_hub_get_collector( const ofaHub *hub )
+{
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	return( MY_ICOLLECTOR( hub ));
+}
+
+/**
  * ofa_hub_init_signaling_system:
  * @hub: this #ofaHub instance.
  *
@@ -828,7 +842,7 @@ dossier_do_close( ofaHub *hub )
 	g_clear_object( &priv->dossier_prefs );
 
 	ofa_isingle_keeper_free_all( OFA_ISINGLE_KEEPER( hub ));
-	my_icollector_free_all( MY_ICOLLECTOR( hub ));
+	my_icollector_free_all( ofa_hub_get_collector( hub ));
 }
 
 /*

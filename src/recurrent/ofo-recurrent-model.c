@@ -261,7 +261,7 @@ hub_update_ope_template_identifier( ofaHub *hub, const gchar *mnemo, const gchar
 
 	g_free( query );
 
-	my_icollector_free_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_MODEL );
+	my_icollector_free_collection( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL );
 	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_MODEL );
 
 	return( ok );
@@ -281,7 +281,7 @@ ofo_recurrent_model_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_MODEL, hub ));
+	return( my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL, hub ));
 }
 
 /**
@@ -632,7 +632,8 @@ ofo_recurrent_model_insert( ofoRecurrentModel *recurrent_model, ofaHub *hub )
 	if( model_do_insert( recurrent_model, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( recurrent_model ), hub );
 		my_icollector_add_object(
-				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( recurrent_model ), ( GCompareFunc ) recurrent_model_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ),
+				MY_ICOLLECTIONABLE( recurrent_model ), ( GCompareFunc ) recurrent_model_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_model );
 		ok = TRUE;
 	}
@@ -744,7 +745,8 @@ ofo_recurrent_model_update( ofoRecurrentModel *recurrent_model, const gchar *pre
 
 	if( model_do_update( recurrent_model, ofa_hub_get_connect( hub ), prev_mnemo )){
 		my_icollector_sort_collection(
-				MY_ICOLLECTOR( hub ), OFO_TYPE_RECURRENT_MODEL, ( GCompareFunc ) recurrent_model_cmp_by_ptr );
+				ofa_hub_get_collector( hub ),
+				OFO_TYPE_RECURRENT_MODEL, ( GCompareFunc ) recurrent_model_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_model, prev_mnemo );
 		ok = TRUE;
 	}
@@ -856,7 +858,7 @@ ofo_recurrent_model_delete( ofoRecurrentModel *recurrent_model )
 
 	if( model_do_delete( recurrent_model, ofa_hub_get_connect( hub ))){
 		g_object_ref( recurrent_model );
-		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( recurrent_model ));
+		my_icollector_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( recurrent_model ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, recurrent_model );
 		g_object_unref( recurrent_model );
 		ok = TRUE;
@@ -1060,7 +1062,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_RECURRENT_MODEL );
+			my_icollector_free_collection( ofa_hub_get_collector( parms->hub ), OFO_TYPE_RECURRENT_MODEL );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_MODEL );
 
 		} else {

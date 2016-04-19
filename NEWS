@@ -70,6 +70,7 @@
    - ofo_account_archive_open_balances(): moved to ofo_account_archive_balances().
    - ofaICollectionable: renamed to myICollectionable and moved to my-1 library (todo #1071).
    - ofaICollector: renamed to myICollector and moved to my-1 library (todo #1071).
+   - ofaICollector instance is provided by ofaHub (todo #1092).
    - ofaPeriodClose: new dialog.
 
 -----------------------------------------------------------------------

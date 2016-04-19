@@ -399,7 +399,7 @@ hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *pre
 			g_free( etp_mnemo );
 		}
 
-		my_icollector_free_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_TVA_FORM );
+		my_icollector_free_collection( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM );
 		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
 	}
 
@@ -420,7 +420,7 @@ ofo_tva_form_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_get_collection( MY_ICOLLECTOR( hub ), OFO_TYPE_TVA_FORM, hub ));
+	return( my_icollector_get_collection( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM, hub ));
 }
 
 /**
@@ -1109,7 +1109,8 @@ ofo_tva_form_insert( ofoTVAForm *tva_form, ofaHub *hub )
 	if( form_do_insert( tva_form, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( tva_form ), hub );
 		my_icollector_add_object(
-				MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( tva_form ), ( GCompareFunc ) tva_form_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ),
+				MY_ICOLLECTIONABLE( tva_form ), ( GCompareFunc ) tva_form_cmp_by_ptr, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_form );
 		ok = TRUE;
 	}
@@ -1327,7 +1328,8 @@ ofo_tva_form_update( ofoTVAForm *tva_form, const gchar *prev_mnemo )
 
 	if( form_do_update( tva_form, ofa_hub_get_connect( hub ), prev_mnemo )){
 		my_icollector_sort_collection(
-				MY_ICOLLECTOR( hub ), OFO_TYPE_TVA_FORM, ( GCompareFunc ) tva_form_cmp_by_ptr );
+				ofa_hub_get_collector( hub ),
+				OFO_TYPE_TVA_FORM, ( GCompareFunc ) tva_form_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_form, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1423,7 +1425,7 @@ ofo_tva_form_delete( ofoTVAForm *tva_form )
 
 	if( form_do_delete( tva_form, ofa_hub_get_connect( hub ))){
 		g_object_ref( tva_form );
-		my_icollector_remove_object( MY_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( tva_form ));
+		my_icollector_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_form ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, tva_form );
 		g_object_unref( tva_form );
 		ok = TRUE;
@@ -1765,7 +1767,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_free_collection( MY_ICOLLECTOR( parms->hub ), OFO_TYPE_TVA_FORM );
+			my_icollector_free_collection( ofa_hub_get_collector( parms->hub ), OFO_TYPE_TVA_FORM );
 			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
 
 		} else {

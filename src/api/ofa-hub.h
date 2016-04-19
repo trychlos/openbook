@@ -46,6 +46,8 @@
  * The #ofaHub object is available through the #ofaIGetter interface.
  */
 
+#include "my/my-icollector.h"
+
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-portfolio-collection.h"
@@ -102,6 +104,8 @@ ofaExtenderCollection  *ofa_hub_get_extender_collection   ( const ofaHub *hub );
 
 void                    ofa_hub_set_extender_collection   ( ofaHub *hub,
 																ofaExtenderCollection *collection );
+
+myICollector           *ofa_hub_get_collector             ( const ofaHub *hub );
 
 void                    ofa_hub_init_signaling_system     ( ofaHub *hub );
 
