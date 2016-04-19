@@ -44,6 +44,11 @@
  * equal sign without tranforming it in a formula, just prefix it with
  * a single quote (e.g. "'=this is not a formula").
  *
+ * Arithmetic operators + - / and * are honored inside of the %EVAL()
+ * function. This function may have nested parentheses. Most of the
+ * time, it is easier to have just one %EVAL() outside of the whole
+ * formula, but this is in case mandatory.
+ *
  * Leading and terminating spaces are silently ignored.
  *
  * A formula is build around functions and arithmetic signs, where:
@@ -69,9 +74,54 @@
  * formula and re-evaluated. It may thus be a shortcut to a more complex
  * formula.
  *
- * Formula evaluation may return with a set of error messages.
- * This set must be released by the caller with
+ * Formula evaluation may return with a list of error messages.
+ * This list must be released by the caller with
  *  #g_list_free_full( list, ( GDestroyNotify ) g_free ).
+ *
+ * BNF formulation
+ * ---------------
+ *
+ * FORMULA ::= "=" a_expression
+ *
+ * a_expression ::= arithmetic expression
+ * a_expression ::= [ "(" ] content [ AOP content [ ... ]] [ ")" ]
+ *
+ * AOP ::= arithmetic operator
+ * AOP ::= "+" | "-" | "/" | "*"
+ *    aka: addition | substraction | division | product
+ *    Precedences are:    "*" "/"
+ *               then:    "+" "-"
+ *    AOP is evaluated:
+ *    - inside of a %EVAL function
+ *    - or if the automatic arithmetic evaluation mode is %TRUE.
+ *
+ *    Example:
+ *    a) "a * b + c" is evaluated as "a * b = res1", then "res1 + c = res2"
+ *    b) "a * ( b + c )" is evaluated as "b + c = res1", then "a * res1 = res2"
+ *
+ * "(" and ")" are parentheses which modify the precedence of arithmetic
+ * operators during arithmetic evaluation.
+ * As such, they are only taken into account:
+ *    - inside of a %EVAL function
+ *    - or if the automatic arithmetic evaluation mode is %TRUE.
+ * When auto evaluation mode is %FALSE and outside of an %EVAL(...)
+ * function, parentheses are just rendered as-is.
+ *
+ * content ::= %MACRO | %FN( arg1 [ ; arg2 [ ... ]] )
+ *
+ * MACRO ::= a macro function which evaluates without argument.
+ *
+ * %FN() ::= a function which evaluates its argument(s).
+ *
+ * argi ::= a_expression | c_expression
+ *
+ * c_expression ::= comparison expression
+ * c_expression ::= [ "(" ] content CMP content [ ")" ]
+ *
+ * CMP ::= comparison operator
+ * CMP ::= ( "<" | ">" | "!" | "=" ){1,3}
+ *    Comparison operator is used in %IF() first argument.
+ *    It evaluates to "1" (comparison is true) or "0" (comparison is false).
  *
  * v54 known functions
  * -------------------
@@ -81,8 +131,24 @@
  *    The formula engine itself provides some standard functions, which
  *    are so available to all callers:
  *
+ *    - %EVAL( a op b [ op c [...]] ): evaluates the arithmetic expression
+ *
  *    - %IF( condition; if_true; if_false ): evaluates the condition,
  *      returning 'if_true' or 'if_false' strings.
+ *
+ *    Auto Eval:
+ *
+ *    When auto evaluation is set to TRUE, which is the default,
+ *    formulas do not need to use %EVAL(...) function to evaluate
+ *    arithmetic expressions. Instead they are auto-evaluated anywhere
+ *    in the formula.
+ *    In this mode, the %EVAL(...) function is just ignored.
+ *    As a side effect, arithmetic operators which do not have to be
+ *    evaluated have to be backslashed (e.g. when returning a label
+ *    which embeds a minus sign '-' as typo separator).
+ *
+ *    When auto evaluation is set to FALSE, the arithmetic operators
+ *    are only evaluated inside of a %EVAL(...) function.
  *
  * Operation template
  *
@@ -130,16 +196,6 @@
  *       - 'ACCOUNT()': returns the rough+validated balance of the account
  *       - 'AMOUNT():
  *       - 'BASE()':
- *
- * BNF formulation
- * ---------------
- *
- * OPERATOR OP ::= "+" | "-" | "/" | "*"
- *    addition | substraction | division | product
- *    precedences are:    "*" "/"
- *               then:    "+" "-"
- *
- * FORMULA ::= "=" <content> [ OP <content [ ... ]]
  */
 
 #include <glib.h>
@@ -205,8 +261,14 @@ typedef ofaFormulaEvalFn ( *ofaFormulaFindFn )( const gchar *, gint *, const GMa
  *
  * => a copy of #ofa_formula_engine_eval() original arguments
  *
- * @user_data: the user data pointer.
+ * @engine: the #ofaFormulaEngine instance itself.
+ * @finder: the #ofaFormulaFindFn usere-provided callback.
+ * @user_data: the user data user-provided pointer.
  * @msg: the output #GList of messages.
+ *
+ * => runtime data
+ *
+ * @eval_arithmetics: whether arithmetic expression must be evaluated.
  *
  * => the arguments for the current match
  *
@@ -221,8 +283,11 @@ typedef ofaFormulaEvalFn ( *ofaFormulaFindFn )( const gchar *, gint *, const GMa
 struct _ofsFormulaHelper {
 
 	ofaFormulaEngine   *engine;
+	ofaFormulaFindFn    finder;
 	void               *user_data;
 	GList              *msg;
+
+	gboolean            eval_arithmetics;
 
 	const GMatchInfo   *match_info;
 	gchar              *match_zero;
@@ -231,22 +296,25 @@ struct _ofsFormulaHelper {
 	guint               args_count;
 };
 
-GType             ofa_formula_engine_get_type  ( void ) G_GNUC_CONST;
+GType             ofa_formula_engine_get_type         ( void ) G_GNUC_CONST;
 
-ofaFormulaEngine *ofa_formula_engine_new       ( void );
+ofaFormulaEngine *ofa_formula_engine_new              ( void );
 
-void              ofa_formula_engine_set_format( ofaFormulaEngine *engine,
-														gunichar thousand_sep,
-														gunichar decimal_sep,
-														guint digits );
+void              ofa_formula_engine_set_auto_eval    ( ofaFormulaEngine *engine,
+															gboolean auto_eval );
 
-gchar            *ofa_formula_engine_eval      ( ofaFormulaEngine *engine,
-														const gchar *formula,
-														ofaFormulaFindFn finder,
-														void *user_data,
-														GList **msg );
+void              ofa_formula_engine_set_amount_format( ofaFormulaEngine *engine,
+															gunichar thousand_sep,
+															gunichar decimal_sep,
+															guint digits );
 
-void              ofa_formula_test             ( void );
+gchar            *ofa_formula_engine_eval             ( ofaFormulaEngine *engine,
+															const gchar *formula,
+															ofaFormulaFindFn finder,
+															void *user_data,
+															GList **msg );
+
+void              ofa_formula_test                    ( void );
 
 G_END_DECLS
 

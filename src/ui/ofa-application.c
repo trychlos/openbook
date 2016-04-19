@@ -36,6 +36,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-core.h"
 #include "api/ofa-extender-collection.h"
+#include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
@@ -911,9 +912,10 @@ maintainer_test_function( void )
 		g_debug( "%s: query=%s", thisfn, query );
 	}
 #endif
-#if 0
-	ofa_formula_test();
-#endif
+
+	if( 0 ){
+		ofa_formula_test();
+	}
 }
 /*                                                                   */
 /*                                                                   */

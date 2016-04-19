@@ -38,6 +38,7 @@
    - ofaExerciceCloseAssistant: records the end date of the prevous exercice.
    - ofaExerciceCloseAssistant: cleanup obsolete tables from the DBMS (todo #1089).
    - ofaFormulaEngine: now has a %IF() function.
+   - ofaFormulaEngine: now has arithmetic auto evaluation mode (todo #1084).
    - ofaGuidedInput: add a title to the dialog.
    - ofaPeriodClose: let the period be closed independantly of the ledgers (todo #798).
    - ofaTVARecordProperties: port to new formula engine.

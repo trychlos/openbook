@@ -39,7 +39,7 @@
  * ofa_amount_from_str:
  * @str: a localized, decorated, string.
  *
- * Returns: the evaulated amount.
+ * Returns: the evaluated amount.
  */
 ofxAmount
 ofa_amount_from_str( const gchar *str )

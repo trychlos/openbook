@@ -353,10 +353,6 @@
 
 1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
 
-1084 2016- 4-14 BUG ofsOpe should backslash the string it returns
-                     when it contains operators [-+/*]
-                     Rather: re-use %EVAL() to evaluate expressions
-
 1086 2016- 4-15 Have an error message from ofa_idbconnect_query
 
 1087 2016- 4-15 Hub signaling system should be available to all plugins,
@@ -1180,6 +1176,11 @@
 1083 2016- 4-14 BUG connect_to_hub_signaling_system seems to be called
                  on dossier opening, instead of on hub instanciation
      2016- 4-15 fixed, which also fix #1077.
+
+1084 2016- 4-14 BUG ofsOpe should backslash the string it returns
+                     when it contains operators [-+/*]
+                     Rather: re-use %EVAL() to evaluate expressions
+     2016- 4-19 fixed
 
 1085 2016- 4-15 BUG AccountsChart: when opening the page, no row is selected
                     but buttons are enabled 
