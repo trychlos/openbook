@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
@@ -190,9 +190,9 @@ static gboolean    form_delete_details( ofoTVAForm *form, const ofaIDBConnect *c
 static gboolean    form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gint        form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo );
 static gint        tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b );
-static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
-static GList      *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList      *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
@@ -211,7 +211,7 @@ static gboolean    form_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
@@ -1109,7 +1109,7 @@ ofo_tva_form_insert( ofoTVAForm *tva_form, ofaHub *hub )
 	if( form_do_insert( tva_form, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( tva_form ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( tva_form ), ( GCompareFunc ) tva_form_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( tva_form ), ( GCompareFunc ) tva_form_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_form );
 		ok = TRUE;
 	}
@@ -1423,7 +1423,7 @@ ofo_tva_form_delete( ofoTVAForm *tva_form )
 
 	if( form_do_delete( tva_form, ofa_hub_get_connect( hub ))){
 		g_object_ref( tva_form );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( tva_form ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( tva_form ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, tva_form );
 		g_object_unref( tva_form );
 		ok = TRUE;
@@ -1487,10 +1487,10 @@ tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_tva_form_icollectionable_iface_init";
 
@@ -1507,7 +1507,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	static const gchar *thisfn = "ofo_tva_form_load_dataset";
 	ofoTVAFormPrivate *priv;
@@ -1516,13 +1516,15 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 	gchar *from;
 	const ofaIDBConnect *connect;
 
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"TVA_T_FORMS ORDER BY TFO_MNEMO ASC",
 					OFO_TYPE_TVA_FORM,
-					hub );
+					OFA_HUB( user_data ));
 
-	connect = ofa_hub_get_connect( hub );
+	connect = ofa_hub_get_connect( OFA_HUB( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		form = OFO_TVA_FORM( it->data );

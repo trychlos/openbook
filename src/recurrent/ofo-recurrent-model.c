@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
@@ -120,9 +120,9 @@ static gboolean           model_update_main( ofoRecurrentModel *model, const ofa
 static gboolean           model_do_delete( ofoRecurrentModel *model, const ofaIDBConnect *connect );
 static gint               model_cmp_by_mnemo( const ofoRecurrentModel *a, const gchar *mnemo );
 static gint               recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a, const ofoRecurrentModel *b );
-static void               icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void               icollectionable_iface_init( myICollectionableInterface *iface );
 static guint              icollectionable_get_interface_version( void );
-static GList             *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList             *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void               iexportable_iface_init( ofaIExportableInterface *iface );
 static guint              iexportable_get_interface_version( void );
 static gchar             *iexportable_get_label( const ofaIExportable *instance );
@@ -138,7 +138,7 @@ static gboolean           model_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentModel )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
@@ -632,7 +632,7 @@ ofo_recurrent_model_insert( ofoRecurrentModel *recurrent_model, ofaHub *hub )
 	if( model_do_insert( recurrent_model, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( recurrent_model ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( recurrent_model ), ( GCompareFunc ) recurrent_model_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( recurrent_model ), ( GCompareFunc ) recurrent_model_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_model );
 		ok = TRUE;
 	}
@@ -856,7 +856,7 @@ ofo_recurrent_model_delete( ofoRecurrentModel *recurrent_model )
 
 	if( model_do_delete( recurrent_model, ofa_hub_get_connect( hub ))){
 		g_object_ref( recurrent_model );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( recurrent_model ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( recurrent_model ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, recurrent_model );
 		g_object_unref( recurrent_model );
 		ok = TRUE;
@@ -896,10 +896,10 @@ recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a, const ofoRecurrentModel 
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_recurrent_model_icollectionable_iface_init";
 
@@ -916,15 +916,17 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	GList *dataset;
+
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"REC_T_MODELS ORDER BY REC_MNEMO ASC",
 					OFO_TYPE_RECURRENT_MODEL,
-					hub );
+					OFA_HUB( user_data ));
 
 	return( dataset );
 }

@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
@@ -194,9 +194,9 @@ static gboolean        model_update_main( ofoOpeTemplate *model, const ofaIDBCon
 static gboolean        model_do_delete( ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
 static gint            ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
-static void            icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void            icollectionable_iface_init( myICollectionableInterface *iface );
 static guint           icollectionable_get_interface_version( void );
-static GList          *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList          *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( void );
 static gchar          *iexportable_get_label( const ofaIExportable *instance );
@@ -215,7 +215,7 @@ static gboolean        model_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoOpeTemplate )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
@@ -1205,7 +1205,7 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofaHub *hub )
 	if( model_do_insert( ope_template, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( ope_template ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( ope_template ), ( GCompareFunc ) ope_template_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( ope_template ), ( GCompareFunc ) ope_template_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ope_template );
 		ok = TRUE;
 	}
@@ -1517,7 +1517,7 @@ ofo_ope_template_delete( ofoOpeTemplate *ope_template )
 
 	if( model_do_delete( ope_template, ofa_hub_get_connect( hub ))){
 		g_object_ref( ope_template );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( ope_template ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ope_template ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, ope_template );
 		g_object_unref( ope_template );
 		ok = TRUE;
@@ -1559,10 +1559,10 @@ ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
 
@@ -1579,18 +1579,20 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it;
 	ofoOpeTemplate *template;
 	gchar *from;
 
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_OPE_TEMPLATES ORDER BY OTE_MNEMO ASC",
 					OFO_TYPE_OPE_TEMPLATE,
-					hub );
+					OFA_HUB( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		template = OFO_OPE_TEMPLATE( it->data );
@@ -1599,7 +1601,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s' ORDER BY OTE_DET_ROW ASC",
 				ofo_ope_template_get_mnemo( template ));
 		priv->details =
-				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( hub ), from );
+				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
 		g_free( from );
 	}
 

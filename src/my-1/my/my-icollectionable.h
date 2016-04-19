@@ -22,37 +22,37 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_ICOLLECTIONABLE_H__
-#define __OPENBOOK_API_OFA_ICOLLECTIONABLE_H__
+#ifndef __MY_API_MY_ICOLLECTIONABLE_H__
+#define __MY_API_MY_ICOLLECTIONABLE_H__
 
 /**
  * SECTION: icollectionable
- * @title: ofaICollectionable
+ * @title: myICollectionable
  * @short_description: The ICollectionable Interface
- * @include: openbook/ofa-icollectionable.h
+ * @include: my/my-icollectionable.h
  *
- * The #ofaICollectionable interface should be implemented by all the
+ * The #myICollectionable interface should be implemented by all the
  * classes which wish the the #ofaICollector implementation maintains
  * a collection of their objects.
  */
 
-#include "api/ofa-hub-def.h"
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ICOLLECTIONABLE                      ( ofa_icollectionable_get_type())
-#define OFA_ICOLLECTIONABLE( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_ICOLLECTIONABLE, ofaICollectionable ))
-#define OFA_IS_ICOLLECTIONABLE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_ICOLLECTIONABLE ))
-#define OFA_ICOLLECTIONABLE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_ICOLLECTIONABLE, ofaICollectionableInterface ))
+#define MY_TYPE_ICOLLECTIONABLE                      ( my_icollectionable_get_type())
+#define MY_ICOLLECTIONABLE( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, MY_TYPE_ICOLLECTIONABLE, myICollectionable ))
+#define MY_IS_ICOLLECTIONABLE( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, MY_TYPE_ICOLLECTIONABLE ))
+#define MY_ICOLLECTIONABLE_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_ICOLLECTIONABLE, myICollectionableInterface ))
 
-typedef struct _ofaICollectionable                    ofaICollectionable;
+typedef struct _myICollectionable                    myICollectionable;
 
 /**
- * ofaICollectionableInterface:
+ * myICollectionableInterface:
  * @get_interface_version: [should]: get the version number of the
  *                                   interface implementation.
  *
- * This defines the interface that an #ofaICollectionable may/should
+ * This defines the interface that an #myICollectionable may/should
  * implement.
  */
 typedef struct {
@@ -76,36 +76,36 @@ typedef struct {
 	/*** instance-wide ***/
 	/**
 	 * load_collection:
-	 * @instance: a fake #ofaICollectionable instance.
-	 * @hub: the #ofaHub object.
+	 * @instance: a fake #myICollectionable instance.
+	 * @user_data: user data to be passed to the @instance.
 	 *
 	 * Returns: the list of objects of the collection, or %NULL.
 	 *
 	 * Since: version 1.
 	 */
-	GList * ( *load_collection )      ( const ofaICollectionable *instance,
-											ofaHub *hub );
+	GList * ( *load_collection )      ( const myICollectionable *instance,
+											void *user_data );
 }
-	ofaICollectionableInterface;
+	myICollectionableInterface;
 
 /*
  * Interface-wide
  */
-GType  ofa_icollectionable_get_type                  ( void );
+GType  my_icollectionable_get_type                  ( void );
 
-guint  ofa_icollectionable_get_interface_last_version( void );
+guint  my_icollectionable_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint  ofa_icollectionable_get_interface_version     ( GType type );
+guint  my_icollectionable_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-GList *ofa_icollectionable_load_collection           ( const ofaICollectionable *instance,
-															ofaHub *hub );
+GList *my_icollectionable_load_collection           ( const myICollectionable *instance,
+															void *user_data );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_ICOLLECTIONABLE_H__ */
+#endif /* __MY_API_MY_ICOLLECTIONABLE_H__ */

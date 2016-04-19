@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
@@ -103,9 +103,9 @@ static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaIDBCo
 static gboolean   class_do_delete( ofoClass *class, const ofaIDBConnect *connect );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
 static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
-static void       icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
-static GList     *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList     *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( void );
 static gchar     *iexportable_get_label( const ofaIExportable *instance );
@@ -121,7 +121,7 @@ static gboolean   class_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoClass, ofo_class, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoClass )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
@@ -457,7 +457,7 @@ ofo_class_insert( ofoClass *class, ofaHub *hub )
 	if( class_do_insert( class, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( class ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( class ), ( GCompareFunc ) class_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( class ), ( GCompareFunc ) class_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, class );
 		ok = TRUE;
 	}
@@ -608,7 +608,7 @@ ofo_class_delete( ofoClass *class )
 
 	if( class_do_delete( class, ofa_hub_get_connect( hub ))){
 		g_object_ref( class );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( class ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( class ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, class );
 		g_object_unref( class );
 		ok = TRUE;
@@ -662,10 +662,10 @@ class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
 
@@ -682,15 +682,17 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	GList *list;
+
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
 
 	list = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
 					OFO_TYPE_CLASS,
-					hub );
+					OFA_HUB( user_data ));
 
 	return( list );
 }

@@ -26,12 +26,13 @@
 #include <config.h>
 #endif
 
+#include "my/my-icollectionable.h"
+
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 
 #define ICOLLECTIONABLE_LAST_VERSION    1
 
-#define ICOLLECTIONABLE_DATA            "ofa-icollectionable-data"
+#define ICOLLECTIONABLE_DATA            "my-icollectionable-data"
 
 /* a data structure attached to the GObject implementation
  */
@@ -43,16 +44,16 @@ typedef struct {
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType register_type( void );
-static void  interface_base_init( ofaICollectionableInterface *klass );
-static void  interface_base_finalize( ofaICollectionableInterface *klass );
+static void  interface_base_init( myICollectionableInterface *klass );
+static void  interface_base_finalize( myICollectionableInterface *klass );
 
 /**
- * ofa_icollectionable_get_type:
+ * my_icollectionable_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_icollectionable_get_type( void )
+my_icollectionable_get_type( void )
 {
 	static GType type = 0;
 
@@ -64,18 +65,18 @@ ofa_icollectionable_get_type( void )
 }
 
 /*
- * ofa_icollectionable_register_type:
+ * my_icollectionable_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_icollectionable_register_type";
+	static const gchar *thisfn = "my_icollectionable_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaICollectionableInterface ),
+		sizeof( myICollectionableInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -88,7 +89,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaICollectionable", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "myICollectionable", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -96,9 +97,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaICollectionableInterface *klass )
+interface_base_init( myICollectionableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_icollectionable_interface_base_init";
+	static const gchar *thisfn = "my_icollectionable_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -111,9 +112,9 @@ interface_base_init( ofaICollectionableInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaICollectionableInterface *klass )
+interface_base_finalize( myICollectionableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_icollectionable_interface_base_finalize";
+	static const gchar *thisfn = "my_icollectionable_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -124,19 +125,19 @@ interface_base_finalize( ofaICollectionableInterface *klass )
 }
 
 /**
- * ofa_icollectionable_get_interface_last_version:
- * @instance: this #ofaICollectionable instance.
+ * my_icollectionable_get_interface_last_version:
+ * @instance: this #myICollectionable instance.
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_icollectionable_get_interface_last_version( void )
+my_icollectionable_get_interface_last_version( void )
 {
 	return( ICOLLECTIONABLE_LAST_VERSION );
 }
 
 /**
- * ofa_icollectionable_get_interface_version:
+ * my_icollectionable_get_interface_version:
  * @type: the implementation's GType.
  *
  * Returns: the version number of this interface which is managed by
@@ -147,7 +148,7 @@ ofa_icollectionable_get_interface_last_version( void )
  * Since: version 1.
  */
 guint
-ofa_icollectionable_get_interface_version( GType type )
+my_icollectionable_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -155,16 +156,16 @@ ofa_icollectionable_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, OFA_TYPE_ICOLLECTIONABLE );
+	iface = g_type_interface_peek( klass, MY_TYPE_ICOLLECTIONABLE );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( ofaICollectionableInterface * ) iface )->get_interface_version ){
-		version = (( ofaICollectionableInterface * ) iface )->get_interface_version();
+	if((( myICollectionableInterface * ) iface )->get_interface_version ){
+		version = (( myICollectionableInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'ofaICollectionable::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'myICollectionable::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -174,25 +175,24 @@ ofa_icollectionable_get_interface_version( GType type )
 }
 
 /**
- * ofa_icollectionable_load_collection:
- * @instance: this #ofaICollectionable instance.
- * @hub: the #ofaHub object.
+ * my_icollectionable_load_collection:
+ * @instance: this #myICollectionable instance.
+ * @user_data: user data to be passed to the @instance.
  *
  * Returns: the collection of desired objects, or %NULL.
  */
 GList *
-ofa_icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+my_icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
-	static const gchar *thisfn = "ofa_icollectionable_load_collection";
+	static const gchar *thisfn = "my_icollectionable_load_collection";
 
-	g_return_val_if_fail( instance && OFA_IS_ICOLLECTIONABLE( instance ), NULL );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( instance && MY_IS_ICOLLECTIONABLE( instance ), NULL );
 
-	if( OFA_ICOLLECTIONABLE_GET_INTERFACE( instance )->load_collection ){
-		return( OFA_ICOLLECTIONABLE_GET_INTERFACE( instance )->load_collection( instance, hub ));
+	if( MY_ICOLLECTIONABLE_GET_INTERFACE( instance )->load_collection ){
+		return( MY_ICOLLECTIONABLE_GET_INTERFACE( instance )->load_collection( instance, user_data ));
 	}
 
-	g_info( "%s: ofaICollectionable's %s implementation does not provide 'load_collection()' method",
+	g_info( "%s: myICollectionable's %s implementation does not provide 'load_collection()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

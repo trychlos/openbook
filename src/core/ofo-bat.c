@@ -32,11 +32,11 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-preferences.h"
@@ -85,9 +85,9 @@ static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connec
 static gint        bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b );
 static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
 static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
-static void        icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
-static GList      *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList      *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -103,7 +103,7 @@ static gboolean    bat_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
 static void
@@ -959,7 +959,7 @@ ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 	if( bat_do_insert( bat, hub )){
 		ofo_base_set_hub( OFO_BASE( bat ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( bat ), ( GCompareFunc ) bat_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( bat ), ( GCompareFunc ) bat_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, bat );
 		ok = TRUE;
 	}
@@ -1190,7 +1190,7 @@ ofo_bat_delete( ofoBat *bat )
 
 	if( bat_do_delete_main( bat, connect ) &&  bat_do_delete_lines( bat, connect )){
 		g_object_ref( bat );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( bat ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( bat ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, bat );
 		g_object_unref( bat );
 		ok = TRUE;
@@ -1295,10 +1295,10 @@ bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
 
@@ -1315,7 +1315,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;
@@ -1324,8 +1324,10 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 	GTimeVal timeval;
 	GDate date;
 
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+
 	dataset = NULL;
-	connect = ofa_hub_get_connect( hub );
+	connect = ofa_hub_get_connect( OFA_HUB( user_data ));
 
 	if( ofa_idbconnect_query_ex( connect,
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
@@ -1392,7 +1394,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 			bat_set_upd_stamp( bat,
 					my_utils_stamp_set_from_sql( &timeval, ( const gchar * ) icol->data ));
 
-			ofo_base_set_hub( OFO_BASE( bat ), hub );
+			ofo_base_set_hub( OFO_BASE( bat ), OFA_HUB( user_data ));
 			dataset = g_list_prepend( dataset, bat );
 		}
 

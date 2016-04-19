@@ -396,7 +396,6 @@ api_include_HEADERS = \
 	ofa-hub.h											\
 	ofa-hub-def.h										\
 	ofa-iabout.h										\
-	ofa-icollectionable.h								\
 	ofa-icollector.h									\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\

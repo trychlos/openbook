@@ -27,7 +27,6 @@
 #endif
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 
 #define ICOLLECTOR_LAST_VERSION           1
@@ -35,7 +34,7 @@
 #define ICOLLECTOR_DATA                   "ofa-icollector-data"
 
 /* a data structure attached to the implementation
- * @collections: the collections of #ofaICollectionable objects,
+ * @collections: the collections of #myICollectionable objects,
  *               maintained as a GList of sCollection data structures.
  */
 typedef struct {
@@ -196,7 +195,7 @@ ofa_icollector_get_interface_version( GType type )
  * @hub: the #ofaHub object.
  * @type: the desired GType type.
  *
- * Returns: a #GList of #ofaICollectionable objects, or %NULL.
+ * Returns: a #GList of #myICollectionable objects, or %NULL.
  *
  * The returned list is owned by the @instance, and should not be
  * released by the caller.
@@ -254,8 +253,8 @@ load_collection( ofaICollector *instance, ofaHub *hub, GType type )
 	collection = NULL;
 	fake = g_object_new( type, NULL );
 
-	if( OFA_IS_ICOLLECTIONABLE( fake )){
-		dataset = ofa_icollectionable_load_collection( OFA_ICOLLECTIONABLE( fake ), hub );
+	if( MY_IS_ICOLLECTIONABLE( fake )){
+		dataset = my_icollectionable_load_collection( MY_ICOLLECTIONABLE( fake ), hub );
 
 		if( dataset && g_list_length( dataset )){
 			collection = g_new0( sCollection, 1 );
@@ -282,14 +281,14 @@ load_collection( ofaICollector *instance, ofaHub *hub, GType type )
  * A new collection is defined if it did not exist yet.
  */
 void
-ofa_icollector_add_object( ofaICollector *instance, ofaHub *hub, ofaICollectionable *object, GCompareFunc func )
+ofa_icollector_add_object( ofaICollector *instance, ofaHub *hub, myICollectionable *object, GCompareFunc func )
 {
 	sICollector *data;
 	sCollection *collection;
 
 	g_return_if_fail( instance && OFA_IS_ICOLLECTOR( instance ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-	g_return_if_fail( object && OFA_IS_ICOLLECTIONABLE( object ));
+	g_return_if_fail( object && MY_IS_ICOLLECTIONABLE( object ));
 
 	data = get_collector_data( instance );
 	collection = get_collection( instance, hub, G_OBJECT_TYPE( object ), data );
@@ -314,13 +313,13 @@ ofa_icollector_add_object( ofaICollector *instance, ofaHub *hub, ofaICollectiona
  * Removes the @object from the collection of objects of the same type.
  */
 void
-ofa_icollector_remove_object( ofaICollector *instance, const ofaICollectionable *object )
+ofa_icollector_remove_object( ofaICollector *instance, const myICollectionable *object )
 {
 	sICollector *data;
 	sCollection *collection;
 
 	g_return_if_fail( instance && OFA_IS_ICOLLECTOR( instance ));
-	g_return_if_fail( object && OFA_IS_ICOLLECTIONABLE( object ));
+	g_return_if_fail( object && MY_IS_ICOLLECTIONABLE( object ));
 
 	data = get_collector_data( instance );
 	collection = get_collection( instance, NULL, G_OBJECT_TYPE( object ), data );

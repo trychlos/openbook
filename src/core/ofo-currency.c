@@ -33,10 +33,10 @@
 #include <string.h>
 
 #include "my/my-double.h"
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
@@ -119,9 +119,9 @@ static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev
 static gboolean     currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *connect );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
 static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
-static void         icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void         icollectionable_iface_init( myICollectionableInterface *iface );
 static guint        icollectionable_get_interface_version( void );
-static GList       *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList       *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
@@ -137,7 +137,7 @@ static gboolean     currency_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoCurrency, ofo_currency, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoCurrency )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
@@ -514,7 +514,7 @@ ofo_currency_insert( ofoCurrency *currency, ofaHub *hub )
 	if( currency_do_insert( currency, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( currency ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( currency ), ( GCompareFunc ) currency_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( currency ), ( GCompareFunc ) currency_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, currency );
 		ok = TRUE;
 	}
@@ -680,7 +680,7 @@ ofo_currency_delete( ofoCurrency *currency )
 
 	if( currency_do_delete( currency, ofa_hub_get_connect( hub ))){
 		g_object_ref( currency );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( currency ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( currency ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, currency );
 		g_object_unref( currency );
 		ok = TRUE;
@@ -720,10 +720,10 @@ currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_account_icollectionable_iface_init";
 
@@ -740,15 +740,17 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	GList *list;
+
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
 
 	list = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_CURRENCIES ORDER BY CUR_CODE ASC",
 					OFO_TYPE_CURRENCY,
-					hub );
+					OFA_HUB( user_data ));
 
 	return( list );
 }

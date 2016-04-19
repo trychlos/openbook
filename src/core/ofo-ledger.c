@@ -32,11 +32,11 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
@@ -190,9 +190,9 @@ static gboolean   ledger_do_update_balance( const ofoLedger *ledger, GList *bala
 static gboolean   ledger_do_delete( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gint       ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint       ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
-static void       icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
-static GList     *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList     *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( void );
 static gchar     *iexportable_get_label( const ofaIExportable *instance );
@@ -209,7 +209,7 @@ static gboolean   ledger_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoLedger )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
@@ -1342,7 +1342,7 @@ ofo_ledger_insert( ofoLedger *ledger, ofaHub *hub )
 	if( ledger_do_insert( ledger, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( ledger ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( ledger ), ( GCompareFunc ) ledger_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( ledger ), ( GCompareFunc ) ledger_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ledger );
 		ok = TRUE;
 	}
@@ -1616,7 +1616,7 @@ ofo_ledger_delete( ofoLedger *ledger )
 
 	if( ledger_do_delete( ledger, ofa_hub_get_connect( hub ))){
 		g_object_ref( ledger );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( ledger ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( ledger ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, ledger );
 		g_object_unref( ledger );
 		ok = TRUE;
@@ -1666,10 +1666,10 @@ ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_ledger_icollectionable_iface_init";
 
@@ -1686,25 +1686,27 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	ofoLedgerPrivate *priv;
 	GList *dataset, *it;
 	ofoLedger *ledger;
 	gchar *from;
 
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_LEDGERS ORDER BY LED_MNEMO ASC",
 					OFO_TYPE_LEDGER,
-					hub );
+					OFA_HUB( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 		priv = ofo_ledger_get_instance_private( ledger );
 		from = g_strdup_printf(
 					"OFA_T_LEDGERS_CUR WHERE LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ));
-		priv->balances = ofo_base_load_rows( st_balance_defs, ofa_hub_get_connect( hub ), from );
+		priv->balances = ofo_base_load_rows( st_balance_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
 		g_free( from );
 	}
 

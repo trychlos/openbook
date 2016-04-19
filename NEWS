@@ -67,7 +67,8 @@
 
    - myIGridList: review the interface.
    - my_utils_quote_sql(): new function.
-   - ofo_account_archive_open_balances(): moved to ofo_account_archive_balances(). 
+   - ofo_account_archive_open_balances(): moved to ofo_account_archive_balances().
+   - ofaICollectionable: renamed to myICollectionable and moved to my-1 library.
    - ofaPeriodClose: new dialog.
 
 -----------------------------------------------------------------------
@@ -491,7 +492,7 @@
 
    - ofaBatTreeview: add unused count to page (todo #754).
    - ofaHub: new hub management class (todo #948).
-   - ofaICollectionable, ofaICollector: new interfaces.
+   - myICollectionable, ofaICollector: new interfaces.
    - ofaIExeCloseClose: new interface for exercice closing in the plugins.
    - ofaIHubber: new interface for ofaHub management (todo #941).
    - TVA: compute the VAT rules (todo #311).
@@ -520,7 +521,7 @@
    - ofo_dossier_new(): removed method.
    - ofo_dossier_get_min_deffect(): changed API (todo #960).
    - ofo_ledger_get_last_entry(): changed API (todo #959).
-   - ofaICollectionable: new interface for classes which have in-memory datasets.
+   - myICollectionable: new interface for classes which have in-memory datasets.
    - ofa_tva_declare_page_set_selected(): new method.
 
 -----------------------------------------------------------------------

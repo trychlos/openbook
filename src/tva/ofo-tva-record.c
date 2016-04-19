@@ -32,11 +32,11 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-account.h"
@@ -229,13 +229,13 @@ static gboolean      record_do_delete( ofoTVARecord *record, const ofaIDBConnect
 static gint          record_cmp_by_compare( const ofoTVARecord *a, const sCompare *cmp );
 static gint          record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
 static gint          tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b );
-static void          icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void          icollectionable_iface_init( myICollectionableInterface *iface );
 static guint         icollectionable_get_interface_version( void );
-static GList        *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList        *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
 
 static void
 details_list_free_detail( GList *fields )
@@ -1309,7 +1309,7 @@ ofo_tva_record_insert( ofoTVARecord *tva_record, ofaHub *hub )
 	if( record_do_insert( tva_record, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( tva_record ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( tva_record ), ( GCompareFunc ) tva_record_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( tva_record ), ( GCompareFunc ) tva_record_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_record );
 		ok = TRUE;
 	}
@@ -1708,7 +1708,7 @@ ofo_tva_record_delete( ofoTVARecord *tva_record )
 
 	if( record_do_delete( tva_record, ofa_hub_get_connect( hub ))){
 		g_object_ref( tva_record );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( tva_record ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( tva_record ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, tva_record );
 		g_object_unref( tva_record );
 		ok = TRUE;
@@ -1776,10 +1776,10 @@ tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_tva_record_icollectionable_iface_init";
 
@@ -1796,7 +1796,7 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	static const gchar *thisfn = "ofo_tva_record_load_dataset";
 	ofoTVARecordPrivate *priv;
@@ -1805,13 +1805,15 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 	gchar *from, *send;
 	const ofaIDBConnect *connect;
 
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"TVA_T_RECORDS ORDER BY TFO_MNEMO ASC,TFO_END DESC",
 					OFO_TYPE_TVA_RECORD,
-					hub );
+					OFA_HUB( user_data ));
 
-	connect = ofa_hub_get_connect( hub );
+	connect = ofa_hub_get_connect( OFA_HUB( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		record = OFO_TVA_RECORD( it->data );

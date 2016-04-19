@@ -29,10 +29,10 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-preferences.h"
@@ -66,12 +66,12 @@ static gboolean   concil_do_insert( ofoConcil *concil, const ofaIDBConnect *conn
 static gint       concil_cmp_by_ptr( const ofoConcil *a, const ofoConcil *b );
 static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaIDBConnect *connect );
 static gboolean   concil_do_delete( ofoConcil *concil, const ofaIDBConnect *connect );
-static void       icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofoConcil, ofo_concil, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoConcil )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
 
 static void
 concil_finalize( GObject *instance )
@@ -261,7 +261,7 @@ concil_get_by_query( const gchar *query, ofaHub *hub )
 
 		ofa_icollector_add_object(
 				OFA_ICOLLECTOR( hub ),
-				hub, OFA_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr );
+				hub, MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
 	}
 
@@ -539,7 +539,7 @@ ofo_concil_insert( ofoConcil *concil, ofaHub *hub )
 		ofo_base_set_hub( OFO_BASE( concil ), hub );
 		ofa_icollector_add_object(
 				OFA_ICOLLECTOR( hub ),
-				hub, OFA_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr );
+				hub, MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
 		ok = TRUE;
 	}
@@ -658,7 +658,7 @@ ofo_concil_delete( ofoConcil *concil )
 
 	if( concil_do_delete( concil, ofa_hub_get_connect( hub ))){
 		g_object_ref( concil );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( concil ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( concil ));
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETED, concil );
 		g_object_unref( concil );
 		ok = TRUE;
@@ -695,10 +695,10 @@ concil_do_delete( ofoConcil *concil, const ofaIDBConnect *connect )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_concil_icollectionable_iface_init";
 
@@ -715,7 +715,7 @@ icollectionable_get_interface_version( void )
 
 #if 0
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, ofaHub *hub )
 {
 	GList *list;
 

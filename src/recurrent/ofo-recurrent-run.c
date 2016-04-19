@@ -30,11 +30,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofo-base.h"
@@ -114,13 +114,13 @@ static gboolean model_do_update( ofoRecurrentRun *model, const ofaIDBConnect *co
 static gboolean model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect );
 static gint     model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
 static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
-static void     icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void     icollectionable_iface_init( myICollectionableInterface *iface );
 static guint    icollectionable_get_interface_version( void );
-static GList   *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList   *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentRun )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
 
 static void
 recurrent_run_finalize( GObject *instance )
@@ -491,7 +491,7 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run, ofaHub *hub )
 	if( model_do_insert( recurrent_run, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( recurrent_run ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( recurrent_run ), ( GCompareFunc ) recurrent_run_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( recurrent_run ), ( GCompareFunc ) recurrent_run_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_run );
 		ok = TRUE;
 	}
@@ -656,10 +656,10 @@ recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b )
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_recurrent_run_icollectionable_iface_init";
 
@@ -676,15 +676,17 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	GList *dataset;
+
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"REC_T_RUN ORDER BY REC_MNEMO ASC, REC_DATE ASC",
 					OFO_TYPE_RECURRENT_RUN,
-					hub );
+					OFA_HUB( user_data ));
 
 	return( dataset );
 }

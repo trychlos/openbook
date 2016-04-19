@@ -37,7 +37,7 @@
  *
  * It is expected that these other objects (whose collections are
  * managed by this #ofaICollector interface) implement themselves the
- * #ofaICollectionable interface.
+ * #myICollectionable interface.
  *
  * For Openbook needs, the #ofaICollector interface is implemented by
  * the #ofaHub class, so that it is able to manage the collections of
@@ -47,8 +47,9 @@
  * single object.
  */
 
+#include "my/my-icollectionable.h"
+
 #include "api/ofa-hub-def.h"
-#include "api/ofa-icollectionable.h"
 
 G_BEGIN_DECLS
 
@@ -110,11 +111,11 @@ GList   *ofa_icollector_get_collection            ( ofaICollector *instance,
 
 void     ofa_icollector_add_object                ( ofaICollector *instance,
 														ofaHub *hub,
-														ofaICollectionable *object,
+														myICollectionable *object,
 														GCompareFunc func );
 
 void     ofa_icollector_remove_object             ( ofaICollector *instance,
-														const ofaICollectionable *object );
+														const myICollectionable *object );
 
 void     ofa_icollector_sort_collection           ( ofaICollector *instance,
 														GType type,

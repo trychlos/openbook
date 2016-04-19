@@ -38,6 +38,7 @@ my_include_HEADERS = \
 	my-file-monitor.h									\
 	my-iaction-map.h									\
 	my-iassistant.h										\
+	my-icollectionable.h								\
 	my-idialog.h										\
 	my-iident.h											\
 	my-igridlist.h										\

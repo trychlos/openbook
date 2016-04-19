@@ -337,7 +337,7 @@
 
 1053 2016- 3-26 CODE review the menu distribution
 
-1071 2016- 4-12 CODE ofaICollectionable	-> myICollectionable
+1071 2016- 4-12 CODE myICollectionable	-> myICollectionable: OK
                      ofaICollector		-> myICollector
                      ofaISingleKeeper	-> mergeable with myICollector
                      + should have its own messaging system
@@ -534,7 +534,7 @@
 
  766 2015- 3-26 replace ofaIDataset interface by ofaICollector
      2016- 1-18 ofaIDataset has been obsoleted by ofaICollector/
-                ofaICollectionable pair
+                myICollectionable pair
 
  791 2015- 4- 6 after having entered new AVRLOY operation template:
                 gtk_tree_view_get_model: assertion 'GTK_IS_TREE_VIEW (tree_view)' failed

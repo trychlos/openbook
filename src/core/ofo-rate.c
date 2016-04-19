@@ -32,11 +32,11 @@
 
 #include "my/my-date.h"
 #include "my/my-double.h"
+#include "my/my-icollectionable.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-icollectionable.h"
 #include "api/ofa-icollector.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmodel.h"
@@ -153,9 +153,9 @@ static gboolean  rate_do_delete( ofoRate *rate, const ofaIDBConnect *connect );
 static gint      rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
 static gint      rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint      rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboolean *consistent );
-static void      icollectionable_iface_init( ofaICollectionableInterface *iface );
+static void      icollectionable_iface_init( myICollectionableInterface *iface );
 static guint     icollectionable_get_interface_version( void );
-static GList    *icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub );
+static GList    *icollectionable_load_collection( const myICollectionable *instance, void *user_data );
 static void      iexportable_iface_init( ofaIExportableInterface *iface );
 static guint     iexportable_get_interface_version( void );
 static gchar    *iexportable_get_label( const ofaIExportable *instance );
@@ -173,7 +173,7 @@ static gboolean  rate_drop_content( const ofaIDBConnect *connect );
 
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRate )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
 
@@ -779,7 +779,7 @@ ofo_rate_insert( ofoRate *rate, ofaHub *hub )
 	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( rate ), hub );
 		ofa_icollector_add_object(
-				OFA_ICOLLECTOR( hub ), hub, OFA_ICOLLECTIONABLE( rate ), ( GCompareFunc ) rate_cmp_by_ptr );
+				OFA_ICOLLECTOR( hub ), hub, MY_ICOLLECTIONABLE( rate ), ( GCompareFunc ) rate_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, rate );
 		ok = TRUE;
 	}
@@ -1044,7 +1044,7 @@ ofo_rate_delete( ofoRate *rate )
 
 	if( rate_do_delete( rate, ofa_hub_get_connect( hub ))){
 		g_object_ref( rate );
-		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), OFA_ICOLLECTIONABLE( rate ));
+		ofa_icollector_remove_object( OFA_ICOLLECTOR( hub ), MY_ICOLLECTIONABLE( rate ));
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, rate );
 		g_object_unref( rate );
 		ok = TRUE;
@@ -1185,10 +1185,10 @@ rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboole
 }
 
 /*
- * ofaICollectionable interface management
+ * myICollectionable interface management
  */
 static void
-icollectionable_iface_init( ofaICollectionableInterface *iface )
+icollectionable_iface_init( myICollectionableInterface *iface )
 {
 	static const gchar *thisfn = "ofo_rate_icollectionable_iface_init";
 
@@ -1205,18 +1205,20 @@ icollectionable_get_interface_version( void )
 }
 
 static GList *
-icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub )
+icollectionable_load_collection( const myICollectionable *instance, void *user_data )
 {
 	ofoRatePrivate *priv;
 	GList *dataset, *it;
 	ofoRate *rate;
 	gchar *from;
 
+	g_return_val_if_fail( user_data && OFA_IS_HUB( user_data ), NULL );
+
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_RATES ORDER BY RAT_MNEMO ASC",
 					OFO_TYPE_RATE,
-					hub );
+					OFA_HUB( user_data ));
 
 	for( it=dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
@@ -1225,7 +1227,7 @@ icollectionable_load_collection( const ofaICollectionable *instance, ofaHub *hub
 				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s' ORDER BY RAT_VAL_ROW ASC",
 				ofo_rate_get_mnemo( rate ));
 		priv->validities =
-				ofo_base_load_rows( st_validity_defs, ofa_hub_get_connect( hub ), from );
+				ofo_base_load_rows( st_validity_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
 		g_free( from );
 	}
 
