@@ -25,13 +25,13 @@
 #define __MY_API_MY_H__
 
 #include <my/my-accel-group.h>
+#include <my/my-book-dnd.h>
 #include <my/my-char.h>
 #include <my/my-date.h>
 #include <my/my-date-combo.h>
 #include <my/my-date-editable.h>
 #include <my/my-date-renderer.h>
 #include <my/my-decimal-combo.h>
-#include <my/my-dnd-book.h>
 #include <my/my-double.h>
 #include <my/my-double-editable.h>
 #include <my/my-double-renderer.h>
@@ -39,6 +39,7 @@
 #include <my/my-file-monitor.h>
 #include <my/my-iaction-map.h>
 #include <my/my-iassistant.h>
+#include <my/my-ibook-detach.h>
 #include <my/my-icollectionable.h>
 #include <my/my-icollector.h>
 #include <my/my-idialog.h>
@@ -47,6 +48,7 @@
 #include <my/my-iprogress.h>
 #include <my/my-isettings.h>
 #include <my/my-iwindow.h>
+#include <my/my-nomodal-window.h>
 #include <my/my-progress-bar.h>
 #include <my/my-settings.h>
 #include <my/my-tab.h>

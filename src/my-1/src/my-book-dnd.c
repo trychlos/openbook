@@ -151,7 +151,8 @@ on_page_added( myBookDnd *book, GtkWidget *child, guint page_num, void *empty )
 {
 	GtkWidget *tab_label;
 
+	/* set the new page as a source for dnd */
+	gtk_notebook_set_tab_detachable( GTK_NOTEBOOK( book ), child, TRUE );
 	tab_label = gtk_notebook_get_tab_label( GTK_NOTEBOOK( book ), child );
-
 	my_ibook_detach_set_source_widget( MY_IBOOK_DETACH( book ), tab_label );
 }

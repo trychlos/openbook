@@ -45,6 +45,7 @@
 
  Other changes:
 
+   - myNomodalWindow: new class which acts as a DnD target.
    - ofa_hub_dossier_is_writable(): new method.
 
 -----------------------------------------------------------------------

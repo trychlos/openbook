@@ -82,6 +82,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iprogress.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
+	my-nomodal-window.c									\
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-tab.c											\

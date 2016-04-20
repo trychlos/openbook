@@ -51,6 +51,7 @@ static GType    register_type( void );
 static void     interface_base_init( myIBookDetachInterface *klass );
 static void     interface_base_finalize( myIBookDetachInterface *klass );
 static gboolean on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata );
+static gboolean on_button_release_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata );
 static void     on_drag_end( GtkWidget *widget, GdkDragContext *context, sDrag *sdata );
 static void     stop_drag_operation( GtkWidget *widget, sDrag *sdata );
 static sDrag   *get_page_data( myIBookDetach *instance, GtkWidget *widget );
@@ -204,7 +205,8 @@ my_ibook_detach_set_source_widget( myIBookDetach *instance, GtkWidget *widget )
 
 	sdata = get_page_data( instance, widget );
 
-	g_signal_connect( widget, "button_press_event", G_CALLBACK( on_button_press_event ), sdata );
+	g_signal_connect( widget, "button-press-event", G_CALLBACK( on_button_press_event ), sdata );
+	g_signal_connect( widget, "button-release-event", G_CALLBACK( on_button_release_event ), sdata );
 }
 
 /*
@@ -222,8 +224,9 @@ on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 	GtkTargetList *target_list;
 	GdkDragContext *context;
 
-	g_debug( "on_button_press_event" );
+	g_debug( "%s", thisfn );
 
+	if( 0 ){
 	/* do not handle anything else than simple click */
 	if( event->type != GDK_BUTTON_PRESS ){
 		g_debug( "%s: returning False because not GDK_BUTTON_PRESS", thisfn );
@@ -249,6 +252,26 @@ on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 	gtk_target_list_unref( target_list );
 
 	return( TRUE );
+	}
+	return( FALSE );
+}
+
+/*
+ * Returns: %TRUE to stop other handlers from being invoked for the event.
+ *  %FALSE to propagate the event further.
+ *
+ * Note: the 'motion-notify-event' signal (which requires
+ * GDK_POINTER_MOTION_MASK) is only sent while the mouse pointer is
+ * inside of the @widget. It is not very useful in our case.
+ */
+static gboolean
+on_button_release_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
+{
+	static const gchar *thisfn = "my_ibook_detach_on_button_release_event";
+
+	g_debug( "%s", thisfn );
+
+	return( FALSE );
 }
 
 static void

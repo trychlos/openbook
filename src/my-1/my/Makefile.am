@@ -48,6 +48,7 @@ my_include_HEADERS = \
 	my-iprogress.h										\
 	my-isettings.h										\
 	my-iwindow.h										\
+	my-nomodal-window.h									\
 	my-progress-bar.h									\
 	my-settings.h										\
 	my-tab.h											\
