@@ -685,7 +685,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 		gtk_widget_set_sensitive( priv->ok_btn, is_valid );
 
 		is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
-		is_validable = ofo_tva_record_is_validable_by_data( priv->mnemo, &priv->begin_date, &priv->end_date );
+		is_validable = ofo_tva_record_is_validable_by_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
 
 		gtk_widget_set_sensitive(
 				priv->compute_btn,

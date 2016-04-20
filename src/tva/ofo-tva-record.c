@@ -747,6 +747,7 @@ ofo_tva_record_is_validable_by_record( const ofoTVARecord *record )
  * @mnemo: an identifier mnemonic.
  * @begin: the begin date of the declaration.
  * @end: the end date of the declaration.
+ * @msgerr: [allow-none][out]: error message placeholder.
  *
  * Returns: %TRUE if the provided datas make the TVA record validable.
  *
@@ -754,13 +755,28 @@ ofo_tva_record_is_validable_by_record( const ofoTVARecord *record )
  * to record the data).
  */
 gboolean
-ofo_tva_record_is_validable_by_data( const gchar *mnemo, const GDate *begin, const GDate *end )
+ofo_tva_record_is_validable_by_data( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr )
 {
-	if( !ofo_tva_record_is_valid_data( mnemo, begin, end, NULL )){
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !ofo_tva_record_is_valid_data( mnemo, begin, end, msgerr )){
 		return( FALSE );
 	}
-	return( my_date_is_valid( begin ) &&
-			my_date_compare( begin, end ) <= 0 );
+	if( !my_date_is_valid( begin )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Invalid begin date" ));
+		}
+		return( FALSE );
+	}
+	if( my_date_compare( begin, end ) > 0 ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Begin date must be less or equal to end date" ));
+		}
+		return( FALSE );
+	}
+
+	return( TRUE );
 }
 
 /**

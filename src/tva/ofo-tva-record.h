@@ -97,7 +97,7 @@ gboolean        ofo_tva_record_is_deletable           ( const ofoTVARecord *reco
 gboolean        ofo_tva_record_is_valid_data          ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
 
 gboolean        ofo_tva_record_is_validable_by_record ( const ofoTVARecord *record );
-gboolean        ofo_tva_record_is_validable_by_data   ( const gchar *mnemo, const GDate *begin, const GDate *end );
+gboolean        ofo_tva_record_is_validable_by_data   ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
 
 gint            ofo_tva_record_compare_by_key         ( const ofoTVARecord *record, const gchar *mnemo, const GDate *end );
 

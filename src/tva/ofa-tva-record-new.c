@@ -364,7 +364,7 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 /*
  * Creating a new tva declaration.
  *
- * When the creation of a new VAT record is confirmeed, then:
+ * When the creation of a new VAT record is confirmed, then:
  * - activate (or open) the declarations management page
  * - open the declaration for edition.
  *
