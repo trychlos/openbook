@@ -50,7 +50,7 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean      is_current;
+	gboolean      is_writable;
 
 	/* UI
 	 */
@@ -139,7 +139,6 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_tva_declare_page_v_setup_view";
 	ofaTVADeclarePagePrivate *priv;
-	ofoDossier *dossier;
 	GtkWidget *grid, *widget;
 	ofaHub *hub;
 
@@ -148,10 +147,7 @@ v_setup_view( ofaPage *page )
 	priv = ofa_tva_declare_page_get_instance_private( OFA_TVA_DECLARE_PAGE( page ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	grid = gtk_grid_new();
 
@@ -332,7 +328,7 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
 
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_current && is_record && ofo_tva_record_is_deletable( record ));
+				priv->is_writable && is_record && ofo_tva_record_is_deletable( record ));
 	}
 }
 

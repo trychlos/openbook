@@ -70,7 +70,7 @@ typedef struct {
 	 */
 	ofoDossier         *dossier;
 	gboolean            is_new;
-	gboolean            is_current;
+	gboolean            is_writable;
 	GDate               begin_init;
 	GDate               end_init;
 	GDate               min_end;
@@ -297,7 +297,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * dossier
@@ -327,8 +327,7 @@ idialog_init( myIDialog *instance )
 	hub = ofa_igetter_get_hub( priv->getter );
 	priv->dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-
-	priv->is_current = ofo_dossier_is_current( priv->dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	init_properties_page( OFA_DOSSIER_PROPERTIES( instance ));
 	init_forward_page( OFA_DOSSIER_PROPERTIES( instance ));
@@ -342,10 +341,10 @@ idialog_init( myIDialog *instance )
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
-	gtk_widget_set_sensitive( priv->begin_entry, priv->is_current && !my_date_is_valid( &priv->prevexe_end ));
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
+	gtk_widget_set_sensitive( priv->begin_entry, priv->is_writable && !my_date_is_valid( &priv->prevexe_end ));
 
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -560,10 +559,10 @@ init_exe_notes_page( ofaDossierProperties *self )
 
 	priv->exe_notes = g_strdup( ofo_dossier_get_exe_notes( priv->dossier ));
 	textview = my_utils_container_notes_setup_full(
-			GTK_CONTAINER( self ), "pexe-notes", priv->exe_notes, priv->is_current );
+			GTK_CONTAINER( self ), "pexe-notes", priv->exe_notes, priv->is_writable );
 	g_return_if_fail( textview && GTK_IS_TEXT_VIEW( textview ));
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( textview ));
 		g_return_if_fail( buffer && GTK_IS_TEXT_BUFFER( buffer ));
 		g_signal_connect( buffer, "changed", G_CALLBACK( on_notes_changed ), self );
@@ -877,7 +876,7 @@ check_for_enable_dlg( ofaDossierProperties *self )
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_valid( self ));
 	}
 }

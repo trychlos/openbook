@@ -62,7 +62,7 @@ typedef struct {
 	 */
 	ofaHub              *hub;
 	GList               *hub_handlers;
-	gboolean             is_current;	/* whether the dossier is current */
+	gboolean             is_writable;	/* whether the dossier is writable */
 	ofaAccountStore     *store;
 	GList               *store_handlers;
 	GtkTreeCellDataFunc  cell_fn;
@@ -350,7 +350,6 @@ setup_bin( ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
 	gulong handler;
-	ofoDossier *dossier;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
@@ -384,10 +383,7 @@ setup_bin( ofaAccountFrameBin *self )
 	ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ));
 
 	/* runtime */
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	/* hub signaling system */
 	hub_connect_to_signaling_system( self );
@@ -1304,7 +1300,7 @@ ofa_account_frame_bin_add_button( ofaAccountFrameBin *bin, ofeAccountFrameBtn id
 			break;
 		case ACCOUNT_BTN_NEW:
 			button = button_add( bin, ACCOUNT_BTN_NEW, BUTTON_NEW, sensitive, G_CALLBACK( button_on_new_clicked ));
-			gtk_widget_set_sensitive( button, sensitive && priv->is_current );
+			gtk_widget_set_sensitive( button, sensitive && priv->is_writable );
 			break;
 		case ACCOUNT_BTN_PROPERTIES:
 			button = button_add( bin, ACCOUNT_BTN_PROPERTIES, BUTTON_PROPERTIES, sensitive, G_CALLBACK( button_on_properties_clicked ));
@@ -1312,7 +1308,7 @@ ofa_account_frame_bin_add_button( ofaAccountFrameBin *bin, ofeAccountFrameBtn id
 			break;
 		case ACCOUNT_BTN_DELETE:
 			button = button_add( bin, ACCOUNT_BTN_DELETE, BUTTON_DELETE, sensitive, G_CALLBACK( button_on_delete_clicked ));
-			gtk_widget_set_sensitive( button, sensitive && priv->is_current );
+			gtk_widget_set_sensitive( button, sensitive && priv->is_writable );
 			break;
 		case ACCOUNT_BTN_VIEW_ENTRIES:
 			button = button_add( bin, ACCOUNT_BTN_VIEW_ENTRIES, _( "View _entries..." ), sensitive, G_CALLBACK( button_on_view_entries_clicked ));
@@ -1320,11 +1316,11 @@ ofa_account_frame_bin_add_button( ofaAccountFrameBin *bin, ofeAccountFrameBtn id
 			break;
 		case ACCOUNT_BTN_SETTLEMENT:
 			button = button_add( bin, ACCOUNT_BTN_SETTLEMENT, _( "_Settlement..." ), sensitive, G_CALLBACK( button_on_settlement_clicked ));
-			gtk_widget_set_sensitive( button, sensitive && priv->is_current );
+			gtk_widget_set_sensitive( button, sensitive && priv->is_writable );
 			break;
 		case ACCOUNT_BTN_RECONCILIATION:
 			button = button_add( bin, ACCOUNT_BTN_RECONCILIATION, _( "_Reconciliation..." ), sensitive, G_CALLBACK( button_on_reconciliation_clicked ));
-			gtk_widget_set_sensitive( button, sensitive && priv->is_current );
+			gtk_widget_set_sensitive( button, sensitive && priv->is_writable );
 			break;
 		default:
 			break;
@@ -1413,12 +1409,12 @@ button_update_sensitivity( ofaAccountFrameBin *self, const gchar *account_id )
 	sbtn = button_find_by_id( &priv->buttons, ACCOUNT_BTN_SETTLEMENT, FALSE );
 	if( sbtn ){
 		g_return_if_fail( sbtn->btn && GTK_IS_WIDGET( sbtn->btn ));
-		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_account && priv->is_current && ofo_account_is_settleable( account_obj ));
+		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_account && priv->is_writable && ofo_account_is_settleable( account_obj ));
 	}
 	sbtn = button_find_by_id( &priv->buttons, ACCOUNT_BTN_RECONCILIATION, FALSE );
 	if( sbtn ){
 		g_return_if_fail( sbtn->btn && GTK_IS_WIDGET( sbtn->btn ));
-		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_account && priv->is_current && ofo_account_is_reconciliable( account_obj ));
+		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_account && priv->is_writable && ofo_account_is_reconciliable( account_obj ));
 	}
 }
 
@@ -1511,7 +1507,7 @@ is_new_allowed( ofaAccountFrameBin *self, sButton *sbtn )
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_current;
+	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_writable;
 
 	return( ok );
 }
@@ -1524,7 +1520,7 @@ is_delete_allowed( ofaAccountFrameBin *self, sButton *sbtn, ofoAccount *selected
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_current && selected && ofo_account_is_deletable( selected );
+	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_writable && selected && ofo_account_is_deletable( selected );
 
 	return( ok );
 }

@@ -53,7 +53,7 @@ typedef struct {
 	/* internals
 	 */
 	ofoBat              *bat;
-	gboolean             is_current;
+	gboolean             is_writable;
 	gboolean             is_new;		/* always FALSE here */
 	ofaBatPropertiesBin *bat_bin;
 
@@ -227,7 +227,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * BAT record
@@ -238,7 +238,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_bat_properties_idialog_init";
 	ofaBatPropertiesPrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 	gchar *title;
 	GtkWidget *parent;
 
@@ -251,9 +250,7 @@ idialog_init( myIDialog *instance )
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	title = g_strdup( _( "Updating the BAT properties" ));
 	gtk_window_set_title( GTK_WINDOW( instance ), title );
@@ -265,7 +262,7 @@ idialog_init( myIDialog *instance )
 	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -282,7 +279,7 @@ check_for_enable_dlg( ofaBatProperties *self )
 
 	priv = ofa_bat_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 	}
 }

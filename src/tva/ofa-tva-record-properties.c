@@ -62,7 +62,7 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean      is_current;
+	gboolean      is_writable;
 
 	/* UI
 	 */
@@ -305,7 +305,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * VAT record
@@ -315,7 +315,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
-	ofoDossier *dossier;
 	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -335,9 +334,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	my_date_set_from_date( &priv->init_end_date, ofo_tva_record_get_end( priv->tva_record ));
 
@@ -349,7 +346,7 @@ idialog_init( myIDialog *instance )
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -388,7 +385,7 @@ init_properties( ofaTVARecordProperties *self )
 	if( my_strlen( cstr )){
 		gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), cstr );
 	}
-	my_utils_widget_set_editable( priv->label_entry, priv->is_current );
+	my_utils_widget_set_editable( priv->label_entry, priv->is_writable );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -428,7 +425,7 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_set_from_date( &priv->begin_date, ofo_tva_record_get_begin( priv->tva_record ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
-	my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
+	my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 
 	/* do not let the user edit the ending date of the declaration
 	 * because this is a key of the record
@@ -476,7 +473,7 @@ init_booleans( ofaTVARecordProperties *self )
 		row = idx;
 		cstr = ofo_tva_record_boolean_get_label( priv->tva_record, idx );
 		button = gtk_check_button_new_with_label( cstr );
-		my_utils_widget_set_editable( button, priv->is_current && !priv->is_validated );
+		my_utils_widget_set_editable( button, priv->is_writable && !priv->is_validated );
 		gtk_grid_attach( GTK_GRID( grid ), button, BOOL_COL_LABEL, row, 1, 1 );
 		g_signal_connect( button, "toggled", G_CALLBACK( on_boolean_toggled ), self );
 		is_true = ofo_tva_record_boolean_get_is_true( priv->tva_record, idx );
@@ -536,7 +533,7 @@ init_taxes( ofaTVARecordProperties *self )
 		has_base = ofo_tva_record_detail_get_has_base( priv->tva_record, idx );
 		if( has_base ){
 			entry = gtk_entry_new();
-			my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
+			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
@@ -556,7 +553,7 @@ init_taxes( ofaTVARecordProperties *self )
 		has_amount = ofo_tva_record_detail_get_has_amount( priv->tva_record, idx );
 		if( has_amount ){
 			entry = gtk_entry_new();
-			my_utils_widget_set_editable( entry, priv->is_current && !priv->is_validated );
+			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
@@ -665,7 +662,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	msgerr = NULL;
 	hub = ofa_igetter_get_hub( priv->getter );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 
 		is_valid = ofo_tva_record_is_valid_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
 
@@ -692,11 +689,11 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 
 		gtk_widget_set_sensitive(
 				priv->compute_btn,
-				priv->is_current && is_valid && is_validable );
+				priv->is_writable && is_valid && is_validable );
 
 		gtk_widget_set_sensitive(
 				priv->validate_btn,
-				priv->is_current && is_valid && !is_validated && is_validable );
+				priv->is_writable && is_valid && !is_validated && is_validable );
 	}
 
 	set_msgerr( self, msgerr );

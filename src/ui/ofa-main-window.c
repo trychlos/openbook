@@ -285,6 +285,7 @@ static void                  enable_action_guided_input( ofaMainWindow *window, 
 static void                  enable_action_settlement( ofaMainWindow *window, gboolean enable );
 static void                  enable_action_reconciliation( ofaMainWindow *window, gboolean enable );
 static void                  enable_action_close_ledger( ofaMainWindow *window, gboolean enable );
+static void                  enable_action_close_period( ofaMainWindow *window, gboolean enable );
 static void                  enable_action_close_exercice( ofaMainWindow *window, gboolean enable );
 static void                  enable_action_import( ofaMainWindow *window, gboolean enable );
 static void                  do_backup( ofaMainWindow *self );
@@ -1074,19 +1075,18 @@ static void
 do_update_menubar_items( ofaMainWindow *self )
 {
 	ofaHub *hub;
-	ofoDossier *dossier;
-	gboolean is_current;
+	gboolean is_writable;
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	dossier = ofa_hub_get_dossier( hub );
-	is_current = dossier ? ofo_dossier_is_current( dossier ) : FALSE;
+	is_writable = ofa_hub_dossier_is_writable( hub );
 
-	enable_action_guided_input( self, is_current );
-	enable_action_settlement( self, is_current );
-	enable_action_reconciliation( self, is_current );
-	enable_action_close_ledger( self, is_current );
-	enable_action_close_exercice( self, is_current );
-	enable_action_import( self, is_current );
+	enable_action_guided_input( self, is_writable );
+	enable_action_settlement( self, is_writable );
+	enable_action_reconciliation( self, is_writable );
+	enable_action_close_ledger( self, is_writable );
+	enable_action_close_period( self, is_writable );
+	enable_action_close_exercice( self, is_writable );
+	enable_action_import( self, is_writable );
 }
 
 static void
@@ -1127,6 +1127,16 @@ enable_action_close_ledger( ofaMainWindow *window, gboolean enable )
 	priv = ofa_main_window_get_instance_private( window );
 
 	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_ledger, "ledclosing", enable );
+}
+
+static void
+enable_action_close_period( ofaMainWindow *window, gboolean enable )
+{
+	ofaMainWindowPrivate *priv;
+
+	priv = ofa_main_window_get_instance_private( window );
+
+	my_utils_action_enable( G_ACTION_MAP( window ), &priv->action_close_period, "perclosing", enable );
 }
 
 static void

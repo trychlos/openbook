@@ -58,7 +58,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	gboolean       is_current;
+	gboolean       is_writable;
 	gboolean       is_new;
 
 	/* UI
@@ -269,7 +269,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * rate
@@ -280,7 +280,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_rate_properties_get_instance_private";
 	ofaRatePropertiesPrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 	gint count, idx;
 	gchar *title;
 	const gchar *mnemo;
@@ -296,10 +295,7 @@ idialog_init( myIDialog *instance )
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	mnemo = ofo_rate_get_mnemo( priv->rate );
 	if( !mnemo ){
@@ -336,10 +332,10 @@ idialog_init( myIDialog *instance )
 	my_utils_container_notes_init( instance, rate );
 	my_utils_container_updstamp_init( instance, rate );
 
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -350,7 +346,7 @@ idialog_init( myIDialog *instance )
 
 	my_igridlist_init(
 			MY_IGRIDLIST( instance ), GTK_GRID( priv->grid ),
-			TRUE, priv->is_current, N_COLUMNS );
+			TRUE, priv->is_writable, N_COLUMNS );
 
 	count = ofo_rate_get_val_count( priv->rate );
 	for( idx=0 ; idx<count ; ++idx ){
@@ -406,7 +402,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_widget_set_sensitive( entry, priv->is_current );
+	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
 			entry, 1+COL_BEGIN, row, 1, 1 );
@@ -425,7 +421,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
-	gtk_widget_set_sensitive( entry, priv->is_current );
+	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
 			entry, 1+COL_END, row, 1, 1 );
@@ -448,7 +444,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
-	gtk_widget_set_sensitive( entry, priv->is_current );
+	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
 			entry, 1+COL_RATE, row, 1, 1 );
@@ -571,7 +567,7 @@ check_for_enable_dlg( ofaRateProperties *self )
 
 	priv = ofa_rate_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 	}
 }

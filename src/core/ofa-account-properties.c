@@ -61,7 +61,7 @@ typedef struct {
 	 */
 	ofaHub              *hub;
 	ofoDossier          *dossier;
-	gboolean             is_current;
+	gboolean             is_writable;
 	gboolean             is_new;
 	gboolean             number_ok;
 	gboolean             has_entries;
@@ -171,11 +171,11 @@ account_properties_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_object_unref( priv->p2_group0 );
-		g_object_unref( priv->p2_group1 );
-		g_object_unref( priv->p2_group2 );
-		g_object_unref( priv->p2_group3 );
-		g_object_unref( priv->p2_group4 );
+		g_clear_object( &priv->p2_group0 );
+		g_clear_object( &priv->p2_group1 );
+		g_clear_object( &priv->p2_group2 );
+		g_clear_object( &priv->p2_group3 );
+		g_clear_object( &priv->p2_group4 );
 	}
 
 	/* chain up to the parent class */
@@ -296,7 +296,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * account
@@ -334,7 +334,7 @@ idialog_init( myIDialog *instance )
 	/* dossier */
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( priv->dossier && OFO_IS_DOSSIER( priv->dossier ));
-	priv->is_current = ofo_dossier_is_current( priv->dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	/* account */
 	priv->has_entries = ofo_entry_use_account( priv->hub, acc_number );
@@ -396,18 +396,18 @@ idialog_init( myIDialog *instance )
 
 	my_utils_container_notes_init( GTK_CONTAINER( instance ), account );
 	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), account );
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 
 	/* setup fields editability, depending of
 	 * - whether the dossier is current
 	 * - whether account has entries or is empty
 	 */
-	my_utils_widget_set_editable( priv->number_entry, priv->is_current && !priv->has_entries );
-	my_utils_widget_set_editable( priv->root_btn, priv->is_current && !priv->has_entries );
-	my_utils_widget_set_editable( priv->detail_btn, priv->is_current && !priv->has_entries );
-	my_utils_widget_set_editable( priv->currency_combo, priv->is_current && !priv->has_entries );
+	my_utils_widget_set_editable( priv->number_entry, priv->is_writable && !priv->has_entries );
+	my_utils_widget_set_editable( priv->root_btn, priv->is_writable && !priv->has_entries );
+	my_utils_widget_set_editable( priv->detail_btn, priv->is_writable && !priv->has_entries );
+	my_utils_widget_set_editable( priv->currency_combo, priv->is_writable && !priv->has_entries );
 
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -751,7 +751,7 @@ check_for_enable_dlg( ofaAccountProperties *self )
 
 	priv = ofa_account_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 
 		gtk_widget_set_sensitive( priv->type_frame, !priv->has_entries );
 		/*g_debug( "setting type frame to %s", priv->has_entries ? "False":"True" );*/

@@ -60,7 +60,7 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean             is_current;
+	gboolean             is_writable;
 	ofoRecurrentModel   *recurrent_model;
 	gboolean             is_new;
 
@@ -261,7 +261,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * recurrent_model
@@ -272,7 +272,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_recurrent_model_properties_idialog_init";
 	ofaRecurrentModelPropertiesPrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -283,10 +282,7 @@ idialog_init( myIDialog *instance )
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	init_title( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
 	init_page_properties( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
@@ -296,10 +292,10 @@ idialog_init( myIDialog *instance )
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -480,7 +476,7 @@ check_for_enable_dlg( ofaRecurrentModelProperties *self )
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		ok = is_dialog_validable( self );
 		gtk_widget_set_sensitive( priv->ok_btn, ok );
 	}

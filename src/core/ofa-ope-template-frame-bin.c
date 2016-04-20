@@ -57,7 +57,7 @@ typedef struct {
 	 */
 	ofaHub              *hub;
 	GList               *hub_handlers;
-	gboolean             is_current;
+	gboolean             is_writable;
 	ofaOpeTemplateStore *store;
 	GList               *store_handlers;
 	ofaIDBMeta          *meta;
@@ -334,7 +334,6 @@ static void
 setup_bin( ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
-	ofoDossier *dossier;
 	gulong handler;
 	GList *strlist, *it;
 	const ofaIDBConnect *connect;
@@ -366,6 +365,7 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 
 	connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_meta( connect );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	/* create one page per ledger
 	 * if strlist is set, then create one page per ledger
@@ -381,12 +381,6 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
 	ofa_list_store_load_dataset( OFA_LIST_STORE( priv->store ));
-
-	/* runtime */
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
 
 	/* hub signaling system */
 	hub_connect_to_signaling_system( self );
@@ -965,7 +959,7 @@ ofa_ope_template_frame_bin_add_button( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 			break;
 		case TEMPLATE_BTN_NEW:
 			button = button_add( bin, TEMPLATE_BTN_NEW, BUTTON_NEW, sensitive, G_CALLBACK( button_on_new_clicked ));
-			gtk_widget_set_sensitive( button, sensitive && priv->is_current );
+			gtk_widget_set_sensitive( button, sensitive && priv->is_writable );
 			break;
 		case TEMPLATE_BTN_PROPERTIES:
 			button = button_add( bin, TEMPLATE_BTN_PROPERTIES, BUTTON_PROPERTIES, sensitive, G_CALLBACK( button_on_properties_clicked ));
@@ -973,7 +967,7 @@ ofa_ope_template_frame_bin_add_button( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 			break;
 		case TEMPLATE_BTN_DELETE:
 			button = button_add( bin, TEMPLATE_BTN_DELETE, BUTTON_DELETE, sensitive, G_CALLBACK( button_on_delete_clicked ));
-			gtk_widget_set_sensitive( button, sensitive && priv->is_current );
+			gtk_widget_set_sensitive( button, sensitive && priv->is_writable );
 			break;
 		case TEMPLATE_BTN_DUPLICATE:
 			button = button_add( bin, TEMPLATE_BTN_DUPLICATE, _( "Duplicate..." ), sensitive, G_CALLBACK( button_on_duplicate_clicked ));
@@ -981,7 +975,7 @@ ofa_ope_template_frame_bin_add_button( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 			break;
 		case TEMPLATE_BTN_GUIDED_INPUT:
 			button = button_add( bin, TEMPLATE_BTN_GUIDED_INPUT, _( "Guided input..." ), sensitive, G_CALLBACK( button_on_guided_input_clicked ));
-			gtk_widget_set_sensitive( button, sensitive && priv->is_current );
+			gtk_widget_set_sensitive( button, sensitive && priv->is_writable );
 			break;
 		default:
 			break;
@@ -1065,12 +1059,12 @@ button_update_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 	sbtn = button_find_by_id( &priv->buttons, TEMPLATE_BTN_DUPLICATE, FALSE );
 	if( sbtn ){
 		g_return_if_fail( sbtn->btn && GTK_IS_WIDGET( sbtn->btn ));
-		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_template && priv->is_current );
+		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_template && priv->is_writable );
 	}
 	sbtn = button_find_by_id( &priv->buttons, TEMPLATE_BTN_GUIDED_INPUT, FALSE );
 	if( sbtn ){
 		g_return_if_fail( sbtn->btn && GTK_IS_WIDGET( sbtn->btn ));
-		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_template && priv->is_current );
+		gtk_widget_set_sensitive( sbtn->btn, sbtn->sensitive && has_template && priv->is_writable );
 	}
 }
 
@@ -1136,7 +1130,7 @@ is_new_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn )
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
-	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_current;
+	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_writable;
 
 	return( ok );
 }
@@ -1149,7 +1143,7 @@ is_delete_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn, ofoOpeTemplate *
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
-	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_current && selected && ofo_ope_template_is_deletable( selected );
+	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_writable && selected && ofo_ope_template_is_deletable( selected );
 
 	return( ok );
 }

@@ -359,7 +359,6 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	const gchar *cstr;
 	gchar *str;
 	gint total, used;
-	ofoDossier *dossier;
 
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
@@ -428,11 +427,9 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_account ), "" );
 	}
 
-	dossier = ofa_hub_get_dossier( priv->hub );
-
 	my_utils_container_notes_setup_full(
 				GTK_CONTAINER( self ),
-				"pn-notes", ofo_bat_get_notes( bat ), ofo_dossier_is_current( dossier ));
+				"pn-notes", ofo_bat_get_notes( bat ), ofa_hub_dossier_is_writable( priv->hub ));
 	my_utils_container_updstamp_init( self, bat );
 }
 

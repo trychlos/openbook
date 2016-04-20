@@ -2329,7 +2329,7 @@ on_row_selected( GtkTreeSelection *select, ofaEntryPage *self )
 		}
 
 		is_editable = entry ? ofo_entry_is_editable( entry ): FALSE;
-		is_editable &= ofo_dossier_is_current( priv->dossier );
+		is_editable &= ofa_hub_dossier_is_writable( priv->hub );
 
 		gtk_widget_set_sensitive(  GTK_WIDGET( priv->edit_switch ), is_editable );
 		g_object_get( G_OBJECT( priv->edit_switch ), "active", &is_active, NULL );

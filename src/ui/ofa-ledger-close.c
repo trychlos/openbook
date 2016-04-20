@@ -290,8 +290,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
- * so first setup the UI fields, then fills them up with the data
+ * first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window
  */
 static void

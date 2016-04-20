@@ -50,7 +50,7 @@ typedef struct {
 	 */
 	ofaHub      *hub;
 	GList       *hub_handlers;
-	gboolean     is_current;
+	gboolean     is_writable;
 
 	/* UI
 	 */
@@ -168,7 +168,6 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_class_page_v_setup_view";
 	ofaClassPagePrivate *priv;
-	ofoDossier *dossier;
 	gulong handler;
 	GtkWidget *tview;
 
@@ -178,11 +177,7 @@ v_setup_view( ofaPage *page )
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
-	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
@@ -311,7 +306,7 @@ v_setup_buttons( ofaPage *page )
 
 	btn = ofa_buttons_box_add_button_with_mnemonic(
 			buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
-	gtk_widget_set_sensitive( btn, priv->is_current );
+	gtk_widget_set_sensitive( btn, priv->is_writable );
 
 	priv->update_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
@@ -474,7 +469,7 @@ on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_current && is_class && ofo_class_is_deletable( class ));
+				priv->is_writable && is_class && ofo_class_is_deletable( class ));
 	}
 }
 

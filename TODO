@@ -198,10 +198,6 @@
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
- 701 2015- 3- 8 be able to open a current dossier as read-only
-                (use case: when user wants to make sure he will not
-                modify it inadvertently)
-
  706 2015- 3- 9 be able to configure some user shortcuts (in particular,
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
@@ -493,6 +489,11 @@
                 -> gtk_tree_model_filter_refilter doesn't help
      2016- 1-18 this happens to be eventually a Gtk+ bug which has 
                 already been reported on some graphic cards
+
+ 701 2015- 3- 8 be able to open a current dossier as read-only
+                (use case: when user wants to make sure he will not
+                modify it inadvertently)
+     2015- 4-20 done
 
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
      2015- 3-12 are we sure we want this ?

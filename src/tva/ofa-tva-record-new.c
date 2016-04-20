@@ -55,7 +55,6 @@ typedef struct {
 	 */
 	ofaIGetter   *getter;
 	ofoTVARecord *tva_record;
-	gboolean      is_current;
 
 	/* UI
 	 */
@@ -227,7 +226,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * VAT record

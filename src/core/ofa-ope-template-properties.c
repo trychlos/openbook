@@ -73,7 +73,7 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean        is_current;
+	gboolean        is_writable;
 	gboolean        is_new;
 
 	/* data
@@ -315,7 +315,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_ope_template_properties_idialog_init";
 	ofaOpeTemplatePropertiesPrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 	GtkWidget *button;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -328,11 +327,7 @@ idialog_init( myIDialog *instance )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	priv->is_current = ofo_dossier_is_current( dossier );
-	//priv->is_current = FALSE;
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	init_dialog_title( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
 	init_mnemo( OFA_OPE_TEMPLATE_PROPERTIES( instance ));
@@ -348,14 +343,14 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), instance );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		gtk_widget_grab_focus(
 				my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-entry" ));
 	}
 
 	/* if not the current exercice, then only have a 'Close' button */
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
-	if( !priv->is_current ){
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -524,7 +519,7 @@ init_detail( ofaOpeTemplateProperties *self )
 
 	my_igridlist_init(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			TRUE, priv->is_current, DET_N_COLUMNS );
+			TRUE, priv->is_writable, DET_N_COLUMNS );
 
 	count = ofo_ope_template_get_detail_count( priv->ope_template );
 	for( i=1 ; i<=count ; ++i ){
@@ -582,10 +577,10 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	gtk_entry_set_alignment( entry, 0 );
 	gtk_entry_set_max_length( entry, OTE_DET_COMMENT_MAX_LENGTH );
 	gtk_entry_set_max_width_chars( entry, OTE_DET_COMMENT_MAX_LENGTH );
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		gtk_widget_grab_focus( GTK_WIDGET( entry ));
 	}
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			GTK_WIDGET( entry ), 1+DET_COL_COMMENT, row, 1, 1 );
@@ -593,7 +588,7 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	/* account identifier */
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
 	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_DETAIL );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
@@ -601,7 +596,7 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 
 	/* account locked */
 	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_current );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			toggle, 1+DET_COL_ACCOUNT_LOCKED, row, 1, 1 );
@@ -612,14 +607,14 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	gtk_widget_set_hexpand( GTK_WIDGET( entry ), TRUE );
 	gtk_entry_set_max_length( entry, OTE_DET_LABEL_MAX_LENGTH );
 	gtk_entry_set_max_width_chars( entry, OTE_DET_LABEL_MAX_LENGTH );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			GTK_WIDGET( entry ), 1+DET_COL_LABEL, row, 1, 1 );
 
 	/* label locked */
 	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_current );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			toggle, 1+DET_COL_LABEL_LOCKED, row, 1, 1 );
@@ -630,14 +625,14 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	gtk_entry_set_max_length( entry, OTE_DET_AMOUNT_MAX_LENGTH );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_entry_set_max_width_chars( entry, OTE_DET_AMOUNT_MAX_LENGTH );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			GTK_WIDGET( entry ), 1+DET_COL_DEBIT, row, 1, 1 );
 
 	/* debit locked */
 	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_current );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			toggle, 1+DET_COL_DEBIT_LOCKED, row, 1, 1 );
@@ -648,14 +643,14 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	gtk_entry_set_max_length( entry, OTE_DET_AMOUNT_MAX_LENGTH );
 	gtk_entry_set_width_chars( entry, 10 );
 	gtk_entry_set_max_width_chars( entry, OTE_DET_AMOUNT_MAX_LENGTH );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_current );
+	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			GTK_WIDGET( entry ), 1+DET_COL_CREDIT, row, 1, 1 );
 
 	/* credit locked */
 	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_current );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			toggle, 1+DET_COL_CREDIT_LOCKED, row, 1, 1 );
@@ -787,7 +782,7 @@ check_for_enable_dlg( ofaOpeTemplateProperties *self )
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 	}
 }

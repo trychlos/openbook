@@ -50,7 +50,7 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean            is_current;
+	gboolean            is_writable;
 	gint                exe_id;			/* internal identifier of the current exercice */
 
 	/* UI
@@ -153,16 +153,13 @@ v_setup_view( ofaPage *page )
 	ofaLedgerPagePrivate *priv;
 	GtkWidget *frame;
 	ofaHub *hub;
-	ofoDossier *dossier;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	frame = setup_tree_view( page );
 
@@ -214,7 +211,7 @@ v_setup_buttons( ofaPage *page )
 
 	btn = ofa_buttons_box_add_button_with_mnemonic(
 				buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
-	gtk_widget_set_sensitive( btn, priv->is_current );
+	gtk_widget_set_sensitive( btn, priv->is_writable );
 
 	priv->update_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
@@ -290,7 +287,7 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 			is_ledger );
 
 	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_current && is_ledger && ofo_ledger_is_deletable( ledger ));
+			priv->is_writable && is_ledger && ofo_ledger_is_deletable( ledger ));
 
 	gtk_widget_set_sensitive( priv->entries_btn,
 			is_ledger && ofo_ledger_has_entries( ledger ));

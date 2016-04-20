@@ -53,7 +53,7 @@ typedef struct {
 	/* internals
 	 */
 	ofoClass   *class;
-	gboolean    is_current;
+	gboolean    is_writable;
 	gboolean    is_new;
 
 	/* data
@@ -237,7 +237,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * account class
@@ -248,7 +248,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_class_properties_idialog_init";
 	ofaClassPropertiesPrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 	gchar *title;
 	gint number;
 	GtkEntry *entry;
@@ -264,9 +263,7 @@ idialog_init( myIDialog *instance )
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	number = ofo_class_get_number( priv->class );
 	if( number < 1 ){
@@ -308,10 +305,10 @@ idialog_init( myIDialog *instance )
 
 	my_utils_container_notes_init( instance, class );
 	my_utils_container_updstamp_init( instance, class );
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -351,7 +348,7 @@ check_for_enable_dlg( ofaClassProperties *self )
 
 	priv = ofa_class_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		gtk_widget_set_sensitive( priv->ok_btn, is_dialog_validable( self ));
 	}
 }

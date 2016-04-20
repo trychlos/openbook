@@ -54,7 +54,7 @@ typedef struct {
 
 	/* runtime data
 	 */
-	gboolean        is_current;			/* whether the dossier is current */
+	gboolean        is_writable;			/* whether the dossier is current */
 
 	/* UI
 	 */
@@ -139,7 +139,6 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 	static ofaBatColumns st_columns [] = {
 			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END,
 			BAT_DISP_COUNT, BAT_DISP_UNUSED,
@@ -154,10 +153,7 @@ v_setup_view( ofaPage *page )
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	priv->tview = ofa_bat_treeview_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 4, 4, 4, 0 );
@@ -198,7 +194,7 @@ v_setup_buttons( ofaPage *page )
 	priv->import_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, _( "_Import..." ), G_CALLBACK( on_import_clicked ), page );
-	gtk_widget_set_sensitive( priv->import_btn, priv->is_current );
+	gtk_widget_set_sensitive( priv->import_btn, priv->is_writable );
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -223,7 +219,7 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 			is_bat );
 
 	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_current && is_bat && ofo_bat_is_deletable( bat ));
+			priv->is_writable && is_bat && ofo_bat_is_deletable( bat ));
 }
 
 static GtkWidget *

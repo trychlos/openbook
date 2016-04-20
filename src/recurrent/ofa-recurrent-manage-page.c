@@ -55,7 +55,7 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean           is_current;
+	gboolean           is_writable;
 
 	/* UI
 	 */
@@ -181,7 +181,6 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_recurrent_manage_page_v_setup_view";
 	ofaRecurrentManagePagePrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 	GtkWidget *widget;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -189,10 +188,7 @@ v_setup_view( ofaPage *page )
 	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	get_settings( OFA_RECURRENT_MANAGE_PAGE( page ));
 
@@ -376,7 +372,7 @@ v_setup_buttons( ofaPage *page )
 
 	btn = ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, BUTTON_NEW, G_CALLBACK( action_on_new_clicked ), page );
-	gtk_widget_set_sensitive( btn, priv->is_current );
+	gtk_widget_set_sensitive( btn, priv->is_writable );
 
 	priv->update_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
@@ -391,7 +387,7 @@ v_setup_buttons( ofaPage *page )
 	priv->generate_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, _( "_Generate new operations..." ), G_CALLBACK( action_on_generate_clicked ), page );
-	gtk_widget_set_sensitive( priv->generate_btn, priv->is_current );
+	gtk_widget_set_sensitive( priv->generate_btn, priv->is_writable );
 
 	btn = ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, _( "_View waiting operations..." ), G_CALLBACK( action_on_view_clicked ), page );
@@ -569,7 +565,7 @@ tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentManagePage 
 	}
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_current && is_model && ofo_recurrent_model_is_deletable( model ));
+				priv->is_writable && is_model && ofo_recurrent_model_is_deletable( model ));
 	}
 }
 

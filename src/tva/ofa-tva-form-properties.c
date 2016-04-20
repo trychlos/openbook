@@ -58,7 +58,7 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean       is_current;
+	gboolean       is_writable;
 	ofoTVAForm    *tva_form;
 	gboolean       is_new;
 
@@ -288,7 +288,7 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_current' property
+ * this dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
  * tva_form
@@ -298,7 +298,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_tva_form_properties_idialog_init";
 	ofaTVAFormPropertiesPrivate *priv;
-	ofoDossier *dossier;
 	guint count, idx;
 	gchar *title;
 	const gchar *mnemo;
@@ -315,10 +314,7 @@ idialog_init( myIDialog *instance )
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	priv->is_current = ofo_dossier_is_current( dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	mnemo = ofo_tva_form_get_mnemo( priv->tva_form );
 	if( !mnemo ){
@@ -363,7 +359,7 @@ idialog_init( myIDialog *instance )
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_current );
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), priv->is_writable );
 
 	/* set the detail rows after having set editability for current
 	 * dossier (because my_utils_container_set_editable() set the
@@ -373,7 +369,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->det_grid && GTK_IS_GRID( priv->det_grid ));
 	my_igridlist_init(
 			MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ),
-			TRUE, priv->is_current, N_DET_COLUMNS );
+			TRUE, priv->is_writable, N_DET_COLUMNS );
 	count = ofo_tva_form_detail_get_count( priv->tva_form );
 	for( idx=0 ; idx<count ; ++idx ){
 		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->det_grid ));
@@ -383,14 +379,14 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->bool_grid && GTK_IS_GRID( priv->bool_grid ));
 	my_igridlist_init(
 			MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ),
-			TRUE, priv->is_current, N_BOOL_COLUMNS );
+			TRUE, priv->is_writable, N_BOOL_COLUMNS );
 	count = ofo_tva_form_boolean_get_count( priv->tva_form );
 	for( idx=0 ; idx<count ; ++idx ){
 		my_igridlist_add_row( MY_IGRIDLIST( instance ), GTK_GRID( priv->bool_grid ));
 	}
 
 	/* if not the current exercice, then only have a 'Close' button */
-	if( !priv->is_current ){
+	if( !priv->is_writable ){
 		my_idialog_set_close_button( instance );
 		priv->ok_btn = NULL;
 	}
@@ -456,7 +452,7 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	gtk_entry_set_width_chars( GTK_ENTRY( spin ), DET_SPIN_WIDTH );
 	gtk_entry_set_max_width_chars( GTK_ENTRY( spin ), DET_SPIN_MAX_WIDTH );
 	gtk_spin_button_set_numeric( GTK_SPIN_BUTTON( spin ), TRUE );
-	gtk_widget_set_sensitive( spin, priv->is_current );
+	gtk_widget_set_sensitive( spin, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
 			spin, 1+COL_DET_LEVEL, row, 1, 1 );
@@ -465,7 +461,7 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	entry = gtk_entry_new();
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_code_changed ), self );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_CODE_MAX_LENGTH );
-	gtk_widget_set_sensitive( entry, priv->is_current );
+	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
 			entry, 1+COL_DET_CODE, row, 1, 1 );
@@ -475,7 +471,7 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_label_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_LABEL_MAX_LENGTH );
-	gtk_widget_set_sensitive( entry, priv->is_current );
+	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
 			entry, 1+COL_DET_LABEL, row, 1, 1 );
@@ -483,7 +479,7 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* has base */
 	toggle = gtk_check_button_new();
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_base_toggled ), self );
-	gtk_widget_set_sensitive( toggle, priv->is_current );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
 			toggle, 1+COL_DET_HAS_BASE, row, 1, 1 );
@@ -501,7 +497,7 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* has amount */
 	toggle = gtk_check_button_new();
 	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_amount_toggled ), self );
-	gtk_widget_set_sensitive( toggle, priv->is_current );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
 			toggle, 1+COL_DET_HAS_AMOUNT, row, 1, 1 );
@@ -595,7 +591,7 @@ setup_boolean_widgets( ofaTVAFormProperties *self, guint row )
 	g_signal_connect( entry, "changed", G_CALLBACK( on_bool_label_changed ), self );
 	gtk_widget_set_hexpand( entry, TRUE );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), BOOL_LABEL_MAX_LENGTH );
-	gtk_widget_set_sensitive( entry, priv->is_current );
+	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ),
 			entry, 1+COL_BOOL_LABEL, row, 1, 1 );
@@ -672,7 +668,7 @@ on_det_has_base_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 	checked = gtk_toggle_button_get_active( button );
 	row = my_igridlist_get_row_index( GTK_WIDGET( button ));
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_BASE, row );
-	gtk_widget_set_sensitive( entry, checked && priv->is_current );
+	gtk_widget_set_sensitive( entry, checked && priv->is_writable );
 	//g_debug( "on_det_has_base_toggled: row=%u, checked=%s", row, checked ? "True":"False" );
 
 	check_for_enable_dlg( self );
@@ -697,7 +693,7 @@ on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
 	checked = gtk_toggle_button_get_active( button );
 	row = my_igridlist_get_row_index( GTK_WIDGET( button ));
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, row );
-	gtk_widget_set_sensitive( entry, checked && priv->is_current );
+	gtk_widget_set_sensitive( entry, checked && priv->is_writable );
 	//g_debug( "on_det_has_amount_toggled: row=%u, checked=%s", row, checked ? "True":"False" );
 
 	check_for_enable_dlg( self );
@@ -726,7 +722,7 @@ check_for_enable_dlg( ofaTVAFormProperties *self )
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
-	if( priv->is_current ){
+	if( priv->is_writable ){
 		ok = is_dialog_validable( self );
 		gtk_widget_set_sensitive( priv->ok_btn, ok );
 	}

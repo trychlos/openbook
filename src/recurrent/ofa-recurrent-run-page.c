@@ -54,10 +54,6 @@
  */
 typedef struct {
 
-	/* internals
-	 */
-	gboolean                 is_current;
-
 	/* UI
 	 */
 	GtkWidget               *top_paned;
@@ -179,8 +175,6 @@ v_setup_view( ofaPage *page )
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
-
-	priv->is_current = ofo_dossier_is_current( dossier );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	gtk_widget_set_hexpand( page_widget, TRUE );

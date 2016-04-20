@@ -196,7 +196,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_dossier_display_notes_idialog_init";
 	ofaDossierDisplayNotesPrivate *priv;
 	ofaHub *hub;
-	ofoDossier *dossier;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -206,10 +205,7 @@ idialog_init( myIDialog *instance )
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "exe-label", "exe-text", priv->exe_notes );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
-
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), ofo_dossier_is_current( dossier ));
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), ofa_hub_dossier_is_writable( hub ));
 }
 
 static void
