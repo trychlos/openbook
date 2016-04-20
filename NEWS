@@ -35,7 +35,9 @@
  New features and improvements:
 
    - ofaDossierOpen: open in read-only mode (todo #701).
+   - ofaTVARecordProperties: set the auto-eval mode to True.
    - ofsOpe: set again the auto-eval mode to False, only using %EVAL() function.
+   - ofoTVARecord: improve data control.
  
  Bug fixes:
 

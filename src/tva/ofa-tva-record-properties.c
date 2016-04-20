@@ -820,6 +820,7 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 	if( resp == GTK_RESPONSE_OK ){
 		if( !st_engine ){
 			st_engine = ofa_formula_engine_new();
+			ofa_formula_engine_set_auto_eval( st_engine, TRUE );
 		}
 		count = ofo_tva_record_detail_get_count( priv->tva_record );
 
