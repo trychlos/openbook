@@ -125,9 +125,12 @@ ofoDossier             *ofa_hub_get_dossier               ( const ofaHub *hub );
 
 gboolean                ofa_hub_dossier_open              ( ofaHub *hub,
 																ofaIDBConnect *connect,
-																GtkWindow *parent );
+																GtkWindow *parent,
+																gboolean read_only );
 
 void                    ofa_hub_dossier_close             ( ofaHub *hub );
+
+gboolean                ofa_hub_dossier_is_writable       ( const ofaHub *hub );
 
 ofaDossierPrefs        *ofa_hub_dossier_get_prefs         ( const ofaHub *hub );
 

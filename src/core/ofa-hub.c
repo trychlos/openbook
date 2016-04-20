@@ -65,6 +65,7 @@ typedef struct {
 	ofaIDBConnect          *connect;
 	ofoDossier             *dossier;
 	ofaDossierPrefs        *dossier_prefs;
+	gboolean                read_only;
 }
 	ofaHubPrivate;
 
@@ -773,6 +774,7 @@ ofa_hub_get_dossier( const ofaHub *hub )
  * @hub: this #ofaHub instance.
  * @connect: a valid connection to the targeted database.
  * @parent: the #GtkWindow parent window.
+ * @read_only: whether the dossier should be opened in read-only mode.
  *
  * Open the dossier and exercice pointed to by the @connect connection.
  * On success, the @hub object takes a reference on this @connect
@@ -784,7 +786,7 @@ ofa_hub_get_dossier( const ofaHub *hub )
  * else.
  */
 gboolean
-ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent )
+ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent, gboolean read_only )
 {
 	ofaHubPrivate *priv;
 	gboolean ok;
@@ -804,6 +806,7 @@ ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent )
 	if( ofa_idbmodel_update( hub, parent )){
 		priv->dossier = ofo_dossier_new( hub );
 		if( priv->dossier ){
+			priv->read_only = read_only;
 			priv->dossier_prefs = ofa_dossier_prefs_new( hub );
 			ok = TRUE;
 		}
@@ -855,6 +858,33 @@ dossier_do_close( ofaHub *hub )
 	g_clear_object( &priv->dossier_prefs );
 
 	my_icollector_free_all( ofa_hub_get_collector( hub ));
+}
+
+/**
+ * ofa_hub_dossier_is_writable:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: %TRUE if the dossier is writable, i.e. is a current exercice
+ * which has not been opened in read-only mode.
+ */
+gboolean
+ofa_hub_dossier_is_writable( const ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+	gboolean is_writable;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	is_writable = priv->dossier &&
+			OFO_IS_DOSSIER( priv->dossier ) &&
+			ofo_dossier_is_current( priv->dossier ) &&
+			!priv->read_only;
+
+	return( is_writable );
 }
 
 /*

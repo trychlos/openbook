@@ -68,6 +68,7 @@ typedef struct {
 	 */
 	ofaDossierTreeview *dossier_tview;
 	ofaExerciceCombo   *exercice_combo;
+	GtkWidget          *readonly_btn;
 	GtkWidget          *message_label;
 	GtkWidget          *ok_btn;
 }
@@ -351,6 +352,10 @@ idialog_init( myIDialog *instance )
 		ofa_user_credentials_bin_set_password( user_credentials, priv->password );
 	}
 
+	/* get read-only mode */
+	priv->readonly_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "read-only-btn" );
+	g_return_if_fail( priv->readonly_btn && GTK_IS_CHECK_BUTTON( priv->readonly_btn ));
+
 	/* focus defauls to be set on the dossier treeview
 	 * if the dossier is already set, then set the focus on the exercice combo
 	 * if the exercice is also already selected, then set focus to NULL
@@ -424,7 +429,7 @@ static void
 check_for_enable_dlg( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
-	gboolean ok_enable;
+	gboolean ok_enable, ro_enable;
 	gchar *msg;
 
 	priv = ofa_dossier_open_get_instance_private( self );
@@ -432,6 +437,10 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	msg = NULL;
 
 	ok_enable = are_data_set( self, &msg );
+
+	ro_enable = priv->meta && priv->period && ofa_idbperiod_get_current( priv->period );
+	gtk_widget_set_sensitive( priv->readonly_btn, ro_enable );
+
 	set_message( self, msg );
 	g_free( msg );
 
@@ -536,16 +545,18 @@ do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 	ofaHub *hub;
-	gboolean ok;
+	gboolean ok, read_only;
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
 	ok = FALSE;
 
+	read_only = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->readonly_btn ));
+
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ))){
+	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ), read_only )){
 		ofa_hub_dossier_remediate_settings( hub );
 		ok = TRUE;
 	}

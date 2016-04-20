@@ -1439,7 +1439,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			 * prevent the window manager to close this particular one
 			 */
 			priv->is_destroy_allowed = FALSE;
-			ok = ofa_hub_dossier_open( priv->hub, cnx, GTK_WINDOW( main_window ));
+			ok = ofa_hub_dossier_open( priv->hub, cnx, GTK_WINDOW( main_window ), FALSE );
 			priv->is_destroy_allowed = TRUE;
 			if( ok ){
 				priv->dossier = ofa_hub_get_dossier( priv->hub );
