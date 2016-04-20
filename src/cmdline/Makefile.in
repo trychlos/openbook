@@ -112,8 +112,8 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-bin_PROGRAMS = t_dynbook$(EXEEXT)
-subdir = misc/t_dynbook
+bin_PROGRAMS = ofa_cmdline$(EXEEXT)
+subdir = src/cmdline
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_code_coverage.m4 \
 	$(top_srcdir)/m4/ax_is_release.m4 \
@@ -137,10 +137,10 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(applicationsdir)" \
 	"$(DESTDIR)$(ui_datadir)"
 PROGRAMS = $(bin_PROGRAMS)
 am__objects_1 =
-am_t_dynbook_OBJECTS = main.$(OBJEXT) $(am__objects_1)
-t_dynbook_OBJECTS = $(am_t_dynbook_OBJECTS)
+am_ofa_cmdline_OBJECTS = main.$(OBJEXT) $(am__objects_1)
+ofa_cmdline_OBJECTS = $(am_ofa_cmdline_OBJECTS)
 am__DEPENDENCIES_1 =
-t_dynbook_DEPENDENCIES = $(am__DEPENDENCIES_1)
+ofa_cmdline_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -179,8 +179,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(t_dynbook_SOURCES)
-DIST_SOURCES = $(t_dynbook_SOURCES)
+SOURCES = $(ofa_cmdline_SOURCES)
+DIST_SOURCES = $(ofa_cmdline_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -419,12 +419,12 @@ ui_datadir = $(pkgdatadir)/ui
 BUILT_SOURCES = \
 	$(NULL)
 
-t_dynbook_SOURCES = \
+ofa_cmdline_SOURCES = \
 	main.c												\
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
-t_dynbook_LDADD = \
+ofa_cmdline_LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
 
@@ -475,9 +475,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__confi
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu misc/t_dynbook/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu src/cmdline/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu misc/t_dynbook/Makefile
+	  $(AUTOMAKE) --gnu src/cmdline/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -545,9 +545,9 @@ clean-binPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-t_dynbook$(EXEEXT): $(t_dynbook_OBJECTS) $(t_dynbook_DEPENDENCIES) $(EXTRA_t_dynbook_DEPENDENCIES) 
-	@rm -f t_dynbook$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(t_dynbook_OBJECTS) $(t_dynbook_LDADD) $(LIBS)
+ofa_cmdline$(EXEEXT): $(ofa_cmdline_OBJECTS) $(ofa_cmdline_DEPENDENCIES) $(EXTRA_ofa_cmdline_DEPENDENCIES) 
+	@rm -f ofa_cmdline$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(ofa_cmdline_OBJECTS) $(ofa_cmdline_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

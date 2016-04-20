@@ -65,6 +65,7 @@
 
  Other changes:
 
+   - misc/t_xxx: removed test programs (todo #1081).
    - myIGridList: review the interface.
    - my_icollectionable_load_collection(): is now a class method (todo #1091).
    - my_utils_quote_sql(): new function.
@@ -76,6 +77,7 @@
    - ofaISignalHub: new interface (todo #1087).
    - ofaISingleKeeper: merged into myICollector interface (todo #1095).
    - ofaPeriodClose: new dialog.
+   - src/cmdline: new command-line program (todo #1081). 
 
 -----------------------------------------------------------------------
  Version 0.54

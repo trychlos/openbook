@@ -19,13 +19,3 @@
 #
 # Authors:
 #   Pierre Wieser <pwieser@trychlos.org>
-
-SUBDIRS = \
-	t_action							\
-	t_amounts							\
-	t_delete							\
-	t_dynbook							\
-	t_nonmodal							\
-	t_spawn								\
-	t_weakref							\
-	$(NULL)

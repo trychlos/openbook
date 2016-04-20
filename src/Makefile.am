@@ -32,5 +32,6 @@ SUBDIRS = \
 	postgre												\
 	recurrent											\
 	tva													\
+	cmdline												\
 	ui													\
 	$(NULL)

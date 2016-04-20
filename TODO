@@ -344,8 +344,6 @@
 1075 2016- 4-14 have a message bar
      2016- 4-20 describe a use case
 
-1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
-
 1086 2016- 4-15 Have an error message from ofa_idbconnect_query
 
 1093 2016- 4-19 CODE should ICollector have its own messaging system
@@ -1173,6 +1171,9 @@
 
 1080 2016- 4-14 BUG  ExerciceClose: 6X nor 7X accounts are zero-ed
      2016- 4-14 fixed with myICollector and ofaISingleKeeper free_all().
+
+1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
+     2016- 4-20 done, with src/cmdline/
 
 1082 2016- 4-14 BUG v30 DDL refactoring does not rightly consider '%'
                     (maybe when it is not the first char ?)

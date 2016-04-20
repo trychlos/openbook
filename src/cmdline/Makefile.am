@@ -21,7 +21,7 @@
 #   Pierre Wieser <pwieser@trychlos.org>
 
 bin_PROGRAMS = \
-	t_weakref											\
+	ofa_cmdline											\
 	$(NULL)
 
 ui_datadir = $(pkgdatadir)/ui
@@ -39,12 +39,12 @@ AM_CPPFLAGS += \
 BUILT_SOURCES = \
 	$(NULL)
 
-t_weakref_SOURCES = \
+ofa_cmdline_SOURCES = \
 	main.c												\
 	$(BUILT_SOURCES)									\
 	$(NULL)
 
-t_weakref_LDADD = \
+ofa_cmdline_LDADD = \
 	$(OPENBOOK_LIBS)									\
 	$(NULL)
 

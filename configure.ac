@@ -127,16 +127,10 @@ AC_CONFIG_FILES([
 	m4/Makefile
 	maintainer/Makefile
 	misc/Makefile
-	misc/t_action/Makefile
-	misc/t_amounts/Makefile
-	misc/t_delete/Makefile
-	misc/t_dynbook/Makefile
-	misc/t_nonmodal/Makefile
-	misc/t_spawn/Makefile
-	misc/t_weakref/Makefile
 	po/Makefile.in
 	src/Makefile
 	src/api/Makefile
+	src/cmdline/Makefile
 	src/core/Makefile
 	src/css/Makefile
 	src/importers/Makefile
