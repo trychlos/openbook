@@ -65,6 +65,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-date-editable.c									\
 	my-date-renderer.c									\
 	my-decimal-combo.c									\
+	my-dnd-book.c										\
 	my-double.c											\
 	my-double-editable.c								\
 	my-double-renderer.c								\

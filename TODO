@@ -177,6 +177,7 @@
 
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
+     2016- 4-20 see also #886
 
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
@@ -282,6 +283,7 @@
 
  886 2015-11- 7 FEAT ExerciceClosing: purge reconciliation groups when
                      both bat files and entries are purged
+     2016- 4-20 see also #601
 
  909 2015-11-26 ARCH SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same
                      signal (exe_dates_changed) sent on main window so

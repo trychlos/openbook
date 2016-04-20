@@ -32,6 +32,7 @@
 
 #include "my/my-accel-group.h"
 #include "my/my-date.h"
+#include "my/my-dnd-book.h"
 #include "my/my-iaction-map.h"
 #include "my/my-iwindow.h"
 #include "my/my-tab.h"
@@ -1001,14 +1002,14 @@ static void
 pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 {
 	ofaMainWindowPrivate *priv;
-	GtkNotebook *book;
+	myDndBook *book;
 
 	priv = ofa_main_window_get_instance_private( self );
 
-	book = GTK_NOTEBOOK( gtk_notebook_new());
+	book = my_dnd_book_new();
 	my_utils_widget_set_margins( GTK_WIDGET( book ), 4, 4, 2, 4 );
-	gtk_notebook_set_scrollable( book, TRUE );
-	gtk_notebook_popup_enable( book );
+	gtk_notebook_set_scrollable( GTK_NOTEBOOK( book ), TRUE );
+	gtk_notebook_popup_enable( GTK_NOTEBOOK( book ));
 	gtk_widget_set_hexpand( GTK_WIDGET( book ), TRUE );
 	gtk_widget_set_vexpand( GTK_WIDGET( book ), TRUE );
 

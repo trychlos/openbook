@@ -88,6 +88,7 @@
  Other changes:
 
    - misc/t_xxx: removed test programs (todo #1081).
+   - myDndBook: new GtkNotebook-derived class.
    - myIGridList: review the interface.
    - my_icollectionable_load_collection(): is now a class method (todo #1091).
    - my_utils_quote_sql(): new function.

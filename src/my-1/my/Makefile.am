@@ -31,6 +31,7 @@ my_include_HEADERS = \
 	my-date-editable.h									\
 	my-date-renderer.h									\
 	my-decimal-combo.h									\
+	my-dnd-book.h										\
 	my-double.h											\
 	my-double-editable.h								\
 	my-double-renderer.h								\

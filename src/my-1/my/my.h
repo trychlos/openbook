@@ -31,6 +31,7 @@
 #include <my/my-date-editable.h>
 #include <my/my-date-renderer.h>
 #include <my/my-decimal-combo.h>
+#include <my/my-dnd-book.h>
 #include <my/my-double.h>
 #include <my/my-double-editable.h>
 #include <my/my-double-renderer.h>
