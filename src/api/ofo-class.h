@@ -67,36 +67,33 @@ typedef struct {
 }
 	ofoClassClass;
 
-GType           ofo_class_get_type                ( void ) G_GNUC_CONST;
+GType           ofo_class_get_type          ( void ) G_GNUC_CONST;
 
-void            ofo_class_connect_to_hub_signaling_system
-                                                  ( const ofaHub *hub );
+GList          *ofo_class_get_dataset       ( ofaHub *hub );
+#define         ofo_class_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-GList          *ofo_class_get_dataset             ( ofaHub *hub );
-#define         ofo_class_free_dataset( L )       g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
+ofoClass       *ofo_class_get_by_number     ( ofaHub *hub, gint number );
 
-ofoClass       *ofo_class_get_by_number           ( ofaHub *hub, gint number );
+ofoClass       *ofo_class_new               ( void );
 
-ofoClass       *ofo_class_new                     ( void );
+gint            ofo_class_get_number        ( const ofoClass *class );
+const gchar    *ofo_class_get_label         ( const ofoClass *class );
+const gchar    *ofo_class_get_notes         ( const ofoClass *class );
+const gchar    *ofo_class_get_upd_user      ( const ofoClass *class );
+const GTimeVal *ofo_class_get_upd_stamp     ( const ofoClass *class );
 
-gint            ofo_class_get_number              ( const ofoClass *class );
-const gchar    *ofo_class_get_label               ( const ofoClass *class );
-const gchar    *ofo_class_get_notes               ( const ofoClass *class );
-const gchar    *ofo_class_get_upd_user            ( const ofoClass *class );
-const GTimeVal *ofo_class_get_upd_stamp           ( const ofoClass *class );
+gboolean        ofo_class_is_valid_data     ( gint number, const gchar *label, gchar **msgerr );
+gboolean        ofo_class_is_valid_number   ( gint number );
+gboolean        ofo_class_is_valid_label    ( const gchar *label );
+gboolean        ofo_class_is_deletable      ( const ofoClass *class );
 
-gboolean        ofo_class_is_valid_data           ( gint number, const gchar *label, gchar **msgerr );
-gboolean        ofo_class_is_valid_number         ( gint number );
-gboolean        ofo_class_is_valid_label          ( const gchar *label );
-gboolean        ofo_class_is_deletable            ( const ofoClass *class );
+void            ofo_class_set_number        ( ofoClass *class, gint number );
+void            ofo_class_set_label         ( ofoClass *class, const gchar *label );
+void            ofo_class_set_notes         ( ofoClass *class, const gchar *notes );
 
-void            ofo_class_set_number              ( ofoClass *class, gint number );
-void            ofo_class_set_label               ( ofoClass *class, const gchar *label );
-void            ofo_class_set_notes               ( ofoClass *class, const gchar *notes );
-
-gboolean        ofo_class_insert                  ( ofoClass *class, ofaHub *hub );
-gboolean        ofo_class_update                  ( ofoClass *class, gint prev_id );
-gboolean        ofo_class_delete                  ( ofoClass *class );
+gboolean        ofo_class_insert            ( ofoClass *class, ofaHub *hub );
+gboolean        ofo_class_update            ( ofoClass *class, gint prev_id );
+gboolean        ofo_class_delete            ( ofoClass *class );
 
 G_END_DECLS
 

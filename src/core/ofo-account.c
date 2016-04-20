@@ -43,6 +43,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
@@ -207,11 +208,6 @@ typedef struct {
 
 static void         archives_list_free_detail( GList *fields );
 static void         archives_list_free( ofoAccount *account );
-static void         on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
-static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
-static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void         on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
 static gint         account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
@@ -246,12 +242,20 @@ static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporte
 static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean     account_get_exists( const ofoAccount *account, const ofaIDBConnect *connect );
 static gboolean     account_drop_content( const ofaIDBConnect *connect );
+static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void         isignal_hub_connect( ofaHub *hub );
+static void         on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
+static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
+static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoAccount )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 archives_list_free_detail( GList *fields )
@@ -323,228 +327,6 @@ ofo_account_class_init( ofoAccountClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = account_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_finalize;
-}
-
-/**
- * ofo_account_connect_to_hub_signaling_system:
- * @hub: the #ofaHub object.
- *
- * Connect to the @hub signaling system.
- */
-void
-ofo_account_connect_to_hub_signaling_system( const ofaHub *hub )
-{
-	static const gchar *thisfn = "ofo_account_connect_to_hub_signaling_system";
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
-
-	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
-
-	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
-{
-	static const gchar *thisfn = "ofo_account_on_hub_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) empty );
-
-	if( OFO_IS_ENTRY( object )){
-		on_new_object_entry( hub, OFO_ENTRY( object ));
-	}
-}
-
-/*
- * a new entry has been recorded, so update the daily balances
- */
-static void
-on_new_object_entry( ofaHub *hub, ofoEntry *entry )
-{
-	ofaEntryStatus status;
-	ofoAccount *account;
-	gdouble debit, credit, prev;
-
-	/* the only case where an entry is created with a 'past' status
-	 *  is an imported entry in the past (before the beginning of the
-	 *  exercice) - in this case, the 'new_object' message should not be
-	 *  sent
-	 * if not in the past, only allowed status are 'rough' or 'future' */
-	status = ofo_entry_get_status( entry );
-	g_return_if_fail( status != ENT_STATUS_PAST );
-	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
-
-	account = ofo_account_get_by_number( hub, ofo_entry_get_account( entry ));
-	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-
-	debit = ofo_entry_get_debit( entry );
-	credit = ofo_entry_get_credit( entry );
-
-	/* impute the new entry either to the debit or the credit of daily
-	 * or futur balances depending of the position of the effect date
-	 * vs. ending date of the exercice
-	 */
-	switch( status ){
-		case ENT_STATUS_ROUGH:
-			if( debit ){
-				prev = ofo_account_get_rough_debit( account );
-				ofo_account_set_rough_debit( account, prev+debit );
-
-			} else {
-				prev = ofo_account_get_rough_credit( account );
-				ofo_account_set_rough_credit( account, prev+credit );
-			}
-			break;
-
-		case ENT_STATUS_FUTURE:
-			if( debit ){
-				prev = ofo_account_get_futur_debit( account );
-				ofo_account_set_futur_debit( account, prev+debit );
-
-			} else {
-				prev = ofo_account_get_futur_credit( account );
-				ofo_account_set_futur_credit( account, prev+credit );
-			}
-			break;
-
-		default:
-			g_return_if_reached();
-			break;
-	}
-
-	ofo_account_update_amounts( account );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_account_on_hub_updated_object";
-	const gchar *code;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-	}
-}
-
-/*
- * the currency code iso has been modified: update the accounts which
- * use it
- */
-static void
-on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-	GList *collection;
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
-						code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
-
-	collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub );
-	if( collection && g_list_length( collection )){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
-	}
-}
-
-/*
- * SIGNAL_HUB_STATUS_CHANGE signal handler
- */
-static void
-on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
-{
-	static const gchar *thisfn = "ofo_account_on_hub_entry_status_change";
-	ofoAccount *account;
-	ofxAmount debit, credit, amount;
-
-	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
-			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
-
-	account = ofo_account_get_by_number( hub, ofo_entry_get_account( entry ));
-	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
-
-	debit = ofo_entry_get_debit( entry );
-	credit = ofo_entry_get_credit( entry );
-
-	switch( prev_status ){
-		case ENT_STATUS_ROUGH:
-			amount = ofo_account_get_rough_debit( account );
-			ofo_account_set_rough_debit( account, amount-debit );
-			amount = ofo_account_get_rough_credit( account );
-			ofo_account_set_rough_credit( account, amount-credit );
-			break;
-		case ENT_STATUS_VALIDATED:
-			amount = ofo_account_get_val_debit( account );
-			ofo_account_set_val_debit( account, amount-debit );
-			amount = ofo_account_get_val_credit( account );
-			ofo_account_set_val_credit( account, amount-credit );
-			break;
-		case ENT_STATUS_FUTURE:
-			amount = ofo_account_get_futur_debit( account );
-			ofo_account_set_futur_debit( account, amount-debit );
-			amount = ofo_account_get_futur_credit( account );
-			ofo_account_set_futur_credit( account, amount-credit );
-			break;
-		default:
-			break;
-	}
-
-	switch( new_status ){
-		case ENT_STATUS_ROUGH:
-			amount = ofo_account_get_rough_debit( account );
-			ofo_account_set_rough_debit( account, amount+debit );
-			amount = ofo_account_get_rough_credit( account );
-			ofo_account_set_rough_credit( account, amount+credit );
-			break;
-		case ENT_STATUS_VALIDATED:
-			amount = ofo_account_get_val_debit( account );
-			ofo_account_set_val_debit( account, amount+debit );
-			amount = ofo_account_get_val_credit( account );
-			ofo_account_set_val_credit( account, amount+credit );
-			break;
-		case ENT_STATUS_FUTURE:
-			amount = ofo_account_get_futur_debit( account );
-			ofo_account_set_futur_debit( account, amount+debit );
-			amount = ofo_account_get_futur_credit( account );
-			ofo_account_set_futur_credit( account, amount+credit );
-			break;
-		default:
-			break;
-	}
-
-	ofo_account_update_amounts( account );
 }
 
 /**
@@ -2716,4 +2498,228 @@ static gboolean
 account_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_ACCOUNTS", TRUE ));
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_account_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_account_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
+static void
+on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_on_hub_new_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	if( OFO_IS_ENTRY( object )){
+		on_new_object_entry( hub, OFO_ENTRY( object ));
+	}
+}
+
+/*
+ * a new entry has been recorded, so update the daily balances
+ */
+static void
+on_new_object_entry( ofaHub *hub, ofoEntry *entry )
+{
+	ofaEntryStatus status;
+	ofoAccount *account;
+	gdouble debit, credit, prev;
+
+	/* the only case where an entry is created with a 'past' status
+	 *  is an imported entry in the past (before the beginning of the
+	 *  exercice) - in this case, the 'new_object' message should not be
+	 *  sent
+	 * if not in the past, only allowed status are 'rough' or 'future' */
+	status = ofo_entry_get_status( entry );
+	g_return_if_fail( status != ENT_STATUS_PAST );
+	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+
+	account = ofo_account_get_by_number( hub, ofo_entry_get_account( entry ));
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+	debit = ofo_entry_get_debit( entry );
+	credit = ofo_entry_get_credit( entry );
+
+	/* impute the new entry either to the debit or the credit of daily
+	 * or futur balances depending of the position of the effect date
+	 * vs. ending date of the exercice
+	 */
+	switch( status ){
+		case ENT_STATUS_ROUGH:
+			if( debit ){
+				prev = ofo_account_get_rough_debit( account );
+				ofo_account_set_rough_debit( account, prev+debit );
+
+			} else {
+				prev = ofo_account_get_rough_credit( account );
+				ofo_account_set_rough_credit( account, prev+credit );
+			}
+			break;
+
+		case ENT_STATUS_FUTURE:
+			if( debit ){
+				prev = ofo_account_get_futur_debit( account );
+				ofo_account_set_futur_debit( account, prev+debit );
+
+			} else {
+				prev = ofo_account_get_futur_credit( account );
+				ofo_account_set_futur_credit( account, prev+credit );
+			}
+			break;
+
+		default:
+			g_return_if_reached();
+			break;
+	}
+
+	ofo_account_update_amounts( account );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_on_hub_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+	}
+}
+
+/*
+ * the currency code iso has been modified: update the accounts which
+ * use it
+ */
+static void
+on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+	GList *collection;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
+						code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub );
+	if( collection && g_list_length( collection )){
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
+	}
+}
+
+/*
+ * SIGNAL_HUB_STATUS_CHANGE signal handler
+ */
+static void
+on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_on_hub_entry_status_change";
+	ofoAccount *account;
+	ofxAmount debit, credit, amount;
+
+	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
+
+	account = ofo_account_get_by_number( hub, ofo_entry_get_account( entry ));
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+
+	debit = ofo_entry_get_debit( entry );
+	credit = ofo_entry_get_credit( entry );
+
+	switch( prev_status ){
+		case ENT_STATUS_ROUGH:
+			amount = ofo_account_get_rough_debit( account );
+			ofo_account_set_rough_debit( account, amount-debit );
+			amount = ofo_account_get_rough_credit( account );
+			ofo_account_set_rough_credit( account, amount-credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			amount = ofo_account_get_val_debit( account );
+			ofo_account_set_val_debit( account, amount-debit );
+			amount = ofo_account_get_val_credit( account );
+			ofo_account_set_val_credit( account, amount-credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			amount = ofo_account_get_futur_debit( account );
+			ofo_account_set_futur_debit( account, amount-debit );
+			amount = ofo_account_get_futur_credit( account );
+			ofo_account_set_futur_credit( account, amount-credit );
+			break;
+		default:
+			break;
+	}
+
+	switch( new_status ){
+		case ENT_STATUS_ROUGH:
+			amount = ofo_account_get_rough_debit( account );
+			ofo_account_set_rough_debit( account, amount+debit );
+			amount = ofo_account_get_rough_credit( account );
+			ofo_account_set_rough_credit( account, amount+credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			amount = ofo_account_get_val_debit( account );
+			ofo_account_set_val_debit( account, amount+debit );
+			amount = ofo_account_get_val_credit( account );
+			ofo_account_set_val_credit( account, amount+credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			amount = ofo_account_get_futur_debit( account );
+			ofo_account_set_futur_debit( account, amount+debit );
+			amount = ofo_account_get_futur_credit( account );
+			ofo_account_set_futur_credit( account, amount+credit );
+			break;
+		default:
+			break;
+	}
+
+	ofo_account_update_amounts( account );
 }

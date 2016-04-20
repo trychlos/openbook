@@ -40,6 +40,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -176,9 +177,6 @@ typedef struct {
 }
 	ofoOpeTemplatePrivate;
 
-static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
-static gboolean        on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint            model_count_for_ledger( const ofaIDBConnect *connect, const gchar *ledger );
 static gint            model_count_for_rate( const ofaIDBConnect *connect, const gchar *mnemo );
@@ -212,12 +210,18 @@ static GList          *iimportable_import_parse_detail( ofaIImporter *importer, 
 static void            iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean        model_get_exists( const ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gboolean        model_drop_content( const ofaIDBConnect *connect );
+static void            isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void            isignal_hub_connect( ofaHub *hub );
+static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean        on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoOpeTemplate )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 details_list_free_detail( GList *fields )
@@ -293,144 +297,6 @@ ofo_ope_template_class_init( ofoOpeTemplateClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ope_template_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_finalize;
-}
-
-/**
- * ofo_ope_template_connect_to_hub_signaling_system:
- * @hub: the #ofaHub object.
- *
- * Connect to the @hub signaling system.
- */
-void
-ofo_ope_template_connect_to_hub_signaling_system( const ofaHub *hub )
-{
-	static const gchar *thisfn = "ofo_ope_template_connect_to_hub_signaling_system";
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_ope_template_on_hub_updated_object";
-	const gchar *mnemo;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_LEDGER( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				on_update_ledger_mnemo( hub, mnemo, prev_id );
-			}
-		}
-
-	} else if( OFO_IS_RATE( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				on_update_rate_mnemo( hub, mnemo, prev_id );
-			}
-		}
-	}
-}
-
-static gboolean
-on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
-{
-	static const gchar *thisfn = "ofo_ope_template_do_update_ledger_mnemo";
-	gchar *query;
-	gboolean ok;
-
-	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
-			thisfn, ( void * ) hub, mnemo, prev_id );
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_OPE_TEMPLATES "
-					"	SET OTE_LED_MNEMO='%s' WHERE OTE_LED_MNEMO='%s'",
-								mnemo, prev_id );
-
-	ok = ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
-
-	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
-
-	return( ok );
-}
-
-static gboolean
-on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
-{
-	static const gchar *thisfn = "ofo_ope_template_do_update_rate_mnemo";
-	gchar *query;
-	const ofaIDBConnect *connect;
-	GSList *result, *irow, *icol;
-	gchar *etp_mnemo, *det_debit, *det_credit;
-	gint det_row;
-	gboolean ok;
-
-	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
-			thisfn, ( void * ) hub, mnemo, prev_id );
-
-	connect = ofa_hub_get_connect( hub );
-
-	query = g_strdup_printf(
-					"SELECT OTE_MNEMO,OTE_DET_ROW,OTE_DET_DEBIT,OTE_DET_CREDIT "
-					"	FROM OFA_T_OPE_TEMPLATES_DET "
-					"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
-							prev_id, prev_id );
-
-	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
-	g_free( query );
-
-	if( ok ){
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = irow->data;
-			etp_mnemo = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			det_row = atoi(( gchar * ) icol->data );
-			icol = icol->next;
-			det_debit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
-			icol = icol->next;
-			det_credit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
-
-			query = g_strdup_printf(
-							"UPDATE OFA_T_OPE_TEMPLATES_DET "
-							"	SET OTE_DET_DEBIT='%s',OTE_DET_CREDIT='%s' "
-							"	WHERE OTE_MNEMO='%s' AND OTE_DET_ROW=%d",
-									det_debit, det_credit,
-									etp_mnemo, det_row );
-
-			ofa_idbconnect_query( connect, query, TRUE );
-
-			g_free( query );
-			g_free( det_credit );
-			g_free( det_debit );
-			g_free( etp_mnemo );
-		}
-
-		my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
-
-		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
-	}
-
-	return( ok );
 }
 
 /**
@@ -2149,4 +2015,148 @@ model_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_OPE_TEMPLATES", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_OPE_TEMPLATES_DET", TRUE ));
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_ope_template_on_hub_updated_object";
+	const gchar *mnemo;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_LEDGER( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				on_update_ledger_mnemo( hub, mnemo, prev_id );
+			}
+		}
+
+	} else if( OFO_IS_RATE( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				on_update_rate_mnemo( hub, mnemo, prev_id );
+			}
+		}
+	}
+}
+
+static gboolean
+on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_ope_template_do_update_ledger_mnemo";
+	gchar *query;
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_OPE_TEMPLATES "
+					"	SET OTE_LED_MNEMO='%s' WHERE OTE_LED_MNEMO='%s'",
+								mnemo, prev_id );
+
+	ok = ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
+
+	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
+
+	return( ok );
+}
+
+static gboolean
+on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_ope_template_do_update_rate_mnemo";
+	gchar *query;
+	const ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+	gchar *etp_mnemo, *det_debit, *det_credit;
+	gint det_row;
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
+
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf(
+					"SELECT OTE_MNEMO,OTE_DET_ROW,OTE_DET_DEBIT,OTE_DET_CREDIT "
+					"	FROM OFA_T_OPE_TEMPLATES_DET "
+					"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
+							prev_id, prev_id );
+
+	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
+	g_free( query );
+
+	if( ok ){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			etp_mnemo = g_strdup(( gchar * ) icol->data );
+			icol = icol->next;
+			det_row = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			det_debit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+			icol = icol->next;
+			det_credit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+
+			query = g_strdup_printf(
+							"UPDATE OFA_T_OPE_TEMPLATES_DET "
+							"	SET OTE_DET_DEBIT='%s',OTE_DET_CREDIT='%s' "
+							"	WHERE OTE_MNEMO='%s' AND OTE_DET_ROW=%d",
+									det_debit, det_credit,
+									etp_mnemo, det_row );
+
+			ofa_idbconnect_query( connect, query, TRUE );
+
+			g_free( query );
+			g_free( det_credit );
+			g_free( det_debit );
+			g_free( etp_mnemo );
+		}
+
+		my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
+
+		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
+	}
+
+	return( ok );
 }

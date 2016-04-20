@@ -71,9 +71,6 @@ typedef struct {
 
 GType           ofo_ledger_get_type            ( void ) G_GNUC_CONST;
 
-void            ofo_ledger_connect_to_hub_signaling_system
-                                               ( const ofaHub *hub );
-
 GList          *ofo_ledger_get_dataset         ( ofaHub *hub );
 #define         ofo_ledger_free_dataset( L )   g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 

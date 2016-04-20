@@ -92,9 +92,6 @@ typedef enum {
 
 GType           ofo_account_get_type                ( void ) G_GNUC_CONST;
 
-void            ofo_account_connect_to_hub_signaling_system
-                                                    ( const ofaHub *hub );
-
 GList          *ofo_account_get_dataset             ( ofaHub *hub );
 GList          *ofo_account_get_dataset_for_solde   ( ofaHub *hub );
 #define         ofo_account_free_dataset( L )       g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )

@@ -249,22 +249,6 @@ ofo_rate_class_init( ofoRateClass *klass )
 }
 
 /**
- * ofo_rate_connect_to_hub_signaling_system:
- * @hub: the #ofaHub object.
- *
- * Connect to the @hub signaling system.
- */
-void
-ofo_rate_connect_to_hub_signaling_system( const ofaHub *hub )
-{
-	static const gchar *thisfn = "ofo_rate_connect_to_hub_signaling_system";
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-}
-
-/**
  * ofo_rate_get_dataset:
  * @hub: the current #ofaHub object.
  *

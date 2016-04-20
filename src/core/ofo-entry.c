@@ -40,6 +40,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
@@ -180,17 +181,6 @@ static sStatus st_status[] = {
 		{ 0 },
 };
 
-static void         on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
-static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void         on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
-static void         on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
-static void         on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
-static void         on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
-static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
-static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate );
-static gint         remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
-static void         on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static gchar       *effect_in_exercice( const ofaHub *hub );
 static GList       *entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order );
 static gint         entry_count_for_account( const ofaIDBConnect *connect, const gchar *account );
@@ -219,6 +209,10 @@ static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static gboolean     entry_do_update( ofoEntry *entry, ofaHub *hub );
 static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
 static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *connect );
+static void         iconcil_iface_init( ofaIConcilInterface *iface );
+static guint        iconcil_get_interface_version( void );
+static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
+static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
@@ -231,16 +225,26 @@ static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms
 static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean     entry_drop_content( const ofaIDBConnect *connect );
-static void         iconcil_iface_init( ofaIConcilInterface *iface );
-static guint        iconcil_get_interface_version( void );
-static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
-static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
+static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void         isignal_hub_connect( ofaHub *hub );
+static void         on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
+static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
+static void         on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
+static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate );
+static gint         remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
+static void         on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONCIL, iconcil_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 entry_finalize( GObject *instance )
@@ -289,421 +293,6 @@ ofo_entry_class_init( ofoEntryClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = entry_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_finalize;
-}
-
-/**
- * ofo_entry_connect_to_hub_signaling_system:
- * @hub: the #ofaHub object.
- *
- * Connect to the @hub signaling system.
- */
-void
-ofo_entry_connect_to_hub_signaling_system( const ofaHub *hub )
-{
-	static const gchar *thisfn = "ofo_entry_connect_to_hub_signaling_system";
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
-
-	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), NULL );
-
-	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
-
-	g_signal_connect( G_OBJECT( hub ),
-			SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- *
- * we try to report in recorded entries the modifications which may
- * happen on one of the externe identifiers - but only for the current
- * exercice
- *
- * Nonetheless, this is never a good idea to modify an identifier which
- * is publicly known, and this always should be done with the greatest
- * attention
- */
-static void
-on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_entry_on_hub_updated_object";
-	const gchar *number;
-	const gchar *code;
-	const gchar *mnemo;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_ACCOUNT( object )){
-		if( my_strlen( prev_id )){
-			number = ofo_account_get_number( OFO_ACCOUNT( object ));
-			if( g_utf8_collate( number, prev_id )){
-				on_updated_object_account_number( hub, prev_id, number );
-			}
-		}
-
-	} else if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-
-	} else if( OFO_IS_LEDGER( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				on_updated_object_ledger_mnemo( hub, prev_id, mnemo );
-			}
-		}
-
-	} else if( OFO_IS_OPE_TEMPLATE( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				on_updated_object_model_mnemo( hub, prev_id, mnemo );
-			}
-		}
-	}
-}
-
-/*
- * an account number has been modified
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES "
-			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
-}
-
-/*
- * a currency iso code has been modified (should be very rare)
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES "
-			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
-}
-
-/*
- * a ledger mnemonic has been modified
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES"
-			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
-}
-
-/*
- * an operation template mnemonic has been modified
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES"
-			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
-}
-
-/*
- * SIGNAL_HUB_DELETED signal handler
- */
-static void
-on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
-{
-	static const gchar *thisfn = "ofo_entry_on_hub_deleted_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) empty );
-
-	/* what is to do on the entries when a conciliation group is deleted ? */
-	/*
-	if( OFO_IS_CONCIL( object )){
-		g_warning( "%s: conciliation group deleted: should update the entries", thisfn );
-	}
-	*/
-}
-
-/*
- * SIGNAL_HUB_EXE_DATES_CHANGED signal handler.
- *
- * The cases of remediation:
- *
- * 1/ entries were considered in the past, but are now in the exercice
- *    depending if the ledger is closed or not for the effect date of
- *    the entry, these entries will become rough or validated
- *
- * 2/ entries were considered in the past, but are now in the future
- *
- * 3/ entries were considered in the exercice, but are now in the past
- *    these entries will become past
- *    depending if the ledger is closed or not for the effect date of
- *    the entry, the account and ledger rough/validated balances will
- *    be updated
- *
- * 4/ entries were considered in the exercice, but are not in the future
- *    these entries will become future
- *    depending if the ledger is closed or not for the effect date of
- *    the entry, the account and ledger rough/validated balances will
- *    be updated
- *
- * 5/ these entries were considered in the future, but are now considered
- *    in the exercice
- *    depending if the ledger is closed or not for the effect date of
- *    the entry, these entries will become rough or validated
- *
- * 6/ entries were considered in the future, but are now set in the past
- */
-static void
-on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
-{
-	ofoDossier *dossier;
-	const GDate *new_begin, *new_end;
-
-	dossier = ofa_hub_get_dossier( hub );
-
-	new_begin = ofo_dossier_get_exe_begin( dossier );
-	check_for_changed_begin_exe_dates( hub, prev_begin, new_begin, TRUE );
-
-	new_end = ofo_dossier_get_exe_end( dossier );
-	check_for_changed_end_exe_dates( hub, prev_end, new_end, TRUE );
-}
-
-static gint
-check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate )
-{
-	gint count;
-	gchar *sprev, *snew, *where;
-
-	count = 0;
-	sprev = my_date_to_str( prev_begin, MY_DATE_SQL );
-	snew = my_date_to_str( new_begin, MY_DATE_SQL );
-	where = NULL;
-
-	if( !my_date_is_valid( prev_begin )){
-		if( !my_date_is_valid( new_begin )){
-			/* nothing to do here */
-
-		} else {
-			/* setting a beginning date for the exercice
-			 * there may be entries which were considered in the
-			 * exercice (either rough or validated) but are now
-			 * considered in the past */
-			/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
-			where = g_strdup_printf(
-					"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
-			count = remediate_status( hub, remediate, where, ENT_STATUS_PAST );
-		}
-	} else if( !my_date_is_valid( new_begin )){
-		/* removing the beginning date of the exercice
-		 * there may be entries which were considered in the past
-		 * but are now considered in the exercice */
-		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
-
-	} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
-		/* there may be entries which were considered in the exercice
-		 * but are now considered in the past */
-		/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_PAST );
-
-	} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
-		/* there may be entries which were considered in the past
-		 * but are now considered in the exercice */
-		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
-	}
-
-	g_free( sprev );
-	g_free( snew );
-	g_free( where );
-
-	return( count );
-}
-
-static gint
-check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate )
-{
-	gint count;
-	gchar *sprev, *snew, *where;
-
-	count = 0;
-	sprev = my_date_to_str( prev_end, MY_DATE_SQL );
-	snew = my_date_to_str( new_end, MY_DATE_SQL );
-	where = NULL;
-
-	if( !my_date_is_valid( prev_end )){
-		if( !my_date_is_valid( new_end )){
-			/* nothing to do here */
-
-		} else {
-			/* setting an ending date for the exercice
-			 * there may be entries which were considered in the
-			 * exercice (either rough or validated) but are now
-			 * considered in the future */
-			/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
-			where = g_strdup_printf(
-					"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
-			count = remediate_status( hub, remediate, where, ENT_STATUS_FUTURE );
-		}
-	} else if( !my_date_is_valid( new_end )){
-		/* removing the ending date of the exercice
-		 * there may be entries which were considered in the future
-		 * but are now considered in the exercice */
-		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
-
-	} else if( my_date_compare( prev_end, new_end ) < 0 ){
-		/* there may be entries which were considered in the future
-		 * but are now considered in the exercice */
-		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
-
-	} else if( my_date_compare( prev_end, new_end ) > 0 ){
-		/* there may be entries which were considered in the exercice
-		 * but are now considered in the future */
-		/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
-		where = g_strdup_printf(
-				"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!=%u",
-				sprev, snew, ENT_STATUS_DELETED );
-		count = remediate_status( hub, remediate, where, ENT_STATUS_FUTURE );
-	}
-
-	return( count );
-}
-
-static gint
-remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status )
-{
-	static const gchar *thisfn = "ofo_entry_remediate_status";
-	gint count;
-	GList *dataset, *it;
-	ofoEntry *entry;
-	ofaEntryStatus prev_status;
-	ofoLedger *ledger;
-	const GDate *last_close, *deffect;
-
-	count = 0;
-	dataset = entry_load_dataset( hub, where, NULL );
-	count = g_list_length( dataset );
-
-	if( remediate ){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_STATUS_COUNT, new_status, count );
-
-		for( it=dataset ; it ; it=it->next ){
-			entry = OFO_ENTRY( it->data );
-			prev_status = ofo_entry_get_status( entry );
-
-			/* new status actually depends of the last closing date of
-			 * the ledger of the entry */
-			if( prev_status == ENT_STATUS_PAST && new_status == ENT_STATUS_ROUGH ){
-				ledger = ofo_ledger_get_by_mnemo( hub, ofo_entry_get_ledger( entry ));
-				if( !ledger || !OFO_IS_LEDGER( ledger )){
-					g_warning( "%s: ledger %s no more exists", thisfn, ofo_entry_get_ledger( entry ));
-					return( -1 );
-				}
-				deffect = ofo_entry_get_deffect( entry );
-				last_close = ofo_ledger_get_last_close( ledger );
-				if( my_date_is_valid( last_close ) && my_date_compare( deffect, last_close ) <= 0 ){
-					new_status = ENT_STATUS_VALIDATED;
-				}
-			}
-
-			g_signal_emit_by_name(
-					G_OBJECT( hub ), SIGNAL_HUB_STATUS_CHANGE, entry, prev_status, new_status );
-		}
-	}
-	ofo_entry_free_dataset( dataset );
-
-	return( count );
-}
-
-/*
- * SIGNAL_HUB_STATUS_CHANGE signal handler
- */
-static void
-on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
-{
-	static const gchar *thisfn = "ofo_entry_on_hub_entry_status_change";
-	gchar *query;
-
-	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
-			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
-
-	entry_set_status( entry, new_status );
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_ENTRIES SET ENT_STATUS=%u WHERE ENT_NUMBER=%ld",
-						new_status,
-						ofo_entry_get_number( entry ));
-
-	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );
-	}
-
-	g_free( query );
 }
 
 /**
@@ -2698,6 +2287,42 @@ do_delete_entry( ofoEntry *entry, const ofaIDBConnect *connect )
 
 }
 
+/*
+ * ofaIConcil interface management
+ */
+static void
+iconcil_iface_init( ofaIConcilInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_iconcil_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iconcil_get_interface_version;
+	iface->get_object_id = iconcil_get_object_id;
+	iface->get_object_type = iconcil_get_object_type;
+}
+
+static guint
+iconcil_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static ofxCounter
+iconcil_get_object_id( const ofaIConcil *instance )
+{
+	return( ofo_entry_get_number( OFO_ENTRY( instance )));
+}
+
+static const gchar *
+iconcil_get_object_type( const ofaIConcil *instance )
+{
+	return( CONCIL_TYPE_ENTRY );
+}
+
+/*
+ * ofaIExportable interface management
+ */
 static void
 iexportable_iface_init( ofaIExportableInterface *iface )
 {
@@ -3353,34 +2978,416 @@ entry_drop_content( const ofaIDBConnect *connect )
 }
 
 /*
- * ofaIConcil interface management
+ * ofaISignalHub interface management
  */
 static void
-iconcil_iface_init( ofaIConcilInterface *iface )
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
 {
-	static const gchar *thisfn = "ofo_entry_iconcil_iface_init";
+	static const gchar *thisfn = "ofo_entry_isignal_hub_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = iconcil_get_interface_version;
-	iface->get_object_id = iconcil_get_object_id;
-	iface->get_object_type = iconcil_get_object_type;
+	iface->connect = isignal_hub_connect;
 }
 
-static guint
-iconcil_get_interface_version( void )
+static void
+isignal_hub_connect( ofaHub *hub )
 {
-	return( 1 );
+	static const gchar *thisfn = "ofo_entry_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
 }
 
-static ofxCounter
-iconcil_get_object_id( const ofaIConcil *instance )
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ *
+ * we try to report in recorded entries the modifications which may
+ * happen on one of the externe identifiers - but only for the current
+ * exercice
+ *
+ * Nonetheless, this is never a good idea to modify an identifier which
+ * is publicly known, and this always should be done with the greatest
+ * attention
+ */
+static void
+on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	return( ofo_entry_get_number( OFO_ENTRY( instance )));
+	static const gchar *thisfn = "ofo_entry_on_hub_updated_object";
+	const gchar *number;
+	const gchar *code;
+	const gchar *mnemo;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_ACCOUNT( object )){
+		if( my_strlen( prev_id )){
+			number = ofo_account_get_number( OFO_ACCOUNT( object ));
+			if( g_utf8_collate( number, prev_id )){
+				on_updated_object_account_number( hub, prev_id, number );
+			}
+		}
+
+	} else if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+
+	} else if( OFO_IS_LEDGER( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				on_updated_object_ledger_mnemo( hub, prev_id, mnemo );
+			}
+		}
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				on_updated_object_model_mnemo( hub, prev_id, mnemo );
+			}
+		}
+	}
 }
 
-static const gchar *
-iconcil_get_object_type( const ofaIConcil *instance )
+/*
+ * an account number has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
 {
-	return( CONCIL_TYPE_ENTRY );
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES "
+			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+	g_free( query );
+}
+
+/*
+ * a currency iso code has been modified (should be very rare)
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES "
+			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+	g_free( query );
+}
+
+/*
+ * a ledger mnemonic has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES"
+			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+	g_free( query );
+}
+
+/*
+ * an operation template mnemonic has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES"
+			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+	g_free( query );
+}
+
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
+static void
+on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_on_hub_deleted_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	/* what is to do on the entries when a conciliation group is deleted ? */
+	/*
+	if( OFO_IS_CONCIL( object )){
+		g_warning( "%s: conciliation group deleted: should update the entries", thisfn );
+	}
+	*/
+}
+
+/*
+ * SIGNAL_HUB_EXE_DATES_CHANGED signal handler.
+ *
+ * The cases of remediation:
+ *
+ * 1/ entries were considered in the past, but are now in the exercice
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, these entries will become rough or validated
+ *
+ * 2/ entries were considered in the past, but are now in the future
+ *
+ * 3/ entries were considered in the exercice, but are now in the past
+ *    these entries will become past
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, the account and ledger rough/validated balances will
+ *    be updated
+ *
+ * 4/ entries were considered in the exercice, but are not in the future
+ *    these entries will become future
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, the account and ledger rough/validated balances will
+ *    be updated
+ *
+ * 5/ these entries were considered in the future, but are now considered
+ *    in the exercice
+ *    depending if the ledger is closed or not for the effect date of
+ *    the entry, these entries will become rough or validated
+ *
+ * 6/ entries were considered in the future, but are now set in the past
+ */
+static void
+on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
+{
+	ofoDossier *dossier;
+	const GDate *new_begin, *new_end;
+
+	dossier = ofa_hub_get_dossier( hub );
+
+	new_begin = ofo_dossier_get_exe_begin( dossier );
+	check_for_changed_begin_exe_dates( hub, prev_begin, new_begin, TRUE );
+
+	new_end = ofo_dossier_get_exe_end( dossier );
+	check_for_changed_end_exe_dates( hub, prev_end, new_end, TRUE );
+}
+
+static gint
+check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate )
+{
+	gint count;
+	gchar *sprev, *snew, *where;
+
+	count = 0;
+	sprev = my_date_to_str( prev_begin, MY_DATE_SQL );
+	snew = my_date_to_str( new_begin, MY_DATE_SQL );
+	where = NULL;
+
+	if( !my_date_is_valid( prev_begin )){
+		if( !my_date_is_valid( new_begin )){
+			/* nothing to do here */
+
+		} else {
+			/* setting a beginning date for the exercice
+			 * there may be entries which were considered in the
+			 * exercice (either rough or validated) but are now
+			 * considered in the past */
+			/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
+			count = remediate_status( hub, remediate, where, ENT_STATUS_PAST );
+		}
+	} else if( !my_date_is_valid( new_begin )){
+		/* removing the beginning date of the exercice
+		 * there may be entries which were considered in the past
+		 * but are now considered in the exercice */
+		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT<'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
+		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+
+	} else if( my_date_compare( prev_begin, new_begin ) < 0 ){
+		/* there may be entries which were considered in the exercice
+		 * but are now considered in the past */
+		/*count = move_from_exercice_to_past( dossier, prev_begin, new_begin, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT>='%s' AND ENT_DEFFECT<'%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( hub, remediate, where, ENT_STATUS_PAST );
+
+	} else if( my_date_compare( prev_begin, new_begin ) > 0 ){
+		/* there may be entries which were considered in the past
+		 * but are now considered in the exercice */
+		/*count = move_from_past_to_exercice( dossier, prev_begin, new_begin, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT<'%s' AND ENT_DEFFECT>='%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+	}
+
+	g_free( sprev );
+	g_free( snew );
+	g_free( where );
+
+	return( count );
+}
+
+static gint
+check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate )
+{
+	gint count;
+	gchar *sprev, *snew, *where;
+
+	count = 0;
+	sprev = my_date_to_str( prev_end, MY_DATE_SQL );
+	snew = my_date_to_str( new_end, MY_DATE_SQL );
+	where = NULL;
+
+	if( !my_date_is_valid( prev_end )){
+		if( !my_date_is_valid( new_end )){
+			/* nothing to do here */
+
+		} else {
+			/* setting an ending date for the exercice
+			 * there may be entries which were considered in the
+			 * exercice (either rough or validated) but are now
+			 * considered in the future */
+			/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
+			where = g_strdup_printf(
+					"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", snew, ENT_STATUS_DELETED );
+			count = remediate_status( hub, remediate, where, ENT_STATUS_FUTURE );
+		}
+	} else if( !my_date_is_valid( new_end )){
+		/* removing the ending date of the exercice
+		 * there may be entries which were considered in the future
+		 * but are now considered in the exercice */
+		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT>'%s' AND ENT_STATUS!=%u", sprev, ENT_STATUS_DELETED );
+		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+
+	} else if( my_date_compare( prev_end, new_end ) < 0 ){
+		/* there may be entries which were considered in the future
+		 * but are now considered in the exercice */
+		/*count = move_from_future_to_exercice( dossier, prev_end, new_end, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT>'%s' AND ENT_DEFFECT<='%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( hub, remediate, where, ENT_STATUS_ROUGH );
+
+	} else if( my_date_compare( prev_end, new_end ) > 0 ){
+		/* there may be entries which were considered in the exercice
+		 * but are now considered in the future */
+		/*count = move_from_exercice_to_future( dossier, prev_end, new_end, remediate );*/
+		where = g_strdup_printf(
+				"ENT_DEFFECT<='%s' AND ENT_DEFFECT>'%s' AND ENT_STATUS!=%u",
+				sprev, snew, ENT_STATUS_DELETED );
+		count = remediate_status( hub, remediate, where, ENT_STATUS_FUTURE );
+	}
+
+	return( count );
+}
+
+static gint
+remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status )
+{
+	static const gchar *thisfn = "ofo_entry_remediate_status";
+	gint count;
+	GList *dataset, *it;
+	ofoEntry *entry;
+	ofaEntryStatus prev_status;
+	ofoLedger *ledger;
+	const GDate *last_close, *deffect;
+
+	count = 0;
+	dataset = entry_load_dataset( hub, where, NULL );
+	count = g_list_length( dataset );
+
+	if( remediate ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_STATUS_COUNT, new_status, count );
+
+		for( it=dataset ; it ; it=it->next ){
+			entry = OFO_ENTRY( it->data );
+			prev_status = ofo_entry_get_status( entry );
+
+			/* new status actually depends of the last closing date of
+			 * the ledger of the entry */
+			if( prev_status == ENT_STATUS_PAST && new_status == ENT_STATUS_ROUGH ){
+				ledger = ofo_ledger_get_by_mnemo( hub, ofo_entry_get_ledger( entry ));
+				if( !ledger || !OFO_IS_LEDGER( ledger )){
+					g_warning( "%s: ledger %s no more exists", thisfn, ofo_entry_get_ledger( entry ));
+					return( -1 );
+				}
+				deffect = ofo_entry_get_deffect( entry );
+				last_close = ofo_ledger_get_last_close( ledger );
+				if( my_date_is_valid( last_close ) && my_date_compare( deffect, last_close ) <= 0 ){
+					new_status = ENT_STATUS_VALIDATED;
+				}
+			}
+
+			g_signal_emit_by_name(
+					G_OBJECT( hub ), SIGNAL_HUB_STATUS_CHANGE, entry, prev_status, new_status );
+		}
+	}
+	ofo_entry_free_dataset( dataset );
+
+	return( count );
+}
+
+/*
+ * SIGNAL_HUB_STATUS_CHANGE signal handler
+ */
+static void
+on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_on_hub_entry_status_change";
+	gchar *query;
+
+	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
+
+	entry_set_status( entry, new_status );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_ENTRIES SET ENT_STATUS=%u WHERE ENT_NUMBER=%ld",
+						new_status,
+						ofo_entry_get_number( entry ));
+
+	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );
+	}
+
+	g_free( query );
 }

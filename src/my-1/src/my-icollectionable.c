@@ -198,7 +198,7 @@ my_icollectionable_load_collection( GType type, void *user_data )
 		list = (( myICollectionableInterface * ) iface )->load_collection( user_data );
 
 	} else {
-		g_info( "%s implementation does not provide 'load_collection()' method",
+		g_info( "%s implementation does not provide 'myICollectionable::load_collection()' method",
 				g_type_name( type ));
 	}
 

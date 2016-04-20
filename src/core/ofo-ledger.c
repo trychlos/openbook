@@ -42,6 +42,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -165,11 +166,6 @@ typedef struct {
 }
 	ofoLedgerPrivate;
 
-static void       on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
-static void       on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
-static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void       on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void       on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint       ledger_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
 static gint       ledger_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
@@ -206,12 +202,20 @@ static GList     *iimportable_import_parse( ofaIImporter *importer, ofsImporterP
 static void       iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean   ledger_get_exists( const ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_drop_content( const ofaIDBConnect *connect );
+static void       isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void       isignal_hub_connect( ofaHub *hub );
+static void       on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
+static void       on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
+static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void       on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void       on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoLedger )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 free_detail_cur( GList *fields )
@@ -282,200 +286,6 @@ ofo_ledger_class_init( ofoLedgerClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = ledger_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_finalize;
-}
-
-/**
- * ofo_ledger_connect_to_hub_signaling_system:
- * @hub: the #ofaHub object.
- *
- * Connect to the @hub signaling system.
- */
-void
-ofo_ledger_connect_to_hub_signaling_system( const ofaHub *hub )
-{
-	static const gchar *thisfn = "ofo_ledger_connect_to_hub_signaling_system";
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
-	g_signal_connect(
-			G_OBJECT( hub ), SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
-{
-	static const gchar *thisfn = "ofo_ledger_on_hub_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
-			thisfn, ( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) empty );
-
-	if( OFO_IS_ENTRY( object )){
-		on_new_ledger_entry( hub, OFO_ENTRY( object ));
-	}
-}
-
-/*
- * we are recording a new entry (so necessarily on the current exercice)
- * thus update the balances
- */
-static void
-on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
-{
-	ofaEntryStatus status;
-	const gchar *mnemo, *currency;
-	ofoLedger *ledger;
-	GList *balance;
-
-	/* the only case where an entry is created with a 'past' status
-	 *  is an imported entry in the past (before the beginning of the
-	 *  exercice) - in this case, the 'new_object' message should not be
-	 *  sent
-	 * if not in the past, only allowed status are 'rough' or 'future' */
-	status = ofo_entry_get_status( entry );
-	g_return_if_fail( status != ENT_STATUS_PAST );
-	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
-
-	mnemo = ofo_entry_get_ledger( entry );
-	ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-
-	currency = ofo_entry_get_currency( entry );
-
-	switch( status ){
-		case ENT_STATUS_ROUGH:
-			balance = ledger_add_balance_rough(
-							ledger, currency, ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
-			break;
-
-		case ENT_STATUS_FUTURE:
-			balance = ledger_add_balance_future(
-							ledger, currency, ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
-			break;
-
-		default:
-			g_return_if_reached();
-	}
-
-	if( ledger_do_update_balance( ledger, balance, hub )){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_ledger_on_hub_updated_object";
-	const gchar *code;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-	}
-}
-
-/*
- * a currency iso code has been modified (this should be very rare)
- * so update our ledger records
- */
-static void
-on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_LEDGERS_CUR "
-					"	SET LED_CUR_CODE='%s' WHERE LED_CUR_CODE='%s'", code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER );
-
-	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
-}
-
-/*
- * SIGNAL_HUB_STATUS_CHANGE signal handler
- */
-static void
-on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
-{
-	static const gchar *thisfn = "ofo_ledger_on_hub_entry_status_change";
-	const gchar *currency;
-	ofoLedger *ledger;
-	ofxAmount debit, credit;
-	GList *balance;
-
-	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
-			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
-
-	ledger = ofo_ledger_get_by_mnemo( hub, ofo_entry_get_ledger( entry ));
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-
-	currency = ofo_entry_get_currency( entry );
-
-	debit = ofo_entry_get_debit( entry );
-	credit = ofo_entry_get_credit( entry );
-
-	switch( prev_status ){
-		case ENT_STATUS_ROUGH:
-			ledger_add_balance_rough( ledger, currency, -debit, -credit );
-			break;
-		case ENT_STATUS_VALIDATED:
-			ledger_add_balance_validated( ledger, currency, -debit, -credit );
-			break;
-		case ENT_STATUS_FUTURE:
-			ledger_add_balance_future( ledger, currency, -debit, -credit );
-			break;
-		default:
-			break;
-	}
-
-	switch( new_status ){
-		case ENT_STATUS_ROUGH:
-			ledger_add_balance_rough( ledger, currency, debit, credit );
-			break;
-		case ENT_STATUS_VALIDATED:
-			ledger_add_balance_validated( ledger, currency, debit, credit );
-			break;
-		case ENT_STATUS_FUTURE:
-			ledger_add_balance_future( ledger, currency, debit, credit );
-			break;
-		default:
-			break;
-	}
-
-	balance = ledger_find_balance_by_code( ledger, currency );
-
-	if( ledger_do_update_balance( ledger, balance, hub )){
-		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
-	}
 }
 
 /**
@@ -2101,4 +1911,202 @@ ledger_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_LEDGERS", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_LEDGERS_CUR", TRUE ));
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
+static void
+on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_ledger_on_hub_new_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn, ( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	if( OFO_IS_ENTRY( object )){
+		on_new_ledger_entry( hub, OFO_ENTRY( object ));
+	}
+}
+
+/*
+ * we are recording a new entry (so necessarily on the current exercice)
+ * thus update the balances
+ */
+static void
+on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
+{
+	ofaEntryStatus status;
+	const gchar *mnemo, *currency;
+	ofoLedger *ledger;
+	GList *balance;
+
+	/* the only case where an entry is created with a 'past' status
+	 *  is an imported entry in the past (before the beginning of the
+	 *  exercice) - in this case, the 'new_object' message should not be
+	 *  sent
+	 * if not in the past, only allowed status are 'rough' or 'future' */
+	status = ofo_entry_get_status( entry );
+	g_return_if_fail( status != ENT_STATUS_PAST );
+	g_return_if_fail( status == ENT_STATUS_ROUGH || status == ENT_STATUS_FUTURE );
+
+	mnemo = ofo_entry_get_ledger( entry );
+	ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
+	currency = ofo_entry_get_currency( entry );
+
+	switch( status ){
+		case ENT_STATUS_ROUGH:
+			balance = ledger_add_balance_rough(
+							ledger, currency, ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
+			break;
+
+		case ENT_STATUS_FUTURE:
+			balance = ledger_add_balance_future(
+							ledger, currency, ofo_entry_get_debit( entry ), ofo_entry_get_credit( entry ));
+			break;
+
+		default:
+			g_return_if_reached();
+	}
+
+	if( ledger_do_update_balance( ledger, balance, hub )){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
+	}
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_ledger_on_hub_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+	}
+}
+
+/*
+ * a currency iso code has been modified (this should be very rare)
+ * so update our ledger records
+ */
+static void
+on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_LEDGERS_CUR "
+					"	SET LED_CUR_CODE='%s' WHERE LED_CUR_CODE='%s'", code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER );
+
+	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
+}
+
+/*
+ * SIGNAL_HUB_STATUS_CHANGE signal handler
+ */
+static void
+on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+{
+	static const gchar *thisfn = "ofo_ledger_on_hub_entry_status_change";
+	const gchar *currency;
+	ofoLedger *ledger;
+	ofxAmount debit, credit;
+	GList *balance;
+
+	g_debug( "%s: hub=%p, entry=%p, prev_status=%u, new_status=%u, empty=%p",
+			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
+
+	ledger = ofo_ledger_get_by_mnemo( hub, ofo_entry_get_ledger( entry ));
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+
+	currency = ofo_entry_get_currency( entry );
+
+	debit = ofo_entry_get_debit( entry );
+	credit = ofo_entry_get_credit( entry );
+
+	switch( prev_status ){
+		case ENT_STATUS_ROUGH:
+			ledger_add_balance_rough( ledger, currency, -debit, -credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			ledger_add_balance_validated( ledger, currency, -debit, -credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			ledger_add_balance_future( ledger, currency, -debit, -credit );
+			break;
+		default:
+			break;
+	}
+
+	switch( new_status ){
+		case ENT_STATUS_ROUGH:
+			ledger_add_balance_rough( ledger, currency, debit, credit );
+			break;
+		case ENT_STATUS_VALIDATED:
+			ledger_add_balance_validated( ledger, currency, debit, credit );
+			break;
+		case ENT_STATUS_FUTURE:
+			ledger_add_balance_future( ledger, currency, debit, credit );
+			break;
+		default:
+			break;
+	}
+
+	balance = ledger_find_balance_by_code( ledger, currency );
+
+	if( ledger_do_update_balance( ledger, balance, hub )){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
+	}
 }

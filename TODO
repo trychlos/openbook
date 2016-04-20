@@ -348,7 +348,7 @@
 1086 2016- 4-15 Have an error message from ofa_idbconnect_query
 
 1087 2016- 4-15 Hub signaling system should be available to all plugins,
-                not only to IDBModel
+                not only to ofaIDBModel's
                 + should review its initialization which is a bit
                 laborious..
 
@@ -357,7 +357,15 @@
                      here)
      2016- 4-19 find a use case
 
-1096
+1096 2016- 4-20 FEAT connect ofoBat to hub signaling system
+
+1097 2016- 4-20 FEAT connect ofoClass to hub signaling system
+
+1098 2016- 4-20 FEAT connect ofoCurrency to hub signaling system
+
+1099 2016- 4-20 FEAT connect ofoRate to hub signaling system
+
+1100
 
 -----------------------------------------------------------------------
  DONE

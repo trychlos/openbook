@@ -77,9 +77,6 @@ typedef struct {
 
 GType           ofo_rate_get_type          ( void ) G_GNUC_CONST;
 
-void            ofo_rate_connect_to_hub_signaling_system
-                                           ( const ofaHub *hub );
-
 GList          *ofo_rate_get_dataset       ( ofaHub *hub );
 #define         ofo_rate_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 

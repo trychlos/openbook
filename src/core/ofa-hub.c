@@ -37,6 +37,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-class.h"
@@ -58,6 +59,7 @@ typedef struct {
 	ofaExtenderCollection  *extenders;
 	ofaPortfolioCollection *portfolios;
 	GList                  *objects;
+	GList                  *core_types;
 
 	/* dossier
 	 */
@@ -546,12 +548,16 @@ ofa_hub_get_collector( const ofaHub *hub )
  * Example of a use case: the intermediate closing by ledger may be run
  * without having first loaded the accounts, but the accounts should be
  * connected in order to update themselves.
+ *
+ * This method must be called after having registered core types.
  */
 void
 ofa_hub_init_signaling_system( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_hub_init_signaling_system";
 	ofaHubPrivate *priv;
+	GList *it;
+	gpointer klass, iface;
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
@@ -561,15 +567,25 @@ ofa_hub_init_signaling_system( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	ofo_account_connect_to_hub_signaling_system( hub );
-	ofo_bat_connect_to_hub_signaling_system( hub );
-	ofo_class_connect_to_hub_signaling_system( hub );
-	ofo_concil_connect_to_hub_signaling_system( hub );
-	ofo_currency_connect_to_hub_signaling_system( hub );
-	ofo_entry_connect_to_hub_signaling_system( hub );
-	ofo_ledger_connect_to_hub_signaling_system( hub );
-	ofo_ope_template_connect_to_hub_signaling_system( hub );
-	ofo_rate_connect_to_hub_signaling_system( hub );
+	/* propose to registered core GType's to connect to hub signaling
+	 * system
+	 */
+	for( it=priv->core_types ; it ; it=it->next ){
+
+		klass = g_type_class_ref(( GType ) GPOINTER_TO_UINT( it->data ));
+		g_return_if_fail( klass );
+
+		iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNAL_HUB );
+
+		if( iface && (( ofaISignalHubInterface * ) iface )->connect ){
+			(( ofaISignalHubInterface * ) iface )->connect( hub );
+		} else {
+			g_info( "%s implementation does not provide 'ofaISignalHub::connect()' method",
+					g_type_name(( GType ) GPOINTER_TO_UINT( it->data )));
+		}
+
+		g_type_class_unref( klass );
+	}
 
 	ofa_idbmodel_init_hub_signaling_system( hub );
 }
@@ -578,12 +594,18 @@ ofa_hub_init_signaling_system( ofaHub *hub )
  * ofa_hub_register_types:
  * @hub: this #ofaHub instance.
  *
- * Registers all #ofoBase derived types provided by the core library.
+ * Registers all #ofoBase derived types provided by the core library
+ * (aka "core types") so that @hub will be able to dynamically request
+ * them on demand.
  *
- * This method, plus #ofa_hub_get_for_type() below, are in particular
+ * This method, plus #ofa_hub_get_for_type() below, are for example
  * used to get a dynamic list of importable or exportable types, and
  * more generally to be able to get a dynamic list of any known (and
  * registered) type.
+ *
+ * Plugins-provided types (aka "plugin types") do not need to register
+ * here. It is enough they implement the desired interface to be
+ * dynamically requested on demand.
  */
 void
 ofa_hub_register_types( ofaHub *hub )
@@ -596,17 +618,29 @@ ofa_hub_register_types( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	priv->core_types = NULL;
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_ACCOUNT ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_BAT ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_CLASS ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_CONCIL ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_CURRENCY ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_DOSSIER ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_ENTRY ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_LEDGER ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_OPE_TEMPLATE ));
+	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_RATE ));
+
 	priv->objects = NULL;
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CLASS, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
 	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_BAT, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CLASS, NULL ));
 	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
+	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
 	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
 	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
 	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_RATE, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_BAT, NULL ));
 }
 
 /**
