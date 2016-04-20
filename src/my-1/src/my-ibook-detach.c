@@ -36,9 +36,7 @@
  */
 typedef struct {
 	myIBookDetach *instance;
-	gulong	       on_button_press_handler;
-	gulong         on_motion_notify_handler;
-	gulong	       on_button_release_handler;
+	gulong	       on_drag_end_handler;
 }
 	sDrag;
 
@@ -53,8 +51,7 @@ static GType    register_type( void );
 static void     interface_base_init( myIBookDetachInterface *klass );
 static void     interface_base_finalize( myIBookDetachInterface *klass );
 static gboolean on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata );
-static gboolean on_motion_notify_event( GtkWidget *widget, GdkEventMotion *event, sDrag *sdata );
-static gboolean on_button_release_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata );
+static void     on_drag_end( GtkWidget *widget, GdkDragContext *context, sDrag *sdata );
 static void     stop_drag_operation( GtkWidget *widget, sDrag *sdata );
 static sDrag   *get_page_data( myIBookDetach *instance, GtkWidget *widget );
 
@@ -203,20 +200,25 @@ my_ibook_detach_set_source_widget( myIBookDetach *instance, GtkWidget *widget )
 	g_return_if_fail( instance && MY_IS_IBOOK_DETACH( instance ));
 	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
 
-	gtk_widget_add_events( widget, GDK_BUTTON_PRESS_MASK );
+	gtk_widget_add_events( widget, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK );
 
 	sdata = get_page_data( instance, widget );
-	sdata->on_button_press_handler =
-				g_signal_connect( widget, "button_press_event", G_CALLBACK( on_button_press_event ), sdata );
+
+	g_signal_connect( widget, "button_press_event", G_CALLBACK( on_button_press_event ), sdata );
 }
 
 /*
  * Returns: %TRUE to stop other handlers from being invoked for the event.
  *  %FALSE to propagate the event further.
+ *
+ * Note: the 'motion-notify-event' signal (which requires
+ * GDK_POINTER_MOTION_MASK) is only sent while the mouse pointer is
+ * inside of the @widget. It is not very useful in our case.
  */
 static gboolean
 on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 {
+	static const gchar *thisfn = "my_ibook_detach_on_button_press_event";
 	GtkTargetList *target_list;
 	GdkDragContext *context;
 
@@ -224,18 +226,17 @@ on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 
 	/* do not handle anything else than simple click */
 	if( event->type != GDK_BUTTON_PRESS ){
+		g_debug( "%s: returning False because not GDK_BUTTON_PRESS", thisfn );
 		return( FALSE );
 	}
 	/* do not handle even simple click if any modifier is set */
 	if( event->state != 0 ){
+		g_debug( "%s: returning False because state=%d", thisfn, event->state );
 		return( FALSE );
 	}
 
-	sdata->on_motion_notify_handler =
-			g_signal_connect( widget, "motion-notify-event", G_CALLBACK( on_motion_notify_event ), sdata );
-
-	sdata->on_button_release_handler =
-			g_signal_connect( widget, "button-release-event", G_CALLBACK( on_button_release_event ), sdata );
+	sdata->on_drag_end_handler =
+				g_signal_connect( widget, "drag-end", G_CALLBACK( on_drag_end ), sdata );
 
 	target_list = gtk_target_list_new( dnd_source_formats, G_N_ELEMENTS( dnd_source_formats ));
 
@@ -250,35 +251,19 @@ on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 	return( TRUE );
 }
 
-static gboolean
-on_motion_notify_event( GtkWidget *widget, GdkEventMotion *event, sDrag *sdata )
+static void
+on_drag_end( GtkWidget *widget, GdkDragContext *context, sDrag *sdata )
 {
-	g_debug( "on_motion_notify_event" );
-
-	return( FALSE );
-}
-
-/*
- * if the cursor has been moved, then detach the tab and recreate it here
- */
-static gboolean
-on_button_release_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
-{
-	g_debug( "on_button_release_event" );
+	g_debug( "on_drag_end" );
 
 	stop_drag_operation( widget, sdata );
-
-	return( FALSE );
 }
 
 static void
 stop_drag_operation( GtkWidget *widget, sDrag *sdata )
 {
-	g_signal_handler_disconnect( widget, sdata->on_motion_notify_handler );
-	sdata->on_motion_notify_handler = 0;
-
-	g_signal_handler_disconnect( widget, sdata->on_button_release_handler );
-	sdata->on_button_release_handler = 0;
+	g_signal_handler_disconnect( widget, sdata->on_drag_end_handler );
+	sdata->on_drag_end_handler = 0;
 }
 
 static sDrag *
