@@ -53,13 +53,13 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	GtkGrid      parent;
+	GtkEventBox      parent;
 }
 	myTab;
 
 typedef struct {
 	/*< public members >*/
-	GtkGridClass parent;
+	GtkEventBoxClass parent;
 }
 	myTabClass;
 

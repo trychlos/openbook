@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_MY_ICOLLECTOR_H__
-#define __OPENBOOK_API_MY_ICOLLECTOR_H__
+#ifndef __MY_API_MY_ICOLLECTOR_H__
+#define __MY_API_MY_ICOLLECTOR_H__
 
 /**
  * SECTION: icollector
  * @title: myICollector
  * @short_description: The ICollector Interface
- * @include: openbook/my-icollector.h
+ * @include: my/my-icollector.h
  *
  * The #myICollector interface lets an object manage collection(s)
  * (resp. single) objects.
@@ -130,4 +130,4 @@ void     my_icollector_free_all                  ( myICollector *instance );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_MY_ICOLLECTOR_H__ */
+#endif /* __MY_API_MY_ICOLLECTOR_H__ */

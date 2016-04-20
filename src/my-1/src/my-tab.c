@@ -34,6 +34,7 @@
 typedef struct {
 	gboolean   dispose_has_run;
 
+	GtkWidget *grid;
 	gchar     *label;
 
 	GtkWidget *pin_btn;
@@ -58,7 +59,7 @@ static void on_tab_pin_clicked_class_handler( myTab *tab );
 static void on_close_button_clicked( GtkButton *button, myTab *tab );
 static void on_tab_close_clicked_class_handler( myTab *tab );
 
-G_DEFINE_TYPE_EXTENDED( myTab, my_tab, GTK_TYPE_GRID, 0,
+G_DEFINE_TYPE_EXTENDED( myTab, my_tab, GTK_TYPE_EVENT_BOX, 0,
 		G_ADD_PRIVATE( myTab ))
 
 static void
@@ -198,13 +199,16 @@ setup_tab_content( myTab *tab, GtkImage *image, const gchar *text )
 
 	priv = my_tab_get_instance_private( tab );
 
+	priv->grid = gtk_grid_new();
+	gtk_container_add( GTK_CONTAINER( tab ), priv->grid );
+
 	if( image ){
-		gtk_grid_attach( GTK_GRID( tab ), GTK_WIDGET( image ), 0, 0, 1, 1 );
+		gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( image ), 0, 0, 1, 1 );
 		my_utils_widget_set_margin_right( GTK_WIDGET( image ), 2 );
 	}
 
 	label = gtk_label_new_with_mnemonic( text );
-	gtk_grid_attach( GTK_GRID( tab ), label, 1, 0, 1, 1 );
+	gtk_grid_attach( GTK_GRID( priv->grid ), label, 1, 0, 1, 1 );
 	my_utils_widget_set_margin_right( label, 6 );
 	priv->label = g_strdup( text );
 
@@ -213,7 +217,7 @@ setup_tab_content( myTab *tab, GtkImage *image, const gchar *text )
 	gtk_button_set_focus_on_click( GTK_BUTTON( priv->pin_btn ), FALSE );
 	gtk_button_set_image( GTK_BUTTON( priv->pin_btn ),
 			gtk_image_new_from_icon_name( "view-fullscreen", GTK_ICON_SIZE_MENU ));
-	gtk_grid_attach( GTK_GRID( tab ), priv->pin_btn, 2, 0, 1, 1 );
+	gtk_grid_attach( GTK_GRID( priv->grid ), priv->pin_btn, 2, 0, 1, 1 );
 	my_utils_widget_set_margin_right( priv->pin_btn, 2 );
 
 	g_signal_connect( priv->pin_btn, "clicked", G_CALLBACK( on_pin_button_clicked ), tab );
@@ -223,7 +227,7 @@ setup_tab_content( myTab *tab, GtkImage *image, const gchar *text )
 	gtk_button_set_focus_on_click( GTK_BUTTON( priv->close_btn ), FALSE );
 	gtk_button_set_image( GTK_BUTTON( priv->close_btn ),
 			gtk_image_new_from_icon_name( "window-close", GTK_ICON_SIZE_MENU ));
-	gtk_grid_attach( GTK_GRID( tab ), priv->close_btn, 3, 0, 1, 1 );
+	gtk_grid_attach( GTK_GRID( priv->grid ), priv->close_btn, 3, 0, 1, 1 );
 
 	g_signal_connect( priv->close_btn, "clicked", G_CALLBACK( on_close_button_clicked ), tab );
 }
