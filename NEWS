@@ -35,14 +35,15 @@
  New features and improvements:
 
    - ofaDossierOpen: open in read-only mode (todo #701).
+   - ofsOpe: set again the auto-eval mode to False, only using %EVAL() function.
  
  Bug fixes:
 
-   - 
+   - Fix 'Closing period' menu item sensitivity when dossier is read-only.
 
  Other changes:
 
-   -  
+   - ofa_hub_dossier_is_writable(): new method.
 
 -----------------------------------------------------------------------
  Version 0.55

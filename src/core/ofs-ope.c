@@ -205,6 +205,7 @@ ofs_ope_apply_template( ofsOpe *ope )
 
 	if( !st_engine ){
 		st_engine = ofa_formula_engine_new();
+		ofa_formula_engine_set_auto_eval( st_engine, FALSE );
 	}
 
 	helper = g_new0( sOpeHelper, 1 );
