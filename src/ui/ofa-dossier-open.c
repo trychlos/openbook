@@ -63,6 +63,7 @@ typedef struct {
 	gchar              *password;
 	ofaIDBConnect      *connect;		/* the DB connection */
 	gboolean            opened;
+	gboolean            read_only;
 
 	/* UI
 	 */
@@ -153,6 +154,7 @@ ofa_dossier_open_init( ofaDossierOpen *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->opened = FALSE;
+	priv->read_only = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -482,7 +484,7 @@ are_data_set( ofaDossierOpen *self, gchar **msg )
 
 /*
  * all data are expected to be set
- * but we have yet to check the DB connection
+ * but we have still to check the DB connection
  */
 static gboolean
 idialog_quit_on_ok( myIDialog *instance )
@@ -497,6 +499,7 @@ idialog_quit_on_ok( myIDialog *instance )
 	msg = NULL;
 
 	if( is_connection_valid( OFA_DOSSIER_OPEN( instance ), &msg )){
+		priv->read_only = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->readonly_btn ));
 		priv->opened = do_open_dossier( OFA_DOSSIER_OPEN( instance ));
 		return( priv->opened );
 	}
@@ -545,18 +548,16 @@ do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 	ofaHub *hub;
-	gboolean ok, read_only;
+	gboolean ok;
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
 	ok = FALSE;
 
-	read_only = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->readonly_btn ));
-
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ), read_only )){
+	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ), priv->read_only )){
 		ofa_hub_dossier_remediate_settings( hub );
 		ok = TRUE;
 	}
