@@ -61,8 +61,6 @@ typedef struct {
 
 GType              ofo_recurrent_model_get_type               ( void ) G_GNUC_CONST;
 
-void               ofo_recurrent_model_connect_to_hub_handlers( ofaHub *hub );
-
 GList             *ofo_recurrent_model_get_dataset            ( ofaHub *hub );
 
 ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );

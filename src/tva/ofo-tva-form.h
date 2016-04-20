@@ -91,8 +91,6 @@ typedef struct {
 
 GType           ofo_tva_form_get_type               ( void ) G_GNUC_CONST;
 
-void            ofo_tva_form_connect_to_hub_handlers( ofaHub *hub );
-
 GList          *ofo_tva_form_get_dataset            ( ofaHub *hub );
 
 ofoTVAForm     *ofo_tva_form_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );

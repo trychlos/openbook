@@ -37,6 +37,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
@@ -104,8 +105,6 @@ static const sLabels st_labels[] = {
 		{ 0 }
 };
 
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static void     recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
 static void     recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
 static gboolean model_do_insert( ofoRecurrentRun *model, const ofaIDBConnect *connect );
@@ -117,10 +116,15 @@ static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRec
 static void     icollectionable_iface_init( myICollectionableInterface *iface );
 static guint    icollectionable_get_interface_version( void );
 static GList   *icollectionable_load_collection( void *user_data );
+static void     isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void     isignal_hub_connect( ofaHub *hub );
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentRun )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 recurrent_run_finalize( GObject *instance )
@@ -171,80 +175,6 @@ ofo_recurrent_run_class_init( ofoRecurrentRunClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = recurrent_run_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_run_finalize;
-}
-
-/**
- * ofo_recurrent_run_connect_to_hub_handlers:
- *
- * As the signal connection is protected by a static variable, there is
- * no need here to handle signal disconnection
- */
-void
-ofo_recurrent_run_connect_to_hub_handlers( ofaHub *hub )
-{
-	static const gchar *thisfn = "ofo_recurrent_run_connect_to_hub_handlers";
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_signal_connect( G_OBJECT( hub ),
-				SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_recurrent_run_hub_on_updated_object";
-	const gchar *mnemo;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_RECURRENT_MODEL( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				hub_update_recurrent_model_identifier( hub, mnemo, prev_id );
-			}
-		}
-	}
-}
-
-static gboolean
-hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
-{
-	static const gchar *thisfn = "ofo_recurrent_run_hub_update_recurrent_model_identifier";
-	gchar *query;
-	const ofaIDBConnect *connect;
-	gboolean ok;
-
-	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
-			thisfn, ( void * ) hub, mnemo, prev_id );
-
-	connect = ofa_hub_get_connect( hub );
-
-	query = g_strdup_printf(
-					"UPDATE REC_T_RUN "
-					"	SET REC_MNEMO='%s' "
-					"	WHERE REC_MNEMO='%s'",
-							mnemo, prev_id );
-
-	ok = ofa_idbconnect_query( connect, query, TRUE );
-
-	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_RUN );
-	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_RUN );
-
-	return( ok );
 }
 
 /**
@@ -691,4 +621,84 @@ icollectionable_load_collection( void *user_data )
 					OFA_HUB( user_data ));
 
 	return( dataset );
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_hub_on_updated_object";
+	const gchar *mnemo;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				hub_update_recurrent_model_identifier( hub, mnemo, prev_id );
+			}
+		}
+	}
+}
+
+static gboolean
+hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_hub_update_recurrent_model_identifier";
+	gchar *query;
+	const ofaIDBConnect *connect;
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
+
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf(
+					"UPDATE REC_T_RUN "
+					"	SET REC_MNEMO='%s' "
+					"	WHERE REC_MNEMO='%s'",
+							mnemo, prev_id );
+
+	ok = ofa_idbconnect_query( connect, query, TRUE );
+
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_RUN );
+	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_RUN );
+
+	return( ok );
 }

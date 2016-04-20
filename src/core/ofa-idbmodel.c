@@ -368,39 +368,6 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 }
 
 /**
- * ofa_idbmodel_init_hub_signaling_system:
- * @hub: the #ofaHub object.
- *
- * Propose to all ofaIDBModel implentations to connect themselves to
- * the hub signaling system.
- */
-void
-ofa_idbmodel_init_hub_signaling_system( ofaHub *hub )
-{
-	static const gchar *thisfn = "ofa_idbmodel_init_hub_signaling_system";
-	ofaExtenderCollection *extenders;
-	GList *plugins_list, *it;
-	ofaIDBModel *instance;
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	extenders = ofa_hub_get_extender_collection( hub );
-	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
-
-	for( it=plugins_list ; it ; it=it->next ){
-		instance = OFA_IDBMODEL( it->data );
-		if( OFA_IDBMODEL_GET_INTERFACE( instance )->connect_handlers ){
-			OFA_IDBMODEL_GET_INTERFACE( instance )->connect_handlers( instance, hub );
-		} else {
-			g_info( "%s: ofaIDBModel's %s implementation does not provide 'connect_handlers()' method",
-					thisfn, G_OBJECT_TYPE_NAME( instance ));
-		}
-	}
-
-	ofa_extender_collection_free_types( plugins_list );
-}
-
-/**
  * ofa_idbmodel_get_is_deletable:
  * @object: the #ofoBase object to be checked.
  *

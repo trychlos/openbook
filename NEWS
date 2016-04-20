@@ -72,6 +72,7 @@
    - ofaICollectionable: renamed to myICollectionable and moved to my-1 library (todo #1071).
    - ofaICollector: renamed to myICollector and moved to my-1 library (todo #1071).
    - ofaICollector instance is provided by ofaHub (todo #1092).
+   - ofaIDBModel::connect_handlers(): removed method (todo #1087).
    - ofaISignalHub: new interface (todo #1087).
    - ofaISingleKeeper: merged into myICollector interface (todo #1095).
    - ofaPeriodClose: new dialog.

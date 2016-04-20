@@ -58,8 +58,7 @@ typedef struct {
 	 */
 	ofaExtenderCollection  *extenders;
 	ofaPortfolioCollection *portfolios;
-	GList                  *objects;
-	GList                  *core_types;
+	GList                  *core_objects;
 
 	/* dossier
 	 */
@@ -90,6 +89,7 @@ static gint st_signals[ N_SIGNALS ]     = { 0 };
 
 static void  icollector_iface_init( myICollectorInterface *iface );
 static guint icollector_get_interface_version( void );
+static void  connect_signaling_system_to( ofaHub *hub, GType type );
 static void  dossier_do_close( ofaHub *hub );
 static void  check_db_vs_settings( const ofaHub *hub );
 
@@ -130,7 +130,7 @@ hub_dispose( GObject *instance )
 
 		g_clear_object( &priv->extenders );
 		g_clear_object( &priv->portfolios );
-		g_list_free_full( priv->objects, ( GDestroyNotify ) g_object_unref );
+		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
 
 		dossier_do_close( OFA_HUB( instance ));
 	}
@@ -556,8 +556,7 @@ ofa_hub_init_signaling_system( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_hub_init_signaling_system";
 	ofaHubPrivate *priv;
-	GList *it;
-	gpointer klass, iface;
+	GList *list, *it;
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 
@@ -567,27 +566,33 @@ ofa_hub_init_signaling_system( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	/* propose to registered core GType's to connect to hub signaling
-	 * system
-	 */
-	for( it=priv->core_types ; it ; it=it->next ){
+	list = ofa_hub_get_for_type( hub, OFA_TYPE_ISIGNAL_HUB );
 
-		klass = g_type_class_ref(( GType ) GPOINTER_TO_UINT( it->data ));
-		g_return_if_fail( klass );
-
-		iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNAL_HUB );
-
-		if( iface && (( ofaISignalHubInterface * ) iface )->connect ){
-			(( ofaISignalHubInterface * ) iface )->connect( hub );
-		} else {
-			g_info( "%s implementation does not provide 'ofaISignalHub::connect()' method",
-					g_type_name(( GType ) GPOINTER_TO_UINT( it->data )));
-		}
-
-		g_type_class_unref( klass );
+	for( it=list ; it ; it=it->next ){
+		connect_signaling_system_to( hub, G_OBJECT_TYPE( it->data ));
 	}
 
-	ofa_idbmodel_init_hub_signaling_system( hub );
+	g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
+}
+
+static void
+connect_signaling_system_to( ofaHub *hub, GType type )
+{
+	gpointer klass, iface;
+
+	klass = g_type_class_ref( type );
+	g_return_if_fail( klass );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNAL_HUB );
+
+	if( iface && (( ofaISignalHubInterface * ) iface )->connect ){
+		(( ofaISignalHubInterface * ) iface )->connect( hub );
+	} else {
+		g_info( "%s implementation does not provide 'ofaISignalHub::connect()' method",
+				g_type_name( type ));
+	}
+
+	g_type_class_unref( klass );
 }
 
 /**
@@ -618,29 +623,17 @@ ofa_hub_register_types( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->core_types = NULL;
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_ACCOUNT ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_BAT ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_CLASS ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_CONCIL ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_CURRENCY ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_DOSSIER ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_ENTRY ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_LEDGER ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_OPE_TEMPLATE ));
-	priv->core_types = g_list_prepend( priv->core_types, GUINT_TO_POINTER( OFO_TYPE_RATE ));
-
-	priv->objects = NULL;
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_BAT, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CLASS, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
-	priv->objects = g_list_prepend( priv->objects, g_object_new( OFO_TYPE_RATE, NULL ));
+	priv->core_objects = NULL;
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CLASS, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_RATE, NULL ));
 }
 
 /**
@@ -670,7 +663,7 @@ ofa_hub_get_for_type( ofaHub *hub, GType type )
 
 	/* requests first the objects registered from core library */
 	objects = NULL;
-	for( it=priv->objects ; it ; it=it->next ){
+	for( it=priv->core_objects ; it ; it=it->next ){
 		if( G_TYPE_CHECK_INSTANCE_TYPE( G_OBJECT( it->data ), type )){
 			objects = g_list_prepend( objects, g_object_ref( it->data ));
 		}

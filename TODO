@@ -342,20 +342,16 @@
 1074 2016- 4-14 may have external commands to backup/restore ?
 
 1075 2016- 4-14 have a message bar
+     2016- 4-20 describe a use case
 
 1081 2016- 4-14 Remove misc/t_xxx, replacing by a command-line test appli
 
 1086 2016- 4-15 Have an error message from ofa_idbconnect_query
 
-1087 2016- 4-15 Hub signaling system should be available to all plugins,
-                not only to ofaIDBModel's
-                + should review its initialization which is a bit
-                laborious..
-
-1093 2016- 4-19 CODE ICollector should have its own messaging system
+1093 2016- 4-19 CODE should ICollector have its own messaging system
                      on add/remove actions (update/reload cannot be managed
-                     here)
-     2016- 4-19 find a use case
+                     here) ?
+     2016- 4-19 describe a use case
 
 1096 2016- 4-20 FEAT connect ofoBat to hub signaling system
 
@@ -1196,6 +1192,12 @@
                     AccountsChart: not ok
                     Ledgers, OpeTemplates, Currencies, Rates, Classes, Bats: ok
      2016- 4-15 fixed
+
+1087 2016- 4-15 Hub signaling system should be available to all plugins,
+                not only to ofaIDBModel's
+                + should review its initialization which is a bit
+                laborious..
+     2016- 4-20 done
 
 1088 2016- 4-15 BUG Application accelerators are not active after a
                     dossier has been opened

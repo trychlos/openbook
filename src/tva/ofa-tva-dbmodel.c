@@ -90,7 +90,6 @@ static sMigration st_migrates[] = {
 static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static void       idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub );
 static gboolean   idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object );
 static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
@@ -113,7 +112,6 @@ ofa_tva_dbmodel_iface_init( ofaIDBModelInterface *iface )
 	iface->get_current_version = idbmodel_get_current_version;
 	iface->get_last_version = idbmodel_get_last_version;
 	iface->ddl_update = idbmodel_ddl_update;
-	iface->connect_handlers = idbmodel_connect_handlers;
 	iface->get_is_deletable = idbmodel_get_is_deletable;
 	iface->check_dbms_integrity = idbmodel_check_dbms_integrity;
 }
@@ -153,17 +151,6 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *con
 	}
 
 	return( last_version );
-}
-
-static void
-idbmodel_connect_handlers( const ofaIDBModel *instance, ofaHub *hub )
-{
-	static const gchar *thisfn = "ofa_tva_dbmodel_idbmodel_connect_handlers";
-
-	g_debug( "%s: instance=%p, hub=%p", thisfn, ( void * ) instance, ( void * ) hub );
-
-	ofo_tva_form_connect_to_hub_handlers( hub );
-	ofo_tva_record_connect_to_hub_handlers( hub );
 }
 
 static gboolean

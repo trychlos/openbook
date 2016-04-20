@@ -1919,7 +1919,7 @@ ledger_drop_content( const ofaIDBConnect *connect )
 static void
 isignal_hub_iface_init( ofaISignalHubInterface *iface )
 {
-	static const gchar *thisfn = "ofo_entry_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_ledger_isignal_hub_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -1929,7 +1929,7 @@ isignal_hub_iface_init( ofaISignalHubInterface *iface )
 static void
 isignal_hub_connect( ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_entry_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_ledger_isignal_hub_connect";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 

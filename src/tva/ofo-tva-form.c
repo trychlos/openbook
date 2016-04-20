@@ -39,6 +39,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -167,8 +168,6 @@ typedef struct {
 }
 	ofoTVAFormPrivate;
 
-static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean    hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
 static guint       form_count_for_account( const ofaIDBConnect *connect, const gchar *account );
 static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user );
@@ -208,12 +207,17 @@ static GList      *iimportable_import_parse_rule( ofaIImporter *importer, ofsImp
 static void        iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean    form_get_exists( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_drop_content( const ofaIDBConnect *connect );
+static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void        isignal_hub_connect( ofaHub *hub );
+static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean    hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 details_list_free_detail( GList *fields )
@@ -307,103 +311,6 @@ ofo_tva_form_class_init( ofoTVAFormClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = tva_form_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_form_finalize;
-}
-
-/**
- * ofo_tva_form_connect_to_hub_handlers:
- *
- * As the signal connection is protected by a static variable, there is
- * no need here to handle signal disconnection
- */
-void
-ofo_tva_form_connect_to_hub_handlers( ofaHub *hub )
-{
-	static const gchar *thisfn = "ofo_tva_form_connect_to_hub_handlers";
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_tva_form_hub_on_updated_object";
-	const gchar *mnemo;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_ACCOUNT( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_account_get_number( OFO_ACCOUNT( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				hub_update_account_identifier( hub, mnemo, prev_id );
-			}
-		}
-	}
-}
-
-static gboolean
-hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
-{
-	static const gchar *thisfn = "ofo_tva_form_hub_update_account_identifier";
-	gchar *query;
-	const ofaIDBConnect *connect;
-	GSList *result, *irow, *icol;
-	gchar *etp_mnemo, *det_amount;
-	gint det_row;
-	gboolean ok;
-
-	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
-			thisfn, ( void * ) hub, mnemo, prev_id );
-
-	connect = ofa_hub_get_connect( hub );
-
-	query = g_strdup_printf(
-					"SELECT TFO_MNEMO,TFO_DET_ROW,TFO_DET_AMOUNT "
-					"	FROM TVA_T_FORMS_DET "
-					"	WHERE TFO_DET_AMOUNT LIKE '%%%s%%'", prev_id );
-
-	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
-	g_free( query );
-
-	if( ok ){
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = irow->data;
-			etp_mnemo = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			det_row = atoi(( gchar * ) icol->data );
-			icol = icol->next;
-			det_amount = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
-
-			query = g_strdup_printf(
-							"UPDATE TVA_T_FORMS_DET "
-							"	SET TFO_DET_AMOUNT='%s' "
-							"	WHERE TFO_MNEMO='%s' AND TFO_DET_ROW=%d",
-									det_amount, etp_mnemo, det_row );
-
-			ofa_idbconnect_query( connect, query, TRUE );
-
-			g_free( query );
-			g_free( det_amount );
-			g_free( etp_mnemo );
-		}
-
-		my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM );
-		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
-	}
-
-	return( ok );
 }
 
 /**
@@ -2147,4 +2054,108 @@ form_drop_content( const ofaIDBConnect *connect )
 	return( ofa_idbconnect_query( connect, "DELETE FROM TVA_T_FORMS", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM TVA_T_FORMS_DET", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM TVA_T_FORMS_BOOL", TRUE ));
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_tva_form_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_tva_form_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_tva_form_hub_on_updated_object";
+	const gchar *mnemo;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_ACCOUNT( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_account_get_number( OFO_ACCOUNT( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				hub_update_account_identifier( hub, mnemo, prev_id );
+			}
+		}
+	}
+}
+
+static gboolean
+hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_tva_form_hub_update_account_identifier";
+	gchar *query;
+	const ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+	gchar *etp_mnemo, *det_amount;
+	gint det_row;
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
+
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf(
+					"SELECT TFO_MNEMO,TFO_DET_ROW,TFO_DET_AMOUNT "
+					"	FROM TVA_T_FORMS_DET "
+					"	WHERE TFO_DET_AMOUNT LIKE '%%%s%%'", prev_id );
+
+	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
+	g_free( query );
+
+	if( ok ){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			etp_mnemo = g_strdup(( gchar * ) icol->data );
+			icol = icol->next;
+			det_row = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			det_amount = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+
+			query = g_strdup_printf(
+							"UPDATE TVA_T_FORMS_DET "
+							"	SET TFO_DET_AMOUNT='%s' "
+							"	WHERE TFO_MNEMO='%s' AND TFO_DET_ROW=%d",
+									det_amount, etp_mnemo, det_row );
+
+			ofa_idbconnect_query( connect, query, TRUE );
+
+			g_free( query );
+			g_free( det_amount );
+			g_free( etp_mnemo );
+		}
+
+		my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM );
+		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_TVA_FORM );
+	}
+
+	return( ok );
 }

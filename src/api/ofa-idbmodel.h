@@ -143,18 +143,6 @@ typedef struct {
 													const ofaIDBConnect *connect );
 
 	/**
-	 * connect_handlers:
-	 * @instance: the #ofaIDBModel provider.
-	 * @hub: the #ofaHub object.
-	 *
-	 * Let the implementation connect to the hub signaling system.
-	 *
-	 * Since: version 1
-	 */
-	void          ( *connect_handlers )     ( const ofaIDBModel *instance,
-													ofaHub *hub );
-
-	/**
 	 * get_is_deletable:
 	 * @instance: the #ofaIDBModel provider.
 	 * @object: the #ofoBase object to be tested.
@@ -233,8 +221,6 @@ guint        ofa_idbmodel_get_interface_version     ( GType type );
  */
 gboolean     ofa_idbmodel_update                    ( ofaHub *hub,
 															GtkWindow *parent );
-
-void         ofa_idbmodel_init_hub_signaling_system ( ofaHub *hub );
 
 gboolean     ofa_idbmodel_get_is_deletable          ( const ofaHub *hub,
 															const ofoBase *object );

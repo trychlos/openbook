@@ -71,8 +71,6 @@ typedef struct {
 
 GType           ofo_tva_record_get_type               ( void ) G_GNUC_CONST;
 
-void            ofo_tva_record_connect_to_hub_handlers( ofaHub *hub );
-
 GList          *ofo_tva_record_get_dataset            ( ofaHub *hub );
 
 GDate          *ofo_tva_record_get_last_end           ( ofaHub *hub, const gchar *mnemo, GDate * );
