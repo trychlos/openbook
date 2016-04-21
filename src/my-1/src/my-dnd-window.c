@@ -27,7 +27,7 @@
 #endif
 
 #include "my/my-iwindow.h"
-#include "my/my-nomodal-window.h"
+#include <my-1/my/my-dnd-window.h>
 #include "my/my-utils.h"
 
 /* private instance data
@@ -35,39 +35,39 @@
 typedef struct {
 	gboolean    dispose_has_run;
 }
-	myNomodalWindowPrivate;
+	myDndWindowPrivate;
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy );
 
-G_DEFINE_TYPE_EXTENDED( myNomodalWindow, my_nomodal_window, GTK_TYPE_WINDOW, 0,
-		G_ADD_PRIVATE( myNomodalWindow ) \
+G_DEFINE_TYPE_EXTENDED( myDndWindow, my_dnd_window, GTK_TYPE_WINDOW, 0,
+		G_ADD_PRIVATE( myDndWindow ) \
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
 nomodal_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "my_nomodal_window_finalize";
+	static const gchar *thisfn = "my_dnd_window_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && MY_IS_NOMODAL_WINDOW( instance ));
+	g_return_if_fail( instance && MY_IS_DND_WINDOW( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( my_nomodal_window_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( my_dnd_window_parent_class )->finalize( instance );
 }
 
 static void
 nomodal_page_dispose( GObject *instance )
 {
-	myNomodalWindowPrivate *priv;
+	myDndWindowPrivate *priv;
 
-	g_return_if_fail( instance && MY_IS_NOMODAL_WINDOW( instance ));
+	g_return_if_fail( instance && MY_IS_DND_WINDOW( instance ));
 
-	priv = my_nomodal_window_get_instance_private( MY_NOMODAL_WINDOW( instance ));
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -77,29 +77,29 @@ nomodal_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( my_nomodal_window_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( my_dnd_window_parent_class )->dispose( instance );
 }
 
 static void
-my_nomodal_window_init( myNomodalWindow *self )
+my_dnd_window_init( myDndWindow *self )
 {
-	static const gchar *thisfn = "my_nomodal_window_init";
-	myNomodalWindowPrivate *priv;
+	static const gchar *thisfn = "my_dnd_window_init";
+	myDndWindowPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && MY_IS_NOMODAL_WINDOW( self ));
+	g_return_if_fail( self && MY_IS_DND_WINDOW( self ));
 
-	priv = my_nomodal_window_get_instance_private( self );
+	priv = my_dnd_window_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-my_nomodal_window_class_init( myNomodalWindowClass *klass )
+my_dnd_window_class_init( myDndWindowClass *klass )
 {
-	static const gchar *thisfn = "my_nomodal_window_class_init";
+	static const gchar *thisfn = "my_dnd_window_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -108,23 +108,23 @@ my_nomodal_window_class_init( myNomodalWindowClass *klass )
 }
 
 /**
- * my_nomodal_window_new:
+ * my_dnd_window_new:
  * @source: a #GtkWindow source window.
  *
- * Creates a #myNomodalWindow non-modal window.
+ * Creates a #myDndWindow non-modal window.
  * Configure it as DnD target.
  */
-myNomodalWindow *
-my_nomodal_window_new( GtkWindow *source )
+myDndWindow *
+my_dnd_window_new( GtkWindow *source )
 {
-	myNomodalWindow *window;
+	myDndWindow *window;
 	GtkWindow *parent;
 
 	g_return_val_if_fail( source && GTK_IS_WINDOW( source ), NULL );
 
-	parent = NULL;
+	parent = ( GtkWindow * ) gtk_widget_get_toplevel( GTK_WIDGET( source ));
 
-	window = g_object_new( MY_TYPE_NOMODAL_WINDOW, NULL );
+	window = g_object_new( MY_TYPE_DND_WINDOW, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( window ), parent );
 
 	return( window );
@@ -136,7 +136,7 @@ my_nomodal_window_new( GtkWindow *source )
 static void
 iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "my_nomodal_window_iwindow_iface_init";
+	static const gchar *thisfn = "my_dnd_window_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 

@@ -22,36 +22,36 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_API_MY_IBOOK_DETACH_H__
-#define __MY_API_MY_IBOOK_DETACH_H__
+#ifndef __MY_API_MY_IDND_DETACH_H__
+#define __MY_API_MY_IDND_DETACH_H__
 
 /**
- * SECTION: ibook_detach
- * @title: myIBookDetach
- * @short_description: The IBookDetach Interface
- * @include: my/my-ibook_detach.h
+ * SECTION: idnd_detach
+ * @title: myIDndDetach
+ * @short_description: The IDndDetach Interface
+ * @include: my/my-idnd-detach.h
  *
- * The #myIBookDetach interface lets the user detach pages from a
- * #GtkNotebook. It is implemented by the #myBookDnd class.
+ * The #myIDndDetach interface lets the user detach pages from a
+ * #GtkNotebook. It is implemented by the #myDndBook class.
  */
 
 #include <glib-object.h>
 
 G_BEGIN_DECLS
 
-#define MY_TYPE_IBOOK_DETACH                      ( my_ibook_detach_get_type())
-#define MY_IBOOK_DETACH( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, MY_TYPE_IBOOK_DETACH, myIBookDetach ))
-#define MY_IS_IBOOK_DETACH( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, MY_TYPE_IBOOK_DETACH ))
-#define MY_IBOOK_DETACH_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_IBOOK_DETACH, myIBookDetachInterface ))
+#define MY_TYPE_IDND_DETACH                      ( my_idnd_detach_get_type())
+#define MY_IDND_DETACH( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, MY_TYPE_IDND_DETACH, myIDndDetach ))
+#define MY_IS_IDND_DETACH( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, MY_TYPE_IDND_DETACH ))
+#define MY_IDND_DETACH_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), MY_TYPE_IDND_DETACH, myIDndDetachInterface ))
 
-typedef struct _myIBookDetach                     myIBookDetach;
+typedef struct _myIDndDetach                     myIDndDetach;
 
 /**
- * myIBookDetachInterface:
+ * myIDndDetachInterface:
  * @get_interface_version: [should]: get the version number of the
  *                                   interface implementation.
  *
- * This defines the interface that an #myIBookDetach may/should
+ * This defines the interface that an #myIDndDetach may/should
  * implement.
  */
 typedef struct {
@@ -74,26 +74,27 @@ typedef struct {
 
 	/*** instance-wide ***/
 }
-	myIBookDetachInterface;
+	myIDndDetachInterface;
 
 /*
  * Interface-wide
  */
-GType my_ibook_detach_get_type                  ( void );
+GType my_idnd_detach_get_type                  ( void );
 
-guint my_ibook_detach_get_interface_last_version( void );
+guint my_idnd_detach_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint my_ibook_detach_get_interface_version     ( GType type );
+guint my_idnd_detach_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void  my_ibook_detach_set_source_widget         ( myIBookDetach *instance,
-														GtkWidget *widget );
+void  my_idnd_detach_set_source_widget         ( myIDndDetach *instance,
+														GtkWidget *window,
+														GtkWidget *source );
 
 G_END_DECLS
 
-#endif /* __MY_API_MY_IBOOK_DETACH_H__ */
+#endif /* __MY_API_MY_IDND_DETACH_H__ */

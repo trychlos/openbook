@@ -183,14 +183,14 @@ am__installdirs = "$(DESTDIR)$(pkglibdir)"
 LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 liborgtrychlosmy1_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am_liborgtrychlosmy1_la_OBJECTS = my-accel-group.lo my-book-dnd.lo \
+am_liborgtrychlosmy1_la_OBJECTS = my-accel-group.lo my-dnd-book.lo \
 	my-char.lo my-date.lo my-date-combo.lo my-date-editable.lo \
 	my-date-renderer.lo my-decimal-combo.lo my-double.lo \
 	my-double-editable.lo my-double-renderer.lo my-field-combo.lo \
 	my-file-monitor.lo my-iaction-map.lo my-iassistant.lo \
-	my-ibook-detach.lo my-icollectionable.lo my-icollector.lo \
+	my-idnd-detach.lo my-icollectionable.lo my-icollector.lo \
 	my-idialog.lo my-iident.lo my-igridlist.lo my-iprogress.lo \
-	my-isettings.lo my-iwindow.lo my-nomodal-window.lo \
+	my-isettings.lo my-iwindow.lo my-dnd-window.lo \
 	my-progress-bar.lo my-settings.lo my-tab.lo \
 	my-thousand-combo.lo my-timeout.lo my-utils.lo
 liborgtrychlosmy1_la_OBJECTS = $(am_liborgtrychlosmy1_la_OBJECTS)
@@ -468,7 +468,7 @@ nodist_liborgtrychlosmy1_la_OURCES = \
 
 liborgtrychlosmy1_la_SOURCES = \
 	my-accel-group.c									\
-	my-book-dnd.c										\
+	my-dnd-book.c										\
 	my-char.c											\
 	my-date.c											\
 	my-date-combo.c										\
@@ -482,7 +482,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-file-monitor.c									\
 	my-iaction-map.c									\
 	my-iassistant.c										\
-	my-ibook-detach.c									\
+	my-idnd-detach.c									\
 	my-icollectionable.c								\
 	my-icollector.c										\
 	my-idialog.c										\
@@ -491,7 +491,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iprogress.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
-	my-nomodal-window.c									\
+	my-dnd-window.c									\
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-tab.c											\
@@ -600,7 +600,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-accel-group.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-book-dnd.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-dnd-book.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-char.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-date-editable.Plo@am__quote@
@@ -614,7 +614,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-file-monitor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iaction-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iassistant.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-ibook-detach.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-idnd-detach.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-icollectionable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-icollector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-idialog.Plo@am__quote@
@@ -623,7 +623,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iprogress.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-isettings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-iwindow.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-nomodal-window.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-dnd-window.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-progress-bar.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-settings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/my-tab.Plo@am__quote@

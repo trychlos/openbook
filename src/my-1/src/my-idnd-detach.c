@@ -26,43 +26,46 @@
 #include <config.h>
 #endif
 
-#include "my/my-book-dnd.h"
-#include "my/my-ibook-detach.h"
+#include <my-1/my/my-dnd-book.h>
+#include <my-1/my/my-idnd-detach.h>
 
-#define IBOOK_DETACH_LAST_VERSION        1
-#define IBOOK_DETACH_DATA               "my-ibook_detach-data"
+#define IDND_DETACH_LAST_VERSION        1
+#define IDND_DETACH_DATA               "my-idnd_detach-data"
 
 /* a data structure attached to the source widget
  */
 typedef struct {
-	myIBookDetach *instance;
+	myIDndDetach *instance;
+	GtkWidget     *page;
 	gulong	       on_drag_end_handler;
 }
 	sDrag;
 
 
 static GtkTargetEntry dnd_source_formats[] = {
-	{ "XdndOpenbookDetach", GTK_TARGET_SAME_APP, 0 },
+	//{ "XdndOpenbookDetach", GTK_TARGET_SAME_APP, 0 },
+	{ "XdndOpenbookDetach", 0, 0 },
 };
 
 static guint st_initializations = 0;	/* interface initialization count */
 
 static GType    register_type( void );
-static void     interface_base_init( myIBookDetachInterface *klass );
-static void     interface_base_finalize( myIBookDetachInterface *klass );
+static void     interface_base_init( myIDndDetachInterface *klass );
+static void     interface_base_finalize( myIDndDetachInterface *klass );
 static gboolean on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata );
 static gboolean on_button_release_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata );
+static void     on_drag_begin( GtkWidget *widget, GdkDragContext *context, sDrag *sdata );
 static void     on_drag_end( GtkWidget *widget, GdkDragContext *context, sDrag *sdata );
 static void     stop_drag_operation( GtkWidget *widget, sDrag *sdata );
-static sDrag   *get_page_data( myIBookDetach *instance, GtkWidget *widget );
+static sDrag   *get_page_data( myIDndDetach *instance, GtkWidget *widget );
 
 /**
- * my_ibook_detach_get_type:
+ * my_idnd_detach_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-my_ibook_detach_get_type( void )
+my_idnd_detach_get_type( void )
 {
 	static GType type = 0;
 
@@ -74,18 +77,18 @@ my_ibook_detach_get_type( void )
 }
 
 /*
- * my_ibook_detach_register_type:
+ * my_idnd_detach_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "my_ibook_detach_register_type";
+	static const gchar *thisfn = "my_idnd_detach_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( myIBookDetachInterface ),
+		sizeof( myIDndDetachInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -98,7 +101,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "myIBookDetach", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "myIDndDetach", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -106,9 +109,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( myIBookDetachInterface *klass )
+interface_base_init( myIDndDetachInterface *klass )
 {
-	static const gchar *thisfn = "my_ibook_detach_interface_base_init";
+	static const gchar *thisfn = "my_idnd_detach_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -121,9 +124,9 @@ interface_base_init( myIBookDetachInterface *klass )
 }
 
 static void
-interface_base_finalize( myIBookDetachInterface *klass )
+interface_base_finalize( myIDndDetachInterface *klass )
 {
-	static const gchar *thisfn = "my_ibook_detach_interface_base_finalize";
+	static const gchar *thisfn = "my_idnd_detach_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -134,19 +137,19 @@ interface_base_finalize( myIBookDetachInterface *klass )
 }
 
 /**
- * my_ibook_detach_get_interface_last_version:
- * @instance: this #myIBookDetach instance.
+ * my_idnd_detach_get_interface_last_version:
+ * @instance: this #myIDndDetach instance.
  *
  * Returns: the last version number of this interface.
  */
 guint
-my_ibook_detach_get_interface_last_version( void )
+my_idnd_detach_get_interface_last_version( void )
 {
-	return( IBOOK_DETACH_LAST_VERSION );
+	return( IDND_DETACH_LAST_VERSION );
 }
 
 /**
- * my_ibook_detach_get_interface_version:
+ * my_idnd_detach_get_interface_version:
  * @type: the implementation's GType.
  *
  * Returns: the version number of this interface which is managed by
@@ -157,7 +160,7 @@ my_ibook_detach_get_interface_last_version( void )
  * Since: version 1.
  */
 guint
-my_ibook_detach_get_interface_version( GType type )
+my_idnd_detach_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -165,16 +168,16 @@ my_ibook_detach_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, MY_TYPE_IBOOK_DETACH );
+	iface = g_type_interface_peek( klass, MY_TYPE_IDND_DETACH );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( myIBookDetachInterface * ) iface )->get_interface_version ){
-		version = (( myIBookDetachInterface * ) iface )->get_interface_version();
+	if((( myIDndDetachInterface * ) iface )->get_interface_version ){
+		version = (( myIDndDetachInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'myIBookDetach::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'myIDndDetach::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -184,29 +187,44 @@ my_ibook_detach_get_interface_version( GType type )
 }
 
 /**
- * my_ibook_detach_set_source_widget:
- * @instance: this #myIBookDetach instance.
- * @widget: the #GtkWidget which is to be used by the user to detach
- *  the page.
+ * my_idnd_detach_set_source_widget:
+ * @instance: this #myIDndDetach instance.
+ * @window: the page of the #GtkNotebook we are about do move.
+ * @source: the #GtkWidget which is to be used by the user to detach
+ *  the page (aka the tab label).
  *
- * Initialize the drag-and-drop @widget source.
+ * Initialize @widget as a drag-and-drop source.
+ * This is to be called on each page creation of the @instance notebook.
  *
  * Since: version 1.
  */
 void
-my_ibook_detach_set_source_widget( myIBookDetach *instance, GtkWidget *widget )
+my_idnd_detach_set_source_widget( myIDndDetach *instance, GtkWidget *window, GtkWidget *source )
 {
+	static const gchar *thisfn = "my_idnd_detach_set_source_widget";
 	sDrag *sdata;
 
-	g_return_if_fail( instance && MY_IS_IBOOK_DETACH( instance ));
-	g_return_if_fail( widget && GTK_IS_WIDGET( widget ));
+	g_debug( "%s: instance=%p, window=%p, source=%p",
+			thisfn, ( void * ) instance, ( void * ) window, ( void * ) source );
 
-	gtk_widget_add_events( widget, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK );
+	g_return_if_fail( instance && MY_IS_IDND_DETACH( instance ));
+	g_return_if_fail( window && GTK_IS_WIDGET( window ));
+	g_return_if_fail( source && GTK_IS_WIDGET( source ));
 
-	sdata = get_page_data( instance, widget );
+	gtk_notebook_set_tab_detachable( GTK_NOTEBOOK( instance ), window, TRUE );
 
-	g_signal_connect( widget, "button-press-event", G_CALLBACK( on_button_press_event ), sdata );
-	g_signal_connect( widget, "button-release-event", G_CALLBACK( on_button_release_event ), sdata );
+	gtk_widget_add_events( source,
+			GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK );
+
+	gtk_drag_source_set( source,
+			GDK_BUTTON1_MASK, dnd_source_formats, G_N_ELEMENTS( dnd_source_formats ), GDK_ACTION_MOVE );
+
+	sdata = get_page_data( instance, source );
+	sdata->page = window;
+
+	g_signal_connect( source, "button-press-event", G_CALLBACK( on_button_press_event ), sdata );
+	g_signal_connect( source, "button-release-event", G_CALLBACK( on_button_release_event ), sdata );
+	g_signal_connect( source, "drag-begin", G_CALLBACK( on_drag_begin ), sdata );
 }
 
 /*
@@ -215,18 +233,18 @@ my_ibook_detach_set_source_widget( myIBookDetach *instance, GtkWidget *widget )
  *
  * Note: the 'motion-notify-event' signal (which requires
  * GDK_POINTER_MOTION_MASK) is only sent while the mouse pointer is
- * inside of the @widget. It is not very useful in our case.
+ * inside of the source @widget. It is not very useful in our case.
  */
 static gboolean
 on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 {
-	static const gchar *thisfn = "my_ibook_detach_on_button_press_event";
+	static const gchar *thisfn = "my_idnd_detach_on_button_press_event";
 	GtkTargetList *target_list;
 	GdkDragContext *context;
 
 	g_debug( "%s", thisfn );
 
-	if( 0 ){
+	if( 1 ){
 	/* do not handle anything else than simple click */
 	if( event->type != GDK_BUTTON_PRESS ){
 		g_debug( "%s: returning False because not GDK_BUTTON_PRESS", thisfn );
@@ -239,7 +257,7 @@ on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 	}
 
 	sdata->on_drag_end_handler =
-				g_signal_connect( widget, "drag-end", G_CALLBACK( on_drag_end ), sdata );
+					g_signal_connect( widget, "drag-end", G_CALLBACK( on_drag_end ), sdata );
 
 	target_list = gtk_target_list_new( dnd_source_formats, G_N_ELEMENTS( dnd_source_formats ));
 
@@ -267,11 +285,17 @@ on_button_press_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 static gboolean
 on_button_release_event( GtkWidget *widget, GdkEventButton *event, sDrag *sdata )
 {
-	static const gchar *thisfn = "my_ibook_detach_on_button_release_event";
+	static const gchar *thisfn = "my_idnd_detach_on_button_release_event";
 
 	g_debug( "%s", thisfn );
 
 	return( FALSE );
+}
+
+static void
+on_drag_begin( GtkWidget *widget, GdkDragContext *context, sDrag *sdata )
+{
+	g_debug( "on_drag_begin: widget=%p", ( void * ) widget );
 }
 
 static void
@@ -285,20 +309,22 @@ on_drag_end( GtkWidget *widget, GdkDragContext *context, sDrag *sdata )
 static void
 stop_drag_operation( GtkWidget *widget, sDrag *sdata )
 {
-	g_signal_handler_disconnect( widget, sdata->on_drag_end_handler );
-	sdata->on_drag_end_handler = 0;
+	if( sdata->on_drag_end_handler ){
+		g_signal_handler_disconnect( widget, sdata->on_drag_end_handler );
+		sdata->on_drag_end_handler = 0;
+	}
 }
 
 static sDrag *
-get_page_data( myIBookDetach *instance, GtkWidget *widget )
+get_page_data( myIDndDetach *instance, GtkWidget *widget )
 {
 	sDrag *sdata;
 
-	sdata = ( sDrag * ) g_object_get_data( G_OBJECT( widget ), IBOOK_DETACH_DATA );
+	sdata = ( sDrag * ) g_object_get_data( G_OBJECT( widget ), IDND_DETACH_DATA );
 
 	if( !sdata ){
 		sdata = g_new0( sDrag, 1 );
-		g_object_set_data( G_OBJECT( widget ), IBOOK_DETACH_DATA, sdata );
+		g_object_set_data( G_OBJECT( widget ), IDND_DETACH_DATA, sdata );
 		sdata->instance = instance;
 	}
 

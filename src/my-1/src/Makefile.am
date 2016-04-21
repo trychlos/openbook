@@ -59,13 +59,14 @@ nodist_liborgtrychlosmy1_la_OURCES = \
 
 liborgtrychlosmy1_la_SOURCES = \
 	my-accel-group.c									\
-	my-book-dnd.c										\
 	my-char.c											\
 	my-date.c											\
 	my-date-combo.c										\
 	my-date-editable.c									\
 	my-date-renderer.c									\
 	my-decimal-combo.c									\
+	my-dnd-book.c										\
+	my-dnd-window.c										\
 	my-double.c											\
 	my-double-editable.c								\
 	my-double-renderer.c								\
@@ -73,16 +74,15 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-file-monitor.c									\
 	my-iaction-map.c									\
 	my-iassistant.c										\
-	my-ibook-detach.c									\
 	my-icollectionable.c								\
 	my-icollector.c										\
 	my-idialog.c										\
+	my-idnd-detach.c									\
 	my-iident.c											\
 	my-igridlist.c										\
 	my-iprogress.c										\
 	my-isettings.c										\
 	my-iwindow.c										\
-	my-nomodal-window.c									\
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-tab.c											\

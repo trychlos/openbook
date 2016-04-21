@@ -22,15 +22,15 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __MY_API_MY_BOOK_DND_H__
-#define __MY_API_MY_BOOK_DND_H__
+#ifndef __MY_API_MY_DND_BOOK_H__
+#define __MY_API_MY_DND_BOOK_H__
 
-/* @title: myBookDnd
- * @short_description: The myBookDnd Class Definition
+/* @title: myDndBook
+ * @short_description: The myDndBook Class Definition
  * @include: my/my-dnd-book.h
  *
- * The #myBookDnd class is an extension of #GtkNotebook which let
- * detach its tabs. It implements #myIBookAttach and #myIBookDetach
+ * The #myDndBook class is an extension of #GtkNotebook which let
+ * detach its tabs. It implements #myIBookAttach and #myIDndDetach
  * interfaces.
  */
 
@@ -38,29 +38,29 @@
 
 G_BEGIN_DECLS
 
-#define MY_TYPE_BOOK_DND                ( my_book_dnd_get_type())
-#define MY_BOOK_DND( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, MY_TYPE_BOOK_DND, myBookDnd ))
-#define MY_BOOK_DND_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, MY_TYPE_BOOK_DND, myBookDndClass ))
-#define MY_IS_BOOK_DND( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, MY_TYPE_BOOK_DND ))
-#define MY_IS_BOOK_DND_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_BOOK_DND ))
-#define MY_BOOK_DND_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_BOOK_DND, myBookDndClass ))
+#define MY_TYPE_DND_BOOK                ( my_dnd_book_get_type())
+#define MY_DND_BOOK( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, MY_TYPE_DND_BOOK, myDndBook ))
+#define MY_DND_BOOK_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, MY_TYPE_DND_BOOK, myDndBookClass ))
+#define MY_IS_DND_BOOK( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, MY_TYPE_DND_BOOK ))
+#define MY_IS_DND_BOOK_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), MY_TYPE_DND_BOOK ))
+#define MY_DND_BOOK_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), MY_TYPE_DND_BOOK, myDndBookClass ))
 
 typedef struct {
 	/*< public members >*/
 	GtkNotebook      parent;
 }
-	myBookDnd;
+	myDndBook;
 
 typedef struct {
 	/*< public members >*/
 	GtkNotebookClass parent;
 }
-	myBookDndClass;
+	myDndBookClass;
 
-GType      my_book_dnd_get_type( void ) G_GNUC_CONST;
+GType      my_dnd_book_get_type( void ) G_GNUC_CONST;
 
-myBookDnd *my_book_dnd_new     ( void );
+myDndBook *my_dnd_book_new     ( void );
 
 G_END_DECLS
 
-#endif /* __MY_API_MY_BOOK_DND_H__ */
+#endif /* __MY_API_MY_DND_BOOK_H__ */

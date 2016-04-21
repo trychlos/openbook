@@ -25,13 +25,14 @@ include ../make.inc
 my_include_HEADERS = \
 	my.h												\
 	my-accel-group.h									\
-	my-book-dnd.h										\
 	my-char.h											\
 	my-date.h											\
 	my-date-combo.h										\
 	my-date-editable.h									\
 	my-date-renderer.h									\
 	my-decimal-combo.h									\
+	my-dnd-book.h										\
+	my-dnd-window.h										\
 	my-double.h											\
 	my-double-editable.h								\
 	my-double-renderer.h								\
@@ -39,16 +40,15 @@ my_include_HEADERS = \
 	my-file-monitor.h									\
 	my-iaction-map.h									\
 	my-iassistant.h										\
-	my-ibook-detach.h									\
 	my-icollectionable.h								\
 	my-icollector.h										\
 	my-idialog.h										\
+	my-idnd-detach.h									\
 	my-iident.h											\
 	my-igridlist.h										\
 	my-iprogress.h										\
 	my-isettings.h										\
 	my-iwindow.h										\
-	my-nomodal-window.h									\
 	my-progress-bar.h									\
 	my-settings.h										\
 	my-tab.h											\
