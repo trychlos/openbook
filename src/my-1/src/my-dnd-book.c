@@ -26,8 +26,10 @@
 #include <config.h>
 #endif
 
-#include <my-1/my/my-dnd-book.h>
-#include <my-1/my/my-idnd-detach.h>
+#include "my/my-dnd-book.h"
+#include "my/my-dnd-common.h"
+#include "my/my-dnd-window.h"
+#include "my/my-iwindow.h"
 
 /* private instance data
  */
@@ -36,17 +38,23 @@ typedef struct {
 
 	/* runtime data
 	 */
+	myDndWindow *drag_window;
 }
 	myDndBookPrivate;
 
-static void idnd_detach_iface_init( myIDndDetachInterface *iface );
-static void on_page_added( myDndBook *book, GtkWidget *child, guint page_num, void *empty );
-static void dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context );
-static void dnd_book_drag_end( GtkWidget *self, GdkDragContext *context );
+static GtkTargetEntry dnd_format[] = {
+	{ MY_DND_TARGET, 0, 0 },
+};
+
+static void     on_page_added( myDndBook *book, GtkWidget *child, guint page_num, void *empty );
+static void     dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context );
+static void     dnd_book_drag_data_get( GtkWidget *widget, GdkDragContext *context, GtkSelectionData *data, guint info, guint time );
+static gboolean dnd_book_drag_failed( GtkWidget *widget, GdkDragContext *context, GtkDragResult result );
+static void     dnd_book_drag_end( GtkWidget *self, GdkDragContext *context );
+static void     dnd_book_drag_data_delete( GtkWidget *widget, GdkDragContext *context );
 
 G_DEFINE_TYPE_EXTENDED( myDndBook, my_dnd_book, GTK_TYPE_NOTEBOOK, 0,
-		G_ADD_PRIVATE( myDndBook )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDND_DETACH, idnd_detach_iface_init ))
+		G_ADD_PRIVATE( myDndBook ))
 
 static void
 dnd_book_finalize( GObject *object )
@@ -98,6 +106,13 @@ my_dnd_book_init( myDndBook *self )
 	priv = my_dnd_book_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	priv->drag_window = NULL;
+
+	gtk_drag_source_set( GTK_WIDGET( self ),
+			GDK_BUTTON1_MASK, dnd_format, G_N_ELEMENTS( dnd_format ), GDK_ACTION_MOVE );
+
+	g_signal_connect( self, "page-added", G_CALLBACK( on_page_added ), NULL );
 }
 
 static void
@@ -110,19 +125,13 @@ my_dnd_book_class_init( myDndBookClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dnd_book_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dnd_book_finalize;
 
+	/* override all drag virtuals else GtkNotebook will handle them */
+	/* source side */
 	GTK_WIDGET_CLASS( klass )->drag_begin = dnd_book_drag_begin;
+	GTK_WIDGET_CLASS( klass )->drag_data_get = dnd_book_drag_data_get;
+	GTK_WIDGET_CLASS( klass )->drag_failed = dnd_book_drag_failed;
 	GTK_WIDGET_CLASS( klass )->drag_end = dnd_book_drag_end;
-}
-
-/*
- * myIDndDetach interface management
- */
-static void
-idnd_detach_iface_init( myIDndDetachInterface *iface )
-{
-	static const gchar *thisfn = "my_dnd_book_idnd_detach_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+	GTK_WIDGET_CLASS( klass )->drag_data_delete = dnd_book_drag_data_delete;
 }
 
 /**
@@ -138,43 +147,79 @@ my_dnd_book_new( void )
 
 	book = g_object_new( MY_TYPE_DND_BOOK, NULL );
 
-	g_signal_connect( book, "page-added", G_CALLBACK( on_page_added ), NULL );
-
 	return( book );
 }
 
 /*
- * We want intercept the 'button_press_event' signal when the user
- * clicks on the tab of the page.
- *
- * As the 'button_press_event' signal is connected to the page's tab,
- * there is nothing to do when the page is removed (because the page's
- * tab is destroyed).
+ * Make the page detacheable in order to take advantage of the GtkNotebook
+ * DnD initialization. But all handlers are only ours.
  */
 static void
 on_page_added( myDndBook *book, GtkWidget *child, guint page_num, void *empty )
 {
 	gtk_notebook_set_tab_detachable( GTK_NOTEBOOK( book ), child, TRUE );
-#if 0
-	GtkWidget *tab_label;
-
-	/* set the new page as a source for dnd */
-	tab_label = gtk_notebook_get_tab_label( GTK_NOTEBOOK( book ), child );
-	my_idnd_detach_set_source_widget( MY_IDND_DETACH( book ), child, tab_label );
-#endif
 }
 
 static void
 dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context )
 {
-	g_debug( "dnd_book_drag_begin: self=%p", self );
-	gint page_n = gtk_notebook_get_current_page( GTK_NOTEBOOK( self ));
-	GtkWidget *page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self ), page_n );
-	g_debug( "page_n=%d, page_w=%p (%s)", page_n, page_w, G_OBJECT_TYPE_NAME( page_w ));
+	myDndBookPrivate *priv;
+	gint page_n;
+	GtkWidget *page_w;
+
+	priv = my_dnd_book_get_instance_private( MY_DND_BOOK( self ));
+
+	page_n = gtk_notebook_get_current_page( GTK_NOTEBOOK( self ));
+	page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self ), page_n );
+	priv->drag_window = my_dnd_window_new( GTK_NOTEBOOK( self ), page_w );
+
+	gtk_drag_set_icon_widget( context, GTK_WIDGET( priv->drag_window ), 50, 50 );
+}
+
+/*
+ * useless here but defined to make sure GtkNotebook's one is not run
+ */
+static void
+dnd_book_drag_data_get( GtkWidget *widget, GdkDragContext *context, GtkSelectionData *data, guint info, guint time )
+{
+}
+
+static gboolean
+dnd_book_drag_failed( GtkWidget *widget, GdkDragContext *context, GtkDragResult result )
+{
+	myDndBookPrivate *priv;
+
+	priv = my_dnd_book_get_instance_private( MY_DND_BOOK( widget ));
+
+	//g_debug( "dnd_book_drag_failed" );
+
+	if( priv->drag_window ){
+		my_iwindow_close( MY_IWINDOW( priv->drag_window ));
+		priv->drag_window = NULL;
+	}
+
+	return( FALSE );
 }
 
 static void
 dnd_book_drag_end( GtkWidget *self, GdkDragContext *context )
 {
-	g_debug( "dnd_book_drag_end: self=%p", self );
+	myDndBookPrivate *priv;
+
+	priv = my_dnd_book_get_instance_private( MY_DND_BOOK( self ));
+
+	//g_debug( "dnd_book_drag_end" );
+
+	if( priv->drag_window ){
+		gtk_widget_show_all( GTK_WIDGET( priv->drag_window ));
+		priv->drag_window = NULL;
+	}
+}
+
+/*
+ * useless here but defined to make sure GtkNotebook's one is not run
+ */
+static void
+dnd_book_drag_data_delete( GtkWidget *widget, GdkDragContext *context )
+{
 }

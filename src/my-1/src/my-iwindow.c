@@ -44,6 +44,8 @@ static GList   *st_live_list            = NULL;		/* list of IWindow instances */
 typedef struct {
 	GtkWindow   *parent;
 	myISettings *settings;
+	gboolean     does_restore_pos;
+	gboolean     does_restore_size;
 	gboolean     initialized;
 	gboolean     hide_on_close;
 	gboolean     closed;
@@ -64,7 +66,7 @@ static gboolean   is_destroy_allowed( const myIWindow *instance );
 static gchar     *iwindow_get_identifier( const myIWindow *instance );
 static gchar     *get_default_identifier( const myIWindow *instance );
 static gchar     *iwindow_get_key_prefix( const myIWindow *instance );
-static void       iwindow_set_default_size( myIWindow *instance );
+static void       iwindow_set_default_size( myIWindow *instance, sIWindow *sdata );
 static void       iwindow_set_transient_for( myIWindow *instance );
 static void       position_restore( myIWindow *instance, sIWindow *sdata );
 static void       position_save( myIWindow *instance, sIWindow *sdata );
@@ -234,6 +236,48 @@ my_iwindow_set_parent( myIWindow *instance, GtkWindow *parent )
 
 	sdata = get_iwindow_data( instance );
 	sdata->parent = parent;
+}
+
+/**
+ * my_iwindow_set_restore_pos:
+ * @instance: this #myIWindow instance.
+ * @restore_pos: whether the @instance should try to restore its
+ * position (and thus save position at end).
+ *
+ * Sets the restore-position flag.
+ *
+ * Use case: the size of the @instance window is set by the application
+ * oof may be restored from a configuration file, while its position is
+ * managged at runtime by e.g. the mouse pointer.
+ */
+void
+my_iwindow_set_restore_pos( myIWindow *instance, gboolean restore_pos )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_iwindow_data( instance );
+	sdata->does_restore_pos = restore_pos;
+}
+
+/**
+ * my_iwindow_set_restore_size:
+ * @instance: this #myIWindow instance.
+ * @restore_size: whether the @instance should try to restore its
+ * size (and thus save size at end).
+ *
+ * Sets the restore-size flag.
+ */
+void
+my_iwindow_set_restore_size( myIWindow *instance, gboolean restore_size )
+{
+	sIWindow *sdata;
+
+	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
+
+	sdata = get_iwindow_data( instance );
+	sdata->does_restore_size = restore_size;
 }
 
 /**
@@ -677,15 +721,19 @@ iwindow_get_key_prefix( const myIWindow *instance )
  * This is only used when no record is found in user settings.
  */
 static void
-iwindow_set_default_size( myIWindow *instance )
+iwindow_set_default_size( myIWindow *instance, sIWindow *sdata )
 {
 	static const gchar *thisfn = "my_iwindow_set_default_size";
-	guint x, y, cx, cy;
+	gint x, y, cx, cy;
 
 	if( MY_IWINDOW_GET_INTERFACE( instance )->get_default_size ){
 		MY_IWINDOW_GET_INTERFACE( instance )->get_default_size( instance, &x, &y, &cx, &cy );
-		gtk_window_move( GTK_WINDOW( instance ), x, y );
-		gtk_window_resize( GTK_WINDOW( instance ), cx, cy );
+		if( sdata->does_restore_pos ){
+			gtk_window_move( GTK_WINDOW( instance ), x, y );
+		}
+		if( sdata->does_restore_size ){
+			gtk_window_resize( GTK_WINDOW( instance ), cx, cy );
+		}
 
 	} else {
 		g_info( "%s: myIWindow's %s implementation does not provide 'get_default_size()' method",
@@ -740,16 +788,23 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 {
 	gchar *key_prefix;
 
-	key_prefix = iwindow_get_key_prefix( instance );
+	if( sdata->settings ){
+		key_prefix = iwindow_get_key_prefix( instance );
 
-	if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
+		if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
+			g_free( key_prefix );
+			key_prefix = get_default_identifier( instance );
+		}
+		if( sdata->does_restore_pos || sdata->does_restore_size ){
+			if( !my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
+				iwindow_set_default_size( instance, sdata );
+			}
+		}
 		g_free( key_prefix );
-		key_prefix = get_default_identifier( instance );
+
+	} else {
+		iwindow_set_default_size( instance, sdata );
 	}
-	if( !my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
-		iwindow_set_default_size( instance );
-	}
-	g_free( key_prefix );
 }
 
 static void
@@ -757,13 +812,15 @@ position_save( myIWindow *instance, sIWindow *sdata )
 {
 	gchar *key_prefix, *default_key;
 
-	key_prefix = iwindow_get_key_prefix( instance );
-	my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, key_prefix );
-	g_free( key_prefix );
+	if( sdata->settings ){
+		key_prefix = iwindow_get_key_prefix( instance );
+		my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, key_prefix );
+		g_free( key_prefix );
 
-	default_key = get_default_identifier( instance );
-	if( !my_utils_window_position_get_has_pos( sdata->settings, default_key )){
-		my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, default_key );
+		default_key = get_default_identifier( instance );
+		if( !my_utils_window_position_get_has_pos( sdata->settings, default_key )){
+			my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, default_key );
+		}
 	}
 }
 
@@ -780,6 +837,8 @@ get_iwindow_data( const myIWindow *instance )
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_iwindow_finalized, sdata );
 
 		sdata->parent = NULL;
+		sdata->does_restore_pos = TRUE;
+		sdata->does_restore_size = TRUE;
 		sdata->initialized = FALSE;
 		sdata->hide_on_close = FALSE;
 	}

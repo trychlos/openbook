@@ -26,28 +26,48 @@
 #include <config.h>
 #endif
 
+#include "my/my-dnd-common.h"
+#include "my/my-dnd-window.h"
 #include "my/my-iwindow.h"
-#include <my-1/my/my-dnd-window.h>
+#include "my/my-tab.h"
 #include "my/my-utils.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean    dispose_has_run;
+	gboolean   dispose_has_run;
+
+	GtkNotebook *source_book;
+	gchar       *title;
+	GtkWidget   *top_widget;
 }
 	myDndWindowPrivate;
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy );
+static GtkTargetEntry dnd_format[] = {
+	{ MY_DND_TARGET, 0, 0 },
+};
+
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static gchar   *iwindow_get_identifier( const myIWindow *instance );
+static void     iwindow_init( myIWindow *instance );
+static void     iwindow_get_default_size( myIWindow *instance, gint *x, gint *y, gint *cx, gint *cy );
+static void     set_title( myDndWindow *self, const gchar *title );
+static void     set_content( myDndWindow *self );
+static gboolean dnd_window_drag_motion( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time );
+static void     dnd_window_drag_leave( GtkWidget *widget, GdkDragContext *context, guint time );
+static gboolean on_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, void *empty );
+static gboolean dnd_window_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time );
+static void     dnd_window_drag_data_received( GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *data, guint info, guint time );
 
 G_DEFINE_TYPE_EXTENDED( myDndWindow, my_dnd_window, GTK_TYPE_WINDOW, 0,
-		G_ADD_PRIVATE( myDndWindow ) \
+		G_ADD_PRIVATE( myDndWindow )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
 nomodal_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_dnd_window_finalize";
+	myDndWindowPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -55,6 +75,9 @@ nomodal_page_finalize( GObject *instance )
 	g_return_if_fail( instance && MY_IS_DND_WINDOW( instance ));
 
 	/* free data members here */
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
+
+	g_free( priv->title );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_dnd_window_parent_class )->finalize( instance );
@@ -105,27 +128,56 @@ my_dnd_window_class_init( myDndWindowClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = nomodal_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = nomodal_page_finalize;
+
+	GTK_WIDGET_CLASS( klass )->drag_motion = dnd_window_drag_motion;
+	GTK_WIDGET_CLASS( klass )->drag_leave = dnd_window_drag_leave;
+	GTK_WIDGET_CLASS( klass )->drag_drop = dnd_window_drag_drop;
+	GTK_WIDGET_CLASS( klass )->drag_data_received = dnd_window_drag_data_received;
 }
 
 /**
  * my_dnd_window_new:
- * @source: a #GtkWindow source window.
+ * @book: the source #GtkNotebook.
+ * @page: the being-dragged page.
  *
  * Creates a #myDndWindow non-modal window.
  * Configure it as DnD target.
  */
 myDndWindow *
-my_dnd_window_new( GtkWindow *source )
+my_dnd_window_new( GtkNotebook *book, GtkWidget *page )
 {
 	myDndWindow *window;
+	myDndWindowPrivate *priv;
 	GtkWindow *parent;
+	GtkWidget *tab;
 
-	g_return_val_if_fail( source && GTK_IS_WINDOW( source ), NULL );
-
-	parent = ( GtkWindow * ) gtk_widget_get_toplevel( GTK_WIDGET( source ));
+	g_return_val_if_fail( book && GTK_IS_NOTEBOOK( book ), NULL );
+	g_return_val_if_fail( page && GTK_IS_WIDGET( page ), NULL );
 
 	window = g_object_new( MY_TYPE_DND_WINDOW, NULL );
+
+	priv = my_dnd_window_get_instance_private( window );
+
+	parent = ( GtkWindow * ) gtk_widget_get_toplevel( GTK_WIDGET( book ));
 	my_iwindow_set_parent( MY_IWINDOW( window ), parent );
+
+	my_iwindow_set_restore_pos( MY_IWINDOW( window ), FALSE );
+
+	tab = gtk_notebook_get_tab_label( book, page );
+	if( MY_IS_TAB( tab )){
+		set_title( window, my_tab_get_label( MY_TAB( tab )));
+	} else {
+		set_title( window, gtk_notebook_get_tab_label_text( book, page ));
+	}
+
+	priv->source_book = book;
+	priv->top_widget = page;
+
+	my_iwindow_init( MY_IWINDOW( window ));
+
+	gtk_drag_dest_set( GTK_WIDGET( window ), 0, dnd_format, G_N_ELEMENTS( dnd_format ), GDK_ACTION_MOVE );
+
+	g_signal_connect( window, "drag-drop", G_CALLBACK( on_drag_drop ), NULL );
 
 	return( window );
 }
@@ -140,18 +192,45 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->get_identifier = iwindow_get_identifier;
+	iface->init = iwindow_init;
 	iface->get_default_size = iwindow_get_default_size;
 }
 
+static gchar *
+iwindow_get_identifier( const myIWindow *instance )
+{
+	myDndWindowPrivate *priv;
+	const gchar *cstr;
+
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
+
+	cstr = G_OBJECT_TYPE_NAME( priv->top_widget );
+
+	return( g_strdup( cstr ));
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	myDndWindowPrivate *priv;
+
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
+
+	gtk_window_set_title( GTK_WINDOW( instance ), priv->title );
+	gtk_window_set_resizable( GTK_WINDOW( instance ), TRUE );
+	gtk_window_set_modal( GTK_WINDOW( instance ), FALSE );
+}
+
 /*
- * we set the default size and position to those of the main window
+ * we set the default size and position to 75% of those of the main window
  * so that we are sure they are suitable for the page
  */
 static void
-iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy )
+iwindow_get_default_size( myIWindow *instance, gint *x, gint *y, gint *cx, gint *cy )
 {
 	GtkWindow *parent;
-	gint mw_x, mw_y, mw_width, mw_height;
+	gint mw_width, mw_height;
 
 	*x = 0;
 	*y = 0;
@@ -159,11 +238,92 @@ iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, gu
 	*cy = 0;
 	parent = my_iwindow_get_parent( instance );
 	if( parent && GTK_IS_WINDOW( parent )){
-		gtk_window_get_position( parent, &mw_x, &mw_y );
 		gtk_window_get_size( parent, &mw_width, &mw_height );
-		*x = mw_x + 100;
-		*y = mw_y + 100;
-		*cx = mw_width - 150;
-		*cy = mw_height - 150;
+		*cx = mw_width * 3/4;
+		*cy = mw_height * 3/4;
 	}
+}
+
+static void
+set_title( myDndWindow *self, const gchar *title )
+{
+	myDndWindowPrivate *priv;
+
+	priv = my_dnd_window_get_instance_private( self );
+
+	g_free( priv->title );
+	priv->title = g_strdup( title );
+}
+
+static void
+set_content( myDndWindow *self )
+{
+	myDndWindowPrivate *priv;
+	gint page_n;
+
+	priv = my_dnd_window_get_instance_private( self );
+
+	g_object_ref( priv->top_widget );
+	page_n = gtk_notebook_page_num( priv->source_book, priv->top_widget );
+	gtk_notebook_remove_page( priv->source_book, page_n );
+	gtk_container_add( GTK_CONTAINER( self ), priv->top_widget );
+	g_object_unref( priv->top_widget );
+}
+
+static gboolean
+dnd_window_drag_motion( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time )
+{
+	GdkAtom op_target, expected_target;
+
+	op_target = gtk_drag_dest_find_target( widget, context, NULL );
+	expected_target = gdk_atom_intern_static_string( MY_DND_TARGET );
+
+	if( op_target != expected_target ){
+		//g_debug( "dnd_window_drag_motion: False" );
+		return( FALSE );
+	}
+
+	//g_debug( "dnd_window_drag_motion: True" );
+
+	gdk_drag_status( context, GDK_ACTION_MOVE, time );
+
+	return( TRUE );
+}
+
+static void
+dnd_window_drag_leave( GtkWidget *widget, GdkDragContext *context, guint time )
+{
+	//g_debug( "dnd_window_drag_leave" );
+
+	/* this is needed in order the 'drag-drop' signal be emitted */
+	my_iwindow_present( MY_IWINDOW( widget ));
+}
+
+static gboolean
+on_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, void *empty )
+{
+	//g_debug( "on_drag_drop" );
+
+	set_content( MY_DND_WINDOW( widget ));
+
+	return( TRUE );
+}
+
+/*
+ * useless here but defined to make sure GtkNotebook's one is not run
+ */
+static gboolean
+dnd_window_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time )
+{
+	//g_debug( "dnd_window_drag_drop" );
+
+	return( TRUE );
+}
+
+/*
+ * useless here but defined to make sure GtkNotebook's one is not run
+ */
+static void
+dnd_window_drag_data_received( GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *data, guint info, guint time )
+{
 }

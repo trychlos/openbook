@@ -53,7 +53,7 @@ static GList *st_list                   = NULL;
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
 static void      iwindow_init( myIWindow *instance );
-static void      iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy );
+static void      iwindow_get_default_size( myIWindow *instance, gint *x, gint *y, gint *cx, gint *cy );
 static void      on_finalized_page( void *empty, GObject *finalized_page );
 
 G_DEFINE_TYPE_EXTENDED( ofaNomodalPage, ofa_nomodal_page, GTK_TYPE_WINDOW, 0,
@@ -216,7 +216,7 @@ iwindow_init( myIWindow *instance )
  * so that we are sure they are suitable for the page
  */
 static void
-iwindow_get_default_size( myIWindow *instance, guint *x, guint *y, guint *cx, guint *cy )
+iwindow_get_default_size( myIWindow *instance, gint *x, gint *y, gint *cx, gint *cy )
 {
 	GtkWindow *parent;
 	gint mw_x, mw_y, mw_width, mw_height;

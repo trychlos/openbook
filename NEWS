@@ -47,7 +47,6 @@
 
    - myDndWindow: new class which acts as a DnD source/target.
    - myBookDnd: class is renamed to myDndBook.
-   - myIBookDetach: interface is renamed to myIDndDetach.
    - ofa_hub_dossier_is_writable(): new method.
 
 -----------------------------------------------------------------------

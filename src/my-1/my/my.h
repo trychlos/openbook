@@ -31,6 +31,9 @@
 #include <my/my-date-editable.h>
 #include <my/my-date-renderer.h>
 #include <my/my-decimal-combo.h>
+#include <my/my-dnd-book.h>
+#include <my/my-dnd-common.h>
+#include <my/my-dnd-window.h>
 #include <my/my-double.h>
 #include <my/my-double-editable.h>
 #include <my/my-double-renderer.h>
@@ -52,8 +55,5 @@
 #include <my/my-thousand-combo.h>
 #include <my/my-timeout.h>
 #include <my/my-utils.h>
-#include <my-1/my/my-dnd-book.h>
-#include <my-1/my/my-dnd-window.h>
-#include <my-1/my/my-idnd-detach.h>
 
 #endif /* __MY_API_MY_H__ */

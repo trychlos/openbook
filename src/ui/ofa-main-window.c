@@ -1738,7 +1738,6 @@ on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWi
 	g_debug( "%s: book=%p, page_w=%p, page_num=%u, main_window=%p",
 			thisfn, ( void * ) book, ( void * ) page_w, page_num, ( void * ) main_window );
 
-
 	g_signal_emit_by_name( page_w, "page-removed", page_w, page_num );
 }
 

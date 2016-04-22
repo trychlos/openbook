@@ -32,6 +32,7 @@ my_include_HEADERS = \
 	my-date-renderer.h									\
 	my-decimal-combo.h									\
 	my-dnd-book.h										\
+	my-dnd-common.h										\
 	my-dnd-window.h										\
 	my-double.h											\
 	my-double-editable.h								\
@@ -43,7 +44,6 @@ my_include_HEADERS = \
 	my-icollectionable.h								\
 	my-icollector.h										\
 	my-idialog.h										\
-	my-idnd-detach.h									\
 	my-iident.h											\
 	my-igridlist.h										\
 	my-iprogress.h										\

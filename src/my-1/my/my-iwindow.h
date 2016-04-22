@@ -164,10 +164,10 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	void     ( *get_default_size )     ( myIWindow *instance,
-												guint *x,
-												guint *y,
-												guint *cx,
-												guint *cy );
+												gint *x,
+												gint *y,
+												gint *cx,
+												gint *cy );
 
 	/**
 	 * quit_on_escape:
@@ -258,6 +258,12 @@ void         my_iwindow_set_settings              ( myIWindow *instance,
 														myISettings *settings );
 
 gchar       *my_iwindow_get_keyname               ( const myIWindow *instance );
+
+void         my_iwindow_set_restore_pos           ( myIWindow *instance,
+														gboolean restore_pos );
+
+void         my_iwindow_set_restore_size          ( myIWindow *instance,
+														gboolean restore_size );
 
 void         my_iwindow_set_hide_on_close         ( myIWindow *instance,
 														gboolean hide_on_close );
