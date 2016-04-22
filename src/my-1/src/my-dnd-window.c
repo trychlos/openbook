@@ -117,6 +117,10 @@ my_dnd_window_init( myDndWindow *self )
 	priv = my_dnd_window_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	gtk_drag_dest_set( GTK_WIDGET( self ), 0, dnd_format, G_N_ELEMENTS( dnd_format ), GDK_ACTION_MOVE );
+
+	g_signal_connect( self, "drag-drop", G_CALLBACK( on_drag_drop ), NULL );
 }
 
 static void
@@ -174,10 +178,6 @@ my_dnd_window_new( GtkNotebook *book, GtkWidget *page )
 	priv->top_widget = page;
 
 	my_iwindow_init( MY_IWINDOW( window ));
-
-	gtk_drag_dest_set( GTK_WIDGET( window ), 0, dnd_format, G_N_ELEMENTS( dnd_format ), GDK_ACTION_MOVE );
-
-	g_signal_connect( window, "drag-drop", G_CALLBACK( on_drag_drop ), NULL );
 
 	return( window );
 }
