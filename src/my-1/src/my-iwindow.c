@@ -483,7 +483,8 @@ my_iwindow_present( myIWindow *instance )
 	gchar *instance_id, *other_id;
 	gint cmp;
 
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s), st_live_list_count=%d",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), g_list_length( st_live_list ));
 
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
@@ -491,6 +492,7 @@ my_iwindow_present( myIWindow *instance )
 	instance_id = iwindow_get_identifier( instance );
 
 	for( it=st_live_list ; it ; it=it->next ){
+		//g_debug( "it->data=%p", it->data );
 		other = MY_IWINDOW( it->data );
 		if( other == instance ){
 			continue;

@@ -48,6 +48,7 @@
    - myDndWindow: new class which acts as a DnD source/target.
    - myBookDnd: class is renamed to myDndBook.
    - ofa_hub_dossier_is_writable(): new method.
+   - ofaNomodalPage: replaced by myDndWindow.
 
 -----------------------------------------------------------------------
  Version 0.55

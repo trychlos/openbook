@@ -33,6 +33,7 @@
 #include "my/my-accel-group.h"
 #include "my/my-date.h"
 #include "my/my-dnd-book.h"
+#include "my/my-dnd-window.h"
 #include "my/my-iaction-map.h"
 #include "my/my-iwindow.h"
 #include "my/my-tab.h"
@@ -72,7 +73,6 @@
 #include "ui/ofa-ledger-page.h"
 #include "ui/ofa-ledger-summary-render.h"
 #include "ui/ofa-main-window.h"
-#include "ui/ofa-nomodal-page.h"
 #include "ui/ofa-ope-template-page.h"
 #include "ui/ofa-period-close.h"
 #include "ui/ofa-rate-page.h"
@@ -298,7 +298,6 @@ static void                  notebook_activate_page( const ofaMainWindow *window
 static gboolean              notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
 static void                  on_tab_close_clicked( myTab *tab, ofaPage *page );
 static void                  do_close( ofaPage *page );
-static void                  on_tab_pin_clicked( myTab *tab, ofaPage *page );
 static void                  on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *self );
 static void                  close_all_pages( ofaMainWindow *self );
 static void                  igetter_iface_init( ofaIGetterInterface *iface );
@@ -1604,8 +1603,11 @@ notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sTheme
 
 	/* the tab widget */
 	tab = my_tab_new( NULL, gettext( def->label ));
+
+	my_tab_set_show_close( tab, TRUE );
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
-	g_signal_connect( tab, MY_SIGNAL_TAB_PIN_CLICKED, G_CALLBACK( on_tab_pin_clicked ), page );
+
+	my_tab_set_show_detach( tab, FALSE );
 
 	/* the menu widget */
 	label = gtk_label_new( gettext( def->label ));
@@ -1703,29 +1705,6 @@ do_close( ofaPage *page )
 	gtk_notebook_remove_page( book, page_num );
 }
 
-static void
-on_tab_pin_clicked( myTab *tab, ofaPage *page )
-{
-	static const gchar *thisfn = "ofa_main_window_on_tab_pin_clicked";
-	gchar *title, *title2;
-	GtkWindow *toplevel;
-
-	g_debug( "%s: tab=%p, page=%p", thisfn, ( void * ) tab, ( void * ) page );
-
-	title = my_tab_get_label( tab );
-	title2 = my_utils_str_remove_underlines( title );
-
-	g_free( title );
-	g_object_ref( G_OBJECT( page ));
-
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
-	do_close( page );
-	ofa_nomodal_page_run( OFA_IGETTER( page ), toplevel, title2, GTK_WIDGET( page ));
-
-	g_free( title2 );
-	g_object_unref( G_OBJECT( page ));
-}
-
 /*
  * signal handler triggered when a page is removed from the main notebook
  * the same signal is proxied to the ofaPage
@@ -1753,7 +1732,7 @@ close_all_pages( ofaMainWindow *main_window )
 			gtk_notebook_remove_page( book, count-1 );
 		}
 	}
-	ofa_nomodal_page_close_all();
+	my_dnd_window_close_all();
 }
 
 /*
@@ -1863,7 +1842,7 @@ itheme_manager_activate( ofaIThemeManager *instance, GType type )
 
 	theme_def = theme_get_by_type( &priv->themes, type );
 
-	if( !ofa_nomodal_page_present_by_type( type )){
+	if( !my_dnd_window_present_by_type( type )){
 		page = notebook_get_page( OFA_MAIN_WINDOW( instance ), book, theme_def );
 		if( !page ){
 			page = notebook_create_page( OFA_MAIN_WINDOW( instance ), book, theme_def );

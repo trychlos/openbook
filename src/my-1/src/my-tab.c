@@ -312,3 +312,53 @@ my_tab_get_label( const myTab *tab )
 
 	return( g_strdup( priv->label ));
 }
+
+/**
+ * my_tab_set_show_close:
+ * @tab:: this #myTab instance.
+ * @show: whether the 'Close' button is visible.
+ *
+ * Hide or show the 'Close' button.
+ */
+void
+my_tab_set_show_close( myTab *tab, gboolean show )
+{
+	myTabPrivate *priv;
+
+	g_return_if_fail( tab && MY_IS_TAB( tab ));
+
+	priv = my_tab_get_instance_private( tab );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( show ){
+		gtk_widget_show( priv->close_btn );
+	} else {
+		gtk_widget_hide( priv->close_btn );
+	}
+}
+
+/**
+ * my_tab_set_show_detach:
+ * @tab:: this #myTab instance.
+ * @show: whether the 'Detach' button is visible.
+ *
+ * Hide or show the 'Detach' button.
+ */
+void
+my_tab_set_show_detach( myTab *tab, gboolean show )
+{
+	myTabPrivate *priv;
+
+	g_return_if_fail( tab && MY_IS_TAB( tab ));
+
+	priv = my_tab_get_instance_private( tab );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( show ){
+		gtk_widget_show( priv->pin_btn );
+	} else {
+		gtk_widget_hide( priv->pin_btn );
+	}
+}

@@ -186,8 +186,6 @@ openbook_SOURCES = \
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-main-window-def.h								\
-	ofa-nomodal-page.c									\
-	ofa-nomodal-page.h									\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
 	ofa-period-close.c									\

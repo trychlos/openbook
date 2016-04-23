@@ -34,15 +34,13 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean     dispose_has_run;
 
-	/* runtime data
-	 */
-	myDndWindow *drag_window;
+	myDndWindow *drag_window;			/* while detaching a page to a myDndWindow */
 }
 	myDndBookPrivate;
 
-static GtkTargetEntry dnd_format[] = {
+static const GtkTargetEntry st_dnd_format[] = {
 	{ MY_DND_TARGET, 0, 0 },
 };
 
@@ -110,7 +108,7 @@ my_dnd_book_init( myDndBook *self )
 	priv->drag_window = NULL;
 
 	gtk_drag_source_set( GTK_WIDGET( self ),
-			GDK_BUTTON1_MASK, dnd_format, G_N_ELEMENTS( dnd_format ), GDK_ACTION_MOVE );
+			GDK_BUTTON1_MASK, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
 
 	g_signal_connect( self, "page-added", G_CALLBACK( on_page_added ), NULL );
 }
@@ -173,7 +171,9 @@ dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context )
 	page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self ), page_n );
 	priv->drag_window = my_dnd_window_new( GTK_NOTEBOOK( self ), page_w );
 
+	//g_debug( "dnd_book_drag_begin: ref_count=%d", G_OBJECT( priv->drag_window )->ref_count );
 	gtk_drag_set_icon_widget( context, GTK_WIDGET( priv->drag_window ), 50, 50 );
+	//g_debug( "dnd_book_drag_begin: ref_count=%d", G_OBJECT( priv->drag_window )->ref_count );
 }
 
 /*
@@ -211,6 +211,7 @@ dnd_book_drag_end( GtkWidget *self, GdkDragContext *context )
 	//g_debug( "dnd_book_drag_end" );
 
 	if( priv->drag_window ){
+		//g_debug( "dnd_book_drag_end: ref_count=%d", G_OBJECT( priv->drag_window )->ref_count );
 		gtk_widget_show_all( GTK_WIDGET( priv->drag_window ));
 		priv->drag_window = NULL;
 	}
@@ -223,3 +224,35 @@ static void
 dnd_book_drag_data_delete( GtkWidget *widget, GdkDragContext *context )
 {
 }
+
+/**
+ * my_dnd_book_detach_current_page:
+ * @book: this #myDndBook instance.
+ *
+ * Detach the current page.
+ *
+ * Returns: a reference to the detached page, which should be
+ * #g_object_unref() by the caller after having added it to a
+ * #GtkContainer.
+ */
+GtkWidget *
+my_dnd_book_detach_current_page( myDndBook *book )
+{
+	myDndBookPrivate *priv;
+	gint page_n;
+	GtkWidget *page_w;
+
+	g_return_val_if_fail( book && MY_IS_DND_BOOK( book ), NULL );
+
+	priv = my_dnd_book_get_instance_private( book );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	page_n = gtk_notebook_get_current_page( GTK_NOTEBOOK( book ));
+	page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( book ), page_n );
+	g_object_ref( page_w );
+	gtk_notebook_remove_page( GTK_NOTEBOOK( book ), page_n );
+
+	return( page_w );
+}
+

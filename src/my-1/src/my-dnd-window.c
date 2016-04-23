@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "my/my-dnd-book.h"
 #include "my/my-dnd-common.h"
 #include "my/my-dnd-window.h"
 #include "my/my-iwindow.h"
@@ -39,11 +40,13 @@ typedef struct {
 
 	GtkNotebook *source_book;
 	gchar       *title;
-	GtkWidget   *top_widget;
+	gchar       *class_name;
 }
 	myDndWindowPrivate;
 
-static GtkTargetEntry dnd_format[] = {
+static GList *st_list                       = NULL;
+
+static const GtkTargetEntry st_dnd_format[] = {
 	{ MY_DND_TARGET, 0, 0 },
 };
 
@@ -64,13 +67,13 @@ G_DEFINE_TYPE_EXTENDED( myDndWindow, my_dnd_window, GTK_TYPE_WINDOW, 0,
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init ))
 
 static void
-nomodal_page_finalize( GObject *instance )
+dnd_window_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_dnd_window_finalize";
 	myDndWindowPrivate *priv;
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s), st_list_count=%d",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), g_list_length( st_list ));
 
 	g_return_if_fail( instance && MY_IS_DND_WINDOW( instance ));
 
@@ -78,13 +81,14 @@ nomodal_page_finalize( GObject *instance )
 	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
 
 	g_free( priv->title );
+	g_free( priv->class_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_dnd_window_parent_class )->finalize( instance );
 }
 
 static void
-nomodal_page_dispose( GObject *instance )
+dnd_window_dispose( GObject *instance )
 {
 	myDndWindowPrivate *priv;
 
@@ -97,6 +101,8 @@ nomodal_page_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		st_list = g_list_remove( st_list, instance );
 	}
 
 	/* chain up to the parent class */
@@ -109,8 +115,8 @@ my_dnd_window_init( myDndWindow *self )
 	static const gchar *thisfn = "my_dnd_window_init";
 	myDndWindowPrivate *priv;
 
-	g_debug( "%s: self=%p (%s)",
-			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+	g_debug( "%s: self=%p (%s), st_list_count=%d",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ), g_list_length( st_list ));
 
 	g_return_if_fail( self && MY_IS_DND_WINDOW( self ));
 
@@ -118,9 +124,11 @@ my_dnd_window_init( myDndWindow *self )
 
 	priv->dispose_has_run = FALSE;
 
-	gtk_drag_dest_set( GTK_WIDGET( self ), 0, dnd_format, G_N_ELEMENTS( dnd_format ), GDK_ACTION_MOVE );
+	gtk_drag_dest_set( GTK_WIDGET( self ), 0, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
 
 	g_signal_connect( self, "drag-drop", G_CALLBACK( on_drag_drop ), NULL );
+
+	st_list = g_list_prepend( st_list, self );
 }
 
 static void
@@ -130,8 +138,8 @@ my_dnd_window_class_init( myDndWindowClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = nomodal_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = nomodal_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = dnd_window_dispose;
+	G_OBJECT_CLASS( klass )->finalize = dnd_window_finalize;
 
 	GTK_WIDGET_CLASS( klass )->drag_motion = dnd_window_drag_motion;
 	GTK_WIDGET_CLASS( klass )->drag_leave = dnd_window_drag_leave;
@@ -175,7 +183,7 @@ my_dnd_window_new( GtkNotebook *book, GtkWidget *page )
 	}
 
 	priv->source_book = book;
-	priv->top_widget = page;
+	priv->class_name = g_strdup( G_OBJECT_TYPE_NAME( page ));
 
 	my_iwindow_init( MY_IWINDOW( window ));
 
@@ -201,13 +209,12 @@ static gchar *
 iwindow_get_identifier( const myIWindow *instance )
 {
 	myDndWindowPrivate *priv;
-	const gchar *cstr;
 
 	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
 
-	cstr = G_OBJECT_TYPE_NAME( priv->top_widget );
+	//g_debug( "iwindow_get_identifier: instance=%p, id=%s", instance, priv->class_name );
 
-	return( g_strdup( cstr ));
+	return( g_strdup( priv->class_name ));
 }
 
 static void
@@ -259,15 +266,62 @@ static void
 set_content( myDndWindow *self )
 {
 	myDndWindowPrivate *priv;
-	gint page_n;
+	GtkWidget *page_w;
 
 	priv = my_dnd_window_get_instance_private( self );
 
-	g_object_ref( priv->top_widget );
-	page_n = gtk_notebook_page_num( priv->source_book, priv->top_widget );
-	gtk_notebook_remove_page( priv->source_book, page_n );
-	gtk_container_add( GTK_CONTAINER( self ), priv->top_widget );
-	g_object_unref( priv->top_widget );
+	page_w = my_dnd_book_detach_current_page( MY_DND_BOOK( priv->source_book ));
+	gtk_container_add( GTK_CONTAINER( self ), page_w );
+	g_object_unref( page_w );
+}
+
+/**
+ * my_dnd_window_present_by_type:
+ * @type: the GType of the searched page.
+ *
+ * Returns: %TRUE if the page has been found.
+ */
+gboolean
+my_dnd_window_present_by_type( GType type )
+{
+	static const gchar *thisfn = "my_dnd_window_present_by_type";
+	myDndWindow *window;
+	myDndWindowPrivate *priv;
+	GList *it;
+	const gchar *ctype_name;
+
+	ctype_name = g_type_name( type );
+
+	g_debug( "%s: type=%lu, class_name=%s", thisfn, type, ctype_name );
+
+	for( it=st_list ; it ; it=it->next ){
+		window = MY_DND_WINDOW( it->data );
+		priv = my_dnd_window_get_instance_private( window );
+		if( !my_collate( priv->class_name, ctype_name )){
+			g_debug( "%s: found window=%p", thisfn, ( void * ) window );
+			my_iwindow_present( MY_IWINDOW( window ));
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
+ * my_dnd_window_close_all:
+ *
+ * Close all opened pages.
+ */
+void
+my_dnd_window_close_all( void )
+{
+	static const gchar *thisfn = "my_dnd_window_close_all";
+
+	g_debug( "%s:", thisfn );
+
+	while( st_list ){
+		gtk_widget_destroy( GTK_WIDGET( st_list->data ));
+	}
 }
 
 static gboolean
@@ -305,6 +359,7 @@ on_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint 
 	//g_debug( "on_drag_drop" );
 
 	set_content( MY_DND_WINDOW( widget ));
+	gtk_drag_finish( context, TRUE, FALSE, time );
 
 	return( TRUE );
 }

@@ -57,9 +57,11 @@ typedef struct {
 }
 	myDndBookClass;
 
-GType      my_dnd_book_get_type( void ) G_GNUC_CONST;
+GType      my_dnd_book_get_type           ( void ) G_GNUC_CONST;
 
-myDndBook *my_dnd_book_new     ( void );
+myDndBook *my_dnd_book_new                ( void );
+
+GtkWidget *my_dnd_book_detach_current_page( myDndBook *book );
 
 G_END_DECLS
 

@@ -56,10 +56,14 @@ typedef struct {
 }
 	myDndWindowClass;
 
-GType        my_dnd_window_get_type( void ) G_GNUC_CONST;
+GType        my_dnd_window_get_type       ( void ) G_GNUC_CONST;
 
-myDndWindow *my_dnd_window_new     ( GtkNotebook *book,
-										GtkWidget *page );
+myDndWindow *my_dnd_window_new            ( GtkNotebook *book,
+												GtkWidget *page );
+
+gboolean     my_dnd_window_present_by_type( GType type );
+
+void         my_dnd_window_close_all      ( void );
 
 G_END_DECLS
 
