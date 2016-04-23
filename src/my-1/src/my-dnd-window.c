@@ -353,13 +353,27 @@ dnd_window_drag_leave( GtkWidget *widget, GdkDragContext *context, guint time )
 	my_iwindow_present( MY_IWINDOW( widget ));
 }
 
+/*
+ * @x, @y: coordinates relative to the top-left corner of the destination
+ *  window.
+ */
 static gboolean
 on_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, void *empty )
 {
-	//g_debug( "on_drag_drop" );
+	static const gchar *thisfn = "my_dnd_window_on_drag_drop";
+	gint pos_x, pos_y;
+
+	gtk_window_get_position( GTK_WINDOW( widget ), &pos_x, &pos_y );
+
+	g_debug( "%s: widget=%p, context=%p, x=%d, y=%d, pos_x=%d, pos_y=%d",
+			thisfn, ( void * ) widget, ( void * ) context, x, y, pos_x, pos_y );
 
 	set_content( MY_DND_WINDOW( widget ));
 	gtk_drag_finish( context, TRUE, FALSE, time );
+
+	g_debug( "moving to x=%d, y=%d", x+pos_x, y+pos_y );
+	gtk_window_move( GTK_WINDOW( widget ), x+pos_x, y+pos_y );
+	g_debug( "end of move" );
 
 	return( TRUE );
 }

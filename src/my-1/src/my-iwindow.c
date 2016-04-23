@@ -42,7 +42,8 @@ static GList   *st_live_list            = NULL;		/* list of IWindow instances */
 /* a data structure attached to each instance
  */
 typedef struct {
-	GtkWindow   *parent;
+	GtkWindow   *parent;				/* the set parent of the window */
+	GtkWindow   *computed_parent;		/* the computed parent */
 	myISettings *settings;
 	gboolean     does_restore_pos;
 	gboolean     does_restore_size;
@@ -55,23 +56,22 @@ typedef struct {
 static GType      register_type( void );
 static void       interface_base_init( myIWindowInterface *klass );
 static void       interface_base_finalize( myIWindowInterface *klass );
-static void       iwindow_init_application( myIWindow *instance );
-static void       iwindow_init_window( myIWindow *instance, sIWindow *sdata );
-static void       application_do_read_settings( myIWindow *instance, sIWindow *sdata );
-static void       application_do_write_settings( myIWindow *instance, sIWindow *sdata );
-static gboolean   iwindow_quit_on_escape( const myIWindow *instance );
+static void       iwindow_init_window( myIWindow *instance );
+static void       iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata );
+static void       iwindow_init_read_settings( myIWindow *instance, sIWindow *sdata );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance, gboolean destroy_hidden );
+static void       iwindow_close_write_settings( myIWindow *instance, sIWindow *sdata );
 static gboolean   is_destroy_allowed( const myIWindow *instance );
-static gchar     *iwindow_get_identifier( const myIWindow *instance );
+static gchar     *get_iwindow_identifier( const myIWindow *instance );
 static gchar     *get_default_identifier( const myIWindow *instance );
-static gchar     *iwindow_get_key_prefix( const myIWindow *instance );
-static void       iwindow_set_default_size( myIWindow *instance, sIWindow *sdata );
-static void       iwindow_set_transient_for( myIWindow *instance );
+static gchar     *get_iwindow_key_prefix( const myIWindow *instance );
+static void       set_iwindow_default_size( myIWindow *instance, sIWindow *sdata );
 static void       position_restore( myIWindow *instance, sIWindow *sdata );
 static void       position_save( myIWindow *instance, sIWindow *sdata );
 static sIWindow  *get_iwindow_data( const myIWindow *instance );
 static void       on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow );
+static void       dump_live_list( void );
 
 /**
  * my_iwindow_get_type:
@@ -202,7 +202,7 @@ my_iwindow_get_interface_version( GType type )
  * @instance: this #myIWindow instance.
  *
  * Returns: the #GtkWindow parent of this window, defaulting to the
- * main windoww of the application (if set).
+ * main window of the application (if set).
  *
  * The returned reference is owned by the implementation, and should
  * not be released by the caller.
@@ -211,12 +211,22 @@ GtkWindow *
 my_iwindow_get_parent( const myIWindow *instance )
 {
 	sIWindow *sdata;
+	GtkWindow *parent;
 
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
 	sdata = get_iwindow_data( instance );
 
-	return( sdata->parent );
+	parent = sdata->parent;
+
+	if( !parent ){
+		if( !sdata->computed_parent ){
+			sdata->computed_parent = ( GtkWindow * ) gtk_widget_get_toplevel( GTK_WIDGET( instance ));
+		}
+		parent = sdata->computed_parent;
+	}
+
+	return( parent );
 }
 
 /**
@@ -336,7 +346,7 @@ my_iwindow_get_keyname( const myIWindow *instance )
 
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
-	keyprefix = iwindow_get_key_prefix( instance );
+	keyprefix = get_iwindow_key_prefix( instance );
 	keyname = g_strdup_printf( "%s-settings", keyprefix );
 	g_free( keyprefix );
 
@@ -379,22 +389,55 @@ my_iwindow_init( myIWindow *instance )
 	sdata = get_iwindow_data( instance );
 
 	if( !sdata->initialized ){
-		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
-		sdata->initialized = TRUE;
 
-		iwindow_init_application( instance );
-		iwindow_init_window( instance, sdata );
+		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+		iwindow_init_set_transient_for( instance, sdata );
+		iwindow_init_window( instance );
+		iwindow_init_read_settings( instance, sdata );
+
+		position_restore( instance, sdata );
+
+		if( st_dump_container ){
+			my_utils_container_dump( GTK_CONTAINER( instance ));
+		}
+
+		g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
 
 		if( MY_IS_IDIALOG( instance )){
 			my_idialog_init( MY_IDIALOG( instance ));
 		}
+
+		sdata->initialized = TRUE;
 	}
 }
 
+/*
+ * Set the new window transient regarding its parent.
+ * If not explicitly set via #my_iwindow_set_parent() method, the parent
+ * defaults to the main window.
+ *
+ * This fonction is called at first-time-initialisation time.
+ */
 static void
-iwindow_init_application( myIWindow *instance )
+iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata )
 {
-	static const gchar *thisfn = "my_iwindow_init_application";
+	GtkWindow *parent;
+
+	parent = my_iwindow_get_parent( instance );
+
+	if( parent ){
+		gtk_window_set_transient_for( GTK_WINDOW( instance ), parent );
+	}
+}
+
+/*
+ * Let the implementation init its window
+ */
+static void
+iwindow_init_window( myIWindow *instance )
+{
+	static const gchar *thisfn = "my_iwindow_init_window";
 
 	if( MY_IWINDOW_GET_INTERFACE( instance )->init ){
 		MY_IWINDOW_GET_INTERFACE( instance )->init( instance );
@@ -405,26 +448,13 @@ iwindow_init_application( myIWindow *instance )
 	}
 }
 
+/*
+ * Let the implementation read its settings
+ */
 static void
-iwindow_init_window( myIWindow *instance, sIWindow *sdata )
+iwindow_init_read_settings( myIWindow *instance, sIWindow *sdata )
 {
-	iwindow_set_transient_for( instance );
-
-	position_restore( instance, sdata );
-
-	application_do_read_settings( instance, sdata );
-
-	if( st_dump_container ){
-		my_utils_container_dump( GTK_CONTAINER( instance ));
-	}
-
-	g_signal_connect( instance, "delete-event", G_CALLBACK( on_delete_event ), instance );
-}
-
-static void
-application_do_read_settings( myIWindow *instance, sIWindow *sdata )
-{
-	static const gchar *thisfn = "my_iwindow_application_do_read_settings";
+	static const gchar *thisfn = "my_iwindow_iwindow_init_read_settings";
 	gchar *key_name;
 
 	key_name = my_iwindow_get_keyname( instance );
@@ -434,25 +464,6 @@ application_do_read_settings( myIWindow *instance, sIWindow *sdata )
 
 	} else {
 		g_info( "%s: myIWindow's %s implementation does not provide 'read_settings()' method",
-				thisfn, G_OBJECT_TYPE_NAME( instance ));
-	}
-
-	g_free( key_name );
-}
-
-static void
-application_do_write_settings( myIWindow *instance, sIWindow *sdata )
-{
-	static const gchar *thisfn = "my_iwindow_application_do_write_settings";
-	gchar *key_name;
-
-	key_name = my_iwindow_get_keyname( instance );
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->write_settings ){
-		MY_IWINDOW_GET_INTERFACE( instance )->write_settings( instance, sdata->settings, key_name );
-
-	} else {
-		g_info( "%s: myIWindow's %s implementation does not provide 'write_settings()' method",
 				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 
@@ -489,15 +500,15 @@ my_iwindow_present( myIWindow *instance )
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
 	found = NULL;
-	instance_id = iwindow_get_identifier( instance );
+	instance_id = get_iwindow_identifier( instance );
 
 	for( it=st_live_list ; it ; it=it->next ){
-		//g_debug( "it->data=%p", it->data );
+		//g_debug( "it=%p, it->data=%p", it, it->data );
 		other = MY_IWINDOW( it->data );
 		if( other == instance ){
 			continue;
 		}
-		other_id = iwindow_get_identifier( other );
+		other_id = get_iwindow_identifier( other );
 		cmp = g_utf8_collate( instance_id, other_id );
 		g_free( other_id );
 		if( cmp == 0 ){
@@ -513,7 +524,10 @@ my_iwindow_present( myIWindow *instance )
 
 	} else {
 		my_iwindow_init( instance );
-		st_live_list = g_list_prepend( st_live_list, instance );
+		if( !g_list_find( st_live_list, instance )){
+			st_live_list = g_list_prepend( st_live_list, instance );
+			dump_live_list();
+		}
 		found = instance;
 	}
 
@@ -572,29 +586,6 @@ my_iwindow_close_all( void )
 	}
 }
 
-/*
- * iwindow_quit_on_escape:
- * @instance: this #myIWindow instance.
- *
- * Let the implementation decide if it accepts to quit a dialog on
- * Escape key.
- *
- * Default is %TRUE.
- */
-static gboolean
-iwindow_quit_on_escape( const myIWindow *instance )
-{
-	static const gchar *thisfn = "my_iwindow_quit_on_escape";
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->quit_on_escape ){
-		return( MY_IWINDOW_GET_INTERFACE( instance )->quit_on_escape( instance ));
-	}
-
-	g_info( "%s: myIWindow's %s implementation does not provide 'quit_on_escape()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( TRUE );
-}
-
 static gboolean
 on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
 {
@@ -603,9 +594,7 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
 	g_debug( "%s: widget=%p, event=%p, instance=%p",
 			thisfn, ( void * ) widget, ( void * ) event, ( void * ) instance );
 
-	if( iwindow_quit_on_escape( instance )){
-		do_close( instance, FALSE );
-	}
+	do_close( instance, FALSE );
 
 	return( TRUE );
 }
@@ -621,7 +610,7 @@ do_close( myIWindow *instance, gboolean destroy_hidden )
 
 	sdata = get_iwindow_data( instance );
 
-	application_do_write_settings( instance, sdata );
+	iwindow_close_write_settings( instance, sdata );
 	position_save( instance, sdata );
 
 	if( sdata->hide_on_close && !destroy_hidden ){
@@ -632,6 +621,25 @@ do_close( myIWindow *instance, gboolean destroy_hidden )
 		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_destroy( GTK_WIDGET( instance ));
 	}
+}
+
+static void
+iwindow_close_write_settings( myIWindow *instance, sIWindow *sdata )
+{
+	static const gchar *thisfn = "my_iwindow_iwindow_close_write_settings";
+	gchar *key_name;
+
+	key_name = my_iwindow_get_keyname( instance );
+
+	if( MY_IWINDOW_GET_INTERFACE( instance )->write_settings ){
+		MY_IWINDOW_GET_INTERFACE( instance )->write_settings( instance, sdata->settings, key_name );
+
+	} else {
+		g_info( "%s: myIWindow's %s implementation does not provide 'write_settings()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
+	}
+
+	g_free( key_name );
 }
 
 /*
@@ -667,7 +675,7 @@ is_destroy_allowed( const myIWindow *instance )
 }
 
 /*
- * iwindow_get_identifier:
+ * get_iwindow_identifier:
  * @instance: this #myIWindow instance.
  *
  * Returns: the instance identifier as a newly allocated string which
@@ -676,9 +684,9 @@ is_destroy_allowed( const myIWindow *instance )
  * Defaults to the class name of the window implementation.
  */
 static gchar *
-iwindow_get_identifier( const myIWindow *instance )
+get_iwindow_identifier( const myIWindow *instance )
 {
-	static const gchar *thisfn = "my_iwindow_get_identifier";
+	static const gchar *thisfn = "my_get_iwindow_identifier";
 
 	if( MY_IWINDOW_GET_INTERFACE( instance )->get_identifier ){
 		return( MY_IWINDOW_GET_INTERFACE( instance )->get_identifier( instance ));
@@ -703,9 +711,9 @@ get_default_identifier( const myIWindow *instance )
  * The key defaults to the identifier.
  */
 static gchar *
-iwindow_get_key_prefix( const myIWindow *instance )
+get_iwindow_key_prefix( const myIWindow *instance )
 {
-	static const gchar *thisfn = "my_iwindow_get_key_prefix";
+	static const gchar *thisfn = "my_get_iwindow_key_prefix";
 
 	if( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix ){
 		return( MY_IWINDOW_GET_INTERFACE( instance )->get_key_prefix( instance ));
@@ -714,7 +722,7 @@ iwindow_get_key_prefix( const myIWindow *instance )
 	g_info( "%s: myIWindow's %s implementation does not provide 'get_key_prefix()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 
-	return( iwindow_get_identifier( instance ));
+	return( get_iwindow_identifier( instance ));
 }
 
 /*
@@ -723,9 +731,9 @@ iwindow_get_key_prefix( const myIWindow *instance )
  * This is only used when no record is found in user settings.
  */
 static void
-iwindow_set_default_size( myIWindow *instance, sIWindow *sdata )
+set_iwindow_default_size( myIWindow *instance, sIWindow *sdata )
 {
-	static const gchar *thisfn = "my_iwindow_set_default_size";
+	static const gchar *thisfn = "my_set_iwindow_default_size";
 	gint x, y, cx, cy;
 
 	if( MY_IWINDOW_GET_INTERFACE( instance )->get_default_size ){
@@ -740,27 +748,6 @@ iwindow_set_default_size( myIWindow *instance, sIWindow *sdata )
 	} else {
 		g_info( "%s: myIWindow's %s implementation does not provide 'get_default_size()' method",
 				thisfn, G_OBJECT_TYPE_NAME( instance ));
-	}
-}
-
-/*
- * Set the new window transient regarding its parent.
- * If not explicitly set via #my_iwindow_set_parent() method, the parent
- * defaults to the main window.
- *
- * This fonction is called at first-time-initialisation time.
- */
-static void
-iwindow_set_transient_for( myIWindow *instance )
-{
-	sIWindow *sdata;
-	GtkWindow *parent;
-
-	sdata = get_iwindow_data( instance );
-	parent = sdata->parent;
-
-	if( parent ){
-		gtk_window_set_transient_for( GTK_WINDOW( instance ), parent );
 	}
 }
 
@@ -791,7 +778,7 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 	gchar *key_prefix;
 
 	if( sdata->settings ){
-		key_prefix = iwindow_get_key_prefix( instance );
+		key_prefix = get_iwindow_key_prefix( instance );
 
 		if( !my_utils_window_position_get_has_pos( sdata->settings, key_prefix )){
 			g_free( key_prefix );
@@ -799,13 +786,13 @@ position_restore( myIWindow *instance, sIWindow *sdata )
 		}
 		if( sdata->does_restore_pos || sdata->does_restore_size ){
 			if( !my_utils_window_position_restore( GTK_WINDOW( instance ), sdata->settings, key_prefix )){
-				iwindow_set_default_size( instance, sdata );
+				set_iwindow_default_size( instance, sdata );
 			}
 		}
 		g_free( key_prefix );
 
 	} else {
-		iwindow_set_default_size( instance, sdata );
+		set_iwindow_default_size( instance, sdata );
 	}
 }
 
@@ -815,7 +802,7 @@ position_save( myIWindow *instance, sIWindow *sdata )
 	gchar *key_prefix, *default_key;
 
 	if( sdata->settings ){
-		key_prefix = iwindow_get_key_prefix( instance );
+		key_prefix = get_iwindow_key_prefix( instance );
 		my_utils_window_position_save( GTK_WINDOW( instance ), sdata->settings, key_prefix );
 		g_free( key_prefix );
 
@@ -859,4 +846,18 @@ on_iwindow_finalized( sIWindow *sdata, GObject *finalized_iwindow )
 	g_free( sdata );
 
 	st_live_list = g_list_remove( st_live_list, finalized_iwindow );
+
+	dump_live_list();
+}
+
+static void
+dump_live_list( void )
+{
+	static const gchar *thisfn = "my_iwindow_dump_live_list";
+	GList *it;
+
+	g_debug( "%s: st_live_list=%p", thisfn, ( void * ) st_live_list );
+	for( it=st_live_list ; it ; it=it->next ){
+		g_debug( "%s: it->data=%p", thisfn, it->data );
+	}
 }

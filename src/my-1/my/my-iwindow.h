@@ -170,22 +170,6 @@ typedef struct {
 												gint *cy );
 
 	/**
-	 * quit_on_escape:
-	 * @instance: the #myIWindow instance.
-	 *
-	 * Called when the user asks for quitting the dialog by hitting
-	 * the 'Escape' key, or destroy the window.
-	 *
-	 * Returns: %TRUE if the user confirms that he wants quit the
-	 * dialog.
-	 *
-	 * Defaults to %TRUE.
-	 *
-	 * Since: version 1.
-	 */
-	gboolean ( *quit_on_escape )       ( const myIWindow *instance );
-
-	/**
 	 * read_settings:
 	 * @instance: the #myIWindow instance.
 	 * @settings: the #myISettings implementation provided by the

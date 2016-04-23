@@ -40,6 +40,8 @@ G_BEGIN_DECLS
 
 #define MY_DND_TARGET                   "XdndOpenbookDrag"
 
+#define MY_DND_SHIFT                     55
+
 /**
  * myDndData:
  * @book: the #GtkNotebook.

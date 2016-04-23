@@ -46,10 +46,10 @@ static const GtkTargetEntry st_dnd_format[] = {
 
 static void     on_page_added( myDndBook *book, GtkWidget *child, guint page_num, void *empty );
 static void     dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context );
-static void     dnd_book_drag_data_get( GtkWidget *widget, GdkDragContext *context, GtkSelectionData *data, guint info, guint time );
-static gboolean dnd_book_drag_failed( GtkWidget *widget, GdkDragContext *context, GtkDragResult result );
+static void     dnd_book_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time );
+static gboolean dnd_book_drag_failed( GtkWidget *self, GdkDragContext *context, GtkDragResult result );
 static void     dnd_book_drag_end( GtkWidget *self, GdkDragContext *context );
-static void     dnd_book_drag_data_delete( GtkWidget *widget, GdkDragContext *context );
+static void     dnd_book_drag_data_delete( GtkWidget *self, GdkDragContext *context );
 
 G_DEFINE_TYPE_EXTENDED( myDndBook, my_dnd_book, GTK_TYPE_NOTEBOOK, 0,
 		G_ADD_PRIVATE( myDndBook ))
@@ -172,7 +172,8 @@ dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context )
 	priv->drag_window = my_dnd_window_new( GTK_NOTEBOOK( self ), page_w );
 
 	//g_debug( "dnd_book_drag_begin: ref_count=%d", G_OBJECT( priv->drag_window )->ref_count );
-	gtk_drag_set_icon_widget( context, GTK_WIDGET( priv->drag_window ), 50, 50 );
+	//gtk_drag_set_icon_widget( context, GTK_WIDGET( priv->drag_window ), MY_DND_SHIFT, MY_DND_SHIFT );
+	gtk_drag_set_icon_widget( context, GTK_WIDGET( priv->drag_window ), 500, MY_DND_SHIFT );
 	//g_debug( "dnd_book_drag_begin: ref_count=%d", G_OBJECT( priv->drag_window )->ref_count );
 }
 
@@ -180,18 +181,19 @@ dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context )
  * useless here but defined to make sure GtkNotebook's one is not run
  */
 static void
-dnd_book_drag_data_get( GtkWidget *widget, GdkDragContext *context, GtkSelectionData *data, guint info, guint time )
+dnd_book_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time )
 {
 }
 
 static gboolean
-dnd_book_drag_failed( GtkWidget *widget, GdkDragContext *context, GtkDragResult result )
+dnd_book_drag_failed( GtkWidget *self, GdkDragContext *context, GtkDragResult result )
 {
+	static const gchar *thisfn = "my_dnd_book_drag_failed";
 	myDndBookPrivate *priv;
 
-	priv = my_dnd_book_get_instance_private( MY_DND_BOOK( widget ));
+	priv = my_dnd_book_get_instance_private( MY_DND_BOOK( self ));
 
-	//g_debug( "dnd_book_drag_failed" );
+	g_debug( "%s: self=%p, context=%p, result=%d", thisfn, ( void * ) self, ( void * ) context, result );
 
 	if( priv->drag_window ){
 		my_iwindow_close( MY_IWINDOW( priv->drag_window ));
@@ -204,15 +206,16 @@ dnd_book_drag_failed( GtkWidget *widget, GdkDragContext *context, GtkDragResult 
 static void
 dnd_book_drag_end( GtkWidget *self, GdkDragContext *context )
 {
+	static const gchar *thisfn = "my_dnd_book_drag_data_end";
 	myDndBookPrivate *priv;
 
 	priv = my_dnd_book_get_instance_private( MY_DND_BOOK( self ));
 
-	//g_debug( "dnd_book_drag_end" );
+	g_debug( "%s: self=%p, context=%p", thisfn, ( void * ) self, ( void * ) context );
 
 	if( priv->drag_window ){
 		//g_debug( "dnd_book_drag_end: ref_count=%d", G_OBJECT( priv->drag_window )->ref_count );
-		gtk_widget_show_all( GTK_WIDGET( priv->drag_window ));
+		gtk_widget_show( GTK_WIDGET( priv->drag_window ));
 		priv->drag_window = NULL;
 	}
 }
@@ -221,8 +224,11 @@ dnd_book_drag_end( GtkWidget *self, GdkDragContext *context )
  * useless here but defined to make sure GtkNotebook's one is not run
  */
 static void
-dnd_book_drag_data_delete( GtkWidget *widget, GdkDragContext *context )
+dnd_book_drag_data_delete( GtkWidget *self, GdkDragContext *context )
 {
+	static const gchar *thisfn = "my_dnd_book_drag_data_delete";
+
+	g_debug( "%s: self=%p, context=%p", thisfn, ( void * ) self, ( void * ) context );
 }
 
 /**
