@@ -40,19 +40,20 @@ G_BEGIN_DECLS
 
 #define MY_DND_TARGET                   "XdndOpenbookDrag"
 
-#define MY_DND_SHIFT                     55
+#define MY_DND_SHIFT                     20
+
+#define MY_DND_POPUP_SCALE             0.75
 
 /**
  * myDndData:
- * @book: the #GtkNotebook.
  * @page_w: the #GtkWidget page.
+ * @title:  the title of the page.
  *
- * A data structure to communicate between myIDndDetach and myIDndAttach
- * interfaces.
+ * A data structure to communicate between sender and receiver.
  */
 typedef struct {
-	GtkNotebook *book;
-	GtkWidget   *page;
+	GtkWidget *page;
+	gchar     *title;
 }
 	myDndData;
 

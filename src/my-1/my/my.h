@@ -33,6 +33,7 @@
 #include <my/my-decimal-combo.h>
 #include <my/my-dnd-book.h>
 #include <my/my-dnd-common.h>
+#include <my/my-dnd-popup.h>
 #include <my/my-dnd-window.h>
 #include <my/my-double.h>
 #include <my/my-double-editable.h>

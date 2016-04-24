@@ -33,6 +33,7 @@ my_include_HEADERS = \
 	my-decimal-combo.h									\
 	my-dnd-book.h										\
 	my-dnd-common.h										\
+	my-dnd-popup.h										\
 	my-dnd-window.h										\
 	my-double.h											\
 	my-double-editable.h								\

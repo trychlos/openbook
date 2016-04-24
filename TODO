@@ -191,11 +191,6 @@
 
  656 2015- 2-17 OpeTemplate page: have a shortcut on each tab
 
- 668 2015- 2-17 have main notebook pages detachable ? getting so non-
-                modal dialogs
-     2015- 2-20 this requires to implement DnD on some non-modal windows
-     2016- 3-20 ofaNonModalPage is a temporary work-around
-
  684 2015- 2-21 MainWindow left pane: these are shortcuts which should
                 be choosable by the user among the defined features
 
@@ -316,8 +311,6 @@
                      choose whether to import reconciliations/settlements
                      or no, to import deleted entries
      2016- 3- 1 +accounts: import balances
-
- 999 2016- 2-24 FEAT add a Close button to detached nomodal pages
 
 1003 2016- 2-24 FEAT RenderPage: add navigation+zoom buttons
 
@@ -473,6 +466,13 @@
                 non-modal (use case: consult rates)
      2016- 1-27 ofaOpeTemplateProperties: done
      2016- 1-27 ofaGuidedInput: done
+
+ 668 2015- 2-17 have main notebook pages detachable ? getting so non-
+                modal dialogs
+     2015- 2-20 this requires to implement DnD on some non-modal windows
+     2016- 3-20 ofaNonModalPage is a temporary work-around
+     2016- 4-20 deprecate ofaNomodalPage, replacing it with detachable
+                myDndWindow.
 
  669 2015- 2-17 have a visual way to distinct between dossiers (e.g. a
                 color, a logo, etc.)
@@ -891,6 +891,9 @@
 
  998 2016- 2-14 FEAT objects valid_data method() provides an error message
      2016- 3- 9 done
+
+ 999 2016- 2-24 FEAT add a Close button to detached nomodal pages
+     2016- 4-24 cancelled
 
 1000 2016- 2-24 FEAT myIDialog: add a debug message on cancel and close
                      actions

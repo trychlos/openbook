@@ -858,6 +858,6 @@ dump_live_list( void )
 
 	g_debug( "%s: st_live_list=%p", thisfn, ( void * ) st_live_list );
 	for( it=st_live_list ; it ; it=it->next ){
-		g_debug( "%s: it->data=%p", thisfn, it->data );
+		g_debug( "%s: it->data=%p (%s)", thisfn, it->data, G_OBJECT_TYPE_NAME( it->data ));
 	}
 }

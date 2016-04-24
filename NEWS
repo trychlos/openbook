@@ -34,6 +34,7 @@
   
  New features and improvements:
 
+   - Main notebook's pages are now detachable (todo #668).
    - ofaDossierOpen: open in read-only mode (todo #701).
    - ofaTVARecordProperties: set the auto-eval mode to True.
    - ofsOpe: set again the auto-eval mode to False, only using %EVAL() function.
