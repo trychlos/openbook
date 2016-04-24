@@ -40,7 +40,12 @@ typedef struct {
 }
 	myDndWindowPrivate;
 
-static GList *st_list                   = NULL;
+static GList *st_list                       = NULL;
+
+/* source format when destination is a myDndBook book */
+static const GtkTargetEntry st_dnd_format[] = {
+	{ MY_DND_TARGET, 0, 0 },
+};
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
@@ -106,6 +111,13 @@ my_dnd_window_init( myDndWindow *self )
 	priv = my_dnd_window_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	gtk_drag_source_set( GTK_WIDGET( self ),
+			GDK_BUTTON1_MASK, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
+
+	if( !g_list_find( st_list, self )){
+		st_list = g_list_prepend( st_list, self );
+	}
 }
 
 static void

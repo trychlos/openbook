@@ -45,7 +45,8 @@ typedef struct {
 }
 	myDndPopupPrivate;
 
-static const GtkTargetEntry st_dnd_dest_format[] = {
+/* target format when source is a myDndBook child */
+static const GtkTargetEntry st_dnd_format[] = {
 	{ MY_DND_TARGET, 0, 0 },
 };
 
@@ -249,7 +250,7 @@ setup_target_window( myDndPopup *self )
 
 	g_signal_connect( priv->target_window, "draw", G_CALLBACK( on_target_window_draw ), NULL );
 
-	gtk_drag_dest_set( priv->target_window, 0, st_dnd_dest_format, G_N_ELEMENTS( st_dnd_dest_format ), GDK_ACTION_MOVE );
+	gtk_drag_dest_set( priv->target_window, 0, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
 
 	g_signal_connect( priv->target_window, "drag-motion", G_CALLBACK( on_drag_motion ), NULL );
 	g_signal_connect( priv->target_window, "drag-leave", G_CALLBACK( on_drag_leave ), NULL );
@@ -321,16 +322,13 @@ on_drag_data_received( GtkWidget *widget, GdkDragContext *context, gint x, gint 
 	myDndPopupPrivate *priv;
 	myDndData **sdata;
 	myDndWindow *window;
-	GtkWidget *parent;
 
 	priv = my_dnd_popup_get_instance_private( MY_DND_POPUP( self ));
 
 	sdata = ( myDndData ** ) gtk_selection_data_get_data( data );
 
 	window = my_dnd_window_new(( *sdata )->page, ( *sdata )->title, x, y, priv->source_width, priv->source_height );
-	parent = gtk_widget_get_toplevel( GTK_WIDGET( self ));
-	g_debug( "parent=%p", parent );
-	my_iwindow_set_parent( MY_IWINDOW( window ), ( GtkWindow * ) parent );
+	my_iwindow_set_parent( MY_IWINDOW( window ), ( *sdata )->parent );
 	my_iwindow_set_restore_pos( MY_IWINDOW( window ), FALSE );
 	my_iwindow_set_restore_size( MY_IWINDOW( window ), FALSE );
 	my_iwindow_present( MY_IWINDOW( window ));

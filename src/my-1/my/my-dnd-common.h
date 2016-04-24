@@ -48,12 +48,14 @@ G_BEGIN_DECLS
  * myDndData:
  * @page_w: the #GtkWidget page.
  * @title:  the title of the page.
+ * @parent: the parent toplevel.
  *
  * A data structure to communicate between sender and receiver.
  */
 typedef struct {
 	GtkWidget *page;
 	gchar     *title;
+	GtkWindow *parent;
 }
 	myDndData;
 

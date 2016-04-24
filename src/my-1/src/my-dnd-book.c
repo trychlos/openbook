@@ -111,6 +111,9 @@ my_dnd_book_init( myDndBook *self )
 	gtk_drag_source_set( GTK_WIDGET( self ),
 			GDK_BUTTON1_MASK, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
 
+	gtk_drag_dest_set( GTK_WIDGET( self ),
+			0, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
+
 	g_signal_connect( self, "page-added", G_CALLBACK( on_page_added ), NULL );
 }
 
@@ -203,6 +206,7 @@ dnd_book_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionDa
 		sdata = g_new0( myDndData, 1 );
 		sdata->page = page_w;
 		sdata->title = my_utils_str_remove_underlines( title );
+		sdata->parent = ( GtkWindow * ) gtk_widget_get_toplevel( self );
 		g_free( title );
 
 		gtk_selection_data_set( data, data_target, sizeof( gpointer ), ( void * ) &sdata, sizeof( gpointer ));
