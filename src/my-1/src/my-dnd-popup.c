@@ -150,27 +150,25 @@ my_dnd_popup_class_init( myDndPopupClass *klass )
 /**
  * my_dnd_popup_new:
  * @source: the being-dragged widget.
+ * @with_dest: whether we also have to create an invisible destination
+ *  window to hosts the DnD drop.
  *
- * Creates a #myDndPopup window, configuring it as DnD target.
+ * Creates a #myDndPopup window.
  */
 myDndPopup *
-my_dnd_popup_new( GtkWidget *source )
+my_dnd_popup_new( GtkWidget *source, gboolean with_dest )
 {
 	myDndPopup *window;
-
-	/* just create a popup on which we are going to draw the page */
-	/*
-	window = g_object_new( MY_TYPE_DND_POPUP, NULL );
-	gtk_window_set_decorated( GTK_WINDOW( window ), FALSE );
-	gtk_widget_hide( GTK_WIDGET( window ));
-	*/
 
 	window = g_object_new( MY_TYPE_DND_POPUP,
 					"type", GTK_WINDOW_POPUP,
 					NULL );
 
 	setup_drag_icon( window, source );
-	setup_target_window( window );
+
+	if( with_dest ){
+		setup_target_window( window );
+	}
 
 	return( window );
 }
@@ -329,8 +327,6 @@ on_drag_data_received( GtkWidget *widget, GdkDragContext *context, gint x, gint 
 
 	window = my_dnd_window_new(( *sdata )->page, ( *sdata )->title, x, y, priv->source_width, priv->source_height );
 	my_iwindow_set_parent( MY_IWINDOW( window ), ( *sdata )->parent );
-	my_iwindow_set_restore_pos( MY_IWINDOW( window ), FALSE );
-	my_iwindow_set_restore_size( MY_IWINDOW( window ), FALSE );
 	my_iwindow_present( MY_IWINDOW( window ));
 
 	g_object_unref(( *sdata )->page );

@@ -294,8 +294,10 @@ static void                  do_properties( const ofaMainWindow *self );
 static GtkNotebook          *notebook_get_book( const ofaMainWindow *window );
 static ofaPage              *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
 static ofaPage              *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
+static void                  book_attach_page( const ofaMainWindow *main, GtkNotebook *book, GtkWidget *page, const gchar *title );
 static void                  notebook_activate_page( const ofaMainWindow *window, GtkNotebook *book, ofaPage *page );
 static gboolean              notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self );
+static gboolean              book_on_append_page( myDndBook *book, GtkWidget *page, const gchar *title, ofaMainWindow *self );
 static void                  on_tab_close_clicked( myTab *tab, ofaPage *page );
 static void                  do_close( ofaPage *page );
 static void                  on_page_removed( GtkNotebook *book, GtkWidget *page, guint page_num, ofaMainWindow *self );
@@ -1014,6 +1016,7 @@ pane_right_add_empty_notebook( ofaMainWindow *self, ofaHub *hub )
 
 	g_signal_connect( book, "draw", G_CALLBACK( notebook_on_draw ), self );
 	g_signal_connect( book, "page-removed", G_CALLBACK( on_page_removed ), self );
+	g_signal_connect( book, "my-append-page", G_CALLBACK( book_on_append_page ), self );
 
 	gtk_paned_pack2( priv->pane, GTK_WIDGET( book ), TRUE, FALSE );
 }
@@ -1595,14 +1598,24 @@ static ofaPage *
 notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def )
 {
 	ofaPage *page;
+	const gchar *title;
+
+	page = g_object_new( def->type, PAGE_PROP_GETTER, main, NULL );
+	title = gettext( def->label );
+
+	book_attach_page( main, book, GTK_WIDGET( page ), title );
+
+	return( page );
+}
+
+static void
+book_attach_page( const ofaMainWindow *main, GtkNotebook *book, GtkWidget *page, const gchar *title )
+{
 	myTab *tab;
 	GtkWidget *label;
 
-	/* the top child of the notebook page */
-	page = g_object_new( def->type, PAGE_PROP_GETTER, main, NULL );
-
 	/* the tab widget */
-	tab = my_tab_new( NULL, gettext( def->label ));
+	tab = my_tab_new( NULL, title );
 
 	my_tab_set_show_close( tab, TRUE );
 	g_signal_connect( tab, MY_SIGNAL_TAB_CLOSE_CLICKED, G_CALLBACK( on_tab_close_clicked ), page );
@@ -1610,13 +1623,11 @@ notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sTheme
 	my_tab_set_show_detach( tab, FALSE );
 
 	/* the menu widget */
-	label = gtk_label_new( gettext( def->label ));
+	label = gtk_label_new( title );
 	my_utils_widget_set_xalign( label, 0 );
 
-	gtk_notebook_append_page_menu( book, GTK_WIDGET( page ), GTK_WIDGET( tab ), label );
-	gtk_notebook_set_tab_reorderable( book, GTK_WIDGET( page ), TRUE );
-
-	return( page );
+	gtk_notebook_append_page_menu( book, page, GTK_WIDGET( tab ), label );
+	gtk_notebook_set_tab_reorderable( book, page, TRUE );
 }
 
 /*
@@ -1674,6 +1685,22 @@ notebook_on_draw( GtkWidget *widget, cairo_t *cr, ofaMainWindow *self )
 	}
 
 	return( FALSE );
+}
+
+/*
+ * Returns: %TRUE to show that we have handled the signal.
+ */
+static gboolean
+book_on_append_page( myDndBook *book, GtkWidget *page, const gchar *title, ofaMainWindow *self )
+{
+	static const gchar *thisfn = "ofa_main_window_book_on_append_page";
+
+	g_debug( "%s: book=%p, page=%p, title=%s, self=%p",
+			thisfn, ( void * ) book, ( void * ) page, title, ( void * ) self );
+
+	book_attach_page( self, GTK_NOTEBOOK( book ), page, title );
+
+	return( TRUE );
 }
 
 static void

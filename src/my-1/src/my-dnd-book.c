@@ -45,12 +45,26 @@ static const GtkTargetEntry st_dnd_format[] = {
 	{ MY_DND_TARGET, 0, 0 },
 };
 
+/* signals defined here
+ */
+enum {
+	APPEND_PAGE = 0,
+	N_SIGNALS
+};
+
+static guint st_signals[ N_SIGNALS ]    = { 0 };
+
 static void     on_page_added( myDndBook *book, GtkWidget *child, guint page_num, void *empty );
 static void     dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context );
 static void     dnd_book_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time );
 static gboolean dnd_book_drag_failed( GtkWidget *self, GdkDragContext *context, GtkDragResult result );
 static void     dnd_book_drag_end( GtkWidget *self, GdkDragContext *context );
 static void     dnd_book_drag_data_delete( GtkWidget *self, GdkDragContext *context );
+static gboolean on_drag_motion( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, void *empty );
+static void     on_drag_leave( GtkWidget *widget, GdkDragContext *context, guint time, void *empty );
+static gboolean on_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, void *empty );
+static void     on_drag_data_received( GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *data, guint info, guint time, void *empty );
+static gboolean append_page_default_handler( myDndBook *book, GtkWidget *page, const gchar *title );
 
 G_DEFINE_TYPE_EXTENDED( myDndBook, my_dnd_book, GTK_TYPE_NOTEBOOK, 0,
 		G_ADD_PRIVATE( myDndBook ))
@@ -111,10 +125,15 @@ my_dnd_book_init( myDndBook *self )
 	gtk_drag_source_set( GTK_WIDGET( self ),
 			GDK_BUTTON1_MASK, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
 
+	g_signal_connect( self, "page-added", G_CALLBACK( on_page_added ), NULL );
+
 	gtk_drag_dest_set( GTK_WIDGET( self ),
 			0, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
 
-	g_signal_connect( self, "page-added", G_CALLBACK( on_page_added ), NULL );
+	g_signal_connect( self, "drag-motion", G_CALLBACK( on_drag_motion ), NULL );
+	g_signal_connect( self, "drag-leave", G_CALLBACK( on_drag_leave ), NULL );
+	g_signal_connect( self, "drag-drop", G_CALLBACK( on_drag_drop ), NULL );
+	g_signal_connect( self, "drag-data-received", G_CALLBACK( on_drag_data_received ), NULL );
 }
 
 static void
@@ -134,6 +153,33 @@ my_dnd_book_class_init( myDndBookClass *klass )
 	GTK_WIDGET_CLASS( klass )->drag_failed = dnd_book_drag_failed;
 	GTK_WIDGET_CLASS( klass )->drag_end = dnd_book_drag_end;
 	GTK_WIDGET_CLASS( klass )->drag_data_delete = dnd_book_drag_data_delete;
+
+	/**
+	 * myDndBook::append-page:
+	 *
+	 * This signal is sent to append a page to the notebook.
+	 *
+	 * Handler should return %TRUE to indicate that it has handled the
+	 * signal.
+	 * Default class handler just appends the page to the notebook.
+	 *
+	 * Handler is of type:
+	 * gboolean ( *handler )( myDndBook     *book,
+	 * 							GtkWidget   *page,
+	 * 							const gchar *title,
+	 * 							gpointer     user_data );
+	 */
+	st_signals[ APPEND_PAGE ] = g_signal_new_class_handler(
+				"my-append-page",
+				MY_TYPE_DND_BOOK,
+				G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+				G_CALLBACK( append_page_default_handler ),
+				g_signal_accumulator_true_handled,				/* accumulator */
+				NULL,											/* accumulator data */
+				NULL,
+				G_TYPE_BOOLEAN,
+				2,
+				G_TYPE_POINTER, G_TYPE_STRING );
 }
 
 /**
@@ -162,6 +208,9 @@ on_page_added( myDndBook *book, GtkWidget *child, guint page_num, void *empty )
 	gtk_notebook_set_tab_detachable( GTK_NOTEBOOK( book ), child, TRUE );
 }
 
+/*
+ * detaching a tab
+ */
 static void
 dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context )
 {
@@ -173,7 +222,7 @@ dnd_book_drag_begin( GtkWidget *self, GdkDragContext *context )
 
 	page_n = gtk_notebook_get_current_page( GTK_NOTEBOOK( self ));
 	page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( self ), page_n );
-	priv->drag_popup = my_dnd_popup_new( page_w );
+	priv->drag_popup = my_dnd_popup_new( page_w, TRUE );
 	gtk_drag_set_icon_widget( context, GTK_WIDGET( priv->drag_popup ), MY_DND_SHIFT, MY_DND_SHIFT );
 }
 
@@ -257,4 +306,88 @@ dnd_book_drag_data_delete( GtkWidget *self, GdkDragContext *context )
 	static const gchar *thisfn = "my_dnd_book_drag_data_delete";
 
 	g_debug( "%s: self=%p, context=%p", thisfn, ( void * ) self, ( void * ) context );
+}
+
+/*
+ * Re-attaching a tab
+ *
+ * Returns: %TRUE if a drop zone
+ */
+static gboolean
+on_drag_motion( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, void *empty )
+{
+	static const gchar *thisfn = "my_dnd_book_on_drag_motion";
+	GdkAtom op_target, expected_target;
+
+	op_target = gtk_drag_dest_find_target( widget, context, NULL );
+	expected_target = gdk_atom_intern_static_string( MY_DND_TARGET );
+
+	if( op_target != expected_target ){
+		g_debug( "%s: unexpected target, returning False", thisfn );
+		return( FALSE );
+	}
+
+	gdk_drag_status( context, GDK_ACTION_MOVE, time );
+
+	return( TRUE );
+}
+
+static void
+on_drag_leave( GtkWidget *widget, GdkDragContext *context, guint time, void *empty )
+{
+}
+
+/*
+ * @x, @y: coordinates relative to the top-left corner of the destination
+ *  window.
+ */
+static gboolean
+on_drag_drop( GtkWidget *widget, GdkDragContext *context, gint x, gint y, guint time, void *empty )
+{
+	static const gchar *thisfn = "my_dnd_book_on_drag_drop";
+	GdkAtom op_target, expected_target;
+
+	op_target = gtk_drag_dest_find_target( widget, context, NULL );
+	expected_target = gdk_atom_intern_static_string( MY_DND_TARGET );
+
+	if( op_target != expected_target ){
+		g_debug( "%s: unexpected target, returning False", thisfn );
+		return( FALSE );
+	}
+
+	gtk_drag_get_data( widget, context, op_target, time  );
+
+	return( TRUE );
+}
+
+static void
+on_drag_data_received( GtkWidget *widget, GdkDragContext *context, gint x, gint y, GtkSelectionData *data, guint info, guint time, void *empty )
+{
+	myDndData **sdata;
+
+	sdata = ( myDndData ** ) gtk_selection_data_get_data( data );
+
+	g_signal_emit_by_name( widget, "my-append-page", ( *sdata )->page, ( *sdata )->title );
+
+	g_object_unref(( *sdata )->page );
+	g_free(( *sdata )->title );
+	g_free( *sdata );
+
+	gtk_drag_finish( context, TRUE, FALSE, time );
+}
+
+static gboolean
+append_page_default_handler( myDndBook *book, GtkWidget *page, const gchar *title )
+{
+	static const gchar *thisfn = "my_dnd_book_append_page_default_handler";
+	GtkWidget *tab;
+
+	g_debug( "%s: book=%p, page=%p, title=%s",
+			thisfn, ( void * ) book, ( void * ) page, title );
+
+	tab = gtk_label_new( title );
+
+	gtk_notebook_append_page( GTK_NOTEBOOK( book ), page, tab );
+
+	return( TRUE );
 }

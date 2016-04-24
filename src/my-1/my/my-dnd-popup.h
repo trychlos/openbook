@@ -58,7 +58,8 @@ typedef struct {
 
 GType        my_dnd_popup_get_type        ( void ) G_GNUC_CONST;
 
-myDndPopup  *my_dnd_popup_new             ( GtkWidget *source );
+myDndPopup  *my_dnd_popup_new             ( GtkWidget *source,
+												gboolean with_dest );
 
 const gchar *my_dnd_popup_get_result_label( GtkDragResult result );
 

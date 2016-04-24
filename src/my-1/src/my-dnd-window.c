@@ -27,6 +27,7 @@
 #endif
 
 #include "my/my-dnd-common.h"
+#include "my/my-dnd-popup.h"
 #include "my/my-dnd-window.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
@@ -34,9 +35,10 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean   dispose_has_run;
 
-	gchar   *class_name;
+	GtkWidget *child_widget;				/* the widget detached from the notebook */
+	GtkWidget *drag_popup;					/* the popup during re-attaching */
 }
 	myDndWindowPrivate;
 
@@ -50,6 +52,8 @@ static const GtkTargetEntry st_dnd_format[] = {
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
 static void     iwindow_init( myIWindow *instance );
+static void     on_drag_begin( GtkWidget *self, GdkDragContext *context, void *empty );
+static void     on_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( myDndWindow, my_dnd_window, GTK_TYPE_WINDOW, 0,
 		G_ADD_PRIVATE( myDndWindow )
@@ -59,7 +63,6 @@ static void
 dnd_window_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "my_dnd_window_finalize";
-	myDndWindowPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s), st_list_count=%d",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), g_list_length( st_list ));
@@ -67,9 +70,6 @@ dnd_window_finalize( GObject *instance )
 	g_return_if_fail( instance && MY_IS_DND_WINDOW( instance ));
 
 	/* free data members here */
-	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
-
-	g_free( priv->class_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( my_dnd_window_parent_class )->finalize( instance );
@@ -89,6 +89,10 @@ dnd_window_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		if( priv->drag_popup ){
+			gtk_widget_destroy( priv->drag_popup );
+		}
 
 		st_list = g_list_remove( st_list, instance );
 	}
@@ -114,6 +118,9 @@ my_dnd_window_init( myDndWindow *self )
 
 	gtk_drag_source_set( GTK_WIDGET( self ),
 			GDK_BUTTON1_MASK, st_dnd_format, G_N_ELEMENTS( st_dnd_format ), GDK_ACTION_MOVE );
+
+	g_signal_connect( self, "drag-begin", G_CALLBACK( on_drag_begin ), NULL );
+	g_signal_connect( self, "drag-data-get", G_CALLBACK( on_drag_data_get ), NULL );
 
 	if( !g_list_find( st_list, self )){
 		st_list = g_list_prepend( st_list, self );
@@ -150,12 +157,14 @@ my_dnd_window_new( GtkWidget *widget, const gchar *title, gint x, gint y, gint w
 	window = g_object_new( MY_TYPE_DND_WINDOW, NULL );
 	priv = my_dnd_window_get_instance_private( window );
 
+	priv->child_widget = widget;
 	gtk_container_add( GTK_CONTAINER( window ), widget );
-	priv->class_name = g_strdup( G_OBJECT_TYPE_NAME( widget ));
-
 	gtk_window_set_title( GTK_WINDOW( window ), title );
 	gtk_window_move( GTK_WINDOW( window ), x-MY_DND_SHIFT, y-MY_DND_SHIFT );
 	gtk_window_resize( GTK_WINDOW( window ), 0.9*width, 0.9*height );
+
+	my_iwindow_set_restore_pos( MY_IWINDOW( window ), FALSE );
+	my_iwindow_set_restore_size( MY_IWINDOW( window ), FALSE );
 
 	return( window );
 }
@@ -181,7 +190,7 @@ iwindow_get_identifier( const myIWindow *instance )
 
 	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( instance ));
 
-	return( g_strdup( priv->class_name ));
+	return( g_strdup( G_OBJECT_TYPE_NAME( priv->child_widget )));
 }
 
 static void
@@ -213,7 +222,7 @@ my_dnd_window_present_by_type( GType type )
 	for( it=st_list ; it ; it=it->next ){
 		window = MY_DND_WINDOW( it->data );
 		priv = my_dnd_window_get_instance_private( window );
-		if( !my_collate( priv->class_name, ctype_name )){
+		if( !my_collate( G_OBJECT_TYPE_NAME( priv->child_widget ), ctype_name )){
 			g_debug( "%s: found window=%p", thisfn, ( void * ) window );
 			my_iwindow_present( MY_IWINDOW( window ));
 			return( TRUE );
@@ -237,5 +246,46 @@ my_dnd_window_close_all( void )
 
 	while( st_list ){
 		gtk_widget_destroy( GTK_WIDGET( st_list->data ));
+	}
+}
+
+static void
+on_drag_begin( GtkWidget *self, GdkDragContext *context, void *empty )
+{
+	myDndWindowPrivate *priv;
+
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( self ));
+
+	priv->drag_popup = GTK_WIDGET( my_dnd_popup_new( priv->child_widget, FALSE ));
+	gtk_drag_set_icon_widget( context, priv->drag_popup, MY_DND_SHIFT, MY_DND_SHIFT );
+}
+
+/*
+ * get the data for re-attach the widget to the notebook
+ */
+static void
+on_drag_data_get( GtkWidget *self, GdkDragContext *context, GtkSelectionData *data, guint info, guint time, void *empty )
+{
+	myDndWindowPrivate *priv;
+	myDndData *sdata;
+	GdkAtom data_target, expected_target;
+
+	priv = my_dnd_window_get_instance_private( MY_DND_WINDOW( self ));
+
+	data_target = gtk_selection_data_get_target( data );
+	expected_target = gdk_atom_intern_static_string( MY_DND_TARGET );
+
+	if( data_target == expected_target ){
+
+		g_object_ref( priv->child_widget );
+		gtk_container_remove( GTK_CONTAINER( self ), priv->child_widget );
+
+		sdata = g_new0( myDndData, 1 );
+		sdata->page = priv->child_widget;
+		sdata->title = g_strdup( gtk_window_get_title( GTK_WINDOW( self )));
+
+		gtk_selection_data_set( data, data_target, sizeof( gpointer ), ( void * ) &sdata, sizeof( gpointer ));
+
+		my_iwindow_close( MY_IWINDOW( self ));
 	}
 }
