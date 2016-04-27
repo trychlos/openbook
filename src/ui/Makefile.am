@@ -159,10 +159,6 @@ openbook_SOURCES = \
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-iprintable.c									\
-	ofa-iprintable.h									\
-	ofa-irenderable.c									\
-	ofa-irenderable.h									\
 	ofa-itreeview-column.c								\
 	ofa-itreeview-column.h								\
 	ofa-itreeview-display.c								\
@@ -202,8 +198,6 @@ openbook_SOURCES = \
 	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\
 	ofa-reconcil-render.h								\
-	ofa-render-page.c									\
-	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
 	ofa-settlement-page.c								\

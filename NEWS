@@ -50,7 +50,10 @@
    - myDndWindow: new class which manages the child windows.
    - myBookDnd: class is renamed to myDndBook.
    - ofa_hub_dossier_is_writable(): new method.
-   - ofaNomodalPage: replaced by myDndWindow.
+   - ofaIPrintable: moved to api.
+   - ofaIRenderable: moved to api.
+   - ofaNomodalPage: deprecated and replaced by myDndWindow.
+   - ofaRenderPage: moved to api.
 
 -----------------------------------------------------------------------
  Version 0.55

@@ -55,7 +55,9 @@ api_include_HEADERS = \
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
 	ofa-import-duplicate.h								\
+	ofa-iprintable.h									\
 	ofa-iproperties.h									\
+	ofa-irenderable.h									\
 	ofa-isignal-hub.h									\
 	ofa-istore.h										\
 	ofa-itheme-manager.h								\
@@ -69,6 +71,7 @@ api_include_HEADERS = \
 	ofa-periodicity-bin.h								\
 	ofa-portfolio-collection.h							\
 	ofa-preferences.h									\
+	ofa-render-page.h									\
 	ofa-settings.h										\
 	ofa-stream-format.h									\
 	\

@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_RENDER_PAGE_H__
-#define __OFA_RENDER_PAGE_H__
+#ifndef __OPENBOOK_API_OFA_RENDER_PAGE_H__
+#define __OPENBOOK_API_OFA_RENDER_PAGE_H__
 
 /**
  * SECTION: ofa_render_page
  * @short_description: #ofaRenderPage class definition.
- * @include: ui/ofa-render-page.h
+ * @include: api/ofa-render-page.h
  *
  * This is an abstract base class which handled the preview of printings.
  * These printings, after having been displayed, may be printed (or
@@ -137,4 +137,4 @@ GtkWidget *ofa_render_page_get_top_paned     ( const ofaRenderPage *page );
 
 G_END_DECLS
 
-#endif /* __OFA_RENDER_PAGE_H__ */
+#endif /* __OPENBOOK_API_OFA_RENDER_PAGE_H__ */

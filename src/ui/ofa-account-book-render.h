@@ -34,7 +34,7 @@
  * Arguments are entered via the #ofaAccountBookBin composite widget.
  */
 
-#include "ui/ofa-render-page.h"
+#include "api/ofa-render-page.h"
 
 G_BEGIN_DECLS
 

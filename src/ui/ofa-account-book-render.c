@@ -37,6 +37,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -50,7 +51,6 @@
 #include "core/ofa-iconcil.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-irenderable.h"
 #include "ui/ofa-account-book-bin.h"
 #include "ui/ofa-account-book-render.h"
 

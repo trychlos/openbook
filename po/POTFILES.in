@@ -15,6 +15,7 @@ src/core/ofa-ope-template-properties.ui
 src/core/ofa-ope-template-select.ui
 src/core/ofa-open-prefs-bin.ui
 src/core/ofa-preferences.ui
+src/core/ofa-render-page.ui
 src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui
 src/mysql/ofa-mysql-prefs-bin.ui
@@ -61,7 +62,6 @@ src/ui/ofa-plugin-manager.ui
 src/ui/ofa-rate-properties.ui
 src/ui/ofa-reconcil-bin.ui
 src/ui/ofa-reconcil-page.ui
-src/ui/ofa-render-page.ui
 src/ui/ofa-restore-assistant.ui
 src/ui/ofa-settlement-page.ui
 src/ui/ofa-user-credentials-bin.ui

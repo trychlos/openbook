@@ -33,7 +33,7 @@
  * The class which manages the rendering (preview/print) of ledgers.
  */
 
-#include "ui/ofa-render-page.h"
+#include "api/ofa-render-page.h"
 
 G_BEGIN_DECLS
 

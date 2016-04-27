@@ -34,7 +34,7 @@
 
 #include "my/my-utils.h"
 
-#include "ui/ofa-iprintable.h"
+#include "api/ofa-iprintable.h"
 
 /* data associated to each implementor object
  */

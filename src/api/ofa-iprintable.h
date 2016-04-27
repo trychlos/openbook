@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_IPRINTABLE_H__
-#define __OFA_IPRINTABLE_H__
+#ifndef __OPENBOOK_API_OFA_IPRINTABLE_H__
+#define __OPENBOOK_API_OFA_IPRINTABLE_H__
 
 /**
  * SECTION: iprintable
  * @title: ofaIPrintable
  * @short_description: The IPrintable Interface
- * @include: ui/ofa-iprintable.h
+ * @include: api/ofa-iprintable.h
  *
  * The #ofaIPrintable interface lets its users benefit of the
  * standardized printing system of Openbook.
@@ -192,4 +192,4 @@ gboolean ofa_iprintable_print        ( ofaIPrintable *instance );
 
 G_END_DECLS
 
-#endif /* __OFA_IPRINTABLE_H__ */
+#endif /* __OPENBOOK_API_OFA_IPRINTABLE_H__ */

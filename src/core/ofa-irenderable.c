@@ -32,7 +32,7 @@
 
 #include "my/my-utils.h"
 
-#include "ui/ofa-irenderable.h"
+#include "api/ofa-irenderable.h"
 
 /* data associated to each implementor object
  */

@@ -160,8 +160,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-import-assistant.$(OBJEXT) ofa-iprintable.$(OBJEXT) \
-	ofa-irenderable.$(OBJEXT) ofa-itreeview-column.$(OBJEXT) \
+	ofa-import-assistant.$(OBJEXT) ofa-itreeview-column.$(OBJEXT) \
 	ofa-itreeview-display.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
 	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
 	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
@@ -172,9 +171,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
 	ofa-rate-properties.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
 	ofa-reconcil-page.$(OBJEXT) ofa-reconcil-render.$(OBJEXT) \
-	ofa-render-page.$(OBJEXT) ofa-restore-assistant.$(OBJEXT) \
-	ofa-settlement-page.$(OBJEXT) ofa-tree-store.$(OBJEXT) \
-	ofa-user-credentials-bin.$(OBJEXT)
+	ofa-restore-assistant.$(OBJEXT) ofa-settlement-page.$(OBJEXT) \
+	ofa-tree-store.$(OBJEXT) ofa-user-credentials-bin.$(OBJEXT)
 am__objects_1 = resources.$(OBJEXT)
 nodist_openbook_OBJECTS = $(am__objects_1)
 openbook_OBJECTS = $(am_openbook_OBJECTS) $(nodist_openbook_OBJECTS)
@@ -574,10 +572,6 @@ openbook_SOURCES = \
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-iprintable.c									\
-	ofa-iprintable.h									\
-	ofa-irenderable.c									\
-	ofa-irenderable.h									\
 	ofa-itreeview-column.c								\
 	ofa-itreeview-column.h								\
 	ofa-itreeview-display.c								\
@@ -617,8 +611,6 @@ openbook_SOURCES = \
 	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\
 	ofa-reconcil-render.h								\
-	ofa-render-page.c									\
-	ofa-render-page.h									\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
 	ofa-settlement-page.c								\
@@ -796,8 +788,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-ex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iprintable.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-irenderable.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itreeview-column.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itreeview-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-bin.Po@am__quote@
@@ -817,7 +807,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-restore-assistant.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settlement-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tree-store.Po@am__quote@

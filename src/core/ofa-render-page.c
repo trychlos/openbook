@@ -35,10 +35,10 @@
 
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
+#include "api/ofa-render-page.h"
 
 #include "ui/ofa-iprintable.h"
 #include "ui/ofa-irenderable.h"
-#include "ui/ofa-render-page.h"
 
 /* private instance data
  */
@@ -79,7 +79,7 @@ typedef struct {
 #define MSG_ERROR                       "labelerror"	/* red */
 #define MSG_INFO                        "labelinfo"		/* blue */
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-render-page.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-render-page.ui";
 static const gchar *st_ui_name          = "RenderPageWindow";
 
 static GtkWidget         *v_setup_view( ofaPage *page );

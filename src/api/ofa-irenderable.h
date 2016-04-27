@@ -22,14 +22,14 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_IRENDERABLE_H__
-#define __OFA_IRENDERABLE_H__
+#ifndef __OPENBOOK_API_OFA_IRENDERABLE_H__
+#define __OPENBOOK_API_OFA_IRENDERABLE_H__
 
 /**
  * SECTION: irenderable
  * @title: ofaIRenderable
  * @short_description: The IRenderable Interface
- * @include: ui/ofa-irenderable.h
+ * @include: api/ofa-irenderable.h
  *
  * The #ofaIRenderable interface lets its users benefit of the
  * standardized printing system of Openbook.
@@ -553,4 +553,4 @@ gdouble      ofa_irenderable_set_wrapped_text     ( ofaIRenderable *instance,
 
 G_END_DECLS
 
-#endif /* __OFA_IRENDERABLE_H__ */
+#endif /* __OPENBOOK_API_OFA_IRENDERABLE_H__ */

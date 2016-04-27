@@ -111,7 +111,9 @@ libofa_core_la_SOURCES = \
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-import-duplicate.c								\
+	ofa-iprintable.c									\
 	ofa-iproperties.c									\
+	ofa-irenderable.c									\
 	ofa-isignal-hub.c									\
 	ofa-istore.c										\
 	ofa-itheme-manager.c								\
@@ -138,12 +140,14 @@ libofa_core_la_SOURCES = \
 	ofa-periodicity-bin.c								\
 	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
+	ofa-render-page.c									\
 	ofa-settings.c										\
 	ofa-stream-format.c									\
 	ofa-stream-format-bin.c								\
 	ofa-stream-format-bin.h								\
 	ofa-stream-format-disp.c							\
 	ofa-stream-format-disp.h							\
+	\
 	ofo-account.c										\
 	ofo-base.c											\
 	ofo-bat.c											\
@@ -156,6 +160,7 @@ libofa_core_la_SOURCES = \
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
 	ofo-rate.c											\
+	\
 	ofs-account-balance.c								\
 	ofs-concil-id.c										\
 	ofs-currency.c										\
