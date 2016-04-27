@@ -577,39 +577,39 @@ ofo_entry_get_dataset_for_print_general_books( ofaHub *hub,
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	query = g_string_new( "" );
-	first = FALSE;
+	first = TRUE;
 	dataset = NULL;
 
 	if( my_strlen( from_account )){
 		g_string_append_printf( query, "ENT_ACCOUNT>='%s' ", from_account );
-		first = TRUE;
+		first = FALSE;
 	}
 	if( my_strlen( to_account )){
-		if( first ){
+		if( !first ){
 			query = g_string_append( query, "AND " );
 		}
 		g_string_append_printf( query, "ENT_ACCOUNT<='%s' ", to_account );
-		first = TRUE;
+		first = FALSE;
 	}
 	if( my_date_is_valid( from_date )){
-		if( first ){
+		if( !first ){
 			query = g_string_append( query, "AND " );
 		}
 		str = my_date_to_str( from_date, MY_DATE_SQL );
 		g_string_append_printf( query, "ENT_DEFFECT>='%s' ", str );
 		g_free( str );
-		first = TRUE;
+		first = FALSE;
 	}
 	if( my_date_is_valid( to_date )){
-		if( first ){
+		if( !first ){
 			query = g_string_append( query, "AND " );
 		}
 		str = my_date_to_str( to_date, MY_DATE_SQL );
 		g_string_append_printf( query, "ENT_DEFFECT<='%s' ", str );
 		g_free( str );
-		first = TRUE;
+		first = FALSE;
 	}
-	if( first ){
+	if( !first ){
 		query = g_string_append( query, "AND " );
 	}
 	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
