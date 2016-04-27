@@ -316,6 +316,7 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 
 	priv->entries_list = NULL;
 	dbegin = ofo_dossier_get_exe_begin( dossier );
+	//g_debug( "check_entries_balance_run: dbegin=%s", my_date_to_str( dbegin, MY_DATE_SQL ));
 	entries = ofo_entry_get_dataset_for_print_general_books( priv->hub, NULL, NULL, dbegin, NULL );
 	count = g_list_length( entries );
 
@@ -632,6 +633,13 @@ cmp_lists( ofaCheckBalancesBin *self, GList *list_a, GList *list_b )
 {
 	GList *it;
 	ofsCurrency *sbal_a, *sbal_b;
+
+	if( 1 ){
+		g_debug( "list_a" );
+		ofs_currency_list_dump( list_a );
+		g_debug( "list_b" );
+		ofs_currency_list_dump( list_b );
+	}
 
 	/* check that all 'a' records are found and same in list_b */
 	for( it=list_a ; it ; it=it->next ){
