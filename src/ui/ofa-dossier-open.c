@@ -557,7 +557,7 @@ do_open_dossier( ofaDossierOpen *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ), priv->read_only )){
+	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ), TRUE, priv->read_only )){
 		ofa_hub_dossier_remediate_settings( hub );
 		ok = TRUE;
 	}

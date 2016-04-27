@@ -50,10 +50,12 @@
    - myDndWindow: new class which manages the child windows.
    - myBookDnd: class is renamed to myDndBook.
    - ofa_hub_dossier_is_writable(): new method.
+   - ofa_hub_dossier_open: takes a new 'run_checks' boolean argument.
    - ofaIPrintable: moved to api.
    - ofaIRenderable: moved to api.
    - ofaNomodalPage: deprecated and replaced by myDndWindow.
    - ofaRenderPage: moved to api.
+   - SIGNAL_HUB_DOSSIER_OPENED: signal takes two 'run_checks' and 'read_only' arguments.
 
 -----------------------------------------------------------------------
  Version 0.55

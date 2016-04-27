@@ -265,12 +265,12 @@ static const gchar *st_icon_fname       = ICONFNAME;
 static void                  pane_save_position( GtkPaned *pane );
 static void                  window_store_ref( ofaMainWindow *self, GtkBuilder *builder, const gchar *placeholder );
 static void                  init_themes( ofaMainWindow *self );
-static void                  hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self );
+static void                  hub_on_dossier_opened( ofaHub *hub, gboolean run_prefs, gboolean read_only, ofaMainWindow *self );
 static void                  hub_on_dossier_closed( ofaHub *hub, ofaMainWindow *self );
 static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow *main_window );
 static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
-static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub );
+static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean read_only );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
 static void                  set_window_title( const ofaMainWindow *window, gboolean with_dossier );
@@ -605,9 +605,9 @@ init_themes( ofaMainWindow *self )
 }
 
 static void
-hub_on_dossier_opened( ofaHub *hub, ofaMainWindow *self )
+hub_on_dossier_opened( ofaHub *hub, gboolean run_prefs, gboolean read_only, ofaMainWindow *self )
 {
-	do_open_dossier( self, hub );
+	do_open_dossier( self, hub, run_prefs, read_only );
 }
 
 static void
@@ -667,7 +667,7 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 }
 
 static void
-do_open_dossier( ofaMainWindow *self, ofaHub *hub )
+do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean read_only )
 {
 	static const gchar *thisfn = "ofa_main_window_do_open_dossier";
 	ofaMainWindowPrivate *priv;

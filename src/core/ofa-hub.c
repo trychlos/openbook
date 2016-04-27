@@ -280,6 +280,8 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 *
 	 * Handler is of type:
 	 * 		void user_handler( ofaHub   *hub,
+	 * 							gboolean run_checks,
+	 * 							gboolean read_only,
 	 * 							gpointer user_data );
 	 */
 	st_signals[ DOSSIER_OPENED ] = g_signal_new_class_handler(
@@ -291,8 +293,8 @@ ofa_hub_class_init( ofaHubClass *klass )
 				NULL,								/* accumulator data */
 				NULL,
 				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
+				2,
+				G_TYPE_BOOLEAN, G_TYPE_BOOLEAN );
 
 	/**
 	 * ofaHub::hub-dossier-closed:
@@ -774,6 +776,7 @@ ofa_hub_get_dossier( const ofaHub *hub )
  * @hub: this #ofaHub instance.
  * @connect: a valid connection to the targeted database.
  * @parent: the #GtkWindow parent window.
+ * @run_prefs: whether to allow the user prefs to be run.
  * @read_only: whether the dossier should be opened in read-only mode.
  *
  * Open the dossier and exercice pointed to by the @connect connection.
@@ -786,7 +789,7 @@ ofa_hub_get_dossier( const ofaHub *hub )
  * else.
  */
 gboolean
-ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent, gboolean read_only )
+ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent, gboolean run_prefs, gboolean read_only )
 {
 	ofaHubPrivate *priv;
 	gboolean ok;
@@ -814,8 +817,9 @@ ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent, gb
 
 	if( !ok ){
 		dossier_do_close( hub );
+
 	} else {
-		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_OPENED );
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_OPENED, run_prefs, read_only );
 	}
 
 	return( ok );
