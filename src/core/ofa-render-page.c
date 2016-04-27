@@ -33,12 +33,11 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-iprintable.h"
+#include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-render-page.h"
-
-#include "ui/ofa-iprintable.h"
-#include "ui/ofa-irenderable.h"
 
 /* private instance data
  */
