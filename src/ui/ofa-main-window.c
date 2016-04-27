@@ -271,6 +271,7 @@ static void                  hub_on_dossier_changed( ofaHub *hub, ofaMainWindow 
 static void                  hub_on_dossier_preview( ofaHub *hub, const gchar *uri, ofaMainWindow *main_window );
 static gboolean              on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data );
 static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean read_only );
+static void                  do_open_run_prefs( ofaMainWindow *self, ofaHub *hub, gboolean read_only );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
 static void                  set_window_title( const ofaMainWindow *window, gboolean with_dossier );
@@ -669,13 +670,9 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 static void
 do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean read_only )
 {
-	static const gchar *thisfn = "ofa_main_window_do_open_dossier";
 	ofaMainWindowPrivate *priv;
 	const GDate *exe_begin, *exe_end;
-	const gchar *main_notes, *exe_notes;
 	ofoDossier *dossier;
-	ofaDossierPrefs *prefs;
-	gboolean empty, user_prefs_non_empty, dossier_prefs_non_empty;
 
 	priv = ofa_main_window_get_instance_private( self );
 
@@ -698,6 +695,41 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean 
 
 	g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CHANGED );
 
+	if( run_prefs ){
+		do_open_run_prefs( self, hub, read_only );
+	}
+}
+
+/**
+ * ofa_main_window_dossier_run_prefs:
+ * @main_window: this #ofaMainWindow instance.
+ *
+ * Run the user preferences.
+ */
+void
+ofa_main_window_dossier_run_prefs( ofaMainWindow *main_window )
+{
+	ofaHub *hub;
+	gboolean read_only;
+
+	g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+
+	hub = igetter_get_hub( OFA_IGETTER( main_window ));
+	read_only = !ofa_hub_dossier_is_writable( hub );
+
+	do_open_run_prefs( main_window, hub, read_only );
+}
+
+static void
+do_open_run_prefs( ofaMainWindow *self, ofaHub *hub, gboolean read_only )
+{
+	static const gchar *thisfn = "ofa_main_window_do_open_run_prefs";
+	const gchar *main_notes, *exe_notes;
+	ofoDossier *dossier;
+	ofaDossierPrefs *prefs;
+	gboolean empty, user_prefs_non_empty, dossier_prefs_non_empty;
+
+	dossier = ofa_hub_get_dossier( hub );
 	prefs = ofa_hub_dossier_get_prefs( hub );
 
 	/* display dossier notes ? */

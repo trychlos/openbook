@@ -265,6 +265,7 @@ static void
 exercice_close_assistant_dispose( GObject *instance )
 {
 	ofaExerciceCloseAssistantPrivate *priv;
+	GtkApplicationWindow *main_window;
 
 	g_return_if_fail( instance && OFA_IS_EXERCICE_CLOSE_ASSISTANT( instance ));
 
@@ -277,6 +278,12 @@ exercice_close_assistant_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->meta );
 		ofa_extender_collection_free_types( priv->close_list );
+
+		if( priv->getter ){
+			main_window = ofa_igetter_get_main_window( priv->getter );
+			g_return_if_fail( main_window && OFA_IS_MAIN_WINDOW( main_window ));
+			ofa_main_window_dossier_run_prefs( OFA_MAIN_WINDOW( main_window ));
+		}
 	}
 
 	/* chain up to the parent class */

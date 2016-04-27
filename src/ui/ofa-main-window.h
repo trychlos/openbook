@@ -126,6 +126,8 @@ void           ofa_main_window_dossier_backup    ( ofaMainWindow *window );
 
 void           ofa_main_window_dossier_properties( ofaMainWindow *window );
 
+void           ofa_main_window_dossier_run_prefs ( ofaMainWindow *window );
+
 void           ofa_main_window_warning_no_entry  ( const ofaMainWindow *window );
 
 G_END_DECLS

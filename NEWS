@@ -43,6 +43,7 @@
  Bug fixes:
 
    - Fix 'Closing period' menu item sensitivity when dossier is read-only.
+   - ofaExerciceCloseAssistant: only run user prefs after closing assistant.
 
  Other changes:
 
@@ -53,9 +54,10 @@
    - ofa_hub_dossier_open: takes a new 'run_checks' boolean argument.
    - ofaIPrintable: moved to api.
    - ofaIRenderable: moved to api.
+   - ofa_main_window_dossier_run_prefs(): new method.
    - ofaNomodalPage: deprecated and replaced by myDndWindow.
    - ofaRenderPage: moved to api.
-   - SIGNAL_HUB_DOSSIER_OPENED: signal takes two 'run_checks' and 'read_only' arguments.
+   - SIGNAL_HUB_DOSSIER_OPENED: signal takes two 'run_prefs' and 'read_only' arguments.
 
 -----------------------------------------------------------------------
  Version 0.55
