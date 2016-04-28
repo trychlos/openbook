@@ -353,7 +353,14 @@
 
 1099 2016- 4-20 FEAT connect ofoRate to hub signaling system
 
-1100
+1100 2016- 4-28 ExerciceCloseAssistant: when archiving open exercice
+                balances, it is not needed to also archive accounts
+                where both debit and credit are zero (e.g. 6x, 7x)
+
+1101 2016- 4-28 When about to delete a db record, have a signal with
+                boolean accumulator
+
+1102
 
 -----------------------------------------------------------------------
  DONE
