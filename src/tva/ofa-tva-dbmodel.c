@@ -179,7 +179,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 	cur_version = idbmodel_get_current_version( instance, update_data->connect );
 	last_version = idbmodel_get_last_version( instance, update_data->connect );
 
-	label = gtk_label_new( _( " Updating VAT DB model " ));
+	label = gtk_label_new( _( " Updating VAT DB Model " ));
 	my_iprogress_start_work( window, instance, label );
 
 	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );
@@ -587,6 +587,38 @@ static gulong
 count_v5( sUpdate *update_data )
 {
 	return( 6 );
+}
+
+/*
+ * Define operation template rules
+ */
+static gboolean
+dbmodel_to_v6( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_to_v6";
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	if( !exec_query( update_data,
+			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_OPE ("
+			"	TFO_MNEMO               VARCHAR(64)  BINARY NOT NULL COMMENT 'Form mnemonic',"
+			"	TFO_OPE_ROW             INTEGER      NOT NULL        COMMENT 'Table line number',"
+			"	TFO_OPE_FORM_ROW        INTEGER                      COMMENT 'Form source row number',"
+			"	TFO_OPE_FORM_COLUMN     INTEGER                      COMMENT 'Form source column number',"
+			"	TFO_OPE_TEMPLATE_ID     VARCHAR(64)                  COMMENT 'Operation template identifier',"
+			"	TFO_OPE_TEMPLATE_ROW    INTEGER                      COMMENT 'Operation template destination row number',"
+			"	TFO_OPE_TEMPLATE_COLUMN INTEGER                      COMMENT 'Operation template destination column number',"
+			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_OPE_ROW))" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v6( sUpdate *update_data )
+{
+	return( 1 );
 }
 
 /*

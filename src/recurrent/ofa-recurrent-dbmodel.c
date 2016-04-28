@@ -171,7 +171,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 	cur_version = idbmodel_get_current_version( instance, update_data->connect );
 	last_version = idbmodel_get_last_version( instance, update_data->connect );
 
-	label = gtk_label_new( _( " Updating Recurrent DB model " ));
+	label = gtk_label_new( _( " Updating Recurrent DB Model " ));
 	my_iprogress_start_work( window, instance, label );
 
 	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );
