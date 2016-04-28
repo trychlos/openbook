@@ -69,8 +69,6 @@ typedef struct {
 }
 	ofoRecurrentGenPrivate;
 
-static ofoRecurrentGen *st_this         = NULL;
-
 static ofoRecurrentGen *get_this( ofaHub *hub );
 static ofoRecurrentGen *gen_do_read( ofaHub *hub );
 static gboolean         gen_do_update( ofoRecurrentGen *gen );
@@ -132,11 +130,18 @@ ofo_recurrent_gen_class_init( ofoRecurrentGenClass *klass )
 static ofoRecurrentGen *
 get_this( ofaHub *hub )
 {
-	if( !st_this ){
-		st_this = gen_do_read( hub );
+	ofoRecurrentGen *gen;
+	myICollector *collector;
+
+	collector = ofa_hub_get_collector( hub );
+	gen = ( ofoRecurrentGen * ) my_icollector_single_get_object( collector, OFO_TYPE_RECURRENT_GEN );
+
+	if( !gen ){
+		gen = gen_do_read( hub );
+		my_icollector_single_set_object( collector, gen );
 	}
 
-	return( st_this );
+	return( gen );
 }
 static ofoRecurrentGen *
 gen_do_read( ofaHub *hub )
