@@ -182,7 +182,7 @@ ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *aske
 		my_iwindow_set_settings( MY_IWINDOW( st_this ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 		priv = ofa_account_select_get_instance_private( st_this );
-		priv->getter = getter;
+		priv->getter = ofa_igetter_get_permanent_getter( getter );
 
 		my_iwindow_init( MY_IWINDOW( st_this ));
 		my_iwindow_set_hide_on_close( MY_IWINDOW( st_this ), TRUE );

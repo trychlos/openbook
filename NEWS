@@ -45,7 +45,7 @@
    - Fix 'Closing period' menu item sensitivity when dossier is read-only.
    - ofaExerciceCloseAssistant: only run user prefs after closing assistant
      (and new properties have been set).
-   - Fix crash of account and operation template selection after initia
+   - Fix crash of account and operation template selection after initial
      caller has been closed.
 
  Other changes:
