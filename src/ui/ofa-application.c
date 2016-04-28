@@ -156,6 +156,7 @@ static void                  on_about( GSimpleAction *action, GVariant *paramete
 static void                  on_version( ofaApplication *application );
 
 static void                  igetter_iface_init( ofaIGetterInterface *iface );
+static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *instance );
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
@@ -1186,10 +1187,17 @@ igetter_iface_init( ofaIGetterInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->get_permanent = igetter_get_permanent_getter;
 	iface->get_application = igetter_get_application;
 	iface->get_hub = igetter_get_hub;
 	iface->get_main_window = igetter_get_main_window;
 	iface->get_theme_manager = igetter_get_theme_manager;
+}
+
+static ofaIGetter *
+igetter_get_permanent_getter( const ofaIGetter *instance )
+{
+	return( OFA_IGETTER( instance ));
 }
 
 static GApplication *

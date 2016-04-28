@@ -61,6 +61,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void                  igetter_iface_init( ofaIGetterInterface *iface );
+static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *instance );
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
@@ -292,10 +293,28 @@ igetter_iface_init( ofaIGetterInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->get_permanent = igetter_get_permanent_getter;
 	iface->get_application = igetter_get_application;
 	iface->get_hub = igetter_get_hub;
 	iface->get_main_window = igetter_get_main_window;
 	iface->get_theme_manager = igetter_get_theme_manager;
+}
+
+/*
+ * #ofaPage's life is not expected to be as long as those of the
+ * #ofoDossier, so asks to the main window.
+ */
+static ofaIGetter *
+igetter_get_permanent_getter( const ofaIGetter *instance )
+{
+	GtkApplicationWindow *main_window;
+
+	g_return_val_if_fail( !OFA_PAGE( instance )->prot->dispose_has_run, NULL );
+
+	main_window = igetter_get_main_window( instance );
+	g_return_val_if_fail( main_window && OFA_IS_IGETTER( main_window ), NULL );
+
+	return( ofa_igetter_get_permanent_getter( OFA_IGETTER( main_window )));
 }
 
 static GApplication *

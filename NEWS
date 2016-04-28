@@ -43,7 +43,10 @@
  Bug fixes:
 
    - Fix 'Closing period' menu item sensitivity when dossier is read-only.
-   - ofaExerciceCloseAssistant: only run user prefs after closing assistant.
+   - ofaExerciceCloseAssistant: only run user prefs after closing assistant
+     (and new properties have been set).
+   - Fix crash of account and operation template selection after initia
+     caller has been closed.
 
  Other changes:
 
@@ -52,6 +55,7 @@
    - myBookDnd: class is renamed to myDndBook.
    - ofa_hub_dossier_is_writable(): new method.
    - ofa_hub_dossier_open: takes a new 'run_checks' boolean argument.
+   - ofa_igetter_get_permanent_getter(): new method.
    - ofaIPrintable: moved to api.
    - ofaIRenderable: moved to api.
    - ofa_main_window_dossier_run_prefs(): new method.

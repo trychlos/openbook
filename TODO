@@ -222,6 +222,9 @@
 
  783 2015- 4- 3 FEAT have a summary of unsettle/unreconciliated entries
                      which will be reported after exercice closing
+     2016- 4-28 use case: when preparing the exercice closing, have a
+                direct view of unsettled entries on settleable accounts
+                + idem for unreconciliated on reconciliable
 
  790 2015- 4- 6 DISP GuidedInputEx: replace the treeview by a revealer ?
 

@@ -161,6 +161,51 @@ ofa_igetter_get_interface_version( GType type )
 }
 
 /**
+ * ofa_igetter_get_permanent_getter:
+ * @instance: this #ofaIGetter instance.
+ *
+ * Returns: a permanent instance of an #ofaIGetter implementation.
+ *
+ * The exact returned implementation is only garanteed to be at least
+ * the same lifre than those of the #ofoDossier.
+ *
+ * This is to be used when the life of the user is longer that those of
+ * the provided #ofaIGetter.
+ *
+ * Example: a #ofaReconciliation page opens a #ofaAccountSelect composite
+ * widget, providing it with its own #ofaIGetter. At some time then, this
+ * #ofaReconciliation page is closed by the used, thus invalidating the
+ * provided #ofaIGetter instance.
+ *
+ * But the #ofaAccountSelect life is as long as those of the #ofoDossier.
+ * Next time it tries to access its initially-provided #ofaIGetter
+ * interface, it will crash.
+ *
+ * Updating the #ofaIGetter instance stored by the composite widget is
+ * not enough, because the inital instance may have been propagated to
+ * another child widget, and so on.
+ *
+ * The most secure way is just for the composite widget which "knows"
+ * that it will have a long life to store a permanent instance of a
+ * #ofaIGetter implementation.
+ */
+ofaIGetter *
+ofa_igetter_get_permanent_getter( const ofaIGetter *instance )
+{
+	static const gchar *thisfn = "ofa_igetter_get_permanent";
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	if( OFA_IGETTER_GET_INTERFACE( instance )->get_permanent ){
+		return( OFA_IGETTER_GET_INTERFACE( instance )->get_permanent( instance ));
+	}
+
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_permanent()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	return( NULL );
+}
+
+/**
  * ofa_igetter_get_application:
  * @instance: this #ofaIGetter instance.
  *

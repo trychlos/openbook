@@ -95,6 +95,16 @@ typedef struct {
 
 	/*** instance-wide ***/
 	/**
+	 * get_permanent:
+	 * @instance: this #ofaIGetter instance.
+	 *
+	 * Returns: a permanent instance of #ofaIGetter implementation.
+	 *
+	 * Since: version 1
+	 */
+	ofaIGetter *           ( *get_permanent )        ( const ofaIGetter *instance );
+
+	/**
 	 * get_application:
 	 * @instance: this #ofaIGetter instance.
 	 *
@@ -151,6 +161,8 @@ guint                 ofa_igetter_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
+ofaIGetter           *ofa_igetter_get_permanent_getter      ( const ofaIGetter *instance );
+
 GApplication         *ofa_igetter_get_application           ( const ofaIGetter *instance );
 
 ofaHub               *ofa_igetter_get_hub                   ( const ofaIGetter *instance );
