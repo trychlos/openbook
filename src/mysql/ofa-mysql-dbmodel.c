@@ -114,6 +114,8 @@ static gboolean dbmodel_v30( ofaMysqlDBModel *self, gint version );
 static gulong   count_v30( ofaMysqlDBModel *self );
 static gboolean dbmodel_v31( ofaMysqlDBModel *self, gint version );
 static gulong   count_v31( ofaMysqlDBModel *self );
+static gboolean dbmodel_v32( ofaMysqlDBModel *self, gint version );
+static gulong   count_v32( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -128,6 +130,7 @@ static sMigration st_migrates[] = {
 		{ 29, dbmodel_v29, count_v29 },
 		{ 30, dbmodel_v30, count_v30 },
 		{ 31, dbmodel_v31, count_v31 },
+		{ 32, dbmodel_v32, count_v32 },
 		{ 0 }
 };
 
@@ -651,6 +654,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 
 	/* n° 9 */
 	/* Identifiers and labels are resized in v28 */
+	/* ope number is added in v32 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_ENTRIES ("
 			"	ENT_DEFFECT      DATE NOT NULL                       COMMENT 'Imputation effect date',"
@@ -1691,7 +1695,7 @@ dbmodel_v31( ofaMysqlDBModel *self, gint version )
 
 	if( !exec_query( self,
 			"ALTER TABLE OFA_T_DOSSIER "
-			"	ADD COLUMN DOS_PREVEXE_END        DATE                COMMENT 'End date of previoous exercice'" )){
+			"	ADD COLUMN DOS_PREVEXE_END        DATE                COMMENT 'End date of previous exercice'" )){
 		return( FALSE );
 	}
 
@@ -1733,4 +1737,36 @@ static gulong
 count_v31( ofaMysqlDBModel *self )
 {
 	return( 4 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v32:
+ *
+ * - ofoDossier: have previous exercice end date.
+ * - ofoAccountsArchive: new accounts archives table
+ */
+static gboolean
+dbmodel_v32( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v32";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_ENTRIES "
+			"	ADD COLUMN ENT_OPE_NUMBER         BIGINT              COMMENT 'Source operation number'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v32( ofaMysqlDBModel *self )
+{
+	return( 1 );
 }
