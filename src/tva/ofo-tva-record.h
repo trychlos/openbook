@@ -85,6 +85,7 @@ void            ofo_tva_record_dump                   ( const ofoTVARecord *reco
 const gchar    *ofo_tva_record_get_mnemo              ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_label              ( const ofoTVARecord *record );
 gboolean        ofo_tva_record_get_has_correspondence ( const ofoTVARecord *record );
+const gchar    *ofo_tva_record_get_correspondence     ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_notes              ( const ofoTVARecord *record );
 gboolean        ofo_tva_record_get_is_validated       ( const ofoTVARecord *record );
 const GDate    *ofo_tva_record_get_begin              ( const ofoTVARecord *record );
@@ -104,6 +105,7 @@ gint            ofo_tva_record_compare_by_key         ( const ofoTVARecord *reco
 void            ofo_tva_record_set_mnemo              ( ofoTVARecord *record, const gchar *mnemo );
 void            ofo_tva_record_set_label              ( ofoTVARecord *record, const gchar *label );
 void            ofo_tva_record_set_has_correspondence ( ofoTVARecord *record, gboolean has_correspondence );
+void            ofo_tva_record_set_correspondence     ( ofoTVARecord *record, const gchar *correspondence );
 void            ofo_tva_record_set_notes              ( ofoTVARecord *record, const gchar *notes );
 void            ofo_tva_record_set_is_validated       ( ofoTVARecord *record, gboolean is_validated );
 void            ofo_tva_record_set_begin              ( ofoTVARecord *record, const GDate *date );

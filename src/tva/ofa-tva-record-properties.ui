@@ -320,6 +320,7 @@
                           <object class="GtkGrid" id="p3-grid">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="margin_right">16</property>
                             <property name="vexpand">True</property>
                             <property name="row_spacing">2</property>
                             <property name="column_spacing">2</property>
@@ -388,6 +389,7 @@
                           <object class="GtkGrid" id="p2-grid">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="margin_right">16</property>
                             <property name="vexpand">True</property>
                             <property name="row_spacing">2</property>
                             <property name="column_spacing">2</property>
@@ -399,7 +401,7 @@
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
-                                <property name="left_attach">1</property>
+                                <property name="left_attach">0</property>
                                 <property name="top_attach">0</property>
                               </packing>
                             </child>
@@ -412,7 +414,7 @@
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
-                                <property name="left_attach">2</property>
+                                <property name="left_attach">1</property>
                                 <property name="top_attach">0</property>
                               </packing>
                             </child>
@@ -424,7 +426,7 @@
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
-                                <property name="left_attach">4</property>
+                                <property name="left_attach">3</property>
                                 <property name="top_attach">0</property>
                               </packing>
                             </child>
@@ -436,12 +438,9 @@
                                 <property name="xalign">0</property>
                               </object>
                               <packing>
-                                <property name="left_attach">3</property>
+                                <property name="left_attach">2</property>
                                 <property name="top_attach">0</property>
                               </packing>
-                            </child>
-                            <child>
-                              <placeholder/>
                             </child>
                           </object>
                         </child>
@@ -461,6 +460,37 @@
                   </object>
                   <packing>
                     <property name="position">2</property>
+                    <property name="tab_fill">False</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkScrolledWindow" id="scrolledwindow1">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkTextView" id="pn-notes">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="vexpand">True</property>
+                        <property name="wrap_mode">word</property>
+                        <property name="left_margin">2</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="position">3</property>
+                  </packing>
+                </child>
+                <child type="tab">
+                  <object class="GtkLabel" id="label2">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">_Notes</property>
+                    <property name="use_underline">True</property>
+                  </object>
+                  <packing>
+                    <property name="position">3</property>
                     <property name="tab_fill">False</property>
                   </packing>
                 </child>

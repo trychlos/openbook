@@ -39,6 +39,7 @@
    - ofaTVARecordProperties: set the auto-eval mode to True.
    - ofsOpe: set again the auto-eval mode to False, only using %EVAL() function.
    - ofoTVARecord: improve data control.
+   - ofoTVARecord: distinguish between correspondence and notes.
  
  Bug fixes:
 

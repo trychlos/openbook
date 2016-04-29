@@ -63,6 +63,7 @@ typedef struct {
 	/* internals
 	 */
 	gboolean      is_writable;
+	gboolean      is_new;
 
 	/* UI
 	 */
@@ -71,7 +72,8 @@ typedef struct {
 	GtkWidget    *end_editable;
 	GtkWidget    *boolean_grid;
 	GtkWidget    *detail_grid;
-	GtkWidget    *textview;
+	GtkWidget    *corresp_textview;
+	GtkWidget    *notes_textview;
 	GtkWidget    *compute_btn;
 	GtkWidget    *validate_btn;
 	GtkWidget    *ok_btn;
@@ -93,7 +95,7 @@ static gboolean st_debug                = TRUE;
 
 enum {
 	BOOL_COL_LABEL = 0,
-	DET_COL_CODE = 1,
+	DET_COL_CODE = 0,
 	DET_COL_LABEL,
 	DET_COL_BASE,
 	DET_COL_AMOUNT,
@@ -210,6 +212,7 @@ ofa_tva_record_properties_init( ofaTVARecordProperties *self )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -316,6 +319,7 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
 	ofaHub *hub;
+	const gchar *cstr;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -342,6 +346,13 @@ idialog_init( myIDialog *instance )
 	init_booleans( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_taxes( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_correspondence( OFA_TVA_RECORD_PROPERTIES( instance ));
+
+	priv->notes_textview = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "pn-notes" );
+	g_return_if_fail( priv->notes_textview && GTK_IS_TEXT_VIEW( priv->notes_textview ));
+	cstr = ofo_tva_record_get_notes( priv->tva_record );
+	my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->notes_textview ), cstr, TRUE );
+
+	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_record );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
@@ -485,10 +496,9 @@ static void
 init_taxes( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkWidget *grid, *label, *entry;
+	GtkWidget *grid, *entry;
 	guint idx, count, row;
 	const gchar *cstr;
-	gchar *str;
 	gboolean has_base, has_amount;
 	ofxAmount amount;
 
@@ -500,15 +510,6 @@ init_taxes( ofaTVARecordProperties *self )
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 	for( idx=0 ; idx<count ; ++idx ){
 		row = idx+1;
-
-		label = gtk_label_new( NULL );
-		gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-		my_utils_widget_set_margins( label, 0, 0, 0, 4 );
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 0, row, 1, 1 );
-		str = g_strdup_printf( "<i>%u</i>", row );
-		gtk_label_set_markup( GTK_LABEL( label ), str );
-		g_free( str );
 
 		/* code */
 		entry = gtk_entry_new();
@@ -538,7 +539,7 @@ init_taxes( ofaTVARecordProperties *self )
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
-			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_BASE, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_base_changed ), self );
 
@@ -558,7 +559,7 @@ init_taxes( ofaTVARecordProperties *self )
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
-			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_AMOUNT, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_amount_changed ), self );
 
@@ -568,11 +569,6 @@ init_taxes( ofaTVARecordProperties *self )
 			amount = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
 			my_double_editable_set_amount( GTK_EDITABLE( entry ), amount );
 		}
-
-		/* padding on the right so that the scrollbar does not hide the
-		 * amount */
-		label = gtk_label_new( "   " );
-		gtk_grid_attach( GTK_GRID( grid ), label, DET_COL_PADDING, row, 1, 1 );
 	}
 }
 
@@ -592,12 +588,13 @@ init_correspondence( ofaTVARecordProperties *self )
 		label = gtk_label_new_with_mnemonic( _( "_Correspondence" ));
 		scrolled = gtk_scrolled_window_new( NULL, NULL );
 		gtk_scrolled_window_set_shadow_type( GTK_SCROLLED_WINDOW( scrolled ), GTK_SHADOW_IN );
-		gtk_notebook_append_page( GTK_NOTEBOOK( book ), scrolled, label );
-		priv->textview = gtk_text_view_new();
-		gtk_container_add( GTK_CONTAINER( scrolled ), priv->textview );
+		gtk_notebook_insert_page( GTK_NOTEBOOK( book ), scrolled, label, 3 );
+		priv->corresp_textview = gtk_text_view_new();
+		gtk_text_view_set_left_margin( GTK_TEXT_VIEW( priv->corresp_textview ), 2 );
+		gtk_container_add( GTK_CONTAINER( scrolled ), priv->corresp_textview );
 
-		cstr = ofo_tva_record_get_notes( priv->tva_record );
-		my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->textview ), cstr, TRUE );
+		cstr = ofo_tva_record_get_correspondence( priv->tva_record );
+		my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->corresp_textview ), cstr, TRUE );
 	}
 }
 
@@ -738,10 +735,6 @@ do_update( ofaTVARecordProperties *self, gchar **msgerr )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	if( priv->has_correspondence ){
-		my_utils_container_notes_get_ex( GTK_TEXT_VIEW( priv->textview ), tva_record );
-	}
-
 	ofo_tva_record_set_label( priv->tva_record,
 			gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
 
@@ -750,6 +743,17 @@ do_update( ofaTVARecordProperties *self, gchar **msgerr )
 
 	ofo_tva_record_set_end( priv->tva_record,
 			my_date_editable_get_date( GTK_EDITABLE( priv->end_editable ), NULL ));
+
+	if( priv->has_correspondence ){
+		GtkTextBuffer *buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->corresp_textview ));
+		GtkTextIter start, end; gtk_text_buffer_get_start_iter( buffer, &start );
+		gtk_text_buffer_get_end_iter( buffer, &end );
+		gchar *notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+		ofo_tva_record_set_correspondence( priv->tva_record, notes );
+		g_free( notes );
+	}
+
+	my_utils_container_notes_get_ex( GTK_TEXT_VIEW( priv->notes_textview ), tva_record );
 
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
 	ofo_tva_record_boolean_free_all( priv->tva_record );

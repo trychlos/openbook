@@ -51,6 +51,7 @@ enum {
 	TFO_MNEMO = 1,
 	TFO_LABEL,
 	TFO_HAS_CORRESPONDENCE,
+	TFO_CORRESPONDENCE,
 	TFO_NOTES,
 	TFO_VALIDATED,
 	TFO_BEGIN,
@@ -89,6 +90,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_HAS_CORRESPONDENCE ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_CORRESPONDENCE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -585,6 +590,15 @@ ofo_tva_record_get_has_correspondence( const ofoTVARecord *record )
 }
 
 /**
+ * ofo_tva_record_get_correspondence:
+ */
+const gchar *
+ofo_tva_record_get_correspondence( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, string, NULL, TFO_CORRESPONDENCE );
+}
+
+/**
  * ofo_tva_record_get_notes:
  */
 const gchar *
@@ -828,6 +842,15 @@ void
 ofo_tva_record_set_has_correspondence( ofoTVARecord *record, gboolean has_correspondence )
 {
 	ofo_base_setter( TVA_RECORD, record, string, TFO_HAS_CORRESPONDENCE, has_correspondence ? "Y":"N" );
+}
+
+/**
+ * ofo_tva_record_set_correspondence:
+ */
+void
+ofo_tva_record_set_correspondence( ofoTVARecord *record, const gchar *notes )
+{
+	ofo_base_setter( TVA_RECORD, record, string, TFO_CORRESPONDENCE, notes );
 }
 
 /**

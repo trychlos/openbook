@@ -609,13 +609,19 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS "
+			"	ADD    COLUMN TFO_CORRESPONDENCE   VARCHAR(4096)                        COMMENT 'Correspondence'" )){
+		return( FALSE );
+	}
+
 	return( TRUE );
 }
 
 static gulong
 count_v6( sUpdate *update_data )
 {
-	return( 1 );
+	return( 2 );
 }
 
 /*
