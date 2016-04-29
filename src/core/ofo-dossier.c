@@ -215,6 +215,7 @@ static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *s
 static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_last_ope( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
@@ -840,6 +841,29 @@ ofo_dossier_get_next_entry( ofoDossier *dossier )
 }
 
 /**
+ * ofo_dossier_get_next_ope:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the next operation number to be allocated in the dossier.
+ */
+ofxCounter
+ofo_dossier_get_next_ope( ofoDossier *dossier )
+{
+	ofxCounter last, next;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
+
+	last = ofo_dossier_get_last_ope( dossier );
+	next = last+1;
+	dossier_set_last_ope( dossier, next );
+	dossier_update_next( dossier, "DOS_LAST_OPE", next );
+
+	return( next );
+}
+
+/**
  * ofo_dossier_get_next_settlement:
  * @dossier: this #ofoDossier instance.
  */
@@ -1367,6 +1391,12 @@ static void
 dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter )
 {
 	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_ENTRY, counter );
+}
+
+static void
+dossier_set_last_ope( ofoDossier *dossier, ofxCounter counter )
+{
+	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_OPE, counter );
 }
 
 static void
