@@ -120,7 +120,8 @@ void            ofo_tva_record_detail_add             ( ofoTVARecord *record,
 															ofxAmount base,
 															gboolean has_amount,
 															const gchar *amount_rule,
-															ofxAmount amount );
+															ofxAmount amount,
+															const gchar *template );
 
 void            ofo_tva_record_detail_free_all        ( ofoTVARecord *record );
 
@@ -134,6 +135,7 @@ ofxAmount       ofo_tva_record_detail_get_base        ( const ofoTVARecord *reco
 gboolean        ofo_tva_record_detail_get_has_amount  ( const ofoTVARecord *record, guint idx );
 const gchar    *ofo_tva_record_detail_get_amount_rule ( const ofoTVARecord *record, guint idx );
 ofxAmount       ofo_tva_record_detail_get_amount      ( const ofoTVARecord *record, guint idx );
+const gchar    *ofo_tva_record_detail_get_template    ( const ofoTVARecord *record, guint idx );
 
 void            ofo_tva_record_detail_set_base        ( ofoTVARecord *record, guint idx, ofxAmount base );
 void            ofo_tva_record_detail_set_amount      ( ofoTVARecord *record, guint idx, ofxAmount amount );

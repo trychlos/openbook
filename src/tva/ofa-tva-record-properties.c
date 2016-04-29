@@ -143,6 +143,7 @@ static gchar           *eval_amount( ofsFormulaHelper *helper );
 static gchar           *eval_base( ofsFormulaHelper *helper );
 static gchar           *eval_code( ofsFormulaHelper *helper );
 static void             on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static gboolean         do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr );
 static void             set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
 
 static const sEvalDef st_formula_fns[] = {
@@ -1052,9 +1053,12 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
 
-	if( do_update( self, &msgerr )){
+	if( do_update( self, &msgerr ) &&
+			do_generate_opes( self, &msgerr )){
+
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO,
 				_( "The VAT declaration has been successfully validated." ));
+
 		/* close the Properties dialog box
 		 * with Cancel for not trigger another update */
 		my_iwindow_close( MY_IWINDOW( self ));
@@ -1063,6 +1067,18 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
 		g_free( msgerr );
 	}
+}
+
+/*
+ * when an operation template is recorded besides of an amount, it is
+ * generated if the corresponding amount is greater thant zero.
+ * This amount is so injected in the operation template, first row and
+ * first of available debit/credit.
+ */
+static gboolean
+do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
+{
+	return( TRUE );
 }
 
 static void

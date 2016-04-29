@@ -615,13 +615,19 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS_DET "
+			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)                          COMMENT 'Operation template'" )){
+		return( FALSE );
+	}
+
 	return( TRUE );
 }
 
 static gulong
 count_v6( sUpdate *update_data )
 {
-	return( 2 );
+	return( 3 );
 }
 
 /*

@@ -71,6 +71,7 @@ enum {
 	TFO_DET_HAS_AMOUNT,
 	TFO_DET_AMOUNT_RULE,
 	TFO_DET_AMOUNT,
+	TFO_DET_TEMPLATE,
 };
 
 /*
@@ -171,6 +172,10 @@ static const ofsBoxDef st_details_defs[] = {
 				FALSE },
 		{ OFA_BOX_CSV( TFO_DET_AMOUNT ),
 				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_TEMPLATE ),
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ 0 }
@@ -530,7 +535,8 @@ ofo_tva_record_new_from_form( const ofoTVAForm *form )
 				0,
 				ofo_tva_form_detail_get_has_amount( form, i ),
 				ofo_tva_form_detail_get_amount( form, i ),
-				0 );
+				0,
+				ofo_tva_form_detail_get_has_template( form, i ) ? ofo_tva_form_detail_get_template( form, i ) : NULL );
 	}
 
 	count = ofo_tva_form_boolean_get_count( form );
@@ -912,7 +918,8 @@ ofo_tva_record_detail_add( ofoTVARecord *record,
 							guint level,
 							const gchar *code, const gchar *label,
 							gboolean has_base, const gchar *base_rule, ofxAmount base,
-							gboolean has_amount, const gchar *amount_rule, ofxAmount amount )
+							gboolean has_amount, const gchar *amount_rule, ofxAmount amount,
+							const gchar *template )
 {
 	ofoTVARecordPrivate *priv;
 	GList *fields;
@@ -935,6 +942,7 @@ ofo_tva_record_detail_add( ofoTVARecord *record,
 	ofa_box_set_string( fields, TFO_DET_HAS_AMOUNT, has_amount ? "Y":"N" );
 	ofa_box_set_string( fields, TFO_DET_AMOUNT_RULE, amount_rule );
 	ofa_box_set_amount( fields, TFO_DET_AMOUNT, amount );
+	ofa_box_set_string( fields, TFO_DET_TEMPLATE, my_strlen( template ) ? template : NULL );
 
 	priv->details = g_list_append( priv->details, fields );
 }
@@ -1167,6 +1175,28 @@ ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
 	amount = nth ? ofa_box_get_amount( nth->data, TFO_DET_AMOUNT ) : 0;
 
 	return( amount );
+}
+
+/**
+ * ofo_tva_record_detail_get_template:
+ * @idx is the index in the details list, starting with zero
+ */
+const gchar *
+ofo_tva_record_detail_get_template( const ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	const gchar *cstr;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), NULL );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, NULL );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	cstr = nth ? ofa_box_get_string( nth->data, TFO_DET_TEMPLATE ) : NULL;
+
+	return( cstr );
 }
 
 /**
@@ -1494,7 +1524,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 {
 	GString *query;
 	gboolean ok;
-	gchar *send, *code, *label, *base, *amount;
+	gchar *send, *code, *label, *base, *amount, *template;
 	const gchar *cstr;
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS_DET " );
@@ -1504,7 +1534,8 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 			"	(TFO_MNEMO,TFO_END,TFO_DET_ROW,"
 			"	 TFO_DET_LEVEL,TFO_DET_CODE,TFO_DET_LABEL,"
 			"	 TFO_DET_HAS_BASE,TFO_DET_BASE_RULE,TFO_DET_BASE,"
-			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT_RULE,TFO_DET_AMOUNT) "
+			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT_RULE,TFO_DET_AMOUNT,"
+			"	 TFO_DET_TEMPLATE) "
 			"	VALUES('%s','%s',%d",
 			ofo_tva_record_get_mnemo( record ), send, rang );
 
@@ -1555,6 +1586,14 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 	amount = my_double_to_sql( ofa_box_get_amount( details, TFO_DET_AMOUNT ));
 	g_string_append_printf( query, ",%s", amount );
 	g_free( amount );
+
+	template = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_TEMPLATE ));
+	if( my_strlen( template )){
+		g_string_append_printf( query, ",'%s'", template );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( template );
 
 	query = g_string_append( query, ")" );
 
