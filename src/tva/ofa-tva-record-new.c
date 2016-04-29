@@ -349,7 +349,7 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 		exists = ( ofo_tva_record_get_by_key( hub, mnemo, dend ) != NULL );
 		if( exists ){
-			msgerr = g_strdup( _( "Same declaration is already defined" ));
+			msgerr = g_strdup( _( "End date overlaps with an already defined declaration" ));
 		} else {
 			ok_valid = TRUE;
 		}

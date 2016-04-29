@@ -56,6 +56,7 @@ enum {
 	TFO_VALIDATED,
 	TFO_BEGIN,
 	TFO_END,
+	TFO_DOPE,
 	TFO_UPD_USER,
 	TFO_UPD_STAMP,
 	TFO_BOOL_ROW,
@@ -72,6 +73,7 @@ enum {
 	TFO_DET_AMOUNT_RULE,
 	TFO_DET_AMOUNT,
 	TFO_DET_TEMPLATE,
+	TFO_DET_OPE_NUMBER,
 };
 
 /*
@@ -111,6 +113,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( TFO_END ),
+				OFA_TYPE_DATE,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( TFO_DOPE ),
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
@@ -178,6 +184,10 @@ static const ofsBoxDef st_details_defs[] = {
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( TFO_DET_OPE_NUMBER ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -214,15 +224,6 @@ typedef struct {
 }
 	ofoTVARecordPrivate;
 
-/* a structure to compare mnemos and end dates
- */
-typedef struct {
-	gchar *mnemo;
-	GDate  date;
-}
-	sCompare;
-
-static ofoTVARecord *record_find_by_mnemo_and_end( GList *set, const gchar *mnemo, const GDate *end );
 static guint         record_count_for_account( const ofaIDBConnect *connect, const gchar *account );
 static void          tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user );
 static void          tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp );
@@ -236,7 +237,6 @@ static gboolean      record_insert_bools( ofoTVARecord *record, const ofaIDBConn
 static gboolean      record_do_update( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean      record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean      record_do_delete( ofoTVARecord *record, const ofaIDBConnect *connect );
-static gint          record_cmp_by_compare( const ofoTVARecord *a, const sCompare *cmp );
 static gint          record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
 static gint          tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b );
 static void          icollectionable_iface_init( myICollectionableInterface *iface );
@@ -404,39 +404,87 @@ ofo_tva_record_get_last_end( ofaHub *hub, const gchar *mnemo, GDate *date )
  * ofo_tva_record_get_by_key:
  * @dossier:
  * @mnemo:
- * @end:
+ * @candidate_end: a valid date as candidate end.
  *
- * Returns: the searched recorded tva declaration, or %NULL.
+ * Returns: the first found recorded tva declaration for which the @end
+ * date is inside of begin end end declaration dates, or %NULL.
+ *
+ * @end is the candidate date end for a new record. As a consequence,
+ * any record with this same @end end date will make the candidate date
+ * erroneous.
  *
  * The returned object is owned by the #ofoTVARecord class, and should
  * not be unreffed by the caller.
  */
 ofoTVARecord *
-ofo_tva_record_get_by_key( ofaHub *hub, const gchar *mnemo, const GDate *end )
+ofo_tva_record_get_by_key( ofaHub *hub, const gchar *mnemo, const GDate *candidate_end )
 {
-	GList *dataset;
+	GList *dataset, *it;
+	ofoTVARecord *record;
+	const gchar *cmnemo;
+	const GDate *dbegin, *dend;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( mnemo ), NULL );
+	g_return_val_if_fail( my_date_is_valid( candidate_end ), NULL );
+
+	dataset = ofo_tva_record_get_dataset( hub );
+
+	for( it=dataset ; it ; it=it->next ){
+		record = OFO_TVA_RECORD( it->data );
+		cmnemo = ofo_tva_record_get_mnemo( record );
+		if( !my_collate( cmnemo, mnemo )){
+			dbegin = ofo_tva_record_get_begin( record );
+			dend = ofo_tva_record_get_end( record );
+			if( my_date_compare_ex( dbegin, candidate_end, TRUE ) <= 0 &&
+					my_date_compare( candidate_end, dend ) <= 0 ){
+				return( record );
+			}
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_tva_record_get_by_begin:
+ * @dossier:
+ * @mnemo:
+ * @candidate_begin: a valid date as candidate begin.
+ * @end: the end date of the candidate record.
+ *
+ * Returns: the first found recorded tva declaration for which the @begin
+ * date is inside of begin end end declaration dates, or %NULL.
+ *
+ * The returned object is owned by the #ofoTVARecord class, and should
+ * not be unreffed by the caller.
+ */
+ofoTVARecord *
+ofo_tva_record_get_by_begin( ofaHub *hub, const gchar *mnemo, const GDate *candidate_begin, const GDate *end )
+{
+	GList *dataset, *it;
+	ofoTVARecord *record;
+	const gchar *cmnemo;
+	const GDate *dbegin, *dend;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( my_strlen( mnemo ), NULL );
+	g_return_val_if_fail( my_date_is_valid( candidate_begin ), NULL );
 	g_return_val_if_fail( my_date_is_valid( end ), NULL );
 
 	dataset = ofo_tva_record_get_dataset( hub );
 
-	return( record_find_by_mnemo_and_end( dataset, mnemo, end ));
-}
-
-static ofoTVARecord *
-record_find_by_mnemo_and_end( GList *set, const gchar *mnemo, const GDate *end )
-{
-	sCompare cmp;
-	GList *found;
-
-	cmp.mnemo = g_strdup( mnemo );
-	my_date_set_from_date( &cmp.date, end );
-
-	found = g_list_find_custom( set, &cmp, ( GCompareFunc ) record_cmp_by_compare );
-	if( found ){
-		return( OFO_TVA_RECORD( found->data ));
+	for( it=dataset ; it ; it=it->next ){
+		record = OFO_TVA_RECORD( it->data );
+		cmnemo = ofo_tva_record_get_mnemo( record );
+		dend = ofo_tva_record_get_end( record );
+		if( !my_collate( cmnemo, mnemo ) && my_date_compare( dend, end ) != 0 ){
+			dbegin = ofo_tva_record_get_begin( record );
+			if( my_date_compare_ex( dbegin, candidate_begin, TRUE ) <= 0 &&
+					my_date_compare( candidate_begin, dend ) <= 0 ){
+				return( record );
+			}
+		}
 	}
 
 	return( NULL );
@@ -648,6 +696,15 @@ ofo_tva_record_get_end( const ofoTVARecord *record )
 }
 
 /**
+ * ofo_tva_record_get_dope:
+ */
+const GDate *
+ofo_tva_record_get_dope( const ofoTVARecord *record )
+{
+	ofo_base_getter( TVA_RECORD, record, date, NULL, TFO_DOPE );
+}
+
+/**
  * ofo_tva_record_get_upd_user:
  */
 const gchar *
@@ -733,49 +790,16 @@ ofo_tva_record_is_valid_data( const gchar *mnemo, const GDate *begin, const GDat
 }
 
 /**
- * ofo_tva_record_is_validable_by_record:
- * @record:
- *
- * Returns: %TRUE if this TVA record may be validated.
- *
- * This is the case if both date are set (while only end date is needed
- * to record the data).
- */
-gboolean
-ofo_tva_record_is_validable_by_record( const ofoTVARecord *record )
-{
-	const GDate *cbegin, *cend;
-	const gchar *cstr;
-
-	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, FALSE );
-
-	cstr = ofo_tva_record_get_mnemo( record );
-	cbegin = ofo_tva_record_get_begin( record );
-	cend = ofo_tva_record_get_end( record );
-
-	if( !ofo_tva_record_is_valid_data( cstr, cbegin, cend, NULL )){
-		return( FALSE );
-	}
-
-	return( my_date_is_valid( cbegin ) &&
-			my_date_compare( cbegin, cend ) <= 0 );
-}
-
-/**
- * ofo_tva_record_is_validable_by_data:
+ * ofo_tva_record_is_computable:
  * @mnemo: an identifier mnemonic.
  * @begin: the begin date of the declaration.
  * @end: the end date of the declaration.
  * @msgerr: [allow-none][out]: error message placeholder.
  *
- * Returns: %TRUE if the provided datas make the TVA record validable.
- *
- * This is the case if both date are set (while only end date is needed
- * to record the data).
+ * Returns: %TRUE if the provided datas make the TVA record computable.
  */
 gboolean
-ofo_tva_record_is_validable_by_data( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr )
+ofo_tva_record_is_computable( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr )
 {
 	if( msgerr ){
 		*msgerr = NULL;
@@ -795,7 +819,43 @@ ofo_tva_record_is_validable_by_data( const gchar *mnemo, const GDate *begin, con
 		}
 		return( FALSE );
 	}
+	return( TRUE );
+}
 
+/**
+ * ofo_tva_record_is_validable:
+ * @mnemo: an identifier mnemonic.
+ * @begin: the begin date of the declaration.
+ * @end: the end date of the declaration.
+ * @dope: the operation date.
+ * @msgerr: [allow-none][out]: error message placeholder.
+ *
+ * Returns: %TRUE if the provided datas make the TVA record validable.
+ *
+ * This is the case if both dates are set (while only end date is needed
+ * to record the data).
+ */
+gboolean
+ofo_tva_record_is_validable( const gchar *mnemo, const GDate *begin, const GDate *end, const GDate *dope, gchar **msgerr )
+{
+	if( msgerr ){
+		*msgerr = NULL;
+	}
+	if( !ofo_tva_record_is_computable( mnemo, begin, end, msgerr )){
+		return( FALSE );
+	}
+	if( !my_date_is_valid( dope )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Invalid operation date" ));
+		}
+		return( FALSE );
+	}
+	if( my_date_compare( end, dope ) > 0 ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Operation date must be greater or equal to end date" ));
+		}
+		return( FALSE );
+	}
 	return( TRUE );
 }
 
@@ -893,6 +953,15 @@ void
 ofo_tva_record_set_end( ofoTVARecord *record, const GDate *date )
 {
 	ofo_base_setter( TVA_RECORD, record, date, TFO_END, date );
+}
+
+/**
+ * ofo_tva_record_set_dope:
+ */
+void
+ofo_tva_record_set_dope( ofoTVARecord *record, const GDate *date )
+{
+	ofo_base_setter( TVA_RECORD, record, date, TFO_DOPE, date );
 }
 
 /*
@@ -1200,6 +1269,28 @@ ofo_tva_record_detail_get_template( const ofoTVARecord *record, guint idx )
 }
 
 /**
+ * ofo_tva_record_detail_get_ope_number:
+ * @idx is the index in the details list, starting with zero
+ */
+ofxCounter
+ofo_tva_record_detail_get_ope_number( const ofoTVARecord *record, guint idx )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+	ofxCounter number;
+
+	g_return_val_if_fail( record && OFO_IS_TVA_RECORD( record ), 0 );
+	g_return_val_if_fail( !OFO_BASE( record )->prot->dispose_has_run, 0 );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	number = nth ? ofa_box_get_counter( nth->data, TFO_DET_OPE_NUMBER ) : 0;
+
+	return( number );
+}
+
+/**
  * ofo_tva_record_detail_set_base:
  * @idx is the index in the details list, starting with zero
  */
@@ -1237,6 +1328,26 @@ ofo_tva_record_detail_set_amount( ofoTVARecord *record, guint idx, ofxAmount amo
 	nth = g_list_nth( priv->details, idx );
 	g_return_if_fail( nth );
 	ofa_box_set_amount( nth->data, TFO_DET_AMOUNT, amount );
+}
+
+/**
+ * ofo_tva_record_detail_set_ope_number:
+ * @idx is the index in the details list, starting with zero
+ */
+void
+ofo_tva_record_detail_set_ope_number( ofoTVARecord *record, guint idx, ofxCounter number )
+{
+	ofoTVARecordPrivate *priv;
+	GList *nth;
+
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+	g_return_if_fail( !OFO_BASE( record )->prot->dispose_has_run );
+
+	priv = ofo_tva_record_get_instance_private( record );
+
+	nth = g_list_nth( priv->details, idx );
+	g_return_if_fail( nth );
+	ofa_box_set_counter( nth->data, TFO_DET_OPE_NUMBER, number );
 }
 
 /**
@@ -1381,23 +1492,25 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes, *sbegin, *send, *userid;
+	gchar *label, *notes, *corresp, *sbegin, *send, *sdope, *userid;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_record_get_label( record ));
+	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), MY_DATE_SQL );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS" );
 
 	g_string_append_printf( query,
-			"	(TFO_MNEMO,TFO_LABEL,TFO_HAS_CORRESPONDENCE,"
-			"	 TFO_NOTES,TFO_VALIDATED,TFO_BEGIN,TFO_END,"
+			"	(TFO_MNEMO,TFO_LABEL,TFO_HAS_CORRESPONDENCE,TFO_CORRESPONDENCE,"
+			"	 TFO_NOTES,TFO_VALIDATED,TFO_BEGIN,TFO_END,TFO_DOPE,"
 			"	 TFO_UPD_USER, TFO_UPD_STAMP) VALUES ('%s'",
 			ofo_tva_record_get_mnemo( record ));
 
@@ -1408,6 +1521,12 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	}
 
 	g_string_append_printf( query, ",'%s'", ofo_tva_record_get_has_correspondence( record ) ? "Y":"N" );
+
+	if( my_strlen( corresp )){
+		g_string_append_printf( query, ",'%s'", corresp );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, ",'%s'", notes );
@@ -1429,6 +1548,12 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		query = g_string_append( query, ",NULL" );
 	}
 
+	if( my_strlen( sdope )){
+		g_string_append_printf( query, ",'%s'", sdope );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+
 	g_string_append_printf( query,
 			",'%s','%s')", userid, stamp_str );
 
@@ -1437,6 +1562,7 @@ record_insert_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	tva_record_set_upd_user( record, userid );
 	tva_record_set_upd_stamp( record, &stamp );
 
+	g_free( sdope );
 	g_free( send );
 	g_free( sbegin );
 	g_string_free( query, TRUE );
@@ -1526,6 +1652,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 	gboolean ok;
 	gchar *send, *code, *label, *base, *amount, *template;
 	const gchar *cstr;
+	ofxCounter number;
 
 	query = g_string_new( "INSERT INTO TVA_T_RECORDS_DET " );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
@@ -1535,7 +1662,7 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 			"	 TFO_DET_LEVEL,TFO_DET_CODE,TFO_DET_LABEL,"
 			"	 TFO_DET_HAS_BASE,TFO_DET_BASE_RULE,TFO_DET_BASE,"
 			"	 TFO_DET_HAS_AMOUNT,TFO_DET_AMOUNT_RULE,TFO_DET_AMOUNT,"
-			"	 TFO_DET_TEMPLATE) "
+			"	 TFO_DET_TEMPLATE,TFO_DET_OPE_NUMBER) "
 			"	VALUES('%s','%s',%d",
 			ofo_tva_record_get_mnemo( record ), send, rang );
 
@@ -1590,6 +1717,14 @@ record_insert_details( ofoTVARecord *record, const ofaIDBConnect *connect, guint
 	template = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_TEMPLATE ));
 	if( my_strlen( template )){
 		g_string_append_printf( query, ",'%s'", template );
+	} else {
+		query = g_string_append( query, ",NULL" );
+	}
+	g_free( template );
+
+	number = ofa_box_get_counter( details, TFO_DET_OPE_NUMBER );
+	if( number > 0 ){
+		g_string_append_printf( query, ",%lu", number );
 	} else {
 		query = g_string_append( query, ",NULL" );
 	}
@@ -1684,19 +1819,21 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	gchar *label, *notes, *sbegin, *send, *userid;
+	gchar *label, *notes, *corresp, *sbegin, *send, *sdope, *userid;
 	const gchar *mnemo;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_tva_record_get_label( record ));
+	corresp = my_utils_quote_sql( ofo_tva_record_get_correspondence( record ));
 	notes = my_utils_quote_sql( ofo_tva_record_get_notes( record ));
 	mnemo = ofo_tva_record_get_mnemo( record );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), MY_DATE_SQL );
 	send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
+	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), MY_DATE_SQL );
 
 	query = g_string_new( "UPDATE TVA_T_RECORDS SET " );
 
@@ -1709,6 +1846,12 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_string_append_printf(
 			query, ",TFO_HAS_CORRESPONDENCE='%s'",
 			ofo_tva_record_get_has_correspondence( record ) ? "Y":"N" );
+
+	if( my_strlen( corresp )){
+		g_string_append_printf( query, ",TFO_CORRESPONDENCE='%s'", corresp );
+	} else {
+		query = g_string_append( query, ",TFO_CORRESPONDENCE=NULL" );
+	}
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, ",TFO_NOTES='%s'", notes );
@@ -1724,6 +1867,12 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 		g_string_append_printf( query, ",TFO_BEGIN='%s'", sbegin );
 	} else {
 		query = g_string_append( query, ",TFO_BEGIN=NULL" );
+	}
+
+	if( my_strlen( sdope )){
+		g_string_append_printf( query, ",TFO_DOPE='%s'", sdope );
+	} else {
+		query = g_string_append( query, ",TFO_DOPE=NULL" );
 	}
 
 	g_string_append_printf( query,
@@ -1744,6 +1893,7 @@ record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect )
 	g_free( label );
 	g_free( sbegin );
 	g_free( send );
+	g_free( sdope );
 	g_free( userid );
 
 	return( ok );
@@ -1805,12 +1955,6 @@ record_do_delete( ofoTVARecord *record, const ofaIDBConnect *connect )
 }
 
 static gint
-record_cmp_by_compare( const ofoTVARecord *a, const sCompare *cmp )
-{
-	return( record_cmp_by_mnemo_end( a, cmp->mnemo, &cmp->date ));
-}
-
-static gint
 record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end )
 {
 	gchar *aend, *akey, *bend, *bkey;
@@ -1821,7 +1965,7 @@ record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate 
 	bend = my_date_to_str( end, MY_DATE_SQL );
 	bkey = g_strdup_printf( "%s-%s", mnemo, bend );
 
-	cmp = g_utf8_collate( akey, bkey );
+	cmp = my_collate( akey, bkey );
 
 	g_free( bkey );
 	g_free( bend );

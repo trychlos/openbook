@@ -80,12 +80,13 @@ enum {
 	TVA_RECORD_COL_IS_VALIDATED,
 	TVA_RECORD_COL_BEGIN,
 	TVA_RECORD_COL_END,
+	TVA_RECORD_COL_DOPE,
 	TVA_RECORD_COL_OBJECT,
 	TVA_RECORD_N_COLUMNS
 };
 
 /**
- * ofaCurrencyColumns:
+ * ofaTVARecordColumns:
  * The columns displayed in the views.
  */
 typedef enum {
@@ -95,8 +96,9 @@ typedef enum {
 	TVA_RECORD_DISP_IS_VALIDATED = 1 << 3,
 	TVA_RECORD_DISP_BEGIN        = 1 << 4,
 	TVA_RECORD_DISP_END          = 1 << 5,
-	TVA_RECORD_DISP_UPD_USER     = 1 << 6,
-	TVA_RECORD_DISP_UPD_STAMP    = 1 << 7
+	TVA_RECORD_DISP_DOPE         = 1 << 6,
+	TVA_RECORD_DISP_UPD_USER     = 1 << 7,
+	TVA_RECORD_DISP_UPD_STAMP    = 1 << 8
 }
 	ofaTVARecordColumns;
 

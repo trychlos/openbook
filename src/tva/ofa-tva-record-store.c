@@ -53,6 +53,7 @@ static GType st_col_types[TVA_RECORD_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* is_validated */
 		G_TYPE_STRING,					/* begin */
 		G_TYPE_STRING,					/* end */
+		G_TYPE_STRING,					/* dope */
 		G_TYPE_OBJECT					/* the #ofoTVARecord itself */
 };
 
@@ -246,11 +247,12 @@ static void
 set_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record, GtkTreeIter *iter )
 {
 	const gchar *cvalidated;
-	gchar *sbegin, *send;
+	gchar *sbegin, *send, *sdope;
 
 	cvalidated = ofo_tva_record_get_is_validated( record ) ? _( "Yes" ) : "";
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_display());
 	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display());
+	sdope = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display());
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
@@ -260,11 +262,13 @@ set_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record, GtkT
 			TVA_RECORD_COL_IS_VALIDATED, cvalidated,
 			TVA_RECORD_COL_BEGIN,        sbegin,
 			TVA_RECORD_COL_END,          send,
+			TVA_RECORD_COL_DOPE,         sdope,
 			TVA_RECORD_COL_OBJECT,       record,
 			-1 );
 
 	g_free( sbegin );
 	g_free( send );
+	g_free( sdope );
 }
 
 /*

@@ -611,13 +611,15 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 
 	if( !exec_query( update_data,
 			"ALTER TABLE TVA_T_RECORDS "
-			"	ADD    COLUMN TFO_CORRESPONDENCE   VARCHAR(4096)                        COMMENT 'Correspondence'" )){
+			"	ADD    COLUMN TFO_CORRESPONDENCE   VARCHAR(4096)                        COMMENT 'Correspondence',"
+			"	ADD    COLUMN TFO_DOPE             DATE                                 COMMENT 'Validation operation date'" )){
 		return( FALSE );
 	}
 
 	if( !exec_query( update_data,
 			"ALTER TABLE TVA_T_RECORDS_DET "
-			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)                          COMMENT 'Operation template'" )){
+			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)                          COMMENT 'Operation template',"
+			"	ADD    COLUMN TFO_DET_OPE_NUMBER   BIGINT                               COMMENT 'Generated operation number'" )){
 		return( FALSE );
 	}
 

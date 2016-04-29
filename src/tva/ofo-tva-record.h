@@ -74,7 +74,8 @@ GType           ofo_tva_record_get_type               ( void ) G_GNUC_CONST;
 GList          *ofo_tva_record_get_dataset            ( ofaHub *hub );
 
 GDate          *ofo_tva_record_get_last_end           ( ofaHub *hub, const gchar *mnemo, GDate * );
-ofoTVARecord   *ofo_tva_record_get_by_key             ( ofaHub *hub, const gchar *mnemo, const GDate *end );
+ofoTVARecord   *ofo_tva_record_get_by_key             ( ofaHub *hub, const gchar *mnemo, const GDate *candidate_end );
+ofoTVARecord   *ofo_tva_record_get_by_begin           ( ofaHub *hub, const gchar *mnemo, const GDate *candidate_begin, const GDate *end );
 gboolean        ofo_tva_record_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
 
 ofoTVARecord   *ofo_tva_record_new                    ( void );
@@ -90,15 +91,15 @@ const gchar    *ofo_tva_record_get_notes              ( const ofoTVARecord *reco
 gboolean        ofo_tva_record_get_is_validated       ( const ofoTVARecord *record );
 const GDate    *ofo_tva_record_get_begin              ( const ofoTVARecord *record );
 const GDate    *ofo_tva_record_get_end                ( const ofoTVARecord *record );
+const GDate    *ofo_tva_record_get_dope               ( const ofoTVARecord *record );
 const gchar    *ofo_tva_record_get_upd_user           ( const ofoTVARecord *record );
 const GTimeVal *ofo_tva_record_get_upd_stamp          ( const ofoTVARecord *record );
 
 gboolean        ofo_tva_record_is_deletable           ( const ofoTVARecord *record );
 
 gboolean        ofo_tva_record_is_valid_data          ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
-
-gboolean        ofo_tva_record_is_validable_by_record ( const ofoTVARecord *record );
-gboolean        ofo_tva_record_is_validable_by_data   ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
+gboolean        ofo_tva_record_is_computable          ( const gchar *mnemo, const GDate *begin, const GDate *end, gchar **msgerr );
+gboolean        ofo_tva_record_is_validable           ( const gchar *mnemo, const GDate *begin, const GDate *end, const GDate *dope, gchar **msgerr );
 
 gint            ofo_tva_record_compare_by_key         ( const ofoTVARecord *record, const gchar *mnemo, const GDate *end );
 
@@ -110,6 +111,7 @@ void            ofo_tva_record_set_notes              ( ofoTVARecord *record, co
 void            ofo_tva_record_set_is_validated       ( ofoTVARecord *record, gboolean is_validated );
 void            ofo_tva_record_set_begin              ( ofoTVARecord *record, const GDate *date );
 void            ofo_tva_record_set_end                ( ofoTVARecord *record, const GDate *date );
+void            ofo_tva_record_set_dope               ( ofoTVARecord *record, const GDate *date );
 
 void            ofo_tva_record_detail_add             ( ofoTVARecord *record,
 															guint level,
@@ -136,9 +138,11 @@ gboolean        ofo_tva_record_detail_get_has_amount  ( const ofoTVARecord *reco
 const gchar    *ofo_tva_record_detail_get_amount_rule ( const ofoTVARecord *record, guint idx );
 ofxAmount       ofo_tva_record_detail_get_amount      ( const ofoTVARecord *record, guint idx );
 const gchar    *ofo_tva_record_detail_get_template    ( const ofoTVARecord *record, guint idx );
+ofxCounter      ofo_tva_record_detail_get_ope_number  ( const ofoTVARecord *record, guint idx );
 
 void            ofo_tva_record_detail_set_base        ( ofoTVARecord *record, guint idx, ofxAmount base );
 void            ofo_tva_record_detail_set_amount      ( ofoTVARecord *record, guint idx, ofxAmount amount );
+void            ofo_tva_record_detail_set_ope_number  ( ofoTVARecord *record, guint idx, ofxCounter number );
 
 void            ofo_tva_record_boolean_add            ( ofoTVARecord *record,
 														const gchar *label,

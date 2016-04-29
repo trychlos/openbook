@@ -70,6 +70,7 @@ typedef struct {
 	GtkWidget    *label_entry;
 	GtkWidget    *begin_editable;
 	GtkWidget    *end_editable;
+	GtkWidget    *dope_editable;
 	GtkWidget    *boolean_grid;
 	GtkWidget    *detail_grid;
 	GtkWidget    *corresp_textview;
@@ -85,6 +86,7 @@ typedef struct {
 	gchar        *mnemo;
 	GDate         begin_date;
 	GDate         end_date;
+	GDate         dope_date;
 	gboolean      has_correspondence;
 	gboolean      is_validated;
 }
@@ -130,6 +132,7 @@ static void             init_taxes( ofaTVARecordProperties *self );
 static void             init_correspondence( ofaTVARecordProperties *self );
 static void             on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void             on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
 static void             on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void             on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
@@ -464,6 +467,28 @@ init_properties( ofaTVARecordProperties *self )
 	my_date_set_from_date( &priv->end_date, ofo_tva_record_get_end( priv->tva_record ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end_date );
 	my_utils_widget_set_editable( entry, FALSE );
+
+	/* operation date */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->dope_editable = entry;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+
+	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );
+
+	my_date_set_from_date( &priv->dope_date, ofo_tva_record_get_dope( priv->tva_record ));
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->dope_date );
+	my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 }
 
 static void
@@ -625,6 +650,19 @@ on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 }
 
 static void
+on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	my_date_set_from_date( &priv->dope_date, my_date_editable_get_date( entry, NULL ));
+
+	set_dialog_title( self );
+	check_for_enable_dlg( self );
+}
+
+static void
 on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self )
 {
 	check_for_enable_dlg( self );
@@ -649,9 +687,7 @@ static void
 check_for_enable_dlg( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	gboolean is_valid, is_validated, end_date_has_changed, exists, is_validable;
-	const gchar *mnemo;
-	const GDate *dend;
+	gboolean is_valid, is_validated, is_validable, is_computable;
 	gchar *msgerr;
 	ofaHub *hub;
 
@@ -663,31 +699,33 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	if( priv->is_writable ){
 
 		is_valid = ofo_tva_record_is_valid_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+		is_computable = FALSE;
+		is_validable = FALSE;
 
 		if( is_valid ){
-			/* the ending date is no more modifiable */
-			if( 0 ){
-				dend = ofo_tva_record_get_end( priv->tva_record );
-				end_date_has_changed = my_date_compare( &priv->init_end_date, dend ) != 0;
-				if( end_date_has_changed ){
-					mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-					exists = ( ofo_tva_record_get_by_key( hub, mnemo, dend ) != NULL );
-					if( exists ){
-						set_msgerr( self, _( "Same declaration is already defined" ));
-						is_valid = FALSE;
-					}
-				}
+			is_computable = ofo_tva_record_is_computable( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+		}
+
+		if( is_computable ){
+			if( ofo_tva_record_get_by_begin( hub, priv->mnemo, &priv->begin_date, &priv->end_date ) != NULL ){
+				msgerr = g_strdup( _( "Begin date overlaps with an already defined declaration" ));
+				is_valid = FALSE;
+				is_computable = FALSE;
 			}
 		}
 
 		gtk_widget_set_sensitive( priv->ok_btn, is_valid );
 
-		is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
-		is_validable = ofo_tva_record_is_validable_by_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
-
 		gtk_widget_set_sensitive(
 				priv->compute_btn,
-				priv->is_writable && is_valid && is_validable );
+				priv->is_writable && is_valid && is_computable );
+
+		is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
+
+		if( is_computable ){
+			is_validable = ofo_tva_record_is_validable(
+					priv->mnemo, &priv->begin_date, &priv->end_date, &priv->dope_date, &msgerr );
+		}
 
 		gtk_widget_set_sensitive(
 				priv->validate_btn,
@@ -744,6 +782,9 @@ do_update( ofaTVARecordProperties *self, gchar **msgerr )
 
 	ofo_tva_record_set_end( priv->tva_record,
 			my_date_editable_get_date( GTK_EDITABLE( priv->end_editable ), NULL ));
+
+	ofo_tva_record_set_dope( priv->tva_record,
+			my_date_editable_get_date( GTK_EDITABLE( priv->dope_editable ), NULL ));
 
 	if( priv->has_correspondence ){
 		GtkTextBuffer *buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->corresp_textview ));
@@ -1053,8 +1094,8 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
 
-	if( do_update( self, &msgerr ) &&
-			do_generate_opes( self, &msgerr )){
+	if( do_generate_opes( self, &msgerr ) &&
+			do_update( self, &msgerr )){
 
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO,
 				_( "The VAT declaration has been successfully validated." ));
@@ -1078,6 +1119,24 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 static gboolean
 do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
 {
+	ofaTVARecordPropertiesPrivate *priv;
+	guint count, idx;
+	ofxAmount amount;
+	const gchar *cstr;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	count = ofo_tva_record_detail_get_count( priv->tva_record );
+	for( idx=0 ; idx<count ; ++idx ){
+		if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
+			amount = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
+			cstr = ofo_tva_record_detail_get_template( priv->tva_record, idx );
+			if( amount > 0 && my_strlen( cstr )){
+
+			}
+		}
+	}
+
 	return( TRUE );
 }
 
