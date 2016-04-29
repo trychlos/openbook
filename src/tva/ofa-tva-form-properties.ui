@@ -175,6 +175,7 @@
                           <object class="GtkGrid" id="p3-grid">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="margin_right">16</property>
                             <property name="row_spacing">2</property>
                             <property name="column_spacing">2</property>
                             <child>
@@ -230,6 +231,7 @@
                           <object class="GtkGrid" id="p2-grid">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="margin_right">16</property>
                             <property name="row_spacing">2</property>
                             <property name="column_spacing">2</property>
                             <child>
@@ -292,6 +294,21 @@
                                 <property name="left_attach">1</property>
                                 <property name="top_attach">0</property>
                               </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="label12">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="label" translatable="yes">Template</property>
+                                <property name="xalign">0</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">9</property>
+                                <property name="top_attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <placeholder/>
                             </child>
                             <child>
                               <placeholder/>

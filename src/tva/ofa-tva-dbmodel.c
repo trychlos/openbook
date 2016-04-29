@@ -68,6 +68,8 @@ static gboolean dbmodel_to_v4( sUpdate *update_data, guint version );
 static gulong   count_v4( sUpdate *update_data );
 static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
 static gulong   count_v5( sUpdate *update_data );
+static gboolean dbmodel_to_v6( sUpdate *update_data, guint version );
+static gulong   count_v6( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -82,6 +84,7 @@ static sMigration st_migrates[] = {
 		{ 3, dbmodel_to_v3, count_v3 },
 		{ 4, dbmodel_to_v4, count_v4 },
 		{ 5, dbmodel_to_v5, count_v5 },
+		{ 6, dbmodel_to_v6, count_v6 },
 		{ 0 }
 };
 
@@ -600,15 +603,9 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
 
 	if( !exec_query( update_data,
-			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_OPE ("
-			"	TFO_MNEMO               VARCHAR(64)  BINARY NOT NULL COMMENT 'Form mnemonic',"
-			"	TFO_OPE_ROW             INTEGER      NOT NULL        COMMENT 'Table line number',"
-			"	TFO_OPE_FORM_ROW        INTEGER                      COMMENT 'Form source row number',"
-			"	TFO_OPE_FORM_COLUMN     INTEGER                      COMMENT 'Form source column number',"
-			"	TFO_OPE_TEMPLATE_ID     VARCHAR(64)                  COMMENT 'Operation template identifier',"
-			"	TFO_OPE_TEMPLATE_ROW    INTEGER                      COMMENT 'Operation template destination row number',"
-			"	TFO_OPE_TEMPLATE_COLUMN INTEGER                      COMMENT 'Operation template destination column number',"
-			"	CONSTRAINT PRIMARY KEY (TFO_MNEMO,TFO_OPE_ROW))" )){
+			"ALTER TABLE TVA_T_FORMS_DET "
+			"	ADD    COLUMN TFO_DET_HAS_TEMPLATE CHAR(1)                              COMMENT 'Has operation template',"
+			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)                          COMMENT 'Operation template'" )){
 		return( FALSE );
 	}
 
