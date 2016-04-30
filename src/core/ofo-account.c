@@ -209,8 +209,6 @@ typedef struct {
 static void         archives_list_free_detail( GList *fields );
 static void         archives_list_free( ofoAccount *account );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
-static gint         account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
-static gint         account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
@@ -245,6 +243,7 @@ static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void         isignal_hub_connect( ofaHub *hub );
 static gboolean     hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean     hub_is_deletable_class( ofaHub *hub, ofoClass *class );
+static gboolean     hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
 static void         hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         hub_on_new_object_entry( ofaHub *hub, ofoEntry *entry );
 static void         hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
@@ -418,49 +417,6 @@ account_find_by_number( GList *set, const gchar *number )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_account_use_currency:
- * @hub: the #ofaHub object.
- * @currency: the currency ISO 3A code
- *
- * Returns: %TRUE if at least one recorded account makes use of the
- * specified currency.
- *
- * The whole account dataset is loaded from DBMS if not already done.
- */
-gboolean
-ofo_account_use_currency( ofaHub *hub, const gchar *currency )
-{
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( my_strlen( currency ), FALSE );
-
-	ofo_account_get_dataset( hub );
-
-	return( account_count_for_currency( ofa_hub_get_connect( hub ), currency ) > 0 );
-}
-
-static gint
-account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency )
-{
-	return( account_count_for( connect, "ACC_CURRENCY", currency ));
-}
-
-static gint
-account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s='%s'", field, mnemo );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 /**
@@ -2508,6 +2464,9 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 
 	if( OFO_IS_CLASS( object )){
 		deletable = hub_is_deletable_class( hub, OFO_CLASS( object ));
+
+	} else if( OFO_IS_CURRENCY( object )){
+		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
 	}
 
 	return( deletable );
@@ -2522,6 +2481,23 @@ hub_is_deletable_class( ofaHub *hub, ofoClass *class )
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_NUMBER LIKE '%d%%'",
 			ofo_class_get_number( class ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_CURRENCY='%s'",
+			ofo_currency_get_code( currency ));
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 

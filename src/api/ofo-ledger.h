@@ -75,7 +75,6 @@ GList          *ofo_ledger_get_dataset         ( ofaHub *hub );
 #define         ofo_ledger_free_dataset( L )   g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
 ofoLedger      *ofo_ledger_get_by_mnemo        ( ofaHub *hub, const gchar *mnemo );
-gboolean        ofo_ledger_use_currency        ( ofaHub *hub, const gchar *currency );
 
 ofoLedger      *ofo_ledger_new                 ( void );
 

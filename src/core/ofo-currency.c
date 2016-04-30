@@ -352,7 +352,6 @@ gboolean
 ofo_currency_is_deletable( const ofoCurrency *currency )
 {
 	ofaHub *hub;
-	const gchar *dev_code;
 	gboolean deletable;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
@@ -360,11 +359,6 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 
 	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( currency ));
-	dev_code = ofo_currency_get_code( currency );
-
-	deletable = !ofo_account_use_currency( hub, dev_code ) &&
-				!ofo_entry_use_currency( hub, dev_code ) &&
-				!ofo_ledger_use_currency( hub, dev_code );
 
 	if( hub && deletable ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, currency, &deletable );

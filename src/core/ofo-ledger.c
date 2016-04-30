@@ -167,8 +167,6 @@ typedef struct {
 	ofoLedgerPrivate;
 
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint       ledger_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
-static gint       ledger_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
 static gint       cmp_currencies( const gchar *a_currency, const gchar *b_currency );
 static GList     *ledger_find_balance_by_code( const ofoLedger *ledger, const gchar *currency );
 static GList     *ledger_new_balance_with_code( ofoLedger *ledger, const gchar *currency );
@@ -204,11 +202,13 @@ static gboolean   ledger_get_exists( const ofoLedger *ledger, const ofaIDBConnec
 static gboolean   ledger_drop_content( const ofaIDBConnect *connect );
 static void       isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void       isignal_hub_connect( ofaHub *hub );
-static void       on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
-static void       on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
-static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void       on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void       on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static gboolean   hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean   hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
+static void       hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty );
+static void       hub_on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
+static void       hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void       hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoLedger )
@@ -338,45 +338,6 @@ ledger_find_by_mnemo( GList *set, const gchar *mnemo )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_ledger_use_currency:
- *
- * Returns: %TRUE if a recorded ledger makes use of the specified
- * currency.
- */
-gboolean
-ofo_ledger_use_currency( ofaHub *hub, const gchar *currency )
-{
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	/* make sure the collection is loaded */
-	ofo_ledger_get_dataset( hub );
-
-	return( ledger_count_for_currency( ofa_hub_get_connect( hub ), currency ) > 0 );
-}
-
-static gint
-ledger_count_for_currency( const ofaIDBConnect *connect, const gchar *currency )
-{
-	return( ledger_count_for( connect, "LED_CUR_CODE", currency ));
-}
-
-static gint
-ledger_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_LEDGERS_CUR WHERE %s='%s'", field, mnemo );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 /**
@@ -1935,18 +1896,60 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( hub_on_entry_status_change ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_ledger_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_CURRENCY( object )){
+		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_LEDGERS_CUR WHERE LED_CUR_CODE='%s'",
+			ofo_currency_get_code( currency ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /*
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
+hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_on_hub_new_object";
+	static const gchar *thisfn = "ofo_ledger_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
 			thisfn, ( void * ) hub,
@@ -1954,7 +1957,7 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
 			( void * ) empty );
 
 	if( OFO_IS_ENTRY( object )){
-		on_new_ledger_entry( hub, OFO_ENTRY( object ));
+		hub_on_new_ledger_entry( hub, OFO_ENTRY( object ));
 	}
 }
 
@@ -1963,7 +1966,7 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
  * thus update the balances
  */
 static void
-on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
+hub_on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
 {
 	ofaEntryStatus status;
 	const gchar *mnemo, *currency;
@@ -2006,60 +2009,12 @@ on_new_ledger_entry( ofaHub *hub, ofoEntry *entry )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_ledger_on_hub_updated_object";
-	const gchar *code;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-	}
-}
-
-/*
- * a currency iso code has been modified (this should be very rare)
- * so update our ledger records
- */
-static void
-on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_LEDGERS_CUR "
-					"	SET LED_CUR_CODE='%s' WHERE LED_CUR_CODE='%s'", code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER );
-
-	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
-}
-
-/*
  * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
-on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
-	static const gchar *thisfn = "ofo_ledger_on_hub_entry_status_change";
+	static const gchar *thisfn = "ofo_ledger_hub_on_entry_status_change";
 	const gchar *currency;
 	ofoLedger *ledger;
 	ofxAmount debit, credit;
@@ -2109,4 +2064,52 @@ on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 	if( ledger_do_update_balance( ledger, balance, hub )){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_UPDATED, ledger, NULL );
 	}
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_ledger_hub_on_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( g_utf8_collate( code, prev_id )){
+				hub_on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+	}
+}
+
+/*
+ * a currency iso code has been modified (this should be very rare)
+ * so update our ledger records
+ */
+static void
+hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_LEDGERS_CUR "
+					"	SET LED_CUR_CODE='%s' WHERE LED_CUR_CODE='%s'", code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER );
+
+	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
 }
