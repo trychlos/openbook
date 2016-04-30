@@ -240,6 +240,8 @@ static void         on_updated_object_account_number( const ofaHub *hub, const g
 static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void         on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
 static void         on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static gboolean     hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean     hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void         on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
 static void         on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
@@ -3106,6 +3108,7 @@ isignal_hub_connect( ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
@@ -3241,6 +3244,47 @@ on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gc
 
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_OPE_TEMPLATE='%s'",
+			ofo_ope_template_get_mnemo( template ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /*

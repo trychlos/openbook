@@ -36,6 +36,7 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -205,7 +206,6 @@ typedef struct {
 static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
 static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
-static gint        dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static gint        dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
@@ -230,10 +230,15 @@ static gchar      *iexportable_get_label( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
+static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void        isignal_hub_connect( ofaHub *hub );
+static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 dossier_finalize( GObject *instance )
@@ -452,45 +457,6 @@ ofo_dossier_use_ledger( const ofoDossier *dossier, const gchar *ledger )
 	}
 
 	return( FALSE );
-}
-
-/**
- * ofo_dossier_use_ope_template:
- *
- * Returns: %TRUE if the dossier makes use of this operation template,
- * thus preventing its deletion.
- */
-gboolean
-ofo_dossier_use_ope_template( const ofoDossier *dossier, const gchar *ope_template )
-{
-	gint forward, solde;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	forward = dossier_count_uses( dossier, "DOS_FORW_OPE", ope_template );
-	solde = dossier_count_uses( dossier, "DOS_SLD_OPE", ope_template );
-
-	return( forward+solde > 0 );
-}
-
-static gint
-dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
-{
-	ofaHub *hub;
-	gchar *query;
-	gint count;
-
-	hub = ofo_base_get_hub( OFO_BASE( dossier ));
-
-	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE %s='%s' AND DOS_ID=%d",
-					field, mnemo, DOSSIER_ROW_ID );
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 static gint
@@ -1926,4 +1892,71 @@ static void
 free_cur_detail( GList *fields )
 {
 	ofa_box_free_fields_list( fields );
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_FORW_OPE='%s' OR DOS_SLD_OPE='%s'",
+			ofo_ope_template_get_mnemo( template ),
+			ofo_ope_template_get_mnemo( template ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }

@@ -623,21 +623,17 @@ gboolean
 ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 {
 	ofaHub *hub;
-	const gchar *mnemo;
-	ofoDossier *dossier;
 	gboolean deletable;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
+	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( model ));
-	dossier = ofa_hub_get_dossier( hub );
-	mnemo = ofo_ope_template_get_mnemo( model );
 
-	deletable = !ofo_entry_use_ope_template( hub, mnemo ) &&
-				!ofo_dossier_use_ope_template( dossier, mnemo );
-
-	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( model ));
+	if( hub ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, model, &deletable );
+	}
 
 	return( deletable );
 }
