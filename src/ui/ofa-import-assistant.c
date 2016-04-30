@@ -1514,7 +1514,7 @@ p7_confirm_empty_table( const ofaImportAssistant *self )
 				_( "You have asked to fully drop the previously content of the target "
 					"table before importing these new datas.\n"
 					"Are you sure ?" ),
-				_( "_Confirm" ));
+				_( "C_onfirm" ));
 
 	return( ok );
 }
