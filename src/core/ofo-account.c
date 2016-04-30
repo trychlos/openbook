@@ -245,11 +245,11 @@ static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void         isignal_hub_connect( ofaHub *hub );
 static gboolean     hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean     hub_is_deletable_class( ofaHub *hub, ofoClass *class );
-static void         on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
-static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
-static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void         on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void         hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty );
+static void         hub_on_new_object_entry( ofaHub *hub, ofoEntry *entry );
+static void         hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoAccount )
@@ -2484,9 +2484,9 @@ isignal_hub_connect( ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( hub_on_entry_status_change ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
 }
 
 /*
@@ -2534,9 +2534,9 @@ hub_is_deletable_class( ofaHub *hub, ofoClass *class )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
+hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_account_on_hub_new_object";
+	static const gchar *thisfn = "ofo_account_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
 			thisfn,
@@ -2545,7 +2545,7 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
 			( void * ) empty );
 
 	if( OFO_IS_ENTRY( object )){
-		on_new_object_entry( hub, OFO_ENTRY( object ));
+		hub_on_new_object_entry( hub, OFO_ENTRY( object ));
 	}
 }
 
@@ -2553,7 +2553,7 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty )
  * a new entry has been recorded, so update the daily balances
  */
 static void
-on_new_object_entry( ofaHub *hub, ofoEntry *entry )
+hub_on_new_object_entry( ofaHub *hub, ofoEntry *entry )
 {
 	ofaEntryStatus status;
 	ofoAccount *account;
@@ -2613,9 +2613,9 @@ on_new_object_entry( ofaHub *hub, ofoEntry *entry )
  * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
-on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
-	static const gchar *thisfn = "ofo_account_on_hub_entry_status_change";
+	static const gchar *thisfn = "ofo_account_hub_on_entry_status_change";
 	ofoAccount *account;
 	ofxAmount debit, credit, amount;
 
@@ -2681,9 +2681,9 @@ on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_account_on_hub_updated_object";
+	static const gchar *thisfn = "ofo_account_hub_on_updated_object";
 	const gchar *code;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
@@ -2697,7 +2697,7 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
+				hub_on_updated_object_currency_code( hub, prev_id, code );
 			}
 		}
 	}
@@ -2708,7 +2708,7 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
  * use it
  */
 static void
-on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 	GList *collection;
