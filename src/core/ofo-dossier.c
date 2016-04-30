@@ -203,7 +203,6 @@ typedef struct {
 }
 	ofoDossierPrivate;
 
-static gint        dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
 static GList      *dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency );
@@ -230,6 +229,9 @@ static void        free_cur_detail( GList *fields );
 static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void        isignal_hub_connect( ofaHub *hub );
 static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
+static gboolean    hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
+static gboolean    hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
 static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
@@ -314,96 +316,6 @@ ofo_dossier_new( ofaHub *hub )
 	dossier = dossier_do_read( hub );
 
 	return( dossier );
-}
-
-/**
- * ofo_dossier_use_account:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: %TRUE if the dossier makes use of this account, thus
- * preventing its deletion.
- */
-gboolean
-ofo_dossier_use_account( const ofoDossier *dossier, const gchar *account )
-{
-	gint count;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	count = dossier_cur_count_uses( dossier, "DOS_SLD_ACCOUNT", account );
-	return( count > 0 );
-}
-
-/**
- * ofo_dossier_use_currency:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: %TRUE if the dossier makes use of this currency, thus
- * preventing its deletion.
- */
-gboolean
-ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
-{
-	const gchar *default_dev;
-	gint count;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	default_dev = ofo_dossier_get_default_currency( dossier );
-
-	if( my_strlen( default_dev ) &&
-			!g_utf8_collate( default_dev, currency )){
-		return( TRUE );
-	}
-
-	count = dossier_cur_count_uses( dossier, "DOS_CURRENCY", currency );
-	return( count > 0 );
-}
-
-/**
- * ofo_dossier_use_ledger:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: %TRUE if the dossier makes use of this ledger, thus
- * preventing its deletion.
- */
-gboolean
-ofo_dossier_use_ledger( const ofoDossier *dossier, const gchar *ledger )
-{
-	const gchar *import_ledger;
-	gint cmp;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	import_ledger = ofo_dossier_get_import_ledger( dossier );
-	if( my_strlen( import_ledger )){
-		cmp = g_utf8_collate( ledger, import_ledger );
-		return( cmp == 0 );
-	}
-
-	return( FALSE );
-}
-
-static gint
-dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
-{
-	ofaHub *hub;
-	gchar *query;
-	gint count;
-
-	hub = ofo_base_get_hub( OFO_BASE( dossier ));
-
-	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE %s='%s' AND DOS_ID=%d",
-					field, mnemo, DOSSIER_ROW_ID );
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 /**
@@ -1866,11 +1778,81 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 
 	deletable = TRUE;
 
-	if( OFO_IS_OPE_TEMPLATE( object )){
+	if( OFO_IS_ACCOUNT( object )){
+		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+
+	} else if( OFO_IS_CURRENCY( object )){
+		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
+
+	} else if( OFO_IS_LEDGER( object )){
+		deletable = hub_is_deletable_ledger( hub, OFO_LEDGER( object ));
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
 		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
 	}
 
 	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE DOS_SLD_ACCOUNT='%s'",
+			ofo_account_get_number( account ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_DEF_CURRENCY='%s'",
+			ofo_currency_get_code( currency ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	if( count == 0 ){
+		query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE DOS_CURRENCY='%s'",
+				ofo_currency_get_code( currency ));
+
+		ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+		g_free( query );
+	}
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_IMPORT_LEDGER='%s'",
+			ofo_ledger_get_mnemo( ledger ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 static gboolean

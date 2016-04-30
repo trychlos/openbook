@@ -744,16 +744,14 @@ ofo_account_is_deletable( const ofoAccount *account )
 	gboolean deletable;
 	GList *children, *it;
 	const gchar *number;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
+	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
-	dossier = ofa_hub_get_dossier( hub );
 	number = ofo_account_get_number( account );
-	deletable = !ofo_entry_use_account( hub, number ) &&
-				!ofo_dossier_use_account( dossier, number );
+	deletable = !ofo_entry_use_account( hub, number );
 
 	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
 		children = ofo_account_get_children( account );
@@ -763,7 +761,9 @@ ofo_account_is_deletable( const ofoAccount *account )
 		g_list_free( children );
 	}
 
-	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( account ));
+	if( hub && deletable ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, account, &deletable );
+	}
 
 	return( deletable );
 }

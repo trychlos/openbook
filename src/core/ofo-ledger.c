@@ -838,22 +838,22 @@ gboolean
 ofo_ledger_is_deletable( const ofoLedger *ledger )
 {
 	ofaHub *hub;
-	ofoDossier *dossier;
 	gboolean deletable;
 	const gchar *mnemo;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
+	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
-	dossier = ofa_hub_get_dossier( hub );
 	mnemo = ofo_ledger_get_mnemo( ledger );
 
-	deletable = !ofo_dossier_use_ledger( dossier, mnemo ) &&
-			!ofo_entry_use_ledger( hub, mnemo ) &&
+	deletable = !ofo_entry_use_ledger( hub, mnemo ) &&
 			!ofo_ope_template_use_ledger( hub, mnemo );
 
-	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( ledger ));
+	if( hub && deletable ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, ledger, &deletable );
+	}
 
 	return( deletable );
 }

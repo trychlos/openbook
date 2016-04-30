@@ -353,22 +353,22 @@ ofo_currency_is_deletable( const ofoCurrency *currency )
 {
 	ofaHub *hub;
 	const gchar *dev_code;
-	ofoDossier *dossier;
 	gboolean deletable;
 
 	g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( currency )->prot->dispose_has_run, FALSE );
 
+	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( currency ));
-	dossier = ofa_hub_get_dossier( hub );
 	dev_code = ofo_currency_get_code( currency );
 
 	deletable = !ofo_account_use_currency( hub, dev_code ) &&
-				!ofo_dossier_use_currency( dossier, dev_code ) &&
 				!ofo_entry_use_currency( hub, dev_code ) &&
 				!ofo_ledger_use_currency( hub, dev_code );
 
-	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( currency ));
+	if( hub && deletable ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, currency, &deletable );
+	}
 
 	return( deletable );
 }
