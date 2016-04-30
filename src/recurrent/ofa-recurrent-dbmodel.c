@@ -80,7 +80,6 @@ static sMigration st_migrates[] = {
 static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static gboolean   idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object );
 static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static gboolean   exec_query( sUpdate *update_data, const gchar *query );
@@ -104,7 +103,6 @@ ofa_recurrent_dbmodel_iface_init( ofaIDBModelInterface *iface )
 	iface->get_current_version = idbmodel_get_current_version;
 	iface->get_last_version = idbmodel_get_last_version;
 	iface->ddl_update = idbmodel_ddl_update;
-	iface->get_is_deletable = idbmodel_get_is_deletable;
 	iface->check_dbms_integrity = idbmodel_check_dbms_integrity;
 }
 
@@ -143,13 +141,6 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *con
 	}
 
 	return( last_version );
-}
-
-static gboolean
-idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object )
-{
-	return( ofo_recurrent_model_get_is_deletable( hub, object ) &&
-			ofo_recurrent_run_get_is_deletable( hub, object ));
 }
 
 static gboolean

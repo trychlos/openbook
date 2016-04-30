@@ -244,20 +244,6 @@ ofo_recurrent_run_get_by_id( ofaHub *hub, const gchar *mnemo, const GDate *date 
 }
 
 /**
- * ofo_recurrent_run_get_is_deletable:
- * @hub: the current #ofaHub object of the application.
- * @object: the object to be tested.
- *
- * Returns: %TRUE if the @object is not used by ofoTVAForm, thus may be
- * deleted.
- */
-gboolean
-ofo_recurrent_run_get_is_deletable( const ofaHub *hub, const ofoBase *object )
-{
-	return( TRUE );
-}
-
-/**
  * ofo_recurrent_run_new:
  */
 ofoRecurrentRun *
