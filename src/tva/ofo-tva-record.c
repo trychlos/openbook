@@ -170,7 +170,6 @@ typedef struct {
 }
 	ofoTVARecordPrivate;
 
-static guint         record_count_for_account( const ofaIDBConnect *connect, const gchar *account );
 static void          record_set_mnemo( ofoTVARecord *record, const gchar *mnemo );
 static void          tva_record_set_upd_user( ofoTVARecord *record, const gchar *upd_user );
 static void          tva_record_set_upd_stamp( ofoTVARecord *record, const GTimeVal *upd_stamp );
@@ -440,52 +439,6 @@ ofo_tva_record_get_by_begin( ofaHub *hub, const gchar *mnemo, const GDate *candi
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_tva_record_get_is_deletable:
- * @hub: the current #ofaHub object of the application.
- * @object: the object to be tested.
- *
- * Returns: %TRUE if the @object is not used by ofoTVAForm, thus may be
- * deleted.
- */
-gboolean
-ofo_tva_record_get_is_deletable( const ofaHub *hub, const ofoBase *object )
-{
-	gboolean ok;
-	const gchar *account_id;
-	guint count;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( object && OFO_IS_BASE( object ), FALSE );
-
-	ok = TRUE;
-
-	if( OFO_IS_ACCOUNT( object )){
-		account_id = ofo_account_get_number( OFO_ACCOUNT( object ));
-		count = record_count_for_account( ofa_hub_get_connect( hub ), account_id );
-		ok = ( count == 0 );
-	}
-
-	return( ok );
-}
-
-static guint
-record_count_for_account( const ofaIDBConnect *connect, const gchar *account )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM TVA_T_RECORDS_DET "
-				"	WHERE TFO_DET_BASE_RULE LIKE '%%%s%%' OR TFO_DET_AMOUNT_RULE LIKE '%%%s%%'", account, account );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( abs( count ));
 }
 
 /**

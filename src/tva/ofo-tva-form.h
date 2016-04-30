@@ -95,8 +95,6 @@ GList          *ofo_tva_form_get_dataset            ( ofaHub *hub );
 
 ofoTVAForm     *ofo_tva_form_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
 
-gboolean        ofo_tva_form_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
-
 ofoTVAForm     *ofo_tva_form_new                    ( void );
 ofoTVAForm     *ofo_tva_form_new_from_form          ( const ofoTVAForm *form );
 

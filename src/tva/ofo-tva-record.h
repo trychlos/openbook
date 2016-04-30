@@ -76,7 +76,6 @@ GList          *ofo_tva_record_get_dataset            ( ofaHub *hub );
 GDate          *ofo_tva_record_get_last_end           ( ofaHub *hub, const gchar *mnemo, GDate * );
 ofoTVARecord   *ofo_tva_record_get_by_key             ( ofaHub *hub, const gchar *mnemo, const GDate *candidate_end );
 ofoTVARecord   *ofo_tva_record_get_by_begin           ( ofaHub *hub, const gchar *mnemo, const GDate *candidate_begin, const GDate *end );
-gboolean        ofo_tva_record_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
 
 ofoTVARecord   *ofo_tva_record_new                    ( void );
 ofoTVARecord   *ofo_tva_record_new_from_form          ( const ofoTVAForm *form );

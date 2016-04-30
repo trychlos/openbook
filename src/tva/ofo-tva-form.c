@@ -179,7 +179,6 @@ typedef struct {
 	ofoTVAFormPrivate;
 
 static ofoTVAForm *form_find_by_mnemo( GList *set, const gchar *mnemo );
-static guint       form_count_for_account( const ofaIDBConnect *connect, const gchar *account );
 static void        tva_form_set_upd_user( ofoTVAForm *form, const gchar *upd_user );
 static void        tva_form_set_upd_stamp( ofoTVAForm *form, const GTimeVal *upd_stamp );
 static GList      *form_detail_new( ofoTVAForm *form, guint level, const gchar *code, const gchar *label, gboolean has_base, const gchar *base, gboolean has_amount, const gchar *amount, gboolean has_template, const gchar *template );
@@ -220,6 +219,7 @@ static gboolean    form_drop_content( const ofaIDBConnect *connect );
 static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void        isignal_hub_connect( ofaHub *hub );
 static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean    hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
@@ -380,52 +380,6 @@ form_find_by_mnemo( GList *set, const gchar *mnemo )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_tva_form_get_is_deletable:
- * @hub: the current #ofaHub object of the application.
- * @object: the object to be tested.
- *
- * Returns: %TRUE if the @object is not used by ofoTVAForm, thus may be
- * deleted.
- */
-gboolean
-ofo_tva_form_get_is_deletable( const ofaHub *hub, const ofoBase *object )
-{
-	gboolean ok;
-	const gchar *account_id;
-	guint count;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( object && OFO_IS_BASE( object ), FALSE );
-
-	ok = TRUE;
-
-	if( OFO_IS_ACCOUNT( object )){
-		account_id = ofo_account_get_number( OFO_ACCOUNT( object ));
-		count = form_count_for_account( ofa_hub_get_connect( hub ), account_id );
-		ok = ( count == 0 );
-	}
-
-	return( ok );
-}
-
-static guint
-form_count_for_account( const ofaIDBConnect *connect, const gchar *account )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM TVA_T_FORMS_DET "
-				"	WHERE TFO_DET_BASE LIKE '%%%s%%' OR TFO_DET_AMOUNT LIKE '%%%s%%'", account, account );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( abs( count ));
 }
 
 /**
@@ -2205,11 +2159,33 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 
 	deletable = TRUE;
 
-	if( OFO_IS_OPE_TEMPLATE( object )){
+	if( OFO_IS_ACCOUNT( object )){
+		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
 		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
 	}
 
 	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM TVA_T_FORMS_DET "
+			"	WHERE TFO_DET_BASE LIKE '%%%s%%' OR TFO_DET_AMOUNT LIKE '%%%s%%'",
+			ofo_account_get_number( account ),
+			ofo_account_get_number( account ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 static gboolean
