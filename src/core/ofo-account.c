@@ -211,7 +211,6 @@ static void         archives_list_free( ofoAccount *account );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static gint         account_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
 static gint         account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
-static gint         account_count_for_like( const ofaIDBConnect *connect, const gchar *field, gint number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
@@ -244,6 +243,8 @@ static gboolean     account_get_exists( const ofoAccount *account, const ofaIDBC
 static gboolean     account_drop_content( const ofaIDBConnect *connect );
 static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void         isignal_hub_connect( ofaHub *hub );
+static gboolean     hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean     hub_is_deletable_class( ofaHub *hub, ofoClass *class );
 static void         on_hub_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         on_new_object_entry( ofaHub *hub, ofoEntry *entry );
 static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
@@ -420,26 +421,6 @@ account_find_by_number( GList *set, const gchar *number )
 }
 
 /**
- * ofo_account_use_class:
- * @hub: the #ofaHub object.
- * @number: the searched class number
- *
- * Returns: %TRUE if at least one recorded account makes use of the
- * specified class number.
- *
- * The whole account dataset is loaded from DBMS if not already done.
- */
-gboolean
-ofo_account_use_class( ofaHub *hub, gint number )
-{
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	ofo_account_get_dataset( hub );
-
-	return( account_count_for_like( ofa_hub_get_connect( hub ), "ACC_NUMBER", number ) > 0 );
-}
-
-/**
  * ofo_account_use_currency:
  * @hub: the #ofaHub object.
  * @currency: the currency ISO 3A code
@@ -474,23 +455,6 @@ account_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar
 
 	query = g_strdup_printf(
 				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s='%s'", field, mnemo );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
-}
-
-static gint
-account_count_for_like( const ofaIDBConnect *connect, const gchar *field, gint number )
-{
-	gint count;
-	gchar *query;
-
-	count = 0;
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE %s LIKE '%d%%'", field, number );
 
 	ofa_idbconnect_query_int( connect, query, &count, TRUE );
 
@@ -2519,9 +2483,51 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_CLASS( object )){
+		deletable = hub_is_deletable_class( hub, OFO_CLASS( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_class( ofaHub *hub, ofoClass *class )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_ACCOUNTS WHERE ACC_NUMBER LIKE '%d%%'",
+			ofo_class_get_number( class ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /*
@@ -2604,56 +2610,6 @@ on_new_object_entry( ofaHub *hub, ofoEntry *entry )
 }
 
 /*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_account_on_hub_updated_object";
-	const gchar *code;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-	}
-}
-
-/*
- * the currency code iso has been modified: update the accounts which
- * use it
- */
-static void
-on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-	GList *collection;
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
-						code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
-
-	collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub );
-	if( collection && g_list_length( collection )){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
-	}
-}
-
-/*
  * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
@@ -2719,4 +2675,54 @@ on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 	}
 
 	ofo_account_update_amounts( account );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_on_hub_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+	}
+}
+
+/*
+ * the currency code iso has been modified: update the accounts which
+ * use it
+ */
+static void
+on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+	GList *collection;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
+						code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub );
+	if( collection && g_list_length( collection )){
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
+	}
 }

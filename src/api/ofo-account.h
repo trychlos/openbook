@@ -97,7 +97,6 @@ GList          *ofo_account_get_dataset_for_solde   ( ofaHub *hub );
 #define         ofo_account_free_dataset( L )       g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
 ofoAccount     *ofo_account_get_by_number           ( ofaHub *hub, const gchar *number );
-gboolean        ofo_account_use_class               ( ofaHub *hub, gint number );
 gboolean        ofo_account_use_currency            ( ofaHub *hub, const gchar *devise );
 
 ofoAccount     *ofo_account_new                     ( void );
