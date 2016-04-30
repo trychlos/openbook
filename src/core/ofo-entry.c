@@ -74,6 +74,7 @@ enum {
 	ENT_STATUS,
 	ENT_UPD_USER,
 	ENT_UPD_STAMP,
+	ENT_OPE_NUMBER,
 	ENT_STLMT_NUMBER,
 	ENT_STLMT_USER,
 	ENT_STLMT_STAMP,
@@ -127,6 +128,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( ENT_OPE_NUMBER ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
 		{ OFA_BOX_CSV( ENT_STLMT_NUMBER ),
 				OFA_TYPE_COUNTER,
 				TRUE,
@@ -163,6 +168,8 @@ typedef struct {
 	gboolean   import_settled;
 }
 	ofoEntryPrivate;
+
+#define ENTRY_IE_FORMAT                 1
 
 /* manage the abbreviated localized status
  */
@@ -223,6 +230,7 @@ static guint        iimportable_get_interface_version( void );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
 static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void         iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoEntry *entry, GSList **fields );
 static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean     entry_drop_content( const ofaIDBConnect *connect );
 static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
@@ -1098,6 +1106,18 @@ ofo_entry_get_status_from_abr( const gchar *abr_status )
 }
 
 /**
+ * ofo_entry_get_ope_number:
+ * @entry: this #ofoEntry instance.
+ *
+ * Returns: the number of the source operation, or zero.
+ */
+ofxCounter
+ofo_entry_get_ope_number( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, counter, 0, ENT_OPE_NUMBER );
+}
+
+/**
  * ofo_entry_get_settlement_number:
  * @entry: this #ofoEntry instance.
  *
@@ -1516,6 +1536,15 @@ static void
 entry_set_upd_stamp( ofoEntry *entry, const GTimeVal *upd_stamp )
 {
 	ofo_base_setter( ENTRY, entry, timestamp, ENT_UPD_STAMP, upd_stamp );
+}
+
+/**
+ * ofo_entry_set_ope_number:
+ */
+void
+ofo_entry_set_ope_number( ofoEntry *entry, ofxCounter number )
+{
+	ofo_base_setter( ENTRY, entry, counter, ENT_OPE_NUMBER, number );
 }
 
 /**
@@ -2363,6 +2392,11 @@ iexportable_get_label( const ofaIExportable *instance )
  * v0.38: as the conciliation information have moved to another table,
  * and because we want to stay able to export/import them, we have to
  * add to the dataset the informations got from conciliation groups.
+ *
+ * v0.56: introduce a format version number prefix (for now: 1).
+ * Starting from now, the added conciliation group comes just after this
+ * version number, and the entry comes after. This let us add new fields
+ * at the end of the entry.
  */
 static gboolean
 iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
@@ -2390,8 +2424,10 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
 
 	if( with_headers ){
 		str = ofa_box_csv_get_header( st_boxed_defs, settings );
-		str2 = g_strdup_printf( "%s%c%s%c%s%c%s",
-				str, field_sep, "ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp" );
+		str2 = g_strdup_printf( "%s%c%s%c%s%c%s%c%s",
+				"Version", field_sep,
+				"ConcilDval", field_sep, "ConcilUser", field_sep, "ConcilStamp", field_sep,
+				str );
 		ok = ofa_iexportable_set_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
@@ -2410,12 +2446,16 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
 		currency = ofo_currency_get_by_code( hub, cur_code );
 		g_return_val_if_fail( currency && OFO_IS_CURRENCY( currency ), FALSE );
 		str = ofa_box_csv_get_line_ex( OFO_BASE( it->data )->prot->fields, settings, ( CSVExportFunc ) export_cb, currency );
+
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( it->data ));
 		sdate = concil ? my_date_to_str( ofo_concil_get_dval( concil ), MY_DATE_SQL ) : g_strdup( "" );
 		suser = g_strdup( concil ? ofo_concil_get_user( concil ) : "" );
 		sstamp = concil ? my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS ) : g_strdup( "" );
-		str2 = g_strdup_printf( "%s%c%s%c%s%c%s",
-				str, field_sep, sdate, field_sep, suser, field_sep, sstamp );
+
+		str2 = g_strdup_printf( "%u%c%s%c%s%c%s%c%s",
+				ENTRY_IE_FORMAT, field_sep,
+				sdate, field_sep, suser, field_sep, sstamp, field_sep,
+				str );
 		ok = ofa_iexportable_set_line( exportable, str2 );
 		g_free( str2 );
 		g_free( str );
@@ -2483,6 +2523,11 @@ iimportable_get_label( const ofaIImportable *instance )
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
+ * - maybe a format number (else format=0)
+ * If format >= 1
+ *   - reconciliation date: yyyy-mm-dd
+ *   - exported reconciliation user (defaults to current user)
+ *   - exported reconciliation timestamp (defaults to now)
  * - operation date (yyyy-mm-dd)
  * - effect date (yyyy-mm-dd)
  * - label
@@ -2493,6 +2538,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * - account number, must exist and be a detail account
  * - debit
  * - credit (only one of the twos must be set)
+ * - ope.number (starting with format=1)
  * - settlement: "True" or a settlement number if the entry has been
  *   settled, or empty
  * - ignored (settlement user on export)
@@ -2501,6 +2547,7 @@ iimportable_get_label( const ofaIImportable *instance )
  * - ignored (entry status on export)
  * - ignored (creation user on export)
  * - ignored (creation timestamp on export)
+ * If format = 0
  * - reconciliation date: yyyy-mm-dd
  * - exported reconciliation user (defaults to current user)
  * - exported reconciliation timestamp (defaults to now)
@@ -2565,9 +2612,9 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	const gchar *cstr;
 	GSList *itl, *fields, *itf;
 	ofoEntry *entry;
-	guint numline, total;
+	guint numline, total, format;
 	GDate date;
-	gchar *currency, *userid, *str, *sdeb, *scre;
+	gchar *currency, *str, *sdeb, *scre;
 	ofoAccount *account;
 	ofoLedger *ledger;
 	gdouble debit, credit;
@@ -2576,11 +2623,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofsCurrency *sdet;
 	ofoCurrency *cur_object;
 	ofxCounter counter;
-	GTimeVal stamp;
-	ofoConcil *concil;
 	myDateFormat date_format;
 	ofoDossier *dossier;
-	const ofaIDBConnect *connect;
 
 	numline = 0;
 	dataset = NULL;
@@ -2593,7 +2637,6 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	fut = NULL;
 	date_format = ofa_stream_format_get_date_format( parms->format );
 	dossier = ofa_hub_get_dossier( parms->hub );
-	connect = ofa_hub_get_connect( parms->hub );
 
 	for( itl=lines ; itl ; itl=itl->next ){
 
@@ -2604,22 +2647,45 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		numline += 1;
 		fields = ( GSList * ) itl->data;
 		entry = ofo_entry_new();
-		concil = NULL;
 		debit = 0;
 		credit = 0;
 
-		/* operation date */
+		/* first field is a version number or the operation date */
 		itf = fields;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		my_date_set_from_str( &date, cstr, date_format );
-		if( !my_date_is_valid( &date )){
-			str = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
+		format = atoi( cstr );
+
+		/* valid format >= 1 */
+		if( !my_date_is_valid( &date ) && format > 0 && format <= ENTRY_IE_FORMAT ){
+
+			/* conciliation group */
+			iimportable_import_concil( importer, parms, entry, &itf );
+
+			/* operation date */
+			itf = itf ? itf->next : NULL;
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			my_date_set_from_str( &date, cstr, date_format );
+			if( !my_date_is_valid( &date )){
+				str = g_strdup_printf( _( "invalid entry operation date: %s" ), cstr );
+				ofa_iimporter_progress_num_text( importer, parms, numline, str );
+				g_free( str );
+				parms->parse_errs += 1;
+				continue;
+			}
+			ofo_entry_set_dope( entry, &date );
+
+		/* valid format = 0 */
+		} else if( my_date_is_valid( &date )){
+			ofo_entry_set_dope( entry, &date );
+
+		} else {
+			str = g_strdup_printf( _( "invalid first field while version number or operation date was expected: %s" ), cstr );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
 			g_free( str );
 			parms->parse_errs += 1;
 			continue;
 		}
-		ofo_entry_set_dope( entry, &date );
 
 		/* effect date */
 		itf = itf ? itf->next : NULL;
@@ -2761,6 +2827,16 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			continue;
 		}
 
+		/* format >= 1: operation number */
+		if( format >= 1 ){
+			itf = itf ? itf->next : NULL;
+			cstr = itf ? ( const gchar * ) itf->data : NULL;
+			counter = my_strlen( cstr ) ? atol( cstr ) : 0;
+			if( counter ){
+				ofo_entry_set_ope_number( entry, counter );
+			}
+		}
+
 		/* settlement (number or True)
 		 * do not allocate a settlement number from the dossier here
 		 * in case where the entries import would not be inserted */
@@ -2793,42 +2869,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		/* ignored (creation timestamp from export) */
 		itf = itf ? itf->next : NULL;
 
-		/* reconciliation date */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		my_date_set_from_str( &date, cstr, date_format );
-		if( my_date_is_valid( &date )){
-			concil = ofo_concil_new();
-			g_object_set_data( G_OBJECT( entry ), "entry-concil", concil );
-			ofo_concil_set_dval( concil, &date );
-			g_debug( "%s: new concil dval=%s", thisfn, cstr );
-		}
-
-		/* exported reconciliation user (defaults to current user) */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( concil ){
-			userid = g_strdup( cstr );
-			if( !my_strlen( userid )){
-				g_free( userid );
-				userid = ofa_idbconnect_get_account( connect );
-			}
-			ofo_concil_set_user( concil, userid );
-			g_debug( "%s: new concil user=%s", thisfn, userid );
-			g_free( userid );
-		}
-
-		/* exported reconciliation timestamp (defaults to now) */
-		itf = itf ? itf->next : NULL;
-		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( concil ){
-			if( !my_strlen( cstr )){
-				my_utils_stamp_set_now( &stamp );
-			} else {
-				my_utils_stamp_set_from_str( &stamp, cstr );
-			}
-			ofo_concil_set_stamp( concil, &stamp );
-			g_debug( "%s: new concil stamp=%s", thisfn, cstr );
+		if( format == 0 ){
+			iimportable_import_concil( importer, parms, entry, &itf );
 		}
 
 		/* what to do regarding the effect date ?
@@ -2915,6 +2957,70 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofs_currency_list_free( &fut );
 
 	return( dataset );
+}
+
+/*
+ * import conciliation informations
+ * which happend to be at the end of the line (format=0) or at the start
+ * of the line (format>=1)
+ */
+static void
+iimportable_import_concil( ofaIImporter *importer, ofsImporterParms *parms, ofoEntry *entry, GSList **fields )
+{
+	static const gchar *thisfn = "ofo_entry_iimportable_import_concil";
+	GSList *itf;
+	const gchar *cstr;
+	GDate date;
+	GTimeVal stamp;
+	ofoConcil *concil;
+	gchar *userid;
+	const ofaIDBConnect *connect;
+	myDateFormat date_format;
+
+	concil = NULL;
+	itf = *fields;
+	date_format = ofa_stream_format_get_date_format( parms->format );
+	connect = ofa_hub_get_connect( parms->hub );
+
+	/* reconciliation date */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	my_date_set_from_str( &date, cstr, date_format );
+	if( my_date_is_valid( &date )){
+		concil = ofo_concil_new();
+		g_object_set_data( G_OBJECT( entry ), "entry-concil", concil );
+		ofo_concil_set_dval( concil, &date );
+		g_debug( "%s: new concil dval=%s", thisfn, cstr );
+	}
+
+	/* exported reconciliation user (defaults to current user) */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( concil ){
+		userid = g_strdup( cstr );
+		if( !my_strlen( userid )){
+			g_free( userid );
+			userid = ofa_idbconnect_get_account( connect );
+		}
+		ofo_concil_set_user( concil, userid );
+		g_debug( "%s: new concil user=%s", thisfn, userid );
+		g_free( userid );
+	}
+
+	/* exported reconciliation timestamp (defaults to now) */
+	itf = itf ? itf->next : NULL;
+	cstr = itf ? ( const gchar * ) itf->data : NULL;
+	if( concil ){
+		if( !my_strlen( cstr )){
+			my_utils_stamp_set_now( &stamp );
+		} else {
+			my_utils_stamp_set_from_str( &stamp, cstr );
+		}
+		ofo_concil_set_stamp( concil, &stamp );
+		g_debug( "%s: new concil stamp=%s", thisfn, cstr );
+	}
+
+	*fields = itf;
 }
 
 static void
