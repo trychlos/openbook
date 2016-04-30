@@ -368,18 +368,6 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 }
 
 /**
- * ofa_idbmodel_get_is_deletable:
- * @object: the #ofoBase object to be checked.
- *
- * Returns: %TRUE if all the plugins accept that this object be deleted.
- */
-gboolean
-ofa_idbmodel_get_is_deletable( const ofaHub *hub, const ofoBase *object )
-{
-	return( TRUE );
-}
-
-/**
  * ofa_idbmodel_get_by_name:
  * @hub: the #ofaHub object.
  * @name: the searched for identification name.

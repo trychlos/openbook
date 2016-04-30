@@ -209,9 +209,6 @@ guint        ofa_idbmodel_get_interface_version     ( GType type );
 gboolean     ofa_idbmodel_update                    ( ofaHub *hub,
 															GtkWindow *parent );
 
-gboolean     ofa_idbmodel_get_is_deletable          ( const ofaHub *hub,
-															const ofoBase *object );
-
 ofaIDBModel *ofa_idbmodel_get_by_name               ( const ofaHub *hub,
 															const gchar *name );
 
