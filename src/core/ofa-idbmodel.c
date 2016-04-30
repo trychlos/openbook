@@ -376,31 +376,7 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 gboolean
 ofa_idbmodel_get_is_deletable( const ofaHub *hub, const ofoBase *object )
 {
-	static const gchar *thisfn = "ofa_idbmodel_get_is_deletable";
-	ofaExtenderCollection *extenders;
-	GList *plugins_list, *it;
-	ofaIDBModel *instance;
-	gboolean ok;
-
-	g_return_val_if_fail( object && OFO_IS_BASE( object ), FALSE );
-
-	extenders = ofa_hub_get_extender_collection( hub );
-	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
-	ok = TRUE;
-
-	for( it=plugins_list ; it && ok ; it=it->next ){
-		instance = OFA_IDBMODEL( it->data );
-		if( OFA_IDBMODEL_GET_INTERFACE( instance )->get_is_deletable ){
-			ok &= OFA_IDBMODEL_GET_INTERFACE( instance )->get_is_deletable( instance, hub, object );
-		} else {
-			g_info( "%s: ofaIDBModel's %s implementation does not provide 'get_is_deletable()' method",
-					thisfn, G_OBJECT_TYPE_NAME( instance ));
-		}
-	}
-
-	ofa_extender_collection_free_types( plugins_list );
-
-	return( ok );
+	return( TRUE );
 }
 
 /**

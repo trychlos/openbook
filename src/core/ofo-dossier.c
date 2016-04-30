@@ -203,9 +203,6 @@ typedef struct {
 }
 	ofoDossierPrivate;
 
-static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
-static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
 static gint        dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
@@ -234,6 +231,9 @@ static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void        isignal_hub_connect( ofaHub *hub );
 static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
+static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
@@ -312,80 +312,8 @@ ofo_dossier_new( ofaHub *hub )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	dossier = dossier_do_read( hub );
-	if( dossier ){
-		g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), dossier );
-		g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), dossier );
-	}
 
 	return( dossier );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
-	const gchar *code;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, dossier=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) dossier );
-
-	if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-	}
-}
-
-static void
-on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_DOSSIER "
-					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
-}
-
-/*
- * SIGNAL_HUB_EXE_DATES_CHANGED signal handler
- * @dossier: this #ofoDossier instance.
- *
- * Changing beginning or ending exercice dates is only possible for
- * the current exercice.
- */
-static void
-on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier )
-{
-	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
-	ofaIDBPeriod *period;
-
-	connect = ofa_hub_get_connect( hub );
-	meta = ofa_idbconnect_get_meta( connect );
-	period = ofa_idbconnect_get_period( connect );
-
-	g_debug( "on_hub_exe_dates_changed: hub=%p, prev_begin=%p, prev_end=%p, dossier=%p",
-			hub, prev_begin, prev_end, dossier );
-
-	ofa_idbmeta_update_period( meta, period,
-			TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
-
-	g_object_unref( period );
-	g_object_unref( meta );
 }
 
 /**
@@ -1917,6 +1845,8 @@ isignal_hub_connect( ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 }
 
 /*
@@ -1959,4 +1889,76 @@ hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
 	g_free( query );
 
 	return( count == 0 );
+}
+
+/*
+ * SIGNAL_HUB_EXE_DATES_CHANGED signal handler
+ *
+ * Changing beginning or ending exercice dates is only possible for the
+ * current exercice.
+ */
+static void
+on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
+{
+	const ofaIDBConnect *connect;
+	ofaIDBMeta *meta;
+	ofaIDBPeriod *period;
+	ofoDossier *dossier;
+
+	g_debug( "on_hub_exe_dates_changed: hub=%p, prev_begin=%p, prev_end=%p, empty=%p",
+			hub, ( void * ) prev_begin, ( void * ) prev_end, ( void * ) empty );
+
+	dossier = ofa_hub_get_dossier( hub );
+	if( dossier && OFO_IS_DOSSIER( dossier )){
+
+		connect = ofa_hub_get_connect( hub );
+		meta = ofa_idbconnect_get_meta( connect );
+		period = ofa_idbconnect_get_period( connect );
+
+		ofa_idbmeta_update_period( meta, period,
+				TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
+
+		g_object_unref( period );
+		g_object_unref( meta );
+	}
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( my_collate( code, prev_id )){
+				on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+	}
+}
+
+static void
+on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER "
+					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
 }

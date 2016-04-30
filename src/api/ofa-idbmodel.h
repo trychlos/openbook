@@ -143,19 +143,6 @@ typedef struct {
 													const ofaIDBConnect *connect );
 
 	/**
-	 * get_is_deletable:
-	 * @instance: the #ofaIDBModel provider.
-	 * @object: the #ofoBase object to be tested.
-	 *
-	 * Returns: %TRUE if the @object may be deleted.
-	 *
-	 * Since: version 1
-	 */
-	gboolean      ( *get_is_deletable )     ( const ofaIDBModel *instance,
-													const ofaHub *hub,
-													const ofoBase *object );
-
-	/**
 	 * needs_update:
 	 * @instance: the #ofaIDBModel provider.
 	 * @connect: the #ofaIDBConnect connection object.
