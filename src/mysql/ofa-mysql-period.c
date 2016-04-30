@@ -241,16 +241,22 @@ read_from_settings( myISettings *settings, const gchar *group, const gchar *key 
 	/* second element: beginning date as YYYYMMDD */
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
-	ofa_idbperiod_set_begin_date(
-			OFA_IDBPERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
+	if( my_strlen( cstr )){
+		ofa_idbperiod_set_begin_date(
+				OFA_IDBPERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
+	}
 
 	/* third element: ending date as YYYYMMDD */
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
-	ofa_idbperiod_set_end_date(
-			OFA_IDBPERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
+	if( my_strlen( cstr )){
+		ofa_idbperiod_set_end_date(
+				OFA_IDBPERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
+	}
 
-	my_isettings_free_string_list( settings, strlist );
+	if( strlist ){
+		my_isettings_free_string_list( settings, strlist );
+	}
 
 	return( period );
 }
