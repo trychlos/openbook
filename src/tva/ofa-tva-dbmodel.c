@@ -638,7 +638,9 @@ count_v6( sUpdate *update_data )
 }
 
 /*
- * cannot check VAT forms integrity without interpreting the computing rules
+ * Cannot fully check VAT forms integrity without interpreting the
+ * computing rules.
+ * Should at least check for operation template(s)..
  */
 static gulong
 idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
