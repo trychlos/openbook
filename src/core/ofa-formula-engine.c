@@ -165,7 +165,7 @@ static gchar    *do_evaluate_a_expression( ofsFormulaHelper *helper, const gchar
 static gboolean  does_name_match( ofsFormulaHelper *helper, const gchar *expression );
 static gchar    *evaluate_names( ofsFormulaHelper *helper, const gchar *expression );
 static gboolean  evaluate_name_cb( const GMatchInfo *match_info, GString *result, ofsFormulaHelper *helper );
-static gboolean  evaluate_name_args( ofsFormulaHelper *helper, gint fn_count );
+static gboolean  evaluate_name_args( ofsFormulaHelper *helper, gint fn_min_count, gint fn_max_count );
 static gboolean  check_for_eval( ofsFormulaHelper *helper, const gchar *expression );
 static GList    *parse_expression_for_regex( ofsFormulaHelper *helper, const gchar *expression, GRegex *regex );
 static gboolean  does_nested_match( ofsFormulaHelper *helper, const gchar *expression );
@@ -752,7 +752,7 @@ static gboolean
 evaluate_name_cb( const GMatchInfo *match_info, GString *result, ofsFormulaHelper *helper )
 {
 	static const gchar *thisfn = "ofa_formula_engine_evaluate_name_cb";
-	gint count, fn_count;
+	gint count, fn_min_count, fn_max_count;
 	ofaFormulaEvalFn fn_ptr;
 	gchar *match, *str, *name, *res;
 	ofsFormulaHelper *helper_cb;
@@ -780,12 +780,16 @@ evaluate_name_cb( const GMatchInfo *match_info, GString *result, ofsFormulaHelpe
 
 		if( !my_collate( name, "EVAL" )){
 			fn_ptr = eval_eval;
-			fn_count = 1;
+			fn_min_count = 1;
+			fn_max_count = 1;
+
 		} else if( !my_collate( name, "IF" )){
 			fn_ptr = eval_if;
-			fn_count = 3;
+			fn_min_count = 3;
+			fn_max_count = 3;
+
 		} else {
-			fn_ptr = ( *helper->finder )( name, &fn_count, match_info, helper->user_data );
+			fn_ptr = ( *helper->finder )( name, &fn_min_count, &fn_max_count, match_info, helper->user_data );
 		}
 
 		if( fn_ptr ){
@@ -799,7 +803,7 @@ evaluate_name_cb( const GMatchInfo *match_info, GString *result, ofsFormulaHelpe
 			helper_cb->match_zero = match;
 			helper_cb->match_name = name;
 
-			if( count == 2 || evaluate_name_args( helper_cb, fn_count )){
+			if( count == 2 || evaluate_name_args( helper_cb, fn_min_count, fn_max_count )){
 				res = ( *fn_ptr )( helper_cb );
 			}
 
@@ -843,7 +847,7 @@ evaluate_name_cb( const GMatchInfo *match_info, GString *result, ofsFormulaHelpe
  * Returns: %TRUE if no error.
  */
 static gboolean
-evaluate_name_args( ofsFormulaHelper *helper, gint fn_count )
+evaluate_name_args( ofsFormulaHelper *helper, gint fn_min_count, gint fn_max_count )
 {
 	static const gchar *thisfn = "ofa_formula_engine_evaluate_name_args";
 	gboolean ok;
@@ -856,6 +860,7 @@ evaluate_name_args( ofsFormulaHelper *helper, gint fn_count )
 	args_str = g_match_info_fetch( helper->match_info, 2 );
 	args_array = g_strsplit( args_str, OFA_FORMULA_ARG_SEP, -1 );
 
+	/* get the actual count of arguments */
 	it = args_array;
 	count = 0;
 	while( *it ){
@@ -863,10 +868,10 @@ evaluate_name_args( ofsFormulaHelper *helper, gint fn_count )
 		it++;
 	}
 
-	if( fn_count >= 0 && fn_count != count ){
+	if( count < fn_min_count || ( count > fn_max_count && fn_max_count != -1 )){
 		ok = FALSE;
-		str = g_strdup_printf( _( "%s [error] match='%s': expected %u arguments, found %u" ),
-				thisfn, helper->match_zero, fn_count, count );
+		str = g_strdup_printf( _( "%s [error] match='%s': expected %u-%u arguments, found %u" ),
+				thisfn, helper->match_zero, fn_min_count, fn_max_count, count );
 		helper->msg = g_list_append( helper->msg, str );
 	}
 

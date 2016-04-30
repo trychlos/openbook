@@ -30,6 +30,7 @@
 
 #include "my/my-date.h"
 #include "my/my-icollector.h"
+#include "my/my-signal.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -74,6 +75,7 @@ typedef struct {
 enum {
 	NEW_OBJECT = 0,
 	UPDATED_OBJECT,
+	DELETABLE_OBJECT,
 	DELETED_OBJECT,
 	RELOAD_DATASET,
 	DOSSIER_OPENED,
@@ -88,11 +90,12 @@ enum {
 
 static gint st_signals[ N_SIGNALS ]     = { 0 };
 
-static void  icollector_iface_init( myICollectorInterface *iface );
-static guint icollector_get_interface_version( void );
-static void  connect_signaling_system_to( ofaHub *hub, GType type );
-static void  dossier_do_close( ofaHub *hub );
-static void  check_db_vs_settings( const ofaHub *hub );
+static void     icollector_iface_init( myICollectorInterface *iface );
+static guint    icollector_get_interface_version( void );
+static void     connect_signaling_system_to( ofaHub *hub, GType type );
+static gboolean on_deletable_default_handler( ofaHub *hub, GObject *object );
+static void     dossier_do_close( ofaHub *hub );
+static void     check_db_vs_settings( const ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
@@ -217,6 +220,32 @@ ofa_hub_class_init( ofaHubClass *klass )
 				G_TYPE_NONE,
 				2,
 				G_TYPE_OBJECT, G_TYPE_STRING );
+
+	/**
+	 * ofaHub::hub-object-deletable:
+	 *
+	 * The signal is emitted when the application wants to know if a
+	 * particular object is deletable.
+	 *
+	 * The handlers should return %TRUE to abort the deletion of the
+	 * proposed object.
+	 *
+	 * Handler is of type:
+	 * 		gboolean user_handler( ofaHub    *hub,
+	 * 								ofoBase  *object,
+	 * 								gpointer  user_data );
+	 */
+	st_signals[ DELETABLE_OBJECT ] = g_signal_new_class_handler(
+				SIGNAL_HUB_DELETABLE,
+				OFA_TYPE_HUB,
+				G_SIGNAL_RUN_LAST | G_SIGNAL_ACTION,
+				G_CALLBACK( on_deletable_default_handler ),
+				my_signal_accumulator_false_handled,
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_BOOLEAN,
+				1,
+				G_TYPE_OBJECT );
 
 	/**
 	 * ofaHub::hub-object-deleted:
@@ -596,6 +625,34 @@ connect_signaling_system_to( ofaHub *hub, GType type )
 	}
 
 	g_type_class_unref( klass );
+}
+
+/*
+ * Without this class handler connected, the returned deletability is
+ * False.
+ *
+ * With this class handler connected and returning %TRUE, then the
+ * returned deletability is True (which is the expected default).
+ *
+ * With this class handler connected and returning %FALSE, then the
+ * returned deletability is False.
+ *
+ * Any connected handler returning %FALSE stops the signal emission,
+ * and the returned value is %FALSE.
+ *
+ * If all connected handlers return %TRUE, then the control reaches
+ * this default handler which also returns %TRUE. The object is then
+ * supposed to be deletable.
+ */
+static gboolean
+on_deletable_default_handler( ofaHub *hub, GObject *object )
+{
+	static const gchar *thisfn = "ofa_hub_on_deletable_default_handler";
+
+	g_debug( "%s: hub=%p, object=%p (%s)",
+			thisfn, ( void * ) hub, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+
+	return( TRUE );
 }
 
 /**

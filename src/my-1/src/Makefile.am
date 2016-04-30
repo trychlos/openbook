@@ -85,6 +85,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-iwindow.c										\
 	my-progress-bar.c									\
 	my-settings.c										\
+	my-signal.c											\
 	my-tab.c											\
 	my-thousand-combo.c									\
 	my-timeout.c										\

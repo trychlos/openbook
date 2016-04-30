@@ -143,19 +143,6 @@ typedef struct {
 													const ofaIDBConnect *connect );
 
 	/**
-	 * get_is_deletable:
-	 * @instance: the #ofaIDBModel provider.
-	 * @object: the #ofoBase object to be tested.
-	 *
-	 * Returns: %TRUE if the @object may be deleted.
-	 *
-	 * Since: version 1
-	 */
-	gboolean      ( *get_is_deletable )     ( const ofaIDBModel *instance,
-													const ofaHub *hub,
-													const ofoBase *object );
-
-	/**
 	 * needs_update:
 	 * @instance: the #ofaIDBModel provider.
 	 * @connect: the #ofaIDBConnect connection object.
@@ -221,9 +208,6 @@ guint        ofa_idbmodel_get_interface_version     ( GType type );
  */
 gboolean     ofa_idbmodel_update                    ( ofaHub *hub,
 															GtkWindow *parent );
-
-gboolean     ofa_idbmodel_get_is_deletable          ( const ofaHub *hub,
-															const ofoBase *object );
 
 ofaIDBModel *ofa_idbmodel_get_by_name               ( const ofaHub *hub,
 															const gchar *name );

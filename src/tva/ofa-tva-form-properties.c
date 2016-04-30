@@ -39,6 +39,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-ope-template-editable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -77,9 +78,10 @@ typedef struct {
 }
 	ofaTVAFormPropertiesPrivate;
 
-#define DET_SPIN_WIDTH                  2
-#define DET_SPIN_MAX_WIDTH              2
-#define DET_CODE_MAX_LENGTH             64
+#define DET_SPIN_WIDTH                    2
+#define DET_SPIN_MAX_WIDTH                2
+#define DET_CODE_MAX_LENGTH              64
+#define DET_TEMPLATE_MAX_LENGTH          64
 #define DET_LABEL_MAX_LENGTH            256
 #define DET_BASE_MAX_LENGTH             256
 #define DET_AMOUNT_MAX_LENGTH           256
@@ -96,6 +98,8 @@ enum {
 	COL_DET_BASE,
 	COL_DET_HAS_AMOUNT,
 	COL_DET_AMOUNT,
+	COL_DET_HAS_TEMPLATE,
+	COL_DET_TEMPLATE,
 	N_DET_COLUMNS
 };
 
@@ -125,6 +129,8 @@ static void     on_det_has_base_toggled( GtkToggleButton *button, ofaTVAFormProp
 static void     on_det_base_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_det_has_amount_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
 static void     on_det_amount_changed( GtkEntry *entry, ofaTVAFormProperties *self );
+static void     on_det_has_template_toggled( GtkToggleButton *button, ofaTVAFormProperties *self );
+static void     on_det_template_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     on_bool_label_changed( GtkEntry *entry, ofaTVAFormProperties *self );
 static void     check_for_enable_dlg( ofaTVAFormProperties *self );
 static gboolean is_dialog_validable( ofaTVAFormProperties *self );
@@ -460,6 +466,7 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* code */
 	entry = gtk_entry_new();
 	g_signal_connect( entry, "changed", G_CALLBACK( on_det_code_changed ), self );
+	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 4 );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_CODE_MAX_LENGTH );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -511,6 +518,25 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
 			entry, 1+COL_DET_AMOUNT, row, 1, 1 );
+
+	/* has template */
+	toggle = gtk_check_button_new();
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_det_has_template_toggled ), self );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			toggle, 1+COL_DET_HAS_TEMPLATE, row, 1, 1 );
+
+	/* template */
+	entry = gtk_entry_new();
+	g_signal_connect( entry, "changed", G_CALLBACK( on_det_template_changed ), self );
+	gtk_widget_set_hexpand( entry, TRUE );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), DET_TEMPLATE_MAX_LENGTH );
+	gtk_widget_set_sensitive( entry, FALSE );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->det_grid ),
+			entry, 1+COL_DET_TEMPLATE, row, 1, 1 );
+	ofa_ope_template_editable_init( GTK_EDITABLE( entry ), priv->getter );
 }
 
 static void
@@ -520,7 +546,7 @@ set_detail_values( ofaTVAFormProperties *self, guint row )
 	GtkWidget *spin, *entry, *toggle, *previous_spin;
 	const gchar *cstr;
 	guint idx, level;
-	gboolean has_base, has_amount;
+	gboolean has_base, has_amount, has_template;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
@@ -573,6 +599,19 @@ set_detail_values( ofaTVAFormProperties *self, guint row )
 	cstr = ofo_tva_form_detail_get_amount( priv->tva_form, idx );
 	if( my_strlen( cstr )){
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, row );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
+
+	toggle = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_TEMPLATE, row );
+	g_return_if_fail( toggle && GTK_IS_TOGGLE_BUTTON( toggle ));
+	has_template = ofo_tva_form_detail_get_has_template( priv->tva_form, idx );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), has_template );
+	on_det_has_template_toggled( GTK_TOGGLE_BUTTON( toggle ), self );
+
+	cstr = ofo_tva_form_detail_get_template( priv->tva_form, idx );
+	if( my_strlen( cstr )){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, row );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
 	}
@@ -706,6 +745,31 @@ on_det_amount_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 }
 
 static void
+on_det_has_template_toggled( GtkToggleButton *button, ofaTVAFormProperties *self )
+{
+	ofaTVAFormPropertiesPrivate *priv;
+	guint row;
+	GtkWidget *entry;
+	gboolean checked;
+
+	priv = ofa_tva_form_properties_get_instance_private( self );
+
+	checked = gtk_toggle_button_get_active( button );
+	row = my_igridlist_get_row_index( GTK_WIDGET( button ));
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, row );
+	gtk_widget_set_sensitive( entry, checked && priv->is_writable );
+	//g_debug( "on_det_has_template_toggled: row=%u, checked=%s", row, checked ? "True":"False" );
+
+	check_for_enable_dlg( self );
+}
+
+static void
+on_det_template_changed( GtkEntry *entry, ofaTVAFormProperties *self )
+{
+	check_for_enable_dlg( self );
+}
+
+static void
 on_bool_label_changed( GtkEntry *entry, ofaTVAFormProperties *self )
 {
 	check_for_enable_dlg( self );
@@ -771,8 +835,8 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 {
 	ofaTVAFormPropertiesPrivate *priv;
 	gint i;
-	GtkWidget *entry, *base_check, *amount_check, *spin;
-	const gchar *code, *label, *base, *amount;
+	GtkWidget *entry, *base_check, *amount_check, *template_check, *spin;
+	const gchar *code, *label, *base, *amount, *template;
 	gchar *prev_mnemo;
 	guint rows_count, level;
 	gboolean ok;
@@ -811,14 +875,19 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, i );
 		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
 		amount = gtk_entry_get_text( GTK_ENTRY( entry ));
-		if( my_strlen( code ) || my_strlen( label ) || my_strlen( base ) || my_strlen( amount )){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, i );
+		g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
+		template = gtk_entry_get_text( GTK_ENTRY( entry ));
+		if( my_strlen( code ) || my_strlen( label ) || my_strlen( base ) || my_strlen( amount ) || my_strlen( template )){
 			base_check = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_BASE, i );
 			amount_check = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_AMOUNT, i );
+			template_check = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_TEMPLATE, i );
 			ofo_tva_form_detail_add(
 					priv->tva_form,
 					level, code, label,
 					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( base_check )), base,
-					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( amount_check )), amount );
+					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( amount_check )), amount,
+					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( template_check )), template );
 		}
 	}
 

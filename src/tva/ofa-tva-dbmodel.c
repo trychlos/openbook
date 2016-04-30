@@ -68,6 +68,8 @@ static gboolean dbmodel_to_v4( sUpdate *update_data, guint version );
 static gulong   count_v4( sUpdate *update_data );
 static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
 static gulong   count_v5( sUpdate *update_data );
+static gboolean dbmodel_to_v6( sUpdate *update_data, guint version );
+static gulong   count_v6( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -82,6 +84,7 @@ static sMigration st_migrates[] = {
 		{ 3, dbmodel_to_v3, count_v3 },
 		{ 4, dbmodel_to_v4, count_v4 },
 		{ 5, dbmodel_to_v5, count_v5 },
+		{ 6, dbmodel_to_v6, count_v6 },
 		{ 0 }
 };
 
@@ -90,7 +93,6 @@ static sMigration st_migrates[] = {
 static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
-static gboolean   idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object );
 static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
 static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
 static gboolean   exec_query( sUpdate *update_data, const gchar *query );
@@ -112,7 +114,6 @@ ofa_tva_dbmodel_iface_init( ofaIDBModelInterface *iface )
 	iface->get_current_version = idbmodel_get_current_version;
 	iface->get_last_version = idbmodel_get_last_version;
 	iface->ddl_update = idbmodel_ddl_update;
-	iface->get_is_deletable = idbmodel_get_is_deletable;
 	iface->check_dbms_integrity = idbmodel_check_dbms_integrity;
 }
 
@@ -154,13 +155,6 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *con
 }
 
 static gboolean
-idbmodel_get_is_deletable( const ofaIDBModel *instance, const ofaHub *hub, const ofoBase *object )
-{
-	return( ofo_tva_form_get_is_deletable( hub, object ) &&
-			ofo_tva_record_get_is_deletable( hub, object ));
-}
-
-static gboolean
 idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 {
 	sUpdate *update_data;
@@ -179,7 +173,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 	cur_version = idbmodel_get_current_version( instance, update_data->connect );
 	last_version = idbmodel_get_last_version( instance, update_data->connect );
 
-	label = gtk_label_new( _( " Updating VAT DB model " ));
+	label = gtk_label_new( _( " Updating VAT DB Model " ));
 	my_iprogress_start_work( window, instance, label );
 
 	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );
@@ -590,7 +584,63 @@ count_v5( sUpdate *update_data )
 }
 
 /*
- * cannot check VAT forms integrity without interpreting the computing rules
+ * Define operation template rules
+ */
+static gboolean
+dbmodel_to_v6( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_to_v6";
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_FORMS_DET "
+			"	ADD    COLUMN TFO_DET_HAS_TEMPLATE CHAR(1)                              COMMENT 'Has operation template',"
+			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)                          COMMENT 'Operation template'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS "
+			"	DROP   COLUMN TFO_LABEL,"
+			"	DROP   COLUMN TFO_HAS_CORRESPONDENCE,"
+			"	ADD    COLUMN TFO_CORRESPONDENCE   VARCHAR(4096)                        COMMENT 'Correspondence',"
+			"	ADD    COLUMN TFO_DOPE             DATE                                 COMMENT 'Validation operation date'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS_BOOL "
+			"	DROP   COLUMN TFO_BOOL_LABEL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS_DET "
+			"	DROP   COLUMN TFO_DET_LEVEL,"
+			"	DROP   COLUMN TFO_DET_CODE,"
+			"	DROP   COLUMN TFO_DET_LABEL,"
+			"	DROP   COLUMN TFO_DET_HAS_BASE,"
+			"	DROP   COLUMN TFO_DET_BASE_RULE,"
+			"	DROP   COLUMN TFO_DET_HAS_AMOUNT,"
+			"	DROP   COLUMN TFO_DET_AMOUNT_RULE,"
+			"	ADD    COLUMN TFO_DET_OPE_NUMBER   BIGINT                               COMMENT 'Generated operation number'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v6( sUpdate *update_data )
+{
+	return( 4 );
+}
+
+/*
+ * Cannot fully check VAT forms integrity without interpreting the
+ * computing rules.
+ * Should at least check for operation template(s)..
  */
 static gulong
 idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )

@@ -85,11 +85,6 @@ GType                ofo_dossier_get_type                  ( void ) G_GNUC_CONST
 
 ofoDossier          *ofo_dossier_new                       ( ofaHub *hub );
 
-gboolean             ofo_dossier_use_account               ( const ofoDossier *dossier, const gchar *account );
-gboolean             ofo_dossier_use_currency              ( const ofoDossier *dossier, const gchar *currency );
-gboolean             ofo_dossier_use_ledger                ( const ofoDossier *dossier, const gchar *ledger );
-gboolean             ofo_dossier_use_ope_template          ( const ofoDossier *dossier, const gchar *ope_template );
-
 const gchar         *ofo_dossier_get_default_currency      ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_begin             ( const ofoDossier *dossier );
 const GDate         *ofo_dossier_get_exe_end               ( const ofoDossier *dossier );
@@ -118,6 +113,7 @@ const GDate         *ofo_dossier_get_prevexe_end           ( const ofoDossier *d
 ofxCounter           ofo_dossier_get_next_bat              ( ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_next_batline          ( ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_next_entry            ( ofoDossier *dossier );
+ofxCounter           ofo_dossier_get_next_ope              ( ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_next_settlement       ( ofoDossier *dossier );
 ofxCounter           ofo_dossier_get_next_concil           ( ofoDossier *dossier );
 

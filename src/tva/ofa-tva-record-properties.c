@@ -45,9 +45,12 @@
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
+#include "api/ofo-ope-template.h"
 #include "api/ofs-account-balance.h"
+#include "api/ofs-ope.h"
 
 #include "tva/ofa-tva-record-properties.h"
+#include "tva/ofo-tva-form.h"
 #include "tva/ofo-tva-record.h"
 
 /* private instance data
@@ -59,19 +62,22 @@ typedef struct {
 	 */
 	ofaIGetter   *getter;
 	ofoTVARecord *tva_record;
+	ofoTVAForm   *form;
 
 	/* internals
 	 */
 	gboolean      is_writable;
+	gboolean      is_new;
 
 	/* UI
 	 */
-	GtkWidget    *label_entry;
 	GtkWidget    *begin_editable;
 	GtkWidget    *end_editable;
+	GtkWidget    *dope_editable;
 	GtkWidget    *boolean_grid;
 	GtkWidget    *detail_grid;
-	GtkWidget    *textview;
+	GtkWidget    *corresp_textview;
+	GtkWidget    *notes_textview;
 	GtkWidget    *compute_btn;
 	GtkWidget    *validate_btn;
 	GtkWidget    *ok_btn;
@@ -83,6 +89,7 @@ typedef struct {
 	gchar        *mnemo;
 	GDate         begin_date;
 	GDate         end_date;
+	GDate         dope_date;
 	gboolean      has_correspondence;
 	gboolean      is_validated;
 }
@@ -93,7 +100,7 @@ static gboolean st_debug                = TRUE;
 
 enum {
 	BOOL_COL_LABEL = 0,
-	DET_COL_CODE = 1,
+	DET_COL_CODE = 0,
 	DET_COL_LABEL,
 	DET_COL_BASE,
 	DET_COL_AMOUNT,
@@ -109,7 +116,8 @@ enum {
  */
 typedef struct {
 	const gchar *name;
-	gint         args_count;
+	gint         min_args;
+	gint         max_args;
 	gchar *   ( *eval )( ofsFormulaHelper * );
 }
 	sEvalDef;
@@ -128,26 +136,30 @@ static void             init_taxes( ofaTVARecordProperties *self );
 static void             init_correspondence( ofaTVARecordProperties *self );
 static void             on_begin_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self );
+static void             on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self );
 static void             on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
 static void             on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void             on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void             check_for_enable_dlg( ofaTVARecordProperties *self );
 static void             set_dialog_title( ofaTVARecordProperties *self );
+static void             setup_tva_record( ofaTVARecordProperties *self );
 static gboolean         do_update( ofaTVARecordProperties *self, gchar **msgerr );
+static gboolean         do_update_dbms( ofaTVARecordProperties *self, gchar **msgerr );
 static void             on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, ofaTVARecordProperties *self );
+static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatchInfo *match_info, ofaTVARecordProperties *self );
 static gchar           *eval_account( ofsFormulaHelper *helper );
 static gchar           *eval_amount( ofsFormulaHelper *helper );
 static gchar           *eval_base( ofsFormulaHelper *helper );
 static gchar           *eval_code( ofsFormulaHelper *helper );
 static void             on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static gboolean         do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr );
 static void             set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
 
 static const sEvalDef st_formula_fns[] = {
-		{ "ACCOUNT", 1, eval_account },
-		{ "AMOUNT",  1, eval_amount },
-		{ "BASE",    1, eval_base },
-		{ "CODE",    1, eval_code },
+		{ "ACCOUNT", 1, 2, eval_account },
+		{ "AMOUNT",  1, 1, eval_amount },
+		{ "BASE",    1, 1, eval_base },
+		{ "CODE",    1, 1, eval_code },
 		{ 0 }
 };
 
@@ -210,6 +222,7 @@ ofa_tva_record_properties_init( ofaTVARecordProperties *self )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->is_new = FALSE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -316,6 +329,7 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
 	ofaHub *hub;
+	const gchar *cstr;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -334,7 +348,10 @@ idialog_init( myIDialog *instance )
 	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	priv->is_writable = ofa_hub_dossier_is_writable( hub );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
+
+	priv->form = ofo_tva_form_get_by_mnemo( hub, ofo_tva_record_get_mnemo( priv->tva_record ));
+	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
 
 	my_date_set_from_date( &priv->init_end_date, ofo_tva_record_get_end( priv->tva_record ));
 
@@ -342,6 +359,14 @@ idialog_init( myIDialog *instance )
 	init_booleans( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_taxes( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_correspondence( OFA_TVA_RECORD_PROPERTIES( instance ));
+
+	priv->notes_textview = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "pn-notes" );
+	g_return_if_fail( priv->notes_textview && GTK_IS_TEXT_VIEW( priv->notes_textview ));
+	cstr = ofo_tva_record_get_notes( priv->tva_record );
+	my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->notes_textview ), cstr, TRUE );
+	gtk_widget_set_sensitive( priv->notes_textview, priv->is_writable );
+
+	my_utils_container_updstamp_init( GTK_CONTAINER( instance ), tva_record );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
@@ -359,7 +384,8 @@ static void
 init_properties( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkWidget *entry, *label, *button;
+	GtkWidget *entry, *label;
+	gboolean is_true;
 	const gchar *cstr;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
@@ -378,32 +404,24 @@ init_properties( ofaTVARecordProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	/* label */
-	priv->label_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
-	g_return_if_fail( priv->label_entry && GTK_IS_ENTRY( priv->label_entry ));
-	cstr = ofo_tva_record_get_label( priv->tva_record );
-	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), cstr );
-	}
-	my_utils_widget_set_editable( priv->label_entry, priv->is_writable );
-
+	/* label (invariant from form) */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	cstr = ofo_tva_form_get_label( priv->form );
+	g_return_if_fail( cstr && my_strlen( cstr ));
+	gtk_label_set_text( GTK_LABEL( label ), cstr );
 
-	/* has correspondence: invariant */
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-has-corresp" );
-	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( button ),
-			ofo_tva_record_get_has_correspondence( priv->tva_record ));
-	my_utils_widget_set_editable( button, FALSE );
+	/* has correspondence (invariant from form) */
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-has-corresp-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	is_true = ofo_tva_form_get_has_correspondence( priv->form );
+	gtk_label_set_text( GTK_LABEL( label ), is_true ? _( "Yes" ) : _( "No" ));
 
 	/* is validated: invariant */
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-validated" );
-	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), priv->is_validated );
-	my_utils_widget_set_editable( button, FALSE );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-validated-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	is_true = ofo_tva_record_get_is_validated( priv->tva_record );
+	gtk_label_set_text( GTK_LABEL( label ), is_true ? _( "Yes" ) : _( "No" ));
 
 	/* begin date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-begin-entry" );
@@ -452,6 +470,28 @@ init_properties( ofaTVARecordProperties *self )
 	my_date_set_from_date( &priv->end_date, ofo_tva_record_get_end( priv->tva_record ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end_date );
 	my_utils_widget_set_editable( entry, FALSE );
+
+	/* operation date */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-entry" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->dope_editable = entry;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dope-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+
+	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+
+	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );
+
+	my_date_set_from_date( &priv->dope_date, ofo_tva_record_get_dope( priv->tva_record ));
+	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->dope_date );
+	my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 }
 
 static void
@@ -471,7 +511,7 @@ init_booleans( ofaTVARecordProperties *self )
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
 	for( idx=0 ; idx<count ; ++idx ){
 		row = idx;
-		cstr = ofo_tva_record_boolean_get_label( priv->tva_record, idx );
+		cstr = ofo_tva_form_boolean_get_label( priv->form, idx );
 		button = gtk_check_button_new_with_label( cstr );
 		my_utils_widget_set_editable( button, priv->is_writable && !priv->is_validated );
 		gtk_grid_attach( GTK_GRID( grid ), button, BOOL_COL_LABEL, row, 1, 1 );
@@ -485,10 +525,9 @@ static void
 init_taxes( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	GtkWidget *grid, *label, *entry;
+	GtkWidget *grid, *entry, *label;
 	guint idx, count, row;
 	const gchar *cstr;
-	gchar *str;
 	gboolean has_base, has_amount;
 	ofxAmount amount;
 
@@ -501,36 +540,25 @@ init_taxes( ofaTVARecordProperties *self )
 	for( idx=0 ; idx<count ; ++idx ){
 		row = idx+1;
 
-		label = gtk_label_new( NULL );
-		gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
-		my_utils_widget_set_margins( label, 0, 0, 0, 4 );
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 0, row, 1, 1 );
-		str = g_strdup_printf( "<i>%u</i>", row );
-		gtk_label_set_markup( GTK_LABEL( label ), str );
-		g_free( str );
-
 		/* code */
-		entry = gtk_entry_new();
-		my_utils_widget_set_editable( entry, FALSE );
-		gtk_entry_set_width_chars( GTK_ENTRY( entry ), 4 );
-		gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 4 );
-		gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_CODE, row, 1, 1 );
+		label = gtk_label_new( "" );
+		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+		gtk_grid_attach( GTK_GRID( grid ), label, DET_COL_CODE, row, 1, 1 );
 
-		cstr = ofo_tva_record_detail_get_code( priv->tva_record, idx );
-		gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+		cstr = ofo_tva_form_detail_get_code( priv->form, idx );
+		gtk_label_set_text( GTK_LABEL( label ), my_strlen( cstr ) ? cstr : "" );
 
 		/* label */
-		entry = gtk_entry_new();
-		my_utils_widget_set_editable( entry, FALSE );
-		gtk_widget_set_hexpand( entry, TRUE );
-		gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_LABEL, row, 1, 1 );
+		label = gtk_label_new( "" );
+		gtk_widget_set_hexpand( label, TRUE );
+		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+		gtk_grid_attach( GTK_GRID( grid ), label, DET_COL_LABEL, row, 1, 1 );
 
-		cstr = ofo_tva_record_detail_get_label( priv->tva_record, idx );
-		gtk_entry_set_text( GTK_ENTRY( entry ), my_strlen( cstr ) ? cstr : "" );
+		cstr = ofo_tva_form_detail_get_label( priv->form, idx );
+		gtk_label_set_text( GTK_LABEL( label ), my_strlen( cstr ) ? cstr : "" );
 
 		/* base */
-		has_base = ofo_tva_record_detail_get_has_base( priv->tva_record, idx );
+		has_base = ofo_tva_form_detail_get_has_base( priv->form, idx );
 		if( has_base ){
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
@@ -538,19 +566,19 @@ init_taxes( ofaTVARecordProperties *self )
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
-			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_BASE, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_base_changed ), self );
 
 			gtk_widget_set_tooltip_text(
-					entry, ofo_tva_record_detail_get_base_rule( priv->tva_record, idx ));
+					entry, ofo_tva_form_detail_get_base( priv->form, idx ));
 
 			amount = ofo_tva_record_detail_get_base( priv->tva_record, idx );
 			my_double_editable_set_amount( GTK_EDITABLE( entry ), amount );
 		}
 
 		/* amount */
-		has_amount = ofo_tva_record_detail_get_has_amount( priv->tva_record, idx );
+		has_amount = ofo_tva_form_detail_get_has_amount( priv->form, idx );
 		if( has_amount ){
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
@@ -558,21 +586,16 @@ init_taxes( ofaTVARecordProperties *self )
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
-			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 10 );
+			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_AMOUNT, row, 1, 1 );
 			g_signal_connect( entry, "changed", G_CALLBACK( on_detail_amount_changed ), self );
 
 			gtk_widget_set_tooltip_text(
-					entry, ofo_tva_record_detail_get_amount_rule( priv->tva_record, idx ));
+					entry, ofo_tva_form_detail_get_amount( priv->form, idx ));
 
 			amount = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
 			my_double_editable_set_amount( GTK_EDITABLE( entry ), amount );
 		}
-
-		/* padding on the right so that the scrollbar does not hide the
-		 * amount */
-		label = gtk_label_new( "   " );
-		gtk_grid_attach( GTK_GRID( grid ), label, DET_COL_PADDING, row, 1, 1 );
 	}
 }
 
@@ -585,19 +608,21 @@ init_correspondence( ofaTVARecordProperties *self )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	priv->has_correspondence = ofo_tva_record_get_has_correspondence( priv->tva_record );
+	priv->has_correspondence = ofo_tva_form_get_has_correspondence( priv->form );
 	if( priv->has_correspondence ){
 		book = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tva-book" );
 		g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 		label = gtk_label_new_with_mnemonic( _( "_Correspondence" ));
 		scrolled = gtk_scrolled_window_new( NULL, NULL );
 		gtk_scrolled_window_set_shadow_type( GTK_SCROLLED_WINDOW( scrolled ), GTK_SHADOW_IN );
-		gtk_notebook_append_page( GTK_NOTEBOOK( book ), scrolled, label );
-		priv->textview = gtk_text_view_new();
-		gtk_container_add( GTK_CONTAINER( scrolled ), priv->textview );
+		gtk_notebook_insert_page( GTK_NOTEBOOK( book ), scrolled, label, 3 );
+		priv->corresp_textview = gtk_text_view_new();
+		gtk_text_view_set_left_margin( GTK_TEXT_VIEW( priv->corresp_textview ), 2 );
+		gtk_container_add( GTK_CONTAINER( scrolled ), priv->corresp_textview );
 
-		cstr = ofo_tva_record_get_notes( priv->tva_record );
-		my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->textview ), cstr, TRUE );
+		cstr = ofo_tva_record_get_correspondence( priv->tva_record );
+		my_utils_container_notes_setup_ex( GTK_TEXT_VIEW( priv->corresp_textview ), cstr, TRUE );
+		gtk_widget_set_sensitive( priv->corresp_textview, priv->is_writable );
 	}
 }
 
@@ -621,6 +646,19 @@ on_end_changed( GtkEditable *entry, ofaTVARecordProperties *self )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	my_date_set_from_date( &priv->end_date, my_date_editable_get_date( entry, NULL ));
+
+	set_dialog_title( self );
+	check_for_enable_dlg( self );
+}
+
+static void
+on_dope_changed( GtkEditable *entry, ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	my_date_set_from_date( &priv->dope_date, my_date_editable_get_date( entry, NULL ));
 
 	set_dialog_title( self );
 	check_for_enable_dlg( self );
@@ -651,9 +689,7 @@ static void
 check_for_enable_dlg( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	gboolean is_valid, is_validated, end_date_has_changed, exists, is_validable;
-	const gchar *mnemo;
-	const GDate *dend;
+	gboolean is_valid, is_validable, is_computable;
 	gchar *msgerr;
 	ofaHub *hub;
 
@@ -665,35 +701,39 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	if( priv->is_writable ){
 
 		is_valid = ofo_tva_record_is_valid_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+		is_computable = FALSE;
+		is_validable = FALSE;
 
 		if( is_valid ){
-			/* the ending date is no more modifiable */
-			if( 0 ){
-				dend = ofo_tva_record_get_end( priv->tva_record );
-				end_date_has_changed = my_date_compare( &priv->init_end_date, dend ) != 0;
-				if( end_date_has_changed ){
-					mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-					exists = ( ofo_tva_record_get_by_key( hub, mnemo, dend ) != NULL );
-					if( exists ){
-						set_msgerr( self, _( "Same declaration is already defined" ));
-						is_valid = FALSE;
-					}
-				}
+			is_computable = ofo_tva_record_is_computable( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
+		}
+
+		if( is_computable ){
+			if( ofo_tva_record_get_by_begin( hub, priv->mnemo, &priv->begin_date, &priv->end_date ) != NULL ){
+				msgerr = g_strdup( _( "Begin date overlaps with an already defined declaration" ));
+				is_valid = FALSE;
+				is_computable = FALSE;
 			}
 		}
 
 		gtk_widget_set_sensitive( priv->ok_btn, is_valid );
 
-		is_validated = ofo_tva_record_get_is_validated( priv->tva_record );
-		is_validable = ofo_tva_record_is_validable_by_data( priv->mnemo, &priv->begin_date, &priv->end_date, &msgerr );
-
 		gtk_widget_set_sensitive(
 				priv->compute_btn,
-				priv->is_writable && is_valid && is_validable );
+				priv->is_writable && is_valid && is_computable );
+
+		if( is_computable ){
+			is_validable = ofo_tva_record_is_validable(
+					priv->mnemo, &priv->begin_date, &priv->end_date, &priv->dope_date, &msgerr );
+		}
 
 		gtk_widget_set_sensitive(
 				priv->validate_btn,
-				priv->is_writable && is_valid && !is_validated && is_validable );
+				priv->is_writable && is_valid && is_validable );
+
+	} else {
+		gtk_widget_set_sensitive( priv->compute_btn, FALSE );
+		gtk_widget_set_sensitive( priv->validate_btn, FALSE );
 	}
 
 	set_msgerr( self, msgerr );
@@ -713,37 +753,26 @@ set_dialog_title( ofaTVARecordProperties *self )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	send = my_date_to_str( &priv->end_date, MY_DATE_SQL );
-	title = g_strdup_printf( _( "Updating « %s - %s » TVA declaration" ), priv->mnemo, send );
+	title = g_strdup_printf( _( "Updating « %s - %s » VAT declaration" ), priv->mnemo, send );
 	gtk_window_set_title( GTK_WINDOW( self ), title );
 	g_free( title );
 	g_free( send );
 }
 
 /*
- * Recording the updates done to the declaration
- * The record is uniquely identified by the mnemo + the end date
- * Though the mnemo is an invariant, the end date may have been changed.
- * If this is the case, then the original record must be deleted and the
- * new one be re-inserted.
+ * Update the TVARecord object from UI data.
  */
-static gboolean
-do_update( ofaTVARecordProperties *self, gchar **msgerr )
+static void
+setup_tva_record( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	guint idx, row, count;
 	GtkWidget *button, *entry;
-	const gchar *clabel;
-	gboolean ok, is_true;
+	gboolean is_true;
 	ofxAmount amount;
+	gchar *str;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
-
-	if( priv->has_correspondence ){
-		my_utils_container_notes_get_ex( GTK_TEXT_VIEW( priv->textview ), tva_record );
-	}
-
-	ofo_tva_record_set_label( priv->tva_record,
-			gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
 
 	ofo_tva_record_set_begin( priv->tva_record,
 			my_date_editable_get_date( GTK_EDITABLE( priv->begin_editable ), NULL ));
@@ -751,33 +780,73 @@ do_update( ofaTVARecordProperties *self, gchar **msgerr )
 	ofo_tva_record_set_end( priv->tva_record,
 			my_date_editable_get_date( GTK_EDITABLE( priv->end_editable ), NULL ));
 
+	ofo_tva_record_set_dope( priv->tva_record,
+			my_date_editable_get_date( GTK_EDITABLE( priv->dope_editable ), NULL ));
+
+	if( priv->has_correspondence ){
+		GtkTextBuffer *buffer = gtk_text_view_get_buffer( GTK_TEXT_VIEW( priv->corresp_textview ));
+		GtkTextIter start, end; gtk_text_buffer_get_start_iter( buffer, &start );
+		gtk_text_buffer_get_end_iter( buffer, &end );
+		gchar *notes = gtk_text_buffer_get_text( buffer, &start, &end, TRUE );
+		ofo_tva_record_set_correspondence( priv->tva_record, notes );
+		g_free( notes );
+	}
+
+	my_utils_container_notes_get_ex( GTK_TEXT_VIEW( priv->notes_textview ), tva_record );
+
 	count = ofo_tva_record_boolean_get_count( priv->tva_record );
 	ofo_tva_record_boolean_free_all( priv->tva_record );
 	for( idx=0, row=0 ; idx<count ; ++idx, ++row ){
 		button = gtk_grid_get_child_at( GTK_GRID( priv->boolean_grid ), BOOL_COL_LABEL, row );
-		g_return_val_if_fail( button && GTK_IS_CHECK_BUTTON( button ), FALSE );
-		clabel = gtk_button_get_label( GTK_BUTTON( button ));
+		g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
 		is_true = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( button ));
-		ofo_tva_record_boolean_add( priv->tva_record, clabel, is_true );
+		ofo_tva_record_boolean_add( priv->tva_record, is_true );
 	}
 
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 	for( idx=0, row=1 ; idx<count ; ++idx, ++row ){
-		if( ofo_tva_record_detail_get_has_base( priv->tva_record, idx )){
+		if( ofo_tva_form_detail_get_has_base( priv->form, idx )){
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
-			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-			amount = my_double_editable_get_amount( GTK_EDITABLE( entry ));
+			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+			str = my_double_editable_get_string( GTK_EDITABLE( entry ));
+			amount = ofa_amount_from_str( str );
 			ofo_tva_record_detail_set_base( priv->tva_record, idx, amount );
+			g_free( str );
 		}
-		if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
+		if( ofo_tva_form_detail_get_has_amount( priv->form, idx )){
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
-			g_return_val_if_fail( entry && GTK_IS_ENTRY( entry ), FALSE );
-			amount = my_double_editable_get_amount( GTK_EDITABLE( entry ));
+			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+			str = my_double_editable_get_string( GTK_EDITABLE( entry ));
+			amount = ofa_amount_from_str( str );
 			ofo_tva_record_detail_set_amount( priv->tva_record, idx, amount );
+			g_free( str );
 		}
 	}
+}
+
+/*
+ * this is the 'on_ok_clicked' handler
+ */
+static gboolean
+do_update( ofaTVARecordProperties *self, gchar **msgerr )
+{
+	setup_tva_record( self );
+	return( do_update_dbms( self, msgerr ));
+}
+
+/*
+ * the TVARecord object is expected to have been previously #setup_tva_record().
+ */
+static gboolean
+do_update_dbms( ofaTVARecordProperties *self, gchar **msgerr )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	gboolean ok;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	ok = ofo_tva_record_update( priv->tva_record );
+
 	if( !ok ){
 		*msgerr = g_strdup( _( "Unable to update the VAT declaration" ));
 	}
@@ -806,13 +875,13 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 					GTK_DIALOG_MODAL,
 					GTK_MESSAGE_WARNING,
 					GTK_BUTTONS_NONE,
-					_( "Caution: computing the declaration will erase all possible"
+					_( "Caution: computing the declaration will erase all possible "
 							"manual modifications you may have done.\n"
 							"Are your sure you want this ?" ));
 	gtk_dialog_add_buttons(
 			GTK_DIALOG( dialog ),
-			_( "Cancel" ), GTK_RESPONSE_CANCEL,
-			_( "Compute" ), GTK_RESPONSE_OK,
+			_( "_Cancel" ), GTK_RESPONSE_CANCEL,
+			_( "C_ompute" ), GTK_RESPONSE_OK,
 			NULL );
 	resp = gtk_dialog_run( GTK_DIALOG( dialog ));
 	gtk_widget_destroy( dialog );
@@ -825,8 +894,8 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 		count = ofo_tva_record_detail_get_count( priv->tva_record );
 
 		for( idx=0, row=1 ; idx<count ; ++idx, ++row ){
-			if( ofo_tva_record_detail_get_has_base( priv->tva_record, idx )){
-				rule = ofo_tva_record_detail_get_base_rule( priv->tva_record, idx );
+			if( ofo_tva_form_detail_get_has_base( priv->form, idx )){
+				rule = ofo_tva_form_detail_get_base( priv->form, idx );
 				if( my_strlen( rule )){
 					result = ofa_formula_engine_eval( st_engine, rule, ( ofaFormulaFindFn ) get_formula_eval_fn, self, NULL );
 					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
@@ -837,8 +906,8 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 					ofo_tva_record_detail_set_base( priv->tva_record, idx, amount );
 				}
 			}
-			if( ofo_tva_record_detail_get_has_amount( priv->tva_record, idx )){
-				rule = ofo_tva_record_detail_get_amount_rule( priv->tva_record, idx );
+			if( ofo_tva_form_detail_get_has_amount( priv->form, idx )){
+				rule = ofo_tva_form_detail_get_amount( priv->form, idx );
 				if( my_strlen( rule )){
 					result = ofa_formula_engine_eval( st_engine, rule, ( ofaFormulaFindFn ) get_formula_eval_fn, self, NULL );
 					entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
@@ -858,17 +927,19 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
  * Returns: the evaluation function for the name + expected args count
  */
 static ofaFormulaEvalFn
-get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, ofaTVARecordProperties *self )
+get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatchInfo *match_info, ofaTVARecordProperties *self )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_get_formula_eval_fn";
 	gint i;
 
-	*count = -1;
+	*min_count = 0;
+	*max_count = -1;
 
 	for( i=0 ; st_formula_fns[i].name ; ++i ){
 		if( !my_collate( st_formula_fns[i].name, name )){
-			*count = st_formula_fns[i].args_count;
-			g_debug( "%s: found name=%s, expected args count=%d", thisfn, name, *count );
+			*min_count = st_formula_fns[i].min_args;
+			*max_count = st_formula_fns[i].max_args;
+			g_debug( "%s: found name=%s, expected min count=%d, max_count=%d", thisfn, name, *min_count, *max_count );
 			return(( ofaFormulaEvalFn ) st_formula_fns[i].eval );
 		}
 	}
@@ -887,9 +958,7 @@ eval_account( ofsFormulaHelper *helper )
 	ofaTVARecordPropertiesPrivate *priv;
 	gchar *res;
 	GList *it, *dataset;
-	const gchar *cstr;
-	gchar **tokens, **iter;
-	gchar *begin, *end;
+	const gchar *cbegin, *cend;
 	ofaHub *hub;
 	ofxAmount amount;
 	ofsAccountBalance  *sbal;
@@ -898,30 +967,18 @@ eval_account( ofsFormulaHelper *helper )
 
 	res = NULL;
 	it = helper->args_list;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	tokens = cstr ? g_strsplit( cstr, OFA_FORMULA_ARG_SEP, 2 ) : NULL;
-
-	/* extract begin and end accounts */
-	iter = tokens;
-	begin = NULL;
-	end = NULL;
-	if( *iter ){
-		begin = g_strdup( *iter );
-		iter++;
-		if( *iter ){
-			end = g_strdup( *iter );
-		}
+	cbegin = it ? ( const gchar * ) it->data : NULL;
+	it = it ? it->next : NULL;
+	cend = it ? ( const gchar * ) it->data : NULL;
+	if( !cend ){
+		cend = cbegin;
 	}
-	g_strfreev( tokens );
-	if( !end ){
-		end = g_strdup( begin );
-	}
-	DEBUG( "%s: begin=%s, end=%s", thisfn, begin, end );
+	DEBUG( "%s: begin=%s, end=%s", thisfn, cbegin, cend );
 
 	hub = ofa_igetter_get_hub( priv->getter );
 
 	dataset = ofo_entry_get_dataset_balance(
-					hub, begin, end, &priv->begin_date, &priv->end_date );
+					hub, cbegin, cend, &priv->begin_date, &priv->end_date );
 	amount = 0;
 	for( it=dataset ; it ; it=it->next ){
 		sbal = ( ofsAccountBalance * ) it->data;
@@ -930,12 +987,9 @@ eval_account( ofsFormulaHelper *helper )
 		amount += sbal->debit;
 	}
 
-	g_free( begin );
-	g_free( end );
-
 	res = ofa_amount_to_str( amount, NULL );
 
-	DEBUG( "%s: ACCOUNT(%s)=%s", thisfn, cstr, res );
+	DEBUG( "%s: ACCOUNT(%s[;%s])=%s", thisfn, cbegin, cend, res );
 
 	return( res );
 }
@@ -961,7 +1015,7 @@ eval_amount( ofsFormulaHelper *helper )
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	row = cstr ? atoi( cstr ) : 0;
-	if( row > 0 && ofo_tva_record_detail_get_has_amount( priv->tva_record, row-1 )){
+	if( row > 0 && ofo_tva_form_detail_get_has_amount( priv->form, row-1 )){
 		amount = ofo_tva_record_detail_get_amount( priv->tva_record, row-1 );
 		res = ofa_amount_to_str( amount, NULL );
 	}
@@ -991,7 +1045,7 @@ eval_base( ofsFormulaHelper *helper )
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	row = cstr ? atoi( cstr ) : 0;
-	if( row > 0 && ofo_tva_record_detail_get_has_base( priv->tva_record, row-1 )){
+	if( row > 0 && ofo_tva_form_detail_get_has_base( priv->form, row-1 )){
 		amount = ofo_tva_record_detail_get_base( priv->tva_record, row-1 );
 		res = ofa_amount_to_str( amount, NULL );
 	}
@@ -1022,7 +1076,7 @@ eval_code( ofsFormulaHelper *helper )
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 
 	for( i=0 ; i<count ; ++i ){
-		code = ofo_tva_record_detail_get_code( priv->tva_record, i );
+		code = ofo_tva_form_detail_get_code( priv->form, i );
 		if( !my_collate( code, cstr )){
 			res = g_strdup_printf( "%u", i+1 );
 			break;
@@ -1046,11 +1100,15 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
+	setup_tva_record( self );
 	ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
 
-	if( do_update( self, &msgerr )){
+	if( do_generate_opes( self, &msgerr ) &&
+			do_update_dbms( self, &msgerr )){
+
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO,
 				_( "The VAT declaration has been successfully validated." ));
+
 		/* close the Properties dialog box
 		 * with Cancel for not trigger another update */
 		my_iwindow_close( MY_IWINDOW( self ));
@@ -1059,6 +1117,107 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
 		g_free( msgerr );
 	}
+}
+
+/*
+ * when an operation template is recorded besides of an amount, it is
+ * generated if the corresponding amount is greater thant zero.
+ * This amount is so injected in the operation template, first row and
+ * first of available debit/credit.
+ */
+static gboolean
+do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_do_generate_opes";
+	ofaTVARecordPropertiesPrivate *priv;
+	guint count, rec_idx, tmpl_count, tmpl_idx;
+	ofxAmount amount;
+	const gchar *cstr;
+	ofsOpe *ope;
+	ofsOpeDetail *detail;
+	ofaHub *hub;
+	ofoOpeTemplate *template;
+	gboolean done;
+	GList *entries, *it;
+	ofxCounter ope_number;
+	ofoDossier *dossier;
+	ofoEntry *entry;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier = ofa_hub_get_dossier( hub );
+
+	count = ofo_tva_record_detail_get_count( priv->tva_record );
+	for( rec_idx=0 ; rec_idx < count ; ++rec_idx ){
+		if( ofo_tva_form_detail_get_has_amount( priv->form, rec_idx )){
+			amount = ofo_tva_record_detail_get_amount( priv->tva_record, rec_idx );
+			cstr = ofo_tva_form_detail_get_template( priv->form, rec_idx );
+			g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
+
+			if( amount > 0 && my_strlen( cstr )){
+				done = FALSE;
+				template = ofo_ope_template_get_by_mnemo( hub, cstr );
+				g_return_val_if_fail( template && OFO_IS_OPE_TEMPLATE( template ), FALSE );
+				/*
+				 * generate an operation when the amount is greater thant zero
+				 * and the operation template is set and found
+				 * inject the positive amount into the first row/debit/credit
+				 * slot
+				 */
+				ope = ofs_ope_new( template );
+				my_date_set_from_date( &ope->dope, ofo_tva_record_get_dope( priv->tva_record ));
+				ope->dope_user_set = TRUE;
+				ope->ref = g_strdup( ofo_tva_record_get_mnemo( priv->tva_record ));
+				ope->ref_user_set = TRUE;
+				tmpl_count = ofo_ope_template_get_detail_count( template );
+				for( tmpl_idx=0 ; tmpl_idx < tmpl_count ; ++tmpl_idx ){
+					if( !ofo_ope_template_get_detail_debit_locked( template, tmpl_idx )){
+						cstr = ofo_ope_template_get_detail_debit( template, tmpl_idx );
+						if( !my_strlen( cstr )){
+							detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
+							detail->debit = amount;
+							detail->debit_user_set = TRUE;
+							done = TRUE;
+							break;
+
+						}
+					} else if( !ofo_ope_template_get_detail_credit_locked( template, tmpl_idx )){
+						cstr = ofo_ope_template_get_detail_credit( template, tmpl_idx );
+						if( !my_strlen( cstr )){
+							detail = ( ofsOpeDetail * ) g_list_nth( ope->detail, tmpl_idx )->data;
+							detail->credit = amount;
+							detail->credit_user_set = TRUE;
+							done = TRUE;
+							break;
+
+						}
+					}
+				}
+				/*
+				 * setup an operation number
+				 * generate the entries and insert into the dbms
+				 */
+				if( done ){
+					ofs_ope_apply_template( ope );
+					if( ofs_ope_is_valid( ope, msgerr, NULL )){
+						ope_number = ofo_dossier_get_next_ope( dossier );
+						entries = ofs_ope_generate_entries( ope );
+						for( it=entries ; it ; it=it->next ){
+							entry = OFO_ENTRY( it->data );
+							ofo_entry_set_ope_number( entry, ope_number );
+							ofo_entry_insert( entry, hub );
+						}
+						g_list_free_full( entries, ( GDestroyNotify ) g_object_unref );
+						ofo_tva_record_detail_set_ope_number( priv->tva_record, rec_idx, ope_number );
+					}
+				}
+				ofs_ope_free( ope );
+			}
+		}
+	}
+
+	return( TRUE );
 }
 
 static void

@@ -357,7 +357,7 @@
                 balances, it is not needed to also archive accounts
                 where both debit and credit are zero (e.g. 6x, 7x)
 
-1101
+1102
 
 -----------------------------------------------------------------------
  DONE
@@ -1237,6 +1237,10 @@
 
 1095 2016- 4-19 CODE merge ofaISingleKeeper with myICollector
      2016- 4-19 done
+
+1101 2016- 4-28 When about to delete a db record, have a signal which
+                boolean accumulator
+     2016- 4-28 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

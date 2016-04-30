@@ -65,8 +65,6 @@ GList             *ofo_recurrent_model_get_dataset            ( ofaHub *hub );
 
 ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaHub *hub, const gchar *mnemo );
 
-gboolean           ofo_recurrent_model_get_is_deletable       ( const ofaHub *hub, const ofoBase *object );
-
 ofoRecurrentModel *ofo_recurrent_model_new                    ( void );
 
 const gchar       *ofo_recurrent_model_get_mnemo              ( const ofoRecurrentModel *model );

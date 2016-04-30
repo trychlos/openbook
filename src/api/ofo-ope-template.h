@@ -152,8 +152,6 @@ GList          *ofo_ope_template_get_dataset              ( ofaHub *hub );
 #define         ofo_ope_template_free_dataset( L )        g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
 ofoOpeTemplate *ofo_ope_template_get_by_mnemo             ( ofaHub *hub, const gchar *mnemo );
-gboolean        ofo_ope_template_use_ledger               ( ofaHub *hub, const gchar *ledger );
-gboolean        ofo_ope_template_use_rate                 ( ofaHub *hub, const gchar *mnemo );
 
 ofoOpeTemplate *ofo_ope_template_new                      ( void );
 ofoOpeTemplate *ofo_ope_template_new_from_template        ( const ofoOpeTemplate *model );

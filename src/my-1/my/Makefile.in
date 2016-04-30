@@ -430,6 +430,7 @@ my_include_HEADERS = \
 	my-iwindow.h										\
 	my-progress-bar.h									\
 	my-settings.h										\
+	my-signal.h											\
 	my-tab.h											\
 	my-thousand-combo.h									\
 	my-timeout.h										\

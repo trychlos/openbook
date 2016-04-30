@@ -36,6 +36,7 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -202,11 +203,6 @@ typedef struct {
 }
 	ofoDossierPrivate;
 
-static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier );
-static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier );
-static gint        dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
-static gint        dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo );
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
 static GList      *dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency );
@@ -215,6 +211,7 @@ static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *s
 static void        dossier_set_last_bat( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_batline( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter );
+static void        dossier_set_last_ope( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_last_concil( ofoDossier *dossier, ofxCounter counter );
 static void        dossier_set_prev_exe_last_entry( ofoDossier *dossier, ofxCounter counter );
@@ -229,10 +226,21 @@ static gchar      *iexportable_get_label( const ofaIExportable *instance );
 static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
+static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void        isignal_hub_connect( ofaHub *hub );
+static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
+static gboolean    hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
+static gboolean    hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
+static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
+static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 dossier_finalize( GObject *instance )
@@ -306,209 +314,8 @@ ofo_dossier_new( ofaHub *hub )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	dossier = dossier_do_read( hub );
-	if( dossier ){
-		g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), dossier );
-		g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), dossier );
-	}
 
 	return( dossier );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, ofoDossier *dossier )
-{
-	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
-	const gchar *code;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, dossier=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) dossier );
-
-	if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-	}
-}
-
-static void
-on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-					"UPDATE OFA_T_DOSSIER "
-					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-
-	g_free( query );
-}
-
-/*
- * SIGNAL_HUB_EXE_DATES_CHANGED signal handler
- * @dossier: this #ofoDossier instance.
- *
- * Changing beginning or ending exercice dates is only possible for
- * the current exercice.
- */
-static void
-on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, ofoDossier *dossier )
-{
-	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
-	ofaIDBPeriod *period;
-
-	connect = ofa_hub_get_connect( hub );
-	meta = ofa_idbconnect_get_meta( connect );
-	period = ofa_idbconnect_get_period( connect );
-
-	g_debug( "on_hub_exe_dates_changed: hub=%p, prev_begin=%p, prev_end=%p, dossier=%p",
-			hub, prev_begin, prev_end, dossier );
-
-	ofa_idbmeta_update_period( meta, period,
-			TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
-
-	g_object_unref( period );
-	g_object_unref( meta );
-}
-
-/**
- * ofo_dossier_use_account:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: %TRUE if the dossier makes use of this account, thus
- * preventing its deletion.
- */
-gboolean
-ofo_dossier_use_account( const ofoDossier *dossier, const gchar *account )
-{
-	gint count;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	count = dossier_cur_count_uses( dossier, "DOS_SLD_ACCOUNT", account );
-	return( count > 0 );
-}
-
-/**
- * ofo_dossier_use_currency:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: %TRUE if the dossier makes use of this currency, thus
- * preventing its deletion.
- */
-gboolean
-ofo_dossier_use_currency( const ofoDossier *dossier, const gchar *currency )
-{
-	const gchar *default_dev;
-	gint count;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	default_dev = ofo_dossier_get_default_currency( dossier );
-
-	if( my_strlen( default_dev ) &&
-			!g_utf8_collate( default_dev, currency )){
-		return( TRUE );
-	}
-
-	count = dossier_cur_count_uses( dossier, "DOS_CURRENCY", currency );
-	return( count > 0 );
-}
-
-/**
- * ofo_dossier_use_ledger:
- * @dossier: this #ofoDossier instance.
- *
- * Returns: %TRUE if the dossier makes use of this ledger, thus
- * preventing its deletion.
- */
-gboolean
-ofo_dossier_use_ledger( const ofoDossier *dossier, const gchar *ledger )
-{
-	const gchar *import_ledger;
-	gint cmp;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	import_ledger = ofo_dossier_get_import_ledger( dossier );
-	if( my_strlen( import_ledger )){
-		cmp = g_utf8_collate( ledger, import_ledger );
-		return( cmp == 0 );
-	}
-
-	return( FALSE );
-}
-
-/**
- * ofo_dossier_use_ope_template:
- *
- * Returns: %TRUE if the dossier makes use of this operation template,
- * thus preventing its deletion.
- */
-gboolean
-ofo_dossier_use_ope_template( const ofoDossier *dossier, const gchar *ope_template )
-{
-	gint forward, solde;
-
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, FALSE );
-
-	forward = dossier_count_uses( dossier, "DOS_FORW_OPE", ope_template );
-	solde = dossier_count_uses( dossier, "DOS_SLD_OPE", ope_template );
-
-	return( forward+solde > 0 );
-}
-
-static gint
-dossier_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
-{
-	ofaHub *hub;
-	gchar *query;
-	gint count;
-
-	hub = ofo_base_get_hub( OFO_BASE( dossier ));
-
-	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE %s='%s' AND DOS_ID=%d",
-					field, mnemo, DOSSIER_ROW_ID );
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
-}
-
-static gint
-dossier_cur_count_uses( const ofoDossier *dossier, const gchar *field, const gchar *mnemo )
-{
-	ofaHub *hub;
-	gchar *query;
-	gint count;
-
-	hub = ofo_base_get_hub( OFO_BASE( dossier ));
-
-	query = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE %s='%s' AND DOS_ID=%d",
-					field, mnemo, DOSSIER_ROW_ID );
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 /**
@@ -835,6 +642,29 @@ ofo_dossier_get_next_entry( ofoDossier *dossier )
 	next = last+1;
 	dossier_set_last_entry( dossier, next );
 	dossier_update_next( dossier, "DOS_LAST_ENTRY", next );
+
+	return( next );
+}
+
+/**
+ * ofo_dossier_get_next_ope:
+ * @dossier: this #ofoDossier instance.
+ *
+ * Returns: the next operation number to be allocated in the dossier.
+ */
+ofxCounter
+ofo_dossier_get_next_ope( ofoDossier *dossier )
+{
+	ofxCounter last, next;
+
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), 0 );
+	g_return_val_if_fail( ofo_dossier_is_current( dossier ), 0 );
+	g_return_val_if_fail( !OFO_BASE( dossier )->prot->dispose_has_run, 0 );
+
+	last = ofo_dossier_get_last_ope( dossier );
+	next = last+1;
+	dossier_set_last_ope( dossier, next );
+	dossier_update_next( dossier, "DOS_LAST_OPE", next );
 
 	return( next );
 }
@@ -1370,6 +1200,12 @@ dossier_set_last_entry( ofoDossier *dossier, ofxCounter counter )
 }
 
 static void
+dossier_set_last_ope( ofoDossier *dossier, ofxCounter counter )
+{
+	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_OPE, counter );
+}
+
+static void
 dossier_set_last_settlement( ofoDossier *dossier, ofxCounter counter )
 {
 	ofo_base_setter( DOSSIER, dossier, counter, DOS_LAST_SETTLEMENT, counter );
@@ -1896,4 +1732,215 @@ static void
 free_cur_detail( GList *fields )
 {
 	ofa_box_free_fields_list( fields );
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_entry_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_ACCOUNT( object )){
+		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+
+	} else if( OFO_IS_CURRENCY( object )){
+		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
+
+	} else if( OFO_IS_LEDGER( object )){
+		deletable = hub_is_deletable_ledger( hub, OFO_LEDGER( object ));
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE DOS_SLD_ACCOUNT='%s'",
+			ofo_account_get_number( account ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_DEF_CURRENCY='%s'",
+			ofo_currency_get_code( currency ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	if( count == 0 ){
+		query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_DOSSIER_CUR WHERE DOS_CURRENCY='%s'",
+				ofo_currency_get_code( currency ));
+
+		ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+		g_free( query );
+	}
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_IMPORT_LEDGER='%s'",
+			ofo_ledger_get_mnemo( ledger ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_DOSSIER WHERE DOS_FORW_OPE='%s' OR DOS_SLD_OPE='%s'",
+			ofo_ope_template_get_mnemo( template ),
+			ofo_ope_template_get_mnemo( template ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
+/*
+ * SIGNAL_HUB_EXE_DATES_CHANGED signal handler
+ *
+ * Changing beginning or ending exercice dates is only possible for the
+ * current exercice.
+ */
+static void
+on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
+{
+	const ofaIDBConnect *connect;
+	ofaIDBMeta *meta;
+	ofaIDBPeriod *period;
+	ofoDossier *dossier;
+
+	g_debug( "on_hub_exe_dates_changed: hub=%p, prev_begin=%p, prev_end=%p, empty=%p",
+			hub, ( void * ) prev_begin, ( void * ) prev_end, ( void * ) empty );
+
+	dossier = ofa_hub_get_dossier( hub );
+	if( dossier && OFO_IS_DOSSIER( dossier )){
+
+		connect = ofa_hub_get_connect( hub );
+		meta = ofa_idbconnect_get_meta( connect );
+		period = ofa_idbconnect_get_period( connect );
+
+		ofa_idbmeta_update_period( meta, period,
+				TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
+
+		g_object_unref( period );
+		g_object_unref( meta );
+	}
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
+	const gchar *code;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( my_collate( code, prev_id )){
+				on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+	}
+}
+
+static void
+on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER "
+					"	SET DOS_DEF_CURRENCY='%s' WHERE DOS_DEF_CURRENCY='%s'", code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
 }

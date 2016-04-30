@@ -353,17 +353,17 @@ gboolean
 ofo_class_is_deletable( const ofoClass *class )
 {
 	ofaHub *hub;
-	gboolean used_by_accounts;
 	gboolean deletable;
 
 	g_return_val_if_fail( class && OFO_IS_CLASS( class ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( class )->prot->dispose_has_run, FALSE );
 
+	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( class ));
-	used_by_accounts = ofo_account_use_class( hub, ofo_class_get_number( class ));
-	deletable = !used_by_accounts;
 
-	deletable &= ofa_idbmodel_get_is_deletable( hub, OFO_BASE( class ));
+	if( hub && deletable ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, class, &deletable );
+	}
 
 	return( deletable );
 }

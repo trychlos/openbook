@@ -304,7 +304,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 	cur_version = idbmodel_get_current_version( instance, priv->connect );
 	last_version = idbmodel_get_last_version( instance, priv->connect );
 
-	label = gtk_label_new( _( " Updating DBMS main model " ));
+	label = gtk_label_new( _( " Updating DBMS Core Model " ));
 	my_iprogress_start_work( window, instance, label );
 
 	str = g_strdup_printf( _( "Current version is v %u" ), cur_version );

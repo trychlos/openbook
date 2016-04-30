@@ -273,7 +273,7 @@ load_collection( myICollector *instance, GType type, void *user_data )
  * my_icollector_collection_add_object:
  * @instance: this #myICollector instance.
  * @hub: the #ofaHub object.
- * @object: the #ofaICollactionable object to be added.
+ * @object: the #myICollactionable object to be added.
  * @func: [allow-none]: a #GCompareFunc to make sure the object is
  *  added in a sorted list.
  *
@@ -314,7 +314,7 @@ my_icollector_collection_add_object( myICollector *instance, myICollectionable *
 /**
  * my_icollector_collection_remove_object:
  * @instance: this #myICollector instance.
- * @object: the #ofaICollactionable object to be removed.
+ * @object: the #myICollactionable object to be removed.
  *
  * Removes the @object from the collection of objects of the same type.
  */
@@ -391,7 +391,7 @@ my_icollector_collection_free( myICollector *instance, GType type )
 
 /**
  * my_icollector_single_get_object:
- * @instance: this #ofaISingleKeeper instance.
+ * @instance: this #myICollector instance.
  * @type: the desired GType type.
  *
  * Returns: a #GObject of @type, or %NULL.
@@ -422,7 +422,7 @@ my_icollector_single_get_object( myICollector *instance, GType type )
 
 /**
  * my_icollector_single_set_object:
- * @instance: this #ofaISingleKeeper instance.
+ * @instance: this #myICollector instance.
  * @object: [allow-none]: the object to be added.
  *
  * Let the @instance keep the @object.

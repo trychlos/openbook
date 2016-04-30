@@ -43,8 +43,9 @@
 #include "tva/ofa-tva-main.h"
 #include "tva/ofa-tva-declare-page.h"
 #include "tva/ofa-tva-record-new.h"
-#include "tva/ofo-tva-record.h"
 #include "tva/ofa-tva-record-properties.h"
+#include "tva/ofo-tva-form.h"
+#include "tva/ofo-tva-record.h"
 
 /* private instance data
  */
@@ -55,6 +56,7 @@ typedef struct {
 	 */
 	ofaIGetter   *getter;
 	ofoTVARecord *tva_record;
+	ofoTVAForm   *form;
 
 	/* UI
 	 */
@@ -238,6 +240,7 @@ idialog_init( myIDialog *instance )
 	ofaTVARecordNewPrivate *priv;
 	gchar *title;
 	const gchar *mnemo;
+	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -246,6 +249,10 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ok-btn" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	priv->form = ofo_tva_form_get_by_mnemo( hub, ofo_tva_record_get_mnemo( priv->tva_record ));
+	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
 
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 	title = g_strdup_printf( _( "New declaration from « %s » TVA form" ), mnemo );
@@ -276,17 +283,12 @@ init_properties( ofaTVARecordNew *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	cstr = ofo_tva_record_get_label( priv->tva_record );
-	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
-	}
-	my_utils_widget_set_editable( entry, FALSE );
-
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
+	cstr = ofo_tva_form_get_label( priv->form );
+	if( my_strlen( cstr )){
+		gtk_label_set_text( GTK_LABEL( label ), cstr );
+	}
 
 	/* declaration date */
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-end-entry" );
@@ -349,7 +351,7 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
 		exists = ( ofo_tva_record_get_by_key( hub, mnemo, dend ) != NULL );
 		if( exists ){
-			msgerr = g_strdup( _( "Same declaration is already defined" ));
+			msgerr = g_strdup( _( "End date overlaps with an already defined declaration" ));
 		} else {
 			ok_valid = TRUE;
 		}

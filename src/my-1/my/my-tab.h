@@ -28,7 +28,7 @@
 /**
  * SECTION: my_tab
  * @short_description: #myTab class definition.
- * @include: my/my-tab-label.h
+ * @include: my/my-tab.h
  *
  * A custom label for GtkNotebook main pages, which embeds an icon on
  * the left side, and a small close button on the right.

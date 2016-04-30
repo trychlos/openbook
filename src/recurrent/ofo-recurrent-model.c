@@ -109,7 +109,6 @@ typedef struct {
 	ofoRecurrentModelPrivate;
 
 static ofoRecurrentModel *model_find_by_mnemo( GList *set, const gchar *mnemo );
-static guint              model_count_for_ope_template( const ofaIDBConnect *connect, const gchar *template );
 static void               recurrent_model_set_upd_user( ofoRecurrentModel *model, const gchar *upd_user );
 static void               recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const GTimeVal *upd_stamp );
 static gboolean           model_do_insert( ofoRecurrentModel *model, const ofaIDBConnect *connect );
@@ -136,6 +135,8 @@ static gboolean           model_get_exists( const ofoRecurrentModel *model, cons
 static gboolean           model_drop_content( const ofaIDBConnect *connect );
 static void               isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void               isignal_hub_connect( ofaHub *hub );
+static gboolean           hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean           hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void               hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean           hub_update_ope_template_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
@@ -254,51 +255,6 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 }
 
 /**
- * ofo_recurrent_model_get_is_deletable:
- * @hub: the current #ofaHub object of the application.
- * @object: the object to be tested.
- *
- * Returns: %TRUE if the @object is not used by ofoTVAForm, thus may be
- * deleted.
- */
-gboolean
-ofo_recurrent_model_get_is_deletable( const ofaHub *hub, const ofoBase *object )
-{
-	gboolean ok;
-	const gchar *template_id;
-	guint count;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( object && OFO_IS_BASE( object ), FALSE );
-
-	ok = TRUE;
-
-	if( OFO_IS_OPE_TEMPLATE( object )){
-		template_id = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
-		count = model_count_for_ope_template( ofa_hub_get_connect( hub ), template_id );
-		ok = ( count == 0 );
-	}
-
-	return( ok );
-}
-
-static guint
-model_count_for_ope_template( const ofaIDBConnect *connect, const gchar *template )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM REC_T_MODELS WHERE REC_OPE_TEMPLATE='%s'", template );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( abs( count ));
-}
-
-/**
  * ofo_recurrent_model_new:
  */
 ofoRecurrentModel *
@@ -391,37 +347,27 @@ ofo_recurrent_model_get_upd_stamp( const ofoRecurrentModel *model )
  *
  * Returns: %TRUE if the recurrent model is deletable.
  *
- * A recurrent model may be deleted if it is not used nor archived.
+ * A recurrent model may be deleted while it is not used by any run
+ * object.
  */
 gboolean
 ofo_recurrent_model_is_deletable( const ofoRecurrentModel *model )
 {
-	const gchar *model_id;
+	gboolean deletable;
 	ofaHub *hub;
-	const ofaIDBConnect *connect;
-	gint run_count, arch_count;
-	gchar *query;
 
 	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), FALSE );
 
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	model_id = ofo_recurrent_model_get_mnemo( model );
+	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( model ));
-	connect = ofa_hub_get_connect( hub );
-	arch_count = 0;
 
-	query = g_strdup_printf( "SELECT COUNT(*) FROM REC_T_RUN WHERE REC_MNEMO='%s'", model_id );
-	ofa_idbconnect_query_int( connect, query, &run_count, TRUE );
-	g_free( query );
-
-	if( ofa_idbconnect_has_table( connect, "ARCHREC_T_RUN" )){
-		query = g_strdup_printf( "SELECT COUNT(*) FROM ARCHREC_T_RUN WHERE REC_MNEMO='%s'", model_id );
-		ofa_idbconnect_query_int( connect, query, &arch_count, TRUE );
-		g_free( query );
+	if( hub ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, model, &deletable );
 	}
 
-	return( run_count+arch_count == 0 );
+	return( deletable );
 }
 
 /**
@@ -1228,7 +1174,49 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_recurrent_model_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_OPE_TEMPLATE( object )){
+		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM REC_T_MODELS WHERE REC_OPE_TEMPLATE='%s'",
+			ofo_ope_template_get_mnemo( template ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /*

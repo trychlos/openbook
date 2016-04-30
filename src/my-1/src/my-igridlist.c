@@ -432,7 +432,9 @@ my_igridlist_add_row( const myIGridList *instance, GtkGrid *grid )
 	sIGridList *sdata;
 	guint row;
 
-	g_debug( "%s: instance=%p, grid=%p", thisfn, ( void * ) instance, ( void * ) grid );
+	if( 0 ){
+		g_debug( "%s: instance=%p, grid=%p", thisfn, ( void * ) instance, ( void * ) grid );
+	}
 
 	g_return_val_if_fail( instance && MY_IS_IGRIDLIST( instance ), 0 );
 	g_return_val_if_fail( grid && GTK_IS_GRID( grid ), 0 );
@@ -501,8 +503,10 @@ my_igridlist_set_widget( const myIGridList *instance, GtkGrid *grid,
 	sIGridList *sdata;
 	GtkWidget *child;
 
-	g_debug( "%s: instance=%p, grid=%p, widget=%p, column=%u, row=%u, width=%u, height=%u",
-			thisfn, ( void * ) instance, ( void * ) grid, ( void * ) widget, column, row, width, height );
+	if( 0 ){
+		g_debug( "%s: instance=%p, grid=%p, widget=%p, column=%u, row=%u, width=%u, height=%u",
+				thisfn, ( void * ) instance, ( void * ) grid, ( void * ) widget, column, row, width, height );
+	}
 
 	g_return_if_fail( instance && MY_IS_IGRIDLIST( instance ));
 	g_return_if_fail( grid && GTK_IS_GRID( grid ));

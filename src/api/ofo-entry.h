@@ -122,9 +122,8 @@ GList          *ofo_entry_get_dataset_for_exercice_by_status
 
 #define         ofo_entry_free_dataset( L )          g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
-gboolean        ofo_entry_use_account                ( const ofaHub *hub, const gchar *account );
-gboolean        ofo_entry_use_currency               ( const ofaHub *hub, const gchar *currency );
-gboolean        ofo_entry_use_ledger                 ( const ofaHub *hub, const gchar *journal );
+gboolean        ofo_entry_use_account                ( ofaHub *hub, const gchar *account );
+gboolean        ofo_entry_use_ledger                 ( ofaHub *hub, const gchar *ledger );
 gboolean        ofo_entry_use_ope_template           ( const ofaHub *hub, const gchar *model );
 
 ofxCounter      ofo_entry_get_number                 ( const ofoEntry *entry );
@@ -141,6 +140,7 @@ ofxAmount       ofo_entry_get_credit                 ( const ofoEntry *entry );
 ofaEntryStatus  ofo_entry_get_status                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_abr_status             ( const ofoEntry *entry );
 ofaEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
+ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_settlement_stamp       ( const ofoEntry *entry );
 
@@ -167,6 +167,7 @@ void            ofo_entry_set_ledger                 ( ofoEntry *entry, const gc
 void            ofo_entry_set_ope_template           ( ofoEntry *entry, const gchar *model );
 void            ofo_entry_set_debit                  ( ofoEntry *entry, ofxAmount amount );
 void            ofo_entry_set_credit                 ( ofoEntry *entry, ofxAmount amount );
+void            ofo_entry_set_ope_number             ( ofoEntry *entry, ofxCounter counter );
 void            ofo_entry_set_settlement_number      ( ofoEntry *entry, ofxCounter counter );
 
 gboolean        ofo_entry_is_valid_data              ( ofaHub *hub,
