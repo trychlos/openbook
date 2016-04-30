@@ -58,7 +58,8 @@
  */
 typedef struct {
 	const gchar *name;
-	gint         args_count;
+	gint         min_args;
+	gint         max_args;
 	gchar *   ( *eval )( ofsFormulaHelper * );
 }
 	sEvalDef;
@@ -99,7 +100,7 @@ static ofaFormulaEngine *st_engine               = NULL;
 static void             compute_simple_formulas( sOpeHelper *helper );
 static void             compute_dates( sOpeHelper *helper );
 static gchar           *compute_formula( const gchar *formula, sOpeHelper *helper );
-static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOpeHelper *helper );
+static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatchInfo *match_info, sOpeHelper *helper );
 static gchar           *eval_aldc_shortcuts( ofsFormulaHelper *helper );
 static gchar           *eval_a_shortcut( ofsFormulaHelper *helper, const gchar *rowstr );
 static gchar           *eval_c_shortcut( ofsFormulaHelper *helper, const gchar *rowstr );
@@ -138,27 +139,27 @@ static void             ope_dump_detail( ofsOpeDetail *detail, void *empty );
 static void             ope_free_detail( ofsOpeDetail *detail );
 
 static const sEvalDef st_formula_fns[] = {
-		{ "ACCOUNT", 1, eval_account },
-		{ "ACCL",    1, eval_accl },
-		{ "ACCU",    1, eval_accu },
-		{ "ACLA",    1, eval_acla },
-		{ "AMOUNT",  1, eval_amount },
-		{ "CODE",    1, eval_code },
-		{ "CREDIT",  1, eval_credit },
-		{ "DEBIT",   1, eval_debit },
-		{ "DEFFECT", 0, eval_deffect },
-		{ "DOPE",    0, eval_dope },
-		{ "DOMY",    0, eval_domy },
-		{ "EVAL",    1, eval_eval },
-		{ "IDEM",    0, eval_idem },
-		{ "LABEL",   1, eval_label },
-		{ "LELA",    0, eval_lela },
-		{ "LEMN",    0, eval_lemn },
-		{ "OPMN",    0, eval_opmn },
-		{ "OPLA",    0, eval_opla },
-		{ "RATE",    1, eval_rate },
-		{ "REF",     0, eval_ref },
-		{ "SOLDE",   0, eval_solde },
+		{ "ACCOUNT", 1, 1, eval_account },
+		{ "ACCL",    1, 1, eval_accl },
+		{ "ACCU",    1, 1, eval_accu },
+		{ "ACLA",    1, 1, eval_acla },
+		{ "AMOUNT",  1, 1, eval_amount },
+		{ "CODE",    1, 1, eval_code },
+		{ "CREDIT",  1, 1, eval_credit },
+		{ "DEBIT",   1, 1, eval_debit },
+		{ "DEFFECT", 0, 0, eval_deffect },
+		{ "DOPE",    0, 0, eval_dope },
+		{ "DOMY",    0, 0, eval_domy },
+		{ "EVAL",    1, 1, eval_eval },
+		{ "IDEM",    0, 0, eval_idem },
+		{ "LABEL",   1, 1, eval_label },
+		{ "LELA",    0, 0, eval_lela },
+		{ "LEMN",    0, 0, eval_lemn },
+		{ "OPMN",    0, 0, eval_opmn },
+		{ "OPLA",    0, 0, eval_opla },
+		{ "RATE",    1, 1, eval_rate },
+		{ "REF",     0, 0, eval_ref },
+		{ "SOLDE",   0, 0, eval_solde },
 		{ 0 }
 };
 
@@ -350,7 +351,7 @@ compute_formula( const gchar *formula, sOpeHelper *helper )
  * Returns: the evaluation function for the name + expected args count
  */
 static ofaFormulaEvalFn
-get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOpeHelper *helper )
+get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatchInfo *match_info, sOpeHelper *helper )
 {
 	static const gchar *thisfn = "ofs_ope_get_formula_eval_fn";
 	gint i;
@@ -358,12 +359,14 @@ get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOp
 	ofoRate *rate;
 	GError *error;
 
-	*count = -1;
+	*min_count = 0;
+	*max_count = -1;
 
 	for( i=0 ; st_formula_fns[i].name ; ++i ){
 		if( !my_collate( st_formula_fns[i].name, name )){
-			*count = st_formula_fns[i].args_count;
-			DEBUG( "%s: found name=%s, args_count=%d", thisfn, name, *count );
+			*min_count = st_formula_fns[i].min_args;
+			*max_count = st_formula_fns[i].max_args;
+			DEBUG( "%s: found name=%s, min_count=%d, max_count=%d", thisfn, name, *min_count, *max_count );
 			return(( ofaFormulaEvalFn ) st_formula_fns[i].eval );
 		}
 	}
@@ -374,7 +377,8 @@ get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOp
 	hub = ofo_base_get_hub( OFO_BASE( helper->ope->ope_template ));
 	rate = ofo_rate_get_by_mnemo( hub, name );
 	if( rate ){
-		*count = 0;
+		*min_count = 0;
+		*max_count = 0;
 		DEBUG( "%s: found rate for name=%s", thisfn, name );
 		return(( ofaFormulaEvalFn ) eval_rate_by_name );
 	}
@@ -391,7 +395,8 @@ get_formula_eval_fn( const gchar *name, gint *count, GMatchInfo *match_info, sOp
 	}
 	if( st_aldc_shortcuts_regex ){
 		if( g_regex_match( st_aldc_shortcuts_regex, name, 0, NULL )){
-			*count = 0;
+			*min_count = 0;
+			*max_count = 0;
 			DEBUG( "%s: found aldc shortcut for name=%s", thisfn, name );
 			return(( ofaFormulaEvalFn ) eval_aldc_shortcuts );
 		}

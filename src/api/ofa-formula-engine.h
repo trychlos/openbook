@@ -247,14 +247,17 @@ typedef gchar * ( *ofaFormulaEvalFn )( ofsFormulaHelper * );
 /**
  * ofaFormulaFindFn:
  * @name: the found name.
- * @count: [out]: should be set to the expected arguments count, or -1.
+ * @min_count: [out]: should be set to the minimal expected arguments
+ *  count.
+ * @max_count: [out]: should be set to the maximal expected arguments
+ *  count, or -1 for no limit.
  * @match_info: the current #GMatchInfo instance.
  * @user_data: the user data.
  *
  * A callback which should return a pointer to the function which will
  * provide the @name evaluation.
  */
-typedef ofaFormulaEvalFn ( *ofaFormulaFindFn )( const gchar *, gint *, const GMatchInfo *, void * );
+typedef ofaFormulaEvalFn ( *ofaFormulaFindFn )( const gchar *, gint *, gint *, const GMatchInfo *, void * );
 
 /**
  * ofsFormulaHelper:
