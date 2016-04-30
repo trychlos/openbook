@@ -86,6 +86,7 @@ typedef struct {
  */
 #define SIGNAL_HUB_NEW                  "hub-object-new"
 #define SIGNAL_HUB_UPDATED              "hub-object-updated"
+#define SIGNAL_HUB_DELETABLE            "hub-object-deletable"
 #define SIGNAL_HUB_DELETED              "hub-object-deleted"
 #define SIGNAL_HUB_RELOAD               "hub-dataset-reload"
 #define SIGNAL_HUB_DOSSIER_OPENED       "hub-dossier-opened"

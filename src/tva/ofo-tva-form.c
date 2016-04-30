@@ -558,18 +558,26 @@ ofo_tva_form_get_upd_stamp( const ofoTVAForm *form )
  *
  * Returns: %TRUE if the TVA form is deletable.
  *
- * A TVA form is always deletable, as all its previous uses have been
- * recorded as TVA Record which do not more keep any link with the
- * origin form.
+ * A TVA form is deletable while no record has been created from it.
  */
 gboolean
 ofo_tva_form_is_deletable( const ofoTVAForm *form )
 {
+	gboolean deletable;
+	ofaHub *hub;
+
 	g_return_val_if_fail( form && OFO_IS_TVA_FORM( form ), FALSE );
 
 	g_return_val_if_fail( !OFO_BASE( form )->prot->dispose_has_run, FALSE );
 
-	return( TRUE );
+	deletable = TRUE;
+	hub = ofo_base_get_hub( OFO_BASE( form ));
+
+	if( hub ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, form, &deletable );
+	}
+
+	return( deletable );
 }
 
 /**

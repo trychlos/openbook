@@ -39,6 +39,7 @@
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
@@ -188,10 +189,15 @@ static gint          tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVAR
 static void          icollectionable_iface_init( myICollectionableInterface *iface );
 static guint         icollectionable_get_interface_version( void );
 static GList        *icollectionable_load_collection( void *user_data );
+static void          isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void          isignal_hub_connect( ofaHub *hub );
+static gboolean      hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean      hub_is_deletable_tva_form( ofaHub *hub, ofoTVAForm *form );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 details_list_free_detail( GList *fields )
@@ -1644,4 +1650,70 @@ icollectionable_load_collection( void *user_data )
 	}
 
 	return( dataset );
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_tva_form_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_tva_form_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_tva_record_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_TVA_FORM( object )){
+		deletable = hub_is_deletable_tva_form( hub, OFO_TVA_FORM( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_tva_form( ofaHub *hub, ofoTVAForm *form )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM TVA_T_RECORDS WHERE TFO_MNEMO='%s'",
+			ofo_tva_form_get_mnemo( form ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }

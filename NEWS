@@ -65,6 +65,7 @@
    - ofa_main_window_dossier_run_prefs(): new method.
    - ofaNomodalPage: deprecated and replaced by myDndWindow.
    - ofaRenderPage: moved to api.
+   - SIGNAL_HUB_DELETABLE: new signal (todo #1101).
    - SIGNAL_HUB_DOSSIER_OPENED: signal takes two 'run_prefs' and 'read_only' arguments.
 
 -----------------------------------------------------------------------

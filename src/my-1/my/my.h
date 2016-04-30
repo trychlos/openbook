@@ -52,6 +52,7 @@
 #include <my/my-iwindow.h>
 #include <my/my-progress-bar.h>
 #include <my/my-settings.h>
+#include <my/my-signal.h>
 #include <my/my-tab.h>
 #include <my/my-thousand-combo.h>
 #include <my/my-timeout.h>
