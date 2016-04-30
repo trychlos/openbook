@@ -345,14 +345,6 @@
                      here) ?
      2016- 4-19 describe a use case
 
-1096 2016- 4-20 FEAT connect ofoBat to hub signaling system
-
-1097 2016- 4-20 FEAT connect ofoClass to hub signaling system
-
-1098 2016- 4-20 FEAT connect ofoCurrency to hub signaling system
-
-1099 2016- 4-20 FEAT connect ofoRate to hub signaling system
-
 1100 2016- 4-28 ExerciceCloseAssistant: when archiving open exercice
                 balances, it is not needed to also archive accounts
                 where both debit and credit are zero (e.g. 6x, 7x)
@@ -1237,6 +1229,18 @@
 
 1095 2016- 4-19 CODE merge ofaISingleKeeper with myICollector
      2016- 4-19 done
+
+1096 2016- 4-20 FEAT connect ofoBat to hub signaling system
+     2016- 5- 1 done
+
+1097 2016- 4-20 FEAT connect ofoClass to hub signaling system
+     2016- 5- 1 done
+
+1098 2016- 4-20 FEAT connect ofoCurrency to hub signaling system
+     2016- 5- 1 done
+
+1099 2016- 4-20 FEAT connect ofoRate to hub signaling system
+     2016- 5- 1 done
 
 1101 2016- 4-28 When about to delete a db record, have a signal which
                 boolean accumulator
