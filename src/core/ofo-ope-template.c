@@ -179,7 +179,6 @@ typedef struct {
 	ofoOpeTemplatePrivate;
 
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint            model_count_for_ledger( const ofaIDBConnect *connect, const gchar *ledger );
 static gint            model_count_for_rate( const ofaIDBConnect *connect, const gchar *mnemo );
 static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
 static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
@@ -215,9 +214,10 @@ static void            isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void            isignal_hub_connect( ofaHub *hub );
 static gboolean        hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean        hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
-static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
-static gboolean        on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean        hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
+static void            hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean        hub_on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean        hub_on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoOpeTemplate )
@@ -354,39 +354,6 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_ope_template_use_ledger:
- *
- * Returns: %TRUE if a recorded entry makes use of the specified currency.
- */
-gboolean
-ofo_ope_template_use_ledger( ofaHub *hub, const gchar *ledger )
-{
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( my_strlen( ledger ), FALSE );
-
-	/* make sure dataset is loaded */
-	ofo_ope_template_get_dataset( hub );
-
-	return( model_count_for_ledger( ofa_hub_get_connect( hub ), ledger ) > 0 );
-}
-
-static gint
-model_count_for_ledger( const ofaIDBConnect *connect, const gchar *ledger )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES WHERE OTE_LED_MNEMO='%s'", ledger );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 /**
@@ -2039,7 +2006,7 @@ isignal_hub_connect( ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
 }
 
 /*
@@ -2061,6 +2028,9 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 
 	if( OFO_IS_ACCOUNT( object )){
 		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+
+	} else if( OFO_IS_LEDGER( object )){
+		deletable = hub_is_deletable_ledger( hub, OFO_LEDGER( object ));
 	}
 
 	return( deletable );
@@ -2083,13 +2053,30 @@ hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 	return( count == 0 );
 }
 
+static gboolean
+hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES WHERE OTE_LED_MNEMO='%s'",
+			ofo_ledger_get_mnemo( ledger ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
 /*
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_ope_template_on_hub_updated_object";
+	static const gchar *thisfn = "ofo_ope_template_hub_on_updated_object";
 	const gchar *mnemo;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
@@ -2103,7 +2090,7 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				on_update_ledger_mnemo( hub, mnemo, prev_id );
+				hub_on_update_ledger_mnemo( hub, mnemo, prev_id );
 			}
 		}
 
@@ -2111,14 +2098,14 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				on_update_rate_mnemo( hub, mnemo, prev_id );
+				hub_on_update_rate_mnemo( hub, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_ope_template_do_update_ledger_mnemo";
 	gchar *query;
@@ -2144,7 +2131,7 @@ on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 }
 
 static gboolean
-on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_ope_template_do_update_rate_mnemo";
 	gchar *query;

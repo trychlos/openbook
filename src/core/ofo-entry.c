@@ -190,7 +190,6 @@ static sStatus st_status[] = {
 
 static gchar       *effect_in_exercice( const ofaHub *hub );
 static GList       *entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order );
-static gint         entry_count_for_ledger( const ofaIDBConnect *connect, const gchar *ledger );
 static gint         entry_count_for_ope_template( const ofaIDBConnect *connect, const gchar *model );
 static gint         entry_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
 static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub );
@@ -237,6 +236,8 @@ static gboolean     hub_on_deletable_object( ofaHub *hub, ofoBase *object, void 
 static gboolean     hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 static gboolean     hub_is_deletable_account_by_mnemo( ofaHub *hub, const gchar *mnemo );
 static gboolean     hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
+static gboolean     hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
+static gboolean     hub_is_deletable_ledger_by_mnemo( ofaHub *hub, const gchar *mnemo );
 static gboolean     hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void         hub_on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
 static void         hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
@@ -832,6 +833,7 @@ entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order )
 
 	return( dataset );
 }
+
 /**
  * ofo_entry_use_account:
  *
@@ -851,17 +853,11 @@ ofo_entry_use_account( ofaHub *hub, const gchar *account )
  * Returns: %TRUE if a recorded entry makes use of the specified ledger.
  */
 gboolean
-ofo_entry_use_ledger( const ofaHub *hub, const gchar *ledger )
+ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	return( entry_count_for_ledger( ofa_hub_get_connect( hub ), ledger ) > 0 );
-}
-
-static gint
-entry_count_for_ledger( const ofaIDBConnect *connect, const gchar *ledger )
-{
-	return( entry_count_for( connect, "ENT_LEDGER", ledger ));
+	return( !hub_is_deletable_ledger_by_mnemo( hub, ledger ));
 }
 
 /**
@@ -3112,6 +3108,9 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 	} else if( OFO_IS_CURRENCY( object )){
 		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
 
+	} else if( OFO_IS_LEDGER( object )){
+		deletable = hub_is_deletable_ledger( hub, OFO_LEDGER( object ));
+
 	} else if( OFO_IS_OPE_TEMPLATE( object )){
 		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
 	}
@@ -3151,6 +3150,29 @@ hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_CURRENCY='%s'",
 			ofo_currency_get_code( currency ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
+{
+	return( hub_is_deletable_ledger_by_mnemo( hub, ofo_ledger_get_mnemo( ledger )));
+}
+
+static gboolean
+hub_is_deletable_ledger_by_mnemo( ofaHub *hub, const gchar *mnemo )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_LEDGER='%s'",
+			mnemo );
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 

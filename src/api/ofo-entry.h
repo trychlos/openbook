@@ -123,7 +123,7 @@ GList          *ofo_entry_get_dataset_for_exercice_by_status
 #define         ofo_entry_free_dataset( L )          g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
 gboolean        ofo_entry_use_account                ( ofaHub *hub, const gchar *account );
-gboolean        ofo_entry_use_ledger                 ( const ofaHub *hub, const gchar *journal );
+gboolean        ofo_entry_use_ledger                 ( ofaHub *hub, const gchar *ledger );
 gboolean        ofo_entry_use_ope_template           ( const ofaHub *hub, const gchar *model );
 
 ofxCounter      ofo_entry_get_number                 ( const ofoEntry *entry );
