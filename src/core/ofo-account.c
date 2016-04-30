@@ -743,19 +743,16 @@ ofo_account_is_deletable( const ofoAccount *account )
 	ofaHub *hub;
 	gboolean deletable;
 	GList *children, *it;
-	const gchar *number;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
-	number = ofo_account_get_number( account );
-	deletable = !ofo_entry_use_account( hub, number );
 
 	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
 		children = ofo_account_get_children( account );
-		for( it=children ; it ; it=it->next ){
+		for( it=children ; it && deletable ; it=it->next ){
 			deletable &= ofo_account_is_deletable( OFO_ACCOUNT( it->data ));
 		}
 		g_list_free( children );

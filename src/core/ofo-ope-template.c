@@ -42,6 +42,7 @@
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofa-stream-format.h"
+#include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-dossier.h"
@@ -212,6 +213,8 @@ static gboolean        model_get_exists( const ofoOpeTemplate *model, const ofaI
 static gboolean        model_drop_content( const ofaIDBConnect *connect );
 static void            isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void            isignal_hub_connect( ofaHub *hub );
+static gboolean        hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean        hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean        on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean        on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
@@ -2035,7 +2038,49 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_ope_template_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_ACCOUNT( object )){
+		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES_DET WHERE OTE_DET_ACCOUNT LIKE '%%%s%%'",
+			ofo_account_get_number( account ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /*

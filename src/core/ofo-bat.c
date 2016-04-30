@@ -39,7 +39,9 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
+#include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-concil.h"
@@ -100,11 +102,16 @@ static gboolean    bat_get_exists( const ofoBat *bat, const ofaIDBConnect *conne
 static gchar      *bat_get_where( const ofoBat *bat );
 static ofxCounter  bat_get_id_by_where( const ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_drop_content( const ofaIDBConnect *connect );
+static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void        isignal_hub_connect( ofaHub *hub );
+static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 bat_finalize( GObject *instance )
@@ -1922,4 +1929,70 @@ bat_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_BAT", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_BAT_LINES", TRUE ));
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_ope_template_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_ope_template_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_ope_template_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_ACCOUNT( object )){
+		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_BAT WHERE BAT_ACCOUNT='%s'",
+			ofo_account_get_number( account ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }

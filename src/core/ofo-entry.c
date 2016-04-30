@@ -190,7 +190,6 @@ static sStatus st_status[] = {
 
 static gchar       *effect_in_exercice( const ofaHub *hub );
 static GList       *entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order );
-static gint         entry_count_for_account( const ofaIDBConnect *connect, const gchar *account );
 static gint         entry_count_for_currency( const ofaIDBConnect *connect, const gchar *currency );
 static gint         entry_count_for_ledger( const ofaIDBConnect *connect, const gchar *ledger );
 static gint         entry_count_for_ope_template( const ofaIDBConnect *connect, const gchar *model );
@@ -235,12 +234,9 @@ static void         iimportable_import_insert( ofaIImporter *importer, ofsImport
 static gboolean     entry_drop_content( const ofaIDBConnect *connect );
 static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void         isignal_hub_connect( ofaHub *hub );
-static void         on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
-static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void         on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
-static void         on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
 static gboolean     hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean     hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
+static gboolean     hub_is_deletable_account_by_mnemo( ofaHub *hub, const gchar *mnemo );
 static gboolean     hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void         on_hub_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
 static void         on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
@@ -248,6 +244,11 @@ static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate 
 static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate );
 static gint         remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
 static void         on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void         on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
+static void         on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
@@ -831,24 +832,17 @@ entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order )
 
 	return( dataset );
 }
-
 /**
  * ofo_entry_use_account:
  *
  * Returns: %TRUE if a recorded entry makes use of the specified account.
  */
 gboolean
-ofo_entry_use_account( const ofaHub *hub, const gchar *account )
+ofo_entry_use_account( ofaHub *hub, const gchar *account )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	return( entry_count_for_account( ofa_hub_get_connect( hub ), account ) > 0 );
-}
-
-static gint
-entry_count_for_account( const ofaIDBConnect *connect, const gchar *account )
-{
-	return( entry_count_for( connect, "ENT_ACCOUNT", account ));
+	return( !hub_is_deletable_account_by_mnemo( hub, account ));
 }
 
 /**
@@ -3107,143 +3101,11 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( on_hub_entry_status_change ), NULL );
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- *
- * we try to report in recorded entries the modifications which may
- * happen on one of the externe identifiers - but only for the current
- * exercice
- *
- * Nonetheless, this is never a good idea to modify an identifier which
- * is publicly known, and this always should be done with the greatest
- * attention
- */
-static void
-on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
-{
-	static const gchar *thisfn = "ofo_entry_on_hub_updated_object";
-	const gchar *number;
-	const gchar *code;
-	const gchar *mnemo;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) empty );
-
-	if( OFO_IS_ACCOUNT( object )){
-		if( my_strlen( prev_id )){
-			number = ofo_account_get_number( OFO_ACCOUNT( object ));
-			if( g_utf8_collate( number, prev_id )){
-				on_updated_object_account_number( hub, prev_id, number );
-			}
-		}
-
-	} else if( OFO_IS_CURRENCY( object )){
-		if( my_strlen( prev_id )){
-			code = ofo_currency_get_code( OFO_CURRENCY( object ));
-			if( g_utf8_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
-			}
-		}
-
-	} else if( OFO_IS_LEDGER( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				on_updated_object_ledger_mnemo( hub, prev_id, mnemo );
-			}
-		}
-
-	} else if( OFO_IS_OPE_TEMPLATE( object )){
-		if( my_strlen( prev_id )){
-			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				on_updated_object_model_mnemo( hub, prev_id, mnemo );
-			}
-		}
-	}
-}
-
-/*
- * an account number has been modified
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES "
-			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
-}
-
-/*
- * a currency iso code has been modified (should be very rare)
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES "
-			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
-}
-
-/*
- * a ledger mnemonic has been modified
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES"
-			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
-}
-
-/*
- * an operation template mnemonic has been modified
- * all entries must be updated (even the unsettled or unreconciliated
- * from a previous exercice)
- */
-static void
-on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
-{
-	gchar *query;
-
-	query = g_strdup_printf(
-			"UPDATE OFA_T_ENTRIES"
-			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
-
-	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
-	g_free( query );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
 }
 
 /*
@@ -3263,11 +3125,37 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 
 	deletable = TRUE;
 
-	if( OFO_IS_OPE_TEMPLATE( object )){
+	if( OFO_IS_ACCOUNT( object )){
+		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
 		deletable = hub_is_deletable_ope_template( hub, OFO_OPE_TEMPLATE( object ));
 	}
 
 	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
+{
+	return( hub_is_deletable_account_by_mnemo( hub, ofo_account_get_number( account )));
+}
+
+static gboolean
+hub_is_deletable_account_by_mnemo( ofaHub *hub, const gchar *mnemo )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_ACCOUNT='%s'",
+			mnemo );
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 static gboolean
@@ -3539,5 +3427,137 @@ on_hub_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus p
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );
 	}
 
+	g_free( query );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ *
+ * we try to report in recorded entries the modifications which may
+ * happen on one of the externe identifiers - but only for the current
+ * exercice
+ *
+ * Nonetheless, this is never a good idea to modify an identifier which
+ * is publicly known, and this always should be done with the greatest
+ * attention
+ */
+static void
+on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_entry_on_hub_updated_object";
+	const gchar *number;
+	const gchar *code;
+	const gchar *mnemo;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_ACCOUNT( object )){
+		if( my_strlen( prev_id )){
+			number = ofo_account_get_number( OFO_ACCOUNT( object ));
+			if( g_utf8_collate( number, prev_id )){
+				on_updated_object_account_number( hub, prev_id, number );
+			}
+		}
+
+	} else if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( g_utf8_collate( code, prev_id )){
+				on_updated_object_currency_code( hub, prev_id, code );
+			}
+		}
+
+	} else if( OFO_IS_LEDGER( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				on_updated_object_ledger_mnemo( hub, prev_id, mnemo );
+			}
+		}
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
+			if( g_utf8_collate( mnemo, prev_id )){
+				on_updated_object_model_mnemo( hub, prev_id, mnemo );
+			}
+		}
+	}
+}
+
+/*
+ * an account number has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES "
+			"	SET ENT_ACCOUNT='%s' WHERE ENT_ACCOUNT='%s' ", number, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+	g_free( query );
+}
+
+/*
+ * a currency iso code has been modified (should be very rare)
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES "
+			"	SET ENT_CURRENCY='%s' WHERE ENT_CURRENCY='%s' ", code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+	g_free( query );
+}
+
+/*
+ * a ledger mnemonic has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES"
+			"	SET ENT_LEDGER='%s' WHERE ENT_LEDGER='%s' ", mnemo, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+	g_free( query );
+}
+
+/*
+ * an operation template mnemonic has been modified
+ * all entries must be updated (even the unsettled or unreconciliated
+ * from a previous exercice)
+ */
+static void
+on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+			"UPDATE OFA_T_ENTRIES"
+			"	SET ENT_OPE_TEMPLATE='%s' WHERE ENT_OPE_TEMPLATE='%s' ", mnemo, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 	g_free( query );
 }
