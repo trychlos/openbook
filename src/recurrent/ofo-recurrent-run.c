@@ -118,6 +118,8 @@ static guint    icollectionable_get_interface_version( void );
 static GList   *icollectionable_load_collection( void *user_data );
 static void     isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void     isignal_hub_connect( ofaHub *hub );
+static gboolean hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean hub_is_deletable_recurrent_model( ofaHub *hub, ofoRecurrentModel *model );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean hub_update_recurrent_model_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
@@ -645,7 +647,49 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
+	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+}
+
+/*
+ * SIGNAL_HUB_DELETABLE signal handler
+ */
+static gboolean
+hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_recurrent_run_hub_on_deletable_object";
+	gboolean deletable;
+
+	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	deletable = TRUE;
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		deletable = hub_is_deletable_recurrent_model( hub, OFO_RECURRENT_MODEL( object ));
+	}
+
+	return( deletable );
+}
+
+static gboolean
+hub_is_deletable_recurrent_model( ofaHub *hub, ofoRecurrentModel *model )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM REC_T_RUN WHERE REC_MNEMO='%s'",
+			ofo_recurrent_model_get_mnemo( model ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /*

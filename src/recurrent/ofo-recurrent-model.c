@@ -391,37 +391,27 @@ ofo_recurrent_model_get_upd_stamp( const ofoRecurrentModel *model )
  *
  * Returns: %TRUE if the recurrent model is deletable.
  *
- * A recurrent model may be deleted if it is not used nor archived.
+ * A recurrent model may be deleted while it is not used by any run
+ * object.
  */
 gboolean
 ofo_recurrent_model_is_deletable( const ofoRecurrentModel *model )
 {
-	const gchar *model_id;
+	gboolean deletable;
 	ofaHub *hub;
-	const ofaIDBConnect *connect;
-	gint run_count, arch_count;
-	gchar *query;
 
 	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), FALSE );
 
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
 
-	model_id = ofo_recurrent_model_get_mnemo( model );
+	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( model ));
-	connect = ofa_hub_get_connect( hub );
-	arch_count = 0;
 
-	query = g_strdup_printf( "SELECT COUNT(*) FROM REC_T_RUN WHERE REC_MNEMO='%s'", model_id );
-	ofa_idbconnect_query_int( connect, query, &run_count, TRUE );
-	g_free( query );
-
-	if( ofa_idbconnect_has_table( connect, "ARCHREC_T_RUN" )){
-		query = g_strdup_printf( "SELECT COUNT(*) FROM ARCHREC_T_RUN WHERE REC_MNEMO='%s'", model_id );
-		ofa_idbconnect_query_int( connect, query, &arch_count, TRUE );
-		g_free( query );
+	if( hub ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, model, &deletable );
 	}
 
-	return( run_count+arch_count == 0 );
+	return( deletable );
 }
 
 /**
