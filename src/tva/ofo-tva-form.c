@@ -1217,7 +1217,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang,
 	g_free( label );
 
 	cstr = ofa_box_get_string( details, TFO_DET_HAS_BASE );
-	g_string_append_printf( query, "'%s',", cstr );
+	g_string_append_printf( query, ",'%s'", cstr );
 
 	base = my_utils_quote_sql( ofa_box_get_string( details, TFO_DET_BASE ));
 	if( my_strlen( base )){
@@ -1247,7 +1247,7 @@ form_insert_details( ofoTVAForm *form, const ofaIDBConnect *connect, guint rang,
 	} else {
 		query = g_string_append( query, ",NULL" );
 	}
-	g_free( amount );
+	g_free( code );
 
 	query = g_string_append( query, ")" );
 
@@ -2004,7 +2004,7 @@ iimportable_import_parse_rule( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
-		str = g_strdup_printf( _( "invalid indicator: %s, should be 'Y' or 'N'" ), cstr );
+		str = g_strdup_printf( _( "invalid HasBase indicator: %s, should be 'Y' or 'N'" ), cstr );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
 		parms->parse_errs += 1;
 		g_free( str );
@@ -2023,7 +2023,7 @@ iimportable_import_parse_rule( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
-		str = g_strdup_printf( _( "invalid indicator: %s, should be 'Y' or 'N'" ), cstr );
+		str = g_strdup_printf( _( "invalid HasAmount indicator: %s, should be 'Y' or 'N'" ), cstr );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
 		parms->parse_errs += 1;
 		g_free( str );
@@ -2041,18 +2041,18 @@ iimportable_import_parse_rule( ofaIImporter *importer, ofsImporterParms *parms, 
 	/* has ope template */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	if( my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
-		str = g_strdup_printf( _( "invalid indicator: %s, should be 'Y' or 'N'" ), cstr );
+	if( cstr && my_collate( cstr, "Y" ) && my_collate( cstr, "N" )){
+		str = g_strdup_printf( _( "invalid HasOpeTemplate indicator: %s, should be 'Y' or 'N'" ), cstr );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
 		parms->parse_errs += 1;
 		g_free( str );
 		ofa_box_free_fields_list( detail );
 		return( NULL );
 	} else {
-		ofa_box_set_string( detail, TFO_DET_HAS_TEMPLATE, cstr );
+		ofa_box_set_string( detail, TFO_DET_HAS_TEMPLATE, cstr ? cstr : "N" );
 	}
 
-	/* teplate id */
+	/* template id */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	ofa_box_set_string( detail, TFO_DET_TEMPLATE, cstr );

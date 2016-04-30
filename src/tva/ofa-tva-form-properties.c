@@ -546,7 +546,7 @@ set_detail_values( ofaTVAFormProperties *self, guint row )
 	GtkWidget *spin, *entry, *toggle, *previous_spin;
 	const gchar *cstr;
 	guint idx, level;
-	gboolean has_base, has_amount;
+	gboolean has_base, has_amount, has_template;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
@@ -599,6 +599,19 @@ set_detail_values( ofaTVAFormProperties *self, guint row )
 	cstr = ofo_tva_form_detail_get_amount( priv->tva_form, idx );
 	if( my_strlen( cstr )){
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_AMOUNT, row );
+		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
+	}
+
+	toggle = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_HAS_TEMPLATE, row );
+	g_return_if_fail( toggle && GTK_IS_TOGGLE_BUTTON( toggle ));
+	has_template = ofo_tva_form_detail_get_has_template( priv->tva_form, idx );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( toggle ), has_template );
+	on_det_has_template_toggled( GTK_TOGGLE_BUTTON( toggle ), self );
+
+	cstr = ofo_tva_form_detail_get_template( priv->tva_form, idx );
+	if( my_strlen( cstr )){
+		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, row );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
 	}

@@ -35,6 +35,7 @@
 #include "api/ofa-preferences.h"
 
 #include "tva/ofa-tva-record-store.h"
+#include "tva/ofo-tva-form.h"
 #include "tva/ofo-tva-record.h"
 
 /* private instance data
@@ -248,17 +249,21 @@ set_row( ofaTVARecordStore *store, ofaHub *hub, const ofoTVARecord *record, GtkT
 {
 	const gchar *cvalidated;
 	gchar *sbegin, *send, *sdope;
+	ofoTVAForm *form;
+
+	form = ofo_tva_form_get_by_mnemo( hub, ofo_tva_record_get_mnemo( record ));
+	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
 	cvalidated = ofo_tva_record_get_is_validated( record ) ? _( "Yes" ) : "";
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_display());
 	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display());
-	sdope = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display());
+	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_display());
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
 			TVA_RECORD_COL_MNEMO,        ofo_tva_record_get_mnemo( record ),
-			TVA_RECORD_COL_LABEL,        ofo_tva_record_get_label( record ),
+			TVA_RECORD_COL_LABEL,        ofo_tva_form_get_label( form ),
 			TVA_RECORD_COL_IS_VALIDATED, cvalidated,
 			TVA_RECORD_COL_BEGIN,        sbegin,
 			TVA_RECORD_COL_END,          send,

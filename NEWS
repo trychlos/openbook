@@ -36,10 +36,13 @@
 
    - Main notebook's pages are now detachable (todo #668), and re-attachable.
    - ofaDossierOpen: open in read-only mode (todo #701).
+   - ofaFormulaEngine: accepts a variable count of arguments.
    - ofaTVARecordProperties: set the auto-eval mode to True.
    - ofsOpe: set again the auto-eval mode to False, only using %EVAL() function.
    - ofoTVARecord: improve data control.
    - ofoTVARecord: distinguish between correspondence and notes.
+   - ofoTVARecord: generate entries at validation time. 
+   - ofoEntry: new versioned import-export format, including operation number.
  
  Bug fixes:
 

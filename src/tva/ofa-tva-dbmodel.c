@@ -611,14 +611,28 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 
 	if( !exec_query( update_data,
 			"ALTER TABLE TVA_T_RECORDS "
+			"	DROP   COLUMN TFO_LABEL,"
+			"	DROP   COLUMN TFO_HAS_CORRESPONDENCE,"
 			"	ADD    COLUMN TFO_CORRESPONDENCE   VARCHAR(4096)                        COMMENT 'Correspondence',"
 			"	ADD    COLUMN TFO_DOPE             DATE                                 COMMENT 'Validation operation date'" )){
 		return( FALSE );
 	}
 
 	if( !exec_query( update_data,
+			"ALTER TABLE TVA_T_RECORDS_BOOL "
+			"	DROP   COLUMN TFO_BOOL_LABEL" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
 			"ALTER TABLE TVA_T_RECORDS_DET "
-			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)                          COMMENT 'Operation template',"
+			"	DROP   COLUMN TFO_DET_LEVEL,"
+			"	DROP   COLUMN TFO_DET_CODE,"
+			"	DROP   COLUMN TFO_DET_LABEL,"
+			"	DROP   COLUMN TFO_DET_HAS_BASE,"
+			"	DROP   COLUMN TFO_DET_BASE_RULE,"
+			"	DROP   COLUMN TFO_DET_HAS_AMOUNT,"
+			"	DROP   COLUMN TFO_DET_AMOUNT_RULE,"
 			"	ADD    COLUMN TFO_DET_OPE_NUMBER   BIGINT                               COMMENT 'Generated operation number'" )){
 		return( FALSE );
 	}
@@ -629,7 +643,7 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 static gulong
 count_v6( sUpdate *update_data )
 {
-	return( 3 );
+	return( 4 );
 }
 
 /*
