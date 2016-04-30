@@ -179,7 +179,6 @@ typedef struct {
 	ofoOpeTemplatePrivate;
 
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
-static gint            model_count_for_rate( const ofaIDBConnect *connect, const gchar *mnemo );
 static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
 static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
 static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *connect );
@@ -215,6 +214,7 @@ static void            isignal_hub_connect( ofaHub *hub );
 static gboolean        hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean        hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 static gboolean        hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
+static gboolean        hub_is_deletable_rate( ofaHub *hub, ofoRate *rate );
 static void            hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean        hub_on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean        hub_on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
@@ -354,40 +354,6 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 	}
 
 	return( NULL );
-}
-
-/**
- * ofo_ope_template_use_rate:
- *
- * Returns: %TRUE if a recorded entry makes use of the specified rate.
- */
-gboolean
-ofo_ope_template_use_rate( ofaHub *hub, const gchar *mnemo )
-{
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	/* make sure dataset is loaded */
-	ofo_ope_template_get_dataset( hub );
-
-	return( model_count_for_rate( ofa_hub_get_connect( hub ), mnemo ) > 0 );
-}
-
-static gint
-model_count_for_rate( const ofaIDBConnect *connect, const gchar *mnemo )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES_DET "
-				"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
-					mnemo, mnemo );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 /**
@@ -2031,6 +1997,9 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 
 	} else if( OFO_IS_LEDGER( object )){
 		deletable = hub_is_deletable_ledger( hub, OFO_LEDGER( object ));
+
+	} else if( OFO_IS_RATE( object )){
+		deletable = hub_is_deletable_rate( hub, OFO_RATE( object ));
 	}
 
 	return( deletable );
@@ -2062,6 +2031,25 @@ hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES WHERE OTE_LED_MNEMO='%s'",
 			ofo_ledger_get_mnemo( ledger ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
+}
+
+static gboolean
+hub_is_deletable_rate( ofaHub *hub, ofoRate *rate )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_OPE_TEMPLATES_DET "
+			"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
+			ofo_rate_get_mnemo( rate ),
+			ofo_rate_get_mnemo( rate ));
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
