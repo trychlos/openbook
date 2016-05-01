@@ -50,6 +50,7 @@
 #include "api/ofs-ope.h"
 
 #include "tva/ofa-tva-record-properties.h"
+#include "tva/ofa-tva-style.h"
 #include "tva/ofo-tva-form.h"
 #include "tva/ofo-tva-record.h"
 
@@ -63,6 +64,7 @@ typedef struct {
 	ofaIGetter   *getter;
 	ofoTVARecord *tva_record;
 	ofoTVAForm   *form;
+	ofaTVAStyle  *style_provider;
 
 	/* internals
 	 */
@@ -349,6 +351,7 @@ idialog_init( myIDialog *instance )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	priv->is_writable = ofa_hub_dossier_is_writable( hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
+	priv->style_provider = ofa_tva_style_new( hub );
 
 	priv->form = ofo_tva_form_get_by_mnemo( hub, ofo_tva_record_get_mnemo( priv->tva_record ));
 	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
@@ -526,10 +529,11 @@ init_taxes( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
 	GtkWidget *grid, *entry, *label;
-	guint idx, count, row;
+	guint idx, level, count, row;
 	const gchar *cstr;
 	gboolean has_base, has_amount;
 	ofxAmount amount;
+	gchar *style;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
@@ -539,11 +543,14 @@ init_taxes( ofaTVARecordProperties *self )
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 	for( idx=0 ; idx<count ; ++idx ){
 		row = idx+1;
+		level = ofo_tva_form_detail_get_level( priv->form, idx );
+		style = g_strdup_printf( "vat-level%d", level );
 
 		/* code */
 		label = gtk_label_new( "" );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, DET_COL_CODE, row, 1, 1 );
+		ofa_tva_style_set_style( priv->style_provider, label, style );
 
 		cstr = ofo_tva_form_detail_get_code( priv->form, idx );
 		gtk_label_set_text( GTK_LABEL( label ), my_strlen( cstr ) ? cstr : "" );
@@ -553,6 +560,7 @@ init_taxes( ofaTVARecordProperties *self )
 		gtk_widget_set_hexpand( label, TRUE );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, DET_COL_LABEL, row, 1, 1 );
+		ofa_tva_style_set_style( priv->style_provider, label, style );
 
 		cstr = ofo_tva_form_detail_get_label( priv->form, idx );
 		gtk_label_set_text( GTK_LABEL( label ), my_strlen( cstr ) ? cstr : "" );
@@ -596,6 +604,8 @@ init_taxes( ofaTVARecordProperties *self )
 			amount = ofo_tva_record_detail_get_amount( priv->tva_record, idx );
 			my_double_editable_set_amount( GTK_EDITABLE( entry ), amount );
 		}
+
+		g_free( style );
 	}
 }
 

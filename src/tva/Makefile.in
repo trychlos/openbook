@@ -167,7 +167,7 @@ am_libofa_tva_la_OBJECTS = ofa-extension.lo ofa-tva-dbmodel.lo \
 	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
 	ofa-tva-main.lo ofa-tva-manage-page.lo ofa-tva-record-new.lo \
 	ofa-tva-record-properties.lo ofa-tva-record-store.lo \
-	ofo-tva-form.lo ofo-tva-record.lo
+	ofa-tva-style.lo ofo-tva-form.lo ofo-tva-record.lo
 am__objects_1 = resources.lo
 nodist_libofa_tva_la_OBJECTS = $(am__objects_1)
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS) \
@@ -464,6 +464,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-record-properties.h							\
 	ofa-tva-record-store.c								\
 	ofa-tva-record-store.h								\
+	ofa-tva-style.c										\
+	ofa-tva-style.h										\
 	ofo-tva-form.c										\
 	ofo-tva-form.h										\
 	ofo-tva-record.c									\
@@ -579,6 +581,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-new.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-store.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-style.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tva-form.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-tva-record.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resources.Plo@am__quote@

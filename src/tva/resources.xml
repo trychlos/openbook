@@ -4,5 +4,6 @@
     <file>ofa-tva-form-properties.ui</file>
     <file>ofa-tva-record-new.ui</file>
     <file>ofa-tva-record-properties.ui</file>
+    <file>ofa-tva.css</file>
   </gresource>
 </gresources>

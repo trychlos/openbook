@@ -79,6 +79,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-record-properties.h							\
 	ofa-tva-record-store.c								\
 	ofa-tva-record-store.h								\
+	ofa-tva-style.c										\
+	ofa-tva-style.h										\
 	ofo-tva-form.c										\
 	ofo-tva-form.h										\
 	ofo-tva-record.c									\

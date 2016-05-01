@@ -52,11 +52,6 @@
 
  153 2014- 6- 3 import ofx/ofc files
 
- 195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
-                OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
-                 times on a journal selection in journal_treeview from
-                 journals_set)
-
  215 2014- 6-13 assets management
      2014- 6-16 to be built as a plugin
 
@@ -361,6 +356,12 @@
  161 2014- 6- 5 Reconciliation: display the bank account balance if
                 present
      2016- 4-12 done
+
+ 195 2014- 6-11 optimize the usage of SELECT COUNT(*) FROM 
+                OFA_T_ECRITURES WHERE ECR_JOU_MNEMO=%s query (called 4
+                 times on a journal selection in journal_treeview from
+                 journals_set)
+     2016- 5- 1 this is due to deletability checks and normal -> cancelled
 
  213 2014- 6-13 recurrente entries
      2014- 6-16 to be built as a plugin
