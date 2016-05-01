@@ -340,10 +340,6 @@
                      here) ?
      2016- 4-19 describe a use case
 
-1100 2016- 4-28 ExerciceCloseAssistant: when archiving open exercice
-                balances, it is not needed to also archive accounts
-                where both debit and credit are zero (e.g. 6x, 7x)
-
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
 
@@ -1245,6 +1241,11 @@
 
 1099 2016- 4-20 FEAT connect ofoRate to hub signaling system
      2016- 5- 1 done
+
+1100 2016- 4-28 ExerciceCloseAssistant: when archiving open exercice
+                balances, it is not needed to also archive accounts
+                where both debit and credit are zero (e.g. 6x, 7x)
+     2016- 5- 1 it does as it provides a starting point for the future
 
 1101 2016- 4-28 When about to delete a db record, have a signal which
                 boolean accumulator
