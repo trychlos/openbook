@@ -35,6 +35,7 @@
   
  New features and improvements:
 
+   - myICollector: cleanup the stores at end.
    - ofaTVAStyle: style the VAT declarations.
  
  Bug fixes:

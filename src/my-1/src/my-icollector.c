@@ -32,11 +32,11 @@
 #define ICOLLECTOR_DATA                   "my-icollector-data"
 
 /* a data structure attached to the implementor instance
- * @types_list: a #GList of collections of #myICollectionable
- *              (resp. single) objects, as sType data structures.
+ * @typed_list: a #GList of collections of #myICollectionable
+ *              (resp. single) objects, as sTyped data structures.
  */
 typedef struct {
-	GList   *types_list;
+	GList   *typed_list;
 	gboolean finalizing_instance;
 }
 	sCollector;
@@ -243,7 +243,7 @@ get_collection( myICollector *instance, GType type, sCollector *sdata, void *use
 	if( user_data ){
 		typed = load_collection( instance, type, user_data );
 		if( typed ){
-			sdata->types_list = g_list_prepend( sdata->types_list, typed );
+			sdata->typed_list = g_list_prepend( sdata->typed_list, typed );
 		}
 	}
 
@@ -384,7 +384,7 @@ my_icollector_collection_free( myICollector *instance, GType type )
 
 	if( typed ){
 		g_return_if_fail( typed->is_collection );
-		sdata->types_list = g_list_remove( sdata->types_list, typed );
+		sdata->typed_list = g_list_remove( sdata->typed_list, typed );
 		free_typed( typed );
 	}
 }
@@ -449,7 +449,7 @@ my_icollector_single_set_object( myICollector *instance, void *object )
 		typed->type = G_OBJECT_TYPE( object );
 		typed->is_collection = FALSE;
 		typed->t.object = object;
-		sdata->types_list = g_list_prepend( sdata->types_list, typed );
+		sdata->typed_list = g_list_prepend( sdata->typed_list, typed );
 		g_object_weak_ref( G_OBJECT( object ), ( GWeakNotify ) on_single_object_finalized, sdata );
 	}
 }
@@ -465,14 +465,23 @@ my_icollector_free_all( myICollector *instance )
 {
 	static const gchar *thisfn = "my_icollector_free_all";
 	sCollector *sdata;
+	sTyped *typed;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_if_fail( instance && MY_IS_ICOLLECTOR( instance ));
 
 	sdata = get_collector_data( instance );
-	g_list_free_full( sdata->types_list, ( GDestroyNotify ) free_typed );
-	sdata->types_list = NULL;
+
+	//g_list_free_full( sdata->typed_list, ( GDestroyNotify ) free_typed );
+
+	while( sdata->typed_list ){
+		typed = ( sTyped * ) sdata->typed_list->data;
+		sdata->typed_list = g_list_remove( sdata->typed_list, typed );
+		free_typed( typed );
+	}
+
+	sdata->typed_list = NULL;
 }
 
 static sTyped *
@@ -481,7 +490,7 @@ find_typed_by_type( sCollector *sdata, GType type )
 	GList *it;
 	sTyped *typed;
 
-	for( it=sdata->types_list ; it ; it=it->next ){
+	for( it=sdata->typed_list ; it ; it=it->next ){
 		typed = ( sTyped * ) it->data;
 		if( typed && typed->type == type ){
 			return( typed );
@@ -517,7 +526,7 @@ on_instance_finalized( sCollector *sdata, GObject *finalized_collector )
 			thisfn, ( void * ) sdata, ( void * ) finalized_collector );
 
 	sdata->finalizing_instance = TRUE;
-	g_list_free_full( sdata->types_list, ( GDestroyNotify ) free_typed );
+	g_list_free_full( sdata->typed_list, ( GDestroyNotify ) free_typed );
 	g_free( sdata );
 }
 
@@ -533,7 +542,7 @@ on_single_object_finalized( sCollector *sdata, GObject *finalized_object )
 	if( !sdata->finalizing_instance ){
 		typed = find_typed_by_type( sdata, G_OBJECT_TYPE( finalized_object ));
 		if( typed && !typed->is_collection ){
-			sdata->types_list = g_list_remove( sdata->types_list, typed );
+			sdata->typed_list = g_list_remove( sdata->typed_list, typed );
 			g_free( typed );
 		}
 	}
@@ -542,11 +551,17 @@ on_single_object_finalized( sCollector *sdata, GObject *finalized_object )
 static void
 free_typed( sTyped *typed )
 {
+	static const gchar *thisfn = "my_icollector_free_typed";
+
 	if( typed->is_collection ){
+		g_debug( "%s: about to unref %s collection (count=%d)",
+				thisfn, g_type_name( typed->type ), g_list_length( typed->t.list ));
 		g_list_free_full( typed->t.list, ( GDestroyNotify ) g_object_unref );
+
 	} else {
-		g_debug( "free_typed: about to unref object at %p", ( void * ) typed->t.object );
-		//g_object_unref( typed->t.object );
+		g_debug( "%s: about to unref single %s at %p",
+				thisfn, g_type_name( typed->type ), ( void * ) typed->t.object );
+		g_clear_object( &typed->t.object );
 	}
 
 	g_free( typed );

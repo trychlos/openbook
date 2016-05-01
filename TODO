@@ -344,7 +344,10 @@
                 balances, it is not needed to also archive accounts
                 where both debit and credit are zero (e.g. 6x, 7x)
 
-1102
+1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
+                file in the application directory layout
+
+1103
 
 -----------------------------------------------------------------------
  DONE
