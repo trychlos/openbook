@@ -263,6 +263,7 @@ collection_setup_treeview( ofaMiscCollectorUI *self )
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
 	cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Count" ),
 			cell,

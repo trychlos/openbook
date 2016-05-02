@@ -182,6 +182,10 @@ openbook_SOURCES = \
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-main-window-def.h								\
+	ofa-misc-audit-item.c								\
+	ofa-misc-audit-item.h								\
+	ofa-misc-audit-ui.c									\
+	ofa-misc-audit-ui.h									\
 	ofa-misc-collector-item.c							\
 	ofa-misc-collector-item.h							\
 	ofa-misc-collector-ui.c								\

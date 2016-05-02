@@ -52,6 +52,7 @@
 #include "ui/ofa-dossier-open.h"
 #include "ui/ofa-dossier-store.h"
 #include "ui/ofa-main-window.h"
+#include "ui/ofa-misc-audit-item.h"
 #include "ui/ofa-misc-collector-item.h"
 #include "ui/ofa-plugin-manager.h"
 #include "ui/ofa-restore-assistant.h"
@@ -487,6 +488,7 @@ ofa_application_new( void )
 
 	ofa_box_register_types();
 
+	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
 	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
 
 	return( application );
