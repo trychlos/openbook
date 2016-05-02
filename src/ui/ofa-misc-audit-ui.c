@@ -379,13 +379,17 @@ static void
 scale_setup( ofaMiscAuditUI *self )
 {
 	ofaMiscAuditUIPrivate *priv;
-	GtkWidget *scale;
+	GtkWidget *scale, *label;
 
 	priv = ofa_misc_audit_ui_get_instance_private( self );
 
 	scale = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "page-scale" );
 	g_return_if_fail( scale && GTK_IS_SCALE( scale ));
 	priv->scale = scale;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "scale-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), scale );
 
 	g_signal_connect( scale, "value-changed", G_CALLBACK( scale_on_value_changed ), self );
 }
