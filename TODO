@@ -201,9 +201,6 @@
  720 2015- 3-13 FEAT Reconciliation: when declining a proposition,
                      should search for the next
 
- 732 2015- 3-15 FEAT have a misc option to consult the audit log
-     2016- 5- 2 have to handle ~ 15000 rows
-
  733 2015- 3-15 FEAT be able to search for an entry
 
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
@@ -510,6 +507,10 @@
 
  729 2015- 3-14 FEAT PrintLedgers: have an option to print a summary
      2016- 1-25      new ofaLedgerSummaryRender print
+
+ 732 2015- 3-15 FEAT have a misc option to consult the audit log
+     2016- 5- 2 have to handle ~ 15000 rows
+     2016- 5- 2 done
 
  744 2015- 3-19 FEAT have an option to automatically check the balances
                      when opening the dossier

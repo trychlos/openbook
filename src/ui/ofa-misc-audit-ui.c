@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <math.h>
 
 #include "my/my-icollector.h"
 #include "my/my-idialog.h"
@@ -50,7 +51,14 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkWidget  *audit_tview;
+	GtkWidget     *audit_tview;
+	GtkWidget     *scale;
+
+	/* runtime
+	 */
+	gdouble     tick;
+	gint        rows;
+	guint       pages;
 }
 	ofaMiscAuditUIPrivate;
 
@@ -58,10 +66,17 @@ typedef struct {
  */
 enum {
 	COL_STAMP = 0,
-	COL_LINE,
-	COL_STAMP_SQL,
+	COL_QUERY,
 	N_COLUMNS
 };
+
+/* data structure
+ */
+typedef struct {
+	gchar    *stamp;
+	gchar    *query;
+}
+	sAudit;
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-misc-audit-ui.ui";
 
@@ -70,7 +85,12 @@ static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
 static void      audit_setup_treeview( ofaMiscAuditUI *self );
 static gint      audit_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
-static void      audit_set_data( ofaMiscAuditUI *self );
+static void      audit_set_to_tview( ofaMiscAuditUI *self, guint pageno );
+static GList    *audit_get_from_db( ofaMiscAuditUI *self, guint pageno );
+static void      audit_free( sAudit *audit );
+static void      scale_setup( ofaMiscAuditUI *self );
+static void      scale_set_data( ofaMiscAuditUI *self );
+static void      scale_on_value_changed( GtkRange *range, ofaMiscAuditUI *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMiscAuditUI, ofa_misc_audit_ui, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaMiscAuditUI )
@@ -127,6 +147,7 @@ ofa_misc_audit_ui_init( ofaMiscAuditUI *self )
 	priv = ofa_misc_audit_ui_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->tick = 1000.0;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -208,7 +229,8 @@ idialog_init( myIDialog *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	audit_setup_treeview( OFA_MISC_AUDIT_UI( instance ));
-	audit_set_data( OFA_MISC_AUDIT_UI( instance ));
+	scale_setup( OFA_MISC_AUDIT_UI( instance ));
+	scale_set_data( OFA_MISC_AUDIT_UI( instance ));
 }
 
 static void
@@ -228,7 +250,7 @@ audit_setup_treeview( ofaMiscAuditUI *self )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING ));
+			G_TYPE_STRING, G_TYPE_STRING ));
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tmodel );
 	g_object_unref( tmodel );
 
@@ -252,7 +274,7 @@ audit_setup_treeview( ofaMiscAuditUI *self )
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Command" ),
 			cell,
-			"text", COL_LINE,
+			"text", COL_QUERY,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
@@ -264,8 +286,8 @@ audit_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpoin
 	gchar *astamp, *bstamp;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, COL_STAMP_SQL, &astamp, -1 );
-	gtk_tree_model_get( tmodel, b, COL_STAMP_SQL, &bstamp, -1 );
+	gtk_tree_model_get( tmodel, a, COL_STAMP, &astamp, -1 );
+	gtk_tree_model_get( tmodel, b, COL_STAMP, &bstamp, -1 );
 
 	cmp = my_collate( astamp, bstamp );
 
@@ -275,44 +297,126 @@ audit_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpoin
 	return( cmp );
 }
 
+/*
+ * @pageno: page number, starting from 1.
+ */
 static void
-audit_set_data( ofaMiscAuditUI *self )
+audit_set_to_tview( ofaMiscAuditUI *self, guint pageno )
 {
-#if 0
 	ofaMiscAuditUIPrivate *priv;
-	ofaHub *hub;
-	myICollector *collector;
-	GList *list, *it;
+	GList *dataset, *it;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gchar *name;
-	guint count;
+	sAudit *audit;
+
+	priv = ofa_misc_audit_ui_get_instance_private( self );
+
+	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->audit_tview ));
+	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
+
+	dataset = audit_get_from_db( self, pageno );
+	for( it=dataset ; it ; it=it->next ){
+		audit = ( sAudit * ) it->data;
+		gtk_list_store_insert_with_values(
+				GTK_LIST_STORE( tmodel ), &iter, -1,
+				COL_STAMP, audit->stamp,
+				COL_QUERY, audit->query,
+				-1 );
+	}
+
+	g_list_free_full( dataset, ( GDestroyNotify ) audit_free );
+}
+
+static GList *
+audit_get_from_db( ofaMiscAuditUI *self, guint pageno )
+{
+	ofaMiscAuditUIPrivate *priv;
+	GList *dataset;
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
+	gchar *query;
+	GSList *result, *irow, *icol;
+	sAudit *audit;
+
+	priv = ofa_misc_audit_ui_get_instance_private( self );
+
+	dataset = NULL;
+	hub = ofa_igetter_get_hub( priv->getter );
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf(
+					"SELECT AUD_STAMP,AUD_QUERY FROM OFA_T_AUDIT LIMIT %d,%d",
+					( guint )(( pageno-1) * priv->tick ), ( guint ) priv->tick );
+
+	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			audit = g_new0( sAudit, 1 );
+			icol = ( GSList * ) irow->data;
+			audit->stamp = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			audit->query = g_strdup(( const gchar * ) icol->data );
+			dataset = g_list_prepend( dataset, audit );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+	g_free( query );
+
+	return( g_list_reverse( dataset ));
+}
+
+static void
+audit_free( sAudit *audit )
+{
+	g_free( audit->stamp );
+	g_free( audit->query );
+	g_free( audit );
+}
+
+/*
+ * page is numbered from 1 to n
+ */
+static void
+scale_setup( ofaMiscAuditUI *self )
+{
+	ofaMiscAuditUIPrivate *priv;
+	GtkWidget *scale;
+
+	priv = ofa_misc_audit_ui_get_instance_private( self );
+
+	scale = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "page-scale" );
+	g_return_if_fail( scale && GTK_IS_SCALE( scale ));
+	priv->scale = scale;
+
+	g_signal_connect( scale, "value-changed", G_CALLBACK( scale_on_value_changed ), self );
+}
+
+static void
+scale_set_data( ofaMiscAuditUI *self )
+{
+	ofaMiscAuditUIPrivate *priv;
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
+	GtkAdjustment *adjustment;
 
 	priv = ofa_misc_audit_ui_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	connect = ofa_hub_get_connect( hub );
+	ofa_idbconnect_query_int( connect, "SELECT COUNT(*) FROM OFA_T_AUDIT", &priv->rows, TRUE );
+	priv->pages = ( guint ) ceil(( gdouble ) priv->rows/ priv->tick );
 
-	collector = ofa_hub_get_collector( hub );
-	g_return_if_fail( collector && MY_IS_ICOLLECTOR( collector ));
+	adjustment = gtk_adjustment_new( 1, 1, priv->pages, 1, 10, 0 );
+	gtk_range_set_adjustment( GTK_RANGE( priv->scale ), adjustment );
+	//g_object_unref( adjustment );
 
-	list = my_icollector_audit_get_list( collector );
-	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->audit_tview ));
+	scale_on_value_changed( GTK_RANGE( priv->scale ), self );
+}
 
-	for( it=list ; it ; it=it->next ){
-		name = my_icollector_item_get_name( collector, it->data );
-		count = my_icollector_item_get_count( collector, it->data );
-		g_debug( "audit_set_data: name=%s, count=%d", name, count );
+static void
+scale_on_value_changed( GtkRange *range, ofaMiscAuditUI *self )
+{
+	gdouble pageno;
 
-		gtk_list_store_insert_with_values(
-				GTK_LIST_STORE( tmodel ), &iter, -1,
-				CCOL_NAME,  name,
-				CCOL_COUNT, count,
-				-1 );
-
-		g_free( name );
-	}
-
-	g_list_free( list );
-#endif
+	pageno = gtk_range_get_value( range );
+	audit_set_to_tview( self, ( guint ) pageno );
 }
