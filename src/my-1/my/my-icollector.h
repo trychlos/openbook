@@ -120,11 +120,21 @@ void     my_icollector_collection_sort           ( myICollector *instance,
 void     my_icollector_collection_free           ( myICollector *instance,
 														GType type );
 
+GList   *my_icollector_collection_get_list       ( myICollector *instance );
+
 GObject *my_icollector_single_get_object         ( myICollector *instance,
 														GType type );
 
 void     my_icollector_single_set_object         ( myICollector *instance,
 														void *object );
+
+GList   *my_icollector_single_get_list           ( myICollector *instance );
+
+gchar   *my_icollector_item_get_name             ( myICollector *instance,
+														void *item );
+
+guint    my_icollector_item_get_count            ( myICollector *instance,
+														void *item );
 
 void     my_icollector_free_all                  ( myICollector *instance );
 

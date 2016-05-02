@@ -182,6 +182,10 @@ openbook_SOURCES = \
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-main-window-def.h								\
+	ofa-misc-collector-item.c							\
+	ofa-misc-collector-item.h							\
+	ofa-misc-collector-ui.c								\
+	ofa-misc-collector-ui.h								\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
 	ofa-period-close.c									\

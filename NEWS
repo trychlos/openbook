@@ -35,6 +35,7 @@
   
  New features and improvements:
 
+   - Miscellaneous menu: have an option to display the collector content (todo #562).
    - myICollector: cleanup the stores at end.
    - ofaTVAStyle: style the VAT declarations.
  

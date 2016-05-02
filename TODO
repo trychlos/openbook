@@ -154,9 +154,6 @@
      2016- 1-27 other use case: automatically print the reports on
                 period closing
 
- 562 2015- 1- 8 Add misc menu option to see the loaded stores, and
-                reset them
-
  567 2015- 1- 9 have an EntryStore ?
      2015- 1-18 - ofaViewEntries add its own columns to its store
                 - ofaReconciliation is a tree store with bat lines
@@ -339,6 +336,7 @@
                      on add/remove actions (update/reload cannot be managed
                      here) ?
      2016- 4-19 describe a use case
+     2016- 5- 2 use case: maintain the misc-collector UI up to date
 
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
@@ -436,6 +434,10 @@
                 which would nonetheless be close of the
                 connect_to_hub_signaling_system() calls
      2016- 4- 1 done
+
+ 562 2015- 1- 8 Add misc menu option to see the loaded stores, and
+                reset them
+     2016- 5- 2 done
 
  572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
                 them with integers ?

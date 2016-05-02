@@ -57,6 +57,7 @@ src/ui/ofa-ledger-book-bin.ui
 src/ui/ofa-ledger-close.ui
 src/ui/ofa-ledger-properties.ui
 src/ui/ofa-ledger-summary-bin.ui
+src/ui/ofa-misc-collector-ui.ui
 src/ui/ofa-period-close.ui
 src/ui/ofa-plugin-manager.ui
 src/ui/ofa-rate-properties.ui

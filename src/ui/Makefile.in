@@ -167,6 +167,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-ledger-summary-bin.$(OBJEXT) \
 	ofa-ledger-summary-render.$(OBJEXT) \
 	ofa-ledger-treeview.$(OBJEXT) ofa-main-window.$(OBJEXT) \
+	ofa-misc-collector-item.$(OBJEXT) \
+	ofa-misc-collector-ui.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) ofa-period-close.$(OBJEXT) \
 	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
 	ofa-rate-properties.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
@@ -595,6 +597,10 @@ openbook_SOURCES = \
 	ofa-main-window.c									\
 	ofa-main-window.h									\
 	ofa-main-window-def.h								\
+	ofa-misc-collector-item.c							\
+	ofa-misc-collector-item.h							\
+	ofa-misc-collector-ui.c								\
+	ofa-misc-collector-ui.h								\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
 	ofa-period-close.c									\
@@ -799,6 +805,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-summary-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-main-window.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-item.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-ui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-period-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@

@@ -390,6 +390,39 @@ my_icollector_collection_free( myICollector *instance, GType type )
 }
 
 /**
+ * my_icollector_collection_get_list:
+ * @instance: this #myICollector instance.
+ *
+ * Returns: a list of currently maintained collections.
+ *
+ * Items of the returned list may be requested with the
+ * #my_icollector_item_get_xxx() methods.
+ *
+ * The returned list should be #g_list_free() by the caller.
+ */
+GList *
+my_icollector_collection_get_list( myICollector *instance )
+{
+	GList *list, *it;
+	sCollector *sdata;
+	sTyped *typed;
+
+	g_return_val_if_fail( instance && MY_IS_ICOLLECTOR( instance ), NULL );
+
+	list = NULL;
+	sdata = get_collector_data( instance );
+
+	for( it=sdata->typed_list ; it ; it=it->next ){
+		typed = ( sTyped * ) it->data;
+		if( typed->is_collection ){
+			list = g_list_prepend( list, typed );
+		}
+	}
+
+	return( list );
+}
+
+/**
  * my_icollector_single_get_object:
  * @instance: this #myICollector instance.
  * @type: the desired GType type.
@@ -452,6 +485,89 @@ my_icollector_single_set_object( myICollector *instance, void *object )
 		sdata->typed_list = g_list_prepend( sdata->typed_list, typed );
 		g_object_weak_ref( G_OBJECT( object ), ( GWeakNotify ) on_single_object_finalized, sdata );
 	}
+}
+
+/**
+ * my_icollector_single_get_list:
+ * @instance: this #myICollector instance.
+ *
+ * Returns: a list of currently maintained single objects.
+ *
+ * Items of the returned list may be requested with the
+ * #my_icollector_item_get_xxx() methods.
+ *
+ * The returned list should be #g_list_free() by the caller.
+ */
+GList *
+my_icollector_single_get_list( myICollector *instance )
+{
+	GList *list, *it;
+	sCollector *sdata;
+	sTyped *typed;
+
+	g_return_val_if_fail( instance && MY_IS_ICOLLECTOR( instance ), NULL );
+
+	list = NULL;
+	sdata = get_collector_data( instance );
+
+	for( it=sdata->typed_list ; it ; it=it->next ){
+		typed = ( sTyped * ) it->data;
+		if( !typed->is_collection ){
+			list = g_list_prepend( list, typed );
+		}
+	}
+
+	return( list );
+}
+
+/**
+ * my_icollector_item_get_name:
+ * @instance: this #myICollector instance.
+ * @item: an element of the list returned by
+ *  #my_icollector_collection_get_list() or
+ *  #my_icollector_single_get_list() methods.
+ *
+ * Returns: the name of the item class, as a newly allocated string
+ * which should be #g_free() by the caller.
+ */
+gchar *
+my_icollector_item_get_name( myICollector *instance, void *item )
+{
+	gchar *name;
+	sTyped *typed;
+
+	g_return_val_if_fail( instance && MY_IS_ICOLLECTOR( instance ), NULL );
+	g_return_val_if_fail( item, NULL );
+
+	typed = ( sTyped * ) item;
+	name = g_strdup( g_type_name( typed->type ));
+
+	return( name );
+}
+
+/**
+ * my_icollector_item_get_count:
+ * @instance: this #myICollector instance.
+ * @item: an element of the list returned by
+ *  #my_icollector_collection_get_list() or
+ *  #my_icollector_single_get_list() methods.
+ *
+ * Returns: the count of the items for this collection, or 1 if this is
+ * a single object.
+ */
+guint
+my_icollector_item_get_count( myICollector *instance, void *item )
+{
+	guint count;
+	sTyped *typed;
+
+	g_return_val_if_fail( instance && MY_IS_ICOLLECTOR( instance ), 0 );
+	g_return_val_if_fail( item, 0 );
+
+	typed = ( sTyped * ) item;
+	count = typed->is_collection ? g_list_length( typed->t.list ) : 1;
+
+	return( count );
 }
 
 /**

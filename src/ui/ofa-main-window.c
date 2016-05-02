@@ -431,12 +431,14 @@ main_window_constructed( GObject *instance )
 					thisfn, st_resource_dosmenu, ( void * ) menu, g_menu_model_get_n_items( menu ));
 
 			/* store the references to the plugins placeholders */
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_dossier" );
 			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope1" );
 			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope2" );
 			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope3" );
 			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ope4" );
 			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_print" );
 			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_win_ref" );
+			window_store_ref( OFA_MAIN_WINDOW( instance ), builder, "plugins_app_misc" );
 
 		} else {
 			g_warning( "%s: unable to find '%s' object in '%s' resource", thisfn, st_dosmenu_id, st_resource_dosmenu );
