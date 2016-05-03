@@ -808,7 +808,7 @@ is_dialog_validable( ofaTVAFormProperties *self )
 	msgerr = NULL;
 	hub = ofa_igetter_get_hub( priv->getter );
 
-	ok = ofo_tva_form_is_valid_data( priv->mnemo, &msgerr );
+	ok = ofo_tva_form_is_valid_data( priv->mnemo, priv->label, &msgerr );
 
 	if( ok ){
 		exists = ( ofo_tva_form_get_by_mnemo( hub, priv->mnemo ) != NULL );

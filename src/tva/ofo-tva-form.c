@@ -539,13 +539,14 @@ ofo_tva_form_is_deletable( const ofoTVAForm *form )
 /**
  * ofo_tva_form_is_valid_data:
  * @mnemo:
+ * @label:
  * @msgerr: [allow-none][out]:
  *
  * Returns: %TRUE if provided datas are enough to make the future
  * #ofoTVAForm valid, %FALSE else.
  */
 gboolean
-ofo_tva_form_is_valid_data( const gchar *mnemo, gchar **msgerr )
+ofo_tva_form_is_valid_data( const gchar *mnemo, const gchar *label, gchar **msgerr )
 {
 	gboolean ok;
 
@@ -553,11 +554,16 @@ ofo_tva_form_is_valid_data( const gchar *mnemo, gchar **msgerr )
 	if( msgerr ){
 		*msgerr = NULL;
 	}
-
 	if( !my_strlen( mnemo )){
 		ok = FALSE;
 		if( msgerr ){
 			*msgerr = g_strdup( _( "Empty mnemonic" ));
+		}
+	}
+	if( !my_strlen( label )){
+		ok = FALSE;
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty label" ));
 		}
 	}
 

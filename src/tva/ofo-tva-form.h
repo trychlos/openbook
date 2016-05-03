@@ -107,7 +107,7 @@ const gchar    *ofo_tva_form_get_upd_user           ( const ofoTVAForm *form );
 const GTimeVal *ofo_tva_form_get_upd_stamp          ( const ofoTVAForm *form );
 
 gboolean        ofo_tva_form_is_deletable           ( const ofoTVAForm *form );
-gboolean        ofo_tva_form_is_valid_data          ( const gchar *mnemo, gchar **msgerr );
+gboolean        ofo_tva_form_is_valid_data          ( const gchar *mnemo, const gchar *label, gchar **msgerr );
 
 gint            ofo_tva_form_compare_id             ( const ofoTVAForm *a, const ofoTVAForm *b );
 
