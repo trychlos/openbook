@@ -219,6 +219,7 @@ static void         account_set_upd_user( ofoAccount *account, const gchar *user
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
 static gboolean     account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
+static gboolean     account_do_update_arc( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number );
 static gboolean     account_do_update_amounts( ofoAccount *account, ofaHub *hub );
 static gboolean     account_do_delete( ofoAccount *account, const ofaIDBConnect *connect );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
@@ -1632,7 +1633,8 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
 
-	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number )){
+	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number ) &&
+			account_do_update_arc( account, ofa_hub_get_connect( hub ), prev_number )){
 		my_icollector_collection_sort(
 				ofa_hub_get_collector( hub ),
 				OFO_TYPE_ACCOUNT, ( GCompareFunc ) account_cmp_by_ptr );
@@ -1667,7 +1669,7 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 
 	query = g_string_new( "UPDATE OFA_T_ACCOUNTS SET " );
 
-	if( prev_number && g_utf8_collate( new_number, prev_number )){
+	if( prev_number && my_collate( new_number, prev_number )){
 		g_string_append_printf( query, "ACC_NUMBER='%s',", new_number );
 	}
 
@@ -1718,6 +1720,36 @@ account_do_update( ofoAccount *account, const ofaIDBConnect *connect, const gcha
 	g_free( notes );
 	g_free( label );
 	g_free( userid );
+
+	return( ok );
+}
+
+/*
+ * @prev_number: may be %NULL if the identifier has not changed.
+ */
+static gboolean
+account_do_update_arc( ofoAccount *account, const ofaIDBConnect *connect, const gchar *prev_number )
+{
+	GString *query;
+	gboolean ok;
+	const gchar *new_number;
+
+	ok = TRUE;
+	new_number = ofo_account_get_number( account );
+
+	if( prev_number && my_collate( new_number, prev_number )){
+
+		ok = FALSE;
+		query = g_string_new( "UPDATE OFA_T_ACCOUNTS_ARC SET " );
+		g_string_append_printf( query, "ACC_NUMBER='%s' ", new_number );
+		g_string_append_printf( query, "WHERE ACC_NUMBER='%s'", prev_number );
+
+		if( ofa_idbconnect_query( connect, query->str, TRUE )){
+			ok = TRUE;
+		}
+
+		g_string_free( query, TRUE );
+	}
 
 	return( ok );
 }
