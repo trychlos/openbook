@@ -860,15 +860,17 @@ my_utils_str_remove_underlines( const gchar *string )
 gchar *
 my_utils_str_replace( const gchar *string, const gchar *old, const gchar *new )
 {
-	gchar *new_str;
+	gchar *regex_str, *new_str;
 	GRegex *regex;
 
 	new_str = NULL;
 
 	if( string ){
-		regex = g_regex_new( old, 0, 0, NULL );
+		regex_str = g_strdup_printf( "\\b%s\\b", old );
+		regex = g_regex_new( regex_str, 0, 0, NULL );
 		new_str = g_regex_replace( regex, string, -1, 0, new, 0, NULL );
 		g_regex_unref( regex );
+		g_free( regex_str );
 	}
 
 	return( new_str );

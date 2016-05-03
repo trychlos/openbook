@@ -216,8 +216,9 @@ static gboolean        hub_is_deletable_account( ofaHub *hub, ofoAccount *accoun
 static gboolean        hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
 static gboolean        hub_is_deletable_rate( ofaHub *hub, ofoRate *rate );
 static void            hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean        hub_on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
-static gboolean        hub_on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean        hub_on_updated_account_id( ofaHub *hub, const gchar *new_id, const gchar *prev_id );
+static gboolean        hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean        hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoOpeTemplate )
@@ -2065,7 +2066,7 @@ static void
 hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_ope_template_hub_on_updated_object";
-	const gchar *mnemo;
+	const gchar *mnemo, *new_id;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
@@ -2074,28 +2075,60 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 			prev_id,
 			( void * ) empty );
 
-	if( OFO_IS_LEDGER( object )){
+	if( OFO_IS_ACCOUNT( object )){
+		if( my_strlen( prev_id )){
+			new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
+			if( my_collate( new_id, prev_id )){
+				hub_on_updated_account_id( hub, new_id, prev_id );
+			}
+		}
+
+	} else if( OFO_IS_LEDGER( object )){
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				hub_on_update_ledger_mnemo( hub, mnemo, prev_id );
+			if( my_collate( mnemo, prev_id )){
+				hub_on_updated_ledger_mnemo( hub, mnemo, prev_id );
 			}
 		}
 
 	} else if( OFO_IS_RATE( object )){
 		if( my_strlen( prev_id )){
 			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				hub_on_update_rate_mnemo( hub, mnemo, prev_id );
+			if( my_collate( mnemo, prev_id )){
+				hub_on_updated_rate_mnemo( hub, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-hub_on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_updated_account_id( ofaHub *hub, const gchar *new_id, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_ope_template_do_update_ledger_mnemo";
+	static const gchar *thisfn = "ofo_ope_template_hub_on_updated_account_id";
+	gchar *query;
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, new_id=%s, prev_id=%s",
+			thisfn, ( void * ) hub, new_id, prev_id );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_OPE_TEMPLATES_DET "
+					"	SET OTE_DET_ACCOUNT='%s' WHERE OTE_DET_ACCOUNT='%s'",
+								new_id, prev_id );
+
+	ok = ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
+
+	return( ok );
+}
+
+static gboolean
+hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_ope_template_hub_on_updated_ledger_mnemo";
 	gchar *query;
 	gboolean ok;
 
@@ -2113,21 +2146,20 @@ hub_on_update_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_i
 
 	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
 
-	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
-
 	return( ok );
 }
 
 static gboolean
-hub_on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_ope_template_do_update_rate_mnemo";
+	static const gchar *thisfn = "ofo_ope_template_hub_on_updated_rate_mnemo";
 	gchar *query;
 	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;
 	gchar *etp_mnemo, *det_debit, *det_credit;
 	gint det_row;
 	gboolean ok;
+	const gchar *prev_debit, *prev_credit;
 
 	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) hub, mnemo, prev_id );
@@ -2150,28 +2182,31 @@ hub_on_update_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id 
 			icol = icol->next;
 			det_row = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			det_debit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+			prev_debit = ( const gchar * ) icol->data;
+			det_debit = my_utils_str_replace( prev_debit, prev_id, mnemo );
 			icol = icol->next;
-			det_credit = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+			prev_credit = ( const gchar * ) icol->data;
+			det_credit = my_utils_str_replace( prev_credit, prev_id, mnemo );
 
-			query = g_strdup_printf(
-							"UPDATE OFA_T_OPE_TEMPLATES_DET "
-							"	SET OTE_DET_DEBIT='%s',OTE_DET_CREDIT='%s' "
-							"	WHERE OTE_MNEMO='%s' AND OTE_DET_ROW=%d",
-									det_debit, det_credit,
-									etp_mnemo, det_row );
+			if( my_collate( prev_debit, det_debit ) || my_collate( prev_credit, det_credit )){
+				query = g_strdup_printf(
+								"UPDATE OFA_T_OPE_TEMPLATES_DET "
+								"	SET OTE_DET_DEBIT='%s',OTE_DET_CREDIT='%s' "
+								"	WHERE OTE_MNEMO='%s' AND OTE_DET_ROW=%d",
+										det_debit, det_credit,
+										etp_mnemo, det_row );
 
-			ofa_idbconnect_query( connect, query, TRUE );
+				ofa_idbconnect_query( connect, query, TRUE );
 
-			g_free( query );
+				g_free( query );
+			}
+
 			g_free( det_credit );
 			g_free( det_debit );
 			g_free( etp_mnemo );
 		}
 
 		my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
-
-		g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_OPE_TEMPLATE );
 	}
 
 	return( ok );
