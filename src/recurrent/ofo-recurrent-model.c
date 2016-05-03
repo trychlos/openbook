@@ -138,7 +138,7 @@ static void               isignal_hub_connect( ofaHub *hub );
 static gboolean           hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean           hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void               hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean           hub_update_ope_template_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean           hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentModel )
@@ -1238,17 +1238,17 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 	if( OFO_IS_OPE_TEMPLATE( object )){
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
-			if( g_utf8_collate( mnemo, prev_id )){
-				hub_update_ope_template_identifier( hub, mnemo, prev_id );
+			if( my_collate( mnemo, prev_id )){
+				hub_on_updated_ope_template_mnemo( hub, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-hub_update_ope_template_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_recurrent_model_hub_update_ope_template_identifier";
+	static const gchar *thisfn = "ofo_recurrent_model_hub_on_updated_ope_template_mnemo";
 	gchar *query;
 	const ofaIDBConnect *connect;
 	gboolean ok;
@@ -1269,7 +1269,6 @@ hub_update_ope_template_identifier( ofaHub *hub, const gchar *mnemo, const gchar
 	g_free( query );
 
 	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL );
-	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_RECURRENT_MODEL );
 
 	return( ok );
 }
