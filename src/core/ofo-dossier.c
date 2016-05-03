@@ -237,7 +237,9 @@ static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *t
 static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void        hub_on_updated_account_id( const ofaHub *hub, const gchar *prev_id, const gchar *new_id );
-static void        on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void        hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void        hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
+static void        hub_on_updated_ope_template_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
@@ -1932,7 +1934,7 @@ static void
 on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
-	const gchar *code, *new_id;
+	const gchar *code, *new_id, *new_mnemo;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
@@ -1953,7 +1955,23 @@ on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( my_collate( code, prev_id )){
-				on_updated_currency_code( hub, prev_id, code );
+				hub_on_updated_currency_code( hub, prev_id, code );
+			}
+		}
+
+	} else if( OFO_IS_LEDGER( object )){
+		if( my_strlen( prev_id )){
+			new_mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
+			if( my_collate( new_mnemo, prev_id )){
+				hub_on_updated_ledger_mnemo( hub, prev_id, new_mnemo );
+			}
+		}
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		if( my_strlen( prev_id )){
+			new_mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
+			if( my_collate( new_mnemo, prev_id )){
+				hub_on_updated_ope_template_mnemo( hub, prev_id, new_mnemo );
 			}
 		}
 	}
@@ -1983,7 +2001,7 @@ hub_on_updated_account_id( const ofaHub *hub, const gchar *prev_id, const gchar 
 }
 
 static void
-on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	ofoDossier *dossier;
 	gchar *query;
@@ -2016,5 +2034,64 @@ on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *
 	details = dossier_find_currency_by_code( dossier, prev_id );
 	if( details ){
 		ofa_box_set_string( details, DOS_CURRENCY, code );
+	}
+}
+
+static void
+hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
+{
+	ofoDossier *dossier;
+	gchar *query;
+	const gchar *mnemo;
+
+	dossier = ofa_hub_get_dossier( hub );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER "
+					"	SET DOS_IMPORT_LEDGER='%s' WHERE DOS_IMPORT_LEDGER='%s'", new_mnemo, prev_mnemo );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	mnemo = ofo_dossier_get_import_ledger( dossier );
+	if( !my_collate( mnemo, prev_mnemo )){
+		ofo_dossier_set_import_ledger( dossier, new_mnemo );
+	}
+}
+
+static void
+hub_on_updated_ope_template_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
+{
+	ofoDossier *dossier;
+	gchar *query;
+	const gchar *mnemo;
+
+	dossier = ofa_hub_get_dossier( hub );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER "
+					"	SET DOS_FORW_OPE='%s' WHERE DOS_FORW_OPE='%s'", new_mnemo, prev_mnemo );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	mnemo = ofo_dossier_get_forward_ope( dossier );
+	if( !my_collate( mnemo, prev_mnemo )){
+		ofo_dossier_set_forward_ope( dossier, new_mnemo );
+	}
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER "
+					"	SET DOS_SLD_OPE='%s' WHERE DOS_SLD_OPE='%s'", new_mnemo, prev_mnemo );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	mnemo = ofo_dossier_get_sld_ope( dossier );
+	if( !my_collate( mnemo, prev_mnemo )){
+		ofo_dossier_set_sld_ope( dossier, new_mnemo );
 	}
 }
