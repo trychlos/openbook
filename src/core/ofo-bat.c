@@ -106,6 +106,8 @@ static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void        isignal_hub_connect( ofaHub *hub );
 static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
+static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void        hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
@@ -1954,6 +1956,7 @@ isignal_hub_connect( ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
 }
 
 /*
@@ -1995,4 +1998,46 @@ hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 	g_free( query );
 
 	return( count == 0 );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_account_hub_on_updated_object";
+	const gchar *new_id;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_ACCOUNT( object )){
+		if( my_strlen( prev_id )){
+			new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
+			if( my_collate( new_id, prev_id )){
+				hub_on_updated_account_id( hub, prev_id, new_id );
+			}
+		}
+	}
+}
+
+static void
+hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_BAT SET BAT_ACCOUNT='%s' WHERE BAT_ACCOUNT='%s'",
+						new_id, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_BAT );
 }
