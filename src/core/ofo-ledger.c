@@ -208,7 +208,7 @@ static void       hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty )
 static void       hub_on_new_ledger_entry( ofaHub *hub, ofoEntry *entry );
 static void       hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void       hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void       hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
 
 G_DEFINE_TYPE_EXTENDED( ofoLedger, ofo_ledger, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoLedger )
@@ -2081,7 +2081,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
-				hub_on_updated_object_currency_code( hub, prev_id, code );
+				hub_on_updated_currency_code( hub, prev_id, code );
 			}
 		}
 	}
@@ -2092,7 +2092,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
  * so update our ledger records
  */
 static void
-hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 
@@ -2105,6 +2105,4 @@ hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gc
 	g_free( query );
 
 	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER );
-
-	g_signal_emit_by_name( hub, SIGNAL_HUB_RELOAD, OFO_TYPE_LEDGER );
 }
