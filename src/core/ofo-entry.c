@@ -190,8 +190,6 @@ static sStatus st_status[] = {
 
 static gchar       *effect_in_exercice( const ofaHub *hub );
 static GList       *entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order );
-static gint         entry_count_for_ope_template( const ofaIDBConnect *connect, const gchar *model );
-static gint         entry_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo );
 static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub );
 static gboolean     entry_get_import_settled( const ofoEntry *entry );
 static void         entry_set_number( ofoEntry *entry, ofxCounter number );
@@ -246,10 +244,10 @@ static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *p
 static gint         remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
 static void         hub_on_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 static void         hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         hub_on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
-static void         hub_on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void         hub_on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
-static void         hub_on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         hub_on_updated_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
+static void         hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         hub_on_updated_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
@@ -858,42 +856,6 @@ ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	return( !hub_is_deletable_ledger_by_mnemo( hub, ledger ));
-}
-
-/**
- * ofo_entry_use_ope_template:
- *
- * Returns: %TRUE if a recorded entry makes use of the specified
- * operation template.
- */
-gboolean
-ofo_entry_use_ope_template( const ofaHub *hub, const gchar *model )
-{
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	return( entry_count_for_ope_template( ofa_hub_get_connect( hub ), model ) > 0 );
-}
-
-static gint
-entry_count_for_ope_template( const ofaIDBConnect *connect, const gchar *model )
-{
-	return( entry_count_for( connect, "ENT_OPE_TEMPLATE", model ));
-}
-
-static gint
-entry_count_for( const ofaIDBConnect *connect, const gchar *field, const gchar *mnemo )
-{
-	gint count;
-	gchar *query;
-
-	query = g_strdup_printf(
-				"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE %s='%s'", field, mnemo );
-
-	ofa_idbconnect_query_int( connect, query, &count, TRUE );
-
-	g_free( query );
-
-	return( count );
 }
 
 /**
@@ -3483,7 +3445,7 @@ hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
 		if( my_strlen( prev_id )){
 			number = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( g_utf8_collate( number, prev_id )){
-				hub_on_updated_object_account_number( hub, prev_id, number );
+				hub_on_updated_account_number( hub, prev_id, number );
 			}
 		}
 
@@ -3491,7 +3453,7 @@ hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
-				hub_on_updated_object_currency_code( hub, prev_id, code );
+				hub_on_updated_currency_code( hub, prev_id, code );
 			}
 		}
 
@@ -3499,7 +3461,7 @@ hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				hub_on_updated_object_ledger_mnemo( hub, prev_id, mnemo );
+				hub_on_updated_ledger_mnemo( hub, prev_id, mnemo );
 			}
 		}
 
@@ -3507,7 +3469,7 @@ hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
 			if( g_utf8_collate( mnemo, prev_id )){
-				hub_on_updated_object_model_mnemo( hub, prev_id, mnemo );
+				hub_on_updated_model_mnemo( hub, prev_id, mnemo );
 			}
 		}
 	}
@@ -3519,7 +3481,7 @@ hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
  * from a previous exercice)
  */
 static void
-hub_on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
+hub_on_updated_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
 {
 	gchar *query;
 
@@ -3537,7 +3499,7 @@ hub_on_updated_object_account_number( const ofaHub *hub, const gchar *prev_id, c
  * from a previous exercice)
  */
 static void
-hub_on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 
@@ -3555,7 +3517,7 @@ hub_on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, co
  * from a previous exercice)
  */
 static void
-hub_on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
 {
 	gchar *query;
 
@@ -3573,7 +3535,7 @@ hub_on_updated_object_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, con
  * from a previous exercice)
  */
 static void
-hub_on_updated_object_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+hub_on_updated_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
 {
 	gchar *query;
 

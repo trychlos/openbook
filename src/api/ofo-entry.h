@@ -124,7 +124,6 @@ GList          *ofo_entry_get_dataset_for_exercice_by_status
 
 gboolean        ofo_entry_use_account                ( ofaHub *hub, const gchar *account );
 gboolean        ofo_entry_use_ledger                 ( ofaHub *hub, const gchar *ledger );
-gboolean        ofo_entry_use_ope_template           ( const ofaHub *hub, const gchar *model );
 
 ofxCounter      ofo_entry_get_number                 ( const ofoEntry *entry );
 const gchar    *ofo_entry_get_label                  ( const ofoEntry *entry );
