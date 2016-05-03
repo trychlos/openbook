@@ -248,7 +248,7 @@ static gboolean     hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currenc
 static void         hub_on_new_object( ofaHub *hub, ofoBase *object, void *empty );
 static void         hub_on_new_object_entry( ofaHub *hub, ofoEntry *entry );
 static void         hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void         hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoAccount, ofo_account, OFO_TYPE_BASE, 0,
@@ -2705,7 +2705,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( g_utf8_collate( code, prev_id )){
-				hub_on_updated_object_currency_code( hub, prev_id, code );
+				hub_on_updated_currency_code( hub, prev_id, code );
 			}
 		}
 	}
@@ -2716,7 +2716,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
  * use it
  */
 static void
-hub_on_updated_object_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 	GList *collection;
