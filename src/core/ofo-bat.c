@@ -106,8 +106,10 @@ static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void        isignal_hub_connect( ofaHub *hub );
 static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
+static gboolean    hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
 static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void        hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id );
+static void        hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_code, const gchar *new_code );
 
 G_DEFINE_TYPE_EXTENDED( ofoBat, ofo_bat, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoBat )
@@ -1978,6 +1980,9 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 
 	if( OFO_IS_ACCOUNT( object )){
 		deletable = hub_is_deletable_account( hub, OFO_ACCOUNT( object ));
+
+	} else if( OFO_IS_CURRENCY( object )){
+		deletable = hub_is_deletable_currency( hub, OFO_CURRENCY( object ));
 	}
 
 	return( deletable );
@@ -2000,6 +2005,34 @@ hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 	return( count == 0 );
 }
 
+static gboolean
+hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
+{
+	gchar *query;
+	gint count;
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_BAT WHERE BAT_CURRENCY='%s'",
+			ofo_currency_get_code( currency ));
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	if( count == 0 ){
+
+		query = g_strdup_printf(
+				"SELECT COUNT(*) FROM OFA_T_BAT_LINES WHERE BAT_LINE_CURRENCY='%s'",
+				ofo_currency_get_code( currency ));
+
+		ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+		g_free( query );
+	}
+
+	return( count == 0 );
+}
+
 /*
  * SIGNAL_HUB_UPDATED signal handler
  */
@@ -2007,7 +2040,7 @@ static void
 hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_account_hub_on_updated_object";
-	const gchar *new_id;
+	const gchar *new_id, *new_code;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
@@ -2023,6 +2056,14 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 				hub_on_updated_account_id( hub, prev_id, new_id );
 			}
 		}
+
+	} else if( OFO_IS_CURRENCY( object )){
+		if( my_strlen( prev_id )){
+			new_code = ofo_currency_get_code( OFO_CURRENCY( object ));
+			if( my_collate( new_code, prev_id )){
+				hub_on_updated_currency_code( hub, prev_id, new_code );
+			}
+		}
 	}
 }
 
@@ -2034,6 +2075,30 @@ hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_i
 	query = g_strdup_printf(
 					"UPDATE OFA_T_BAT SET BAT_ACCOUNT='%s' WHERE BAT_ACCOUNT='%s'",
 						new_id, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_BAT );
+}
+
+static void
+hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_code, const gchar *new_code )
+{
+	gchar *query;
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_BAT SET BAT_CURRENCY='%s' WHERE BAT_CURRENCY='%s'",
+						new_code, prev_code );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_BAT_LINES SET BAT_LINE_CURRENCY='%s' WHERE BAT_LINE_CURRENCY='%s'",
+						new_code, prev_code );
 
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
