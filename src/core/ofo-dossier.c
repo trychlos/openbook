@@ -205,6 +205,7 @@ typedef struct {
 
 static void        dossier_update_next( const ofoDossier *dossier, const gchar *field, ofxCounter next_number );
 static GList      *dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency );
+static GList      *dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account );
 static GList      *dossier_new_currency_with_code( ofoDossier *dossier, const gchar *currency );
 static void        dossier_set_upd_user( ofoDossier *dossier, const gchar *user );
 static void        dossier_set_upd_stamp( ofoDossier *dossier, const GTimeVal *stamp );
@@ -235,7 +236,8 @@ static gboolean    hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
 static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void        on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void        hub_on_updated_account_id( const ofaHub *hub, const gchar *prev_id, const gchar *new_id );
+static void        on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
@@ -908,7 +910,6 @@ ofo_dossier_get_sld_account( ofoDossier *dossier, const gchar *currency )
 static GList *
 dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency )
 {
-	static const gchar *thisfn = "ofo_dossier_find_currency_by_code";
 	ofoDossierPrivate *priv;
 	GList *it;
 	GList *cur_detail;
@@ -919,12 +920,31 @@ dossier_find_currency_by_code( ofoDossier *dossier, const gchar *currency )
 	for( it=priv->cur_details ; it ; it=it->next ){
 		cur_detail = ( GList * ) it->data;
 		cur_code = ofa_box_get_string( cur_detail, DOS_CURRENCY );
-		if( !g_utf8_collate( cur_code, currency )){
+		if( !my_collate( cur_code, currency )){
 			return( cur_detail );
 		}
 	}
 
-	g_debug( "%s: currency=%s not found", thisfn, currency );
+	return( NULL );
+}
+
+static GList *
+dossier_find_currency_by_account( ofoDossier *dossier, const gchar *account )
+{
+	ofoDossierPrivate *priv;
+	GList *it;
+	GList *cur_detail;
+	const gchar *cur_account;
+
+	priv = ofo_dossier_get_instance_private( dossier );
+
+	for( it=priv->cur_details ; it ; it=it->next ){
+		cur_detail = ( GList * ) it->data;
+		cur_account = ofa_box_get_string( cur_detail, DOS_SLD_ACCOUNT );
+		if( !my_collate( cur_account, account )){
+			return( cur_detail );
+		}
+	}
 
 	return( NULL );
 }
@@ -1912,7 +1932,7 @@ static void
 on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
-	const gchar *code;
+	const gchar *code, *new_id;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
 			thisfn,
@@ -1921,20 +1941,56 @@ on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
 			prev_id,
 			( void * ) empty );
 
-	if( OFO_IS_CURRENCY( object )){
+	if( OFO_IS_ACCOUNT( object )){
+		if( my_strlen( prev_id )){
+			new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
+			if( my_collate( new_id, prev_id )){
+				hub_on_updated_account_id( hub, prev_id, new_id );
+			}
+		}
+
+	} else if( OFO_IS_CURRENCY( object )){
 		if( my_strlen( prev_id )){
 			code = ofo_currency_get_code( OFO_CURRENCY( object ));
 			if( my_collate( code, prev_id )){
-				on_updated_object_currency_code( hub, prev_id, code );
+				on_updated_currency_code( hub, prev_id, code );
 			}
 		}
 	}
 }
 
 static void
-on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_account_id( const ofaHub *hub, const gchar *prev_id, const gchar *new_id )
 {
+	ofoDossier *dossier;
 	gchar *query;
+	GList *details;
+
+	dossier = ofa_hub_get_dossier( hub );
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER_CUR SET DOS_SLD_ACCOUNT='%s' WHERE DOS_SLD_ACCOUNT='%s'",
+						new_id, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	details = dossier_find_currency_by_account( dossier, prev_id );
+	if( details ){
+		ofa_box_set_string( details, DOS_SLD_ACCOUNT, new_id );
+	}
+}
+
+static void
+on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+{
+	ofoDossier *dossier;
+	gchar *query;
+	const gchar *def_currency;
+	GList *details;
+
+	dossier = ofa_hub_get_dossier( hub );
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_DOSSIER "
@@ -1943,4 +1999,22 @@ on_updated_object_currency_code( const ofaHub *hub, const gchar *prev_id, const 
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
+
+	def_currency = ofo_dossier_get_default_currency( dossier );
+	if( !my_collate( def_currency, prev_id )){
+		ofo_dossier_set_default_currency( dossier, code );
+	}
+
+	query = g_strdup_printf(
+					"UPDATE OFA_T_DOSSIER_CUR "
+					"	SET DOS_CURRENCY='%s' WHERE DOS_CURRENCY='%s'", code, prev_id );
+
+	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
+
+	g_free( query );
+
+	details = dossier_find_currency_by_code( dossier, prev_id );
+	if( details ){
+		ofa_box_set_string( details, DOS_CURRENCY, code );
+	}
 }
