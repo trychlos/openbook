@@ -432,6 +432,7 @@ init_ui( ofaAccountProperties *dialog )
 	g_return_if_fail( priv->number_entry && GTK_IS_ENTRY( priv->number_entry ));
 	g_signal_connect(
 			G_OBJECT( priv->number_entry ), "changed", G_CALLBACK( on_number_changed ), dialog );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->number_entry ));

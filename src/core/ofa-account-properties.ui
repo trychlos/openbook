@@ -91,7 +91,8 @@
                       <object class="GtkEntry" id="p1-number">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="tooltip_text" translatable="yes">The number of the account : it must begin with a class digit, and have at least one more character.</property>
+                        <property name="tooltip_text" translatable="yes">The number of the account : it must begin with a class digit, and have at least one more character.
+It is modifiable as long as no entry has been imputed on the account.</property>
                         <property name="halign">start</property>
                         <property name="max_length">64</property>
                         <property name="invisible_char">●</property>
