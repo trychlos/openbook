@@ -192,6 +192,8 @@ static void          isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void          isignal_hub_connect( ofaHub *hub );
 static gboolean      hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean      hub_is_deletable_tva_form( ofaHub *hub, ofoTVAForm *form );
+static void          hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean      hub_on_updated_tva_form_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVARecord, ofo_tva_record, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVARecord )
@@ -1628,6 +1630,7 @@ isignal_hub_connect( ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
 }
 
 /*
@@ -1669,4 +1672,72 @@ hub_is_deletable_tva_form( ofaHub *hub, ofoTVAForm *form )
 	g_free( query );
 
 	return( count == 0 );
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+{
+	static const gchar *thisfn = "ofo_tva_record_hub_on_updated_object";
+	const gchar *mnemo;
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) empty );
+
+	if( OFO_IS_TVA_FORM( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_tva_form_get_mnemo( OFO_TVA_FORM( object ));
+			if( my_collate( mnemo, prev_id )){
+				hub_on_updated_tva_form_mnemo( hub, mnemo, prev_id );
+			}
+		}
+	}
+}
+
+static gboolean
+hub_on_updated_tva_form_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_tva_record_hub_on_updated_tva_form_mnemo";
+	gchar *query;
+	const ofaIDBConnect *connect;
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
+
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf(
+					"UPDATE TVA_T_RECORDS "
+					"	SET TFO_MNEMO='%s'"
+					"	WHERE TFO_MNEMMO='%s'", mnemo, prev_id );
+
+	ok = ofa_idbconnect_query( connect, query, TRUE );
+	g_free( query );
+
+	query = g_strdup_printf(
+					"UPDATE TVA_T_RECORDS_BOOL "
+					"	SET TFO_MNEMO='%s'"
+					"	WHERE TFO_MNEMMO='%s'", mnemo, prev_id );
+
+	ok = ofa_idbconnect_query( connect, query, TRUE );
+	g_free( query );
+
+	query = g_strdup_printf(
+					"UPDATE TVA_T_RECORDS_DET "
+					"	SET TFO_MNEMO='%s'"
+					"	WHERE TFO_MNEMMO='%s'", mnemo, prev_id );
+
+	ok = ofa_idbconnect_query( connect, query, TRUE );
+	g_free( query );
+
+	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_RECORD );
+
+	return( ok );
 }

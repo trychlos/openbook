@@ -222,8 +222,8 @@ static gboolean    hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *
 static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean    hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
-static gboolean    hub_update_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean    hub_on_updated_account_id( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean    hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
@@ -2225,7 +2225,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_account_get_number( OFO_ACCOUNT( object ));
 			if( my_collate( mnemo, prev_id )){
-				hub_update_account_identifier( hub, mnemo, prev_id );
+				hub_on_updated_account_id( hub, mnemo, prev_id );
 			}
 		}
 
@@ -2233,22 +2233,23 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 		if( my_strlen( prev_id )){
 			mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
 			if( my_collate( mnemo, prev_id )){
-				hub_update_ope_template_mnemo( hub, mnemo, prev_id );
+				hub_on_updated_ope_template_mnemo( hub, mnemo, prev_id );
 			}
 		}
 	}
 }
 
 static gboolean
-hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_updated_account_id( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_tva_form_hub_update_account_identifier";
+	static const gchar *thisfn = "ofo_tva_form_hub_on_updated_account_id";
 	gchar *query;
 	const ofaIDBConnect *connect;
 	GSList *result, *irow, *icol;
-	gchar *etp_mnemo, *det_amount;
+	gchar *etp_mnemo, *det_base, *det_amount;
 	gint det_row;
 	gboolean ok;
+	const gchar *prev_base, *prev_amount;
 
 	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) hub, mnemo, prev_id );
@@ -2256,9 +2257,10 @@ hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *pre
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
-					"SELECT TFO_MNEMO,TFO_DET_ROW,TFO_DET_AMOUNT "
+					"SELECT TFO_MNEMO,TFO_DET_ROW,TFO_DET_BASE,TFO_DET_AMOUNT "
 					"	FROM TVA_T_FORMS_DET "
-					"	WHERE TFO_DET_AMOUNT LIKE '%%%s%%'", prev_id );
+					"	WHERE TFO_DET_BASE LIKE '%%%s%%' OR TFO_DET_AMOUNT LIKE '%%%s%%'",
+					prev_id, prev_id );
 
 	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
 	g_free( query );
@@ -2270,17 +2272,25 @@ hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *pre
 			icol = icol->next;
 			det_row = atoi(( gchar * ) icol->data );
 			icol = icol->next;
-			det_amount = my_utils_str_replace(( gchar * ) icol->data, prev_id, mnemo );
+			prev_base = ( const gchar * ) icol->data;
+			det_base = my_utils_str_replace( prev_base, prev_id, mnemo );
+			icol = icol->next;
+			prev_amount = ( const gchar * ) icol->data;
+			det_amount = my_utils_str_replace( prev_amount, prev_id, mnemo );
 
-			query = g_strdup_printf(
-							"UPDATE TVA_T_FORMS_DET "
-							"	SET TFO_DET_AMOUNT='%s' "
-							"	WHERE TFO_MNEMO='%s' AND TFO_DET_ROW=%d",
-									det_amount, etp_mnemo, det_row );
+			if( my_collate( prev_base, det_base ) || my_collate( prev_amount, det_amount )){
+				query = g_strdup_printf(
+								"UPDATE TVA_T_FORMS_DET "
+								"	SET TFO_DET_BASE='%s',TFO_DET_AMOUNT='%s' "
+								"	WHERE TFO_MNEMO='%s' AND TFO_DET_ROW=%d",
+										det_base, det_amount, etp_mnemo, det_row );
 
-			ofa_idbconnect_query( connect, query, TRUE );
+				ofa_idbconnect_query( connect, query, TRUE );
 
-			g_free( query );
+				g_free( query );
+			}
+
+			g_free( det_base );
 			g_free( det_amount );
 			g_free( etp_mnemo );
 		}
@@ -2292,9 +2302,9 @@ hub_update_account_identifier( ofaHub *hub, const gchar *mnemo, const gchar *pre
 }
 
 static gboolean
-hub_update_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofo_tva_form_hub_update_ope_template_mnemo";
+	static const gchar *thisfn = "ofo_tva_form_hub_on_updated_ope_template_mnemo";
 	gchar *query;
 	const ofaIDBConnect *connect;
 	gboolean ok;
