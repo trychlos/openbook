@@ -138,6 +138,7 @@ static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *se
 static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
 static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
+static void      on_account_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
@@ -590,6 +591,7 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
 	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_DETAIL );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_account_changed ), self );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			GTK_WIDGET( entry ), 1+DET_COL_ACCOUNT, row, 1, 1 );
@@ -760,6 +762,25 @@ on_ref_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 	priv->ref_locked = gtk_toggle_button_get_active( btn );
 
 	/* doesn't change the validable status of the dialog */
+}
+
+static void
+on_account_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	const gchar *number, *label;
+	ofoAccount *account;
+	ofaHub *hub;
+
+	priv = ofa_ope_template_properties_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+	number = gtk_entry_get_text( entry );
+	account = ofo_account_get_by_number( hub, number );
+	if( account && OFO_IS_ACCOUNT( account )){
+		label = ofo_account_get_label( account );
+		gtk_widget_set_tooltip_text( GTK_WIDGET( entry ), label );
+	}
 }
 
 static void

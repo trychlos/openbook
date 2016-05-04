@@ -38,8 +38,9 @@
    - Miscellaneous menu: have an option to display the collector content (todo #562).
    - Miscellaneous menu: have an option to display the audit trace (todo #732).
    - myICollector: cleanup the stores at end.
-   - ofoTVAForm: label is now mandatory.
-   - ofaTVAStyle: style the VAT declarations.
+   - OpeTemplateProperties: account tooltip is account label (todo #1105).
+   - TVAForm: label is now mandatory.
+   - TVAStyle: style the VAT declarations.
    - Review (re-check+setup) all integrity constraints. 
  
  Bug fixes:

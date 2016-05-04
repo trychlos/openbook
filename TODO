@@ -335,13 +335,6 @@
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
 
-1103 2016- 5- 3 BUG AccountsChart: when a gathering account is transformed
-                to a detail account, children disappear instead of being
-                reordered
-
-1105 2016- 5- 3 FEAT OpeTemplate: if account is set, then tooltip is
-                account label
-
 1106
 
 -----------------------------------------------------------------------
@@ -1263,9 +1256,18 @@
                 boolean accumulator
      2016- 4-28 done
 
+1103 2016- 5- 3 BUG AccountsChart: when a gathering account is transformed
+                to a detail account, children disappear instead of being
+                reordered
+     2016- 5- 4 unable to reproduce
+
 1104 2016- 5- 3 BUG AccountsChart: when a parent account is renumbered,
                 children disappear
      2016- 5- 4 fixed
+
+1105 2016- 5- 3 FEAT OpeTemplate: if account is set, then tooltip is
+                account label
+     2016- 5- 3 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
