@@ -1633,6 +1633,7 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
 	ofaAccountFrameBinPrivate *priv;
 	gchar *number;
 	gint class_num;
+	GtkWidget *tview;
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
@@ -1643,6 +1644,14 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
 	if( class_num != priv->prev_class ){
 		book_get_page_by_class( self, class_num, TRUE );
 		priv->prev_class = class_num;
+	}
+
+	/* unable to get the newly insert view expanded after child insertion */
+	tview = page_get_treeview( self );
+	//g_debug( "store_on_row_inserted: tview=%p", ( void * ) tview );
+	if( tview ){
+		//gtk_tree_view_expand_row( GTK_TREE_VIEW( tview ), path, TRUE );
+		gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
 	}
 }
 

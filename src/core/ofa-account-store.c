@@ -44,19 +44,10 @@
 typedef struct {
 	gboolean dispose_has_run;
 
-	/* runtime data
+	/* initialization
 	 */
 }
 	ofaAccountStorePrivate;
-
-/* a structure used when moving a subtree to another place
- */
-typedef struct {
-	ofaHub              *hub;
-	ofoAccount          *account;
-	GtkTreeRowReference *ref;
-}
-	sChild;
 
 static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
@@ -81,16 +72,18 @@ static void     set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *
 static gboolean find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
 static gboolean find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid );
 static gboolean find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, GtkTreeIter *smaller, gint *last );
+static GList   *get_children_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *iter );
 static void     realign_children( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *parent_iter );
-static GList   *realign_children_rec( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *iter, GList *children );
-static void     realign_children_move( sChild *child_str, ofaAccountStore *store );
-static void     child_free( sChild *child_str );
-static void     remove_row_by_number( ofaAccountStore *store, const gchar *number );
+static GList   *remove_rows_by_number( ofaAccountStore *store, const gchar *number );
+static GList   *remove_rows_rec( ofaAccountStore *store, GtkTreeIter *iter, GList *list );
+static gint     cmp_account_by_number( const ofoAccount *a, const ofoAccount *b );
 static void     setup_signaling_connect( ofaAccountStore *store, ofaHub *hub );
-static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
-static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
-static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
-static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store );
+static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
+static void     hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *store );
+static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
+static void     hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *store );
+static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountStore, ofa_account_store, OFA_TYPE_TREE_STORE, 0,
 		G_ADD_PRIVATE( ofaAccountStore ))
@@ -250,6 +243,11 @@ tree_store_load_dataset( ofaTreeStore *store )
 	}
 }
 
+/*
+ * If we do not found a valid parent for the being-inserted account,
+ * then it will be inserted at level 0 of the tree, whatever be its
+ * actual account level.
+ */
 static void
 insert_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account )
 {
@@ -400,6 +398,7 @@ find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter
 
 	while( !found && ( len = my_strlen( candidate_number )) > 1 ){
 		candidate_number[len-1] = '\0';
+		//g_debug( "find_parent_iter: candidate_number='%s'", candidate_number );
 		found = find_row_by_number( store, candidate_number, parent_iter, NULL );
 	}
 
@@ -514,60 +513,85 @@ find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter
 }
 
 /*
- * the @account has just come inserted at @parent_iter
- * its possible children have to be reinserted under it
- * when entering here, @parent_iter should not have yet any child iter
+ * The @account has just come inserted at @parent_iter.
+ * Its possible children have to be reinserted under it.
+ * When entering here, @parent_iter should not have yet any child iter
+ * (because it is newly inserted)
+ *
+ * This function relies on the fact that the store is sorted.
+ * Starting from the newly inserted account (@parent_iter), we
+ * successively iterate on children while these are actual child
+ * of the account.
  */
 static void
 realign_children( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *parent_iter )
 {
 	static const gchar *thisfn = "ofa_account_store_realign_children";
-	GList *children;
+	GList *children, *it;
 	GtkTreeIter iter;
 
 	if( gtk_tree_model_iter_has_child( GTK_TREE_MODEL( store ), parent_iter )){
-		g_warning( "%s: newly inserted row already has at least one child", thisfn );
+		g_warning( "%s: newly inserted row, but already has one child", thisfn );
 
 	} else {
 		children = NULL;
 		iter = *parent_iter;
-		children = realign_children_rec( store, hub, account, &iter, children );
-		if( children ){
-			g_list_foreach( children, ( GFunc ) realign_children_move, store );
-			g_list_free_full( children, ( GDestroyNotify ) child_free );
+		if( gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &iter )){
+			children = get_children_iter( store, account, &iter );
+			for( it=children ; it ; it=it->next ){
+				//g_debug( "realign_children: re-inserting %s", ofo_account_get_number( OFO_ACCOUNT( it->data )));
+				insert_row( store, hub, OFO_ACCOUNT( it->data ));
+			}
+			g_list_free_full( children, ( GDestroyNotify ) g_object_unref );
 		}
 	}
 }
 
 /*
- * realign_children_rec:
+ * get_children_iter:
  * copy into 'children' GList all children accounts, along with their
  * row reference - it will so be easy to remove them from the model,
  * then reinsert these same accounts
  */
 static GList *
-realign_children_rec( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *iter, GList *children )
+get_children_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *iter )
 {
+	GList *children;
 	ofoAccount *candidate;
-	GtkTreeIter child_iter;
+	gboolean is_child, has_next;
 	GtkTreePath *path;
-	sChild *child_str;
+	GtkTreeRowReference *ref;
+	GtkTreeIter next_iter;
 
-	while( gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
+	children = NULL;
+
+	while( TRUE ){
 		gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, ACCOUNT_COL_OBJECT, &candidate, -1 );
 		g_object_unref( candidate );
 
-		if( ofo_account_is_child_of( account, candidate )){
-			child_str = g_new0( sChild, 1 );
-			path = gtk_tree_model_get_path( GTK_TREE_MODEL( store ), iter );
-			child_str->hub = hub;
-			child_str->account = g_object_ref( candidate );
-			child_str->ref = gtk_tree_row_reference_new( GTK_TREE_MODEL( store ), path );
-			children = g_list_prepend( children, child_str );
-			gtk_tree_path_free( path );
+		is_child = ofo_account_is_child_of( account, ofo_account_get_number( candidate ));
+		if( 0 ){
+			g_debug( "get_children_iter: account=%s, candidate=%s, is_child=%s",
+					ofo_account_get_number( account ),
+					ofo_account_get_number( candidate ),
+					is_child ? "True":"False" );
+		}
+		if( is_child ){
+			next_iter = *iter;
+			has_next = gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &next_iter );
+			if( has_next ){
+				path = gtk_tree_model_get_path( GTK_TREE_MODEL( store ), &next_iter );
+				ref = gtk_tree_row_reference_new( GTK_TREE_MODEL( store ), path );
+				gtk_tree_path_free( path );
+			}
+			children = remove_rows_rec( store, iter, children );
+			if( has_next ){
+				path = gtk_tree_row_reference_get_path( ref );
+				gtk_tree_model_get_iter( GTK_TREE_MODEL( store ), iter, path );
+				gtk_tree_row_reference_free( ref );
 
-			if( gtk_tree_model_iter_children( GTK_TREE_MODEL( store ), &child_iter, iter )){
-				children = realign_children_rec( store, hub, account, &child_iter, children );
+			} else {
+				break;
 			}
 
 		} else {
@@ -578,36 +602,78 @@ realign_children_rec( ofaAccountStore *store, ofaHub *hub, const ofoAccount *acc
 	return( children );
 }
 
-static void
-realign_children_move( sChild *child_str, ofaAccountStore *store )
+/*
+ * Recursively removes the 'number' row and all its children.
+ * Does nothing if 'number' does not exist.
+ * Returns: a #GList of ofoAccount references
+ */
+static GList *
+remove_rows_by_number( ofaAccountStore *store, const gchar *number )
 {
-	GtkTreePath *path;
+	static const gchar *thisfn = "ofa_account_store_remove_rows_by_number";
+	GList *list;
 	GtkTreeIter iter;
+	gboolean is_valid;
 
-	path = gtk_tree_row_reference_get_path( child_str->ref );
-	if( path && gtk_tree_model_get_iter( GTK_TREE_MODEL( store ), &iter, path )){
-		gtk_tree_store_remove( GTK_TREE_STORE( store ), &iter );
-		gtk_tree_path_free( path );
-		insert_row( store, child_str->hub, child_str->account );
+	g_debug( "%s: number=%s", thisfn, number );
+
+	/* warning is admitted here because this function is expected to be
+	 * called only on existing accounts */
+	if( !find_row_by_number( store, number, &iter, &is_valid )){
+		g_warning( "%s: '%s': account not found", thisfn, number );
+		return( NULL );
 	}
+	if( !is_valid ){
+		g_warning( "%s: '%s': account was found, but returned GtkTreeIter is not valid", thisfn, number );
+		return( NULL );
+	}
+
+	list = remove_rows_rec( store, &iter, NULL );
+
+	return( list );
 }
 
-static void
-child_free( sChild *child_str )
+/*
+ * Enter here on an item to be removed.
+ * If item has children, then start by removing the children
+ * Then remove the row, adding it to the list
+ *
+ * Returns: a list by account number.
+ */
+static GList *
+remove_rows_rec( ofaAccountStore *store, GtkTreeIter *iter, GList *list )
 {
-	g_object_unref( child_str->account );
-	gtk_tree_row_reference_free( child_str->ref );
-	g_free( child_str );
+	GtkTreeIter child_iter;
+	ofoAccount *account;
+
+	if( 0 ){
+		g_debug( "remove_rows_rec: iter=%p, list=%p (count=%d)",
+				( void * ) iter, ( void * ) list, g_list_length( list ));
+	}
+
+	while( gtk_tree_model_iter_children( GTK_TREE_MODEL( store ), &child_iter, iter )){
+		list = remove_rows_rec( store, &child_iter, list );
+	}
+
+	gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, ACCOUNT_COL_OBJECT, &account, -1 );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+	list = g_list_insert_sorted( list, account, ( GCompareFunc ) cmp_account_by_number );
+
+	//g_debug( "remove_rows_rec: removing %s", ofo_account_get_number( account ));
+	gtk_tree_store_remove( GTK_TREE_STORE( store ), iter );
+
+	return( list );
 }
 
-static void
-remove_row_by_number( ofaAccountStore *store, const gchar *number )
+static gint
+cmp_account_by_number( const ofoAccount *a, const ofoAccount *b )
 {
-	GtkTreeIter iter;
+	const gchar *id_a, *id_b;
 
-	if( find_row_by_number( store, number, &iter, NULL )){
-		gtk_tree_store_remove( GTK_TREE_STORE( store ), &iter );
-	}
+	id_a = ofo_account_get_number( a );
+	id_b = ofo_account_get_number( b );
+
+	return( g_utf8_collate( id_a, id_b ));
 }
 
 /*
@@ -618,19 +684,19 @@ remove_row_by_number( ofaAccountStore *store, const gchar *number )
 static void
 setup_signaling_connect( ofaAccountStore *store, ofaHub *hub )
 {
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
+	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
+	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), store );
 }
 
 /*
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_account_store_on_hub_new_object";
+	static const gchar *thisfn = "ofa_account_store_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
@@ -647,11 +713,9 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_account_store_on_hub_updated_object";
-	GtkTreeIter iter;
-	const gchar *number;
+	static const gchar *thisfn = "ofa_account_store_hub_on_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
 			thisfn,
@@ -661,15 +725,30 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAc
 			( void * ) store );
 
 	if( OFO_IS_ACCOUNT( object )){
-		number = ofo_account_get_number( OFO_ACCOUNT( object ));
+		hub_on_updated_account( hub, OFO_ACCOUNT( object ), prev_id, store );
+	}
+}
 
-		if( prev_id && g_utf8_collate( prev_id, number )){
-			remove_row_by_number( store, prev_id );
-			insert_row( store, hub, OFO_ACCOUNT( object ));
+static void
+hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *store )
+{
+	GtkTreeIter iter;
+	const gchar *number;
+	GList *list, *it;
 
-		} else if( find_row_by_number( store, number, &iter, NULL )){
-			set_row( store, hub, OFO_ACCOUNT( object ), &iter);
+	number = ofo_account_get_number( account );
+
+	if( prev_id && g_utf8_collate( prev_id, number )){
+
+		/* first element of the list is the account itself */
+		list = remove_rows_by_number( store, prev_id );
+		for( it=list ; it ; it=it->next ){
+			insert_row( store, hub, OFO_ACCOUNT( it->data ));
 		}
+		g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
+
+	} else if( find_row_by_number( store, number, &iter, NULL )){
+		set_row( store, hub, account, &iter);
 	}
 }
 
@@ -677,10 +756,9 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAc
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_account_store_on_hub_deleted_object";
-	GList *children, *it;
+	static const gchar *thisfn = "ofa_account_store_hub_on_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
 			thisfn,
@@ -689,29 +767,35 @@ on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
 			( void * ) store );
 
 	if( OFO_IS_ACCOUNT( object )){
-		children = ofo_account_get_children( OFO_ACCOUNT( object ));
-		g_object_ref( OFO_ACCOUNT( object ));
-		remove_row_by_number( store, ofo_account_get_number( OFO_ACCOUNT( object )));
-		for( it=children ; it ; it=it->next ){
-			remove_row_by_number( store, ofo_account_get_number( OFO_ACCOUNT( it->data )));
-		}
-		if( !ofa_prefs_account_delete_root_with_children()){
-			for( it=children ; it ; it=it->next ){
-				insert_row( store, hub, OFO_ACCOUNT( it->data ));
-			}
-		}
-		g_object_unref( OFO_ACCOUNT( object ));
-		g_list_free( children );
+		hub_on_deleted_account( hub, OFO_ACCOUNT( object ), store );
 	}
+}
+
+static void
+hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *store )
+{
+	GList *list, *children, *it;
+
+	/* first element of the list is the account itself */
+	list = remove_rows_by_number( store, ofo_account_get_number( account ));
+	children = list ? list->next : NULL;
+
+	if( !ofa_prefs_account_delete_root_with_children()){
+		for( it=children ; it ; it=it->next ){
+			insert_row( store, hub, OFO_ACCOUNT( it->data ));
+		}
+	}
+
+	g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
 }
 
 /*
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_hub_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
+hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
 {
-	static const gchar *thisfn = "ofa_account_store_on_hub_reload_dataset";
+	static const gchar *thisfn = "ofa_account_store_hub_on_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, store=%p",
 			thisfn, ( void * ) hub, type, ( void * ) store );

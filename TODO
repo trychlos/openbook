@@ -243,10 +243,6 @@
                      véhicule" should distinguish HT and TVA (but, yes,
                      compute on TTC)
 
- 811 2015- 4-17 FEAT Le compte d'équilibre de l'OD de régularisation de
-                     la CSG non déductible ne devrait pas être un compte
-                     de charge
-
  812 2015- 4-17 FEAT libellé des écritures d'amortissement: ajouter le
                      numéro d'annuité et le nb total (#7 - 3/4)
 
@@ -339,7 +335,14 @@
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
 
-1103
+1103 2016- 5- 3 BUG AccountsChart: when a gathering account is transformed
+                to a detail account, children disappear instead of being
+                reordered
+
+1105 2016- 5- 3 FEAT OpeTemplate: if account is set, then tooltip is
+                account label
+
+1106
 
 -----------------------------------------------------------------------
  DONE
@@ -568,6 +571,11 @@
                      has been introduced with DB model v26; it is not
                      used at this time
      2016- 4-12 done
+
+ 811 2015- 4-17 FEAT Le compte d'équilibre de l'OD de régularisation de
+                     la CSG non déductible ne devrait pas être un compte
+                     de charge
+     2016- 5- 3 done for PWI Consultants 2016
 
  814 2015- 4-17 FEAT Dossier: have list of classes allowed to be
                      reconciliated + classes allowed to be settled
@@ -1254,6 +1262,10 @@
 1101 2016- 4-28 When about to delete a db record, have a signal which
                 boolean accumulator
      2016- 4-28 done
+
+1104 2016- 5- 3 BUG AccountsChart: when a parent account is renumbered,
+                children disappear
+     2016- 5- 4 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

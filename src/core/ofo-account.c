@@ -200,9 +200,9 @@ typedef struct {
 /* whether a root account has children, and wich are they ?
  */
 typedef struct {
-	const gchar *number;
-	gint         children_count;
-	GList       *children_list;
+	const ofoAccount *account;
+	gint              children_count;
+	GList            *children_list;
 }
 	sChildren;
 
@@ -946,8 +946,7 @@ ofo_account_get_global_solde( const ofoAccount *account )
  * ofo_account_has_children:
  * @account: the #ofoAccount account
  *
- * Whether an account has children is only relevant for a root account
- * (but this is not checked here).
+ * Whether an account has children is only relevant for a root account.
  */
 gboolean
 ofo_account_has_children( const ofoAccount *account )
@@ -956,6 +955,10 @@ ofo_account_has_children( const ofoAccount *account )
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
+
+	if( !ofo_account_is_root( account )){
+		return( FALSE );
+	}
 
 	account_get_children( account, &child_str );
 	g_list_free( child_str.children_list );
@@ -990,7 +993,7 @@ account_get_children( const ofoAccount *account, sChildren *child_str )
 	GList *dataset;
 
 	memset( child_str, '\0' ,sizeof( sChildren ));
-	child_str->number = ofo_account_get_number( account );
+	child_str->account = account;
 	child_str->children_count = 0;
 	child_str->children_list = NULL;
 
@@ -1005,9 +1008,8 @@ account_iter_children( const ofoAccount *account, sChildren *child_str )
 	const gchar *number;
 
 	number = ofo_account_get_number( account );
-	if( g_str_has_prefix( number, child_str->number ) &&
-			g_utf8_collate( number, child_str->number ) > 0 ){
 
+	if( ofo_account_is_child_of( child_str->account, number )){
 		child_str->children_count += 1;
 		child_str->children_list = g_list_append( child_str->children_list, ( gpointer ) account );
 	}
@@ -1016,24 +1018,24 @@ account_iter_children( const ofoAccount *account, sChildren *child_str )
 /**
  * ofo_account_is_child_of:
  * @account: the #ofoAccount account
- * @candidate: another account to be compared relatively to @account
+ * @candidate: another account identifier.
  *
- * Returns: %TRUE if the @number should logically be a child of @æccount.
+ * Returns: %TRUE if the @candidate is a child number of @account.
  */
 gboolean
-ofo_account_is_child_of( const ofoAccount *account, const ofoAccount *candidate )
+ofo_account_is_child_of( const ofoAccount *account, const gchar *candidate )
 {
 	const gchar *account_number;
-	const gchar *candidate_number;
 	gboolean is_child;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-	g_return_val_if_fail( candidate && OFO_IS_ACCOUNT( candidate ), FALSE );
+	g_return_val_if_fail( my_strlen( candidate ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
 	account_number = ofo_account_get_number( account );
-	candidate_number = ofo_account_get_number( candidate );
-	is_child = g_str_has_prefix( candidate_number, account_number );
+
+	is_child = g_str_has_prefix( candidate, account_number ) &&
+				g_utf8_collate( candidate, account_number ) > 0;
 
 	return( is_child );
 }

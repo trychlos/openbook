@@ -44,7 +44,7 @@
  
  Bug fixes:
 
-   - 
+   - AccountsChart: fix reordering of children of a renumbered account (todo #1104). 
 
  Other changes:
 
