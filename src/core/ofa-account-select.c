@@ -55,6 +55,7 @@ typedef struct {
 	/* UI
 	 */
 	ofaAccountFrameBin  *account_bin;
+	ofaAccountStore     *account_store;
 	GtkWidget           *ok_btn;
 
 	/* returned value
@@ -258,6 +259,9 @@ idialog_init( myIDialog *instance )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
 	ofa_account_frame_bin_set_cell_data_func(
 			priv->account_bin, ( GtkTreeCellDataFunc ) on_book_cell_data_func, instance );
+
+	/* get our own reference on the underlying store */
+	priv->account_store = ofa_account_frame_bin_get_account_store( priv->account_bin );
 
 	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_account_activated ), instance );
 

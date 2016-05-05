@@ -367,6 +367,7 @@ main_window_dispose( GObject *instance )
 			pane_save_position( priv->pane );
 		}
 		close_all_pages( OFA_MAIN_WINDOW( instance ));
+		my_iwindow_close_all();
 
 		/* unref object members here */
 		g_clear_object( &priv->menu );

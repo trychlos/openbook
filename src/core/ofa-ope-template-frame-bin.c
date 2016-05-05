@@ -42,7 +42,6 @@
 #include "core/ofa-guided-input.h"
 #include "core/ofa-ope-template-frame-bin.h"
 #include "core/ofa-ope-template-properties.h"
-#include "core/ofa-ope-template-store.h"
 
 /* private instance data
  */
@@ -1308,6 +1307,27 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
 	if( !book_get_page_by_ledger( self, ledger, TRUE )){
 		book_get_page_by_ledger( self, UNKNOWN_LEDGER_MNEMO, TRUE );
 	}
+}
+
+/**
+ * ofa_ope_template_frame_bin_get_ope_template_store:
+ * @bin:
+ *
+ * Returns: a new reference to the underlying #ofaOpeTemplateStore,
+ * which should be #g_object_unref() after use by the caller.
+ */
+ofaOpeTemplateStore *
+ofa_ope_template_frame_bin_get_ope_template_store( const ofaOpeTemplateFrameBin *bin )
+{
+	ofaOpeTemplateFrameBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ), NULL );
+
+	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( g_object_ref( priv->store ));
 }
 
 static void

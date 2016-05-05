@@ -49,6 +49,7 @@ typedef struct {
 	/* UI
 	 */
 	ofaOpeTemplateFrameBin *ope_templates_frame;
+	ofaOpeTemplateStore    *ope_template_store;
 	GtkWidget              *ok_btn;
 
 	/* returned value
@@ -246,6 +247,9 @@ idialog_init( myIDialog *instance )
 
 	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
+
+	/* get our own reference on the underlying store */
+	priv->ope_template_store = ofa_ope_template_frame_bin_get_ope_template_store( priv->ope_templates_frame );
 
 	g_signal_connect( priv->ope_templates_frame, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
 	g_signal_connect( priv->ope_templates_frame, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );

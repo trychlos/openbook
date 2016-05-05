@@ -43,6 +43,8 @@
 
 #include "api/ofa-igetter-def.h"
 
+#include "core/ofa-ope-template-store.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_OPE_TEMPLATE_FRAME_BIN                ( ofa_ope_template_frame_bin_get_type())
@@ -81,22 +83,24 @@ typedef enum {
 }
 	ofeOpeTemplateFrameBtn;
 
-GType                   ofa_ope_template_frame_bin_get_type            ( void ) G_GNUC_CONST;
+GType                   ofa_ope_template_frame_bin_get_type              ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                 ( ofaIGetter *getter );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                   ( ofaIGetter *getter );
 
-GtkWidget              *ofa_ope_template_frame_bin_add_button          ( ofaOpeTemplateFrameBin *bin,
+GtkWidget              *ofa_ope_template_frame_bin_add_button            ( ofaOpeTemplateFrameBin *bin,
 																				ofeOpeTemplateFrameBtn id,
 																				gboolean sensitive );
 
-GtkWidget              *ofa_ope_template_frame_bin_get_current_treeview( const ofaOpeTemplateFrameBin *bin );
+GtkWidget              *ofa_ope_template_frame_bin_get_current_treeview  ( const ofaOpeTemplateFrameBin *bin );
 
-gchar                  *ofa_ope_template_frame_bin_get_selected        ( ofaOpeTemplateFrameBin *bin );
+gchar                  *ofa_ope_template_frame_bin_get_selected          ( ofaOpeTemplateFrameBin *bin );
 
-void                    ofa_ope_template_frame_bin_set_selected        ( ofaOpeTemplateFrameBin *bin,
+void                    ofa_ope_template_frame_bin_set_selected          ( ofaOpeTemplateFrameBin *bin,
 																				const gchar *mnemo );
 
-void                    ofa_ope_template_frame_bin_write_settings      ( ofaOpeTemplateFrameBin *bin );
+void                    ofa_ope_template_frame_bin_write_settings        ( ofaOpeTemplateFrameBin *bin );
+
+ofaOpeTemplateStore    *ofa_ope_template_frame_bin_get_ope_template_store( const ofaOpeTemplateFrameBin *bin );
 
 G_END_DECLS
 

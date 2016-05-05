@@ -48,6 +48,8 @@
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-igetter-def.h"
 
+#include "core/ofa-account-store.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_ACCOUNT_FRAME_BIN                ( ofa_account_frame_bin_get_type())
@@ -111,6 +113,8 @@ void                ofa_account_frame_bin_cell_data_render    ( ofaAccountFrameB
 																	GtkCellRenderer *cell,
 																	GtkTreeModel *tmodel,
 																	GtkTreeIter *iter );
+
+ofaAccountStore    *ofa_account_frame_bin_get_account_store   ( const ofaAccountFrameBin *bin );
 
 G_END_DECLS
 

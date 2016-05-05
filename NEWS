@@ -48,12 +48,15 @@
  
  Bug fixes:
 
-   - AccountsChart: fix reordering of children of a renumbered account (todo #1104). 
+   - AccountsChart: fix reordering of children of a renumbered account (todo #1104).
+   - AccountSelect, OpeTemplateSelect: fix hub finalization (todo #1106). 
    - FormulaEngine: fix nested parenthese evaluation (todo #1107).
 
  Other changes:
 
-   - 
+   - ofa_account_frame_bin_get_account_store(): new method.
+   - ofa_ope_template_frame_bin_get_ope_template_store(): new method.
+
 -----------------------------------------------------------------------
  Version 0.56
  ============

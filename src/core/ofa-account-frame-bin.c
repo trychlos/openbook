@@ -43,7 +43,6 @@
 
 #include "core/ofa-account-properties.h"
 #include "core/ofa-account-frame-bin.h"
-#include "core/ofa-account-store.h"
 
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-reconcil-page.h"
@@ -1653,6 +1652,27 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
 		//gtk_tree_view_expand_row( GTK_TREE_VIEW( tview ), path, TRUE );
 		gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
 	}
+}
+
+/**
+ * ofa_account_frame_bin_get_account_store:
+ * @bin:
+ *
+ * Returns: a new reference to the underlying #ofaAccountStore, which
+ * should be #g_object_unref() after use by the caller.
+ */
+ofaAccountStore *
+ofa_account_frame_bin_get_account_store( const ofaAccountFrameBin *bin )
+{
+	ofaAccountFrameBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ), NULL );
+
+	priv = ofa_account_frame_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( g_object_ref( priv->store ));
 }
 
 static void
