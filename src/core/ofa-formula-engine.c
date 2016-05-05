@@ -938,9 +938,9 @@ parse_expression_for_regex( ofsFormulaHelper *helper, const gchar *expression, G
 		while( TRUE ){
 			g_match_info_fetch_pos( match_info, 0, &start_pos, &end_pos );
 			pos = g_new0( sStartEnd, 1 );
-			pos->start_pos = end_pos-1;		/* position of the opening parenthese */
+			pos->start_pos = end_pos - 1;		/* position of the opening parenthese, counted from zero */
 			opened_par = 1;
-			p = expression + end_pos;
+			p = expression + end_pos - 1;
 			while( opened_par > 0 ){
 				p = g_utf8_next_char( p );
 				ch = g_utf8_get_char( p );

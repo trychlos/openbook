@@ -335,7 +335,18 @@
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
 
-1106
+1106 2016- 5- 5 BUG when quitting the appli after accounts/opetemplates
+                modifications - account-select::379
+                cf. TODO 1106/trace
+
+1107 2016- 5- 5 BUG FormulaEngine: =%EVAL((%D1-%C2)/(1+%TVAN)) is wrong
+
+1108 2016- 5- 5 OpeTemplateProperties, GuidedInputBin: review width of
+                account column
+
+1109 2016- 5- 5 GuidedInputBin: row number should be italic
+
+1110
 
 -----------------------------------------------------------------------
  DONE

@@ -46,6 +46,7 @@
  Bug fixes:
 
    - AccountsChart: fix reordering of children of a renumbered account (todo #1104). 
+   - FormulaEngine: fix nested parenthese evaluation.
 
  Other changes:
 
