@@ -36,10 +36,12 @@
  New features and improvements:
 
    - GuidedInputBin: row number is italic (todo #1109).
+   - GuidedInputBin: review account column width (todo #1108).
    - Miscellaneous menu: have an option to display the collector content (todo #562).
    - Miscellaneous menu: have an option to display the audit trace (todo #732).
    - myICollector: cleanup the stores at end.
    - OpeTemplateProperties: account tooltip is account label (todo #1105).
+   - OpeTemplateProperties: review account column width (todo #1108).
    - TVAForm: label is now mandatory.
    - TVAStyle: style the VAT declarations.
    - Review (re-check+setup) all integrity constraints. 
@@ -47,7 +49,7 @@
  Bug fixes:
 
    - AccountsChart: fix reordering of children of a renumbered account (todo #1104). 
-   - FormulaEngine: fix nested parenthese evaluation.
+   - FormulaEngine: fix nested parenthese evaluation (todo #1107).
 
  Other changes:
 

@@ -79,6 +79,7 @@ ofa_account_editable_init( GtkEditable *editable, ofaIGetter *getter, ofeAccount
 	if( GTK_IS_ENTRY( editable )){
 		gtk_widget_set_halign( GTK_WIDGET( editable ), GTK_ALIGN_START );
 		gtk_entry_set_alignment( GTK_ENTRY( editable ), 0 );
+		gtk_entry_set_width_chars( GTK_ENTRY( editable ), ACC_NUMBER_WIDTH );
 		gtk_entry_set_max_width_chars( GTK_ENTRY( editable ), ACC_NUMBER_MAX_LENGTH );
 		gtk_entry_set_max_length( GTK_ENTRY( editable ), ACC_NUMBER_MAX_LENGTH );
 

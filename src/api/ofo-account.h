@@ -88,6 +88,7 @@ typedef enum {
 	ofeAccountAllowed;
 
 /* data max length */
+#define ACC_NUMBER_WIDTH                10
 #define ACC_NUMBER_MAX_LENGTH           64
 
 GType           ofo_account_get_type                ( void ) G_GNUC_CONST;
