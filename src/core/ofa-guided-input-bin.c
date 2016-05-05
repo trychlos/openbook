@@ -601,8 +601,9 @@ add_entry_row( ofaGuidedInputBin *self, gint row )
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	/* col #0: rang: number of the entry */
-	str = g_strdup_printf( "%2d", row );
-	label = gtk_label_new( str );
+	label = gtk_label_new( "" );
+	str = g_markup_printf_escaped( "<span style=\"italic\">\%2d</span>", row );
+	gtk_label_set_markup( GTK_LABEL( label ), str );
 	g_free( str );
 	gtk_widget_set_sensitive( GTK_WIDGET( label ), FALSE );
 	my_utils_widget_set_margins( label, 0, 2, 0, 4 );
