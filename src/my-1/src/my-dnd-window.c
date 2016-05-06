@@ -150,11 +150,17 @@ my_dnd_window_class_init( myDndWindowClass *klass )
 myDndWindow *
 my_dnd_window_new( GtkWidget *widget, const gchar *title, gint x, gint y, gint width, gint height )
 {
+	static const gchar *thisfn = "my_dnd_window_new";
 	myDndWindow *window;
 	myDndWindowPrivate *priv;
 
+	g_debug( "%s: widget=%p (%s), title=%s, x=%d, y=%d, width=%d, height=%d",
+			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), title, x, y, width, height );
+
 	/* just create a popup on which we are going to draw the page */
-	window = g_object_new( MY_TYPE_DND_WINDOW, NULL );
+	window = g_object_new( MY_TYPE_DND_WINDOW,
+					"type", GTK_WINDOW_TOPLEVEL,
+					NULL );
 	priv = my_dnd_window_get_instance_private( window );
 
 	priv->child_widget = widget;
