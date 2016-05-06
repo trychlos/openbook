@@ -372,7 +372,7 @@ ofa_guided_input_bin_new( ofaIGetter *getter )
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
 
 	my_utils_container_attach_from_resource( GTK_CONTAINER( self ), st_resource_ui, "gib-window", "top" );
 	setup_main_window( self );
