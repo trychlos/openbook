@@ -114,7 +114,6 @@ static void       on_hub_new_object( const ofoDossier *dossier, const ofoBase *o
 static void       on_hub_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
 static void       on_hub_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
 static void       on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
-static void       on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty );
 static void       pane_save_position( GtkWidget *pane );
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PAGE, 0,
@@ -147,6 +146,10 @@ guided_ex_dispose( GObject *instance )
 
 		/* unref object members here */
 		priv = ofa_guided_ex_get_instance_private( OFA_GUIDED_EX( instance ));
+
+		if( priv->pane ){
+			pane_save_position( priv->pane );
+		}
 
 		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
@@ -185,7 +188,7 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_guided_ex_v_setup_view";
 	ofaGuidedExPrivate *priv;
-	GtkWidget *pane, *child;
+	GtkWidget *pane, *left_child, *right_child;
 	gulong handler;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -195,12 +198,14 @@ v_setup_view( ofaPage *page )
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
-	child = setup_view_left( OFA_GUIDED_EX( page ));
-	gtk_paned_pack1( GTK_PANED( pane ), child, FALSE, FALSE );
-	gtk_widget_set_size_request( child, 200, -1 );
-	child = setup_view_right( OFA_GUIDED_EX( page ));
-	gtk_paned_pack2( GTK_PANED( pane ), child, TRUE, FALSE );
 	priv->pane = pane;
+
+	left_child = setup_view_left( OFA_GUIDED_EX( page ));
+	gtk_paned_add1( GTK_PANED( pane ), left_child );
+
+	right_child = setup_view_right( OFA_GUIDED_EX( page ));
+	gtk_paned_add2( GTK_PANED( pane ), right_child );
+
 	pane_restore_position( pane );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), page );
@@ -215,9 +220,7 @@ v_setup_view( ofaPage *page )
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), page );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	g_signal_connect( page, "page-removed", G_CALLBACK( on_page_removed ), NULL );
-
-	init_left_view( OFA_GUIDED_EX( page ), gtk_paned_get_child1( GTK_PANED( priv->pane )));
+	init_left_view( OFA_GUIDED_EX( page ), left_child );
 
 	return( pane );
 }
@@ -281,7 +284,7 @@ setup_view_left( ofaGuidedEx *self )
 
 	enable_left_select( self );
 
-	return( GTK_WIDGET( frame ));
+	return( frame );
 }
 
 /*
@@ -332,7 +335,7 @@ static GtkWidget *
 setup_left_treeview( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
-	GtkScrolledWindow *scroll;
+	GtkWidget *scrolled;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
@@ -341,15 +344,14 @@ setup_left_treeview( ofaGuidedEx *self )
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
-	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
-	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
-	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	gtk_container_set_border_width( GTK_CONTAINER( scrolled ), 4 );
 
 	tview = GTK_TREE_VIEW( gtk_tree_view_new());
 	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, FALSE );
-	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
+	gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( tview ));
 	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_left_row_activated ), self );
 	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_left_key_pressed ), self );
 	priv->left_tview = tview;
@@ -390,7 +392,7 @@ setup_left_treeview( ofaGuidedEx *self )
 			GTK_TREE_SORTABLE( tmodel ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	return( GTK_WIDGET( scroll ));
+	return( scrolled );
 }
 
 static gint
@@ -448,19 +450,21 @@ on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
 	gtk_tree_model_get( tmodel, iter,
 			LEFT_COL_OBJECT, &object,
 			-1 );
-	g_object_unref( object );
+	if( object ){
+		g_object_unref( object );
 
-	g_object_set( G_OBJECT( cell ),
-						"style-set", FALSE,
-						"background-set", FALSE,
-						NULL );
+		g_object_set( G_OBJECT( cell ),
+							"style-set", FALSE,
+							"background-set", FALSE,
+							NULL );
 
-	g_return_if_fail( OFO_IS_LEDGER( object ) || OFO_IS_OPE_TEMPLATE( object ));
+		g_return_if_fail( OFO_IS_LEDGER( object ) || OFO_IS_OPE_TEMPLATE( object ));
 
-	if( OFO_IS_LEDGER( object )){
-		gdk_rgba_parse( &color, "#ffffb0" );
-		g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
-		g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+		if( OFO_IS_LEDGER( object )){
+			gdk_rgba_parse( &color, "#ffffb0" );
+			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
+			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
 	}
 }
 
@@ -604,8 +608,10 @@ is_left_select_enableable( ofaGuidedEx *self )
 	select = gtk_tree_view_get_selection( priv->left_tview );
 	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
 		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
-		g_object_unref( object );
-		ok = OFO_IS_OPE_TEMPLATE( object );
+		if( object ){
+			g_object_unref( object );
+			ok = OFO_IS_OPE_TEMPLATE( object );
+		}
 	}
 
 	return( ok );
@@ -1038,22 +1044,6 @@ on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self 
 
 	} else if( type == OFO_TYPE_LEDGER ){
 
-	}
-}
-
-static void
-on_page_removed( ofaGuidedEx *page, GtkWidget *page_w, guint page_n, void *empty )
-{
-	static const gchar *thisfn = "ofa_guided_ex_on_page_removed";
-	ofaGuidedExPrivate *priv;
-
-	g_debug( "%s: page=%p, page_w=%p, page_n=%d, empty=%p",
-			thisfn, ( void * ) page, ( void * ) page_w, page_n, ( void * ) empty );
-
-	priv = ofa_guided_ex_get_instance_private( page );
-
-	if( priv->pane ){
-		pane_save_position( priv->pane );
 	}
 }
 
