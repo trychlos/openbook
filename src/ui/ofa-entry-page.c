@@ -1950,11 +1950,11 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
 			g_object_unref( entry );
 
 			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ))){
-				if( g_utf8_collate( priv->jou_mnemo, ledger )){
+				if( !ledger || g_utf8_collate( priv->jou_mnemo, ledger )){
 					visible = FALSE;
 				}
 			} else if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->account_btn ))){
-				if( g_utf8_collate( priv->acc_number, account )){
+				if( !account || g_utf8_collate( priv->acc_number, account )){
 					visible = FALSE;
 				}
 			}
