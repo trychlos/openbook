@@ -683,17 +683,19 @@ ofa_hub_register_types( ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	/* this is also the order of IExportable/IImportable classes:
+	 * do not change */
 	priv->core_objects = NULL;
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CLASS, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CLASS, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_RATE, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
 }
 
 /**

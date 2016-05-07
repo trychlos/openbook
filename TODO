@@ -376,9 +376,6 @@
 
 1124 2016- 5- 7 unable to import LCL-DEPOT-20160201.pdf (change format)
 
-1125 2016- 5- 7 importing BAT: the BAT line should be at the end of the
-                importable data
-
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
@@ -1334,6 +1331,10 @@
                  a GtkWindow parameter, second because should not be used)
                  rather close or hide
      2016- 5- 7 done
+
+1125 2016- 5- 7 importing BAT: the BAT line should be at the end of the
+                importable data
+     2016- 5- 7 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
