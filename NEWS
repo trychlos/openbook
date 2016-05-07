@@ -52,6 +52,7 @@
    - AccountSelect, OpeTemplateSelect: fix hub finalization (todo #1106). 
    - FormulaEngine: fix nested parenthese evaluation (todo #1107).
    - IExportable/IImportable types: have BAT files at end of the list (todo #1125).
+   - Periodicity: fix 31 day label (todo #1118).
 
  Other changes:
 

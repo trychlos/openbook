@@ -356,8 +356,6 @@
 1117 2016- 5- 6 OpeTemplateTreeView: have an indicator that this ope
                 template is used as a recurrent model
 
-1118 2016- 5- 6 BUG Periodicity: has twice 30
-
 1119 2016- 5- 7 BUG Recurrent: when generating recurrent operations from
                 model for the first time, the first model is generated twice
 
@@ -1331,6 +1329,9 @@
                  a GtkWindow parameter, second because should not be used)
                  rather close or hide
      2016- 5- 7 done
+
+1118 2016- 5- 6 BUG Periodicity: has twice 30
+     2016- 5- 7 fixed
 
 1125 2016- 5- 7 importing BAT: the BAT line should be at the end of the
                 importable data
