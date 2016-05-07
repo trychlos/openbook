@@ -249,9 +249,6 @@ void         my_iwindow_set_restore_pos           ( myIWindow *instance,
 void         my_iwindow_set_restore_size          ( myIWindow *instance,
 														gboolean restore_size );
 
-void         my_iwindow_set_hide_on_close         ( myIWindow *instance,
-														gboolean hide_on_close );
-
 void         my_iwindow_init                      ( myIWindow *instance );
 
 myIWindow   *my_iwindow_present                   ( myIWindow *instance );

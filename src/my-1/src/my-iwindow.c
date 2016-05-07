@@ -48,7 +48,6 @@ typedef struct {
 	gboolean     does_restore_pos;
 	gboolean     does_restore_size;
 	gboolean     initialized;
-	gboolean     hide_on_close;
 	gboolean     closed;
 }
 	sIWindow;
@@ -60,7 +59,7 @@ static void       iwindow_init_window( myIWindow *instance );
 static void       iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata );
 static void       iwindow_init_read_settings( myIWindow *instance, sIWindow *sdata );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
-static void       do_close( myIWindow *instance, gboolean destroy_hidden );
+static void       do_close( myIWindow *instance );
 static void       iwindow_close_write_settings( myIWindow *instance, sIWindow *sdata );
 static gboolean   is_destroy_allowed( const myIWindow *instance );
 static gchar     *get_iwindow_identifier( const myIWindow *instance );
@@ -354,25 +353,6 @@ my_iwindow_get_keyname( const myIWindow *instance )
 }
 
 /**
- * my_iwindow_set_hide_on_close:
- * @instance: this #myIWindow instance.
- * @hide_on_close: whether the #GtkwINDOW must be hidden on close, rather
- *  than being destroyed.
-
- * Set the @hide_on_close indicator.
- */
-void
-my_iwindow_set_hide_on_close( myIWindow *instance, gboolean hide_on_close )
-{
-	sIWindow *sdata;
-
-	g_return_if_fail( instance && MY_IS_IWINDOW( instance ));
-
-	sdata = get_iwindow_data( instance );
-	sdata->hide_on_close = hide_on_close;
-}
-
-/**
  * my_iwindow_init:
  * @instance: this #myIWindow instance.
  *
@@ -478,8 +458,8 @@ iwindow_init_read_settings( myIWindow *instance, sIWindow *sdata )
  * for a non-modal user interaction.
  *
  * If a previous window with the same identifier is eventually found,
- * then this current @instance is #g_object_unref(), and the previous
- * window is returned instead.
+ * then this current @instance is closed, and the previous window is
+ * displayed and returned instead.
  *
  * After the call, the @instance may so be invalid.
  *
@@ -506,7 +486,8 @@ my_iwindow_present( myIWindow *instance )
 		//g_debug( "it=%p, it->data=%p", it, it->data );
 		other = MY_IWINDOW( it->data );
 		if( other == instance ){
-			continue;
+			found = other;
+			break;
 		}
 		other_id = get_iwindow_identifier( other );
 		cmp = g_utf8_collate( instance_id, other_id );
@@ -519,16 +500,25 @@ my_iwindow_present( myIWindow *instance )
 
 	g_free( instance_id );
 
+	/* we have :
+	 * - either found this same instance
+	 *   -> just display it (found)
+	 * - either found another instance with same identifier
+	 *   -> close this instance and display the another one (found)
+	 * - either not found anything relevant
+	 *   -> record this instance and initialize and display it
+	 */
 	if( found ){
-		do_close( instance, FALSE );
+		if( found != instance ){
+			do_close( instance );
+		}
 
 	} else {
 		my_iwindow_init( instance );
-		if( !g_list_find( st_live_list, instance )){
-			st_live_list = g_list_prepend( st_live_list, instance );
-			dump_live_list();
-		}
+		g_return_val_if_fail( !g_list_find( st_live_list, instance ), NULL );
+		st_live_list = g_list_prepend( st_live_list, instance );
 		found = instance;
+		dump_live_list();
 	}
 
 	g_debug( "%s: found=%p (%s)", thisfn, ( void * ) found, G_OBJECT_TYPE_NAME( found ));
@@ -548,7 +538,7 @@ my_iwindow_close( myIWindow *instance )
 {
 	g_return_if_fail( instance && MY_IWINDOW( instance ));
 
-	do_close( instance, FALSE );
+	do_close( instance );
 }
 
 /**
@@ -578,7 +568,7 @@ my_iwindow_close_all( void )
 			sdata = get_iwindow_data( MY_IWINDOW( it->data ));
 			if( !sdata->closed ){
 				sdata->closed = TRUE;
-				do_close( MY_IWINDOW( it->data ), TRUE );
+				do_close( MY_IWINDOW( it->data ));
 				has_closed_something = TRUE;
 				break;
 			}
@@ -594,7 +584,7 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
 	g_debug( "%s: widget=%p, event=%p, instance=%p",
 			thisfn, ( void * ) widget, ( void * ) event, ( void * ) instance );
 
-	do_close( instance, FALSE );
+	do_close( instance );
 
 	return( TRUE );
 }
@@ -603,7 +593,7 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
  * this closes the GtkWindow without any user confirmation
  */
 static void
-do_close( myIWindow *instance, gboolean destroy_hidden )
+do_close( myIWindow *instance )
 {
 	static const gchar *thisfn = "my_iwindow_do_close";
 	sIWindow *sdata;
@@ -613,11 +603,7 @@ do_close( myIWindow *instance, gboolean destroy_hidden )
 	iwindow_close_write_settings( instance, sdata );
 	position_save( instance, sdata );
 
-	if( sdata->hide_on_close && !destroy_hidden ){
-		g_debug( "%s: hidding instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-		gtk_widget_hide( GTK_WIDGET( instance ));
-
-	} else if( is_destroy_allowed( instance )){
+	if( is_destroy_allowed( instance )){
 		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_destroy( GTK_WIDGET( instance ));
 	}
@@ -829,7 +815,6 @@ get_iwindow_data( const myIWindow *instance )
 		sdata->does_restore_pos = TRUE;
 		sdata->does_restore_size = TRUE;
 		sdata->initialized = FALSE;
-		sdata->hide_on_close = FALSE;
 	}
 
 	return( sdata );

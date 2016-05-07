@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <gtk/gtk.h>
+
 #include "my/my-icollector.h"
 
 #define ICOLLECTOR_LAST_VERSION            1
@@ -574,7 +576,7 @@ my_icollector_item_get_count( myICollector *instance, void *item )
  * my_icollector_free_all:
  * @instance: this #myICollector instance.
  *
- * Free all the current collections.
+ * Free all the current collections+single objects.
  */
 void
 my_icollector_free_all( myICollector *instance )
@@ -588,8 +590,6 @@ my_icollector_free_all( myICollector *instance )
 	g_return_if_fail( instance && MY_IS_ICOLLECTOR( instance ));
 
 	sdata = get_collector_data( instance );
-
-	//g_list_free_full( sdata->typed_list, ( GDestroyNotify ) free_typed );
 
 	while( sdata->typed_list ){
 		typed = ( sTyped * ) sdata->typed_list->data;
@@ -672,12 +672,20 @@ free_typed( sTyped *typed )
 	if( typed->is_collection ){
 		g_debug( "%s: about to unref %s collection (count=%d)",
 				thisfn, g_type_name( typed->type ), g_list_length( typed->t.list ));
+
 		g_list_free_full( typed->t.list, ( GDestroyNotify ) g_object_unref );
 
 	} else {
 		g_debug( "%s: about to unref single %s at %p",
 				thisfn, g_type_name( typed->type ), ( void * ) typed->t.object );
-		g_clear_object( &typed->t.object );
+
+		/* rather destroy a widget than just unreffing it */
+		if( GTK_IS_WIDGET( typed->t.object )){
+			gtk_widget_destroy( GTK_WIDGET( typed->t.object ));
+
+		} else {
+			g_object_unref( typed->t.object );
+		}
 	}
 
 	g_free( typed );

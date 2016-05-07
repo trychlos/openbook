@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-icollector.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
@@ -64,19 +65,18 @@ typedef struct {
 }
 	ofaAccountSelectPrivate;
 
-static const gchar      *st_resource_ui = "/org/trychlos/openbook/core/ofa-account-select.ui";
-static ofaAccountSelect *st_this        = NULL;
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-account-select.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
-static void      on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
-static void      check_for_enable_dlg( ofaAccountSelect *self );
-static gboolean  is_selection_valid( ofaAccountSelect *self, const gchar *number );
-static gboolean  idialog_quit_on_ok( myIDialog *instance );
-static gboolean  do_select( ofaAccountSelect *self );
-static void      on_hub_finalized( gpointer is_null, gpointer finalized_hub );
+static ofaAccountSelect *ofa_account_select_new( ofaIGetter *getter, GtkWindow *parent );
+static void              iwindow_iface_init( myIWindowInterface *iface );
+static void              idialog_iface_init( myIDialogInterface *iface );
+static void              idialog_init( myIDialog *instance );
+static void              on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
+static void              on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
+static void              check_for_enable_dlg( ofaAccountSelect *self );
+static gboolean          is_selection_valid( ofaAccountSelect *self, const gchar *number );
+static gboolean          idialog_quit_on_ok( myIDialog *instance );
+static gboolean          do_select( ofaAccountSelect *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountSelect, ofa_account_select, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaAccountSelect )
@@ -117,6 +117,7 @@ account_select_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_object_unref( priv->account_store );
 	}
 
 	/* chain up to the parent class */
@@ -154,6 +155,39 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
+/*
+ * Returns: the unique #ofaAccountSelect instance.
+ */
+static ofaAccountSelect *
+ofa_account_select_new( ofaIGetter *getter, GtkWindow *parent )
+{
+	ofaAccountSelect *dialog;
+	ofaAccountSelectPrivate *priv;
+	ofaHub *hub;
+	myICollector *collector;
+
+	hub = ofa_igetter_get_hub( getter );
+	collector = ofa_hub_get_collector( hub );
+
+	dialog = ( ofaAccountSelect * ) my_icollector_single_get_object( collector, OFA_TYPE_ACCOUNT_SELECT );
+
+	if( !dialog ){
+		dialog = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
+		my_iwindow_set_parent( MY_IWINDOW( dialog ), parent );
+		my_iwindow_set_settings( MY_IWINDOW( dialog ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+		/* setup a permanent getter before initialization */
+		priv = ofa_account_select_get_instance_private( dialog );
+		priv->getter = ofa_igetter_get_permanent_getter( getter );
+		my_iwindow_init( MY_IWINDOW( dialog ));
+
+		/* and record this unique object */
+		my_icollector_single_set_object( collector, dialog );
+	}
+
+	return( dialog );
+}
+
 /**
  * ofa_account_select_run:
  * @getter: a #ofaIGetter instance.
@@ -168,35 +202,21 @@ gchar *
 ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *asked_number, ofeAccountAllowed allowed )
 {
 	static const gchar *thisfn = "ofa_account_select_run";
+	ofaAccountSelect *dialog;
 	ofaAccountSelectPrivate *priv;
 	gchar *selected_id;
-	ofaHub *hub;
 
 	g_debug( "%s: getter=%p, parent=%p, asked_number=%s, allowed=%u",
 			thisfn, ( void * ) getter, ( void * ) parent, asked_number, allowed );
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), NULL );
 
-	if( !st_this ){
-		st_this = g_object_new( OFA_TYPE_ACCOUNT_SELECT, NULL );
-		my_iwindow_set_parent( MY_IWINDOW( st_this ), parent );
-		my_iwindow_set_settings( MY_IWINDOW( st_this ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
-
-		priv = ofa_account_select_get_instance_private( st_this );
-		priv->getter = ofa_igetter_get_permanent_getter( getter );
-
-		my_iwindow_init( MY_IWINDOW( st_this ));
-		my_iwindow_set_hide_on_close( MY_IWINDOW( st_this ), TRUE );
-
-		/* setup a weak reference on the hub to auto-unref */
-		hub = ofa_igetter_get_hub( getter );
-		g_object_weak_ref( G_OBJECT( hub ), ( GWeakNotify ) on_hub_finalized, NULL );
-	}
-
-	priv = ofa_account_select_get_instance_private( st_this );
+	dialog = ofa_account_select_new( getter, parent );
+	priv = ofa_account_select_get_instance_private( dialog );
 
 	ofa_account_frame_bin_set_selected( priv->account_bin, asked_number );
-	check_for_enable_dlg( st_this );
+	check_for_enable_dlg( dialog );
 
 	g_free( priv->account_number );
 	priv->account_number = NULL;
@@ -204,9 +224,9 @@ ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *aske
 
 	selected_id = NULL;
 
-	if( my_idialog_run( MY_IDIALOG( st_this )) == GTK_RESPONSE_OK ){
+	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
 		selected_id = g_strdup( priv->account_number );
-		my_iwindow_close( MY_IWINDOW( st_this ));
+		gtk_widget_hide( GTK_WIDGET( dialog ));
 	}
 
 	return( selected_id );
@@ -367,19 +387,4 @@ do_select( ofaAccountSelect *self )
 	g_free( account );
 
 	return( ok );
-}
-
-static void
-on_hub_finalized( gpointer is_null, gpointer finalized_hub )
-{
-	static const gchar *thisfn = "ofa_account_select_on_hub_finalized";
-
-	g_debug( "%s: empty=%p, finalized_hub=%p",
-			thisfn, ( void * ) is_null, ( void * ) finalized_hub );
-
-	g_return_if_fail( st_this && OFA_IS_ACCOUNT_SELECT( st_this ));
-
-	//g_clear_object( &st_this );
-	gtk_widget_destroy( GTK_WIDGET( st_this ));
-	st_this = NULL;
 }
