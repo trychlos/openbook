@@ -104,9 +104,10 @@ typedef struct {
 	ofaGuidedInputBinPrivate;
 
 #define RANG_WIDTH                      3
+#define ACCOUNT_MAX_WIDTH              12
 #define LABEL_MAX_WIDTH               256
-#define AMOUNTS_WIDTH                  10
-#define AMOUNTS_MAX_WIDTH              -1
+#define AMOUNTS_WIDTH                  12
+#define AMOUNTS_MAX_WIDTH              12
 #define CURRENCY_WIDTH                  4
 
 #define TOTAUX_TOP_MARGIN               8
@@ -147,7 +148,7 @@ static sColumnDef st_col_defs[] = {
 				ofo_ope_template_get_detail_account_locked,
 				/* ofa_account_editable() sets width, max_with,
 				 * max_length, horiz.alignment */
-				-1, -1, FALSE, -1, FALSE, NULL
+				-1, ACCOUNT_MAX_WIDTH, FALSE, -1, FALSE, NULL
 		},
 		{ OPE_COL_LABEL,
 				TYPE_ENTRY,
@@ -687,13 +688,6 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 		gtk_widget_set_hexpand( widget, col_def->expand );
 		gtk_widget_set_sensitive( widget, !locked );
 
-		if( col_def->width > 0 ){
-			gtk_entry_set_width_chars( GTK_ENTRY( widget ), col_def->width );
-		}
-		if( col_def->max_width > 0 ){
-			gtk_entry_set_max_width_chars( GTK_ENTRY( widget ), col_def->max_width );
-		}
-
 		if( col_def->is_double ){
 			my_double_editable_init_ex( GTK_EDITABLE( widget ),
 					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
@@ -703,6 +697,22 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 
 		} else if( col_def->xalign >= 0 ){
 			gtk_entry_set_alignment( GTK_ENTRY( widget ), col_def->xalign );
+		}
+
+		if( col_def->column_id == OPE_COL_ACCOUNT ){
+			ofa_account_editable_init(
+					GTK_EDITABLE( widget ), priv->getter, ACCOUNT_ALLOW_DETAIL );
+			if( !locked ){
+				ofa_account_editable_set_postselect_cb(
+						GTK_EDITABLE( widget ), ( AccountPostSelectCb ) on_account_postselect, self );
+			}
+		}
+
+		if( col_def->width > 0 ){
+			gtk_entry_set_width_chars( GTK_ENTRY( widget ), col_def->width );
+		}
+		if( col_def->max_width > 0 ){
+			gtk_entry_set_max_width_chars( GTK_ENTRY( widget ), col_def->max_width );
 		}
 
 		sdata = g_new0( sEntryData, 1 );
@@ -720,15 +730,6 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 			g_signal_connect( widget, "focus-in-event", G_CALLBACK( on_entry_focus_in ), self );
 			g_signal_connect( widget, "focus-out-event", G_CALLBACK( on_entry_focus_out ), self );
 			g_signal_connect( widget, "key-press-event", G_CALLBACK( on_key_pressed ), self );
-		}
-
-		if( col_def->column_id == OPE_COL_ACCOUNT ){
-			ofa_account_editable_init(
-					GTK_EDITABLE( widget ), priv->getter, ACCOUNT_ALLOW_DETAIL );
-			if( !locked ){
-				ofa_account_editable_set_postselect_cb(
-						GTK_EDITABLE( widget ), ( AccountPostSelectCb ) on_account_postselect, self );
-			}
 		}
 	}
 

@@ -37,6 +37,7 @@
 
    - GuidedInputBin: row number is italic (todo #1109).
    - GuidedInputBin: review account column width (todo #1108).
+   - GuidedInputBin: review amount column width (todo #1115).
    - Miscellaneous menu: have an option to display the collector content (todo #562).
    - Miscellaneous menu: have an option to display the audit trace (todo #732).
    - myICollector: cleanup the stores at end.

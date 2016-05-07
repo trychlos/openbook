@@ -347,8 +347,6 @@
 1114 2016- 5- 6 GuidedInputBin: exchange tooltip (line comment) and message
                 (account number)
 
-1115 2016- 5- 6 GuidedInputBin: decrease amount width
-
 1116 2016- 5- 6 Recurrent: should have some macros to be able to put in the
                 generated operations, and interpreted by operations
                 use case: have a month label in the entry label
@@ -1329,6 +1327,9 @@
                  a GtkWindow parameter, second because should not be used)
                  rather close or hide
      2016- 5- 7 done
+
+1115 2016- 5- 6 GuidedInputBin: decrease amount width
+     2016- 5- 7 done + account field width homogeneization
 
 1118 2016- 5- 6 BUG Periodicity: has twice 30
      2016- 5- 7 fixed
