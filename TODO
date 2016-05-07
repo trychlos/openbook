@@ -335,7 +335,58 @@
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
 
-1110
+1110 2016- 5- 5 BUG GuidedEx: when drag and drop page - see TODO_1110/trace
+                gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
+
+1111 2016- 5- 6 iWindow::hide_on_close: is useless (first because already
+                 a GtkWindow parameter, second because should not be used)
+                 rather close or hide
+
+1112 2016- 5- 6 iWindow::is_destroy_allowed should be avoided
+                rather close_all_but()
+
+1113 2016- 5- 6 EntryPage when opening the page
+                see TODO_1113/trace
+
+1114 2016- 5- 6 GuidedInputBin: exchange tooltip (line comment) and message
+                (account number)
+
+1115 2016- 5- 6 GuidedInputBin: decrease amount width
+
+1116 2016- 5- 6 Recurrent: should have some macros to be able to put in the
+                generated operations, and interpreted by operations
+                use case: have a month label in the entry label
+
+1117 2016- 5- 6 OpeTemplateTreeView: have an indicator that this ope
+                template is used as a recurrent model
+
+1118 2016- 5- 6 BUG Periodicity: has twice 30
+
+1119 2016- 5- 7 BUG Recurrent: when generating recurrent operations from
+                model for the first time, the first model is generated twice
+
+1120 2016- 5- 7 BUG Recurrent: when validating waiting operations on an
+                n-1 selection, lot of warnings+critical + one selected
+                line is not validated (but entries are actually generated)
+
+1121 2016- 5- 7 Recurrent: when validating waiting operations, has a
+                'n entries generated' dialog box - should have 'n operations
+                 (m entries)' message instead
+
+1122 2016- 5- 7 Recurrent: waiting operations treeview should display an
+                amount, letting this amount be edited
+
+1123 2016- 5- 7 when generating entries, have an operation number
+
+1124 2016- 5- 7 unable to import LCL-DEPOT-20160201.pdf (change format)
+
+1125 2016- 5- 7 importing BAT: the BAT line should be at the end of the
+                importable data
+
+1126 2016- 5- 7 Recurrent: display generated entries, letting the user
+                confirm them before dbms insertion
+
+1127
 
 -----------------------------------------------------------------------
  DONE
