@@ -75,6 +75,8 @@ static gchar   *st_header_begin_solde   = "ANCIEN SOLDE";
 static gchar   *st_footer_end_solde     = "SOLDE EN EUROS";
 static gchar   *st_page_credit          = "CREDIT";
 static gchar   *st_page_totaux          = "TOTAUX";
+static gchar   *st_page_solde_intermed  = "SOLDE INTERMEDIAIRE A";
+static gchar   *st_page_recapitulatif   = "Récapitulatif des frais perçus";
 
 static gdouble  st_label_min_x          = 74;
 static gdouble  st_valeur_min_x         = 360;
@@ -555,17 +557,23 @@ lcl_pdf_v1_parse_lines_rough( ofaImporterPdfLcl *self, const sParser *parser, of
 			}
 		}
 
+		/* end of the n-1 pages */
+		if( rc->y2 >= st_detail_max_y ){
+			break;
+		}
+
+		/* end of the last page */
+		if( g_str_has_prefix( rc->text, st_page_totaux )){
+			break;
+		}
+
+		/* Récapitulatif des frais perçus
+		 * may be on its own page */
+		if( g_str_has_prefix( rc->text, st_page_recapitulatif )){
+			break;
+		}
+
 		if( first_y > 0 && rc->y1 > first_y ){
-
-			/* end of the n-1 pages */
-			if( rc->y2 >= st_detail_max_y ){
-				break;
-			}
-
-			/* end of the last page */
-			if( g_str_has_prefix( rc->text, st_page_totaux )){
-				break;
-			}
 
 			/* a transaction field */
 			line = find_line( &lines, acceptable_diff, rc->y1 );
@@ -622,6 +630,11 @@ lcl_pdf_v1_parse_lines_merge( ofaImporterPdfLcl *self, const sParser *parser, of
 	 * - or line with only label, which completes the previous line's label */
 	for( it=rough_list ; it ; it=it->next ){
 		line = ( sLine * ) it->data;
+
+		/* just ignore solde intermediaire */
+		if( g_str_has_prefix( line->label, st_page_solde_intermed )){
+			continue;
+		}
 
 		if( line->dope ){
 

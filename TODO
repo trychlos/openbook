@@ -367,8 +367,6 @@
 
 1123 2016- 5- 7 when generating entries, have an operation number
 
-1124 2016- 5- 7 unable to import LCL-DEPOT-20160201.pdf (change format)
-
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
@@ -1334,6 +1332,9 @@
 
 1118 2016- 5- 6 BUG Periodicity: has twice 30
      2016- 5- 7 fixed
+
+1124 2016- 5- 7 unable to import LCL-DEPOT-20160201.pdf (change format ?)
+     2016- 5- 8 fixed
 
 1125 2016- 5- 7 importing BAT: the BAT line should be at the end of the
                 importable data
