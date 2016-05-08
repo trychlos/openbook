@@ -153,8 +153,7 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
  * if not already done. Else get the already allocated #ofaBatStore
  * from the @hub.
  *
- * A weak notify reference is put on this same @hub, so that the
- * instance will be unreffed when the @dossier will be destroyed.
+ * Returns: the #ofaBatStore unique object.
  */
 ofaBatStore *
 ofa_bat_store_new( ofaHub *hub )
@@ -367,6 +366,10 @@ find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
 static void
 connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
 {
+	static const gchar *thisfn = "ofa_bat_store_connect_to_hub_signaling_system";
+
+	g_debug( "%s: store=%p, hub=%p", thisfn, ( void * ) store, ( void * ) hub );
+
 	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
 	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
