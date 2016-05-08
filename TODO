@@ -365,8 +365,6 @@
 1122 2016- 5- 7 Recurrent: waiting operations treeview should display an
                 amount, letting this amount be edited
 
-1123 2016- 5- 7 when generating entries, have an operation number
-
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
@@ -1332,6 +1330,9 @@
 
 1118 2016- 5- 6 BUG Periodicity: has twice 30
      2016- 5- 7 fixed
+
+1123 2016- 5- 7 when generating entries, have an operation number
+     2016- 5- 8 done
 
 1124 2016- 5- 7 unable to import LCL-DEPOT-20160201.pdf (change format ?)
      2016- 5- 8 fixed

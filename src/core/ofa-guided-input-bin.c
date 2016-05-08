@@ -1652,15 +1652,22 @@ do_validate( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
 	gboolean ok;
+	ofoDossier *dossier;
+	ofoEntry *entry;
 	GList *entries, *it;
+	ofxCounter number;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	ok = TRUE;
 	entries = ofs_ope_generate_entries( priv->ope );
+	dossier = ofa_hub_get_dossier( priv->hub );
+	number = ofo_dossier_get_next_ope( dossier );
 
 	for( it=entries ; it ; it=it->next ){
-		ok &= ofo_entry_insert( OFO_ENTRY( it->data ), priv->hub );
+		entry = OFO_ENTRY( it->data );
+		ofo_entry_set_ope_number( entry, number );
+		ok &= ofo_entry_insert( entry, priv->hub );
 		/* TODO:
 		 * in case of an error, remove the already recorded entries
 		 * of the list, decrementing the ledgers and the accounts

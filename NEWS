@@ -36,6 +36,7 @@
  New features and improvements:
 
    - BatUtils: display an error message if appropriate.
+   - Entry: associate an operation number when appropriate (todo #1123).
    - GuidedInputBin: row number is italic (todo #1109).
    - GuidedInputBin: review account column width (todo #1108).
    - GuidedInputBin: review amount column width (todo #1115).

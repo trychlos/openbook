@@ -1115,7 +1115,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
 	gint errors;
-	ofxCounter counter;
+	ofxCounter counter, solde_ope, forward_ope;
 	ofoEntry *entry;
 	ofoCurrency *cur_obj;
 	ofsCurrency *scur;
@@ -1165,6 +1165,8 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			sld_entries = NULL;
 			for_entries = NULL;
 			counter = 0;
+			solde_ope = 0;
+			forward_ope = 0;
 
 			/* create solde operation
 			 * and generate corresponding solde entries */
@@ -1187,6 +1189,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 			if( ofs_ope_is_valid( ope, &msg, &currencies )){
 				sld_entries = ofs_ope_generate_entries( ope );
+				solde_ope = ofo_dossier_get_next_ope( priv->dossier );
 
 			} else {
 				g_warning( "%s: %s", thisfn, msg );
@@ -1220,6 +1223,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 				if( ofs_ope_is_valid( ope, NULL, NULL )){
 					for_entries = ofs_ope_generate_entries( ope );
+					forward_ope = ofo_dossier_get_next_ope( priv->dossier );
 				}
 
 				ofs_ope_free( ope );
@@ -1238,6 +1242,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 			 */
 			for( ite=sld_entries ; ite ; ite=ite->next ){
 				entry = OFO_ENTRY( ite->data );
+				ofo_entry_set_ope_number( entry, solde_ope );
 				ofo_entry_insert( entry, priv->hub );
 				if( is_ran &&
 						ofo_account_is_settleable( account ) &&
@@ -1255,6 +1260,7 @@ p6_do_solde_accounts( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 			for( ite=for_entries ; ite ; ite=ite->next ){
 				entry = OFO_ENTRY( ite->data );
+				ofo_entry_set_ope_number( entry, forward_ope );
 				priv->p6_forwards = g_list_prepend( priv->p6_forwards, entry );
 			}
 		}

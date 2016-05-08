@@ -450,6 +450,8 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj,
 	GList *entries, *it;
 	GDate dmin;
 	ofaHub *hub;
+	ofoEntry *entry;
+	ofxCounter ope_number;
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	dossier = ofa_hub_get_dossier( hub );
@@ -475,8 +477,12 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj,
 	ofs_ope_apply_template( ope );
 	entries = ofs_ope_generate_entries( ope );
 
+	ope_number = ofo_dossier_get_next_ope( dossier );
+
 	for( it=entries ; it ; it=it->next ){
-		ofo_entry_insert( OFO_ENTRY( it->data ), hub );
+		entry = OFO_ENTRY( it->data );
+		ofo_entry_set_ope_number( entry, ope_number );
+		ofo_entry_insert( entry, hub );
 		*count += 1;
 	}
 }
