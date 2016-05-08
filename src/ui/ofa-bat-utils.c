@@ -71,7 +71,7 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 
 	file_chooser = gtk_file_chooser_dialog_new(
 			_( "Select a BAT file to be imported" ),
-			NULL,
+			parent,
 			GTK_FILE_CHOOSER_ACTION_OPEN,
 			_( "Cancel" ), GTK_RESPONSE_CANCEL,
 			_( "Import" ), GTK_RESPONSE_OK,
@@ -103,6 +103,11 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 
 			if( ofa_iimporter_import( importer, &parms ) == 0 ){
 				imported_id = (( ofsImportedBat * ) parms.importable_data )->bat_id;
+
+			} else {
+				my_utils_msg_dialog( parent, GTK_MESSAGE_WARNING,
+						_( "Errors have been detected.\n"
+							"Try import assistant to get a detail of these errors." ));
 			}
 
 			g_debug( "%s: importer=%p (%s), parsed=%u, errs=%u, bat_id=%ld",
