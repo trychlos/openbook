@@ -362,9 +362,6 @@
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
-1127 2016- 5- 7 TVAFormProperties: ope template identifier change is not
-                properly propagated to tva form treeview
-
 1129 2016- 5- 9 only detail account may be closed
 
 1132
@@ -1349,6 +1346,10 @@
 1125 2016- 5- 7 importing BAT: the BAT line should be at the end of the
                 importable data
      2016- 5- 7 fixed
+
+1127 2016- 5- 7 TVAFormProperties: ope template identifier change is not
+                properly propagated to tva form treeview
+     2016- 5- 9 fixed
 
 1128 2016- 5- 9 ope template identifier change is not properly propagated
                 to recurrent opes management page

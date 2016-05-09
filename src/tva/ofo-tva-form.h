@@ -140,6 +140,8 @@ const gchar    *ofo_tva_form_detail_get_amount      ( const ofoTVAForm *form, gu
 gboolean        ofo_tva_form_detail_get_has_template( const ofoTVAForm *form, guint idx );
 const gchar    *ofo_tva_form_detail_get_template    ( const ofoTVAForm *form, guint idx );
 
+void            ofo_tva_form_update_ope_template    ( ofoTVAForm *form, const gchar *prev_id, const gchar *new_id );
+
 void            ofo_tva_form_boolean_add            ( ofoTVAForm *form,
 														const gchar *label );
 

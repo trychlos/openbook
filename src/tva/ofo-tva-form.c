@@ -939,6 +939,36 @@ ofo_tva_form_detail_get_template( const ofoTVAForm *form, guint idx )
 }
 
 /**
+ * ofo_tva_form_update_ope_template:
+ * @form: this #ofoTVAForm instance.
+ * @prev_id: the previous ope template identifier.
+ * @new_id: the new ope template identifier.
+ *
+ * Update the operation template identifier.
+ */
+void
+ofo_tva_form_update_ope_template( ofoTVAForm *form, const gchar *prev_id, const gchar *new_id )
+{
+	ofoTVAFormPrivate *priv;
+	GList *it;
+	const gchar *det_model;
+
+	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
+	g_return_if_fail( !OFO_BASE( form )->prot->dispose_has_run );
+	g_return_if_fail( my_strlen( prev_id ) > 0 );
+	g_return_if_fail( my_strlen( new_id ) > 0 );
+
+	priv = ofo_tva_form_get_instance_private( form );
+
+	for( it=priv->details ; it ; it=it->next ){
+		det_model = ofa_box_get_string(( GList * ) it->data, TFO_DET_TEMPLATE );
+		if( my_strlen( det_model ) && !my_collate( det_model, prev_id )){
+			ofa_box_set_string(( GList * ) it->data, TFO_DET_TEMPLATE, new_id );
+		}
+	}
+}
+
+/**
  * ofo_tva_form_boolean_add:
  * @form:
  * @label:
@@ -2300,8 +2330,6 @@ hub_on_updated_account_id( ofaHub *hub, const gchar *mnemo, const gchar *prev_id
 			g_free( det_amount );
 			g_free( etp_mnemo );
 		}
-
-		my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM );
 	}
 
 	return( ok );
@@ -2327,8 +2355,6 @@ hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar 
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM );
 
 	return( ok );
 }

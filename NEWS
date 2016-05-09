@@ -62,6 +62,7 @@
    - ImporterPdfLcl: fix PDF import (todo #1124).
    - Periodicity: fix 31 day label (todo #1118).
    - RecurrentModel: propagates OpeTemplate identifier change (todo #1128).
+   - TVAFormStore: propagates OpeTemplate identifier change (todo #1127).
 
  Other changes:
 
