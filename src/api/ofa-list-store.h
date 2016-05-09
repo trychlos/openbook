@@ -40,7 +40,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofo-dossier-def.h"
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
@@ -75,22 +75,15 @@ typedef struct {
 	 * It then tries to simulate a reload, thus re-triggering
 	 * "ofa-row-inserted" signal for each row.
 	 */
-	void ( *load_dataset )( ofaListStore *store );
+	void ( *load_dataset )( ofaListStore *store,
+								ofaHub *hub );
 }
 	ofaListStoreClass;
 
-/**
- * Properties defined by the ofaListStore class.
- *
- * @OFA_PROP_HUB:     the current #ofaHub object.
- */
-#define OFA_PROP_HUB                    "ofa-store-prop-hub"
-
 GType   ofa_list_store_get_type    ( void ) G_GNUC_CONST;
 
-void    ofa_list_store_load_dataset( ofaListStore *store );
-
-ofaHub *ofa_list_store_get_hub     ( const ofaListStore *store );
+void    ofa_list_store_load_dataset( ofaListStore *store,
+											ofaHub *hub );
 
 G_END_DECLS
 

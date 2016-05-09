@@ -379,7 +379,7 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
-	ofa_list_store_load_dataset( OFA_LIST_STORE( priv->store ));
+	ofa_list_store_load_dataset( OFA_LIST_STORE( priv->store ), priv->hub );
 
 	/* hub signaling system */
 	hub_connect_to_signaling_system( self );

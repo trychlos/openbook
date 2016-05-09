@@ -28,26 +28,18 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-istore.h"
-
-#include "ui/ofa-tree-store.h"
+#include "api/ofa-tree-store.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean dispose_has_run;
 
-	/* properties
+	/* runtime
 	 */
-	ofaHub   *hub;
-	gboolean  dataset_loaded;
+	gboolean dataset_loaded;
 }
 	ofaTreeStorePrivate;
-
-/* class properties
- */
-enum {
-	OFA_PROP_HUB_ID = 1,
-};
 
 /* signals defined here
  */
@@ -102,73 +94,6 @@ tree_store_dispose( GObject *instance )
 }
 
 static void
-tree_store_get_property( GObject *object, guint property_id, GValue *value, GParamSpec *spec )
-{
-	ofaTreeStorePrivate *priv;
-
-	g_return_if_fail( object && OFA_IS_TREE_STORE( object ));
-
-	priv = ofa_tree_store_get_instance_private( OFA_TREE_STORE( object ));
-
-	if( !priv->dispose_has_run ){
-
-		switch( property_id ){
-			case OFA_PROP_HUB_ID:
-				g_value_set_object( value, priv->hub );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
-	}
-}
-
-static void
-tree_store_set_property( GObject *object, guint property_id, const GValue *value, GParamSpec *spec )
-{
-	ofaTreeStorePrivate *priv;
-
-	g_return_if_fail( OFA_IS_TREE_STORE( object ));
-
-	priv = ofa_tree_store_get_instance_private( OFA_TREE_STORE( object ));
-
-	if( !priv->dispose_has_run ){
-
-		switch( property_id ){
-			case OFA_PROP_HUB_ID:
-				priv->hub = g_value_get_object( value );
-				break;
-
-			default:
-				G_OBJECT_WARN_INVALID_PROPERTY_ID( object, property_id, spec );
-				break;
-		}
-	}
-}
-
-static void
-tree_store_constructed( GObject *instance )
-{
-	ofaTreeStorePrivate *priv;
-
-	g_return_if_fail( instance && OFA_IS_TREE_STORE( instance ));
-
-	/* first, chain up to the parent class */
-	G_OBJECT_CLASS( ofa_tree_store_parent_class )->constructed( instance );
-
-	/* weak ref the dossier (which must have been set at instanciation
-	 * time of the derived class), so that we will be auto-unreffed at
-	 * dossier finalization
-	 */
-	priv = ofa_tree_store_get_instance_private( OFA_TREE_STORE( instance ));
-
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	ofa_istore_init( OFA_ISTORE( instance ), priv->hub );
-}
-
-static void
 ofa_tree_store_init( ofaTreeStore *self )
 {
 	static const gchar *thisfn = "ofa_tree_store_init";
@@ -182,6 +107,8 @@ ofa_tree_store_init( ofaTreeStore *self )
 	priv = ofa_tree_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+
+	ofa_istore_init( OFA_ISTORE( self ));
 }
 
 static void
@@ -191,21 +118,8 @@ ofa_tree_store_class_init( ofaTreeStoreClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->constructed = tree_store_constructed;
-	G_OBJECT_CLASS( klass )->get_property = tree_store_get_property;
-	G_OBJECT_CLASS( klass )->set_property = tree_store_set_property;
 	G_OBJECT_CLASS( klass )->dispose = tree_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tree_store_finalize;
-
-	g_object_class_install_property(
-			G_OBJECT_CLASS( klass ),
-			OFA_PROP_HUB_ID,
-			g_param_spec_object(
-					OFA_PROP_HUB,
-					"Hub",
-					"The current ofaHub object",
-					OFA_TYPE_HUB,
-					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
 	/**
 	 * ofaTreeStore::ofa-row-inserted:
@@ -267,14 +181,20 @@ istore_get_interface_version( void )
 
 /**
  * ofa_tree_store_load_dataset:
- * @store:
+ * @store: the #ofaTreeStore-derived object.
+ * @hub: the #ofaHub hub of the application.
+ *
+ * The first time, loads the dataset.
+ * The other times, only simulates this load, just emitting one signal
+ * per row.
  */
 void
-ofa_tree_store_load_dataset( ofaTreeStore *store )
+ofa_tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub )
 {
 	ofaTreeStorePrivate *priv;
 
 	g_return_if_fail( store && OFA_IS_TREE_STORE( store ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_tree_store_get_instance_private( store );
 
@@ -282,7 +202,7 @@ ofa_tree_store_load_dataset( ofaTreeStore *store )
 
 	if( !priv->dataset_loaded ){
 		if( OFA_TREE_STORE_GET_CLASS( store )->load_dataset ){
-			OFA_TREE_STORE_GET_CLASS( store )->load_dataset( store );
+			OFA_TREE_STORE_GET_CLASS( store )->load_dataset( store, hub );
 		}
 		priv->dataset_loaded = TRUE;
 

@@ -68,7 +68,7 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
-static void     tree_store_load_dataset( ofaTreeStore *store );
+static void     tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub );
 static void     insert_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account );
 static void     set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *iter );
 static gboolean find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
@@ -83,6 +83,8 @@ static void     setup_signaling_connect( ofaAccountStore *store, ofaHub *hub );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
 static void     hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *store );
+static void     hub_on_updated_currency_code( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id );
+static void     hub_on_updated_currency_code_rec( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter );
 static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *store );
 static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store );
@@ -164,9 +166,6 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
  * Instanciates a new #ofaAccountStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaAccountStore
  * from the @dossier.
- *
- * A weak notify reference is put on this same @hub, so that the
- * instance will be unreffed when the @hub is finalized.
  */
 ofaAccountStore *
 ofa_account_store_new( ofaHub *hub )
@@ -183,10 +182,7 @@ ofa_account_store_new( ofaHub *hub )
 		g_return_val_if_fail( OFA_IS_ACCOUNT_STORE( store ), NULL );
 
 	} else {
-		store = g_object_new(
-						OFA_TYPE_ACCOUNT_STORE,
-						OFA_PROP_HUB, hub,
-						NULL );
+		store = g_object_new( OFA_TYPE_ACCOUNT_STORE, NULL );
 
 		st_col_types[ACCOUNT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_tree_store_set_column_types(
@@ -230,14 +226,11 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountS
  * load the dataset when columns and dossier have been both set
  */
 static void
-tree_store_load_dataset( ofaTreeStore *store )
+tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoAccount *account;
-	ofaHub *hub;
 
-	g_object_get( G_OBJECT( store ), OFA_PROP_HUB, &hub, NULL );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 	dataset = ofo_account_get_dataset( hub );
 	g_object_unref( hub );
 
@@ -682,8 +675,6 @@ cmp_account_by_number( const ofoAccount *a, const ofoAccount *b )
 
 /*
  * connect to the hub signaling system
- * there is no need to keep trace of the signal handlers, as the lifetime
- * of this store is equal to those of the dossier
  */
 static void
 setup_signaling_connect( ofaAccountStore *store, ofaHub *hub )
@@ -692,6 +683,8 @@ setup_signaling_connect( ofaAccountStore *store, ofaHub *hub )
 	gulong handler;
 
 	priv = ofa_account_store_get_instance_private( store );
+
+	priv->hub = hub;
 
 	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
@@ -732,6 +725,7 @@ static void
 hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store )
 {
 	static const gchar *thisfn = "ofa_account_store_hub_on_updated_object";
+	const gchar *new_id;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
 			thisfn,
@@ -742,6 +736,12 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAc
 
 	if( OFO_IS_ACCOUNT( object )){
 		hub_on_updated_account( hub, OFO_ACCOUNT( object ), prev_id, store );
+
+	} else if( OFO_IS_CURRENCY( object )){
+		new_id = ofo_currency_get_code( OFO_CURRENCY( object ));
+		if( my_strlen( prev_id ) && my_collate( prev_id, new_id )){
+			hub_on_updated_currency_code( store, prev_id, new_id );
+		}
 	}
 }
 
@@ -765,6 +765,51 @@ hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, 
 
 	} else if( find_row_by_number( store, number, &iter, NULL )){
 		set_row( store, hub, account, &iter);
+	}
+}
+
+/*
+ * Update the store rows+objects for new currency code
+ */
+static void
+hub_on_updated_currency_code( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id )
+{
+	GtkTreeIter iter;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		hub_on_updated_currency_code_rec( self, prev_id, new_id, &iter );
+	}
+}
+
+static void
+hub_on_updated_currency_code_rec( ofaAccountStore *self, const gchar *prev_id, const gchar *new_id, GtkTreeIter *iter )
+{
+	GtkTreeIter child_iter;
+	ofoAccount *account;
+	gchar *stored_id;
+	gint cmp;
+
+	while( TRUE ){
+		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
+			hub_on_updated_currency_code_rec( self, prev_id, new_id, &child_iter );
+		}
+		gtk_tree_model_get( GTK_TREE_MODEL( self ), iter,
+				ACCOUNT_COL_CURRENCY, &stored_id, ACCOUNT_COL_OBJECT, &account, -1 );
+
+		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+		g_object_unref( account );
+		if( stored_id ){
+			cmp = g_utf8_collate( stored_id, prev_id );
+			g_free( stored_id );
+
+			if( cmp == 0 ){
+				ofo_account_set_currency( account, new_id );
+				gtk_tree_store_set( GTK_TREE_STORE( self ), iter, ACCOUNT_COL_CURRENCY, new_id, -1 );
+			}
+		}
+		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			break;
+		}
 	}
 }
 
@@ -818,7 +863,7 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
 
 	if( type == OFO_TYPE_ACCOUNT ){
 		gtk_tree_store_clear( GTK_TREE_STORE( store ));
-		tree_store_load_dataset( OFA_TREE_STORE( store ));
+		tree_store_load_dataset( OFA_TREE_STORE( store ), hub );
 	}
 }
 

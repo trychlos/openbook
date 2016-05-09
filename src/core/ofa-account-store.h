@@ -45,8 +45,7 @@
  */
 
 #include "api/ofa-hub-def.h"
-
-#include "ui/ofa-tree-store.h"
+#include "api/ofa-tree-store.h"
 
 G_BEGIN_DECLS
 

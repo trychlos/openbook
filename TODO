@@ -367,8 +367,6 @@
 
 1129 2016- 5- 9 only detail account may be closed
 
-1131 2016- 5- 9 ofaListStore, ofaTreeStore: hub is not a property
-
 1132
 
 -----------------------------------------------------------------------
@@ -1357,6 +1355,9 @@
      2016- 5- 9 fixed
 
 1130 2016- 5- 9 ofaTreeStore: must be moved to core/
+     2016- 5- 9 done
+
+1131 2016- 5- 9 ofaListStore, ofaTreeStore: hub is not a property
      2016- 5- 9 done
 
 -----------------------------------------------------------------------

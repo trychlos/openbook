@@ -35,26 +35,21 @@
 /* data associated to each implementor object
  */
 typedef struct {
-
-	/* static data
-	 * to be set at initialization time
-	 */
-	ofoDossier *dossier;
-	ofaHub     *hub;
+	void *empty;
 }
 	sIStore;
 
-#define ISTORE_LAST_VERSION             1
+#define ISTORE_LAST_VERSION              1
 #define ISTORE_DATA                     "ofa-istore-data"
 
 static guint st_initializations = 0;	/* interface initialization count */
 
-static GType    register_type( void );
-static void     interface_base_init( ofaIStoreInterface *klass );
-static void     interface_base_finalize( ofaIStoreInterface *klass );
-static void     on_hub_finalized( ofaIStore *istore, GObject *finalized_hub );
-static void     on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaIStore *istore );
-static void     simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
+static GType register_type( void );
+static void  interface_base_init( ofaIStoreInterface *klass );
+static void  interface_base_finalize( ofaIStoreInterface *klass );
+static void  on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaIStore *istore );
+static void  simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
+static void  on_store_finalized( sIStore *sdata, GObject *finalized_store );
 
 /**
  * ofa_istore_get_type:
@@ -190,14 +185,12 @@ ofa_istore_get_interface_version( GType type )
  * implementation take benefit of the interface.
  */
 void
-ofa_istore_init( ofaIStore *istore, ofaHub *hub )
+ofa_istore_init( ofaIStore *istore )
 {
 	static const gchar *thisfn = "ofa_istore_init";
 	sIStore *sdata;
 
-	g_return_if_fail( G_IS_OBJECT( istore ));
-	g_return_if_fail( OFA_IS_ISTORE( istore ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( istore && G_IS_OBJECT( istore ) && OFA_IS_ISTORE( istore ));
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( istore ), ISTORE_DATA );
 	if( sdata ){
@@ -205,32 +198,11 @@ ofa_istore_init( ofaIStore *istore, ofaHub *hub )
 	}
 
 	sdata = g_new0( sIStore, 1 );
+	sdata->empty = NULL;
 	g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, sdata );
-
-	g_object_weak_ref( G_OBJECT( hub ), ( GWeakNotify ) on_hub_finalized, istore );
+	g_object_weak_ref( G_OBJECT( istore ), ( GWeakNotify ) on_store_finalized, sdata );
 
 	g_signal_connect( istore, "row-inserted", G_CALLBACK( on_row_inserted ), istore );
-}
-
-static void
-on_hub_finalized( ofaIStore *istore, GObject *finalized_hub )
-{
-	static const gchar *thisfn = "ofa_istore_on_hub_finalized";
-	sIStore *sdata;
-
-	/* at this time, even the IStore implementation is no more an object
-	 * if it takes advantage of ofaISingleKeeper interface */
-	g_debug( "%s: istore=%p, finalized_hub=%p",
-			thisfn, ( void * ) istore, ( void * ) finalized_hub );
-
-	if( istore && G_IS_OBJECT( istore )){
-		sdata = ( sIStore * ) g_object_get_data( G_OBJECT( istore ), ISTORE_DATA );
-
-		g_free( sdata );
-		g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, NULL );
-
-		g_object_unref( istore );
-	}
 }
 
 static void
@@ -270,8 +242,7 @@ simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter )
 			g_signal_emit_by_name( tmodel, "ofa-row-inserted", path, &iter );
 			gtk_tree_path_free( path );
 
-			if( gtk_tree_model_iter_has_child( tmodel, &iter ) &&
-					gtk_tree_model_iter_children( tmodel, &child_iter, &iter )){
+			if( gtk_tree_model_iter_children( tmodel, &child_iter, &iter )){
 				simulate_dataset_load_rec( tmodel, &child_iter );
 			}
 
@@ -280,4 +251,15 @@ simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter )
 			}
 		}
 	}
+}
+
+static void
+on_store_finalized( sIStore *sdata, GObject *finalized_store )
+{
+	static const gchar *thisfn = "ofa_istore_on_store_finalized";
+
+	g_debug( "%s: sdata=%p, finalized_store=%p (%s)",
+			thisfn, ( void * ) sdata, ( void * ) finalized_store, G_OBJECT_TYPE_NAME( finalized_store ));
+
+	g_free( sdata );
 }

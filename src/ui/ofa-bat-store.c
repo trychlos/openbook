@@ -162,7 +162,6 @@ ofaBatStore *
 ofa_bat_store_new( ofaHub *hub )
 {
 	ofaBatStore *store;
-	ofaBatStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -174,13 +173,7 @@ ofa_bat_store_new( ofaHub *hub )
 		g_return_val_if_fail( OFA_IS_BAT_STORE( store ), NULL );
 
 	} else {
-		store = g_object_new(
-						OFA_TYPE_BAT_STORE,
-						OFA_PROP_HUB,       hub,
-						NULL );
-
-		priv = ofa_bat_store_get_instance_private( store );
-		priv->hub = hub;
+		store = g_object_new( OFA_TYPE_BAT_STORE, NULL );
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), BAT_N_COLUMNS, st_col_types );
@@ -194,6 +187,7 @@ ofa_bat_store_new( ofaHub *hub )
 		my_icollector_single_set_object( collector, store );
 
 		load_dataset( store, hub );
+
 		connect_to_hub_signaling_system( store, hub );
 	}
 
@@ -374,6 +368,8 @@ connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
 
 	priv = ofa_bat_store_get_instance_private( store );
 
+	priv->hub = hub;
+
 	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
@@ -484,16 +480,17 @@ on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil )
 static void
 concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store )
 {
+	ofaBatStorePrivate *priv;
 	ofxCounter bat_id;
-	ofaHub *hub;
 	GtkTreeIter iter;
 	ofoBat *bat;
 
+	priv = ofa_bat_store_get_instance_private( store );
+
 	if( !g_utf8_collate( type, CONCIL_TYPE_BAT )){
-		hub = ofa_list_store_get_hub( OFA_LIST_STORE( store ));
-		bat_id = ofo_bat_line_get_bat_id_from_bat_line_id( hub, id );
+		bat_id = ofo_bat_line_get_bat_id_from_bat_line_id( priv->hub, id );
 		if( find_bat_by_id( store, bat_id, &iter )){
-			bat = ofo_bat_get_by_id( hub, bat_id );
+			bat = ofo_bat_get_by_id( priv->hub, bat_id );
 			set_row_by_store_iter( store, &iter, bat );
 		}
 	}

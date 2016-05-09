@@ -2721,7 +2721,6 @@ static void
 hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
-	GList *collection;
 
 	query = g_strdup_printf(
 					"UPDATE OFA_T_ACCOUNTS SET ACC_CURRENCY='%s' WHERE ACC_CURRENCY='%s'",
@@ -2730,9 +2729,4 @@ hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *co
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
-
-	collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, hub );
-	if( collection && g_list_length( collection )){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_ACCOUNT );
-	}
 }

@@ -215,10 +215,7 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 		g_return_val_if_fail( OFA_IS_RECURRENT_MODEL_STORE( store ), NULL );
 
 	} else {
-		store = g_object_new(
-						OFA_TYPE_RECURRENT_MODEL_STORE,
-						OFA_PROP_HUB,            hub,
-						NULL );
+		store = g_object_new( OFA_TYPE_RECURRENT_MODEL_STORE, NULL );
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), REC_N_COLUMNS, st_col_types );
@@ -235,6 +232,7 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 
 		/* connect to the hub signaling system */
 		priv = ofa_recurrent_model_store_get_instance_private( store );
+
 		priv->hub = hub;
 
 		handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );

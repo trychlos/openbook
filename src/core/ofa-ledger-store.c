@@ -160,10 +160,7 @@ ofa_ledger_store_new( ofaHub *hub )
 		g_return_val_if_fail( OFA_IS_LEDGER_STORE( store ), NULL );
 
 	} else {
-		store = g_object_new(
-						OFA_TYPE_LEDGER_STORE,
-						OFA_PROP_HUB,          hub,
-						NULL );
+		store = g_object_new( OFA_TYPE_LEDGER_STORE, NULL );
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), LEDGER_N_COLUMNS, st_col_types );
@@ -177,6 +174,7 @@ ofa_ledger_store_new( ofaHub *hub )
 		my_icollector_single_set_object( collector, store );
 
 		load_dataset( store, hub );
+
 		setup_signaling_connect( store, hub );
 	}
 

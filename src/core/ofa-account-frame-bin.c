@@ -379,7 +379,7 @@ setup_bin( ofaAccountFrameBin *self )
 	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
-	ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ));
+	ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ), priv->hub );
 
 	/* runtime */
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );

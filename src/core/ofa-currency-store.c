@@ -157,10 +157,7 @@ ofa_currency_store_new( ofaHub *hub )
 		g_return_val_if_fail( OFA_IS_CURRENCY_STORE( store ), NULL );
 
 	} else {
-		store = g_object_new(
-						OFA_TYPE_CURRENCY_STORE,
-						OFA_PROP_HUB,            hub,
-						NULL );
+		store = g_object_new( OFA_TYPE_CURRENCY_STORE, NULL );
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), CURRENCY_N_COLUMNS, st_col_types );
@@ -174,6 +171,7 @@ ofa_currency_store_new( ofaHub *hub )
 		my_icollector_single_set_object( collector, store );
 
 		load_dataset( store, hub );
+
 		setup_signaling_connect( store, hub );
 	}
 
@@ -249,8 +247,6 @@ set_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency, GtkT
 
 /*
  * connect to the hub signaling system
- * there is no need to keep trace of the signal handlers, as the lifetime
- * of this store is equal to those of the dossier
  */
 static void
 setup_signaling_connect( ofaCurrencyStore *store, ofaHub *hub )
@@ -259,6 +255,8 @@ setup_signaling_connect( ofaCurrencyStore *store, ofaHub *hub )
 	gulong handler;
 
 	priv = ofa_currency_store_get_instance_private( store );
+
+	priv->hub = hub;
 
 	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );

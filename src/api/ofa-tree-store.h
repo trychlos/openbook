@@ -22,20 +22,22 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_TREE_STORE_H__
-#define __OFA_TREE_STORE_H__
+#ifndef __OPENBOOK_API_OFA_TREE_STORE_H__
+#define __OPENBOOK_API_OFA_TREE_STORE_H__
 
 /**
  * SECTION: ofa_tree_store
  * @title: ofaTreeStore
  * @short_description: The ofaTreeStore application class definition
- * @include: ui/ofa-tree-store.h
+ * @include: api/ofa-tree-store.h
  *
  * This is a very thin base class for other stores which will manage
  * the dossier objects.
  */
 
 #include <gtk/gtk.h>
+
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
@@ -70,21 +72,16 @@ typedef struct {
 	 * It then tries to simulate a reload, thus re-triggering
 	 * "ofa-row-inserted" signal for each row.
 	 */
-	void ( *load_dataset )( ofaTreeStore *store );
+	void ( *load_dataset )( ofaTreeStore *store,
+								ofaHub *hub );
 }
 	ofaTreeStoreClass;
 
-/**
- * Properties defined by the ofaTreeStore class.
- *
- * @OFA_PROP_HUB: the current #ofaHub object.
- */
-#define OFA_PROP_HUB                    "ofa-store-prop-hub"
-
 GType ofa_tree_store_get_type    ( void ) G_GNUC_CONST;
 
-void  ofa_tree_store_load_dataset( ofaTreeStore *store );
+void  ofa_tree_store_load_dataset( ofaTreeStore *store,
+										ofaHub *hub );
 
 G_END_DECLS
 
-#endif /* __OFA_TREE_STORE_H__ */
+#endif /* __OPENBOOK_API_OFA_TREE_STORE_H__ */

@@ -54,7 +54,7 @@ static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *self );
-static void     list_store_load_dataset( ofaListStore *self );
+static void     list_store_load_dataset( ofaListStore *self, ofaHub *hub );
 static void     insert_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope );
 static void     set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
@@ -151,7 +151,6 @@ ofa_ope_template_store_new( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_new";
 	ofaOpeTemplateStore *store;
-	ofaOpeTemplateStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -164,13 +163,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 		g_debug( "%s: returning existing store=%p", thisfn, ( void * ) store );
 
 	} else {
-		store = g_object_new(
-						OFA_TYPE_OPE_TEMPLATE_STORE,
-						OFA_PROP_HUB,                hub,
-						NULL );
-
-		priv = ofa_ope_template_store_get_instance_private( store );
-		priv->hub = hub;
+		store = g_object_new( OFA_TYPE_OPE_TEMPLATE_STORE, NULL );
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), OPE_TEMPLATE_N_COLUMNS, st_col_types );
@@ -215,14 +208,10 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTempl
  * load the dataset when columns and dossier have been both set
  */
 static void
-list_store_load_dataset( ofaListStore *self )
+list_store_load_dataset( ofaListStore *self, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoOpeTemplate *ope;
-	ofaHub *hub;
-
-	g_object_get( G_OBJECT( self ), OFA_PROP_HUB, &hub, NULL );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	dataset = ofo_ope_template_get_dataset( hub );
 
@@ -349,6 +338,8 @@ connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub )
 
 	priv = ofa_ope_template_store_get_instance_private( self );
 
+	priv->hub = hub;
+
 	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
@@ -447,7 +438,7 @@ on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self )
 
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		list_store_load_dataset( OFA_LIST_STORE( self ));
+		list_store_load_dataset( OFA_LIST_STORE( self ), hub );
 	}
 }
 

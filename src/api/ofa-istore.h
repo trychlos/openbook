@@ -36,8 +36,7 @@
  * all our stores.
  */
 
-#include "api/ofa-hub-def.h"
-#include "api/ofo-dossier-def.h"
+#include <glib-object.h>
 
 G_BEGIN_DECLS
 
@@ -90,8 +89,7 @@ guint ofa_istore_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-void  ofa_istore_init                      ( ofaIStore *istore,
-													ofaHub *hub );
+void  ofa_istore_init                      ( ofaIStore *istore );
 
 void  ofa_istore_simulate_dataset_load     ( const ofaIStore *istore );
 
