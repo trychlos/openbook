@@ -499,6 +499,8 @@ ofo_ledger_update_currency( ofoLedger *ledger, const gchar *prev_id, const gchar
 
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+	g_return_if_fail( my_strlen( prev_id ) > 0 );
+	g_return_if_fail( my_strlen( new_id ) > 0 );
 
 	balances = ledger_find_balance_by_code( ledger, prev_id );
 	if( balances ){

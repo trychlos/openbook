@@ -981,6 +981,36 @@ ofo_ope_template_get_detail_credit_locked( const ofoOpeTemplate *model, gint idx
 }
 
 /**
+ * ofo_ope_template_update_account:
+ * @model: this #ofoOpeTemplate instance.
+ * @prev_id: the previous account identifier.
+ * @new_id: the new account identifier.
+ *
+ * Update the account identifier.
+ */
+void
+ofo_ope_template_update_account( ofoOpeTemplate *model, const gchar *prev_id, const gchar *new_id )
+{
+	ofoOpeTemplatePrivate *priv;
+	GList *it;
+	const gchar *det_account;
+
+	g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
+	g_return_if_fail( !OFO_BASE( model )->prot->dispose_has_run );
+	g_return_if_fail( my_strlen( prev_id ) > 0 );
+	g_return_if_fail( my_strlen( new_id ) > 0 );
+
+	priv = ofo_ope_template_get_instance_private( model );
+
+	for( it=priv->details ; it ; it=it->next ){
+		det_account = ofa_box_get_string(( GList * ) it->data, OTE_DET_ACCOUNT );
+		if( my_strlen( det_account ) && !my_collate( det_account, prev_id )){
+			ofa_box_set_string(( GList * ) it->data, OTE_DET_ACCOUNT, new_id );
+		}
+	}
+}
+
+/**
  * ofo_ope_template_insert:
  *
  * we deal here with an update of publicly modifiable model properties
@@ -2119,8 +2149,6 @@ hub_on_updated_account_id( ofaHub *hub, const gchar *new_id, const gchar *prev_i
 	ok = ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
 
 	return( ok );
 }

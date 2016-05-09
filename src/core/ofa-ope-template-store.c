@@ -29,6 +29,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -62,6 +63,7 @@ static void     remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mne
 static void     connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub );
 static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
 static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
+static void     hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self );
 
@@ -379,7 +381,7 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOp
 {
 	static const gchar *thisfn = "ofa_ope_template_store_on_hub_updated_object";
 	GtkTreeIter iter;
-	const gchar *mnemo;
+	const gchar *mnemo, *new_id;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
@@ -400,6 +402,33 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOp
 
 		} else {
 			g_debug( "%s: not found: mnemo=%s", thisfn, mnemo );
+		}
+
+	} else if( OFO_IS_ACCOUNT( object )){
+		new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
+		if( prev_id && g_utf8_collate( prev_id, new_id )){
+			hub_on_updated_account( self, prev_id, new_id );
+		}
+	}
+}
+
+static void
+hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id )
+{
+	GtkTreeIter iter;
+	ofoOpeTemplate *template;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, OPE_TEMPLATE_COL_OBJECT, &template, -1 );
+			g_return_if_fail( template && OFO_IS_OPE_TEMPLATE( template ));
+			g_object_unref( template );
+
+			ofo_ope_template_update_account( template, prev_id, new_id );
+
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
+				break;
+			}
 		}
 	}
 }

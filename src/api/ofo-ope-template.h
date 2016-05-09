@@ -198,6 +198,8 @@ gboolean        ofo_ope_template_get_detail_debit_locked  ( const ofoOpeTemplate
 const gchar    *ofo_ope_template_get_detail_credit        ( const ofoOpeTemplate *model, gint idx );
 gboolean        ofo_ope_template_get_detail_credit_locked ( const ofoOpeTemplate *model, gint idx );
 
+void            ofo_ope_template_update_account           ( ofoOpeTemplate *model, const gchar *prev_id, const gchar *new_id );
+
 gboolean        ofo_ope_template_insert                   ( ofoOpeTemplate *model, ofaHub *hub );
 gboolean        ofo_ope_template_update                   ( ofoOpeTemplate *model, const gchar *prev_mnemo );
 gboolean        ofo_ope_template_delete                   ( ofoOpeTemplate *model );
