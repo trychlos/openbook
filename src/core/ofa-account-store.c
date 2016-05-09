@@ -232,7 +232,6 @@ tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub )
 	ofoAccount *account;
 
 	dataset = ofo_account_get_dataset( hub );
-	g_object_unref( hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
