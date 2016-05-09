@@ -39,6 +39,7 @@
    - Entry: associate an operation number when appropriate (todo #1123).
    - GuidedInputBin: row number is italic (todo #1109).
    - GuidedInputBin: review account column width (todo #1108).
+   - GuidedInputBin: review account tooltip and message area (todo #1114).
    - GuidedInputBin: review amount column width (todo #1115).
    - Miscellaneous menu: have an option to display the collector content (todo #562).
    - Miscellaneous menu: have an option to display the audit trace (todo #732).

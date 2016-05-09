@@ -236,7 +236,8 @@ static void              check_for_account( ofaGuidedInputBin *self, GtkEntry *e
 static gboolean          on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self );
 static gboolean          on_entry_focus_out( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self );
 static void              on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *self );
-static void              setup_account_label_in_comment( ofaGuidedInputBin *self, gint row_id );
+static void              setup_account_tooltip( ofaGuidedInputBin *self, gint row_id );
+static void              setup_message_area( ofaGuidedInputBin *self, gint row_id, gint column_id );
 static const sColumnDef *find_column_def_from_col_id( const ofaGuidedInputBin *self, gint col_id );
 static void              check_for_enable_dlg( ofaGuidedInputBin *self );
 static gboolean          is_dialog_validable( ofaGuidedInputBin *self );
@@ -742,8 +743,11 @@ row_widget_label( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 	GtkWidget *widget;
 
 	widget = gtk_label_new( "" );
-	my_utils_widget_set_xalign( widget, col_def->xalign );
-	if( col_def->width ){
+
+	if( col_def->xalign >= 0 ){
+		my_utils_widget_set_xalign( widget, col_def->xalign );
+	}
+	if( col_def->width > 0 ){
 		gtk_label_set_width_chars( GTK_LABEL( widget ), col_def->width );
 	}
 
@@ -1038,8 +1042,8 @@ on_entry_focus_in( GtkEntry *entry, GdkEvent *event, ofaGuidedInputBin *self )
 		sdata->initial = g_strdup( gtk_entry_get_text( entry ));
 	}
 
-	/* update the account label when changing the row */
-	setup_account_label_in_comment( self, sdata->row_id );
+	/* setup the dialog message area for row and column */
+	setup_message_area( self, sdata->row_id-1, sdata->col_def->column_id );
 
 	return( FALSE );
 }
@@ -1120,7 +1124,7 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 				if( priv->focused_row == sdata->row_id && priv->focused_column == sdata->col_def->column_id ){
 					detail->account_user_set = TRUE;
 				}
-				setup_account_label_in_comment( self, sdata->row_id );
+				setup_account_tooltip( self, sdata->row_id );
 				break;
 			case OPE_COL_LABEL:
 				detail->label = g_strdup( cstr );
@@ -1156,17 +1160,17 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 }
 
 static void
-setup_account_label_in_comment( ofaGuidedInputBin *self, gint row_id )
+setup_account_tooltip( ofaGuidedInputBin *self, gint row_id )
 {
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *entry;
 	const gchar *acc_number;
-	gchar *comment;
+	gchar *tooltip;
 	ofoAccount *account;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	comment = NULL;
+	tooltip = NULL;
 
 	entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, row_id );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -1174,13 +1178,28 @@ setup_account_label_in_comment( ofaGuidedInputBin *self, gint row_id )
 	if( acc_number ){
 		account = ofo_account_get_by_number( priv->hub, acc_number );
 		if( account && OFO_IS_ACCOUNT( account )){
-			comment = g_strdup_printf( "%s - %s ", acc_number, ofo_account_get_label( account ));
+			tooltip = g_strdup_printf( "%s - %s ", acc_number, ofo_account_get_label( account ));
 		} else {
-			comment = g_strdup_printf( "%s", acc_number );
+			tooltip = g_strdup_printf( "%s", acc_number );
 		}
 	}
+
+	gtk_widget_set_tooltip_text( entry, tooltip ? tooltip : "" );
+
+	g_free( tooltip );
+}
+
+static void
+setup_message_area( ofaGuidedInputBin *self, gint row_id, gint column_id )
+{
+	ofaGuidedInputBinPrivate *priv;
+	const gchar *comment;
+
+	priv = ofa_guided_input_bin_get_instance_private( self );
+
+	comment = ofo_ope_template_get_detail_comment( priv->model, row_id );
+
 	set_comment( self, comment ? comment : "" );
-	g_free( comment );
 }
 
 static const sColumnDef *

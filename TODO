@@ -341,9 +341,6 @@
 1112 2016- 5- 6 iWindow::is_destroy_allowed should be avoided
                 rather close_all_but()
 
-1114 2016- 5- 6 GuidedInputBin: exchange tooltip (line comment) and message
-                (account number)
-
 1116 2016- 5- 6 Recurrent: should have some macros to be able to put in the
                 generated operations, and interpreted by operations
                 use case: have a month label in the entry label
@@ -1324,6 +1321,12 @@
 1113 2016- 5- 6 EntryPage when opening the page
                 see TODO_1113/trace
      2016- 5- 7 fixed
+
+1114 2016- 5- 6 GuidedInputBin: exchange tooltip (line comment) and message
+                (account number)
+     2016- 5- 9 - dialog message is set as line comment (-> may be other thing)
+                - account tooltip is set as account label
+                - other columns tooltip is set as line comment
 
 1115 2016- 5- 6 GuidedInputBin: decrease amount width
      2016- 5- 7 done + account field width homogeneization
