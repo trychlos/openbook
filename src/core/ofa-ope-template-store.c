@@ -215,8 +215,6 @@ list_store_load_dataset( ofaListStore *self, ofaHub *hub )
 
 	dataset = ofo_ope_template_get_dataset( hub );
 
-	g_object_unref( hub );
-
 	for( it=dataset ; it ; it=it->next ){
 		ope = OFO_OPE_TEMPLATE( it->data );
 		insert_row( OFA_OPE_TEMPLATE_STORE( self ), hub, ope );
