@@ -268,6 +268,8 @@ setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub )
 
 	priv = ofa_ledger_store_get_instance_private( store );
 
+	priv->hub = hub;
+
 	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
