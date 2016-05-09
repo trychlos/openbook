@@ -329,7 +329,6 @@
 1093 2016- 4-19 CODE should ICollector have its own messaging system
                      on add/remove actions (update/reload cannot be managed
                      here) ?
-     2016- 4-19 describe a use case
      2016- 5- 2 use case: maintain the misc-collector UI up to date
 
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS

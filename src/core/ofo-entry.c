@@ -1747,6 +1747,7 @@ entry_do_insert( ofoEntry *entry, ofaHub *hub )
 	const gchar *model, *cur_code;
 	ofoCurrency *cur_obj;
 	const ofaIDBConnect *connect;
+	ofxCounter ope_number;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 
@@ -1770,7 +1771,7 @@ entry_do_insert( ofoEntry *entry, ofaHub *hub )
 	g_string_append_printf( query,
 			"	(ENT_DEFFECT,ENT_NUMBER,ENT_DOPE,ENT_LABEL,ENT_REF,ENT_ACCOUNT,"
 			"	ENT_CURRENCY,ENT_LEDGER,ENT_OPE_TEMPLATE,"
-			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,"
+			"	ENT_DEBIT,ENT_CREDIT,ENT_STATUS,ENT_OPE_NUMBER,"
 			"	ENT_UPD_USER, ENT_UPD_STAMP) "
 			"	VALUES ('%s',%ld,'%s','%s',",
 			sdeff,
@@ -1801,10 +1802,20 @@ entry_do_insert( ofoEntry *entry, ofaHub *hub )
 	scredit = ofa_amount_to_sql( ofo_entry_get_credit( entry ), cur_obj );
 
 	g_string_append_printf( query,
-				"%s,%s,%d,'%s','%s')",
+				"%s,%s,%d,",
 				sdebit,
 				scredit,
-				ofo_entry_get_status( entry ),
+				ofo_entry_get_status( entry ));
+
+	ope_number = ofo_entry_get_ope_number( entry );
+	if( ope_number > 0 ){
+		g_string_append_printf( query, "%ld,", ope_number );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	g_string_append_printf( query,
+				"'%s','%s')",
 				userid,
 				stamp_str );
 
