@@ -77,9 +77,9 @@ typedef struct {
 /* a structure passed to #ofa_periodicity_enum_dates_between()
  */
 typedef struct {
-	ofaRecurrentNew *self;
-	ofoRecurrentModel      *model;
-	GList                  *opes;
+	ofaRecurrentNew   *self;
+	ofoRecurrentModel *model;
+	GList             *opes;
 }
 	sEnumDates;
 
@@ -470,6 +470,7 @@ generate_do( ofaRecurrentNew *self )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	models_dataset = ofo_recurrent_model_get_dataset( hub );
+	//g_debug( "generate_do: models_dataset_count=%d", g_list_length( models_dataset ));
 
 	opes = NULL;
 
@@ -513,6 +514,7 @@ generate_do( ofaRecurrentNew *self )
 static GList *
 generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date )
 {
+	static const gchar *thisfn = "ofa_recurrent_new_generate_do_opes";
 	const gchar *per_main, *per_detail;
 	sEnumDates sdata;
 
@@ -522,6 +524,9 @@ generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *
 	sdata.self = self;
 	sdata.model = model;
 	sdata.opes = NULL;
+
+	g_debug( "%s: model=%s, periodicity=%s,%s",
+			thisfn, ofo_recurrent_model_get_label( model ), per_main, per_detail );
 
 	ofa_periodicity_enum_dates_between(
 			per_main, per_detail,
