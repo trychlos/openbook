@@ -30,6 +30,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-periodicity.h"
+#include "api/ofo-ope-template.h"
 
 #include "recurrent/ofa-recurrent-model-store.h"
 #include "recurrent/ofo-recurrent-model.h"
@@ -70,6 +71,7 @@ static void     set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRec
 static gboolean model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIter *iter );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self );
+static void     hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
 static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
 static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentModelStore *self );
 
@@ -374,7 +376,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 {
 	static const gchar *thisfn = "ofa_recurrent_model_store_hub_on_updated_object";
 	GtkTreeIter iter;
-	const gchar *code, *new_code;
+	const gchar *code, *new_code, *new_mnemo;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
@@ -388,6 +390,47 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 		code = prev_id ? prev_id : new_code;
 		if( model_find_by_mnemo( self, code, &iter )){
 			set_row( self, hub, OFO_RECURRENT_MODEL( object ), &iter);
+		}
+
+	} else if( OFO_IS_OPE_TEMPLATE( object )){
+		new_mnemo = ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object ));
+		if( my_strlen( prev_id ) && my_collate( prev_id, new_mnemo )){
+			hub_on_updated_ope_template_mnemo( self, prev_id, new_mnemo );
+		}
+	}
+}
+
+/*
+ * Update all models to the new ope template mnemo
+ * Which means updating the store + updating the corresponding object
+ * Iter on all rows because several models may share same ope template
+ */
+static void
+hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo )
+{
+	GtkTreeIter iter;
+	ofoRecurrentModel *model;
+	gchar *stored_mnemo;
+	gint cmp;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter,
+					REC_MODEL_COL_OPE_TEMPLATE, &stored_mnemo, REC_MODEL_COL_OBJECT, &model, -1 );
+
+			g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+			g_object_unref( model );
+			cmp = g_utf8_collate( stored_mnemo, prev_mnemo );
+			g_free( stored_mnemo );
+
+			if( cmp == 0 ){
+				ofo_recurrent_model_set_ope_template( model, new_mnemo );
+				gtk_list_store_set( GTK_LIST_STORE( self ), &iter, REC_MODEL_COL_OPE_TEMPLATE, new_mnemo, -1 );
+			}
+
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
+				break;
+			}
 		}
 	}
 }

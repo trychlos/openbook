@@ -1268,7 +1268,5 @@ hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar 
 
 	g_free( query );
 
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL );
-
 	return( ok );
 }

@@ -363,9 +363,15 @@
                 confirm them before dbms insertion
 
 1127 2016- 5- 7 TVAFormProperties: ope template identifier change is not
-                properly propagated to treeview
+                properly propagated to tva form treeview
 
-1128
+1129 2016- 5- 9 only detail account may be closed
+
+1130 2016- 5- 9 ofaTreeStore: must be moved to core/
+
+1131 2016- 5- 9 ofaListStore, ofaTreeStore: hub is not a property
+
+1132
 
 -----------------------------------------------------------------------
  DONE
@@ -1347,6 +1353,10 @@
 1125 2016- 5- 7 importing BAT: the BAT line should be at the end of the
                 importable data
      2016- 5- 7 fixed
+
+1128 2016- 5- 9 ope template identifier change is not properly propagated
+                to recurrent opes management page
+     2016- 5- 9 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

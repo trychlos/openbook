@@ -61,6 +61,7 @@
    - IExportable/IImportable types: have BAT files at end of the list (todo #1125).
    - ImporterPdfLcl: fix PDF import (todo #1124).
    - Periodicity: fix 31 day label (todo #1118).
+   - RecurrentModel: propagates OpeTemplate identifier change (todo #1128).
 
  Other changes:
 
