@@ -258,15 +258,12 @@ load_collection( myICollector *instance, GType type, void *user_data )
 	sTyped *typed;
 	GList *dataset;
 
-	typed = NULL;
 	dataset = my_icollectionable_load_collection( type, user_data );
 
-	if( dataset && g_list_length( dataset )){
-		typed = g_new0( sTyped, 1 );
-		typed->type = type;
-		typed->is_collection = TRUE;
-		typed->t.list = dataset;
-	}
+	typed = g_new0( sTyped, 1 );
+	typed->type = type;
+	typed->is_collection = TRUE;
+	typed->t.list = dataset;
 
 	return( typed );
 }
