@@ -362,8 +362,6 @@
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
-1129 2016- 5- 9 only detail account may be closed
-
 1132
 
 -----------------------------------------------------------------------
@@ -1354,6 +1352,9 @@
 1128 2016- 5- 9 ope template identifier change is not properly propagated
                 to recurrent opes management page
      2016- 5- 9 fixed
+
+1129 2016- 5- 9 only detail account may be closed
+     2016- 5- 9 done
 
 1130 2016- 5- 9 ofaTreeStore: must be moved to core/
      2016- 5- 9 done

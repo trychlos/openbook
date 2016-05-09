@@ -358,7 +358,7 @@ idialog_init( myIDialog *instance )
 		gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), priv->label );
 	}
 
-	/* whether the account is closed */
+	/* whether the account is closed (if detail) */
 	gtk_toggle_button_set_active(
 			GTK_TOGGLE_BUTTON( priv->closed_btn ), ofo_account_is_closed( priv->account ));
 
@@ -403,6 +403,7 @@ idialog_init( myIDialog *instance )
 	 * - whether account has entries or is empty
 	 */
 	my_utils_widget_set_editable( priv->number_entry, priv->is_writable && !priv->has_entries );
+	my_utils_widget_set_editable( priv->closed_btn, priv->is_writable && !priv->root );
 	my_utils_widget_set_editable( priv->root_btn, priv->is_writable && !priv->has_entries );
 	my_utils_widget_set_editable( priv->detail_btn, priv->is_writable && !priv->has_entries );
 	my_utils_widget_set_editable( priv->currency_combo, priv->is_writable && !priv->has_entries );

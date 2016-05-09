@@ -35,6 +35,7 @@
   
  New features and improvements:
 
+   - Account: only detail account may be closed (todo #1129).
    - BatUtils: display an error message if appropriate.
    - Entry: associate an operation number when appropriate (todo #1123).
    - GuidedInputBin: row number is italic (todo #1109).
