@@ -60,6 +60,9 @@
    - ICollector: do not insert twice the first record of a dataset (todo #1119).
    - IExportable/IImportable types: have BAT files at end of the list (todo #1125).
    - ImporterPdfLcl: fix PDF import (todo #1124).
+   - BatStore: propagates account and currency identifier changes.
+   - LedgerStore: propagates currency identifier change.
+   - OpeTemplateStore: propagates ledger and account identifier changes.
    - Periodicity: fix 31 day label (todo #1118).
    - RecurrentModel: propagates OpeTemplate identifier change (todo #1128).
    - TVAFormStore: propagates OpeTemplate identifier change (todo #1127).
