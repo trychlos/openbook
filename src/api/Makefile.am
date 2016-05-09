@@ -74,6 +74,7 @@ api_include_HEADERS = \
 	ofa-render-page.h									\
 	ofa-settings.h										\
 	ofa-stream-format.h									\
+	ofa-tree-store.h									\
 	\
 	ofo-account.h										\
 	ofo-account-def.h									\

@@ -210,8 +210,6 @@ openbook_SOURCES = \
 	ofa-restore-assistant.h								\
 	ofa-settlement-page.c								\
 	ofa-settlement-page.h								\
-	ofa-tree-store.c									\
-	ofa-tree-store.h									\
 	ofa-user-credentials-bin.c							\
 	ofa-user-credentials-bin.h							\
 	$(NULL)

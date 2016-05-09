@@ -367,8 +367,6 @@
 
 1129 2016- 5- 9 only detail account may be closed
 
-1130 2016- 5- 9 ofaTreeStore: must be moved to core/
-
 1131 2016- 5- 9 ofaListStore, ofaTreeStore: hub is not a property
 
 1132
@@ -1357,6 +1355,9 @@
 1128 2016- 5- 9 ope template identifier change is not properly propagated
                 to recurrent opes management page
      2016- 5- 9 fixed
+
+1130 2016- 5- 9 ofaTreeStore: must be moved to core/
+     2016- 5- 9 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
