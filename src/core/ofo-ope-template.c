@@ -2172,8 +2172,6 @@ hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_
 
 	g_free( query );
 
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
-
 	return( ok );
 }
 
@@ -2233,8 +2231,6 @@ hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id
 			g_free( det_debit );
 			g_free( etp_mnemo );
 		}
-
-		my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE );
 	}
 
 	return( ok );

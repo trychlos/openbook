@@ -117,6 +117,8 @@ static void       book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, gu
 static void       book_on_finalized_page( sPageData *sdata, gpointer finalized_page );
 static GtkWidget *page_add_treeview( ofaOpeTemplateFrameBin *self, GtkWidget *page );
 static void       page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview );
+static GtkWidget *page_get_treeview( const ofaOpeTemplateFrameBin *self );
+static void       page_set_ledger_mnemo( const ofaOpeTemplateFrameBin *self, GtkWidget *page, const gchar *mnemo );
 static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
 static void       tview_on_row_selected( GtkTreeSelection *selection, ofaOpeTemplateFrameBin *self );
@@ -146,7 +148,7 @@ static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path
 static void       hub_connect_to_signaling_system( ofaOpeTemplateFrameBin *self );
 static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
 static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self );
-static void       hub_on_updated_ledger_label( ofaOpeTemplateFrameBin *self, ofoLedger *ledger );
+static void       hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger );
 static void       hub_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
 static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
 static void       hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger );
@@ -372,7 +374,7 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 	 * nb: if the ledger no more exists, no page is created */
 	strlist = ofa_settings_dossier_get_string_list( priv->meta, st_ledger_order );
 	for( it=strlist ; it ; it=it->next ){
-		book_get_page_by_ledger( self, ( const gchar * ) it->data, TRUE );
+		book_get_page_by_ledger( self, ( const gchar * ) it->data, FALSE );
 	}
 	ofa_settings_free_string_list( strlist );
 
@@ -623,6 +625,16 @@ page_get_treeview( const ofaOpeTemplateFrameBin *self )
 	}
 
 	return( tview );
+}
+
+static void
+page_set_ledger_mnemo( const ofaOpeTemplateFrameBin *self, GtkWidget *page, const gchar *mnemo )
+{
+	sPageData *sdata;
+
+	sdata = ( sPageData * ) g_object_get_data( G_OBJECT( page ), DATA_PAGE_LEDGER );
+	g_free( sdata->ledger );
+	sdata->ledger = g_strdup( mnemo );
 }
 
 /**
@@ -1377,7 +1389,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOp
 					( void * ) object, G_OBJECT_TYPE_NAME( object ), prev_id, ( void * ) self );
 
 	if( OFO_IS_LEDGER( object )){
-		hub_on_updated_ledger_label( self, OFO_LEDGER( object ));
+		hub_on_updated_ledger( self, prev_id, OFO_LEDGER( object ));
 
 	} else if( OFO_IS_OPE_TEMPLATE( object )){
 		hub_on_updated_ope_template( self, OFO_OPE_TEMPLATE( object ));
@@ -1385,22 +1397,27 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOp
 }
 
 /*
- * a ledger label has changed : update the corresponding tab label
+ * a ledger identifier and/or label has changed : update the
+ * corresponding tab
  */
 static void
-hub_on_updated_ledger_label( ofaOpeTemplateFrameBin *self, ofoLedger *ledger )
+hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	GtkWidget *page_w;
-	const gchar *mnemo;
+	const gchar *mnemo, *new_id;
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
-	mnemo = ofo_ledger_get_mnemo( ledger );
+	new_id = ofo_ledger_get_mnemo( ledger );
+	mnemo = prev_id ? prev_id : new_id;
 	page_w = book_get_page_by_ledger( self, mnemo, FALSE );
 	if( page_w ){
 		g_return_if_fail( GTK_IS_WIDGET( page_w ));
 		gtk_notebook_set_tab_label_text( GTK_NOTEBOOK( priv->notebook ), page_w, ofo_ledger_get_label( ledger ));
+		if( my_strlen( prev_id ) && my_collate( prev_id, new_id )){
+			page_set_ledger_mnemo( self, page_w, new_id );
+		}
 	}
 }
 

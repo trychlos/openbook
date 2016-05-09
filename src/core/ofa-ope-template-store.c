@@ -31,6 +31,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-ope-template-store.h"
@@ -61,11 +62,12 @@ static void     set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTem
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
 static void     remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo );
 static void     connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub );
-static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
-static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
+static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
 static void     hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
-static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
-static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self );
+static void     hub_on_updated_ledger( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
+static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
+static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateStore, ofa_ope_template_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateStore ))
@@ -340,16 +342,16 @@ connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub )
 
 	priv->hub = hub;
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 }
@@ -358,9 +360,9 @@ connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_store_on_hub_new_object";
+	static const gchar *thisfn = "ofa_ope_template_store_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -377,9 +379,9 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_store_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_ope_template_store_hub_on_updated_object";
 	GtkTreeIter iter;
 	const gchar *mnemo, *new_id;
 
@@ -409,6 +411,12 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOp
 		if( prev_id && g_utf8_collate( prev_id, new_id )){
 			hub_on_updated_account( self, prev_id, new_id );
 		}
+
+	} else if( OFO_IS_LEDGER( object )){
+		new_id = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
+		if( prev_id && g_utf8_collate( prev_id, new_id )){
+			hub_on_updated_ledger( self, prev_id, new_id );
+		}
 	}
 }
 
@@ -433,13 +441,38 @@ hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const g
 	}
 }
 
+static void
+hub_on_updated_ledger( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id )
+{
+	GtkTreeIter iter;
+	ofoOpeTemplate *template;
+	const gchar *model_ledger;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, OPE_TEMPLATE_COL_OBJECT, &template, -1 );
+			g_return_if_fail( template && OFO_IS_OPE_TEMPLATE( template ));
+			g_object_unref( template );
+
+			model_ledger = ofo_ope_template_get_ledger( template );
+			if( my_strlen( model_ledger ) && !my_collate( model_ledger, prev_id )){
+				ofo_ope_template_set_ledger( template, new_id );
+			}
+
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
+				break;
+			}
+		}
+	}
+}
+
 /*
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_store_on_hub_deleted_object";
+	static const gchar *thisfn = "ofa_ope_template_store_hub_on_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -456,9 +489,9 @@ on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_hub_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self )
+hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_store_on_hub_reload_dataset";
+	static const gchar *thisfn = "ofa_ope_template_store_hub_on_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, self=%p",
 			thisfn, ( void * ) hub, type, ( void * ) self );
