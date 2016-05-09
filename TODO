@@ -347,10 +347,6 @@
 1117 2016- 5- 6 OpeTemplateTreeView: have an indicator that this ope
                 template is used as a recurrent model
 
-1120 2016- 5- 7 BUG Recurrent: when validating waiting operations on an
-                n-1 selection, lot of warnings+critical + one selected
-                line is not validated (but entries are actually generated)
-
 1121 2016- 5- 7 Recurrent: when validating waiting operations, has a
                 'n entries generated' dialog box - should have 'n operations
                  (m entries)' message instead
@@ -1333,6 +1329,11 @@
 1119 2016- 5- 7 BUG Recurrent: when generating recurrent operations from
                 model for the first time, the first model is generated twice
      2016- 5- 9 fixed
+
+1120 2016- 5- 7 BUG Recurrent: when validating waiting operations on an
+                n-1 selection, lot of warnings+critical + one selected
+                line is not validated (but entries are actually generated)
+     2016- 5- 7 unable to reproduce: cancelled
 
 1123 2016- 5- 7 when generating entries, have an operation number
      2016- 5- 8 done

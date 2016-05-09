@@ -208,7 +208,7 @@ setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	priv->tview = ofa_recurrent_run_treeview_new( hub );
+	priv->tview = ofa_recurrent_run_treeview_new( hub, TRUE );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 
 	ofa_recurrent_run_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );

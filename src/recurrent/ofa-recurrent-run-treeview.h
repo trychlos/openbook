@@ -63,7 +63,8 @@ typedef struct {
 
 GType                    ofa_recurrent_run_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaHub *hub );
+ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaHub *hub,
+																			gboolean auto_update );
 
 void                     ofa_recurrent_run_treeview_set_visible       ( ofaRecurrentRunTreeview *bin,
 																			const gchar *status,

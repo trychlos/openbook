@@ -47,6 +47,7 @@ typedef struct {
 	 */
 	ofaHub            *hub;
 	GList             *hub_handlers;
+	gboolean           auto_update;
 
 	/* UI
 	 */
@@ -246,11 +247,16 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
 /**
  * ofa_recurrent_run_treeview_new:
  * @hub: the #ofaHub object hub of the application.
+ * @auto_update: whether the newly inserted operations should be displayed.
  *
  * Returns: a new empty #ofaRecurrentRunTreeview composite object.
+ *
+ * Rationale: this same #ofaRecurrentRunTreeview class is used both by
+ * the #ofaRecurrentRunPage and by the #ofaRecurrentNew dialog. This
+ * later should not be updated when new operations are inserted.
  */
 ofaRecurrentRunTreeview *
-ofa_recurrent_run_treeview_new( ofaHub *hub )
+ofa_recurrent_run_treeview_new( ofaHub *hub, gboolean auto_update )
 {
 	ofaRecurrentRunTreeview *self;
 	ofaRecurrentRunTreeviewPrivate *priv;
@@ -263,6 +269,7 @@ ofa_recurrent_run_treeview_new( ofaHub *hub )
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
 	priv->hub = hub;
+	priv->auto_update = auto_update;
 
 	setup_bin( self );
 	setup_treeview( self );
@@ -1007,6 +1014,7 @@ static void
 hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_new_object";
+	ofaRecurrentRunTreeviewPrivate *priv;
 
 	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,
@@ -1014,7 +1022,9 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_RECURRENT_RUN( object )){
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	if( OFO_IS_RECURRENT_RUN( object ) && priv->auto_update ){
 		store_insert_row( self, OFO_RECURRENT_RUN( object ));
 	}
 }
