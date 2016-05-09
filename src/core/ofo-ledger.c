@@ -485,6 +485,28 @@ cmp_currencies( const gchar *a_currency, const gchar *b_currency )
 }
 
 /**
+ * ofo_ledger_update_currency:
+ * @ledger: this #ofoLedger instance.
+ * @prev_id: the previous currency code.
+ * @new_id: the new currency code.
+ *
+ * Update the detail balances with this new currency code.
+ */
+void
+ofo_ledger_update_currency( ofoLedger *ledger, const gchar *prev_id, const gchar *new_id )
+{
+	GList *balances;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	g_return_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run );
+
+	balances = ledger_find_balance_by_code( ledger, prev_id );
+	if( balances ){
+		ofa_box_set_string( balances, LED_CURRENCY, new_id );
+	}
+}
+
+/**
  * ofo_ledger_get_val_debit:
  * @ledger:
  * @currency:
@@ -2103,6 +2125,4 @@ hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *co
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER );
 }

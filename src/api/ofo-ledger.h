@@ -87,6 +87,7 @@ const GDate    *ofo_ledger_get_last_close      ( const ofoLedger *ledger );
 GDate          *ofo_ledger_get_last_entry      ( const ofoLedger *ledger, GDate *date );
 
 GList          *ofo_ledger_get_currencies      ( const ofoLedger *ledger );
+void            ofo_ledger_update_currency     ( ofoLedger *ledger, const gchar *prev_id, const gchar *new_id );
 
 ofxAmount       ofo_ledger_get_val_debit       ( const ofoLedger *ledger, const gchar *currency );
 ofxAmount       ofo_ledger_get_val_credit      ( const ofoLedger *ledger, const gchar *currency );

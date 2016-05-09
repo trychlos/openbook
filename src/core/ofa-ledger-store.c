@@ -31,6 +31,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 
@@ -63,6 +64,7 @@ static void     setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub );
 static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
 static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store );
 static gboolean find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo, GtkTreeIter *iter );
+static void     hub_on_updated_currency( ofaLedgerStore *self, const gchar *prev_id, const gchar *new_id );
 static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
 static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *store );
 
@@ -308,7 +310,7 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLe
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_hub_updated_object";
 	GtkTreeIter iter;
-	const gchar *mnemo, *new_mnemo;
+	const gchar *mnemo, *new_id;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
 			thisfn,
@@ -318,10 +320,16 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLe
 			( void * ) store );
 
 	if( OFO_IS_LEDGER( object )){
-		new_mnemo = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
-		mnemo = prev_id ? prev_id : new_mnemo;
+		new_id = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
+		mnemo = prev_id ? prev_id : new_id;
 		if( find_ledger_by_mnemo( store, mnemo, &iter )){
 			set_row( store, hub, OFO_LEDGER( object ), &iter);
+		}
+
+	} else if( OFO_IS_CURRENCY( object )){
+		new_id = ofo_currency_get_code( OFO_CURRENCY( object ));
+		if( prev_id && g_utf8_collate( prev_id, new_id )){
+			hub_on_updated_currency( store, prev_id, new_id );
 		}
 	}
 }
@@ -347,6 +355,27 @@ find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo, GtkTreeIter *it
 	}
 
 	return( FALSE );
+}
+
+static void
+hub_on_updated_currency( ofaLedgerStore *self, const gchar *prev_id, const gchar *new_id )
+{
+	GtkTreeIter iter;
+	ofoLedger *ledger;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, LEDGER_COL_OBJECT, &ledger, -1 );
+			g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+			g_object_unref( ledger );
+
+			ofo_ledger_update_currency( ledger, prev_id, new_id );
+
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
+				break;
+			}
+		}
+	}
 }
 
 /*
