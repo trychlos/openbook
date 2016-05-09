@@ -41,12 +41,15 @@ typedef struct {
 
 	/* runtime data
 	 */
+	ofaHub  *hub;
+	GList   *hub_handlers;
 }
 	ofaOpeTemplateStorePrivate;
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
+		G_TYPE_STRING,									/* is_recurrent_model */
 		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
 };
 
@@ -95,6 +98,7 @@ ope_template_store_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -115,6 +119,7 @@ ofa_ope_template_store_init( ofaOpeTemplateStore *self )
 	priv = ofa_ope_template_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->hub_handlers = NULL;
 }
 
 static void
@@ -146,6 +151,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_new";
 	ofaOpeTemplateStore *store;
+	ofaOpeTemplateStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -162,6 +168,9 @@ ofa_ope_template_store_new( ofaHub *hub )
 						OFA_TYPE_OPE_TEMPLATE_STORE,
 						OFA_PROP_HUB,                hub,
 						NULL );
+
+		priv = ofa_ope_template_store_get_instance_private( store );
+		priv->hub = hub;
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), OPE_TEMPLATE_N_COLUMNS, st_col_types );
@@ -256,6 +265,7 @@ set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkT
 			OPE_TEMPLATE_COL_NOTES,     ofo_ope_template_get_notes( ope ),
 			OPE_TEMPLATE_COL_UPD_USER,  ofo_ope_template_get_upd_user( ope ),
 			OPE_TEMPLATE_COL_UPD_STAMP, stamp,
+			OPE_TEMPLATE_COL_RECURRENT, "",
 			-1 );
 
 	g_free( stamp );
@@ -334,10 +344,23 @@ remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *number )
 static void
 connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub )
 {
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
-	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
-	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
+	ofaOpeTemplateStorePrivate *priv;
+	gulong handler;
+
+	priv = ofa_ope_template_store_get_instance_private( self );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
 }
 
 /*

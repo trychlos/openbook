@@ -312,7 +312,7 @@ idialog_init( myIDialog *instance )
 	if( priv->mnemo ){
 		gtk_entry_set_text( entry, priv->mnemo );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_mnemo_changed ), instance );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -323,7 +323,7 @@ idialog_init( myIDialog *instance )
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), instance );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -401,7 +401,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
@@ -420,7 +420,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_date_changed ), self );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->grid ),
@@ -441,7 +441,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
 			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
 			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), DEFAULT_RATE_DECIMALS );
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_rate_changed ), self );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );
 	gtk_widget_set_sensitive( entry, priv->is_writable );

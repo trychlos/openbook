@@ -184,7 +184,7 @@ setup_grid( ofaBalanceGridBin *self )
 	priv->grid = GTK_GRID( grid );
 	gtk_grid_set_column_spacing( priv->grid, 4 );
 
-	g_signal_connect( G_OBJECT( self ), "ofa-update", G_CALLBACK( on_update ), NULL );
+	g_signal_connect( self, "ofa-update", G_CALLBACK( on_update ), NULL );
 
 	gtk_widget_show_all( GTK_WIDGET( self ));
 }

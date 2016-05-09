@@ -335,8 +335,8 @@ setup_ledgers_treeview( ofaLedgerClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_ledger_treeview_get_treeview( priv->tview ));
 
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_rows_selected ), self );
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-activated", G_CALLBACK( on_rows_activated ), self );
+	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( on_rows_selected ), self );
+	g_signal_connect( priv->tview, "ofa-activated", G_CALLBACK( on_rows_activated ), self );
 }
 
 static void

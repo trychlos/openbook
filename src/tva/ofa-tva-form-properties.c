@@ -337,7 +337,7 @@ idialog_init( myIDialog *instance )
 	if( priv->mnemo ){
 		gtk_entry_set_text( entry, priv->mnemo );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_mnemo_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_mnemo_changed ), instance );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -348,7 +348,7 @@ idialog_init( myIDialog *instance )
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), instance );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

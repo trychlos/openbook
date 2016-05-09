@@ -549,7 +549,7 @@ p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 	my_date_editable_set_label( GTK_EDITABLE( priv->p1_end_next ), label, ofa_prefs_date_check());
 	my_date_editable_set_mandatory( GTK_EDITABLE( priv->p1_end_next ), TRUE );
 
-	g_signal_connect( G_OBJECT( priv->p1_end_next ), "changed", G_CALLBACK( p1_on_date_changed ), self );
+	g_signal_connect( priv->p1_end_next, "changed", G_CALLBACK( p1_on_date_changed ), self );
 
 	if( my_date_is_valid( &end ) && exe_length > 0 ){
 		g_date_add_months( &end, exe_length );

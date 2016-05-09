@@ -267,7 +267,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -285,7 +285,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	gtk_tree_view_column_set_expand( column, TRUE );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -302,7 +302,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -319,7 +319,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -336,7 +336,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -345,7 +345,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( tview_on_selection_changed ), self );
+	g_signal_connect( select, "changed", G_CALLBACK( tview_on_selection_changed ), self );
 
 	/* default is to sort by ascending operation date
 	 */

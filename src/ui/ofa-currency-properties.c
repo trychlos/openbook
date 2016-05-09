@@ -289,7 +289,7 @@ idialog_init( myIDialog *instance )
 	if( priv->code ){
 		gtk_entry_set_text( entry, priv->code );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_code_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_code_changed ), instance );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-code-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
@@ -302,7 +302,7 @@ idialog_init( myIDialog *instance )
 	if( priv->label ){
 		gtk_entry_set_text( entry, priv->label );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_label_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), instance );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
@@ -315,7 +315,7 @@ idialog_init( myIDialog *instance )
 	if( priv->symbol ){
 		gtk_entry_set_text( entry, priv->symbol );
 	}
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_symbol_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_symbol_changed ), instance );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-symbol-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
@@ -325,7 +325,7 @@ idialog_init( myIDialog *instance )
 	entry = GTK_ENTRY(
 				my_utils_container_get_child_by_name(
 						GTK_CONTAINER( instance ), "p1-digits-entry" ));
-	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_digits_changed ), instance );
+	g_signal_connect( entry, "changed", G_CALLBACK( on_digits_changed ), instance );
 	str = g_strdup_printf( "%d", priv->digits );
 	gtk_entry_set_text( entry, str );
 	g_free( str );

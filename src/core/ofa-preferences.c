@@ -346,7 +346,7 @@ init_quitting_page( ofaPreferences *self )
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-quit-on-escape" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "toggled", G_CALLBACK( on_quit_on_escape_toggled ), self );
+	g_signal_connect( button, "toggled", G_CALLBACK( on_quit_on_escape_toggled ), self );
 	bvalue = ofa_prefs_assistant_quit_on_escape();
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalue );
 	on_quit_on_escape_toggled( GTK_TOGGLE_BUTTON( button ), self );

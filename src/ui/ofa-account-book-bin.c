@@ -234,7 +234,7 @@ setup_account_selection( ofaAccountBookBin *bin )
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 	priv->account_filter = filter;
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_account_filter_changed ), bin );
+	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_account_filter_changed ), bin );
 
 }
 
@@ -258,7 +258,7 @@ setup_date_selection( ofaAccountBookBin *bin )
 	label = ofa_idate_filter_get_frame_label( OFA_IDATE_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
+	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
 
 }
 
@@ -274,7 +274,7 @@ setup_others( ofaAccountBookBin *bin )
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
 	priv->new_page_btn = toggle;
 
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), bin );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_new_page_toggled ), bin );
 }
 
 static void

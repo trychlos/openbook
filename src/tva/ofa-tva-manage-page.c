@@ -217,7 +217,7 @@ setup_form_treeview( ofaTVAManagePage *self )
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
+	g_signal_connect( select, "changed", G_CALLBACK( on_row_selected ), self );
 
 	priv->form_treeview = tview;
 

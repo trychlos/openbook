@@ -55,6 +55,7 @@
    - AccountSelect, OpeTemplateSelect: fix hub finalization (todo #1106).
    - EntryPage: check strings before compare (todo #1113). 
    - FormulaEngine: fix nested parenthese evaluation (todo #1107).
+   - Hub: disconnect handlers from long-life single objects.
    - IExportable/IImportable types: have BAT files at end of the list (todo #1125).
    - ImporterPdfLcl: fix PDF import (todo #1124).
    - Periodicity: fix 31 day label (todo #1118).

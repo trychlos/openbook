@@ -254,7 +254,7 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-all-ledgers" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_all_ledgers_toggled ), bin );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_all_ledgers_toggled ), bin );
 	priv->all_ledgers_btn = toggle;
 }
 
@@ -277,7 +277,7 @@ setup_date_selection( ofaLedgerBookBin *bin )
 	label = ofa_idate_filter_get_frame_label( OFA_IDATE_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
+	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
 
 	priv->date_filter = filter;
 }
@@ -292,7 +292,7 @@ setup_others( ofaLedgerBookBin *bin )
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-new-page" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), bin );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_new_page_toggled ), bin );
 	priv->new_page_btn = toggle;
 }
 

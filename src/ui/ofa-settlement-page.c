@@ -419,12 +419,12 @@ setup_footer( ofaSettlementPage *self, GtkContainer *parent )
 
 	widget = my_utils_container_get_child_by_name( parent, "settle-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_settle_clicked ), self );
+	g_signal_connect( widget, "clicked", G_CALLBACK( on_settle_clicked ), self );
 	priv->settle_btn = widget;
 
 	widget = my_utils_container_get_child_by_name( parent, "unsettle-btn" );
 	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	g_signal_connect( G_OBJECT( widget ), "clicked", G_CALLBACK( on_unsettle_clicked ), self );
+	g_signal_connect( widget, "clicked", G_CALLBACK( on_unsettle_clicked ), self );
 	priv->unsettle_btn = widget;
 
 	widget = my_utils_container_get_child_by_name( parent, "footer-label" );
@@ -512,7 +512,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -532,7 +532,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -555,7 +555,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -575,7 +575,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -601,7 +601,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -623,7 +623,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -645,7 +645,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -666,7 +666,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	gtk_tree_view_append_column( tview, column );
 	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	if( priv->sort_column_id == column_id ){
@@ -676,7 +676,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_entries_treeview_selection_changed ), self );
+	g_signal_connect( select, "changed", G_CALLBACK( on_entries_treeview_selection_changed ), self );
 
 	/* default is to sort by ascending operation date
 	 */

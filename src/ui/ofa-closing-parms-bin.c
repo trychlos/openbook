@@ -445,7 +445,7 @@ add_button( ofaClosingParmsBin *self, const gchar *stock_id, gint column, gint r
 	g_object_set_data( G_OBJECT( button ), DATA_ROW, GINT_TO_POINTER( row ));
 	image = gtk_image_new_from_icon_name( stock_id, GTK_ICON_SIZE_BUTTON );
 	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_button_clicked ), self );
+	g_signal_connect( button, "clicked", G_CALLBACK( on_button_clicked ), self );
 	gtk_grid_attach( priv->grid, button, column, row, 1, 1 );
 }
 

@@ -619,7 +619,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-new-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( p2_on_new_profile_clicked ), self );
+	g_signal_connect( button, "clicked", G_CALLBACK( p2_on_new_profile_clicked ), self );
 
 	priv->p2_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-message" );
 	g_return_if_fail( priv->p2_message && GTK_IS_LABEL( priv->p2_message ));

@@ -242,7 +242,7 @@ setup_account_selection( ofaBalanceBin *bin )
 	filter = ofa_account_filter_vv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_account_filter_changed ), bin );
+	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_account_filter_changed ), bin );
 
 	priv->account_filter = filter;
 }
@@ -272,7 +272,7 @@ setup_date_selection( ofaBalanceBin *bin )
 	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), bin );
 	priv->accounts_balance_btn = check;
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
+	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
 
 	priv->from_prompt =
 			ofa_idate_filter_get_prompt( OFA_IDATE_FILTER( filter ), IDATE_FILTER_FROM );
@@ -294,12 +294,12 @@ setup_others( ofaBalanceBin *bin )
 	 * safely updated when setting the later preference */
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-new-page" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_new_page_toggled ), bin );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_new_page_toggled ), bin );
 	priv->new_page_btn = toggle;
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-per-class" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( G_OBJECT( toggle ), "toggled", G_CALLBACK( on_per_class_toggled ), bin );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_per_class_toggled ), bin );
 	priv->per_class_btn = toggle;
 }
 

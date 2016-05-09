@@ -430,8 +430,7 @@ init_ui( ofaAccountProperties *dialog )
 	/* account number */
 	priv->number_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-number" );
 	g_return_if_fail( priv->number_entry && GTK_IS_ENTRY( priv->number_entry ));
-	g_signal_connect(
-			G_OBJECT( priv->number_entry ), "changed", G_CALLBACK( on_number_changed ), dialog );
+	g_signal_connect( priv->number_entry, "changed", G_CALLBACK( on_number_changed ), dialog );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -440,8 +439,7 @@ init_ui( ofaAccountProperties *dialog )
 	/* account label */
 	priv->label_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-label" );
 	g_return_if_fail( priv->label_entry && GTK_IS_ENTRY( priv->label_entry ));
-	g_signal_connect(
-			G_OBJECT( priv->label_entry ), "changed", G_CALLBACK( on_label_changed ), dialog );
+	g_signal_connect( priv->label_entry, "changed", G_CALLBACK( on_label_changed ), dialog );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-label-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->label_entry ));
@@ -454,13 +452,11 @@ init_ui( ofaAccountProperties *dialog )
 
 	priv->root_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-root-account" );
 	g_return_if_fail( priv->root_btn && GTK_IS_RADIO_BUTTON( priv->root_btn ));
-	g_signal_connect(
-			G_OBJECT( priv->root_btn ), "toggled", G_CALLBACK( on_root_toggled ), dialog );
+	g_signal_connect( priv->root_btn, "toggled", G_CALLBACK( on_root_toggled ), dialog );
 
 	priv->detail_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-detail-account" );
 	g_return_if_fail( priv->detail_btn && GTK_IS_RADIO_BUTTON( priv->detail_btn ));
-	g_signal_connect(
-			G_OBJECT( priv->detail_btn ), "toggled", G_CALLBACK( on_detail_toggled ), dialog );
+	g_signal_connect( priv->detail_btn, "toggled", G_CALLBACK( on_detail_toggled ), dialog );
 
 	/* account behavior when closing exercice */
 	priv->p1_exe_frame = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-exe-frame" );
@@ -481,7 +477,7 @@ init_ui( ofaAccountProperties *dialog )
 	gtk_container_add( GTK_CONTAINER( priv->currency_parent ), GTK_WIDGET( combo ));
 	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
 	ofa_currency_combo_set_hub( combo, priv->hub );
-	g_signal_connect( G_OBJECT( combo ), "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
+	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
 	priv->currency_etiq = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-currency-label" );
 	g_return_if_fail( priv->currency_etiq && GTK_IS_LABEL( priv->currency_etiq ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( priv->currency_etiq ), GTK_WIDGET( combo ));

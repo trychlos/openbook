@@ -568,8 +568,8 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	priv->tview = GTK_TREE_VIEW( tview );
 
 	gtk_tree_view_set_headers_visible( priv->tview, TRUE );
-	g_signal_connect( G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_key_pressed ), self );
+	g_signal_connect( tview, "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_key_pressed ), self );
 
 	priv->tstore = GTK_TREE_MODEL( gtk_tree_store_new(
 			N_COLUMNS,
@@ -613,7 +613,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
@@ -638,7 +638,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
@@ -658,7 +658,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
@@ -680,7 +680,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
@@ -699,7 +699,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
@@ -718,7 +718,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
@@ -738,7 +738,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
@@ -759,7 +759,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 
@@ -779,7 +779,7 @@ setup_treeview( ofaReconcilPage *self, GtkContainer *parent )
 	gtk_tree_view_column_set_cell_data_func(
 			column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( on_header_clicked ), self );
+	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
 			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
 	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
@@ -897,9 +897,7 @@ setup_entries_filter( ofaReconcilPage *self, GtkContainer *parent )
 				-1 );
 	}
 
-	g_signal_connect(
-			G_OBJECT( priv->mode_combo ),
-			"changed", G_CALLBACK( on_mode_combo_changed ), self );
+	g_signal_connect( priv->mode_combo, "changed", G_CALLBACK( on_mode_combo_changed ), self );
 }
 
 static void

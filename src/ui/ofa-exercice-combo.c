@@ -175,7 +175,7 @@ setup_combo( ofaExerciceCombo *combo )
 	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", EXERCICE_COL_LABEL );
 
-	g_signal_connect( G_OBJECT( combo ), "changed", G_CALLBACK( on_exercice_changed ), NULL );
+	g_signal_connect( combo, "changed", G_CALLBACK( on_exercice_changed ), NULL );
 }
 
 static void

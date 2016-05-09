@@ -51,6 +51,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaHub     *hub;
+	GList      *hub_handlers;
 }
 	ofaBatStorePrivate;
 
@@ -112,6 +113,7 @@ bat_store_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -132,6 +134,7 @@ ofa_bat_store_init( ofaBatStore *self )
 	priv = ofa_bat_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->hub_handlers = NULL;
 }
 
 static void
@@ -177,7 +180,6 @@ ofa_bat_store_new( ofaHub *hub )
 						NULL );
 
 		priv = ofa_bat_store_get_instance_private( store );
-
 		priv->hub = hub;
 
 		gtk_list_store_set_column_types(
@@ -360,20 +362,29 @@ find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter )
 
 /*
  * connect to the dossier signaling system
- * there is no need to keep trace of the signal handlers, as the lifetime
- * of this store is equal to those of the dossier
  */
 static void
 connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_bat_store_connect_to_hub_signaling_system";
+	ofaBatStorePrivate *priv;
+	gulong handler;
 
 	g_debug( "%s: store=%p, hub=%p", thisfn, ( void * ) store, ( void * ) hub );
 
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
+	priv = ofa_bat_store_get_instance_private( store );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*

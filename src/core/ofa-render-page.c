@@ -219,13 +219,13 @@ setup_actions_area( ofaRenderPage *self, GtkContainer *parent )
 
 	button = my_utils_container_get_child_by_name( parent, "render-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_render_clicked ), self );
+	g_signal_connect( button, "clicked", G_CALLBACK( on_render_clicked ), self );
 	gtk_widget_set_sensitive( button, FALSE );
 	priv->render_btn = button;
 
 	button = my_utils_container_get_child_by_name( parent, "print-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_print_clicked ), self );
+	g_signal_connect( button, "clicked", G_CALLBACK( on_print_clicked ), self );
 	gtk_widget_set_sensitive( button, FALSE );
 	priv->print_btn = button;
 }
@@ -240,7 +240,7 @@ setup_drawing_area( ofaRenderPage *self, GtkContainer *parent )
 
 	drawing = my_utils_container_get_child_by_name( parent, "drawing-zone" );
 	g_return_if_fail( drawing && GTK_IS_DRAWING_AREA( drawing ));
-	g_signal_connect( G_OBJECT( drawing ), "draw", G_CALLBACK( on_draw ), self );
+	g_signal_connect( drawing, "draw", G_CALLBACK( on_draw ), self );
 	priv->drawing_area = drawing;
 
 	label = my_utils_container_get_child_by_name( parent, "message" );

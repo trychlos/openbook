@@ -274,7 +274,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
 	bin = ofa_balance_bin_new( OFA_IGETTER( page ));
-	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
+	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 
 	return( GTK_WIDGET( bin ));

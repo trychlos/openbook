@@ -36,10 +36,12 @@
 /* private instance data
  */
 typedef struct {
-	gboolean    dispose_has_run;
+	gboolean   dispose_has_run;
 
-	/*
+	/* runtime
 	 */
+	ofaHub    *hub;
+	GList     *hub_handlers;
 }
 	ofaCurrencyStorePrivate;
 
@@ -94,6 +96,7 @@ currency_store_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -114,6 +117,7 @@ ofa_currency_store_init( ofaCurrencyStore *self )
 	priv = ofa_currency_store_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->hub_handlers = NULL;
 }
 
 static void
@@ -251,10 +255,22 @@ set_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency, GtkT
 static void
 setup_signaling_connect( ofaCurrencyStore *store, ofaHub *hub )
 {
-	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
-	g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
+	ofaCurrencyStorePrivate *priv;
+	gulong handler;
+
+	priv = ofa_currency_store_get_instance_private( store );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*

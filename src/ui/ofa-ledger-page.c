@@ -187,10 +187,10 @@ setup_tree_view( ofaPage *page )
 	ofa_ledger_treeview_set_hub( priv->tview, hub );
 	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_BROWSE );
 
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-changed", G_CALLBACK( on_row_selected ), page );
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-activated", G_CALLBACK( on_row_activated ), page );
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-insert", G_CALLBACK( on_insert_key ), page );
-	g_signal_connect( G_OBJECT( priv->tview ), "ofa-delete", G_CALLBACK( on_delete_key ), page );
+	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( priv->tview, "ofa-activated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
+	g_signal_connect( priv->tview, "ofa-delete", G_CALLBACK( on_delete_key ), page );
 
 	return( parent );
 }
