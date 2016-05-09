@@ -2079,8 +2079,6 @@ hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_i
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_BAT );
 }
 
 static void
@@ -2103,6 +2101,4 @@ hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_code, const gchar *
 	ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
-
-	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_BAT );
 }

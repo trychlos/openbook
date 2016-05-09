@@ -35,6 +35,7 @@
 #include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
+#include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-concil.h"
@@ -71,14 +72,16 @@ static void     insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat )
 static void     set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat );
 static gboolean find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter );
 static void     connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub );
-static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
-static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *store );
-static void     on_updated_bat( ofaBatStore *store, ofoBat *bat );
-static void     on_updated_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil );
-static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
-static void     on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil );
-static void     concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store );
-static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store );
+static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *store );
+static void     hub_on_updated_bat( ofaBatStore *store, ofoBat *bat );
+static void     hub_on_updated_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil );
+static void     hub_on_updated_account( ofaBatStore *self, const gchar *prev_id, const gchar *new_id );
+static void     hub_on_updated_currency( ofaBatStore *self, const gchar *prev_id, const gchar *new_id );
+static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
+static void     hub_on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil );
+static void     hub_on_deleted_concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store );
+static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatStore, ofa_bat_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaBatStore ))
@@ -186,9 +189,9 @@ ofa_bat_store_new( ofaHub *hub )
 
 		my_icollector_single_set_object( collector, store );
 
-		load_dataset( store, hub );
-
 		connect_to_hub_signaling_system( store, hub );
+
+		load_dataset( store, hub );
 	}
 
 	return( store );
@@ -370,16 +373,16 @@ connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
 
 	priv->hub = hub;
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -387,9 +390,9 @@ connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {
-	static const gchar *thisfn = "ofa_bat_store_on_hub_new_object";
+	static const gchar *thisfn = "ofa_bat_store_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,
@@ -406,9 +409,10 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *store )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *store )
 {
-	static const gchar *thisfn = "ofa_bat_store_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_bat_store_hub_on_updated_object";
+	const gchar *new_id;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
 			thisfn,
@@ -418,15 +422,27 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBa
 			( void * ) store );
 
 	if( OFO_IS_BAT( object )){
-		on_updated_bat( store, OFO_BAT( object ));
+		hub_on_updated_bat( store, OFO_BAT( object ));
 
 	} else if( OFO_IS_CONCIL( object )){
-		on_updated_concil( store, hub, OFO_CONCIL( object ));
+		hub_on_updated_concil( store, hub, OFO_CONCIL( object ));
+
+	} else if( OFO_IS_ACCOUNT( object )){
+		new_id = ofo_account_get_number( OFO_ACCOUNT( object ));
+		if( prev_id && g_utf8_collate( prev_id, new_id )){
+			hub_on_updated_account( store, prev_id, new_id );
+		}
+
+	} else if( OFO_IS_CURRENCY( object )){
+		new_id = ofo_currency_get_code( OFO_CURRENCY( object ));
+		if( prev_id && g_utf8_collate( prev_id, new_id )){
+			hub_on_updated_currency( store, prev_id, new_id );
+		}
 	}
 }
 
 static void
-on_updated_bat( ofaBatStore *store, ofoBat *bat )
+hub_on_updated_bat( ofaBatStore *store, ofoBat *bat )
 {
 	GtkTreeIter iter;
 
@@ -442,18 +458,82 @@ on_updated_bat( ofaBatStore *store, ofoBat *bat )
  *  group
  */
 static void
-on_updated_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil )
+hub_on_updated_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil )
 {
-	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) concil_enumerate_cb, store );
+	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) hub_on_deleted_concil_enumerate_cb, store );
+}
+
+static void
+hub_on_updated_account( ofaBatStore *self, const gchar *prev_id, const gchar *new_id )
+{
+	GtkTreeIter iter;
+	ofoBat *bat;
+	gchar *row_account;
+	gint cmp;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, BAT_COL_ACCOUNT, &row_account, BAT_COL_OBJECT, &bat, -1 );
+
+			g_return_if_fail( bat && OFO_IS_BAT( bat ));
+			g_object_unref( bat );
+
+			if( row_account ){
+				cmp = g_utf8_collate( row_account, prev_id );
+				g_free( row_account );
+
+				if( cmp == 0 ){
+					ofo_bat_set_account( bat, new_id );
+					gtk_list_store_set( GTK_LIST_STORE( self ), &iter, BAT_COL_ACCOUNT, new_id, -1 );
+				}
+			}
+
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
+				break;
+			}
+		}
+	}
+}
+
+static void
+hub_on_updated_currency( ofaBatStore *self, const gchar *prev_id, const gchar *new_id )
+{
+	GtkTreeIter iter;
+	ofoBat *bat;
+	gchar *row_currency;
+	gint cmp;
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, BAT_COL_CURRENCY, &row_currency, BAT_COL_OBJECT, &bat, -1 );
+
+			g_return_if_fail( bat && OFO_IS_BAT( bat ));
+			g_object_unref( bat );
+
+			if( row_currency ){
+				cmp = g_utf8_collate( row_currency, prev_id );
+				g_free( row_currency );
+
+				if( cmp == 0 ){
+					ofo_bat_set_currency( bat, new_id );
+					gtk_list_store_set( GTK_LIST_STORE( self ), &iter, BAT_COL_CURRENCY, new_id, -1 );
+				}
+			}
+
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
+				break;
+			}
+		}
+	}
 }
 
 /*
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 {
-	static const gchar *thisfn = "ofa_bat_store_on_hub_deleted_object";
+	static const gchar *thisfn = "ofa_bat_store_hub_on_deleted_object";
 	GtkTreeIter iter;
 
 	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
@@ -467,18 +547,18 @@ on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaBatStore *store )
 			gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
 		}
 	} else if( OFO_IS_CONCIL( object )){
-		on_deleted_concil( store, hub, OFO_CONCIL( object ));
+		hub_on_deleted_concil( store, hub, OFO_CONCIL( object ));
 	}
 }
 
 static void
-on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil )
+hub_on_deleted_concil( ofaBatStore *store, ofaHub *hub, ofoConcil *concil )
 {
-	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) concil_enumerate_cb, store );
+	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) hub_on_deleted_concil_enumerate_cb, store );
 }
 
 static void
-concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store )
+hub_on_deleted_concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBatStore *store )
 {
 	ofaBatStorePrivate *priv;
 	ofxCounter bat_id;
@@ -500,9 +580,9 @@ concil_enumerate_cb( ofoConcil *concil, const gchar *type, ofxCounter id, ofaBat
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_hub_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store )
+hub_on_reload_dataset( ofaHub *hub, GType type, ofaBatStore *store )
 {
-	static const gchar *thisfn = "ofa_bat_store_on_hub_reload_dataset";
+	static const gchar *thisfn = "ofa_bat_store_hub_on_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, store=%p",
 			thisfn, ( void * ) hub, type, ( void * ) store );
