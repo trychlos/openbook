@@ -521,7 +521,7 @@ my_date_to_str( const GDate *date, myDateFormat format )
 						g_date_get_year( date ));
 				break;
 
-			/* mmm yyyy - display as a label with first uppercase */
+			/* Mmm yyyy - display as a label with first uppercase */
 			case MY_DATE_MMYY:
 				g_free( str );
 				str = g_strdup_printf( "%s %4.4d",

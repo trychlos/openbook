@@ -81,7 +81,7 @@
  *    - 'LELA':    ledger label
  *    - 'REF':     the operation piece reference
  *    - 'DOPE':    operation date (format from user preferences)
- *    - 'DOMY':    operation date as mmm yyyy
+ *    - 'DOMY':    operation date as Mmm yyyy
  *    - 'DEFFECT': effect date (format from user preferences)
  *    - 'SOLDE':   the solde of the entries debit and credit to balance
  *                 the operation
