@@ -298,7 +298,7 @@ ofa_istore_set_columns_type( ofaIStore *store, ofaHub *hub, guint columns_count,
 		}
 	}
 
-	ofa_itree_adder_get_types( hub, store, ( TreeAdderTypeCb ) on_column_type_added, sdata );
+	ofa_itree_adder_add_types( hub, store, ( TreeAdderTypeCb ) on_column_type_added, sdata );
 
 	if( 0 ){
 		for( i=0 ; i<sdata->cols_count ; ++i ){

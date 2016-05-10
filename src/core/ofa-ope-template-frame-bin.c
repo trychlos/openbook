@@ -34,6 +34,8 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-istore.h"
+#include "api/ofa-itree-adder.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -90,10 +92,6 @@ typedef struct {
 	sPageData;
 
 #define DATA_PAGE_LEDGER                  "ofa-data-page-ledger"
-
-/* the column identifier is attached to each column header
- */
-#define DATA_COLUMN_ID                    "ofa-data-column-id"
 
 /* a settings which holds the order of ledger mnemos as a string list
  */
@@ -579,15 +577,17 @@ page_add_treeview( ofaOpeTemplateFrameBin *self, GtkWidget *page )
 static void
 page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
 {
+	ofaOpeTemplateFrameBinPrivate *priv;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
+
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 				_( "Mnemo" ),
 				cell, "text", OPE_TEMPLATE_COL_MNEMO,
 				NULL );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( OPE_TEMPLATE_COL_MNEMO ));
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
@@ -597,11 +597,12 @@ page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
 			_( "Label" ),
 			cell, "text", OPE_TEMPLATE_COL_LABEL,
 			NULL );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( OPE_TEMPLATE_COL_LABEL ));
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
+
+	ofa_itree_adder_add_columns( priv->hub, OFA_ISTORE( priv->store ), GTK_WIDGET( tview ));
 }
 
 static GtkWidget *
@@ -613,6 +614,7 @@ page_get_treeview( const ofaOpeTemplateFrameBin *self )
 	GtkWidget *tview;
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
 	tview = NULL;
 	page_n = gtk_notebook_get_current_page( GTK_NOTEBOOK( priv->notebook ));
 

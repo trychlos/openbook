@@ -37,8 +37,9 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType register_type( void );
 static void  interface_base_init( ofaITreeAdderInterface *klass );
 static void  interface_base_finalize( ofaITreeAdderInterface *klass );
-static void  itree_adder_get_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data );
+static void  itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data );
 static void  itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object );
+static void  itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, GtkWidget *treeview );
 
 /**
  * ofa_itree_adder_get_type:
@@ -127,7 +128,7 @@ ofa_itree_adder_get_interface_last_version( void )
 }
 
 /**
- * ofa_itree_adder_get_types:
+ * ofa_itree_adder_add_types:
  * @hub: the #ofaHub object of the application.
  * @store: the target #ofaIStore.
  * @cb: the callback function.
@@ -136,7 +137,7 @@ ofa_itree_adder_get_interface_last_version( void )
  * Defines GType's to be added to a store.
  */
 void
-ofa_itree_adder_get_types( ofaHub *hub, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data )
+ofa_itree_adder_add_types( ofaHub *hub, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data )
 {
 	ofaExtenderCollection *collection;
 	GList *modules, *it;
@@ -147,7 +148,7 @@ ofa_itree_adder_get_types( ofaHub *hub, ofaIStore *store, TreeAdderTypeCb cb, vo
 	collection = ofa_hub_get_extender_collection( hub );
 	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
 	for( it=modules ; it ; it=it->next ){
-		itree_adder_get_types( OFA_ITREE_ADDER( it->data ), store, cb, cb_data );
+		itree_adder_add_types( OFA_ITREE_ADDER( it->data ), store, cb, cb_data );
 	}
 	ofa_extender_collection_free_types( modules );
 }
@@ -174,6 +175,32 @@ ofa_itree_adder_set_values( ofaHub *hub, ofaIStore *store, GtkTreeIter *iter, vo
 	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
 	for( it=modules ; it ; it=it->next ){
 		itree_adder_set_values( OFA_ITREE_ADDER( it->data ), store, hub, iter, object );
+	}
+	ofa_extender_collection_free_types( modules );
+}
+
+/**
+ * ofa_itree_adder_add_columns:
+ * @hub: the #ofaHub object of the application.
+ * @store: the source #ofaIStore.
+ * @treeview: the target #GtkTreeView.
+ *
+ * Let an implementation add its columns to a @treeview.
+ */
+void
+ofa_itree_adder_add_columns( ofaHub *hub, ofaIStore *store, GtkWidget *treeview )
+{
+	ofaExtenderCollection *collection;
+	GList *modules, *it;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( store && OFA_IS_ISTORE( store ));
+	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
+
+	collection = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
+	for( it=modules ; it ; it=it->next ){
+		itree_adder_add_columns( OFA_ITREE_ADDER( it->data ), store, treeview );
 	}
 	ofa_extender_collection_free_types( modules );
 }
@@ -217,7 +244,7 @@ ofa_itree_adder_get_interface_version( GType type )
 }
 
 /*
- * itree_adder_get_types:
+ * itree_adder_add_types:
  * @instance: the #ofaITreeAdder instance.
  * @cb: the callback function.
  * @cb_data: user data for the callback.
@@ -225,22 +252,24 @@ ofa_itree_adder_get_interface_version( GType type )
  * Defines GType's to be added to a store.
  */
 static void
-itree_adder_get_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data )
+itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data )
 {
-	static const gchar *thisfn = "ofa_itree_adder_get_types";
+	static const gchar *thisfn = "ofa_itree_adder_add_types";
 
-	if( OFA_ITREE_ADDER_GET_INTERFACE( instance )->get_types ){
-		OFA_ITREE_ADDER_GET_INTERFACE( instance )->get_types( instance, store, cb, cb_data );
+	if( OFA_ITREE_ADDER_GET_INTERFACE( instance )->add_types ){
+		OFA_ITREE_ADDER_GET_INTERFACE( instance )->add_types( instance, store, cb, cb_data );
 		return;
 	}
 
-	g_info( "%s: ofaITreeAdder's %s implementation does not provide 'get_types()' method",
+	g_info( "%s: ofaITreeAdder's %s implementation does not provide 'add_types()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /*
  * itree_adder_set_values:
  * @instance: the #ofaITreeAdder instance.
+ * @store:
+ * @hub:
  * @iter:
  * @object:
  *
@@ -257,5 +286,27 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
 	}
 
 	g_info( "%s: ofaITreeAdder's %s implementation does not provide 'set_values()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+}
+
+/*
+ * itree_adder_add_columns:
+ * @instance: the #ofaITreeAdder instance.
+ * @store:
+ * @treeview:
+ *
+ * Add columns to a @treeview.
+ */
+static void
+itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, GtkWidget *treeview )
+{
+	static const gchar *thisfn = "ofa_itree_adder_add_columns";
+
+	if( OFA_ITREE_ADDER_GET_INTERFACE( instance )->add_columns ){
+		OFA_ITREE_ADDER_GET_INTERFACE( instance )->add_columns( instance, store, treeview );
+		return;
+	}
+
+	g_info( "%s: ofaITreeAdder's %s implementation does not provide 'add_columns()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }

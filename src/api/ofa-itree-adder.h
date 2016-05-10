@@ -80,7 +80,7 @@ typedef struct {
 
 	/*** instance-wide ***/
 	/**
-	 * get_types:
+	 * add_types:
 	 * @instance: the #ofaITreeAdder instance.
 	 * @store: the target #ofaIStore.
 	 * @cb: the callback function to be called for each GType.
@@ -90,7 +90,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void  ( *get_types )            ( ofaITreeAdder *instance,
+	void  ( *add_types )            ( ofaITreeAdder *instance,
 											ofaIStore *store,
 											TreeAdderTypeCb cb,
 											void *cb_data );
@@ -112,6 +112,20 @@ typedef struct {
 											ofaHub *hub,
 											GtkTreeIter *iter,
 											void *object );
+
+	/**
+	 * add_columns:
+	 * @instance: the #ofaITreeAdder instance.
+	 * @store: the source #ofaIStore.
+	 * @treeview: the target #GtkTreeView.
+	 *
+	 * Add columns to a view.
+	 *
+	 * Since: version 1.
+	 */
+	void  ( *add_columns )          ( ofaITreeAdder *instance,
+											ofaIStore *store,
+											GtkWidget *treeview );
 }
 	ofaITreeAdderInterface;
 
@@ -122,7 +136,7 @@ GType            ofa_itree_adder_get_type                  ( void );
 
 guint            ofa_itree_adder_get_interface_last_version( void );
 
-void             ofa_itree_adder_get_types                 ( ofaHub *hub,
+void             ofa_itree_adder_add_types                 ( ofaHub *hub,
 																	ofaIStore *store,
 																	TreeAdderTypeCb cb,
 																	void *cb_data );
@@ -131,6 +145,10 @@ void             ofa_itree_adder_set_values                ( ofaHub *hub,
 																	ofaIStore *store,
 																	GtkTreeIter *iter,
 																	void *object );
+
+void             ofa_itree_adder_add_columns               ( ofaHub *hub,
+																	ofaIStore *store,
+																	GtkWidget *treeview );
 
 /*
  * Implementation-wide
