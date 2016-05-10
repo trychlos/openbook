@@ -5,5 +5,8 @@
     <file>ofa-recurrent-model-properties.ui</file>
     <file>ofa-recurrent-new.ui</file>
     <file>ofa-recurrent-run-page.ui</file>
+
+    <file>ofa-recurrent-icon-16x16.png</file>
+    <file>filler.png</file>
   </gresource>
 </gresources>

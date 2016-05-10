@@ -35,6 +35,8 @@
  * list/tree store and to the corresponding treeview.
  */
 
+#include <gtk/gtk.h>
+
 #include "api/ofa-hub-def.h"
 #include "api/ofa-istore.h"
 
@@ -54,6 +56,7 @@ typedef guint ( *TreeAdderTypeCb )( ofaIStore *, GType, void * );
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
  * @get_types: [must] defines the implemented GType's.
+ * @set_values: [should] set values in a row.
  *
  * This defines the interface that an #ofaITreeAdder should implement.
  */
@@ -91,6 +94,24 @@ typedef struct {
 											ofaIStore *store,
 											TreeAdderTypeCb cb,
 											void *cb_data );
+
+	/**
+	 * set_values:
+	 * @instance: the #ofaITreeAdder instance.
+	 * @store: the target #ofaIStore.
+	 * @hub: the #ofaHub object of the application.
+	 * @iter: the current #GtkTreeIter.
+	 * @object: the current #GObject.
+	 *
+	 * Sets values in the row.
+	 *
+	 * Since: version 1.
+	 */
+	void  ( *set_values )           ( ofaITreeAdder *instance,
+											ofaIStore *store,
+											ofaHub *hub,
+											GtkTreeIter *iter,
+											void *object );
 }
 	ofaITreeAdderInterface;
 
@@ -105,6 +126,11 @@ void             ofa_itree_adder_get_types                 ( ofaHub *hub,
 																	ofaIStore *store,
 																	TreeAdderTypeCb cb,
 																	void *cb_data );
+
+void             ofa_itree_adder_set_values                ( ofaHub *hub,
+																	ofaIStore *store,
+																	GtkTreeIter *iter,
+																	void *object );
 
 /*
  * Implementation-wide

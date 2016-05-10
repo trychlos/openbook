@@ -260,6 +260,8 @@ set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkT
 			-1 );
 
 	g_free( stamp );
+
+	ofa_itree_adder_set_values( hub, OFA_ISTORE( self ), iter, ( void * ) ope );
 }
 
 /*

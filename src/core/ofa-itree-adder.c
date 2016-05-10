@@ -38,6 +38,7 @@ static GType register_type( void );
 static void  interface_base_init( ofaITreeAdderInterface *klass );
 static void  interface_base_finalize( ofaITreeAdderInterface *klass );
 static void  itree_adder_get_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data );
+static void  itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object );
 
 /**
  * ofa_itree_adder_get_type:
@@ -152,6 +153,32 @@ ofa_itree_adder_get_types( ofaHub *hub, ofaIStore *store, TreeAdderTypeCb cb, vo
 }
 
 /**
+ * ofa_itree_adder_set_values:
+ * @hub: the #ofaHub object of the application.
+ * @store: the target #ofaIStore.
+ * @iter: the current #GtkTreeIter.
+ * @object: the current object.
+ *
+ * Let an implementation set its values in the current row.
+ */
+void
+ofa_itree_adder_set_values( ofaHub *hub, ofaIStore *store, GtkTreeIter *iter, void *object )
+{
+	ofaExtenderCollection *collection;
+	GList *modules, *it;
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_if_fail( store && OFA_IS_ISTORE( store ));
+
+	collection = ofa_hub_get_extender_collection( hub );
+	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
+	for( it=modules ; it ; it=it->next ){
+		itree_adder_set_values( OFA_ITREE_ADDER( it->data ), store, hub, iter, object );
+	}
+	ofa_extender_collection_free_types( modules );
+}
+
+/**
  * ofa_itree_adder_get_interface_version:
  * @type: the implementation's GType.
  *
@@ -208,5 +235,27 @@ itree_adder_get_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeC
 	}
 
 	g_info( "%s: ofaITreeAdder's %s implementation does not provide 'get_types()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+}
+
+/*
+ * itree_adder_set_values:
+ * @instance: the #ofaITreeAdder instance.
+ * @iter:
+ * @object:
+ *
+ * Set values in a row.
+ */
+static void
+itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object )
+{
+	static const gchar *thisfn = "ofa_itree_adder_set_values";
+
+	if( OFA_ITREE_ADDER_GET_INTERFACE( instance )->set_values ){
+		OFA_ITREE_ADDER_GET_INTERFACE( instance )->set_values( instance, store, hub, iter, object );
+		return;
+	}
+
+	g_info( "%s: ofaITreeAdder's %s implementation does not provide 'set_values()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }

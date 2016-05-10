@@ -255,6 +255,37 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 }
 
 /**
+ * ofo_recurrent_model_use_ope_template:
+ * @hub:
+ * @mnemo:
+ *
+ * Returns: %TRUE if any #ofoRecurrentModel use this @mnemo operation
+ * template.
+ */
+gboolean
+ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *mnemo )
+{
+	GList *dataset, *it;
+	ofoRecurrentModel *model;
+	const gchar *model_template;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( my_strlen( mnemo ), FALSE );
+
+	dataset = ofo_recurrent_model_get_dataset( hub );
+
+	for( it=dataset ; it ; it=it->next ){
+		model = OFO_RECURRENT_MODEL( it->data );
+		model_template = ofo_recurrent_model_get_ope_template( model );
+		if( !my_collate( model_template, mnemo )){
+			return( TRUE );
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_recurrent_model_new:
  */
 ofoRecurrentModel *
