@@ -75,6 +75,14 @@ typedef struct {
 }
 	ofaRecurrentRunPagePrivate;
 
+/* counters used when validating a waiting operation
+ */
+typedef struct {
+	guint ope_count;
+	guint entry_count;
+}
+	sCount;
+
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-run-page.ui";
 static const gchar *st_page_settings    = "ofaRecurrentRunPage-settings";
 
@@ -95,7 +103,7 @@ static void       action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPa
 static void       action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self );
 static void       action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
 static void       action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, RecurrentValidCb cb, void *user_data );
-static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, guint *count );
+static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, sCount *counts );
 static void       get_settings( ofaRecurrentRunPage *self );
 static void       set_settings( ofaRecurrentRunPage *self );
 
@@ -393,17 +401,20 @@ action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 static void
 action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
 {
-	guint count;
 	gchar *str;
 	GtkWindow *toplevel;
+	sCount counts;
 
-	count = 0;
-	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_VALIDATED, ( RecurrentValidCb ) action_on_object_validated, &count );
+	memset( &counts, '\0', sizeof( counts ));
+	counts.ope_count = 0;
+	counts.entry_count = 0;
 
-	if( count == 0 ){
-		str = g_strdup( _( "No created entry" ));
+	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_VALIDATED, ( RecurrentValidCb ) action_on_object_validated, &counts );
+
+	if( counts.ope_count == 0 ){
+		str = g_strdup( _( "No created operation" ));
 	} else {
-		str = g_strdup_printf( _( "%u inserted entries" ), count );
+		str = g_strdup_printf( _( "%u generated operations (%u inserted entries)" ), counts.ope_count, counts.entry_count );
 	}
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
@@ -439,7 +450,7 @@ action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, co
 }
 
 static void
-action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj, guint *count )
+action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj, sCount *counts )
 {
 	const gchar *rec_id, *tmpl_id, *ledger_id;
 	ofoDossier *dossier;
@@ -478,12 +489,13 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj,
 	entries = ofs_ope_generate_entries( ope );
 
 	ope_number = ofo_dossier_get_next_ope( dossier );
+	counts->ope_count += 1;
 
 	for( it=entries ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ofo_entry_set_ope_number( entry, ope_number );
 		ofo_entry_insert( entry, hub );
-		*count += 1;
+		counts->entry_count += 1;
 	}
 }
 

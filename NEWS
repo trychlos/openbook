@@ -47,6 +47,7 @@
    - myICollector: cleanup the stores at end.
    - OpeTemplateProperties: account tooltip is account label (todo #1105).
    - OpeTemplateProperties: review account column width (todo #1108).
+   - RecurrentRun validation: improve message (todo #1121).
    - TVAForm: label is now mandatory.
    - TVAStyle: style the VAT declarations.
    - Review (re-check+setup) all integrity constraints. 

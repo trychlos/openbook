@@ -347,10 +347,6 @@
 1117 2016- 5- 6 OpeTemplateTreeView: have an indicator that this ope
                 template is used as a recurrent model
 
-1121 2016- 5- 7 Recurrent: when validating waiting operations, has a
-                'n entries generated' dialog box - should have 'n operations
-                 (m entries)' message instead
-
 1122 2016- 5- 7 Recurrent: waiting operations treeview should display an
                 amount, letting this amount be edited
 
@@ -1334,6 +1330,11 @@
                 n-1 selection, lot of warnings+critical + one selected
                 line is not validated (but entries are actually generated)
      2016- 5- 7 unable to reproduce: cancelled
+
+1121 2016- 5- 7 Recurrent: when validating waiting operations, has a
+                'n entries generated' dialog box - should have 'n operations
+                 (m entries)' message instead
+     2016- 5-10 done
 
 1123 2016- 5- 7 when generating entries, have an operation number
      2016- 5- 8 done
