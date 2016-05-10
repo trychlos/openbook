@@ -97,6 +97,7 @@ void   ofa_istore_simulate_dataset_load     ( const ofaIStore *istore );
 
 void   ofa_istore_set_columns_type          ( ofaIStore *istore,
 													ofaHub *hub,
+													guint column_id,
 													guint columns_count,
 													GType *columns_type );
 

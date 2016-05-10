@@ -37,7 +37,7 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType register_type( void );
 static void  interface_base_init( ofaITreeAdderInterface *klass );
 static void  interface_base_finalize( ofaITreeAdderInterface *klass );
-static void  itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data );
+static void  itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, guint column_id, TreeAdderTypeCb cb, void *cb_data );
 static void  itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object );
 static void  itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, GtkWidget *treeview );
 
@@ -131,13 +131,14 @@ ofa_itree_adder_get_interface_last_version( void )
  * ofa_itree_adder_add_types:
  * @hub: the #ofaHub object of the application.
  * @store: the target #ofaIStore.
+ * @column_id: the column number of the store identifier.
  * @cb: the callback function.
  * @cb_data: user data for the callback.
  *
  * Defines GType's to be added to a store.
  */
 void
-ofa_itree_adder_add_types( ofaHub *hub, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data )
+ofa_itree_adder_add_types( ofaHub *hub, ofaIStore *store, guint column_id, TreeAdderTypeCb cb, void *cb_data )
 {
 	ofaExtenderCollection *collection;
 	GList *modules, *it;
@@ -148,7 +149,7 @@ ofa_itree_adder_add_types( ofaHub *hub, ofaIStore *store, TreeAdderTypeCb cb, vo
 	collection = ofa_hub_get_extender_collection( hub );
 	modules = ofa_extender_collection_get_for_type( collection, OFA_TYPE_ITREE_ADDER );
 	for( it=modules ; it ; it=it->next ){
-		itree_adder_add_types( OFA_ITREE_ADDER( it->data ), store, cb, cb_data );
+		itree_adder_add_types( OFA_ITREE_ADDER( it->data ), store, column_id, cb, cb_data );
 	}
 	ofa_extender_collection_free_types( modules );
 }
@@ -246,18 +247,20 @@ ofa_itree_adder_get_interface_version( GType type )
 /*
  * itree_adder_add_types:
  * @instance: the #ofaITreeAdder instance.
+ * @store: the #ofaIStore.
+ * @column_id: the column number of the identifier.
  * @cb: the callback function.
  * @cb_data: user data for the callback.
  *
  * Defines GType's to be added to a store.
  */
 static void
-itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data )
+itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, guint column_id, TreeAdderTypeCb cb, void *cb_data )
 {
 	static const gchar *thisfn = "ofa_itree_adder_add_types";
 
 	if( OFA_ITREE_ADDER_GET_INTERFACE( instance )->add_types ){
-		OFA_ITREE_ADDER_GET_INTERFACE( instance )->add_types( instance, store, cb, cb_data );
+		OFA_ITREE_ADDER_GET_INTERFACE( instance )->add_types( instance, store, column_id, cb, cb_data );
 		return;
 	}
 

@@ -263,6 +263,7 @@ simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter )
  * ofa_istore_set_columns_type:
  * @store: this #ofaIStore instance.
  * @hub: the #ofaHub object of the application.
+ * @column_id: the column number of the identifier.
  * @columns_count: the initial count of columns.
  * @columns_type: the initial GType's array.
  *
@@ -270,21 +271,16 @@ simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter )
  * specified columns + the columns added by plugins.
  */
 void
-ofa_istore_set_columns_type( ofaIStore *store, ofaHub *hub, guint columns_count, GType *columns_type )
+ofa_istore_set_columns_type( ofaIStore *store, ofaHub *hub, guint column_id, guint columns_count, GType *columns_type )
 {
 	static const gchar *thisfn = "ofa_istore_set_columns_type";
 	sIStore *sdata;
-	guint i;
 
-	g_debug( "%s: store=%p", thisfn, ( void * ) store );
+	g_debug( "%s: store=%p, hub=%p, columnn_id=%u, columns_count=%u, columns_type=%p",
+			thisfn, ( void * ) store, ( void * ) hub, column_id, columns_count, ( void * ) columns_type );
 
 	g_return_if_fail( store && OFA_IS_ISTORE( store ));
-
-	if( 0 ){
-		for( i=0 ; i<columns_count ; ++i ){
-			g_debug( "i=%u, type=%ld", i, columns_type[i] );
-		}
-	}
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
 
@@ -292,19 +288,7 @@ ofa_istore_set_columns_type( ofaIStore *store, ofaHub *hub, guint columns_count,
 	sdata->cols_type = g_new0( GType, 1+columns_count );
 	memcpy( sdata->cols_type, columns_type, sizeof( GType ) * columns_count );
 
-	if( 0 ){
-		for( i=0 ; i<sdata->cols_count ; ++i ){
-			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
-		}
-	}
-
-	ofa_itree_adder_add_types( hub, store, ( TreeAdderTypeCb ) on_column_type_added, sdata );
-
-	if( 0 ){
-		for( i=0 ; i<sdata->cols_count ; ++i ){
-			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
-		}
-	}
+	ofa_itree_adder_add_types( hub, store, column_id, ( TreeAdderTypeCb ) on_column_type_added, sdata );
 
 	if( GTK_IS_LIST_STORE( store )){
 		gtk_list_store_set_column_types(

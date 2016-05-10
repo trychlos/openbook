@@ -45,9 +45,18 @@ typedef struct {
 	/* runtime data
 	 */
 	ofaHub  *hub;
-	GList   *ids;
+	GList   *stores;
 }
 	ofaRecurrentTreeAdderPrivate;
+
+/* the managed stores
+ */
+typedef struct {
+	ofaIStore *store;
+	guint      col_id;
+	GList     *ids;
+}
+	sStore;
 
 /* The columns managed here
  * These are the 'adder_id': our own column identifier
@@ -69,17 +78,22 @@ typedef struct {
 static const gchar *st_resource_filler_png    = "/org/trychlos/openbook/recurrent/filler.png";
 static const gchar *st_resource_recurrent_png = "/org/trychlos/openbook/recurrent/ofa-recurrent-icon-16x16.png";
 
-static void itree_adder_iface_init( ofaITreeAdderInterface *iface );
-static void itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void * cb_data );
-static void add_column_id( ofaRecurrentTreeAdder *self, guint adder_id, guint store_id );
-static void itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object );
-static void ope_template_set_is_recurrent( ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template );
-static void itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, GtkWidget *treeview );
-static void add_ope_template_store_columns( ofaRecurrentTreeAdder *self, GtkWidget *treeview );
-static void free_ids( sIDs *sids );
-static void connect_to_hub_signaling_system( ofaRecurrentTreeAdder *self, ofaHub *hub );
-static void hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentTreeAdder *self );
-static void hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentTreeAdder *self );
+static void    itree_adder_iface_init( ofaITreeAdderInterface *iface );
+static void    itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, guint column_id, TreeAdderTypeCb cb, void * cb_data );
+static void    add_column_id( ofaRecurrentTreeAdder *self, sStore *store_data, guint adder_id, GType type, TreeAdderTypeCb cb, void * cb_data );
+static void    itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object );
+static void    ope_template_store_set_values( ofaRecurrentTreeAdder *self, sStore *store_data, ofaHub *hub, GtkTreeIter *iter, ofoOpeTemplate *template );
+static void    ope_template_set_is_recurrent( ofaRecurrentTreeAdder *self, sStore *store_data, ofaHub *hub, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template );
+static void    itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, GtkWidget *treeview );
+static void    ope_template_store_add_columns( ofaRecurrentTreeAdder *self, sStore *store_data, GtkWidget *treeview );
+static sStore *get_store_data( ofaRecurrentTreeAdder *self, void *store, gboolean create );
+static void    on_store_finalized( ofaRecurrentTreeAdder *self, GObject *finalized_store );
+static void    free_store( sStore *sdata );
+static void    free_ids( sIDs *sids );
+static void    connect_to_hub_signaling_system( ofaRecurrentTreeAdder *self, ofaHub *hub );
+static void    hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentTreeAdder *self );
+static void    hub_on_new_recurrent_model( ofaRecurrentTreeAdder *self, ofaHub *hub, ofoRecurrentModel *model );
+static void    hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentTreeAdder *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentTreeAdder, ofa_recurrent_tree_adder, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaRecurrentTreeAdder )
@@ -99,7 +113,7 @@ recurrent_tree_adder_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_recurrent_tree_adder_get_instance_private( OFA_RECURRENT_TREE_ADDER( instance ));
 
-	g_list_free_full( priv->ids, ( GDestroyNotify ) free_ids );
+	g_list_free_full( priv->stores, ( GDestroyNotify ) free_store );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_recurrent_tree_adder_parent_class )->finalize( instance );
@@ -168,13 +182,16 @@ itree_adder_iface_init( ofaITreeAdderInterface *iface )
 }
 
 static void
-itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeCb cb, void *cb_data )
+itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, guint column_id, TreeAdderTypeCb cb, void *cb_data )
 {
-	guint col_id;
+	sStore *store_data;
+
+	store_data = get_store_data( OFA_RECURRENT_TREE_ADDER( instance ), store, TRUE );
+	store_data->col_id = column_id;
 
 	if( OFA_IS_OPE_TEMPLATE_STORE( store )){
-		col_id = ( *cb )( store, GDK_TYPE_PIXBUF, cb_data );
-		add_column_id( OFA_RECURRENT_TREE_ADDER( instance ), OPE_TEMPLATE_STORE_COL_RECURRENT, col_id );
+		add_column_id( OFA_RECURRENT_TREE_ADDER( instance ),
+				store_data, OPE_TEMPLATE_STORE_COL_RECURRENT, GDK_TYPE_PIXBUF, cb, cb_data );
 	}
 }
 
@@ -183,26 +200,25 @@ itree_adder_add_types( ofaITreeAdder *instance, ofaIStore *store, TreeAdderTypeC
  * @store_id: the column identifier returned by the store
  */
 static void
-add_column_id( ofaRecurrentTreeAdder *self, guint adder_id, guint store_id )
+add_column_id( ofaRecurrentTreeAdder *self, sStore *store_data, guint adder_id, GType type, TreeAdderTypeCb cb, void *cb_data )
 {
-	ofaRecurrentTreeAdderPrivate *priv;
 	sIDs *sdata;
+	guint col_id;
 
-	priv = ofa_recurrent_tree_adder_get_instance_private( self );
+	col_id = ( *cb )( store_data->store, type, cb_data );
 
 	sdata = g_new0( sIDs, 1 );
 	sdata->adder_id = adder_id;
-	sdata->store_id = store_id;
+	sdata->store_id = col_id;
 
-	priv->ids = g_list_prepend( priv->ids, sdata );
+	store_data->ids = g_list_prepend( store_data->ids, sdata );
 }
 
 static void
 itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, void *object )
 {
 	ofaRecurrentTreeAdderPrivate *priv;
-	GList *it;
-	sIDs *sdata;
+	sStore *store_data;
 
 	priv = ofa_recurrent_tree_adder_get_instance_private( OFA_RECURRENT_TREE_ADDER( instance ));
 
@@ -211,16 +227,27 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
 		connect_to_hub_signaling_system( OFA_RECURRENT_TREE_ADDER( instance ), hub );
 	}
 
+	store_data = get_store_data( OFA_RECURRENT_TREE_ADDER( instance ), store, TRUE );
+
 	if( OFA_IS_OPE_TEMPLATE_STORE( store )){
-		for( it=priv->ids ; it ; it=it->next ){
-			sdata = ( sIDs * ) it->data;
-			switch( sdata->adder_id ){
-				case OPE_TEMPLATE_STORE_COL_RECURRENT:
-					ope_template_set_is_recurrent( store, hub, iter, sdata->store_id, OFO_OPE_TEMPLATE( object ));
-					break;
-				default:
-					break;
-			}
+		ope_template_store_set_values( OFA_RECURRENT_TREE_ADDER( instance ), store_data, hub, iter, OFO_OPE_TEMPLATE( object ));
+	}
+}
+
+static void
+ope_template_store_set_values( ofaRecurrentTreeAdder *self, sStore *store_data, ofaHub *hub, GtkTreeIter *iter, ofoOpeTemplate *template )
+{
+	GList *it;
+	sIDs *sdata;
+
+	for( it=store_data->ids ; it ; it=it->next ){
+		sdata = ( sIDs * ) it->data;
+		switch( sdata->adder_id ){
+			case OPE_TEMPLATE_STORE_COL_RECURRENT:
+				ope_template_set_is_recurrent( self, store_data, hub, iter, sdata->store_id, template );
+				break;
+			default:
+				break;
 		}
 	}
 }
@@ -230,7 +257,7 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
  * a recurrent model
  */
 static void
-ope_template_set_is_recurrent( ofaIStore *store, ofaHub *hub, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template )
+ope_template_set_is_recurrent( ofaRecurrentTreeAdder *self, sStore *store_data, ofaHub *hub, GtkTreeIter *iter, guint col_id, ofoOpeTemplate *template )
 {
 	gboolean is_recurrent;
 	GdkPixbuf *png;
@@ -240,33 +267,34 @@ ope_template_set_is_recurrent( ofaIStore *store, ofaHub *hub, GtkTreeIter *iter,
 	is_recurrent = ofo_recurrent_model_use_ope_template( hub, mnemo );
 	png = gdk_pixbuf_new_from_resource( is_recurrent ? st_resource_recurrent_png : st_resource_filler_png, NULL );
 
-	if( GTK_IS_LIST_STORE( store )){
-		gtk_list_store_set( GTK_LIST_STORE( store ), iter, col_id, png, -1 );
+	if( GTK_IS_LIST_STORE( store_data->store )){
+		gtk_list_store_set( GTK_LIST_STORE( store_data->store ), iter, col_id, png, -1 );
 	} else {
-		gtk_tree_store_set( GTK_TREE_STORE( store ), iter, col_id, png, -1 );
+		gtk_tree_store_set( GTK_TREE_STORE( store_data->store ), iter, col_id, png, -1 );
 	}
 }
 
 static void
 itree_adder_add_columns( ofaITreeAdder *instance, ofaIStore *store, GtkWidget *treeview )
 {
+	sStore *store_data;
+
+	store_data = get_store_data( OFA_RECURRENT_TREE_ADDER( instance ), store, TRUE );
+
 	if( OFA_IS_OPE_TEMPLATE_STORE( store )){
-		add_ope_template_store_columns( OFA_RECURRENT_TREE_ADDER( instance ), treeview );
+		ope_template_store_add_columns( OFA_RECURRENT_TREE_ADDER( instance ), store_data, treeview );
 	}
 }
 
 static void
-add_ope_template_store_columns( ofaRecurrentTreeAdder *self, GtkWidget *treeview )
+ope_template_store_add_columns( ofaRecurrentTreeAdder *self, sStore *store_data, GtkWidget *treeview )
 {
-	ofaRecurrentTreeAdderPrivate *priv;
 	GList *it;
 	sIDs *sdata;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 
-	priv = ofa_recurrent_tree_adder_get_instance_private( self );
-
-	for( it=priv->ids ; it ; it=it->next ){
+	for( it=store_data->ids ; it ; it=it->next ){
 		sdata = ( sIDs * ) it->data;
 		switch( sdata->adder_id ){
 			case OPE_TEMPLATE_STORE_COL_RECURRENT:
@@ -279,6 +307,61 @@ add_ope_template_store_columns( ofaRecurrentTreeAdder *self, GtkWidget *treeview
 				break;
 		}
 	}
+}
+
+static sStore *
+get_store_data( ofaRecurrentTreeAdder *self, void *store, gboolean create )
+{
+	ofaRecurrentTreeAdderPrivate *priv;
+	GList *it;
+	sStore *sdata;
+
+	priv = ofa_recurrent_tree_adder_get_instance_private( self );
+
+	for( it=priv->stores ; it ; it=it->next ){
+		sdata = ( sStore * ) it->data;
+		if( sdata->store == store ){
+			return( sdata );
+		}
+	}
+
+	sdata = NULL;
+
+	if( create ){
+		sdata = g_new0( sStore, 1 );
+		sdata->store = store;
+		priv->stores = g_list_prepend( priv->stores, sdata );
+		g_object_weak_ref( G_OBJECT( store ), ( GWeakNotify ) on_store_finalized, self );
+	}
+
+	return( sdata );
+}
+
+static void
+on_store_finalized( ofaRecurrentTreeAdder *self, GObject *finalized_store )
+{
+	static const gchar *thisfn = "ofa_recurrent_tree_adder_on_store_finalized";
+	ofaRecurrentTreeAdderPrivate *priv;
+	sStore *sdata;
+
+	g_debug( "%s: self=%p, finalized_store=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) finalized_store, G_OBJECT_TYPE_NAME( finalized_store ));
+
+	priv = ofa_recurrent_tree_adder_get_instance_private( self );
+
+	sdata = get_store_data( self, finalized_store, FALSE );
+
+	if( sdata ){
+		priv->stores = g_list_remove( priv->stores, sdata );
+		free_store( sdata );
+	}
+}
+
+static void
+free_store( sStore *sdata )
+{
+	g_list_free_full( sdata->ids, ( GDestroyNotify ) free_ids );
+	g_free( sdata );
 }
 
 static void
@@ -310,6 +393,20 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentTreeAdder *self )
 			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		hub_on_new_recurrent_model( self, hub, OFO_RECURRENT_MODEL( object ));
+	}
+}
+
+static void
+hub_on_new_recurrent_model( ofaRecurrentTreeAdder *self, ofaHub *hub, ofoRecurrentModel *model )
+{
+	/*
+	const gchar *model_template;
+
+	model_template = ofo_recurrent_model_get_ope_template( model );
+	*/
 }
 
 /*
