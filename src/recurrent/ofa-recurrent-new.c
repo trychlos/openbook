@@ -80,6 +80,7 @@ typedef struct {
 	ofaRecurrentNew   *self;
 	ofoRecurrentModel *model;
 	GList             *opes;
+	guint              already;
 }
 	sEnumDates;
 
@@ -97,6 +98,7 @@ static void     generate_on_date_changed( ofaRecurrentNew *self, GtkEditable *ed
 static void     generate_on_btn_clicked( GtkButton *button, ofaRecurrentNew *self );
 static void     generate_on_reset_clicked( GtkButton *button, ofaRecurrentNew *self );
 static void     generate_do( ofaRecurrentNew *self );
+static gboolean confirm_redo( ofaRecurrentNew *self, const GDate *last_date );
 static GList   *generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date );
 static void     generate_enum_dates_cb( const GDate *date, sEnumDates *data );
 static gboolean do_update( ofaRecurrentNew *self, gchar **msgerr );
@@ -462,6 +464,7 @@ generate_do( ofaRecurrentNew *self )
 {
 	ofaRecurrentNewPrivate *priv;
 	GList *models_dataset, *it, *opes;
+	const GDate *last_date;
 	gchar *str;
 	gint count;
 	ofaHub *hub;
@@ -472,25 +475,32 @@ generate_do( ofaRecurrentNew *self )
 	models_dataset = ofo_recurrent_model_get_dataset( hub );
 	//g_debug( "generate_do: models_dataset_count=%d", g_list_length( models_dataset ));
 
+	count = 0;
 	opes = NULL;
+	last_date = ofo_recurrent_gen_get_last_run_date( hub );
 
-	for( it=models_dataset ; it ; it=it->next ){
-		opes = g_list_concat( opes,
-				generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date ));
+	if( !my_date_is_valid( last_date ) ||
+			my_date_compare( &priv->begin_date, last_date ) > 0 ||
+			confirm_redo( self, last_date )){
+
+		for( it=models_dataset ; it ; it=it->next ){
+			opes = g_list_concat( opes,
+					generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date ));
+		}
+
+		count = g_list_length( opes );
+		ofa_recurrent_run_treeview_set_from_list( priv->tview, opes );
+
+		if( count == 0 ){
+			str = g_strdup( _( "No generated operation" ));
+		} else if( count == 1 ){
+			str = g_strdup( _( "One generated operation" ));
+		} else {
+			str = g_strdup_printf( _( "%d generated operations" ), count );
+		}
+		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
+		g_free( str );
 	}
-
-	count = g_list_length( opes );
-	ofa_recurrent_run_treeview_set_from_list( priv->tview, opes );
-
-	if( count == 0 ){
-		str = g_strdup( _( "No generated operation" ));
-	} else if( count == 1 ){
-		str = g_strdup( _( "One generated operation" ));
-	} else {
-		str = g_strdup_printf( _( "%d generated operations" ), count );
-	}
-	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, str );
-	g_free( str );
 
 	priv->dataset = opes;
 
@@ -509,6 +519,37 @@ generate_do( ofaRecurrentNew *self )
 }
 
 /*
+ * Requests a user confirm when beginning date of the generation is less
+ * or equal than last generation date
+ */
+static gboolean
+confirm_redo( ofaRecurrentNew *self, const GDate *last_date )
+{
+	ofaRecurrentNewPrivate *priv;
+	gchar *sbegin, *slast, *str;
+	gboolean ok;
+
+	priv = ofa_recurrent_new_get_instance_private( self );
+
+	sbegin = my_date_to_str( &priv->begin_date, ofa_prefs_date_display());
+	slast = my_date_to_str( last_date, ofa_prefs_date_display());
+
+	str = g_strdup_printf(
+			_( "Beginning date %s is less or equal to previous generation date %s.\n"
+				"Please note that already generated operations will not be re-generated.\n"
+				"If they have been cancelled, you might want cancel the cancellation instead.\n"
+				"Do you confirm this generation ?" ), sbegin, slast );
+
+	ok = my_utils_dialog_question( str, _( "C_onfirm" ));
+
+	g_free( sbegin );
+	g_free( slast );
+	g_free( str );
+
+	return( ok );
+}
+
+/*
  * generating new operations (mnemo+date) between the two dates
  */
 static GList *
@@ -524,6 +565,7 @@ generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *
 	sdata.self = self;
 	sdata.model = model;
 	sdata.opes = NULL;
+	sdata.already = 0;
 
 	g_debug( "%s: model=%s, periodicity=%s,%s",
 			thisfn, ofo_recurrent_model_get_label( model ), per_main, per_detail );
@@ -548,9 +590,12 @@ generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	mnemo = ofo_recurrent_model_get_mnemo( data->model );
-	ope = ofo_recurrent_run_get_by_id( hub, mnemo, date );
 
-	if( !ope ){
+	ope = ofo_recurrent_run_get_by_id( hub, mnemo, date );
+	if( ope ){
+		data->already += 1;
+
+	} else {
 		ope = ofo_recurrent_run_new();
 		ofo_recurrent_run_set_mnemo( ope, mnemo );
 		ofo_recurrent_run_set_date( ope, date );
