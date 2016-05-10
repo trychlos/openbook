@@ -35,6 +35,7 @@
 #include "ofa-recurrent-dbmodel.h"
 #include "ofa-recurrent-execlose.h"
 #include "ofa-recurrent-main.h"
+#include "ofa-recurrent-tree-adder.h"
 #include "ofo-recurrent-gen.h"
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
@@ -186,7 +187,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
  * Each of these GType types must be addressed in #ofa_extension_list_types().
  * Only the GTypeModule has to be registered from #ofa_extension_startup().
  */
-#define TYPES_COUNT	 4
+#define TYPES_COUNT	 5
 
 /*
  * ofa_extension_startup:
@@ -222,6 +223,7 @@ ofa_extension_list_types( const GType **types )
 	g_debug( "%s: types=%p, count=%u", thisfn, ( void * ) types, TYPES_COUNT );
 
 	types_list[i++] = OFA_TYPE_RECURRENT_ID;
+	types_list[i++] = OFA_TYPE_RECURRENT_TREE_ADDER;
 	types_list[i++] = OFO_TYPE_RECURRENT_GEN;
 	types_list[i++] = OFO_TYPE_RECURRENT_MODEL;
 	types_list[i++] = OFO_TYPE_RECURRENT_RUN;

@@ -74,6 +74,7 @@
 
    - myIWindow::hide_on_close: removed property (todo #1111).
    - ofa_account_frame_bin_get_account_store(): new method.
+   - ofaITreeAdder: new interface to add a column to a TreeStore.
    - ofa_ope_template_frame_bin_get_ope_template_store(): new method.
    - ofaListStore, ofaTreeStore, depreciate ofaHub property (todo #1131).
    - ofaTreeStore: moved to core library (todo #1130).

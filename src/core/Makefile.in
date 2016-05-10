@@ -179,8 +179,8 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
 	ofa-iimportable.lo ofa-import-duplicate.lo ofa-iprintable.lo \
 	ofa-iproperties.lo ofa-irenderable.lo ofa-isignal-hub.lo \
-	ofa-istore.lo ofa-itheme-manager.lo ofa-ledger-combo.lo \
-	ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-istore.lo ofa-itheme-manager.lo ofa-itree-adder.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
 	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
 	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
 	ofa-ope-template-select.lo ofa-ope-template-store.lo \
@@ -528,6 +528,7 @@ libofa_core_la_SOURCES = \
 	ofa-isignal-hub.c									\
 	ofa-istore.c										\
 	ofa-itheme-manager.c								\
+	ofa-itree-adder.c									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-store.c									\
@@ -543,7 +544,6 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-select.c							\
 	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
-	ofa-ope-template-store.h							\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
 	ofa-page.c											\
@@ -721,6 +721,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-isignal-hub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-istore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itheme-manager.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itree-adder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-list-store.Plo@am__quote@

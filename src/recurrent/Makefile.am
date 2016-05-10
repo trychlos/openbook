@@ -78,6 +78,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-run-page.h							\
 	ofa-recurrent-run-treeview.c						\
 	ofa-recurrent-run-treeview.h						\
+	ofa-recurrent-tree-adder.c							\
+	ofa-recurrent-tree-adder.h							\
 	ofo-recurrent-gen.c									\
 	ofo-recurrent-gen.h									\
 	ofo-recurrent-model.c								\

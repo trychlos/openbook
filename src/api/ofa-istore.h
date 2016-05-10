@@ -38,6 +38,8 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_ISTORE                      ( ofa_istore_get_type())
@@ -77,21 +79,26 @@ typedef struct {
 /*
  * Interface-wide
  */
-GType ofa_istore_get_type                  ( void );
+GType  ofa_istore_get_type                  ( void );
 
-guint ofa_istore_get_interface_last_version( const ofaIStore *istore );
+guint  ofa_istore_get_interface_last_version( const ofaIStore *istore );
 
 /*
  * Implementation-wide
  */
-guint ofa_istore_get_interface_version     ( GType type );
+guint  ofa_istore_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void  ofa_istore_init                      ( ofaIStore *istore );
+void   ofa_istore_init                      ( ofaIStore *istore );
 
-void  ofa_istore_simulate_dataset_load     ( const ofaIStore *istore );
+void   ofa_istore_simulate_dataset_load     ( const ofaIStore *istore );
+
+void   ofa_istore_set_columns_type          ( ofaIStore *istore,
+													ofaHub *hub,
+													guint columns_count,
+													GType *columns_type );
 
 G_END_DECLS
 

@@ -29,12 +29,12 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-itree-adder.h"
+#include "api/ofa-ope-template-store.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
-
-#include "core/ofa-ope-template-store.h"
 
 /* private instance data
  */
@@ -169,11 +169,11 @@ ofa_ope_template_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_OPE_TEMPLATE_STORE, NULL );
 
-		gtk_list_store_set_column_types(
-				GTK_LIST_STORE( store ), OPE_TEMPLATE_N_COLUMNS, st_col_types );
+		ofa_istore_set_columns_type( OFA_ISTORE( store ), hub, OPE_TEMPLATE_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
-				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
+				GTK_TREE_SORTABLE( store ),
+				( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
 		gtk_tree_sortable_set_sort_column_id(
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );

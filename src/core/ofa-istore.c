@@ -27,28 +27,33 @@
 #endif
 
 #include <gtk/gtk.h>
+#include <string.h>
 
 #include "api/ofa-hub.h"
 #include "api/ofa-istore.h"
+#include "api/ofa-itree-adder.h"
 #include "api/ofo-dossier.h"
 
 /* data associated to each implementor object
  */
 typedef struct {
-	void *empty;
+	guint  cols_count;
+	GType *cols_type;
 }
 	sIStore;
 
-#define ISTORE_LAST_VERSION              1
-#define ISTORE_DATA                     "ofa-istore-data"
+#define ISTORE_LAST_VERSION               1
 
-static guint st_initializations = 0;	/* interface initialization count */
+#define ISTORE_DATA                      "ofa-istore-data"
+
+static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
 static void  interface_base_init( ofaIStoreInterface *klass );
 static void  interface_base_finalize( ofaIStoreInterface *klass );
 static void  on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaIStore *istore );
 static void  simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
+static guint on_column_type_added( ofaIStore *store, GType type, sIStore *sdata );
 static void  on_store_finalized( sIStore *sdata, GObject *finalized_store );
 
 /**
@@ -198,7 +203,8 @@ ofa_istore_init( ofaIStore *istore )
 	}
 
 	sdata = g_new0( sIStore, 1 );
-	sdata->empty = NULL;
+	sdata->cols_count = 0;
+	sdata->cols_type = NULL;
 	g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, sdata );
 	g_object_weak_ref( G_OBJECT( istore ), ( GWeakNotify ) on_store_finalized, sdata );
 
@@ -251,6 +257,100 @@ simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter )
 			}
 		}
 	}
+}
+
+/**
+ * ofa_istore_set_columns_type:
+ * @store: this #ofaIStore instance.
+ * @hub: the #ofaHub object of the application.
+ * @columns_count: the initial count of columns.
+ * @columns_type: the initial GType's array.
+ *
+ * Initialize the underlying #GtkListStore / #GtkTreeStore with the
+ * specified columns + the columns added by plugins.
+ */
+void
+ofa_istore_set_columns_type( ofaIStore *store, ofaHub *hub, guint columns_count, GType *columns_type )
+{
+	static const gchar *thisfn = "ofa_istore_set_columns_type";
+	sIStore *sdata;
+	guint i;
+
+	g_debug( "%s: store=%p", thisfn, ( void * ) store );
+
+	g_return_if_fail( store && OFA_IS_ISTORE( store ));
+
+	if( 0 ){
+		for( i=0 ; i<columns_count ; ++i ){
+			g_debug( "i=%u, type=%ld", i, columns_type[i] );
+		}
+	}
+
+	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
+
+	sdata->cols_count = columns_count;
+	sdata->cols_type = g_new0( GType, 1+columns_count );
+	memcpy( sdata->cols_type, columns_type, sizeof( GType ) * columns_count );
+
+	if( 0 ){
+		for( i=0 ; i<sdata->cols_count ; ++i ){
+			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
+		}
+	}
+
+	ofa_itree_adder_get_types( hub, store, ( TreeAdderTypeCb ) on_column_type_added, sdata );
+
+	if( 0 ){
+		for( i=0 ; i<sdata->cols_count ; ++i ){
+			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
+		}
+	}
+
+	if( GTK_IS_LIST_STORE( store )){
+		gtk_list_store_set_column_types(
+				GTK_LIST_STORE( store ), sdata->cols_count, sdata->cols_type );
+	} else {
+		gtk_tree_store_set_column_types(
+				GTK_TREE_STORE( store ), sdata->cols_count, sdata->cols_type );
+	}
+}
+
+/*
+ * starting with N columns, numbered from 0 to N-1
+ * priv->types is an NULL-terminated array of N GType's, so is N+1 size
+ * adding a GType means
+ * N -> N+1
+ * last numbered
+ */
+static guint
+on_column_type_added( ofaIStore *store, GType type, sIStore *sdata )
+{
+	GType *types;
+	guint i, count;
+
+	if( 0 ){
+		g_debug( "before" );
+		for( i=0 ; i<sdata->cols_count ; ++i ){
+			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
+		}
+	}
+
+	sdata->cols_count += 1;									/* new columns count */
+	count = sdata->cols_count;
+	types = g_new0( GType, count+1 );
+	memcpy( types, sdata->cols_type, sizeof( GType ) * ( count-1 ));
+	types[count-1] = type;
+	g_free( sdata->cols_type );
+	sdata->cols_type = types;
+
+	if( 0 ){
+		g_debug( "after" );
+		for( i=0 ; i<sdata->cols_count ; ++i ){
+			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
+		}
+	}
+
+	return( sdata->cols_count-1 );
 }
 
 static void
