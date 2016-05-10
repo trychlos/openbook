@@ -50,6 +50,7 @@
               <object class="GtkScrolledWindow" id="plugin-scrolledwindow">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="margin_right">2</property>
                 <property name="shadow_type">in</property>
                 <child>
                   <object class="GtkTreeView" id="plugin-treeview">
@@ -72,6 +73,7 @@
               <object class="GtkNotebook" id="object-notebook">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="margin_left">2</property>
                 <child>
                   <object class="GtkScrolledWindow" id="object-scrolledwindow">
                     <property name="visible">True</property>

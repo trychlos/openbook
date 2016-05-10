@@ -185,7 +185,7 @@
       <attribute name="label" translatable="yes">_Miscellaneous</attribute>
       <section>
         <item>
-          <attribute name="label" translatable="yes">_Plugins...</attribute>
+          <attribute name="label" translatable="yes">_Plugins manager...</attribute>
           <attribute name="action">app.plugin_manage</attribute>
         </item>
       </section>
