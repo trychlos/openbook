@@ -58,6 +58,9 @@ enum {
 	REC_NOTES,
 	REC_UPD_USER,
 	REC_UPD_STAMP,
+	REC_DEF_AMOUNT1,
+	REC_DEF_AMOUNT2,
+	REC_DEF_AMOUNT3,
 };
 
 /*
@@ -100,6 +103,18 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
+		{ OFA_BOX_CSV( REC_DEF_AMOUNT1 ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_DEF_AMOUNT2 ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_DEF_AMOUNT3 ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -373,6 +388,33 @@ ofo_recurrent_model_get_upd_stamp( const ofoRecurrentModel *model )
 }
 
 /**
+ * ofo_recurrent_model_get_def_amount1:
+ */
+const gchar *
+ofo_recurrent_model_get_def_amount1( const ofoRecurrentModel *model )
+{
+	ofo_base_getter( RECURRENT_MODEL, model, string, NULL, REC_DEF_AMOUNT1 );
+}
+
+/**
+ * ofo_recurrent_model_get_def_amount2:
+ */
+const gchar *
+ofo_recurrent_model_get_def_amount2( const ofoRecurrentModel *model )
+{
+	ofo_base_getter( RECURRENT_MODEL, model, string, NULL, REC_DEF_AMOUNT2 );
+}
+
+/**
+ * ofo_recurrent_model_get_def_amount3:
+ */
+const gchar *
+ofo_recurrent_model_get_def_amount3( const ofoRecurrentModel *model )
+{
+	ofo_base_getter( RECURRENT_MODEL, model, string, NULL, REC_DEF_AMOUNT3 );
+}
+
+/**
  * ofo_recurrent_model_is_deletable:
  * @model: the recurrent model.
  *
@@ -519,6 +561,33 @@ recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const GTimeVal *upd_sta
 }
 
 /**
+ * ofo_recurrent_model_set_def_amount1:
+ */
+void
+ofo_recurrent_model_set_def_amount1( ofoRecurrentModel *model, const gchar *def_amount )
+{
+	ofo_base_setter( RECURRENT_MODEL, model, string, REC_DEF_AMOUNT1, def_amount );
+}
+
+/**
+ * ofo_recurrent_model_set_def_amount2:
+ */
+void
+ofo_recurrent_model_set_def_amount2( ofoRecurrentModel *model, const gchar *def_amount )
+{
+	ofo_base_setter( RECURRENT_MODEL, model, string, REC_DEF_AMOUNT2, def_amount );
+}
+
+/**
+ * ofo_recurrent_model_set_def_amount3:
+ */
+void
+ofo_recurrent_model_set_def_amount3( ofoRecurrentModel *model, const gchar *def_amount )
+{
+	ofo_base_setter( RECURRENT_MODEL, model, string, REC_DEF_AMOUNT3, def_amount );
+}
+
+/**
  * ofo_recurrent_model_insert:
  */
 gboolean
@@ -559,13 +628,16 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	const gchar *period, *detail;
+	const gchar *period, *detail, *def_amount1, *def_amount2, *def_amount3;
 	gchar *label, *template, *notes, *userid, *stamp_str;
 	GTimeVal stamp;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
 	template = my_utils_quote_sql( ofo_recurrent_model_get_ope_template( model ));
+	def_amount1 = ofo_recurrent_model_get_def_amount1( model );
+	def_amount2 = ofo_recurrent_model_get_def_amount2( model );
+	def_amount3 = ofo_recurrent_model_get_def_amount3( model );
 	notes = my_utils_quote_sql( ofo_recurrent_model_get_notes( model ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
@@ -575,6 +647,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	g_string_append_printf( query,
 			"	(REC_MNEMO,REC_LABEL,REC_OPE_TEMPLATE,"
 			"	 REC_PERIOD,REC_PERIOD_DETAIL,"
+			"	 REC_DEF_AMOUNT1,REC_DEF_AMOUNT2,REC_DEF_AMOUNT3,"
 			"	 REC_NOTES,REC_UPD_USER, REC_UPD_STAMP) VALUES ('%s',",
 			ofo_recurrent_model_get_mnemo( model ));
 
@@ -600,6 +673,24 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	detail = ofo_recurrent_model_get_periodicity_detail( model );
 	if( my_strlen( detail )){
 		g_string_append_printf( query, "'%s',", detail );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	if( my_strlen( def_amount1 )){
+		g_string_append_printf( query, "'%s',", def_amount1 );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	if( my_strlen( def_amount2 )){
+		g_string_append_printf( query, "'%s',", def_amount2 );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	if( my_strlen( def_amount3 )){
+		g_string_append_printf( query, "'%s',", def_amount3 );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -673,7 +764,7 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	gboolean ok;
 	GString *query;
 	gchar *label, *notes, *userid;
-	const gchar *new_mnemo, *template, *period, *detail;
+	const gchar *new_mnemo, *template, *period, *detail, *def_amount;
 	gchar *stamp_str;
 	GTimeVal stamp;
 
@@ -715,6 +806,27 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 		g_string_append_printf( query, "REC_PERIOD_DETAIL='%s',", detail );
 	} else {
 		query = g_string_append( query, "REC_PERIOD_DETAIL=NULL," );
+	}
+
+	def_amount = ofo_recurrent_model_get_def_amount1( model );
+	if( my_strlen( def_amount )){
+		g_string_append_printf( query, "REC_DEF_AMOUNT1='%s',", def_amount );
+	} else {
+		query = g_string_append( query, "REC_DEF_AMOUNT1=NULL," );
+	}
+
+	def_amount = ofo_recurrent_model_get_def_amount2( model );
+	if( my_strlen( def_amount )){
+		g_string_append_printf( query, "REC_DEF_AMOUNT2='%s',", def_amount );
+	} else {
+		query = g_string_append( query, "REC_DEF_AMOUNT2=NULL," );
+	}
+
+	def_amount = ofo_recurrent_model_get_def_amount3( model );
+	if( my_strlen( def_amount )){
+		g_string_append_printf( query, "REC_DEF_AMOUNT3='%s',", def_amount );
+	} else {
+		query = g_string_append( query, "REC_DEF_AMOUNT3=NULL," );
 	}
 
 	if( my_strlen( notes )){
@@ -953,6 +1065,11 @@ iimportable_get_label( const ofaIImportable *instance )
  * - periodicity
  * - periodicity detail
  * - notes (opt)
+ * - last update user (placeholder)
+ * - last update timestamp (placeholder)
+ * - def_amount1
+ * - def_amount2
+ * - def_amount3
  *
  * Returns: the total count of errors.
  */
@@ -1079,13 +1196,41 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		}
 		ofo_recurrent_model_set_periodicity_detail( model, cstr );
 
-		/* notes
-		 * we are tolerant on the last field... */
+		/* notes */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		splitted = my_utils_import_multi_lines( cstr );
-		ofo_recurrent_model_set_notes( model, splitted );
-		g_free( splitted );
+		if( my_strlen( cstr )){
+			splitted = my_utils_import_multi_lines( cstr );
+			ofo_recurrent_model_set_notes( model, splitted );
+			g_free( splitted );
+		}
+
+		/* last update user (placeholder) */
+		itf = itf ? itf->next : NULL;
+
+		/* last update timestammp (placeholder) */
+		itf = itf ? itf->next : NULL;
+
+		/* def_amount1 */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			ofo_recurrent_model_set_def_amount1( model, cstr );
+		}
+
+		/* def_amount2 */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			ofo_recurrent_model_set_def_amount2( model, cstr );
+		}
+
+		/* def_amount3 */
+		itf = itf ? itf->next : NULL;
+		cstr = itf ? ( const gchar * ) itf->data : NULL;
+		if( my_strlen( cstr )){
+			ofo_recurrent_model_set_def_amount3( model, cstr );
+		}
 
 		dataset = g_list_prepend( dataset, model );
 		parms->parsed_count += 1;

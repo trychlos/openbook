@@ -81,12 +81,18 @@ const gchar     *ofo_recurrent_run_get_status      ( const ofoRecurrentRun *mode
 gchar           *ofo_recurrent_run_get_status_label( const gchar *status );
 const gchar     *ofo_recurrent_run_get_upd_user    ( const ofoRecurrentRun *model );
 const GTimeVal  *ofo_recurrent_run_get_upd_stamp   ( const ofoRecurrentRun *model );
+gdouble          ofo_recurrent_run_get_amount1     ( const ofoRecurrentRun *model );
+gdouble          ofo_recurrent_run_get_amount2     ( const ofoRecurrentRun *model );
+gdouble          ofo_recurrent_run_get_amount3     ( const ofoRecurrentRun *model );
 
 gint             ofo_recurrent_run_compare         ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 
 void             ofo_recurrent_run_set_mnemo       ( ofoRecurrentRun *model, const gchar *mnemo );
 void             ofo_recurrent_run_set_date        ( ofoRecurrentRun *model, const GDate *date );
 void             ofo_recurrent_run_set_status      ( ofoRecurrentRun *model, const gchar *status );
+void             ofo_recurrent_run_set_amount1     ( ofoRecurrentRun *model, gdouble amount );
+void             ofo_recurrent_run_set_amount2     ( ofoRecurrentRun *model, gdouble amount );
+void             ofo_recurrent_run_set_amount3     ( ofoRecurrentRun *model, gdouble amount );
 
 gboolean         ofo_recurrent_run_insert          ( ofoRecurrentRun *model, ofaHub *hub );
 gboolean         ofo_recurrent_run_update          ( ofoRecurrentRun *model );

@@ -62,6 +62,8 @@ typedef struct {
  */
 static gboolean dbmodel_to_v1( sUpdate *update_data, guint version );
 static gulong   count_v1( sUpdate *update_data );
+static gboolean dbmodel_to_v2( sUpdate *update_data, guint version );
+static gulong   count_v2( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -72,6 +74,7 @@ typedef struct {
 
 static sMigration st_migrates[] = {
 		{ 1, dbmodel_to_v1, count_v1 },
+		{ 2, dbmodel_to_v2, count_v2 },
 		{ 0 }
 };
 
@@ -303,6 +306,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
+	/* updated in v2 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_MODELS ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL UNIQUE COMMENT 'Recurrent operation identifier',"
@@ -317,6 +321,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
+	/* updated in v2 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_RUN ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL        COMMENT 'Recurrent operation identifier',"
@@ -336,6 +341,41 @@ static gulong
 count_v1( sUpdate *update_data )
 {
 	return( 4 );
+}
+
+/*
+ * display three amounts in the model, letting the user edit them
+ */
+static gboolean
+dbmodel_to_v2( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v2";
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_MODELS "
+			"	ADD COLUMN REC_DEF_AMOUNT1    VARCHAR(64)              COMMENT 'Definition of amount n° 1',"
+			"	ADD COLUMN REC_DEF_AMOUNT2    VARCHAR(64)              COMMENT 'Definition of amount n° 2',"
+			"	ADD COLUMN REC_DEF_AMOUNT3    VARCHAR(64)              COMMENT 'Definition of amount n° 3'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_RUN "
+			"	ADD COLUMN REC_AMOUNT1        DECIMAL(20,5)            COMMENT 'Amount n° 1',"
+			"	ADD COLUMN REC_AMOUNT2        DECIMAL(20,5)            COMMENT 'Amount n° 2',"
+			"	ADD COLUMN REC_AMOUNT3        DECIMAL(20,5)            COMMENT 'Amount n° 3'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v2( sUpdate *update_data )
+{
+	return( 2 );
 }
 
 static gulong

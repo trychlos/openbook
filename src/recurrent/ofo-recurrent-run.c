@@ -52,6 +52,9 @@ enum {
 	REC_STATUS,
 	REC_UPD_USER,
 	REC_UPD_STAMP,
+	REC_AMOUNT1,
+	REC_AMOUNT2,
+	REC_AMOUNT3,
 };
 
 /*
@@ -82,6 +85,18 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_TIMESTAMP,
 				FALSE,
 				TRUE },
+		{ OFA_BOX_CSV( REC_AMOUNT1 ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_AMOUNT2 ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_AMOUNT3 ),
+				OFA_TYPE_AMOUNT,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -328,6 +343,33 @@ ofo_recurrent_run_get_upd_stamp( const ofoRecurrentRun *model )
 }
 
 /**
+ * ofo_recurrent_run_get_amount1:
+ */
+gdouble
+ofo_recurrent_run_get_amount1( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT1 );
+}
+
+/**
+ * ofo_recurrent_run_get_amount2:
+ */
+gdouble
+ofo_recurrent_run_get_amount2( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT2 );
+}
+
+/**
+ * ofo_recurrent_run_get_amount3:
+ */
+gdouble
+ofo_recurrent_run_get_amount3( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT3 );
+}
+
+/**
  * ofo_recurrent_run_compare:
  * @a: a #ofoRecurrentRun object.
  * @b: another #ofoRecurrentRun object.
@@ -386,6 +428,33 @@ static void
 recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp )
 {
 	ofo_base_setter( RECURRENT_RUN, model, string, REC_UPD_STAMP, upd_stamp );
+}
+
+/**
+ * ofo_recurrent_run_set_amount1:
+ */
+void
+ofo_recurrent_run_set_amount1( ofoRecurrentRun *model, gdouble amount )
+{
+	ofo_base_setter( RECURRENT_RUN, model, amount, REC_AMOUNT1, amount );
+}
+
+/**
+ * ofo_recurrent_run_set_amount2:
+ */
+void
+ofo_recurrent_run_set_amount2( ofoRecurrentRun *model, gdouble amount )
+{
+	ofo_base_setter( RECURRENT_RUN, model, amount, REC_AMOUNT2, amount );
+}
+
+/**
+ * ofo_recurrent_run_set_amount3:
+ */
+void
+ofo_recurrent_run_set_amount3( ofoRecurrentRun *model, gdouble amount )
+{
+	ofo_base_setter( RECURRENT_RUN, model, amount, REC_AMOUNT3, amount );
 }
 
 /**
