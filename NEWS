@@ -45,6 +45,7 @@
    - Miscellaneous menu: have an option to display the collector content (todo #562).
    - Miscellaneous menu: have an option to display the audit trace (todo #732).
    - myICollector: cleanup the stores at end.
+   - OpeTemplate: have an indicator as used by a recurrent model (todo #1117).
    - OpeTemplateProperties: account tooltip is account label (todo #1105).
    - OpeTemplateProperties: review account column width (todo #1108).
    - Recurrent operations are able to use OpeTemplate macros (todo #1116).

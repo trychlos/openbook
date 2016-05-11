@@ -169,7 +169,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_OPE_TEMPLATE_STORE, NULL );
 
-		ofa_istore_set_columns_type( OFA_ISTORE( store ), hub, OPE_TEMPLATE_COL_MNEMO, OPE_TEMPLATE_N_COLUMNS, st_col_types );
+		ofa_istore_set_columns_type( OFA_ISTORE( store ), hub, OPE_TEMPLATE_COL_OBJECT, OPE_TEMPLATE_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ),

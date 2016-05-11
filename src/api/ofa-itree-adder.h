@@ -83,7 +83,7 @@ typedef struct {
 	 * add_types:
 	 * @instance: the #ofaITreeAdder instance.
 	 * @store: the target #ofaIStore.
-	 * @column_id: the column number of the store identifier.
+	 * @column_object: the column number of the stored object.
 	 * @cb: the callback function to be called for each GType.
 	 * @cb_data: the user data for the callback.
 	 *
@@ -93,7 +93,7 @@ typedef struct {
 	 */
 	void  ( *add_types )            ( ofaITreeAdder *instance,
 											ofaIStore *store,
-											guint column_id,
+											guint column_object,
 											TreeAdderTypeCb cb,
 											void *cb_data );
 
@@ -140,7 +140,7 @@ guint            ofa_itree_adder_get_interface_last_version( void );
 
 void             ofa_itree_adder_add_types                 ( ofaHub *hub,
 																	ofaIStore *store,
-																	guint column_id,
+																	guint column_object,
 																	TreeAdderTypeCb cb,
 																	void *cb_data );
 

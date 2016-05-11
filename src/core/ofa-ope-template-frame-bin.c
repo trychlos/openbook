@@ -592,6 +592,8 @@ page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
 	gtk_tree_view_column_set_cell_data_func(
 			column, cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
 
+	ofa_itree_adder_add_columns( priv->hub, OFA_ISTORE( priv->store ), GTK_WIDGET( tview ));
+
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
@@ -601,8 +603,6 @@ page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
-
-	ofa_itree_adder_add_columns( priv->hub, OFA_ISTORE( priv->store ), GTK_WIDGET( tview ));
 }
 
 static GtkWidget *
