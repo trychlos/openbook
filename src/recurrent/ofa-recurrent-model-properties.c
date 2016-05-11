@@ -73,6 +73,9 @@ typedef struct {
 	GtkWidget           *ope_template_entry;
 	GtkWidget           *ope_template_label;
 	ofaPeriodicityBin   *periodicity_bin;
+	GtkWidget           *def1_entry;
+	GtkWidget           *def2_entry;
+	GtkWidget           *def3_entry;
 
 	/* data
 	 */
@@ -378,6 +381,24 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-period-prompt" );
 	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), combo );
+
+	/* amount definitions */
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-def1" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->def1_entry = entry;
+
+	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-editables-prompt" );
+	g_return_if_fail( prompt && GTK_IS_LABEL( prompt ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-def2" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->def2_entry = entry;
+
+	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-def3" );
+	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
+	priv->def3_entry = entry;
+
 }
 
 static void
@@ -400,6 +421,15 @@ setup_data( ofaRecurrentModelProperties *self )
 	cper = ofo_recurrent_model_get_periodicity( priv->recurrent_model );
 	cdet = ofo_recurrent_model_get_periodicity_detail( priv->recurrent_model );
 	ofa_periodicity_bin_set_selected( priv->periodicity_bin, cper, cdet );
+
+	cstr = ofo_recurrent_model_get_def_amount1( priv->recurrent_model );
+	gtk_entry_set_text( GTK_ENTRY( priv->def1_entry ), cstr ? cstr : "" );
+
+	cstr = ofo_recurrent_model_get_def_amount2( priv->recurrent_model );
+	gtk_entry_set_text( GTK_ENTRY( priv->def2_entry ), cstr ? cstr : "" );
+
+	cstr = ofo_recurrent_model_get_def_amount3( priv->recurrent_model );
+	gtk_entry_set_text( GTK_ENTRY( priv->def3_entry ), cstr ? cstr : "" );
 }
 
 static void
@@ -532,6 +562,7 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	gchar *prev_mnemo;
 	gboolean ok;
 	ofaHub *hub;
+	const gchar *cstr;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -546,6 +577,16 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	ofo_recurrent_model_set_ope_template( priv->recurrent_model, priv->ope_template );
 	ofo_recurrent_model_set_periodicity( priv->recurrent_model, priv->periodicity );
 	ofo_recurrent_model_set_periodicity_detail( priv->recurrent_model, priv->periodicity_detail );
+
+	cstr = gtk_entry_get_text( GTK_ENTRY( priv->def1_entry ));
+	ofo_recurrent_model_set_def_amount1( priv->recurrent_model, cstr );
+
+	cstr = gtk_entry_get_text( GTK_ENTRY( priv->def2_entry ));
+	ofo_recurrent_model_set_def_amount2( priv->recurrent_model, cstr );
+
+	cstr = gtk_entry_get_text( GTK_ENTRY( priv->def3_entry ));
+	ofo_recurrent_model_set_def_amount3( priv->recurrent_model, cstr );
+
 	my_utils_container_notes_get( GTK_WINDOW( self ), recurrent_model );
 
 	/*
