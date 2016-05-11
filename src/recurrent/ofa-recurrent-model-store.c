@@ -50,6 +50,7 @@ typedef struct {
 static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ope_template, periodicity, detail */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* def_amount1,def_amount2,def_amount3 */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoRecurrentModel itself */
 };
@@ -300,13 +301,16 @@ static void
 set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model, GtkTreeIter *iter )
 {
 	gchar *stamp;
-	const gchar *csper, *csdet;
+	const gchar *csper, *csdet, *csdef1, *csdef2, *csdef3;
 	const gchar *periodicity;
 
 	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 	periodicity = ofo_recurrent_model_get_periodicity( model );
 	csper = ofa_periodicity_get_label( periodicity );
 	csdet = ofa_periodicity_get_detail_label( periodicity, ofo_recurrent_model_get_periodicity_detail( model ));
+	csdef1 = ofo_recurrent_model_get_def_amount1( model );
+	csdef2 = ofo_recurrent_model_get_def_amount2( model );
+	csdef3 = ofo_recurrent_model_get_def_amount3( model );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
@@ -316,6 +320,9 @@ set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *mod
 			REC_MODEL_COL_OPE_TEMPLATE,       ofo_recurrent_model_get_ope_template( model ),
 			REC_MODEL_COL_PERIODICITY,        csper ? csper : "",
 			REC_MODEL_COL_PERIODICITY_DETAIL, csdet ? csdet : "",
+			REC_MODEL_COL_DEF_AMOUNT1,        csdef1 ? csdef1 : "",
+			REC_MODEL_COL_DEF_AMOUNT2,        csdef2 ? csdef2 : "",
+			REC_MODEL_COL_DEF_AMOUNT3,        csdef3 ? csdef3 : "",
 			REC_MODEL_COL_UPD_USER,           ofo_recurrent_model_get_upd_user( model ),
 			REC_MODEL_COL_UPD_STAMP,          stamp,
 			REC_MODEL_COL_OBJECT,             model,

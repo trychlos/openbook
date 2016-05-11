@@ -72,9 +72,6 @@ typedef struct {
 }
 	ofaRecurrentManagePagePrivate;
 
-/* the id of the column is set against sortable columns */
-#define DATA_COLUMN_ID                  "ofa-data-column-id"
-
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
  * when asking for ascending sort, Gtk+ displays a 'v' indicator
  * while we would prefer the '^' version -
@@ -265,7 +262,6 @@ setup_treeview( ofaRecurrentManagePage *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -283,7 +279,6 @@ setup_treeview( ofaRecurrentManagePage *self )
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_expand( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -300,7 +295,6 @@ setup_treeview( ofaRecurrentManagePage *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -317,7 +311,6 @@ setup_treeview( ofaRecurrentManagePage *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -334,7 +327,54 @@ setup_treeview( ofaRecurrentManagePage *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
+
+	column_id = REC_MODEL_COL_DEF_AMOUNT1;
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Def. 1" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
+
+	column_id = REC_MODEL_COL_DEF_AMOUNT2;
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Def. 2" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
+
+	column_id = REC_MODEL_COL_DEF_AMOUNT3;
+	text_cell = gtk_cell_renderer_text_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Def. 3" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -450,8 +490,8 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 	static const gchar *thisfn = "ofa_recurrent_manage_page_tview_on_sort_model";
 	ofaRecurrentManagePagePrivate *priv;
 	gint cmp;
-	gchar *smnemoa, *slabela, *stemplatea, *sperioda, *sdetaila;
-	gchar *smnemob, *slabelb, *stemplateb, *speriodb, *sdetailb;
+	gchar *smnemoa, *slabela, *stemplatea, *sperioda, *sdetaila, *sdef1a, *sdef2a, *sdef3a;
+	gchar *smnemob, *slabelb, *stemplateb, *speriodb, *sdetailb, *sdef1b, *sdef2b, *sdef3b;
 
 	gtk_tree_model_get( tmodel, a,
 			REC_MODEL_COL_MNEMO,              &smnemoa,
@@ -459,6 +499,9 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 			REC_MODEL_COL_OPE_TEMPLATE,       &stemplatea,
 			REC_MODEL_COL_PERIODICITY,        &sperioda,
 			REC_MODEL_COL_PERIODICITY_DETAIL, &sdetaila,
+			REC_MODEL_COL_DEF_AMOUNT1,        &sdef1a,
+			REC_MODEL_COL_DEF_AMOUNT2,        &sdef2a,
+			REC_MODEL_COL_DEF_AMOUNT3,        &sdef3a,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
@@ -467,6 +510,9 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 			REC_MODEL_COL_OPE_TEMPLATE,       &stemplateb,
 			REC_MODEL_COL_PERIODICITY,        &speriodb,
 			REC_MODEL_COL_PERIODICITY_DETAIL, &sdetailb,
+			REC_MODEL_COL_DEF_AMOUNT1,        &sdef1b,
+			REC_MODEL_COL_DEF_AMOUNT2,        &sdef2b,
+			REC_MODEL_COL_DEF_AMOUNT3,        &sdef3b,
 			-1 );
 
 	cmp = 0;
@@ -489,17 +535,32 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 		case REC_MODEL_COL_PERIODICITY_DETAIL:
 			cmp = my_collate( sdetaila, sdetailb );
 			break;
+		case REC_MODEL_COL_DEF_AMOUNT1:
+			cmp = my_collate( sdef1a, sdef1b );
+			break;
+		case REC_MODEL_COL_DEF_AMOUNT2:
+			cmp = my_collate( sdef2a, sdef2b );
+			break;
+		case REC_MODEL_COL_DEF_AMOUNT3:
+			cmp = my_collate( sdef3a, sdef3b );
+			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
 			break;
 	}
 
+	g_free( sdef1a );
+	g_free( sdef2a );
+	g_free( sdef3a );
 	g_free( sdetaila );
 	g_free( sperioda );
 	g_free( stemplatea );
 	g_free( slabela );
 	g_free( smnemoa );
 
+	g_free( sdef1b );
+	g_free( sdef2b );
+	g_free( sdef3b );
 	g_free( sdetailb );
 	g_free( speriodb );
 	g_free( stemplateb );
