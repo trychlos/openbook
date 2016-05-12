@@ -98,6 +98,7 @@ my_double_undecorate( const gchar *text, gunichar thousand_sep, gunichar decimal
 	if( thousand_sep != '\0' ){
 		str = thousand_sep == '.' ? g_strdup( "\\." ) : g_strdup_printf( "%c", thousand_sep );
 		regex = g_regex_new( str, 0, 0, NULL );
+		//g_debug( "my_double_undecorate: thousand_sep=%2.2x, str='%s'", thousand_sep, str );
 		dest2 = g_regex_replace_literal( regex, dest1, -1, 0, "", 0, NULL );
 		g_free( dest1 );
 		dest1 = dest2;
@@ -106,8 +107,9 @@ my_double_undecorate( const gchar *text, gunichar thousand_sep, gunichar decimal
 	}
 
 	/* replace the specified decimal separator with a dot '.' */
-	if( decimal_sep != '.' ){
+	if( decimal_sep != '\0'  && decimal_sep != '.' ){
 		str = g_strdup_printf( "%c", decimal_sep );
+		//g_debug( "my_double_undecorate: decimal_sep=%2.2x, str='%s'", decimal_sep, str );
 		regex = g_regex_new( str, 0, 0, NULL );
 		dest2 = g_regex_replace_literal( regex, dest1, -1, 0, ".", 0, NULL );
 		g_free( dest1 );

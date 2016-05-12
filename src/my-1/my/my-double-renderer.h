@@ -39,7 +39,12 @@
 
 G_BEGIN_DECLS
 
-void my_double_renderer_init( GtkCellRenderer *renderer );
+void my_double_renderer_init( GtkCellRenderer *renderer,
+									gunichar thousand_sep,
+									gunichar decimal_sep,
+									gboolean accept_dot,
+									gboolean accept_comma,
+									gint decimals );
 
 G_END_DECLS
 

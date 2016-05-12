@@ -437,6 +437,8 @@ action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, co
 
 	for( it=selected ; it ; it=it->next ){
 		run_obj = OFO_RECURRENT_RUN( it->data );
+		g_return_if_fail( run_obj && OFO_IS_RECURRENT_RUN( run_obj ));
+
 		cur_status = ofo_recurrent_run_get_status( run_obj );
 		if( !my_collate( cur_status, allowed_status )){
 			ofo_recurrent_run_set_status( run_obj, new_status );

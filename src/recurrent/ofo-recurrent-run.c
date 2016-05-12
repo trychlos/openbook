@@ -34,6 +34,7 @@
 #include "my/my-icollector.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
@@ -122,11 +123,11 @@ static const sLabels st_labels[] = {
 
 static void     recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
 static void     recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
-static gboolean model_do_insert( ofoRecurrentRun *model, const ofaIDBConnect *connect );
-static gboolean model_insert_main( ofoRecurrentRun *model, const ofaIDBConnect *connect );
-static gboolean model_do_update( ofoRecurrentRun *model, const ofaIDBConnect *connect );
-static gboolean model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect );
-static gint     model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
+static gboolean recurrent_run_do_insert( ofoRecurrentRun *model, ofaHub *hub );
+static gboolean recurrent_run_insert_main( ofoRecurrentRun *model, ofaHub *hub );
+static gboolean recurrent_run_do_update( ofoRecurrentRun *model, ofaHub *hub );
+static gboolean recurrent_run_update_main( ofoRecurrentRun *model, ofaHub *hub );
+static gint     recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
 static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void     icollectionable_iface_init( myICollectionableInterface *iface );
 static guint    icollectionable_get_interface_version( void );
@@ -475,7 +476,7 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run, ofaHub *hub )
 
 	ok = FALSE;
 
-	if( model_do_insert( recurrent_run, ofa_hub_get_connect( hub ))){
+	if( recurrent_run_do_insert( recurrent_run, hub )){
 		ofo_base_set_hub( OFO_BASE( recurrent_run ), hub );
 		my_icollector_collection_add_object(
 				ofa_hub_get_collector( hub ),
@@ -488,41 +489,76 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run, ofaHub *hub )
 }
 
 static gboolean
-model_do_insert( ofoRecurrentRun *model, const ofaIDBConnect *connect )
+recurrent_run_do_insert( ofoRecurrentRun *recrun, ofaHub *hub )
 {
-	return( model_insert_main( model, connect ));
+	return( recurrent_run_insert_main( recrun, hub ));
 }
 
 static gboolean
-model_insert_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
+recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaHub *hub )
 {
 	gboolean ok;
+	const ofaIDBConnect *connect;
 	GString *query;
 	const GDate *date;
-	const gchar *status;
-	gchar *sdate, *userid, *stamp_str;
+	const gchar *mnemo, *status, *csdef;
+	gchar *sdate, *userid, *stamp_str, *samount;
 	GTimeVal stamp;
+	ofoRecurrentModel *model;
+
+	connect = ofa_hub_get_connect( hub );
 
 	userid = ofa_idbconnect_get_account( connect );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
+	mnemo = ofo_recurrent_run_get_mnemo( recrun );
+	model = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
+
 	query = g_string_new( "INSERT INTO REC_T_RUN " );
 
 	g_string_append_printf( query,
 			"	(REC_MNEMO,REC_DATE,REC_STATUS,"
+			"	 REC_AMOUNT1,REC_AMOUNT2,REC_AMOUNT3,"
 			"	 REC_UPD_USER, REC_UPD_STAMP) VALUES ('%s',",
-			ofo_recurrent_run_get_mnemo( model ));
+			mnemo );
 
-	date = ofo_recurrent_run_get_date( model );
+	date = ofo_recurrent_run_get_date( recrun );
 	g_return_val_if_fail( my_date_is_valid( date ), FALSE );
 	sdate = my_date_to_str( date, MY_DATE_SQL );
 	g_string_append_printf( query, "'%s',", sdate );
 	g_free( sdate );
 
-	status = ofo_recurrent_run_get_status( model );
+	status = ofo_recurrent_run_get_status( recrun );
 	if( my_strlen( status )){
 		g_string_append_printf( query, "'%s',", status );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount1( model );
+	if( my_strlen( csdef )){
+		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount1( recrun ), NULL );
+		g_string_append_printf( query, "%s,", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount2( model );
+	if( my_strlen( csdef )){
+		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount2( recrun ), NULL );
+		g_string_append_printf( query, "%s,", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount3( model );
+	if( my_strlen( csdef )){
+		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount3( recrun ), NULL );
+		g_string_append_printf( query, "%s,", samount );
+		g_free( samount );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -532,8 +568,8 @@ model_insert_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	recurrent_run_set_upd_user( model, userid );
-	recurrent_run_set_upd_stamp( model, &stamp );
+	recurrent_run_set_upd_user( recrun, userid );
+	recurrent_run_set_upd_stamp( recrun, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( stamp_str );
@@ -565,10 +601,10 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( recurrent_run ));
 
-	if( model_do_update( recurrent_run, ofa_hub_get_connect( hub ))){
+	if( recurrent_run_do_update( recurrent_run, hub )){
 		my_icollector_collection_sort(
 				ofa_hub_get_collector( hub ),
-				OFO_TYPE_RECURRENT_MODEL, ( GCompareFunc ) recurrent_run_cmp_by_ptr );
+				OFO_TYPE_RECURRENT_RUN, ( GCompareFunc ) recurrent_run_cmp_by_ptr );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_run, NULL );
 		ok = TRUE;
 	}
@@ -577,34 +613,74 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 }
 
 static gboolean
-model_do_update( ofoRecurrentRun *model, const ofaIDBConnect *connect )
+recurrent_run_do_update( ofoRecurrentRun *recrun, ofaHub *hub )
 {
-	return( model_update_main( model, connect ));
+	return( recurrent_run_update_main( recrun, hub ));
 }
 
 static gboolean
-model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
+recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 {
+	static const gchar *thisfn = "ofo_recurrent_run_update_main";
 	gboolean ok;
+	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *userid, *sdate;
-	const gchar *status, *mnemo;
+	gchar *userid, *sdate, *samount;
+	const gchar *status, *mnemo, *csdef;
 	const GDate *date;
 	gchar *stamp_str;
 	GTimeVal stamp;
+	ofoRecurrentModel *model;
 
-	mnemo = ofo_recurrent_run_get_mnemo( model );
+	mnemo = ofo_recurrent_run_get_mnemo( recrun );
+	model = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
+
+	if( 0 ){
+		g_debug( "%s: recrun=%p (%s), model=%p (%s)", thisfn,
+				( void * ) recrun, G_OBJECT_TYPE_NAME( recrun ),
+				( void * ) model, G_OBJECT_TYPE_NAME( model ));
+	}
+
+	connect = ofa_hub_get_connect( hub );
+
 	userid = ofa_idbconnect_get_account( connect );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
-	date = ofo_recurrent_run_get_date( model );
+	date = ofo_recurrent_run_get_date( recrun );
 	sdate = my_date_to_str( date, MY_DATE_SQL );
 
 	query = g_string_new( "UPDATE REC_T_RUN SET " );
 
-	status = ofo_recurrent_run_get_status( model );
+	status = ofo_recurrent_run_get_status( recrun );
 	g_string_append_printf( query, "REC_STATUS='%s',", status );
+
+	csdef = ofo_recurrent_model_get_def_amount1( model );
+	if( my_strlen( csdef )){
+		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount1( recrun ), NULL );
+		g_string_append_printf( query, "REC_AMOUNT1=%s,", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "REC_AMOUNT1=NULL," );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount2( model );
+	if( my_strlen( csdef )){
+		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount2( recrun ), NULL );
+		g_string_append_printf( query, "REC_AMOUNT2=%s,", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "REC_AMOUNT2=NULL," );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount3( model );
+	if( my_strlen( csdef )){
+		samount = ofa_amount_to_sql( ofo_recurrent_run_get_amount3( recrun ), NULL );
+		g_string_append_printf( query, "REC_AMOUNT3=%s,", samount );
+		g_free( samount );
+	} else {
+		query = g_string_append( query, "REC_AMOUNT3=NULL," );
+	}
 
 	g_string_append_printf( query,
 			"	REC_UPD_USER='%s',REC_UPD_STAMP='%s'"
@@ -615,8 +691,8 @@ model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
-	recurrent_run_set_upd_user( model, userid );
-	recurrent_run_set_upd_stamp( model, &stamp );
+	recurrent_run_set_upd_user( recrun, userid );
+	recurrent_run_set_upd_stamp( recrun, &stamp );
 
 	g_string_free( query, TRUE );
 	g_free( sdate );
@@ -627,7 +703,7 @@ model_update_main( ofoRecurrentRun *model, const ofaIDBConnect *connect )
 }
 
 static gint
-model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date )
+recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date )
 {
 	gint cmp;
 
@@ -635,13 +711,18 @@ model_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDa
 	if( cmp == 0 ){
 		cmp = my_date_compare( ofo_recurrent_run_get_date( a ), date );
 	}
+
 	return( cmp );
 }
 
 static gint
 recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b )
 {
-	return( model_cmp_by_mnemo_date( a, ofo_recurrent_run_get_mnemo( b ), ofo_recurrent_run_get_date( b )));
+	if( 0 ){
+		g_debug( "a=%p (%s), b=%p (%s)", a, G_OBJECT_TYPE_NAME( a ), b, G_OBJECT_TYPE_NAME( b ));
+	}
+
+	return( recurrent_run_cmp_by_mnemo_date( a, ofo_recurrent_run_get_mnemo( b ), ofo_recurrent_run_get_date( b )));
 }
 
 /*

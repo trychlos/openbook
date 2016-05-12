@@ -29,8 +29,10 @@
 #include <glib/gi18n.h>
 
 #include "my/my-date.h"
+#include "my/my-double-renderer.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 
@@ -78,11 +80,16 @@ enum {
 	COL_LABEL,
 	COL_DATE,
 	COL_STATUS,
+	COL_AMOUNT1,
+	COL_AMOUNT2,
+	COL_AMOUNT3,
 	COL_OBJECT,
+	COL_MODEL,
 	COL_N_COLUMNS
 };
 
-/* the id of the column is set against sortable columns */
+/* the id of the column is set against each editable GtkCellRenderer
+ */
 #define DATA_COLUMN_ID                  "ofa-data-column-id"
 
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
@@ -109,6 +116,8 @@ static void     setup_treeview( ofaRecurrentRunTreeview *self );
 static gboolean tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self );
 static void     tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self );
 static gint     tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunTreeview *self );
+static void     tview_on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self );
+static void     tview_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecurrentRunTreeview *self );
 static void     tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self );
 static void     tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentRunTreeview *self );
 static GList   *tview_get_selected( ofaRecurrentRunTreeview *self );
@@ -339,7 +348,8 @@ setup_treeview( ofaRecurrentRunTreeview *self )
 					COL_N_COLUMNS,
 					G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* mnemo, label, date */
 					G_TYPE_STRING,										/* status */
-					G_TYPE_OBJECT );									/* ofoRecurrentRun object */
+					G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* amount1,amount2,amount3 */
+					G_TYPE_OBJECT, G_TYPE_OBJECT );						/* ofoRecurrentRun, ofoRecurrentModel objects */
 	priv->store = store;
 
 	tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( store ), NULL );
@@ -380,7 +390,6 @@ setup_treeview( ofaRecurrentRunTreeview *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -398,7 +407,6 @@ setup_treeview( ofaRecurrentRunTreeview *self )
 	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_expand( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -415,7 +423,6 @@ setup_treeview( ofaRecurrentRunTreeview *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -432,7 +439,75 @@ setup_treeview( ofaRecurrentRunTreeview *self )
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
+
+	column_id = COL_AMOUNT1;
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_signal_connect( text_cell, "edited", G_CALLBACK( tview_on_cell_edited ), self );
+	my_double_renderer_init( text_cell,
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Amount 1" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
+
+	column_id = COL_AMOUNT2;
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_signal_connect( text_cell, "edited", G_CALLBACK( tview_on_cell_edited ), self );
+	my_double_renderer_init( text_cell,
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Amount 2" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
+
+	column_id = COL_AMOUNT3;
+	text_cell = gtk_cell_renderer_text_new();
+	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
+	g_signal_connect( text_cell, "edited", G_CALLBACK( tview_on_cell_edited ), self );
+	my_double_renderer_init( text_cell,
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
+	column = gtk_tree_view_column_new_with_attributes(
+			_( "Amount 3" ),
+			text_cell, "text", column_id,
+			NULL );
+	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
+	gtk_tree_view_column_set_alignment( column, 1.0 );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 	gtk_tree_sortable_set_sort_func(
@@ -589,6 +664,90 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 }
 
 static void
+tview_on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	ofoRecurrentRun *recrun;
+	ofoRecurrentModel *model;
+	guint column_id;
+	const gchar *status, *csdef;
+	gboolean editable;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	gtk_tree_model_get( tmodel, iter, COL_OBJECT, &recrun, COL_MODEL, &model, -1 );
+	g_return_if_fail( recrun && OFO_IS_RECURRENT_RUN( recrun ));
+	g_object_unref( recrun );
+	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+	g_object_unref( model );
+
+	column_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( renderer ), DATA_COLUMN_ID ));
+
+	switch( column_id ){
+		case COL_AMOUNT1:
+			csdef = ofo_recurrent_model_get_def_amount1( model );
+			break;
+		case COL_AMOUNT2:
+			csdef = ofo_recurrent_model_get_def_amount2( model );
+			break;
+		case COL_AMOUNT3:
+			csdef = ofo_recurrent_model_get_def_amount3( model );
+			break;
+		default:
+			csdef = NULL;
+			break;
+	}
+
+	switch( column_id ){
+		/* only waiting operations are editable */
+		case COL_AMOUNT1:
+		case COL_AMOUNT2:
+		case COL_AMOUNT3:
+			status = ofo_recurrent_run_get_status( recrun );
+			editable = ofa_hub_dossier_is_writable( priv->hub );
+			editable &= ( my_strlen( csdef ) > 0 );
+			editable &= ( my_collate( status, REC_STATUS_WAITING ) == 0 );
+			g_object_set( G_OBJECT( renderer ), "editable-set", TRUE, "editable", editable, NULL );
+			break;
+		default:
+			break;
+	}
+}
+
+static void
+tview_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecurrentRunTreeview *self )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	gint column_id;
+	GtkTreePath *path;
+	GtkTreeIter sort_iter, filter_iter, iter;
+	gchar *str;
+	gdouble amount;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+
+	if( priv->tsort ){
+		path = gtk_tree_path_new_from_string( path_str );
+		if( gtk_tree_model_get_iter( priv->tsort, &sort_iter, path )){
+
+			gtk_tree_model_sort_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
+			gtk_tree_model_filter_convert_iter_to_child_iter(
+					GTK_TREE_MODEL_FILTER( priv->tfilter), &iter, &filter_iter );
+
+			column_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( cell ), DATA_COLUMN_ID ));
+
+			/* reformat amounts before storing them */
+			amount = ofa_amount_from_str( text );
+			str = ofa_amount_to_str( amount, NULL );
+			gtk_list_store_set( GTK_LIST_STORE( priv->store ), &iter, column_id, str, -1 );
+			g_free( str );
+		}
+		gtk_tree_path_free( path );
+	}
+}
+
+static void
 tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self )
 {
 	GList *sel_objects;
@@ -612,7 +771,7 @@ tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentRunTreeview
 }
 
 /*
- * Returns a list of selected mnemos.
+ * Returns a list of selected ofoRecurrentRun objects.
  * The returned list should be #ofa_recurrent_run_treeview_free_selected().
  */
 static GList *
@@ -797,6 +956,7 @@ store_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun
 				COL_DATE,   sdate ? sdate : "",
 				COL_STATUS, status,
 				COL_OBJECT, ope,
+				COL_MODEL,  model,
 				-1 );
 
 		g_free( status );

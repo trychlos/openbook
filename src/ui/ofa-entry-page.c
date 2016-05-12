@@ -1046,7 +1046,9 @@ setup_entries_treeview( ofaEntryPage *self )
 	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	my_double_renderer_init( text_cell );
+	my_double_renderer_init( text_cell,
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Debit" ),
 			text_cell, "text", column_id,
@@ -1071,7 +1073,9 @@ setup_entries_treeview( ofaEntryPage *self )
 	priv->renderers[column_id] = text_cell;
 	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
 	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	my_double_renderer_init( text_cell );
+	my_double_renderer_init( text_cell,
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
+			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Credit" ),
 			text_cell, "text", column_id,
