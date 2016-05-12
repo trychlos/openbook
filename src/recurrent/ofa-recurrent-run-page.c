@@ -452,7 +452,7 @@ action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, co
 }
 
 static void
-action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj, sCount *counts )
+action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, sCount *counts )
 {
 	const gchar *rec_id, *tmpl_id, *ledger_id;
 	ofoDossier *dossier;
@@ -465,12 +465,14 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj,
 	ofaHub *hub;
 	ofoEntry *entry;
 	ofxCounter ope_number;
+	const gchar *csdef;
+	ofxAmount amount;
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	dossier = ofa_hub_get_dossier( hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
-	rec_id = ofo_recurrent_run_get_mnemo( run_obj );
+	rec_id = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( hub, rec_id );
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
@@ -483,10 +485,29 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *run_obj,
 	g_return_if_fail( ledger_obj && OFO_IS_LEDGER( ledger_obj ));
 
 	ope = ofs_ope_new( template_obj );
-	my_date_set_from_date( &ope->dope, ofo_recurrent_run_get_date( run_obj ));
+	my_date_set_from_date( &ope->dope, ofo_recurrent_run_get_date( recrun ));
 	ope->dope_user_set = TRUE;
 	ofo_dossier_get_min_deffect( dossier, ledger_obj, &dmin );
 	my_date_set_from_date( &ope->deffect, my_date_compare( &ope->dope, &dmin ) >= 0 ? &ope->dope : &dmin );
+
+	csdef = ofo_recurrent_model_get_def_amount1( model );
+	if( my_strlen( csdef )){
+		amount = ofo_recurrent_run_get_amount1( recrun );
+		ofs_ope_set_amount( ope, csdef, amount );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount2( model );
+	if( my_strlen( csdef )){
+		amount = ofo_recurrent_run_get_amount2( recrun );
+		ofs_ope_set_amount( ope, csdef, amount );
+	}
+
+	csdef = ofo_recurrent_model_get_def_amount3( model );
+	if( my_strlen( csdef )){
+		amount = ofo_recurrent_run_get_amount3( recrun );
+		ofs_ope_set_amount( ope, csdef, amount );
+	}
+
 	ofs_ope_apply_template( ope );
 	entries = ofs_ope_generate_entries( ope );
 

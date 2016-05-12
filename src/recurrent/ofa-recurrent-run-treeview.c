@@ -723,10 +723,12 @@ tview_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, o
 	GtkTreeIter sort_iter, filter_iter, iter;
 	gchar *str;
 	gdouble amount;
+	ofoRecurrentRun *recrun;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
 	if( priv->tsort ){
+		amount = 0;
 		path = gtk_tree_path_new_from_string( path_str );
 		if( gtk_tree_model_get_iter( priv->tsort, &sort_iter, path )){
 
@@ -735,13 +737,49 @@ tview_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, o
 			gtk_tree_model_filter_convert_iter_to_child_iter(
 					GTK_TREE_MODEL_FILTER( priv->tfilter), &iter, &filter_iter );
 
+			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), &iter, COL_OBJECT, &recrun, -1 );
+			g_return_if_fail( recrun && OFO_IS_RECURRENT_RUN( recrun ));
+			g_object_unref( recrun );
+
 			column_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( cell ), DATA_COLUMN_ID ));
 
-			/* reformat amounts before storing them */
-			amount = ofa_amount_from_str( text );
-			str = ofa_amount_to_str( amount, NULL );
-			gtk_list_store_set( GTK_LIST_STORE( priv->store ), &iter, column_id, str, -1 );
-			g_free( str );
+			switch( column_id ){
+				case COL_AMOUNT1:
+				case COL_AMOUNT2:
+				case COL_AMOUNT3:
+					/* reformat amounts before storing them */
+					amount = ofa_amount_from_str( text );
+					str = ofa_amount_to_str( amount, NULL );
+					gtk_list_store_set( GTK_LIST_STORE( priv->store ), &iter, column_id, str, -1 );
+					g_free( str );
+					break;
+				default:
+					break;
+			}
+
+			switch( column_id ){
+				case COL_AMOUNT1:
+					ofo_recurrent_run_set_amount1( recrun, amount );
+					break;
+				case COL_AMOUNT2:
+					ofo_recurrent_run_set_amount2( recrun, amount );
+					break;
+				case COL_AMOUNT3:
+					ofo_recurrent_run_set_amount3( recrun, amount );
+					break;
+				default:
+					break;
+			}
+
+			switch( column_id ){
+				case COL_AMOUNT1:
+				case COL_AMOUNT2:
+				case COL_AMOUNT3:
+					ofo_recurrent_run_update( recrun );
+					break;
+				default:
+					break;
+			}
 		}
 		gtk_tree_path_free( path );
 	}

@@ -51,6 +51,7 @@
    - OpeTemplateProperties: review account column width (todo #1108).
    - Recurrent operations are able to use OpeTemplate macros (todo #1116).
    - RecurrentRun validation: improve message (todo #1121).
+   - RecurrentRun: let the user modify the amounts before operation insertion (todo #1122).
    - TVAForm: label is now mandatory.
    - TVAStyle: style the VAT declarations.
    - Review (re-check+setup) all integrity constraints. 

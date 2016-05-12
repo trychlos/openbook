@@ -581,7 +581,6 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaHub *hub )
 /**
  * ofo_recurrent_run_update:
  * @model:
- * @prev_mnemo:
  *
  * Update the status.
  */

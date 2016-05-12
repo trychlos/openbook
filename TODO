@@ -340,9 +340,6 @@
 1112 2016- 5- 6 iWindow::is_destroy_allowed should be avoided
                 rather close_all_but()
 
-1122 2016- 5- 7 Recurrent: waiting operations treeview should display an
-                amount, letting this amount be edited
-
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
@@ -1336,6 +1333,10 @@
                 'n entries generated' dialog box - should have 'n operations
                  (m entries)' message instead
      2016- 5-10 done
+
+1122 2016- 5- 7 Recurrent: waiting operations treeview should display an
+                amount, letting this amount be edited
+     2016- 5-12 done
 
 1123 2016- 5- 7 when generating entries, have an operation number
      2016- 5- 8 done
