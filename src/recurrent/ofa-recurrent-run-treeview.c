@@ -938,27 +938,59 @@ store_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
 	ofoRecurrentModel *model;
-	const gchar *mnemo, *stt;
-	gchar *sdate, *status;
+	const gchar *mnemo, *stt, *csdef;
+	gchar *sdate, *status, *samount1, *samount2, *samount3;
+	ofxAmount amount;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
 	mnemo = ofo_recurrent_run_get_mnemo( ope );
 	model = ofo_recurrent_model_get_by_mnemo( priv->hub, mnemo );
+
 	if( model ){
 		sdate = my_date_to_str( ofo_recurrent_run_get_date( ope ), ofa_prefs_date_display());
 		stt = ofo_recurrent_run_get_status( ope );
 		status = ofo_recurrent_run_get_status_label( stt );
 
+		csdef = ofo_recurrent_model_get_def_amount1( model );
+		if( my_strlen( csdef )){
+			amount = ofo_recurrent_run_get_amount1( ope );
+			samount1 = ofa_amount_to_str( amount, NULL );
+		} else {
+			samount1 = g_strdup( "" );
+		}
+
+		csdef = ofo_recurrent_model_get_def_amount2( model );
+		if( my_strlen( csdef )){
+			amount = ofo_recurrent_run_get_amount2( ope );
+			samount2 = ofa_amount_to_str( amount, NULL );
+		} else {
+			samount2 = g_strdup( "" );
+		}
+
+		csdef = ofo_recurrent_model_get_def_amount3( model );
+		if( my_strlen( csdef )){
+			amount = ofo_recurrent_run_get_amount3( ope );
+			samount3 = ofa_amount_to_str( amount, NULL );
+		} else {
+			samount3 = g_strdup( "" );
+		}
+
 		gtk_list_store_set( priv->store, iter,
-				COL_MNEMO,  mnemo,
-				COL_LABEL,  ofo_recurrent_model_get_label( model ),
-				COL_DATE,   sdate ? sdate : "",
-				COL_STATUS, status,
-				COL_OBJECT, ope,
-				COL_MODEL,  model,
+				COL_MNEMO,   mnemo,
+				COL_LABEL,   ofo_recurrent_model_get_label( model ),
+				COL_DATE,    sdate ? sdate : "",
+				COL_STATUS,  status,
+				COL_AMOUNT1, samount1,
+				COL_AMOUNT2, samount2,
+				COL_AMOUNT3, samount3,
+				COL_OBJECT,  ope,
+				COL_MODEL,   model,
 				-1 );
 
+		g_free( samount3 );
+		g_free( samount2 );
+		g_free( samount1 );
 		g_free( status );
 		g_free( sdate );
 	}

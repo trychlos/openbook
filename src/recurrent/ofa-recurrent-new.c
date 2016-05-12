@@ -39,6 +39,8 @@
 #include "api/ofa-periodicity.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-ope-template.h"
+#include "api/ofs-ope.h"
 
 #include "ofa-recurrent-new.h"
 #include "ofa-recurrent-run-treeview.h"
@@ -79,8 +81,10 @@ typedef struct {
 typedef struct {
 	ofaRecurrentNew   *self;
 	ofoRecurrentModel *model;
+	ofoOpeTemplate    *template;
 	GList             *opes;
 	guint              already;
+	GList             *messages;
 }
 	sEnumDates;
 
@@ -99,8 +103,9 @@ static void     generate_on_btn_clicked( GtkButton *button, ofaRecurrentNew *sel
 static void     generate_on_reset_clicked( GtkButton *button, ofaRecurrentNew *self );
 static void     generate_do( ofaRecurrentNew *self );
 static gboolean confirm_redo( ofaRecurrentNew *self, const GDate *last_date );
-static GList   *generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date );
+static GList   *generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages );
 static void     generate_enum_dates_cb( const GDate *date, sEnumDates *data );
+static void     display_error_messages( ofaRecurrentNew *self, GList *messages );
 static gboolean do_update( ofaRecurrentNew *self, gchar **msgerr );
 static void     get_settings( ofaRecurrentNew *self );
 static void     set_settings( ofaRecurrentNew *self );
@@ -463,7 +468,7 @@ static void
 generate_do( ofaRecurrentNew *self )
 {
 	ofaRecurrentNewPrivate *priv;
-	GList *models_dataset, *it, *opes;
+	GList *models_dataset, *it, *opes, *messages;
 	const GDate *last_date;
 	gchar *str;
 	gint count;
@@ -477,6 +482,7 @@ generate_do( ofaRecurrentNew *self )
 
 	count = 0;
 	opes = NULL;
+	messages = NULL;
 	last_date = ofo_recurrent_gen_get_last_run_date( hub );
 
 	if( !my_date_is_valid( last_date ) ||
@@ -485,7 +491,12 @@ generate_do( ofaRecurrentNew *self )
 
 		for( it=models_dataset ; it ; it=it->next ){
 			opes = g_list_concat( opes,
-					generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date ));
+					generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date, &messages ));
+		}
+
+		if( g_list_length( messages )){
+			display_error_messages( self, messages );
+			g_list_free_full( messages, ( GDestroyNotify ) g_free );
 		}
 
 		count = g_list_length( opes );
@@ -553,19 +564,27 @@ confirm_redo( ofaRecurrentNew *self, const GDate *last_date )
  * generating new operations (mnemo+date) between the two dates
  */
 static GList *
-generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date )
+generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages )
 {
 	static const gchar *thisfn = "ofa_recurrent_new_generate_do_opes";
+	ofaRecurrentNewPrivate *priv;
 	const gchar *per_main, *per_detail;
 	sEnumDates sdata;
+	ofaHub *hub;
+
+	priv = ofa_recurrent_new_get_instance_private( self );
+
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	per_main = ofo_recurrent_model_get_periodicity( model );
 	per_detail = ofo_recurrent_model_get_periodicity_detail( model );
 
 	sdata.self = self;
 	sdata.model = model;
+	sdata.template = ofo_ope_template_get_by_mnemo( hub, ofo_recurrent_model_get_ope_template( model ));
 	sdata.opes = NULL;
 	sdata.already = 0;
+	sdata.messages = NULL;
 
 	g_debug( "%s: model=%s, periodicity=%s,%s",
 			thisfn, ofo_recurrent_model_get_label( model ), per_main, per_detail );
@@ -575,6 +594,10 @@ generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *
 			begin_date, end_date,
 			( PeriodicityDatesCb ) generate_enum_dates_cb, &sdata );
 
+	if( g_list_length( sdata.messages )){
+		*messages = g_list_concat( *messages, sdata.messages );
+	}
+
 	return( sdata.opes );
 }
 
@@ -582,25 +605,99 @@ static void
 generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 {
 	ofaRecurrentNewPrivate *priv;
-	ofoRecurrentRun *ope;
-	const gchar *mnemo;
+	ofoRecurrentRun *recrun;
+	const gchar *mnemo, *csdef;
 	ofaHub *hub;
+	ofsOpe *ope;
+	gchar *msg, *str;
+	gboolean valid;
 
 	priv = ofa_recurrent_new_get_instance_private( data->self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	mnemo = ofo_recurrent_model_get_mnemo( data->model );
 
-	ope = ofo_recurrent_run_get_by_id( hub, mnemo, date );
-	if( ope ){
+	recrun = ofo_recurrent_run_get_by_id( hub, mnemo, date );
+	if( recrun ){
 		data->already += 1;
 
 	} else {
-		ope = ofo_recurrent_run_new();
-		ofo_recurrent_run_set_mnemo( ope, mnemo );
-		ofo_recurrent_run_set_date( ope, date );
-		data->opes = g_list_prepend( data->opes, ope );
+		recrun = ofo_recurrent_run_new();
+		ofo_recurrent_run_set_mnemo( recrun, mnemo );
+		ofo_recurrent_run_set_date( recrun, date );
+
+		valid = TRUE;
+		ope = ofs_ope_new( data->template );
+		my_date_set_from_date( &ope->dope, date );
+		ope->dope_user_set = TRUE;
+		ofs_ope_apply_template( ope );
+
+		csdef = ofo_recurrent_model_get_def_amount1( data->model );
+		if( my_strlen( csdef )){
+			ofo_recurrent_run_set_amount1( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
+			if( my_strlen( msg )){
+				str = g_strdup_printf(
+						_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
+				data->messages = g_list_append( data->messages, str );
+				valid = FALSE;
+			}
+			g_free( msg );
+		}
+
+		csdef = ofo_recurrent_model_get_def_amount2( data->model );
+		if( my_strlen( csdef )){
+			ofo_recurrent_run_set_amount2( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
+			if( my_strlen( msg )){
+				str = g_strdup_printf(
+						_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
+				data->messages = g_list_append( data->messages, str );
+				valid = FALSE;
+			}
+			g_free( msg );
+		}
+
+		csdef = ofo_recurrent_model_get_def_amount3( data->model );
+		if( my_strlen( csdef )){
+			ofo_recurrent_run_set_amount3( recrun, ofs_ope_get_amount( ope, csdef, &msg ));
+			if( my_strlen( msg )){
+				str = g_strdup_printf(
+						_( "Model='%s', specification='%s': %s" ), mnemo, csdef, msg );
+				data->messages = g_list_append( data->messages, str );
+				valid = FALSE;
+			}
+			g_free( msg );
+		}
+
+		if( valid ){
+			data->opes = g_list_prepend( data->opes, recrun );
+
+		} else {
+			g_object_unref( recrun );
+		}
 	}
+}
+
+static void
+display_error_messages( ofaRecurrentNew *self, GList *messages )
+{
+	GString *str;
+	GList *it;
+	gboolean first;
+
+	str = g_string_new( "" );
+	first = TRUE;
+
+	for( it=messages ; it ; it=it->next ){
+		if( !first ){
+			str = g_string_append( str, "\n" );
+		}
+		str = g_string_append( str, ( const gchar * ) it->data );
+		first = FALSE;
+	}
+
+	my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_ERROR, str->str );
+
+	g_string_free( str, TRUE );
 }
 
 static gboolean

@@ -135,6 +135,7 @@ static gboolean         check_for_dates( sChecker *checker );
 static gboolean         check_for_all_entries( sChecker *checker );
 static gboolean         check_for_entry( sChecker *checker, ofsOpeDetail *detail, gint num );
 static gboolean         check_for_currencies( sChecker *checker );
+static ofsOpeDetail    *get_detail_from_cell_def( const ofsOpe *ope, const gchar *cell_def, gboolean *is_debit, gchar **msg );
 static void             ope_dump_detail( ofsOpeDetail *detail, void *empty );
 static void             ope_free_detail( ofsOpeDetail *detail );
 
@@ -1265,6 +1266,112 @@ check_for_currencies( sChecker *checker )
 	}
 
 	return( errors == 0 );
+}
+
+/**
+ * ofs_ope_get_amount:
+ * @ope: this #ofsOpe instance.
+ * @cell_def: the definition of the cell.
+ * @message: [allow-none][out]: error message placeholder.
+ *
+ * Returns: the amount of the specified @cell_def.
+ *
+ * @cell_def is something like 'D1' or 'C2' or so on.
+ */
+ofxAmount
+ofs_ope_get_amount( const ofsOpe *ope, const gchar *cell_def, gchar **message )
+{
+	ofxAmount amount;
+	ofsOpeDetail *detail;
+	gboolean is_debit;
+	gchar *msg;
+
+	amount = 0.0;
+	if( message ){
+		*message = NULL;
+	}
+
+	detail = get_detail_from_cell_def( ope, cell_def, &is_debit, &msg );
+
+	if( detail ){
+		if( is_debit ){
+			amount = detail->debit;
+		} else {
+			amount = detail->credit;
+		}
+
+	} else if( message ){
+		*message = msg;
+	}
+
+	return( amount );
+}
+
+/**
+ * ofs_ope_set_amount:
+ * @ope: this #ofsOpe instance.
+ * @cell_def: the definition of the cell.
+ * @amount: the amount to be set.
+ *
+ * Set the @amount on the specified @cell_def cell.
+ */
+void
+ofs_ope_set_amount( ofsOpe *ope, const gchar *cell_def, ofxAmount amount )
+{
+	ofsOpeDetail *detail;
+	gboolean is_debit;
+
+	detail = get_detail_from_cell_def( ope, cell_def, &is_debit, NULL );
+
+	if( detail ){
+		if( is_debit ){
+			detail->debit = amount;
+			detail->debit_user_set = TRUE;
+
+		} else {
+			detail->credit = amount;
+			detail->credit_user_set = TRUE;
+		}
+	}
+}
+
+static ofsOpeDetail *
+get_detail_from_cell_def( const ofsOpe *ope, const gchar *cell_def, gboolean *is_debit, gchar **msg )
+{
+	ofsOpeDetail *detail;
+	gint row, count;
+
+	detail = NULL;
+	if( msg ){
+		*msg = NULL;
+	}
+
+	count = g_list_length( ope->detail );
+	row = atoi( cell_def + 1 ) - 1;
+
+	/* row must be in [0, count-1] interval */
+	if( row < 0 || row >= count ){
+		if( msg ){
+			*msg = g_strdup_printf( _( "invalid row number: %s" ), cell_def+1 );
+		}
+
+	} else {
+		detail = ( ofsOpeDetail * ) g_list_nth_data( ope->detail, row );
+		if( g_str_has_prefix( cell_def, "D" )){
+			*is_debit = TRUE;
+
+		} else if( g_str_has_prefix( cell_def, "C" )){
+			*is_debit = FALSE;
+
+		} else {
+			if( msg ){
+				*msg = g_strdup_printf( _( "invalid column specification: %c" ), cell_def[0] );
+			}
+			detail = NULL;
+		}
+	}
+
+	return( detail );
 }
 
 /**

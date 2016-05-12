@@ -79,7 +79,7 @@ static const sItemDef st_items_ope2[] = {
 };
 
 static const sItemDef st_items_ref[] = {
-		{ "recurrent-define", N_( "_Recurrent operations management..." ) },
+		{ "recurrent-define", N_( "_Recurrent models management..." ) },
 		{ 0 }
 };
 
@@ -87,7 +87,7 @@ static const sItemDef st_items_ref[] = {
  */
 static sThemeDef st_theme_defs[] = {
 		{ "recurrent-run",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type },
-		{ "recurrent-define",  N_( "_Recurrent operations management" ),  ofa_recurrent_manage_page_get_type },
+		{ "recurrent-define",  N_( "_Recurrent models management" ),  ofa_recurrent_manage_page_get_type },
 		{ 0 }
 };
 
