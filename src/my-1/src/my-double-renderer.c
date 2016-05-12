@@ -48,11 +48,7 @@ my_double_renderer_init( GtkCellRenderer *renderer )
 
 	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_TEXT( renderer ));
 
-	g_signal_connect(
-			G_OBJECT( renderer ),
-			"editing-started",
-			G_CALLBACK( on_editing_started ),
-			NULL );
+	g_signal_connect( renderer, "editing-started", G_CALLBACK( on_editing_started ), NULL );
 
 	gtk_cell_renderer_set_alignment( renderer, 1.0, 0.5 );
 }
