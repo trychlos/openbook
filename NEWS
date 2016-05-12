@@ -70,6 +70,7 @@
    - LedgerStore: propagates currency identifier change.
    - OpeTemplateStore: propagates ledger and account identifier changes.
    - Periodicity: fix 31 day label (todo #1118).
+   - ReconcilPage: fix unconciliation of lines without children.
    - RecurrentModel: propagates OpeTemplate identifier change (todo #1128).
    - TVAFormStore: propagates OpeTemplate identifier change (todo #1127).
 

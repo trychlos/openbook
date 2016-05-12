@@ -3201,7 +3201,7 @@ do_unconciliate( ofaReconcilPage *self )
 
 	/* first iterate to find a candidate value date
 	 * + we also build a list of entries and batlines before removing
-	 *   them from the store (butnot the parent)
+	 *   them from the store (but not the parent)
 	 */
 	first = TRUE;
 	entry_list = NULL;
@@ -3239,6 +3239,10 @@ do_unconciliate( ofaReconcilPage *self )
 				g_debug( "%s: removing %s", thisfn, G_OBJECT_TYPE_NAME( object ));
 			}
 			gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &store_iter );
+
+		} else {
+			gtk_tree_store_set( GTK_TREE_STORE( priv->tstore ), &store_iter,
+					COL_IDCONCIL, "", COL_DRECONCIL, "", -1 );
 		}
 		gtk_tree_path_free( store_path );
 	}
