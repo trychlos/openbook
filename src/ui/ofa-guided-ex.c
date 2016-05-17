@@ -93,7 +93,6 @@ static void       left_setup_treeview( ofaGuidedEx *self, GtkContainer *parent )
 static gint       left_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self );
 static gchar     *left_get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void       left_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedEx *self );
-static void       left_init_view( ofaGuidedEx *self );
 static void       left_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self );
 static void       left_on_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self );
 static gboolean   left_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self );
@@ -102,6 +101,7 @@ static void       left_expand_node( ofaGuidedEx *self, GtkWidget *widget );
 static void       left_enable_select( ofaGuidedEx *self );
 static gboolean   left_is_select_enableable( ofaGuidedEx *self );
 static void       left_on_select_clicked( GtkButton *button, ofaGuidedEx *self );
+static void       left_init_view( ofaGuidedEx *self );
 static void       ledger_insert_row( ofaGuidedEx *self, ofoLedger *ledger );
 static void       ledger_update_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id );
 static void       ledger_remove_row( ofaGuidedEx *self, ofoLedger *ledger );
@@ -297,8 +297,8 @@ left_setup_treeview( ofaGuidedEx *self, GtkContainer *parent )
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
 
 	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), FALSE );
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( left_on_row_activated ), self );
-	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( left_on_key_pressed ), self );
+	g_signal_connect( tview, "row-activated", G_CALLBACK( left_on_row_activated ), self );
+	g_signal_connect( tview, "key-press-event", G_CALLBACK( left_on_key_pressed ), self );
 	priv->left_tview = GTK_TREE_VIEW( tview );
 
 	tmodel = GTK_TREE_MODEL( gtk_tree_store_new(
@@ -408,25 +408,6 @@ left_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 			g_object_set( G_OBJECT( cell ), "background-rgba", &color, NULL );
 			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
 		}
-	}
-}
-
-static void
-left_init_view( ofaGuidedEx *self )
-{
-	ofaGuidedExPrivate *priv;
-	GList *dataset, *ise;
-
-	priv = ofa_guided_ex_get_instance_private( self );
-
-	dataset = ofo_ledger_get_dataset( priv->hub );
-	for( ise=dataset ; ise ; ise=ise->next ){
-		ledger_insert_row( self, OFO_LEDGER( ise->data ));
-	}
-
-	dataset = ofo_ope_template_get_dataset( priv->hub );
-	for( ise=dataset ; ise ; ise=ise->next ){
-		model_insert_row( self, OFO_OPE_TEMPLATE( ise->data ));
 	}
 }
 
@@ -548,12 +529,14 @@ left_is_select_enableable( ofaGuidedEx *self )
 	priv = ofa_guided_ex_get_instance_private( self );
 	ok = FALSE;
 
-	select = gtk_tree_view_get_selection( priv->left_tview );
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
-		if( object ){
-			g_object_unref( object );
-			ok = OFO_IS_OPE_TEMPLATE( object );
+	if( priv->left_tview ){
+		select = gtk_tree_view_get_selection( priv->left_tview );
+		if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+			gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
+			if( object ){
+				g_object_unref( object );
+				ok = OFO_IS_OPE_TEMPLATE( object );
+			}
 		}
 	}
 
@@ -564,6 +547,25 @@ static void
 left_on_select_clicked( GtkButton *button, ofaGuidedEx *self )
 {
 	model_select( self );
+}
+
+static void
+left_init_view( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	GList *dataset, *ise;
+
+	priv = ofa_guided_ex_get_instance_private( self );
+
+	dataset = ofo_ledger_get_dataset( priv->hub );
+	for( ise=dataset ; ise ; ise=ise->next ){
+		ledger_insert_row( self, OFO_LEDGER( ise->data ));
+	}
+
+	dataset = ofo_ope_template_get_dataset( priv->hub );
+	for( ise=dataset ; ise ; ise=ise->next ){
+		model_insert_row( self, OFO_OPE_TEMPLATE( ise->data ));
+	}
 }
 
 static void
