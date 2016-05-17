@@ -553,18 +553,18 @@ static void
 left_init_view( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
-	GList *dataset, *ise;
+	GList *dataset, *it;
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
 	dataset = ofo_ledger_get_dataset( priv->hub );
-	for( ise=dataset ; ise ; ise=ise->next ){
-		ledger_insert_row( self, OFO_LEDGER( ise->data ));
+	for( it=dataset ; it ; it=it->next ){
+		ledger_insert_row( self, OFO_LEDGER( it->data ));
 	}
 
 	dataset = ofo_ope_template_get_dataset( priv->hub );
-	for( ise=dataset ; ise ; ise=ise->next ){
-		model_insert_row( self, OFO_OPE_TEMPLATE( ise->data ));
+	for( it=dataset ; it ; it=it->next ){
+		model_insert_row( self, OFO_OPE_TEMPLATE( it->data ));
 	}
 }
 
