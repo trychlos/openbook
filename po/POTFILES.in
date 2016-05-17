@@ -52,6 +52,7 @@ src/ui/ofa-dossier-properties.ui
 src/ui/ofa-entry-page.ui
 src/ui/ofa-exercice-close-assistant.ui
 src/ui/ofa-export-assistant.ui
+src/ui/ofa-guided-ex.ui
 src/ui/ofa-import-assistant.ui
 src/ui/ofa-ledger-book-bin.ui
 src/ui/ofa-ledger-close.ui
