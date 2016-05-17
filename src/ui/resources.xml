@@ -25,6 +25,7 @@
     <file>ofa-entry-page.ui</file>
     <file>ofa-exercice-close-assistant.ui</file>
     <file>ofa-export-assistant.ui</file>
+    <file>ofa-guided-ex.ui</file>
     <file>ofa-import-assistant.ui</file>
     <file>ofa-ledger-book-bin.ui</file>
     <file>ofa-ledger-close.ui</file>

@@ -80,41 +80,46 @@ enum {
 	LEFT_N_COLUMNS
 };
 
+static const gchar *st_pane_setting     = "GuidedInputExDlg-pane";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-guided-ex.ui";
+static const gchar *st_ui_name          = "ofaGuidedExWindow";
+
 static GtkWidget *v_setup_view( ofaPage *page );
 static void       pane_restore_position( GtkWidget *pane );
+static void       pane_save_position( GtkWidget *pane );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static GtkWidget *setup_view_left( ofaGuidedEx *self );
-static GtkWidget *setup_view_right( ofaGuidedEx *self );
-static GtkWidget *setup_left_treeview( ofaGuidedEx *self );
-static gint       on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self );
-static gchar     *get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void       on_left_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedEx *self );
-static void       init_left_view( ofaGuidedEx *self, GtkWidget *child );
-static void       on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self );
-static void       on_left_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self );
-static gboolean   on_left_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self );
+static void       left_setup_view( ofaGuidedEx *self, GtkContainer *parent );
+static void       left_setup_treeview( ofaGuidedEx *self, GtkContainer *parent );
+static gint       left_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self );
+static gchar     *left_get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void       left_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaGuidedEx *self );
+static void       left_init_view( ofaGuidedEx *self );
+static void       left_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self );
+static void       left_on_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self );
+static gboolean   left_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self );
 static void       left_collapse_node( ofaGuidedEx *self, GtkWidget *widget );
 static void       left_expand_node( ofaGuidedEx *self, GtkWidget *widget );
-static void       enable_left_select( ofaGuidedEx *self );
-static gboolean   is_left_select_enableable( ofaGuidedEx *self );
-static void       on_left_select_clicked( GtkButton *button, ofaGuidedEx *self );
-static void       select_model( ofaGuidedEx *self );
-static void       insert_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger );
-static void       update_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id );
-static void       remove_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger );
-static gboolean   find_left_ledger_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void       insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
-static void       update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id );
-static void       remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model );
-static gboolean   find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void       on_right_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self );
-static void       on_right_ok( GtkButton *button, ofaGuidedEx *self );
-static void       on_right_cancel( GtkButton *button, ofaGuidedEx *self );
-static void       on_hub_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
-static void       on_hub_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
-static void       on_hub_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self );
-static void       on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self );
-static void       pane_save_position( GtkWidget *pane );
+static void       left_enable_select( ofaGuidedEx *self );
+static gboolean   left_is_select_enableable( ofaGuidedEx *self );
+static void       left_on_select_clicked( GtkButton *button, ofaGuidedEx *self );
+static void       ledger_insert_row( ofaGuidedEx *self, ofoLedger *ledger );
+static void       ledger_update_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id );
+static void       ledger_remove_row( ofaGuidedEx *self, ofoLedger *ledger );
+static gboolean   ledger_find_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       model_insert_row( ofaGuidedEx *self, ofoOpeTemplate *model );
+static void       model_update_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id );
+static void       model_remove_row( ofaGuidedEx *self, ofoOpeTemplate *model );
+static gboolean   model_find_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       model_select( ofaGuidedEx *self );
+static void       right_setup_view( ofaGuidedEx *self, GtkContainer *parent );
+static void       right_on_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self );
+static void       right_on_ok( GtkButton *button, ofaGuidedEx *self );
+static void       right_on_cancel( GtkButton *button, ofaGuidedEx *self );
+static void       connect_to_hub_signaling_system( ofaGuidedEx *self );
+static void       hub_on_new_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self );
+static void       hub_on_updated_object( ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
+static void       hub_on_deleted_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self );
+static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaGuidedEx *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaGuidedEx, ofa_guided_ex, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaGuidedEx ))
@@ -188,8 +193,7 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_guided_ex_v_setup_view";
 	ofaGuidedExPrivate *priv;
-	GtkWidget *pane, *left_child, *right_child;
-	gulong handler;
+	GtkWidget *page_widget, *pane;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -197,45 +201,46 @@ v_setup_view( ofaPage *page )
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
-	pane = gtk_paned_new( GTK_ORIENTATION_HORIZONTAL );
+	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	pane = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
+	g_return_val_if_fail( pane && GTK_IS_PANED( pane ), NULL );
+
 	priv->pane = pane;
-
-	left_child = setup_view_left( OFA_GUIDED_EX( page ));
-	gtk_paned_add1( GTK_PANED( pane ), left_child );
-
-	right_child = setup_view_right( OFA_GUIDED_EX( page ));
-	gtk_paned_add2( GTK_PANED( pane ), right_child );
-
 	pane_restore_position( pane );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	left_setup_view( OFA_GUIDED_EX( page ), GTK_CONTAINER( page_widget ));
+	right_setup_view( OFA_GUIDED_EX( page ), GTK_CONTAINER( page_widget ));
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	connect_to_hub_signaling_system( OFA_GUIDED_EX( page ));
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	left_init_view( OFA_GUIDED_EX( page ));
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	init_left_view( OFA_GUIDED_EX( page ), left_child );
-
-	return( pane );
+	return( page_widget );
 }
 
 static void
 pane_restore_position( GtkWidget *pane )
 {
+	static const gchar *thisfn = "ofa_guided_ex_pane_restore_position";
 	gint pos;
 
-	pos = ofa_settings_user_get_uint( "GuidedInputExDlg-pane" );
-	if( pos <= 10 ){
+	pos = ofa_settings_user_get_uint( st_pane_setting );
+	if( pos <= 100 ){
 		pos = 150;
 	}
-	g_debug( "ofa_guided_ex_pane_restore_position: pos=%d", pos );
+	g_debug( "%s: pos=%d", thisfn, pos );
 	gtk_paned_set_position( GTK_PANED( pane ), pos );
+}
+
+static void
+pane_save_position( GtkWidget *pane )
+{
+	static const gchar *thisfn = "ofa_guided_ex_pane_save_position";
+	guint pos;
+
+	pos = gtk_paned_get_position( GTK_PANED( pane ));
+	g_debug( "%s: pos=%d", thisfn, pos );
+	ofa_settings_user_set_uint( st_pane_setting, pos );
 }
 
 static GtkWidget *
@@ -254,89 +259,33 @@ v_get_top_focusable_widget( const ofaPage *page )
  * the left pane is a treeview whose level 0 are the ledgers, and
  * level 1 the entry models defined on the corresponding ledger
  */
-static GtkWidget *
-setup_view_left( ofaGuidedEx *self )
+static void
+left_setup_view( ofaGuidedEx *self, GtkContainer *parent )
 {
 	ofaGuidedExPrivate *priv;
-	GtkWidget *frame, *grid, *tview, *box, *button;
+	GtkWidget *button;
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
-	frame = gtk_frame_new( _( " Per ledger " ));
-	my_utils_widget_set_margins( frame, 0, 4, 4, 2 );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+	left_setup_treeview( self, parent );
 
-	grid = gtk_grid_new();
-	gtk_grid_set_row_spacing( GTK_GRID( grid ), 3 );
-	gtk_container_add( GTK_CONTAINER( frame ), grid );
-
-	tview = setup_left_treeview( self );
-	gtk_grid_attach( GTK_GRID( grid ), tview, 0, 0, 1, 1 );
-
-	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
-	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
-
-	button = gtk_button_new_with_mnemonic( _( "_Select" ));
-	my_utils_widget_set_margins( button, 0, 4, 4, 4 );
-	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_left_select_clicked ), self );
+	button = my_utils_container_get_child_by_name( parent, "select-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( left_on_select_clicked ), self );
 	priv->left_select = GTK_BUTTON( button );
 
-	enable_left_select( self );
-
-	return( frame );
-}
-
-/*
- * note that we do not have any current ofoOpeTemplate at this time
- */
-static GtkWidget *
-setup_view_right( ofaGuidedEx *self )
-{
-	ofaGuidedExPrivate *priv;
-	GtkWidget *grid, *box, *button, *image;
-
-	priv = ofa_guided_ex_get_instance_private( self );
-
-	grid = gtk_grid_new();
-
-	priv->input_bin = ofa_guided_input_bin_new( OFA_IGETTER( self ));
-	my_utils_widget_set_margins( GTK_WIDGET( priv->input_bin ), 0, 0, 2, 4 );
-	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->input_bin ), 0, 0, 1, 1 );
-
-	g_signal_connect( priv->input_bin, "ofa-changed", G_CALLBACK( on_right_piece_changed ), self );
-
-	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
-	gtk_grid_attach( GTK_GRID( grid ), box, 0, 1, 1, 1 );
-
-	button = gtk_button_new_with_mnemonic( _( "_Validate" ));
-	my_utils_widget_set_margins( button, 0, 4, 0, 6 );
-	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
-	image = gtk_image_new_from_icon_name( "gtk-ok", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_right_ok ), self );
-	priv->ok_btn = button;
-
-	button = gtk_button_new_with_mnemonic( _( "  _Reset  " ));
-	my_utils_widget_set_margins( button, 0, 4, 0, 4 );
-	gtk_box_pack_end( GTK_BOX( box ), button, FALSE, FALSE, 0 );
-	image = gtk_image_new_from_icon_name( "gtk-cancel", GTK_ICON_SIZE_BUTTON );
-	gtk_button_set_image( GTK_BUTTON( button ), image );
-	g_signal_connect( G_OBJECT( button ), "clicked", G_CALLBACK( on_right_cancel ), self );
-
-	return( grid );
+	left_enable_select( self );
 }
 
 /*
  * the left pane is a treeview whose level 0 are the ledgers, and
  * level 1 the entry models defined on the corresponding ledger
  */
-static GtkWidget *
-setup_left_treeview( ofaGuidedEx *self )
+static void
+left_setup_treeview( ofaGuidedEx *self, GtkContainer *parent )
 {
 	ofaGuidedExPrivate *priv;
-	GtkWidget *scrolled;
-	GtkTreeView *tview;
+	GtkWidget *tview;
 	GtkTreeModel *tmodel;
 	GtkCellRenderer *text_cell;
 	GtkTreeViewColumn *column;
@@ -344,22 +293,18 @@ setup_left_treeview( ofaGuidedEx *self )
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_set_border_width( GTK_CONTAINER( scrolled ), 4 );
+	tview = my_utils_container_get_child_by_name( parent, "left-treeview" );
+	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
 
-	tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_tree_view_set_headers_visible( tview, FALSE );
-	gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( tview ));
-	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( on_left_row_activated ), self );
-	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_left_key_pressed ), self );
-	priv->left_tview = tview;
+	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), FALSE );
+	g_signal_connect(G_OBJECT( tview ), "row-activated", G_CALLBACK( left_on_row_activated ), self );
+	g_signal_connect( G_OBJECT( tview ), "key-press-event", G_CALLBACK( left_on_key_pressed ), self );
+	priv->left_tview = GTK_TREE_VIEW( tview );
 
 	tmodel = GTK_TREE_MODEL( gtk_tree_store_new(
 			LEFT_N_COLUMNS,
 			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
-	gtk_tree_view_set_model( tview, tmodel );
+	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tmodel );
 	g_object_unref( tmodel );
 
 	text_cell = gtk_cell_renderer_text_new();
@@ -367,9 +312,9 @@ setup_left_treeview( ofaGuidedEx *self )
 			_( "Mnemonic" ),
 			text_cell, "text", LEFT_COL_MNEMO,
 			NULL );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_cell_data_func(
-			column, text_cell, ( GtkTreeCellDataFunc ) on_left_cell_data_func, self, NULL );
+			column, text_cell, ( GtkTreeCellDataFunc ) left_on_cell_data_func, self, NULL );
 
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -377,32 +322,30 @@ setup_left_treeview( ofaGuidedEx *self )
 			text_cell, "text", LEFT_COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_cell_data_func(
-			column, text_cell, ( GtkTreeCellDataFunc ) on_left_cell_data_func, self, NULL );
+			column, text_cell, ( GtkTreeCellDataFunc ) left_on_cell_data_func, self, NULL );
 
-	select = gtk_tree_view_get_selection( tview );
+	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_left_row_selected ), self );
+	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( left_on_row_selected ), self );
 
 	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_left_sort_model, self, NULL );
+			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) left_on_sort_model, self, NULL );
 
 	gtk_tree_sortable_set_sort_column_id(
 			GTK_TREE_SORTABLE( tmodel ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
-
-	return( scrolled );
 }
 
 static gint
-on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self )
+left_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self )
 {
 	gchar *a_key, *b_key;
 	gint cmp;
 
-	a_key = get_sort_key( tmodel, a );
-	b_key = get_sort_key( tmodel, b );
+	a_key = left_get_sort_key( tmodel, a );
+	b_key = left_get_sort_key( tmodel, b );
 
 	cmp = g_utf8_collate( a_key, b_key );
 
@@ -413,7 +356,7 @@ on_left_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGui
 }
 
 static gchar *
-get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter )
+left_get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *key;
 	ofoBase *obj;
@@ -438,7 +381,7 @@ get_sort_key( GtkTreeModel *tmodel, GtkTreeIter *iter )
  * display yellow background the ledger rows
  */
 static void
-on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
+left_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 							GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
 							ofaGuidedEx *self )
 {
@@ -469,7 +412,7 @@ on_left_cell_data_func( GtkTreeViewColumn *tcolumn,
 }
 
 static void
-init_left_view( ofaGuidedEx *self, GtkWidget *child )
+left_init_view( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 	GList *dataset, *ise;
@@ -478,22 +421,22 @@ init_left_view( ofaGuidedEx *self, GtkWidget *child )
 
 	dataset = ofo_ledger_get_dataset( priv->hub );
 	for( ise=dataset ; ise ; ise=ise->next ){
-		insert_left_ledger_row( self, OFO_LEDGER( ise->data ));
+		ledger_insert_row( self, OFO_LEDGER( ise->data ));
 	}
 
 	dataset = ofo_ope_template_get_dataset( priv->hub );
 	for( ise=dataset ; ise ; ise=ise->next ){
-		insert_left_model_row( self, OFO_OPE_TEMPLATE( ise->data ));
+		model_insert_row( self, OFO_OPE_TEMPLATE( ise->data ));
 	}
 }
 
 static void
-on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self )
+left_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaGuidedEx *self )
 {
 	/* select the operation template if the current selected row is an
 	 * operation template */
-	if( is_left_select_enableable( self )){
-		select_model( self );
+	if( left_is_select_enableable( self )){
+		model_select( self );
 
 	/* else collapse/expand the ledger */
 	} else if( gtk_tree_view_row_expanded( view, path )){
@@ -505,9 +448,9 @@ on_left_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *
 }
 
 static void
-on_left_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self )
+left_on_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self )
 {
-	enable_left_select( self );
+	left_enable_select( self );
 }
 
 /*
@@ -518,7 +461,7 @@ on_left_row_selected( GtkTreeSelection *selection, ofaGuidedEx *self )
  * Handles left and right arrows to expand/collapse nodes
  */
 static gboolean
-on_left_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self )
+left_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaGuidedEx *self )
 {
 	if( event->state == 0 ){
 		if( event->keyval == GDK_KEY_Left ){
@@ -579,21 +522,21 @@ left_expand_node( ofaGuidedEx *self, GtkWidget *widget )
 }
 
 static void
-enable_left_select( ofaGuidedEx *self )
+left_enable_select( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
 	gtk_widget_set_sensitive(
-			GTK_WIDGET( priv->left_select ), is_left_select_enableable( self ));
+			GTK_WIDGET( priv->left_select ), left_is_select_enableable( self ));
 }
 
 /*
  * return %TRUE if the current selection is an operation template
  */
 static gboolean
-is_left_select_enableable( ofaGuidedEx *self )
+left_is_select_enableable( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 	GtkTreeSelection *select;
@@ -618,41 +561,13 @@ is_left_select_enableable( ofaGuidedEx *self )
 }
 
 static void
-on_left_select_clicked( GtkButton *button, ofaGuidedEx *self )
+left_on_select_clicked( GtkButton *button, ofaGuidedEx *self )
 {
-	select_model( self );
+	model_select( self );
 }
 
 static void
-select_model( ofaGuidedEx *self )
-{
-	ofaGuidedExPrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoBase *object;
-	gboolean ok;
-
-	priv = ofa_guided_ex_get_instance_private( self );
-
-	object = NULL;
-	select = gtk_tree_view_get_selection( priv->left_tview );
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
-		g_object_unref( object );
-	}
-	g_return_if_fail( object && OFO_IS_OPE_TEMPLATE( object ));
-
-	ofa_guided_input_bin_set_ope_template( priv->input_bin, OFO_OPE_TEMPLATE( object ));
-
-	ok = ofa_guided_input_bin_is_valid( priv->input_bin );
-	on_right_piece_changed( priv->input_bin, ok, self );
-
-	gtk_widget_show_all( gtk_paned_get_child2( GTK_PANED( priv->pane )));
-}
-
-static void
-insert_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
+ledger_insert_row( ofaGuidedEx *self, ofoLedger *ledger )
 {
 	ofaGuidedExPrivate *priv;
 	GtkTreeModel *tmodel;
@@ -673,16 +588,16 @@ insert_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
 }
 
 static void
-update_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id )
+ledger_update_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofa_guided_ex_update_left_ledger_row";
+	static const gchar *thisfn = "ofa_guided_ex_ledger_update_row";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gboolean found;
 	const gchar *cstr;
 
 	cstr = prev_id ? prev_id : ofo_ledger_get_mnemo( ledger );
-	found = find_left_ledger_by_mnemo( self, cstr, &tmodel, &iter );
+	found = ledger_find_by_mnemo( self, cstr, &tmodel, &iter );
 	if( found ){
 		gtk_tree_store_set(
 				GTK_TREE_STORE( tmodel ),
@@ -700,14 +615,14 @@ update_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_
  *  reordered under an 'Unclassed' category
  */
 static void
-remove_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
+ledger_remove_row( ofaGuidedEx *self, ofoLedger *ledger )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter, child_iter;
 	gboolean found;
 	ofoOpeTemplate *model;
 
-	if( !find_left_ledger_by_mnemo( self, ofo_ledger_get_mnemo( ledger ), &tmodel, &iter )){
+	if( !ledger_find_by_mnemo( self, ofo_ledger_get_mnemo( ledger ), &tmodel, &iter )){
 		return;
 	}
 
@@ -723,11 +638,11 @@ remove_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
 		g_return_if_fail( model && OFO_IS_OPE_TEMPLATE( model ));
 
 		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &child_iter );
-		insert_left_model_row( self, model );
+		model_insert_row( self, model );
 		g_object_unref( model );
 	}
 
-	found = find_left_ledger_by_mnemo( self, ofo_ledger_get_mnemo( ledger ), NULL, &iter );
+	found = ledger_find_by_mnemo( self, ofo_ledger_get_mnemo( ledger ), NULL, &iter );
 	g_return_if_fail( found );
 
 	gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
@@ -741,7 +656,7 @@ remove_left_ledger_row( ofaGuidedEx *self, ofoLedger *ledger )
  * is null
  */
 static gboolean
-find_left_ledger_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+ledger_find_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
 	ofaGuidedExPrivate *priv;
 	GtkTreeModel *my_tmodel;
@@ -786,18 +701,18 @@ find_left_ledger_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel *
 }
 
 static void
-insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model )
+model_insert_row( ofaGuidedEx *self, ofoOpeTemplate *model )
 {
-	static const gchar *thisfn = "ofa_guided_ex_insert_left_model_row";
+	static const gchar *thisfn = "ofa_guided_ex_model_insert_row";
 	GtkTreeModel *tmodel;
 	GtkTreeIter parent_iter, iter;
 	gboolean found;
 
-	found = find_left_ledger_by_mnemo( self, ofo_ope_template_get_ledger( model ), &tmodel, &parent_iter );
+	found = ledger_find_by_mnemo( self, ofo_ope_template_get_ledger( model ), &tmodel, &parent_iter );
 	if( !found ){
 		g_debug( "%s: ledger not found: %s", thisfn, ofo_ope_template_get_ledger( model ));
 
-		found = find_left_ledger_by_mnemo( self, UNKNOWN_LEDGER_MNEMO, &tmodel, &parent_iter );
+		found = ledger_find_by_mnemo( self, UNKNOWN_LEDGER_MNEMO, &tmodel, &parent_iter );
 		if( !found ){
 			g_debug( "%s: defining ledger for unclassed models: %s", thisfn, UNKNOWN_LEDGER_MNEMO );
 
@@ -825,18 +740,18 @@ insert_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model )
 }
 
 static void
-update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id )
+model_update_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id )
 {
-	static const gchar *thisfn = "ofa_guided_ex_udpate_left_model_row";
+	static const gchar *thisfn = "ofa_guided_ex_model_udpate_row";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gboolean found;
 
-	found = find_left_model_by_mnemo( self, prev_id, &tmodel, &iter );
+	found = model_find_by_mnemo( self, prev_id, &tmodel, &iter );
 
 	if( found ){
 		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
-		insert_left_model_row( self, model );
+		model_insert_row( self, model );
 
 	} else {
 		g_warning( "%s: unable to find model %s", thisfn, prev_id );
@@ -844,16 +759,16 @@ update_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *pr
 }
 
 static void
-remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model )
+model_remove_row( ofaGuidedEx *self, ofoOpeTemplate *model )
 {
-	static const gchar *thisfn = "ofa_guided_ex_remove_left_model_row";
+	static const gchar *thisfn = "ofa_guided_ex_model_remove_row";
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gboolean found;
 	const gchar *mnemo;
 
 	mnemo = ofo_ope_template_get_mnemo( model );
-	found = find_left_model_by_mnemo( self, mnemo, &tmodel, &iter );
+	found = model_find_by_mnemo( self, mnemo, &tmodel, &iter );
 
 	if( found ){
 		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
@@ -867,7 +782,7 @@ remove_left_model_row( ofaGuidedEx *self, ofoOpeTemplate *model )
  * returns TRUE if found
  */
 static gboolean
-find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
+model_find_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
 	ofaGuidedExPrivate *priv;
 	GtkTreeModel *my_tmodel;
@@ -920,7 +835,68 @@ find_left_model_by_mnemo( ofaGuidedEx *self, const gchar *mnemo, GtkTreeModel **
 }
 
 static void
-on_right_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self )
+model_select( ofaGuidedEx *self )
+{
+	static const gchar *thisfn = "ofa_guided_ex_model_select";
+	ofaGuidedExPrivate *priv;
+	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoBase *object;
+	gboolean ok;
+
+	priv = ofa_guided_ex_get_instance_private( self );
+
+	object = NULL;
+	select = gtk_tree_view_get_selection( priv->left_tview );
+	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, LEFT_COL_OBJECT, &object, -1 );
+		g_object_unref( object );
+	}
+	g_return_if_fail( object && OFO_IS_OPE_TEMPLATE( object ));
+
+	ofa_guided_input_bin_set_ope_template( priv->input_bin, OFO_OPE_TEMPLATE( object ));
+
+	g_debug( "%s: ope_template=%s", thisfn, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
+
+	ok = ofa_guided_input_bin_is_valid( priv->input_bin );
+	right_on_piece_changed( priv->input_bin, ok, self );
+
+	gtk_widget_show_all( gtk_paned_get_child2( GTK_PANED( priv->pane )));
+}
+
+/*
+ * note that we do not have any current ofoOpeTemplate at this time
+ */
+static void
+right_setup_view( ofaGuidedEx *self, GtkContainer *parent )
+{
+	ofaGuidedExPrivate *priv;
+	GtkWidget *bin_parent, *button, *image;
+
+	priv = ofa_guided_ex_get_instance_private( self );
+
+	bin_parent = my_utils_container_get_child_by_name( parent, "bin-parent" );
+	g_return_if_fail( bin_parent && GTK_IS_BOX( bin_parent ));
+	priv->input_bin = ofa_guided_input_bin_new( OFA_IGETTER( self ));
+	gtk_container_add( GTK_CONTAINER( bin_parent ), GTK_WIDGET( priv->input_bin ));
+	g_signal_connect( priv->input_bin, "ofa-changed", G_CALLBACK( right_on_piece_changed ), self );
+
+	priv->ok_btn = my_utils_container_get_child_by_name( parent, "validate-btn" );
+	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
+	image = gtk_image_new_from_icon_name( "gtk-ok", GTK_ICON_SIZE_BUTTON );
+	gtk_button_set_image( GTK_BUTTON( priv->ok_btn ), image );
+	g_signal_connect( priv->ok_btn, "clicked", G_CALLBACK( right_on_ok ), self );
+
+	button = my_utils_container_get_child_by_name( parent, "reset-btn" );
+	g_return_if_fail( button && GTK_IS_BUTTON( button ));
+	image = gtk_image_new_from_icon_name( "gtk-cancel", GTK_ICON_SIZE_BUTTON );
+	gtk_button_set_image( GTK_BUTTON( button ), image );
+	g_signal_connect( button, "clicked", G_CALLBACK( right_on_cancel ), self );
+}
+
+static void
+right_on_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 
@@ -936,7 +912,7 @@ on_right_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self )
  *  try to validate and generate the entries
  */
 static void
-on_right_ok( GtkButton *button, ofaGuidedEx *self )
+right_on_ok( GtkButton *button, ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 
@@ -951,7 +927,7 @@ on_right_ok( GtkButton *button, ofaGuidedEx *self )
  *  reset all the fields, keeping the dates, and the same model
  */
 static void
-on_right_cancel( GtkButton *button, ofaGuidedEx *self )
+right_on_cancel( GtkButton *button, ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 
@@ -961,25 +937,46 @@ on_right_cancel( GtkButton *button, ofaGuidedEx *self )
 	gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 }
 
+static void
+connect_to_hub_signaling_system( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	gulong handler;
+
+	priv = ofa_guided_ex_get_instance_private( self );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+}
+
 /*
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
+hub_on_new_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_on_hub_new_object";
+	static const gchar *thisfn = "ofa_guided_ex_hub_on_new_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		insert_left_model_row( self, OFO_OPE_TEMPLATE( object ));
+		model_insert_row( self, OFO_OPE_TEMPLATE( object ));
 
 	} else if( OFO_IS_LEDGER( object )){
-		insert_left_ledger_row( self, OFO_LEDGER( object ));
+		ledger_insert_row( self, OFO_LEDGER( object ));
 	}
 }
 
@@ -987,22 +984,22 @@ on_hub_new_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( const ofoDossier *dossier, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self )
+hub_on_updated_object( ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_guided_ex_hub_on_updated_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), prev_id=%s, self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
 			( void * ) self );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		update_left_model_row( self, OFO_OPE_TEMPLATE( object ), prev_id );
+		model_update_row( self, OFO_OPE_TEMPLATE( object ), prev_id );
 
 	} else if( OFO_IS_LEDGER( object )){
-		update_left_ledger_row( self, OFO_LEDGER( object ), prev_id );
+		ledger_update_row( self, OFO_LEDGER( object ), prev_id );
 	}
 }
 
@@ -1010,21 +1007,21 @@ on_hub_updated_object( const ofoDossier *dossier, const ofoBase *object, const g
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuidedEx *self )
+hub_on_deleted_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_on_hub_deleted_object";
+	static const gchar *thisfn = "ofa_guided_ex_hub_on_deleted_object";
 
-	g_debug( "%s: dossier=%p, object=%p (%s), self=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
-			( void * ) dossier,
+			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		remove_left_model_row( self, OFO_OPE_TEMPLATE( object ));
+		model_remove_row( self, OFO_OPE_TEMPLATE( object ));
 
 	} else if( OFO_IS_LEDGER( object )){
-		remove_left_ledger_row( self, OFO_LEDGER( object ));
+		ledger_remove_row( self, OFO_LEDGER( object ));
 	}
 }
 
@@ -1032,27 +1029,17 @@ on_hub_deleted_object( const ofoDossier *dossier, const ofoBase *object, ofaGuid
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_hub_reload_dataset( const ofoDossier *dossier, GType type, ofaGuidedEx *self )
+hub_on_reload_dataset( ofaHub *hub, GType type, ofaGuidedEx *self )
 {
-	static const gchar *thisfn = "ofa_guided_ex_on_hub_reload_dataset";
+	static const gchar *thisfn = "ofa_guided_ex_hub_on_reload_dataset";
 
-	g_debug( "%s: dossier=%p, type=%lu, self=%p",
-			thisfn, ( void * ) dossier, type, ( void * ) self );
+	g_debug( "%s: hub=%p, type=%lu (%s), self=%p",
+			thisfn, ( void * ) hub, type, g_type_name( type ), ( void * ) self );
 
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
-
+		//
 
 	} else if( type == OFO_TYPE_LEDGER ){
-
+		//
 	}
-}
-
-static void
-pane_save_position( GtkWidget *pane )
-{
-	guint pos;
-
-	pos = gtk_paned_get_position( GTK_PANED( pane ));
-	g_debug( "ofa_guided_ex_pane_save_position: pos=%d", pos );
-	ofa_settings_user_set_uint( "GuidedInputExDlg-pane", pos );
 }
