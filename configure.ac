@@ -22,7 +22,7 @@
 
 AC_PREREQ([2.53])
 
-AC_INIT([OpenBook],[0.57],[openbook@trychlos.org],,[http://trychlos.github.io/openbook/])
+AC_INIT([OpenBook],[0.58],[openbook@trychlos.org],,[http://trychlos.github.io/openbook/])
 AX_IS_RELEASE([git-directory])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
