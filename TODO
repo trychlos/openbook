@@ -343,7 +343,12 @@
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
-1132
+1132 2016- 5-30 BUG: Reconciliation: balance check has rounding error
+
+1133 2016- 5-30 BUG: EntryPage while entering new operation
+                cf. TODO_1133/trace
+
+1134
 
 -----------------------------------------------------------------------
  DONE

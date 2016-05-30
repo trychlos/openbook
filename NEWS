@@ -40,7 +40,7 @@
  
  Bug fixes:
 
-   - 
+   - EntryPage: fix new entry insertion (todo #1133).
 
  Other changes:
 

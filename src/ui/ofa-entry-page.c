@@ -3173,8 +3173,8 @@ do_new_entry( ofaEntryPage *self, ofoEntry *entry )
 	 * or (by account is selected) the required account is those of the
 	 * entry */
 	if(( gtk_toggle_button_get_active( priv->ledger_btn ) &&
-			!g_utf8_collate( priv->jou_mnemo, ofo_entry_get_ledger( entry ))) ||
-				!g_utf8_collate( priv->acc_number, ofo_entry_get_account( entry ))){
+			!my_collate( priv->jou_mnemo, ofo_entry_get_ledger( entry ))) ||
+				!my_collate( priv->acc_number, ofo_entry_get_account( entry ))){
 
 		gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
 		display_entry( self, entry, &iter );
