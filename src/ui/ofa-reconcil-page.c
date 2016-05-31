@@ -30,6 +30,7 @@
 #include <glib/gi18n.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "my/my-date-editable.h"
 #include "my/my-utils.h"
@@ -55,6 +56,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofs-concil-id.h"
+#include "api/ofs-currency.h"
 
 #include "core/ofa-iconcil.h"
 
@@ -305,7 +307,7 @@ static gboolean     is_session_conciliated( ofaReconcilPage *self, ofoConcil *co
 static void         on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilPage *self );
 static gboolean     tview_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconcilPage *self );
 static void         on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self );
-static void         examine_selection( ofaReconcilPage *self, ofxAmount *debit, ofxAmount *credit, ofoConcil **concil, guint *count, guint *unconcil_rows, gboolean *unique, gboolean *is_child );
+static void         examine_selection( ofaReconcilPage *self, ofsCurrency *scurrency, ofoConcil **concil, guint *count, guint *unconcil_rows, gboolean *unique, gboolean *is_child );
 static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaReconcilPage *self );
 static gboolean     on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconcilPage *self );
 static void         collapse_node( ofaReconcilPage *self, GtkWidget *widget );
@@ -2381,7 +2383,7 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gboolean concil_enabled, decline_enabled, unreconciliate_enabled;
-	ofxAmount debit, credit;
+	ofsCurrency scur;
 	ofoConcil *concil;
 	guint count, unconcil_rows;
 	gboolean is_child, unique;
@@ -2394,15 +2396,17 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self )
 	unreconciliate_enabled = FALSE;
 	priv->activate_action = ACTIV_NONE;
 
-	examine_selection( self,
-			&debit, &credit, &concil, &count, &unconcil_rows, &unique, &is_child );
+	memset( &scur, '\0', sizeof( ofsCurrency ));
+	scur.currency = priv->acc_currency;
 
-	sdeb = ofa_amount_to_str( debit, priv->acc_currency );
+	examine_selection( self, &scur, &concil, &count, &unconcil_rows, &unique, &is_child );
+
+	sdeb = ofa_amount_to_str( scur.debit, priv->acc_currency );
 	gtk_label_set_text( GTK_LABEL( priv->select_debit ), sdeb );
-	scre = ofa_amount_to_str( credit, priv->acc_currency );
+	scre = ofa_amount_to_str( scur.credit, priv->acc_currency );
 	gtk_label_set_text( GTK_LABEL( priv->select_credit ), scre );
 
-	if( debit || credit ){
+	if( scur.debit || scur.credit ){
 		if( !my_collate( sdeb, scre )){
 			gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_green );
 		} else {
@@ -2448,8 +2452,7 @@ on_tview_selection_changed( GtkTreeSelection *select, ofaReconcilPage *self )
  *  (most useful when selecting only one child to decline it)
  */
 static void
-examine_selection( ofaReconcilPage *self,
-		ofxAmount *debit, ofxAmount *credit,
+examine_selection( ofaReconcilPage *self, ofsCurrency *scur,
 		ofoConcil **concil, guint *count, guint *unconcil_rows, gboolean *unique, gboolean *is_child )
 {
 	ofaReconcilPagePrivate *priv;
@@ -2466,8 +2469,8 @@ examine_selection( ofaReconcilPage *self,
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	concil_id = 0;
-	*debit = 0;
-	*credit = 0;
+	scur->debit = 0;
+	scur->credit = 0;
 	*concil = NULL;
 	*unconcil_rows = 0;
 	*unique = TRUE;
@@ -2489,14 +2492,14 @@ examine_selection( ofaReconcilPage *self,
 
 		/* increment debit/credit */
 		if( OFO_IS_ENTRY( object )){
-			*debit += ofo_entry_get_debit( OFO_ENTRY( object ));
-			*credit += ofo_entry_get_credit( OFO_ENTRY( object ));
+			scur->debit += ofo_entry_get_debit( OFO_ENTRY( object ));
+			scur->credit += ofo_entry_get_credit( OFO_ENTRY( object ));
 		} else {
 			amount = ofo_bat_line_get_amount( OFO_BAT_LINE( object ));
 			if( amount < 0 ){
-				*debit += -1*amount;
+				scur->debit += -1*amount;
 			} else {
-				*credit += amount;
+				scur->credit += amount;
 			}
 		}
 
@@ -2808,7 +2811,7 @@ do_reconciliate( ofaReconcilPage *self )
 {
 	static const gchar *thisfn = "ofa_reconcil_page_do_reconciliate";
 	ofaReconcilPagePrivate *priv;
-	ofxAmount debit, credit;
+	ofsCurrency scur;
 	guint count, unconcil_rows;
 	gboolean is_child, unique;
 	ofoConcil *concil;
@@ -2828,12 +2831,15 @@ do_reconciliate( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	examine_selection( self, &debit, &credit, &concil, &count, &unconcil_rows, &unique, &is_child );
+	memset( &scur, '\0', sizeof( ofsCurrency ));
+	scur.currency = priv->acc_currency;
+
+	examine_selection( self, &scur, &concil, &count, &unconcil_rows, &unique, &is_child );
 	g_return_if_fail( unique );
 
 	/* ask for a user confirmation when amounts are not balanced */
-	if( debit != credit ){
-		if( !user_confirm_reconciliation( self, debit, credit )){
+	if( !ofs_currency_is_balanced( &scur )){
+		if( !user_confirm_reconciliation( self, scur.debit, scur.credit )){
 			return;
 		}
 	}
@@ -3174,7 +3180,7 @@ do_unconciliate( ofaReconcilPage *self )
 {
 	static const gchar *thisfn = "ofa_reconcil_page_do_unconciliate";
 	ofaReconcilPagePrivate *priv;
-	ofxAmount debit, credit;
+	ofsCurrency scur;
 	guint count, unconcil_rows;
 	gboolean is_child, unique, first;
 	ofoConcil *concil, *concil_to_remove;
@@ -3190,7 +3196,10 @@ do_unconciliate( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	examine_selection( self, &debit, &credit, &concil, &count, &unconcil_rows, &unique, &is_child );
+	memset( &scur, '\0', sizeof( ofsCurrency ));
+	scur.currency = priv->acc_currency;
+
+	examine_selection( self, &scur, &concil, &count, &unconcil_rows, &unique, &is_child );
 	g_return_if_fail( unique );
 	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
 

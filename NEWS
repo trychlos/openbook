@@ -41,6 +41,7 @@
  Bug fixes:
 
    - EntryPage: fix new entry insertion (todo #1133).
+   - ReconciliationPage: fix debit vs. credit comparison (todo #1132).
 
  Other changes:
 

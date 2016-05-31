@@ -343,11 +343,6 @@
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
-1132 2016- 5-30 BUG: Reconciliation: balance check has rounding error
-
-1133 2016- 5-30 BUG: EntryPage while entering new operation
-                cf. TODO_1133/trace
-
 1134
 
 -----------------------------------------------------------------------
@@ -1369,6 +1364,13 @@
 
 1131 2016- 5- 9 ofaListStore, ofaTreeStore: hub is not a property
      2016- 5- 9 done
+
+1132 2016- 5-30 BUG: Reconciliation: balance check has rounding error
+     2016- 5-31 fixed
+
+1133 2016- 5-30 BUG: EntryPage while entering new operation
+                cf. TODO_1133/trace
+     2016- 5-30 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
