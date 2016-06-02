@@ -218,15 +218,13 @@ gdouble
 my_double_set_from_sql_ex( const gchar *sql_string, gint digits )
 {
 	gdouble amount;
-	gdouble precision;
 
 	if( !my_strlen( sql_string )){
 		return( 0.0 );
 	}
 
-	precision = exp10( digits );
 	amount = g_ascii_strtod( sql_string, NULL );
-	amount = round( amount*precision ) / precision;
+	amount = my_double_round_to_decimals( amount, digits );
 
 	return( amount );
 }
@@ -401,4 +399,21 @@ double_decorate( const gchar *text, gunichar thousand_sep, gunichar decimal_sep 
 	g_free( dest2 );
 
 	return( dest3 );
+}
+
+/**
+ * my_double_round_to_decimals:
+ *
+ * Returns a double with the specified decimal count.
+ */
+gdouble
+my_double_round_to_decimals( gdouble value, guint decimals )
+{
+	gdouble amount;
+	gdouble precision;
+
+	precision = exp10( decimals );
+	amount = round( value*precision ) / precision;
+
+	return( amount );
 }

@@ -44,10 +44,12 @@
    - EntryPage: fix new entry insertion (todo #1133).
    - ReconciliationPage: fix debit vs. credit comparison (todo #1132).
    - RecurrentOperations: fix amount update on newly generated record (todo #1135). 
-   - RecurrentOperations: review index to allow many cancelled operations (todo #1137). 
+   - RecurrentOperations: review index to allow many cancelled operations (todo #1137).
+   - VATDeclaration: computes with actual rounded numbers (todo #1134). 
 
  Other changes:
 
+   - my_double_round_to_decimals(): new function.
    - RecurrentOperations: set the icon slightly smaller (todo #1138).
 
 -----------------------------------------------------------------------

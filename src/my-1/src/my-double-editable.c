@@ -533,6 +533,7 @@ my_double_editable_set_string( GtkEditable *editable, const gchar *string )
 
 	data = get_editable_amount_data( editable );
 	amount = my_double_set_from_str( string, data->thousand_sep, data->decimal_sep );
+	amount = my_double_round_to_decimals( amount, data->decimals );
 	my_double_editable_set_amount( editable, amount );
 }
 

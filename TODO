@@ -340,10 +340,6 @@
 1112 2016- 5- 6 myIWindow::is_destroy_allowed should be avoided
                 rather close_all_but_me()
 
-1134 2016- 5-31 BUG: when building the TVA declaration, should add the
-                rounded displayed amounts instead of the initial amounts
-                (or 487+54 will do 540 !)
-
 1140
 
 -----------------------------------------------------------------------
@@ -1377,6 +1373,11 @@
 1133 2016- 5-30 BUG: EntryPage while entering new operation
                 cf. TODO_1133/trace
      2016- 5-30 fixed
+
+1134 2016- 5-31 BUG: when building the TVA declaration, should add the
+                rounded displayed amounts instead of the initial amounts
+                (or 487+54 will do 540 !)
+     2016- 6- 2 fixed
 
 1135 2016- 6- 1 BUG: recurent operations: when editing an amount
                 (cf. TODO_1135/trace)
