@@ -602,6 +602,10 @@ generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *
 	return( sdata.opes );
 }
 
+/*
+ * Takes care of having at most one Waiting|Validated operation for a
+ * given mnemo+date couple
+ */
 static void
 generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 {

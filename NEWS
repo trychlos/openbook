@@ -36,13 +36,14 @@
   
  New features and improvements:
 
-   - 
+   - RecurrentOperation: DB Model v3.
  
  Bug fixes:
 
    - EntryPage: fix new entry insertion (todo #1133).
    - ReconciliationPage: fix debit vs. credit comparison (todo #1132).
    - RecurrentOperations: fix amount update on newly generated record (todo #1135). 
+   - RecurrentOperations: review index to allow many cancelled operations (todo #1137). 
 
  Other changes:
 

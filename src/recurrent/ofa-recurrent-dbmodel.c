@@ -64,6 +64,8 @@ static gboolean dbmodel_to_v1( sUpdate *update_data, guint version );
 static gulong   count_v1( sUpdate *update_data );
 static gboolean dbmodel_to_v2( sUpdate *update_data, guint version );
 static gulong   count_v2( sUpdate *update_data );
+static gboolean dbmodel_to_v3( sUpdate *update_data, guint version );
+static gulong   count_v3( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -75,6 +77,7 @@ typedef struct {
 static sMigration st_migrates[] = {
 		{ 1, dbmodel_to_v1, count_v1 },
 		{ 2, dbmodel_to_v2, count_v2 },
+		{ 3, dbmodel_to_v3, count_v3 },
 		{ 0 }
 };
 
@@ -322,6 +325,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 	}
 
 	/* updated in v2 */
+	/* updated in v3 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_RUN ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL        COMMENT 'Recurrent operation identifier',"
@@ -329,7 +333,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 			"	REC_STATUS         CHAR(1)                             COMMENT 'Operation status',"
 			"	REC_UPD_USER       VARCHAR(64)                         COMMENT 'User responsible of last update',"
 			"	REC_UPD_STAMP      TIMESTAMP                           COMMENT 'Last update timestamp',"
-			" CONSTRAINT PRIMARY KEY (REC_MNEMO,REC_DATE))"
+			" CONSTRAINT PRIMARY KEY( REC_MNEMO,REC_DATE ))"
 			" CHARACTER SET utf8" )){
 		return( FALSE );
 	}
@@ -374,6 +378,39 @@ dbmodel_to_v2( sUpdate *update_data, guint version )
 
 static gulong
 count_v2( sUpdate *update_data )
+{
+	return( 2 );
+}
+
+/*
+ * Review REC_T_RUN index:
+ *   for a same mnemo+date couple, may have several Cancelled, only one
+ *   Waiting|Validated - this is controlled by the code.
+ */
+static gboolean
+dbmodel_to_v3( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v3";
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_RUN "
+			"	DROP PRIMARY KEY" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_RUN "
+			"	ADD COLUMN REC_NUMSEQ         BIGINT NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Automatic sequence number'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v3( sUpdate *update_data )
 {
 	return( 2 );
 }

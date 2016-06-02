@@ -56,6 +56,7 @@ enum {
 	REC_AMOUNT1,
 	REC_AMOUNT2,
 	REC_AMOUNT3,
+	REC_NUMSEQ
 };
 
 /*
@@ -98,6 +99,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_AMOUNT,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( REC_NUMSEQ ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -121,23 +126,24 @@ static const sLabels st_labels[] = {
 		{ 0 }
 };
 
-static void     recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
-static void     recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
-static gboolean recurrent_run_do_insert( ofoRecurrentRun *model, ofaHub *hub );
-static gboolean recurrent_run_insert_main( ofoRecurrentRun *model, ofaHub *hub );
-static gboolean recurrent_run_do_update( ofoRecurrentRun *model, ofaHub *hub );
-static gboolean recurrent_run_update_main( ofoRecurrentRun *model, ofaHub *hub );
-static gint     recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
-static gint     recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
-static void     icollectionable_iface_init( myICollectionableInterface *iface );
-static guint    icollectionable_get_interface_version( void );
-static GList   *icollectionable_load_collection( void *user_data );
-static void     isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void     isignal_hub_connect( ofaHub *hub );
-static gboolean hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
-static gboolean hub_is_deletable_recurrent_model( ofaHub *hub, ofoRecurrentModel *model );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static gboolean hub_on_updated_rec_model_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static ofxCounter recurrent_run_get_numseq( const ofoRecurrentRun *model );
+static void       recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
+static void       recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
+static gboolean   recurrent_run_do_insert( ofoRecurrentRun *model, ofaHub *hub );
+static gboolean   recurrent_run_insert_main( ofoRecurrentRun *model, ofaHub *hub );
+static gboolean   recurrent_run_do_update( ofoRecurrentRun *model, ofaHub *hub );
+static gboolean   recurrent_run_update_main( ofoRecurrentRun *model, ofaHub *hub );
+static gint       recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
+static gint       recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
+static void       icollectionable_iface_init( myICollectionableInterface *iface );
+static guint      icollectionable_get_interface_version( void );
+static GList     *icollectionable_load_collection( void *user_data );
+static void       isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void       isignal_hub_connect( ofaHub *hub );
+static gboolean   hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
+static gboolean   hub_is_deletable_recurrent_model( ofaHub *hub, ofoRecurrentModel *model );
+static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static gboolean   hub_on_updated_rec_model_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentRun, ofo_recurrent_run, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentRun )
@@ -220,8 +226,9 @@ ofo_recurrent_run_get_dataset( ofaHub *hub )
  *
  * Returns: the found operation, if exists, or %NULL.
  *
- * The search is made whatever be the status of the operation.
- * All operations are candidate to be retrieved.
+ * We are searching here for an operation with same mnemo+date, which
+ * would have a 'Waiting' or 'Validated' status.
+ * Cancelled operations are silently ignored.
  *
  * The returned object is owned by the @hub collector, and should not
  * be released by the caller.
@@ -231,7 +238,7 @@ ofo_recurrent_run_get_by_id( ofaHub *hub, const gchar *mnemo, const GDate *date 
 {
 	GList *dataset, *it;
 	ofoRecurrentRun *ope;
-	const gchar *mnemo_ope;
+	const gchar *mnemo_ope, *status_ope;
 	const GDate *date_ope;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -244,6 +251,16 @@ ofo_recurrent_run_get_by_id( ofaHub *hub, const gchar *mnemo, const GDate *date 
 
 	for( it=dataset ; it ; it=it->next ){
 		ope = OFO_RECURRENT_RUN( it->data );
+
+		status_ope = ofo_recurrent_run_get_status( ope );
+		g_return_val_if_fail( my_strlen( status_ope ), NULL );
+		if( !my_collate( status_ope, REC_STATUS_CANCELLED )){
+			continue;
+		}
+
+		g_return_val_if_fail(
+				!my_collate( status_ope, REC_STATUS_WAITING ) || !my_collate( status_ope, REC_STATUS_VALIDATED ),
+				NULL );
 
 		mnemo_ope = ofo_recurrent_run_get_mnemo( ope );
 		g_return_val_if_fail( my_strlen( mnemo_ope ), NULL );
@@ -368,6 +385,15 @@ gdouble
 ofo_recurrent_run_get_amount3( const ofoRecurrentRun *model )
 {
 	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT3 );
+}
+
+/*
+ * ofo_recurrent_run_get_numseq:
+ */
+static ofxCounter
+recurrent_run_get_numseq( const ofoRecurrentRun *model )
+{
+	ofo_base_getter( RECURRENT_RUN, model, counter, 0, REC_NUMSEQ );
 }
 
 /**
@@ -624,12 +650,12 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	gboolean ok;
 	const ofaIDBConnect *connect;
 	GString *query;
-	gchar *userid, *sdate, *samount;
+	gchar *userid, *samount;
 	const gchar *status, *mnemo, *csdef;
-	const GDate *date;
 	gchar *stamp_str;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
+	ofxCounter numseq;
 
 	mnemo = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
@@ -645,9 +671,6 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	userid = ofa_idbconnect_get_account( connect );
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
-
-	date = ofo_recurrent_run_get_date( recrun );
-	sdate = my_date_to_str( date, MY_DATE_SQL );
 
 	query = g_string_new( "UPDATE REC_T_RUN SET " );
 
@@ -681,12 +704,14 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 		query = g_string_append( query, "REC_AMOUNT3=NULL," );
 	}
 
+	numseq = recurrent_run_get_numseq( recrun );
+
 	g_string_append_printf( query,
 			"	REC_UPD_USER='%s',REC_UPD_STAMP='%s'"
-			"	WHERE REC_MNEMO='%s' AND REC_DATE='%s'",
+			"	WHERE REC_NUMSEQ=%ld",
 					userid,
 					stamp_str,
-					mnemo, sdate );
+					numseq );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 
@@ -694,7 +719,6 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	recurrent_run_set_upd_stamp( recrun, &stamp );
 
 	g_string_free( query, TRUE );
-	g_free( sdate );
 	g_free( stamp_str );
 	g_free( userid );
 
