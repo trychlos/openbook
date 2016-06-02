@@ -337,13 +337,30 @@
 1110 2016- 5- 5 BUG GuidedEx: when drag and drop page - see TODO_1110/trace
                 gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
 
-1112 2016- 5- 6 iWindow::is_destroy_allowed should be avoided
-                rather close_all_but()
+1112 2016- 5- 6 myIWindow::is_destroy_allowed should be avoided
+                rather close_all_but_me()
 
 1126 2016- 5- 7 Recurrent: display generated entries, letting the user
                 confirm them before dbms insertion
 
-1134
+1134 2016- 5-31 BUG: when building the TVA declaration, should add the
+                rounded displayed amounts instead of the initial amounts
+                (or 487+54 will do 540 !)
+
+1136 2016- 6- 2 RecurrentOperations: must be able to cancel operations
+                for a month, and regenerate them: date must be modifiable
+                with only a warning, operations be regenerated as long as
+                they are not Waiting nor Validated
+
+1137 2016- 6- 2 RecurrentOperations: review REC_T_RUN index: for a same
+                mnemo+date couple, may have several Cancelled, only one
+                Waiting|Validated 
+
+1138 2016- 6- 2 Recurrent icon is a bit too large
+
+1139 2016- 6- 2 Have a TVA icon
+
+1140
 
 -----------------------------------------------------------------------
  DONE
@@ -1371,6 +1388,10 @@
 1133 2016- 5-30 BUG: EntryPage while entering new operation
                 cf. TODO_1133/trace
      2016- 5-30 fixed
+
+1135 2016- 6- 1 BUG: recurent operations: when editing an amount
+                (cf. TODO_1135/trace)
+     2016- 6- 2 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -39,6 +39,7 @@
 #include "api/ofa-periodicity.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-base.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofs-ope.h"
 
@@ -625,6 +626,7 @@ generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 		recrun = ofo_recurrent_run_new();
 		ofo_recurrent_run_set_mnemo( recrun, mnemo );
 		ofo_recurrent_run_set_date( recrun, date );
+		ofo_base_set_hub( OFO_BASE( recrun ), hub );
 
 		valid = TRUE;
 		ope = ofs_ope_new( data->template );
