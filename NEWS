@@ -37,6 +37,7 @@
  New features and improvements:
 
    - RecurrentOperation: DB Model v3.
+   - VAT: put its own icon on operation templates pages (todo #1138). 
  
  Bug fixes:
 

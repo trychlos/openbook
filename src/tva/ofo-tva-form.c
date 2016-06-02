@@ -383,6 +383,41 @@ form_find_by_mnemo( GList *set, const gchar *mnemo )
 }
 
 /**
+ * ofo_tva_form_use_ope_template:
+ * @hub:
+ * @mnemo:
+ *
+ * Returns: %TRUE if any #ofoTVAForm use this @mnemo operation
+ * template.
+ */
+gboolean
+ofo_tva_form_use_ope_template( ofaHub *hub, const gchar *mnemo )
+{
+	GList *dataset, *it;
+	ofoTVAForm *form;
+	const gchar *det_template;
+	guint i, count;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( my_strlen( mnemo ), FALSE );
+
+	dataset = ofo_tva_form_get_dataset( hub );
+
+	for( it=dataset ; it ; it=it->next ){
+		form = OFO_TVA_FORM( it->data );
+		count = ofo_tva_form_detail_get_count( form );
+		for( i=0 ; i<count ; ++i ){
+			det_template = ofo_tva_form_detail_get_template( form, i );
+			if( !my_collate( det_template, mnemo )){
+				return( TRUE );
+			}
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofo_tva_form_new:
  */
 ofoTVAForm *

@@ -33,6 +33,7 @@
 #include "ofa-tva-dbmodel.h"
 #include "ofa-tva-execlose.h"
 #include "ofa-tva-main.h"
+#include "ofa-tva-tree-adder.h"
 #include "ofo-tva-form.h"
 #include "ofo-tva-record.h"
 
@@ -183,7 +184,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
  * Each of these GType types must be addressed in #ofa_extension_list_types().
  * Only the GTypeModule has to be registered from #ofa_extension_startup().
  */
-#define TYPES_COUNT	 3
+#define TYPES_COUNT	 4
 
 /*
  * ofa_extension_startup:
@@ -219,6 +220,7 @@ ofa_extension_list_types( const GType **types )
 	g_debug( "%s: types=%p, count=%u", thisfn, ( void * ) types, TYPES_COUNT );
 
 	types_list[i++] = OFA_TYPE_TVA_ID;
+	types_list[i++] = OFA_TYPE_TVA_TREE_ADDER;
 	types_list[i++] = OFO_TYPE_TVA_FORM;
 	types_list[i++] = OFO_TYPE_TVA_RECORD;
 

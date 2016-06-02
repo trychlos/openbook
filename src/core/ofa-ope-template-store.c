@@ -51,7 +51,7 @@ typedef struct {
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
-		G_TYPE_STRING,									/* is_recurrent_model */
+		G_TYPE_STRING, G_TYPE_STRING,					/* is_recurrent_model, used_by_vat */
 		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
 };
 
@@ -257,6 +257,7 @@ set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkT
 			OPE_TEMPLATE_COL_UPD_USER,  ofo_ope_template_get_upd_user( ope ),
 			OPE_TEMPLATE_COL_UPD_STAMP, stamp,
 			OPE_TEMPLATE_COL_RECURRENT, "",
+			OPE_TEMPLATE_COL_VAT,       "",
 			-1 );
 
 	g_free( stamp );

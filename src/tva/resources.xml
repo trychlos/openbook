@@ -5,5 +5,7 @@
     <file>ofa-tva-record-new.ui</file>
     <file>ofa-tva-record-properties.ui</file>
     <file>ofa-tva.css</file>
+    <file>ofa-vat-icon-16x16.png</file>
+    <file>filler.png</file>
   </gresource>
 </gresources>

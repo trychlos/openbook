@@ -344,8 +344,6 @@
                 rounded displayed amounts instead of the initial amounts
                 (or 487+54 will do 540 !)
 
-1139 2016- 6- 2 Have a TVA icon
-
 1140
 
 -----------------------------------------------------------------------
@@ -1397,6 +1395,9 @@
 
 1138 2016- 6- 2 Recurrent icon is a bit too large
      2016- 6- 2 fixed
+
+1139 2016- 6- 2 Have a VAT icon
+     2016- 6- 2 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
