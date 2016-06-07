@@ -509,6 +509,25 @@
                                 <property name="top_attach">1</property>
                               </packing>
                             </child>
+                            <child>
+                              <object class="GtkCheckButton" id="p4-date-over">
+                                <property name="label" translatable="yes">Defaults to edit in _overwrite mode</property>
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">False</property>
+                                <property name="use_underline">True</property>
+                                <property name="xalign">0</property>
+                                <property name="draw_indicator">True</property>
+                              </object>
+                              <packing>
+                                <property name="left_attach">1</property>
+                                <property name="top_attach">2</property>
+                                <property name="width">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <placeholder/>
+                            </child>
                           </object>
                         </child>
                         <child type="label">

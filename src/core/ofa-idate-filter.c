@@ -361,6 +361,7 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_from_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_from_focus_out ), filter );
@@ -381,6 +382,7 @@ setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata )
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), sdata->mandatory );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_to_changed ), filter );
 	g_signal_connect( entry, "focus-out-event", G_CALLBACK( on_to_focus_out ), filter );

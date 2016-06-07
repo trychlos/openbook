@@ -60,6 +60,9 @@ void         my_date_editable_set_label    ( GtkEditable *editable,
 void         my_date_editable_set_mandatory( GtkEditable *editable,
 													gboolean mandatory );
 
+void         my_date_editable_set_overwrite( GtkEditable *editable,
+													gboolean overwrite );
+
 const GDate *my_date_editable_get_date     ( GtkEditable *editable,
 													gboolean *valid );
 

@@ -39,6 +39,7 @@
    - RecurrentOperation: DB Model v3.
    - RecurrentManagement: improve detail column sort (todo #1146).
    - RecurrentManagement: generate operations on selected models (todo #1140).
+   - UserPreferences: have a preference to edit date in overwrite mode (todo #707).
    - VAT: put its own icon on operation templates pages (todo #1138).
  
  Bug fixes:
@@ -54,9 +55,11 @@
 
  Other changes:
 
+   - my_date_editable_set_overwrite(): new function.
    - my_double_round_to_decimals(): new function.
    - RecurrentModelManagement: change columns header (todo #1141).
    - RecurrentOperations: set the icon slightly smaller (todo #1138).
+   - ofa_prefs_date_overwrite(): new function.
    - ofa_recurrent_manage_page_get_selected(): new method.
    - ofa-recurrent-manage-page.ui: removed (unused) file.
 

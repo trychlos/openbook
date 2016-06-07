@@ -359,6 +359,7 @@ init_dates( ofaRecurrentNew *self )
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin_date );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( generate_on_begin_date_changed ), self );
 
@@ -378,6 +379,7 @@ init_dates( ofaRecurrentNew *self )
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end_date );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( generate_on_end_date_changed ), self );
 }

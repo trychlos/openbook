@@ -82,6 +82,7 @@ typedef struct {
 	 */
 	myDateCombo              *p4_display_combo;
 	myDateCombo              *p4_check_combo;
+	GtkWidget                *p4_date_over;
 	myDecimalCombo           *p4_decimal_sep;
 	GtkWidget                *p4_thousand_sep;
 	GtkWidget                *p4_accept_dot;
@@ -108,6 +109,7 @@ typedef struct {
 static gboolean     st_date_prefs_set                 = FALSE;
 static myDateFormat st_date_display                   = 0;
 static myDateFormat st_date_check                     = 0;
+static myDateFormat st_date_overwrite                 = FALSE;
 static gboolean     st_amount_prefs_set               = FALSE;
 static gchar       *st_amount_decimal                 = NULL;
 static gchar       *st_amount_thousand                = NULL;
@@ -147,6 +149,7 @@ static gboolean       init_plugin_page( ofaPreferences *self, gchar **msgerr, of
 static void           on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
 static void           on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
 static void           on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void           on_date_overwrite_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void           on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
 static void           on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
 static void           on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
@@ -425,6 +428,13 @@ init_locales_page( ofaPreferences *self )
 			&priv->p4_check_combo,   "p4-check-label",  "p4-check-parent",   ofa_prefs_date_check());
 	g_signal_connect( priv->p4_check_combo, "changed", G_CALLBACK( on_check_date_changed ), self );
 	on_check_date_changed( GTK_COMBO_BOX( priv->p4_check_combo ), self );
+
+	check = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-date-over" );
+	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
+	priv->p4_date_over = check;
+	g_signal_connect( check, "toggled", G_CALLBACK( on_date_overwrite_toggled ), self );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( check ), ofa_prefs_date_overwrite());
+	on_date_overwrite_toggled( GTK_TOGGLE_BUTTON( check ), self );
 
 	/* decimal display */
 	priv->p4_decimal_sep = my_decimal_combo_new();
@@ -742,6 +752,12 @@ on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_nam
 }
 
 static void
+on_date_overwrite_toggled( GtkToggleButton *toggle, ofaPreferences *self )
+{
+	check_for_activable_dlg( self );
+}
+
+static void
 on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self )
 {
 	check_for_activable_dlg( self );
@@ -1008,10 +1024,12 @@ do_update_locales_page( ofaPreferences *self, gchar **msgerr )
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	list = g_list_append( NULL, GINT_TO_POINTER( my_date_combo_get_selected( priv->p4_display_combo )));
-	list = g_list_append( list, GINT_TO_POINTER( my_date_combo_get_selected( priv->p4_check_combo )));
-	ofa_settings_user_set_uint_list( SETTINGS_DATE, list );
-	ofa_settings_free_uint_list( list );
+	str = g_strdup_printf( "%d;%d;%s;",
+			my_date_combo_get_selected( priv->p4_display_combo ),
+			my_date_combo_get_selected( priv->p4_check_combo ),
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_date_over )) ? "True":"False" );
+	ofa_settings_user_set_string( SETTINGS_DATE, str );
+	g_free( str );
 
 	decimal_sep = my_decimal_combo_get_selected( priv->p4_decimal_sep );
 	list = g_list_append( NULL, decimal_sep );
@@ -1067,8 +1085,23 @@ ofa_prefs_date_check( void )
 	return( st_date_check );
 }
 
+/**
+ * ofa_prefs_date_overwrite:
+ *
+ * Returns: whether the edition should start in overwrite mode.
+ */
+gboolean
+ofa_prefs_date_overwrite( void )
+{
+	if( !st_date_prefs_set ){
+		setup_date_formats();
+	}
+
+	return( st_date_overwrite );
+}
+
 /*
- * settings = display_format;check_format;
+ * settings = display_format;check_format;overwrite;
  */
 static void
 setup_date_formats( void )
@@ -1078,18 +1111,24 @@ setup_date_formats( void )
 	/* have a suitable default value */
 	st_date_display = MY_DATE_DMYY;
 	st_date_check = MY_DATE_DMMM;
+	st_date_overwrite = FALSE;
 
-	list = ofa_settings_user_get_uint_list( SETTINGS_DATE );
-	if( list ){
-		if( list->data ){
-			st_date_display = GPOINTER_TO_INT( list->data );
-		}
-		it = list->next;
+	list = ofa_settings_user_get_string_list( SETTINGS_DATE );
+	it = list;
+	if( it ){
 		if( it->data ){
-			st_date_check = GPOINTER_TO_INT( it->data );
+			st_date_display = atoi(( const gchar * ) it->data );
+		}
+		it = it->next;
+		if( it->data ){
+			st_date_check = atoi(( const gchar * ) it->data );
+		}
+		it = it->next;
+		if( it->data ){
+			st_date_overwrite = my_utils_boolean_from_str(( const gchar * ) it->data );
 		}
 	}
-	ofa_settings_free_uint_list( list );
+	ofa_settings_free_string_list( list );
 	st_date_prefs_set = TRUE;
 }
 

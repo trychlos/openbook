@@ -60,11 +60,13 @@ typedef struct {
 	GtkWidget         *label;
 	myDateFormat       label_format;
 	gboolean           mandatory;
+	gboolean           overwrite;
 }
 	sEditableDate;
 
 #define DEFAULT_ENTRY_FORMAT            MY_DATE_DMYY
 #define DEFAULT_MANDATORY               TRUE
+#define DEFAULT_OVERWRITE               FALSE
 
 #define DATE_EDITABLE_DATA              "my-editable-date-data"
 
@@ -133,6 +135,7 @@ get_editable_date_data( GtkEditable *editable )
 		data->setting_text = FALSE;
 		my_date_editable_set_format( editable, -1 );
 		data->mandatory = DEFAULT_MANDATORY;
+		data->overwrite = DEFAULT_OVERWRITE;
 
 		g_signal_connect( editable, "insert-text", G_CALLBACK( on_text_inserted ), data );
 		g_signal_connect( editable, "delete-text", G_CALLBACK( on_text_deleted ), data );
@@ -641,6 +644,10 @@ on_focus_in( GtkWidget *entry, GdkEvent *event, sEditableDate *data )
 {
 	g_return_val_if_fail( GTK_IS_EDITABLE( entry ), TRUE );
 
+	if( GTK_IS_ENTRY( entry )){
+		gtk_entry_set_overwrite_mode( GTK_ENTRY( entry ), data->overwrite );
+	}
+
 	return( FALSE );
 }
 
@@ -648,6 +655,10 @@ static gboolean
 on_focus_out( GtkWidget *entry, GdkEvent *event, sEditableDate *data )
 {
 	g_return_val_if_fail( GTK_IS_EDITABLE( entry ), TRUE );
+
+	if( GTK_IS_ENTRY( entry )){
+		data->overwrite = gtk_entry_get_overwrite_mode( GTK_ENTRY( entry ));
+	}
 
 	return( FALSE );
 }
@@ -717,6 +728,23 @@ my_date_editable_set_mandatory( GtkEditable *editable, gboolean mandatory )
 	data = get_editable_date_data( editable );
 
 	data->mandatory = mandatory;
+}
+
+/**
+ * my_date_editable_set_overwrite:
+ * @editable: this #GtkEditable instance.
+ * @overwrite: whether the first edit should begin in overwrite mode.
+ */
+void
+my_date_editable_set_overwrite( GtkEditable *editable, gboolean overwrite )
+{
+	sEditableDate *data;
+
+	g_return_if_fail( editable && GTK_IS_EDITABLE( editable ));
+
+	data = get_editable_date_data( editable );
+
+	data->overwrite = overwrite;
 }
 
 /**

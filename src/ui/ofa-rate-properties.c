@@ -401,6 +401,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -420,6 +421,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(

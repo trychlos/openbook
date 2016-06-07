@@ -453,6 +453,7 @@ setup_dialog( ofaGuidedInputBin *self )
 	my_date_editable_init( GTK_EDITABLE( priv->dope_entry ));
 	my_date_editable_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->dope_entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( priv->dope_entry, "changed", G_CALLBACK( on_dope_changed ), self );
 
@@ -471,6 +472,7 @@ setup_dialog( ofaGuidedInputBin *self )
 	my_date_editable_init( GTK_EDITABLE( priv->deffect_entry ));
 	my_date_editable_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->deffect_entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( priv->deffect_entry, "focus-in-event", G_CALLBACK( on_deffect_focus_in ), self );
 	g_signal_connect( priv->deffect_entry, "focus-out-event", G_CALLBACK( on_deffect_focus_out ), self );

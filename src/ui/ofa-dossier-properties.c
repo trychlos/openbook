@@ -474,6 +474,7 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->begin );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_begin_changed ), self );
 
@@ -501,6 +502,7 @@ init_properties_page( ofaDossierProperties *self )
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->end );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( G_OBJECT( entry ), "changed", G_CALLBACK( on_end_changed ), self );
 

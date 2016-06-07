@@ -190,11 +190,6 @@
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
 
- 707 2015- 3- 9 it would be easier to be directly in overwrite mode
-                (and to better manage it) when entering a date: this
-                would prevent the user to have to first select the digits
-                to be changed
-
  714 2015- 3-11 associate an account with a piece ref
                 (e.g. ESP->531, CCP->51441, and so on)
 
@@ -500,6 +495,12 @@
                 (use case: when user wants to make sure he will not
                 modify it inadvertently)
      2015- 4-20 done
+
+ 707 2015- 3- 9 it would be easier to be directly in overwrite mode
+                (and to better manage it) when entering a date: this
+                would prevent the user to have to first select the digits
+                to be changed
+     2016- 6- 7 is now a user preference
 
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
      2015- 3-12 are we sure we want this ?

@@ -307,6 +307,7 @@ init_properties( ofaTVARecordNew *self )
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_date( GTK_EDITABLE( entry ), NULL );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 }

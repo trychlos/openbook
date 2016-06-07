@@ -265,6 +265,7 @@ setup_date( ofaPeriodClose *self )
 	my_date_editable_init( GTK_EDITABLE( priv->closing_date ));
 	my_date_editable_set_format( GTK_EDITABLE( priv->closing_date ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( priv->closing_date ), label, ofa_prefs_date_check());
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_date ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( priv->closing_date, "changed", G_CALLBACK( on_date_changed ), self );
 }

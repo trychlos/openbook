@@ -261,6 +261,7 @@ setup_date_selection( ofaReconcilBin *self )
 	my_date_editable_set_format( GTK_EDITABLE( entry ), ofa_prefs_date_display());
 	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), TRUE );
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 }
