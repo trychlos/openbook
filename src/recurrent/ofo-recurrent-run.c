@@ -133,7 +133,7 @@ static gboolean   recurrent_run_do_insert( ofoRecurrentRun *model, ofaHub *hub )
 static gboolean   recurrent_run_insert_main( ofoRecurrentRun *model, ofaHub *hub );
 static gboolean   recurrent_run_do_update( ofoRecurrentRun *model, ofaHub *hub );
 static gboolean   recurrent_run_update_main( ofoRecurrentRun *model, ofaHub *hub );
-static gint       recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date );
+static gint       recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date, const gchar *status );
 static gint       recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
@@ -726,13 +726,16 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 }
 
 static gint
-recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date )
+recurrent_run_cmp_by_mnemo_date( const ofoRecurrentRun *a, const gchar *mnemo, const GDate *date, const gchar *status )
 {
 	gint cmp;
 
 	cmp = g_utf8_collate( ofo_recurrent_run_get_mnemo( a ), mnemo );
 	if( cmp == 0 ){
 		cmp = my_date_compare( ofo_recurrent_run_get_date( a ), date );
+		if( cmp == 0 ){
+			cmp = my_collate( ofo_recurrent_run_get_status( a ), status );
+		}
 	}
 
 	return( cmp );
@@ -745,7 +748,8 @@ recurrent_run_cmp_by_ptr( const ofoRecurrentRun *a, const ofoRecurrentRun *b )
 		g_debug( "a=%p (%s), b=%p (%s)", a, G_OBJECT_TYPE_NAME( a ), b, G_OBJECT_TYPE_NAME( b ));
 	}
 
-	return( recurrent_run_cmp_by_mnemo_date( a, ofo_recurrent_run_get_mnemo( b ), ofo_recurrent_run_get_date( b )));
+	return( recurrent_run_cmp_by_mnemo_date( a,
+			ofo_recurrent_run_get_mnemo( b ), ofo_recurrent_run_get_date( b ), ofo_recurrent_run_get_status( b )));
 }
 
 /*
