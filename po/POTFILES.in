@@ -19,7 +19,6 @@ src/core/ofa-render-page.ui
 src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui
 src/mysql/ofa-mysql-prefs-bin.ui
-src/recurrent/ofa-recurrent-manage-page.ui
 src/recurrent/ofa-recurrent-model-properties.ui
 src/recurrent/ofa-recurrent-new.ui
 src/recurrent/ofa-recurrent-run-page.ui

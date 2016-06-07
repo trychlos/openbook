@@ -58,6 +58,7 @@
    - RecurrentModelManagement: change columns header (todo #1141).
    - RecurrentOperations: set the icon slightly smaller (todo #1138).
    - ofa_recurrent_manage_page_get_selected(): new method.
+   - ofa-recurrent-manage-page.ui: removed (unused) file.
 
 -----------------------------------------------------------------------
  Version 0.57
