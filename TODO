@@ -352,9 +352,6 @@
 
 1143 2016- 6- 5 VAT declarations: make each treeview column sortable
 
-1144 2016- 6- 5 BUG: after having closed period at 31/1, first accepted
-                effect date is 2/2 (this is one day after)
-
 1147
 
 -----------------------------------------------------------------------
@@ -1418,6 +1415,10 @@
 
 1139 2016- 6- 2 Have a VAT icon
      2016- 6- 2 done
+
+1144 2016- 6- 5 BUG: after having closed period at 31/1, first accepted
+                effect date is 2/2 (this is one day after)
+     2016- 6- 7 fixed
 
 1145 2016- 6- 5 VAT declarations: Validated column: should be centered
      2016- 6- 7 done

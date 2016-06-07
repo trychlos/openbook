@@ -828,6 +828,7 @@ ofo_dossier_get_min_deffect( const ofoDossier *dossier, const ofoLedger *ledger,
 
 	/* compare against the period closing */
 	last_clo = ofo_dossier_get_last_closing_date( dossier );
+	to_add = 0;
 
 	if( my_date_is_valid( date )){
 		if( my_date_is_valid( last_clo )){

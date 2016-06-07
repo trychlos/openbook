@@ -42,6 +42,7 @@
  
  Bug fixes:
 
+   - Dossier: fix minimal effect date computing (todo #1144).
    - EntryPage: fix new entry insertion (todo #1133).
    - ReconciliationPage: fix debit vs. credit comparison (todo #1132).
    - RecurrentOperations: fix amount update on newly generated record (todo #1135).
