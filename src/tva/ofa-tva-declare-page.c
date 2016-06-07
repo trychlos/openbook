@@ -50,24 +50,41 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean      is_writable;
+	gboolean           is_writable;
 
 	/* UI
 	 */
-	GtkWidget    *record_treeview;
-	GtkWidget    *update_btn;
-	GtkWidget    *delete_btn;
+	GtkWidget         *record_treeview;
+	GtkWidget         *update_btn;
+	GtkWidget         *delete_btn;
+
+	/* sorting the view
+	 */
+	gint               sort_column_id;
+	gint               sort_sens;
+	GtkTreeViewColumn *sort_column;
 }
 	ofaTVADeclarePagePrivate;
+
+/* it appears that Gtk+ displays a counter intuitive sort indicator:
+ * when asking for ascending sort, Gtk+ displays a 'v' indicator
+ * while we would prefer the '^' version -
+ * we are defining the inverse indicator, and we are going to sort
+ * in reverse order to have our own illusion
+ */
+#define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
+#define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
 
 static GtkWidget    *v_setup_view( ofaPage *page );
 static GtkWidget    *setup_record_treeview( ofaTVADeclarePage *self );
 static GtkWidget    *v_setup_buttons( ofaPage *page );
 static GtkWidget    *v_get_top_focusable_widget( const ofaPage *page );
-static gboolean      on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADeclarePage *self );
-static void          on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADeclarePage *page );
-static void          on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self );
-static ofoTVARecord *treeview_get_selected( ofaTVADeclarePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void          tview_on_header_clicked( GtkTreeViewColumn *column, ofaTVADeclarePage *self );
+static gint          tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVADeclarePage *self );
+static gboolean      tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADeclarePage *self );
+static void          tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADeclarePage *page );
+static void          tview_on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self );
+static ofoTVARecord *tview_get_selected( ofaTVADeclarePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static void          on_update_clicked( GtkButton *button, ofaTVADeclarePage *page );
 static void          on_delete_clicked( GtkButton *button, ofaTVADeclarePage *page );
 static void          try_to_delete_current_row( ofaTVADeclarePage *page );
@@ -112,11 +129,17 @@ static void
 ofa_tva_declare_page_init( ofaTVADeclarePage *self )
 {
 	static const gchar *thisfn = "ofa_tva_declare_page_init";
+	ofaTVADeclarePagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_TVA_DECLARE_PAGE( self ));
+
+	priv = ofa_tva_declare_page_get_instance_private( self );
+
+	priv->sort_column_id = -1;
+	priv->sort_sens = -1;
 }
 
 static void
@@ -170,6 +193,9 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	GtkTreeSelection *select;
 	ofaTVARecordStore *store;
 	ofaHub *hub;
+	GtkTreeViewColumn *sort_column;
+	gint column_id;
+	GtkTreeModel *tsort;
 
 	priv = ofa_tva_declare_page_get_instance_private( self );
 
@@ -184,61 +210,137 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	gtk_widget_set_hexpand( tview, TRUE );
 	gtk_widget_set_vexpand( tview, TRUE );
 	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), TRUE );
-	g_signal_connect( tview, "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_treeview_key_pressed ), self );
+	g_signal_connect( tview, "row-activated", G_CALLBACK( tview_on_row_activated ), self );
+	g_signal_connect( tview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
 	gtk_container_add( GTK_CONTAINER( scrolled ), tview );
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	store = ofa_tva_record_store_new( hub );
-	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), GTK_TREE_MODEL( store ));
 
+	tsort = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( store ));
+
+	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tsort );
+	g_object_unref( tsort );
+
+	/* default is to sort by descending operation date
+	 */
+	sort_column = NULL;
+	if( priv->sort_column_id < 0 ){
+		priv->sort_column_id = TVA_RECORD_COL_END;
+	}
+	if( priv->sort_sens < 0 ){
+		priv->sort_sens = OFA_SORT_DESCENDING;
+	}
+
+	column_id = TVA_RECORD_COL_MNEMO;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Mnemo" ),
-			text_cell, "text", TVA_RECORD_COL_MNEMO,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
 
+	column_id = TVA_RECORD_COL_LABEL;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			text_cell, "text", TVA_RECORD_COL_LABEL,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
 
+	column_id = TVA_RECORD_COL_BEGIN;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Begin" ),
-			text_cell, "text", TVA_RECORD_COL_BEGIN,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
 
+	column_id = TVA_RECORD_COL_END;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "End" ),
-			text_cell, "text", TVA_RECORD_COL_END,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
 
+	column_id = TVA_RECORD_COL_IS_VALIDATED;
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 0.5, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Validated" ),
-			text_cell, "text", TVA_RECORD_COL_IS_VALIDATED,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
 
+	column_id = TVA_RECORD_COL_DOPE;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Operation" ),
-			text_cell, "text", TVA_RECORD_COL_DOPE,
+			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( select, "changed", G_CALLBACK( on_row_selected ), self );
+	g_signal_connect( select, "changed", G_CALLBACK( tview_on_row_selected ), self );
+
+	/* default is to sort by ascending operation date
+	 */
+	g_return_val_if_fail( sort_column && GTK_IS_TREE_VIEW_COLUMN( sort_column ), NULL );
+	gtk_tree_view_column_set_sort_indicator( sort_column, TRUE );
+	priv->sort_column = sort_column;
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( tsort ), priv->sort_column_id, priv->sort_sens );
 
 	priv->record_treeview = tview;
 
@@ -286,12 +388,122 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 /*
+ * Gtk+ changes automatically the sort order
+ * we reset yet the sort column id
+ *
+ * as a side effect of our inversion of indicators, clicking on a new
+ * header makes the sort order descending as the default
+ */
+static void
+tview_on_header_clicked( GtkTreeViewColumn *column, ofaTVADeclarePage *self )
+{
+	ofaTVADeclarePagePrivate *priv;
+	gint sort_column_id, new_column_id;
+	GtkSortType sort_order;
+	GtkTreeModel *tsort;
+
+	priv = ofa_tva_declare_page_get_instance_private( self );
+
+	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
+	gtk_tree_view_column_set_sort_indicator( column, TRUE );
+	priv->sort_column = column;
+
+	tsort = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->record_treeview ));
+	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( tsort ), &sort_column_id, &sort_order );
+
+	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
+	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( tsort ), new_column_id, sort_order );
+
+	priv->sort_column_id = new_column_id;
+	priv->sort_sens = sort_order;
+}
+
+/*
+ * sorting the store
+ */
+static gint
+tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVADeclarePage *self )
+{
+	static const gchar *thisfn = "ofa_tva_declare_page_tview_on_sort_model";
+	ofaTVADeclarePagePrivate *priv;
+	gint cmp;
+	gchar *smnemoa, *slabela, *valida, *begina, *enda, *dopea;
+	gchar *smnemob, *slabelb, *validb, *beginb, *endb, *dopeb;
+
+	gtk_tree_model_get( tmodel, a,
+			TVA_RECORD_COL_MNEMO,        &smnemoa,
+			TVA_RECORD_COL_LABEL,        &slabela,
+			TVA_RECORD_COL_IS_VALIDATED, &valida,
+			TVA_RECORD_COL_BEGIN,        &begina,
+			TVA_RECORD_COL_END,          &enda,
+			TVA_RECORD_COL_DOPE,         &dopea,
+			-1 );
+
+	gtk_tree_model_get( tmodel, b,
+			TVA_RECORD_COL_MNEMO,        &smnemob,
+			TVA_RECORD_COL_LABEL,        &slabelb,
+			TVA_RECORD_COL_IS_VALIDATED, &validb,
+			TVA_RECORD_COL_BEGIN,        &beginb,
+			TVA_RECORD_COL_END,          &endb,
+			TVA_RECORD_COL_DOPE,         &dopeb,
+			-1 );
+
+	cmp = 0;
+
+	priv = ofa_tva_declare_page_get_instance_private( self );
+
+	switch( priv->sort_column_id ){
+		case TVA_RECORD_COL_MNEMO:
+			cmp = my_collate( smnemoa, smnemob );
+			break;
+		case TVA_RECORD_COL_LABEL:
+			cmp = my_collate( slabela, slabelb );
+			break;
+		case TVA_RECORD_COL_IS_VALIDATED:
+			cmp = my_collate( valida, validb );
+			break;
+		case TVA_RECORD_COL_BEGIN:
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
+			break;
+		case TVA_RECORD_COL_END:
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
+			break;
+		case TVA_RECORD_COL_DOPE:
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display());
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
+			break;
+	}
+
+	g_free( dopea );
+	g_free( enda );
+	g_free( begina );
+	g_free( valida );
+	g_free( slabela );
+	g_free( smnemoa );
+
+	g_free( dopeb );
+	g_free( endb );
+	g_free( beginb );
+	g_free( validb );
+	g_free( slabelb );
+	g_free( smnemob );
+
+	/* return -1 if a > b, so that the order indicator points to the smallest:
+	 * ^: means from smallest to greatest (ascending order)
+	 * v: means from greatest to smallest (descending order)
+	 */
+	return( -cmp );
+}
+
+/*
  * Returns :
  * TRUE to stop other handlers from being invoked for the event.
  * FALSE to propagate the event further.
  */
 static gboolean
-on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADeclarePage *self )
+tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADeclarePage *self )
 {
 	gboolean stop;
 
@@ -307,13 +519,13 @@ on_treeview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaTVADeclarePag
 }
 
 static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADeclarePage *page )
+tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVADeclarePage *page )
 {
 	on_update_clicked( NULL, page );
 }
 
 static void
-on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
+tview_on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
 {
 	ofaTVADeclarePagePrivate *priv;
 	GtkTreeModel *tmodel;
@@ -323,7 +535,7 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
 
 	priv = ofa_tva_declare_page_get_instance_private( self );
 
-	record = treeview_get_selected( self, &tmodel, &iter );
+	record = tview_get_selected( self, &tmodel, &iter );
 	is_record = record && OFO_IS_TVA_RECORD( record );
 
 	if( priv->update_btn ){
@@ -338,7 +550,7 @@ on_row_selected( GtkTreeSelection *selection, ofaTVADeclarePage *self )
 }
 
 static ofoTVARecord *
-treeview_get_selected( ofaTVADeclarePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
+tview_get_selected( ofaTVADeclarePage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
 {
 	ofaTVADeclarePagePrivate *priv;
 	GtkTreeSelection *select;
@@ -366,7 +578,7 @@ on_update_clicked( GtkButton *button, ofaTVADeclarePage *page )
 	ofoTVARecord *record;
 	GtkWindow *toplevel;
 
-	record = treeview_get_selected( page, &tmodel, &iter );
+	record = tview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
@@ -383,7 +595,7 @@ on_delete_clicked( GtkButton *button, ofaTVADeclarePage *page )
 	GtkTreeIter iter;
 	ofoTVARecord *record;
 
-	record = treeview_get_selected( page, &tmodel, &iter );
+	record = tview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
 	do_delete( page, record, tmodel, &iter );
@@ -402,7 +614,7 @@ try_to_delete_current_row( ofaTVADeclarePage *page )
 	GtkTreeIter iter;
 	ofoTVARecord *record;
 
-	record = treeview_get_selected( page, &tmodel, &iter );
+	record = tview_get_selected( page, &tmodel, &iter );
 	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
 
 	if( ofo_tva_record_is_deletable( record )){

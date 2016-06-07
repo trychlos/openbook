@@ -49,6 +49,7 @@
    - RecurrentOperations: review index to allow many cancelled operations (todo #1137).
    - VATDeclaration: computes with actual rounded numbers (todo #1134).
    - VATDeclaration: improve treeview display (todo #1145).
+   - VATDeclaration: make treeview columns sortable (todo #1143).
 
  Other changes:
 
