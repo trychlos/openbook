@@ -89,6 +89,7 @@ static GtkWidget         *v_setup_buttons( ofaPage *page );
 static GtkWidget         *v_get_top_focusable_widget( const ofaPage *page );
 static void               tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
 static gint               tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentManagePage *self );
+static gint               tview_on_sort_detail( const gchar *detaila, const gchar *detailb );
 static gboolean           tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRecurrentManagePage *self );
 static void               tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
 static void               tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentManagePage *self );
@@ -533,7 +534,7 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 			cmp = my_collate( sperioda, speriodb );
 			break;
 		case REC_MODEL_COL_PERIODICITY_DETAIL:
-			cmp = my_collate( sdetaila, sdetailb );
+			cmp = tview_on_sort_detail( sdetaila, sdetailb );
 			break;
 		case REC_MODEL_COL_DEF_AMOUNT1:
 			cmp = my_collate( sdef1a, sdef1b );
@@ -572,6 +573,21 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 	 * v: means from greatest to smallest (descending order)
 	 */
 	return( -cmp );
+}
+
+static gint
+tview_on_sort_detail( const gchar *detaila, const gchar *detailb )
+{
+	int deta, detb;
+
+	deta = atoi( detaila );
+	detb = atoi( detailb );
+
+	if( deta && detb ){
+		return( deta < detb ? -1 : ( deta > detb ? 1 : 0 ));
+	}
+
+	return( my_collate( detaila, detailb ));
 }
 
 /*

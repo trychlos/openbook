@@ -279,6 +279,8 @@
  920 2015-12-10 FEAT review RestoreAssistant
                      + let restore on a selected exercice rather than on
                      the current one
+     2016- 6- 3 have a checkbutton restoring as an archive or as the
+                current exercice
 
  938 2015-12-21 ARCH distinguish a core api with core objects (eg. for
                      command-line only tools) and a ui api which contains
@@ -290,6 +292,8 @@
                      -def includes are always used in headers (and only)
 
  966 2016- 1-10 FEAT tva/ofoTVARecord: make it printable
+     2016- 6- 3  with a checkbutton for printing all lines including zeroes,
+                 or only non-zero lines
 
  971 2016- 2- 3 FEAT have recently used dossiers
      2016- 3-23 note that this list should go to dossier settings
@@ -307,7 +311,7 @@
                      when the amount is set, but one of another field is
                      wrong
 
-1012 2016- 2-25 FEAT GuidedInput: when a row is moved up or down, then
+1012 2016- 2-25 FEAT OpeTemplate: when a row is moved up or down, then
                      the indexes should be updated accordingly
 
 1014 2016- 2-26 FEAT ViewEntries: filter per operation template
@@ -337,10 +341,23 @@
 1110 2016- 5- 5 BUG GuidedEx: when drag and drop page - see TODO_1110/trace
                 gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
 
-1112 2016- 5- 6 myIWindow::is_destroy_allowed should be avoided
-                rather close_all_but_me()
+1140 2016- 6- 5 RecurrentModelManagement: have a button'Generate selected'
+                and another button 'Generate all'
 
-1140
+1141 2016- 6- 5 RecurrentModelManagement: treeview column headers should
+                be Edit. 1/2/3 rather than Def. 1/2/3
+
+1142 2016- 6- 5 BUG when quitting the application
+                (see TODO_1142/trace)
+
+1143 2016- 6- 5 VAT declarations: make each treeview column sortable
+
+1144 2016- 6- 5 BUG: after having closed period at 31/1, first accepted
+                effect date is 2/2 (this is one day after)
+
+1145 2016- 6- 5 VAT declarations: Validated column: should be centered
+
+1147
 
 -----------------------------------------------------------------------
  DONE
@@ -1293,6 +1310,10 @@
                  rather close or hide
      2016- 5- 7 done
 
+1112 2016- 5- 6 myIWindow::is_destroy_allowed should be avoided
+                rather close_all_but_me()
+     2016- 6- 3 cancelled
+
 1113 2016- 5- 6 EntryPage when opening the page
                 see TODO_1113/trace
      2016- 5- 7 fixed
@@ -1399,6 +1420,10 @@
 
 1139 2016- 6- 2 Have a VAT icon
      2016- 6- 2 done
+
+1146 2016- 6- 5 RecurrentModelManagement: when sorting detail column,
+                should sort on number (depending of periodicity content)
+     2016- 6- 7 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
