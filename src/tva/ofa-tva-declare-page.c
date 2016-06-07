@@ -222,6 +222,7 @@ setup_record_treeview( ofaTVADeclarePage *self )
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
 	text_cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( text_cell, 0.5, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Validated" ),
 			text_cell, "text", TVA_RECORD_COL_IS_VALIDATED,

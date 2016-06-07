@@ -38,15 +38,16 @@
 
    - RecurrentOperation: DB Model v3.
    - RecurrentManagement: improve detail column sort (todo #1146).
-   - VAT: put its own icon on operation templates pages (todo #1138). 
+   - VAT: put its own icon on operation templates pages (todo #1138).
  
  Bug fixes:
 
    - EntryPage: fix new entry insertion (todo #1133).
    - ReconciliationPage: fix debit vs. credit comparison (todo #1132).
-   - RecurrentOperations: fix amount update on newly generated record (todo #1135). 
+   - RecurrentOperations: fix amount update on newly generated record (todo #1135).
    - RecurrentOperations: review index to allow many cancelled operations (todo #1137).
-   - VATDeclaration: computes with actual rounded numbers (todo #1134). 
+   - VATDeclaration: computes with actual rounded numbers (todo #1134).
+   - VATDeclaration: improve treeview display (todo #1145).
 
  Other changes:
 

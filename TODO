@@ -355,8 +355,6 @@
 1144 2016- 6- 5 BUG: after having closed period at 31/1, first accepted
                 effect date is 2/2 (this is one day after)
 
-1145 2016- 6- 5 VAT declarations: Validated column: should be centered
-
 1147
 
 -----------------------------------------------------------------------
@@ -1420,6 +1418,9 @@
 
 1139 2016- 6- 2 Have a VAT icon
      2016- 6- 2 done
+
+1145 2016- 6- 5 VAT declarations: Validated column: should be centered
+     2016- 6- 7 done
 
 1146 2016- 6- 5 RecurrentModelManagement: when sorting detail column,
                 should sort on number (depending of periodicity content)
