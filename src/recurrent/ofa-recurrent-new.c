@@ -57,6 +57,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter              *getter;
+	ofaRecurrentManagePage  *manage_page;
 
 	/* internals
 	 */
@@ -194,9 +195,10 @@ ofa_recurrent_new_class_init( ofaRecurrentNewClass *klass )
  * ofa_recurrent_new_run:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the parent window.
+ * @page: the current #ofaRecurrentManagePage page.
  */
 void
-ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent )
+ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentManagePage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_new_run";
 	ofaRecurrentNew *self;
@@ -215,6 +217,7 @@ ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent )
 	priv = ofa_recurrent_new_get_instance_private( self );
 
 	priv->getter = getter;
+	priv->manage_page = page;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -478,7 +481,7 @@ generate_do( ofaRecurrentNew *self )
 	priv = ofa_recurrent_new_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	models_dataset = ofo_recurrent_model_get_dataset( hub );
+	models_dataset = ofa_recurrent_manage_page_get_selected( priv->manage_page );
 	//g_debug( "generate_do: models_dataset_count=%d", g_list_length( models_dataset ));
 
 	count = 0;
@@ -528,6 +531,8 @@ generate_do( ofaRecurrentNew *self )
 		gtk_widget_set_sensitive( priv->end_entry, FALSE );
 		gtk_widget_set_sensitive( priv->generate_btn, FALSE );
 	}
+
+	g_list_free( models_dataset );
 }
 
 /*

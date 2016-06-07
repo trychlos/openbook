@@ -40,6 +40,8 @@
 
 #include "api/ofa-igetter-def.h"
 
+#include "recurrent/ofa-recurrent-manage-page.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RECURRENT_NEW                ( ofa_recurrent_new_get_type())
@@ -64,7 +66,8 @@ typedef struct {
 GType ofa_recurrent_new_get_type( void ) G_GNUC_CONST;
 
 void  ofa_recurrent_new_run     ( ofaIGetter *getter,
-										GtkWindow *parent );
+										GtkWindow *parent,
+										ofaRecurrentManagePage *page );
 
 G_END_DECLS
 

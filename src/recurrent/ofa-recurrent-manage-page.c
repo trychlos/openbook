@@ -83,28 +83,28 @@ typedef struct {
 
 static const gchar *st_page_settings    = "ofaRecurrentManagePage-settings";
 
-static GtkWidget         *v_setup_view( ofaPage *page );
-static GtkWidget         *setup_treeview( ofaRecurrentManagePage *self );
-static GtkWidget         *v_setup_buttons( ofaPage *page );
-static GtkWidget         *v_get_top_focusable_widget( const ofaPage *page );
-static void               tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
-static gint               tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentManagePage *self );
-static gint               tview_on_sort_detail( const gchar *detaila, const gchar *detailb );
-static gboolean           tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRecurrentManagePage *self );
-static void               tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
-static void               tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentManagePage *self );
-static ofoRecurrentModel *tview_get_selected( ofaRecurrentManagePage *self, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static void               store_on_row_inserted_or_removed( ofaRecurrentModelStore *store, ofaRecurrentManagePage *self );
-static void               action_on_new_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void               action_on_update_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void               action_on_delete_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void               action_try_to_delete_current_row( ofaRecurrentManagePage *self );
-static void               action_do_delete( ofaRecurrentManagePage *self, ofoRecurrentModel *model, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean           action_delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
-static void               action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void               action_on_view_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void               get_settings( ofaRecurrentManagePage *self );
-static void               set_settings( ofaRecurrentManagePage *self );
+static GtkWidget *v_setup_view( ofaPage *page );
+static GtkWidget *setup_treeview( ofaRecurrentManagePage *self );
+static GtkWidget *v_setup_buttons( ofaPage *page );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
+static gint       tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentManagePage *self );
+static gint       tview_on_sort_detail( const gchar *detaila, const gchar *detailb );
+static gboolean   tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRecurrentManagePage *self );
+static void       tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
+static void       tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentManagePage *self );
+static GList     *tview_get_selected( ofaRecurrentManagePage *self );
+static void       store_on_row_inserted_or_removed( ofaRecurrentModelStore *store, ofaRecurrentManagePage *self );
+static void       action_on_new_clicked( GtkButton *button, ofaRecurrentManagePage *self );
+static void       action_on_update_clicked( GtkButton *button, ofaRecurrentManagePage *self );
+static void       action_on_delete_clicked( GtkButton *button, ofaRecurrentManagePage *self );
+static void       action_try_to_delete_current_row( ofaRecurrentManagePage *self );
+static void       action_do_delete( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
+static gboolean   action_delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
+static void       action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self );
+static void       action_on_view_clicked( GtkButton *button, ofaRecurrentManagePage *self );
+static void       get_settings( ofaRecurrentManagePage *self );
+static void       set_settings( ofaRecurrentManagePage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentManagePage, ofa_recurrent_manage_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaRecurrentManagePage ))
@@ -385,7 +385,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
+	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
 	g_signal_connect( select, "changed", G_CALLBACK( tview_on_selection_changed ), self );
 
 	/* default is to sort by ascending operation date
@@ -427,8 +427,9 @@ v_setup_buttons( ofaPage *page )
 
 	priv->generate_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "_Generate new operations..." ), G_CALLBACK( action_on_generate_clicked ), page );
-	gtk_widget_set_sensitive( priv->generate_btn, priv->is_writable );
+					buttons_box, _( "_Generate with selected..." ), G_CALLBACK( action_on_generate_clicked ), page );
+
+	ofa_buttons_box_add_spacer( buttons_box );
 
 	btn = ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, _( "_View waiting operations..." ), G_CALLBACK( action_on_view_clicked ), page );
@@ -620,51 +621,92 @@ tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn 
 }
 
 /*
- * selection is browse mode (0 or 1 row selected)
+ * selection is multiple mode (0 to n selected rows)
  */
 static void
 tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentManagePage *self )
 {
 	ofaRecurrentManagePagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	GList *selected;
+	guint count;
 	ofoRecurrentModel *model;
-	gboolean is_model;
 
 	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	model = tview_get_selected( self, &tmodel, &iter );
-	is_model = model && OFO_IS_RECURRENT_MODEL( model );
+	selected = tview_get_selected( self );
+	count = g_list_length( selected );
+
+	model = ( count == 1 ) ? ( ofoRecurrentModel * ) selected->data : NULL;
+	g_return_if_fail( count != 1 || ( model && OFO_IS_RECURRENT_MODEL( model )));
 
 	if( priv->update_btn ){
 		gtk_widget_set_sensitive( priv->update_btn,
-				is_model );
+				count == 1 );
 	}
 	if( priv->delete_btn ){
 		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_writable && is_model && ofo_recurrent_model_is_deletable( model ));
+				priv->is_writable && count == 1 && ofo_recurrent_model_is_deletable( model ));
 	}
+	if( priv->generate_btn ){
+		gtk_widget_set_sensitive( priv->generate_btn,
+				priv->is_writable && count > 0 );
+	}
+
+	g_list_free( selected );
 }
 
-static ofoRecurrentModel *
-tview_get_selected( ofaRecurrentManagePage *self, GtkTreeModel **tmodel, GtkTreeIter *iter )
+/*
+ * Returns a GList of selected ofoRecurrentModel objects
+ *
+ * The returned list should be #g_list_free() by the caller.
+ */
+static GList *
+tview_get_selected( ofaRecurrentManagePage *self )
 {
 	ofaRecurrentManagePagePrivate *priv;
 	GtkTreeSelection *select;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GList *objects, *paths, *it;
 	ofoRecurrentModel *object;
 
 	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	object = NULL;
+	objects = NULL;
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->tview ));
-	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
-		gtk_tree_model_get( *tmodel, iter, REC_MODEL_COL_OBJECT, &object, -1 );
-		g_return_val_if_fail( object && OFO_IS_RECURRENT_MODEL( object ), NULL );
-		g_object_unref( object );
+	paths = gtk_tree_selection_get_selected_rows( select, &tmodel );
+
+	if( paths ){
+		for( it=paths ; it ; it=it->next ){
+			if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data )){
+				gtk_tree_model_get( tmodel, &iter, REC_MODEL_COL_OBJECT, &object, -1 );
+				g_return_val_if_fail( object && OFO_IS_RECURRENT_MODEL( object ), NULL );
+				g_object_unref( object );
+				objects = g_list_prepend( objects, object );
+			}
+		}
+		g_list_free_full( paths, ( GDestroyNotify ) gtk_tree_path_free );
 	}
 
-	return( object );
+	return( objects );
+}
+
+/**
+ * ofa_recurrent_manage_page_get_selected:
+ * @page: this #ofaRecurrentManagePage page.
+ *
+ * Returns: a GList of selected ofoRecurrentModel objects.
+ *
+ * The returned list should be #g_list_free() by the caller.
+ */
+GList *
+ofa_recurrent_manage_page_get_selected( ofaRecurrentManagePage *page )
+{
+	g_return_val_if_fail( page && OFA_IS_RECURRENT_MANAGE_PAGE( page ), NULL );
+	g_return_val_if_fail( !OFA_PAGE( page )->prot->dispose_has_run, NULL );
+
+	return( tview_get_selected( page ));
 }
 
 static void
@@ -699,33 +741,48 @@ action_on_new_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 	ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
 }
 
+/*
+ * Update button is expected to be sensitive when the selection count is 1
+ * (and dossier is writable, and record is updatable)
+ */
 static void
 action_on_update_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	GList *selected;
 	ofoRecurrentModel *model;
 	GtkWindow *toplevel;
 
-	model = tview_get_selected( self, &tmodel, &iter );
+	selected = tview_get_selected( self );
+	g_return_if_fail( g_list_length( selected ) == 1 );
+
+	model = ( ofoRecurrentModel * ) selected->data;
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
+
+	g_list_free( selected );
 }
 
+/*
+ * Delete button is expected to be sensitive when the selection count is 1
+ * (and dossier is writable, and record is deletable)
+ */
 static void
 action_on_delete_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	GList *selected;
 	ofoRecurrentModel *model;
 
-	model = tview_get_selected( self, &tmodel, &iter );
+	selected = tview_get_selected( self );
+	g_return_if_fail( g_list_length( selected ) == 1 );
+
+	model = ( ofoRecurrentModel * ) selected->data;
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
-	action_do_delete( self, model, tmodel, &iter );
+	action_do_delete( self, model );
 
+	g_list_free( selected );
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
@@ -736,20 +793,24 @@ action_on_delete_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 static void
 action_try_to_delete_current_row( ofaRecurrentManagePage *self )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	GList *selected;
 	ofoRecurrentModel *model;
 
-	model = tview_get_selected( self, &tmodel, &iter );
-	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+	selected = tview_get_selected( self );
+	if( g_list_length( selected ) == 1 ){
+		model = ( ofoRecurrentModel * ) selected->data;
+		g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
-	if( ofo_recurrent_model_is_deletable( model )){
-		action_do_delete( self, model, tmodel, &iter );
+		if( ofo_recurrent_model_is_deletable( model )){
+			action_do_delete( self, model );
+		}
 	}
+
+	g_list_free( selected );
 }
 
 static void
-action_do_delete( ofaRecurrentManagePage *self, ofoRecurrentModel *model, GtkTreeModel *tmodel, GtkTreeIter *iter )
+action_do_delete( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
 {
 	g_return_if_fail( ofo_recurrent_model_is_deletable( model ));
 
@@ -776,7 +837,7 @@ action_delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model 
 }
 
 /*
- * generating new operations
+ * generating new operations on current selection
  */
 static void
 action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self )
@@ -785,7 +846,7 @@ action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
-	ofa_recurrent_new_run( OFA_IGETTER( self ), toplevel );
+	ofa_recurrent_new_run( OFA_IGETTER( self ), toplevel, self );
 }
 
 /*

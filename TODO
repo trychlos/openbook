@@ -341,9 +341,6 @@
 1110 2016- 5- 5 BUG GuidedEx: when drag and drop page - see TODO_1110/trace
                 gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
 
-1140 2016- 6- 5 RecurrentModelManagement: have a button'Generate selected'
-                and another button 'Generate all'
-
 1142 2016- 6- 5 BUG when quitting the application
                 (see TODO_1142/trace)
 
@@ -1410,6 +1407,10 @@
 
 1139 2016- 6- 2 Have a VAT icon
      2016- 6- 2 done
+
+1140 2016- 6- 5 RecurrentModelManagement: have a button'Generate selected'
+                and another button 'Generate all'
+     2016- 6- 5 done
 
 1141 2016- 6- 5 RecurrentModelManagement: treeview column headers should
                 be Edit. 1/2/3 rather than Def. 1/2/3

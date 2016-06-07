@@ -56,7 +56,9 @@ typedef struct {
 }
 	ofaRecurrentManagePageClass;
 
-GType ofa_recurrent_manage_page_get_type( void ) G_GNUC_CONST;
+GType  ofa_recurrent_manage_page_get_type    ( void ) G_GNUC_CONST;
+
+GList *ofa_recurrent_manage_page_get_selected( ofaRecurrentManagePage *page );
 
 G_END_DECLS
 

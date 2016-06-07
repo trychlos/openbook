@@ -38,6 +38,7 @@
 
    - RecurrentOperation: DB Model v3.
    - RecurrentManagement: improve detail column sort (todo #1146).
+   - RecurrentManagement: generate operations on selected models (todo #1140).
    - VAT: put its own icon on operation templates pages (todo #1138).
  
  Bug fixes:
@@ -56,6 +57,7 @@
    - my_double_round_to_decimals(): new function.
    - RecurrentModelManagement: change columns header (todo #1141).
    - RecurrentOperations: set the icon slightly smaller (todo #1138).
+   - ofa_recurrent_manage_page_get_selected(): new method.
 
 -----------------------------------------------------------------------
  Version 0.57
