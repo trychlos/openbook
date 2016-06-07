@@ -344,9 +344,6 @@
 1140 2016- 6- 5 RecurrentModelManagement: have a button'Generate selected'
                 and another button 'Generate all'
 
-1141 2016- 6- 5 RecurrentModelManagement: treeview column headers should
-                be Edit. 1/2/3 rather than Def. 1/2/3
-
 1142 2016- 6- 5 BUG when quitting the application
                 (see TODO_1142/trace)
 
@@ -1413,6 +1410,10 @@
 
 1139 2016- 6- 2 Have a VAT icon
      2016- 6- 2 done
+
+1141 2016- 6- 5 RecurrentModelManagement: treeview column headers should
+                be Edit. 1/2/3 rather than Def. 1/2/3
+     2016- 6- 5 done
 
 1143 2016- 6- 5 VAT declarations: make each treeview column sortable
      2016- 6- 7 done

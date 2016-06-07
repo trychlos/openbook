@@ -339,7 +339,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	column_id = REC_MODEL_COL_DEF_AMOUNT1;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Def. 1" ),
+			_( "Edit. 1" ),
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
@@ -355,7 +355,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	column_id = REC_MODEL_COL_DEF_AMOUNT2;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Def. 2" ),
+			_( "Edit. 2" ),
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
@@ -371,7 +371,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	column_id = REC_MODEL_COL_DEF_AMOUNT3;
 	text_cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "Def. 3" ),
+			_( "Edit. 3" ),
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
