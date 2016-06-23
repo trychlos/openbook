@@ -528,7 +528,8 @@ is_dialog_validable( ofaRecurrentModelProperties *self )
 	msgerr = NULL;
 	hub = ofa_igetter_get_hub( priv->getter );
 
-	ok = ofo_recurrent_model_is_valid_data( priv->mnemo, priv->label, priv->ope_template, priv->periodicity, &msgerr );
+	ok = ofo_recurrent_model_is_valid_data(
+			priv->mnemo, priv->label, priv->ope_template, priv->periodicity, priv->periodicity_detail, &msgerr );
 
 	if( ok && !priv->template_obj ){
 		ok = FALSE;

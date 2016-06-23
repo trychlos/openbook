@@ -82,7 +82,7 @@ const gchar       *ofo_recurrent_model_get_def_amount2        ( const ofoRecurre
 const gchar       *ofo_recurrent_model_get_def_amount3        ( const ofoRecurrentModel *model );
 
 gboolean           ofo_recurrent_model_is_deletable           ( const ofoRecurrentModel *model );
-gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, gchar **msgerr );
+gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, const gchar *detail, gchar **msgerr );
 
 void               ofo_recurrent_model_set_mnemo              ( ofoRecurrentModel *model, const gchar *mnemo );
 void               ofo_recurrent_model_set_label              ( ofoRecurrentModel *model, const gchar *label );

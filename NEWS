@@ -37,6 +37,7 @@
  New features and improvements:
 
    - RecurrentOperation: DB Model v3.
+   - RecurrentOperation: make periodicity detail mandatory.
    - RecurrentManagement: improve detail column sort (todo #1146).
    - RecurrentManagement: generate operations on selected models (todo #1140).
    - UserPreferences: have a preference to edit date in overwrite mode (todo #707).
@@ -48,9 +49,9 @@
    - Dossier: fix minimal effect date computing (todo #1144).
    - EntryPage: fix new entry insertion (todo #1133).
    - ReconciliationPage: fix debit vs. credit comparison (todo #1132).
-   - RecurrentOperations: fix amount update on newly generated record (todo #1135).
-   - RecurrentOperations: review index to allow many cancelled operations (todo #1137).
-   - RecurrentOperations: fix sort collation on new records (todo #1155).
+   - RecurrentOperation: fix amount update on newly generated record (todo #1135).
+   - RecurrentOperation: review index to allow many cancelled operations (todo #1137).
+   - RecurrentOperation: fix sort collation on new records (todo #1155).
    - VATDeclaration: computes with actual rounded numbers (todo #1134).
    - VATDeclaration: improve treeview display (todo #1145).
    - VATDeclaration: make treeview columns sortable (todo #1143).

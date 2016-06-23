@@ -449,13 +449,14 @@ ofo_recurrent_model_is_deletable( const ofoRecurrentModel *model )
  * @label:
  * @ope_template:
  * @period:
+ * @detail:
  * @msgerr: [allow-none][out]:
  *
  * Returns: %TRUE if provided datas are enough to make the future
  * #ofoRecurrentModel valid, %FALSE else.
  */
 gboolean
-ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, gchar **msgerr )
+ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, const gchar *detail, gchar **msgerr )
 {
 	if( msgerr ){
 		*msgerr = NULL;
@@ -481,6 +482,12 @@ ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label, const
 	if( !my_strlen( period )){
 		if( msgerr ){
 			*msgerr = g_strdup( _( "Empty periodicity" ));
+		}
+		return( FALSE );
+	}
+	if( !my_strlen( detail )){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Empty periodicity detail" ));
 		}
 		return( FALSE );
 	}
