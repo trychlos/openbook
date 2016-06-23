@@ -339,7 +339,62 @@
 1142 2016- 6- 5 BUG when quitting the application
                 (see TODO_1142/trace)
 
-1147
+1147 2016- 6- 8 UserPref: whether to take advantage of tab reordering
+                or of detachable pages in the main book as the two are
+                mutually exclusive
+
+1148 2016- 6- 8 SettlementPage: column header is Settlement Number
+
+1149 2016- 6- 8 FEAT: print the accounts archived balances for a given date
+                SELECT a.ACC_NUMBER,a.ACC_LABEL,b.ACC_ARC_DEBIT-b.ACC_ARC_CREDIT FROM OFA_T_ACCOUNTS a,OFA_T_ACCOUNTS_ARC b WHERE a.ACC_NUMBER LIKE '5%' AND b.ACC_ARC_DATE='2016-01-31' AND a.ACC_NUMBER=b.ACC_NUMBER;
+
+1150 2016- 6-20 BUG: LedgersBook: template code should be ellipsized
+                + review all prints for identifiers which have been
+                expanded
+
+1151 2016- 6-21 ViewEntries columns: add Settlement and Reconciliation
+                indicators
+
+1152 2016- 6-21 BUG: GuidedInput: does not take into account the selected
+                ledger
+
+1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
+                e.g. operation templates which use such account, and so on
+
+1154 2016- 6-22 BUG: it appears that we may have some detail in OPE_TEMPLATES_DET
+                which do not have any line in OPE_TEMPLATES (VEREP2)
+
+1155 2016- 6-22 BUG: when saving a new recurrent model
+                cf. todo_1155/trace
+
+1156 2016- 6-23 BUG: when validating a recurrent operation (whose amounts
+                were initially all null, and an amount being set before
+                validation
+                cf. todo_1156/trace
+
+1157 2016- 6-23 FEAT: add a Notes indicator in all reference pages
+                (as in AccountsChart)
+
+1158 2016- 6-23 BUG: =-%ACCOUNT(44581) formula returns -748 while account
+                balance is zero
+                This is a feature, %ACCOUNT() function returns the balance
+                of entries on the period declaration
+                => have a BALANCE() function
+
+1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
+                generating any operation (and so without the need for
+                an operation date)
+
+1160 2016- 6-23 FEAT: when closing a period and archiving accounts, have
+                a progress bar on archiving
+
+1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances: sort by
+                date ascending/descending + have a button to change the
+                sort order
+
+1162 2016- 6-23 FEAT: archive ledger balances besides of account balances
+
+1163
 
 -----------------------------------------------------------------------
  DONE
