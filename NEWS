@@ -50,6 +50,7 @@
    - ReconciliationPage: fix debit vs. credit comparison (todo #1132).
    - RecurrentOperations: fix amount update on newly generated record (todo #1135).
    - RecurrentOperations: review index to allow many cancelled operations (todo #1137).
+   - RecurrentOperations: fix sort collation on new records (todo #1155).
    - VATDeclaration: computes with actual rounded numbers (todo #1134).
    - VATDeclaration: improve treeview display (todo #1145).
    - VATDeclaration: make treeview columns sortable (todo #1143).

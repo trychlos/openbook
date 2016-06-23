@@ -581,10 +581,9 @@ tview_on_sort_detail( const gchar *detaila, const gchar *detailb )
 {
 	int deta, detb;
 
-	deta = atoi( detaila );
-	detb = atoi( detailb );
-
-	if( deta && detb ){
+	if( my_strlen( detaila ) && my_strlen( detailb )){
+		deta = atoi( detaila );
+		detb = atoi( detailb );
 		return( deta < detb ? -1 : ( deta > detb ? 1 : 0 ));
 	}
 

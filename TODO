@@ -353,7 +353,7 @@
                 expanded
 
 1151 2016- 6-21 ViewEntries columns: add Settlement and Reconciliation
-                indicators
+                indicators (S/R)
 
 1152 2016- 6-21 BUG: GuidedInput: does not take into account the selected
                 ledger
@@ -363,9 +363,6 @@
 
 1154 2016- 6-22 BUG: it appears that we may have some detail in OPE_TEMPLATES_DET
                 which do not have any line in OPE_TEMPLATES (VEREP2)
-
-1155 2016- 6-22 BUG: when saving a new recurrent model
-                cf. todo_1155/trace
 
 1156 2016- 6-23 BUG: when validating a recurrent operation (whose amounts
                 were initially all null, and an amount being set before
@@ -1481,6 +1478,10 @@
 1146 2016- 6- 5 RecurrentModelManagement: when sorting detail column,
                 should sort on number (depending of periodicity content)
      2016- 6- 7 done
+
+1155 2016- 6-22 BUG: when saving a new recurrent model
+                cf. todo_1155/trace
+     2016- 6-23 fixed
 
 1158 2016- 6-23 BUG: =-%ACCOUNT(44581) formula returns -748 while account
                 balance is zero

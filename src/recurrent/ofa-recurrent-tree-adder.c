@@ -321,6 +321,10 @@ get_store_data( ofaRecurrentTreeAdder *self, void *store, gboolean create )
 
 	priv = ofa_recurrent_tree_adder_get_instance_private( self );
 
+	if( priv->dispose_has_run ){
+		return( NULL );
+	}
+
 	for( it=priv->stores ; it ; it=it->next ){
 		sdata = ( sStore * ) it->data;
 		if( sdata->store == store ){
