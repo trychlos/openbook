@@ -371,15 +371,11 @@
                 were initially all null, and an amount being set before
                 validation
                 cf. todo_1156/trace
+                Note that after rerun we may see that some operation have
+                been generated but not recorded
 
 1157 2016- 6-23 FEAT: add a Notes indicator in all reference pages
                 (as in AccountsChart)
-
-1158 2016- 6-23 BUG: =-%ACCOUNT(44581) formula returns -748 while account
-                balance is zero
-                This is a feature, %ACCOUNT() function returns the balance
-                of entries on the period declaration
-                => have a BALANCE() function
 
 1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
                 generating any operation (and so without the need for
@@ -1485,6 +1481,13 @@
 1146 2016- 6- 5 RecurrentModelManagement: when sorting detail column,
                 should sort on number (depending of periodicity content)
      2016- 6- 7 done
+
+1158 2016- 6-23 BUG: =-%ACCOUNT(44581) formula returns -748 while account
+                balance is zero
+                This is a feature, %ACCOUNT() function returns the balance
+                of entries on the period declaration
+                => have a BALANCE() function for the current balance.
+     2016- 6-23 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

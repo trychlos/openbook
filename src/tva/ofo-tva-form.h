@@ -58,9 +58,11 @@
  *                  entries imputed on the specified account with an
  *                  effect date between the declaration begin and end
  *                  dates (included).
- *                  The account may be specified as begin[-end] to indicate
+ *                  The account may be specified as begin[;end] to indicate
  *                  that we must consider all acounts between 'begin' and
  *                  'end' (included) identifiers.
+ *    - %BALANCE(begin[;end]): returns the current rough+validated balance
+ *                  of the account(s).
  *
  * The opening parenthesis must immediately follow the function name.
  */

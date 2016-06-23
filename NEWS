@@ -41,6 +41,7 @@
    - RecurrentManagement: generate operations on selected models (todo #1140).
    - UserPreferences: have a preference to edit date in overwrite mode (todo #707).
    - VAT: put its own icon on operation templates pages (todo #1138).
+   - VAT: inntroduce the %BALANCE() function (todo #1158).
  
  Bug fixes:
 

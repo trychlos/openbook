@@ -42,6 +42,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
+#include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -151,6 +152,7 @@ static void             on_compute_clicked( GtkButton *button, ofaTVARecordPrope
 static ofaFormulaEvalFn get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatchInfo *match_info, ofaTVARecordProperties *self );
 static gchar           *eval_account( ofsFormulaHelper *helper );
 static gchar           *eval_amount( ofsFormulaHelper *helper );
+static gchar           *eval_balance( ofsFormulaHelper *helper );
 static gchar           *eval_base( ofsFormulaHelper *helper );
 static gchar           *eval_code( ofsFormulaHelper *helper );
 static void             on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
@@ -160,6 +162,7 @@ static void             set_msgerr( ofaTVARecordProperties *self, const gchar *m
 static const sEvalDef st_formula_fns[] = {
 		{ "ACCOUNT", 1, 2, eval_account },
 		{ "AMOUNT",  1, 1, eval_amount },
+		{ "BALANCE", 1, 2, eval_balance },
 		{ "BASE",    1, 1, eval_base },
 		{ "CODE",    1, 1, eval_code },
 		{ 0 }
@@ -962,7 +965,8 @@ get_formula_eval_fn( const gchar *name, gint *min_count, gint *max_count, GMatch
 
 /*
  * %ACCOUNT(begin[;end])
- * Returns: the rough+validated balances for the begin[;end] account(s)
+ * Returns: the rough+validated balances for the entries on the specified
+ *  period on the begin[;end] account(s)
  */
 static gchar *
 eval_account( ofsFormulaHelper *helper )
@@ -1034,6 +1038,57 @@ eval_amount( ofsFormulaHelper *helper )
 	}
 
 	DEBUG( "%s: cstr=%s, res=%s", thisfn, cstr, res );
+
+	return( res );
+}
+
+/*
+ * %BALANCE(begin[;end])
+ * Returns: the current rough+validated balances for the begin[;end] account(s)
+ */
+static gchar *
+eval_balance( ofsFormulaHelper *helper )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_eval_balance";
+	ofaTVARecordPropertiesPrivate *priv;
+	gchar *res;
+	GList *it, *dataset;
+	const gchar *cbegin, *cend, *acc_id;
+	ofaHub *hub;
+	ofxAmount amount;
+	ofoAccount *account;
+
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( helper->user_data ));
+
+	res = NULL;
+	it = helper->args_list;
+	cbegin = it ? ( const gchar * ) it->data : NULL;
+	it = it ? it->next : NULL;
+	cend = it ? ( const gchar * ) it->data : NULL;
+	if( !cend ){
+		cend = cbegin;
+	}
+	DEBUG( "%s: begin=%s, end=%s", thisfn, cbegin, cend );
+
+	hub = ofa_igetter_get_hub( priv->getter );
+
+	dataset = ofo_account_get_dataset( hub );
+	amount = 0;
+	for( it=dataset ; it ; it=it->next ){
+		account = OFO_ACCOUNT( it->data );
+		acc_id = ofo_account_get_number( account );
+		if( my_collate( cbegin, acc_id ) <= 0 && my_collate( acc_id, cend ) <= 0 ){
+			/* credit is -, debit is + */
+			amount -= ofo_account_get_rough_credit( account );
+			amount += ofo_account_get_rough_debit( account );
+			amount -= ofo_account_get_val_credit( account );
+			amount += ofo_account_get_val_debit( account );
+		}
+	}
+
+	res = ofa_amount_to_str( amount, NULL );
+
+	DEBUG( "%s: BALANCE(%s[;%s])=%s", thisfn, cbegin, cend, res );
 
 	return( res );
 }
