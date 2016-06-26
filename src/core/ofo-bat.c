@@ -84,9 +84,9 @@ static gboolean    bat_do_update( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_by_where( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect );
-static gint        bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b );
-static gint        bat_cmp_by_id( const ofoBat *a, ofxCounter id );
-static gint        bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b );
+static gint        bat_cmp_by_date_desc( ofoBat *a, ofoBat *b );
+static gint        bat_cmp_by_id( ofoBat *a, ofxCounter id );
+static gint        bat_cmp_by_ptr( ofoBat *a, ofoBat *b );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( void *user_data );
@@ -98,9 +98,9 @@ static GList      *iimportable_import_parse( ofaIImporter *importer, ofsImporter
 static ofoBat     *iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
 static ofoBatLine *iimportable_import_parse_line( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields, gint year );
 static void        iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
-static gboolean    bat_get_exists( const ofoBat *bat, const ofaIDBConnect *connect );
-static gchar      *bat_get_where( const ofoBat *bat );
-static ofxCounter  bat_get_id_by_where( const ofoBat *bat, const ofaIDBConnect *connect );
+static gboolean    bat_get_exists( ofoBat *bat, const ofaIDBConnect *connect );
+static gchar      *bat_get_where( ofoBat *bat );
+static ofxCounter  bat_get_id_by_where( ofoBat *bat, const ofaIDBConnect *connect );
 static gboolean    bat_drop_content( const ofaIDBConnect *connect );
 static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void        isignal_hub_connect( ofaHub *hub );
@@ -289,7 +289,7 @@ ofo_bat_new( void )
  * ofo_bat_get_id:
  */
 ofxCounter
-ofo_bat_get_id( const ofoBat *bat )
+ofo_bat_get_id( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -305,7 +305,7 @@ ofo_bat_get_id( const ofoBat *bat )
  * ofo_bat_get_uri:
  */
 const gchar *
-ofo_bat_get_uri( const ofoBat *bat )
+ofo_bat_get_uri( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -321,7 +321,7 @@ ofo_bat_get_uri( const ofoBat *bat )
  * ofo_bat_get_format:
  */
 const gchar *
-ofo_bat_get_format( const ofoBat *bat )
+ofo_bat_get_format( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -337,7 +337,7 @@ ofo_bat_get_format( const ofoBat *bat )
  * ofo_bat_get_begin_date:
  */
 const GDate *
-ofo_bat_get_begin_date( const ofoBat *bat )
+ofo_bat_get_begin_date( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -353,7 +353,7 @@ ofo_bat_get_begin_date( const ofoBat *bat )
  * ofo_bat_get_begin_solde:
  */
 ofxAmount
-ofo_bat_get_begin_solde( const ofoBat *bat )
+ofo_bat_get_begin_solde( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -369,7 +369,7 @@ ofo_bat_get_begin_solde( const ofoBat *bat )
  * ofo_bat_get_begin_solde_set:
  */
 gboolean
-ofo_bat_get_begin_solde_set( const ofoBat *bat )
+ofo_bat_get_begin_solde_set( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -385,7 +385,7 @@ ofo_bat_get_begin_solde_set( const ofoBat *bat )
  * ofo_bat_get_end_date:
  */
 const GDate *
-ofo_bat_get_end_date( const ofoBat *bat )
+ofo_bat_get_end_date( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -401,7 +401,7 @@ ofo_bat_get_end_date( const ofoBat *bat )
  * ofo_bat_get_end_solde:
  */
 ofxAmount
-ofo_bat_get_end_solde( const ofoBat *bat )
+ofo_bat_get_end_solde( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -417,7 +417,7 @@ ofo_bat_get_end_solde( const ofoBat *bat )
  * ofo_bat_get_end_solde_set:
  */
 gboolean
-ofo_bat_get_end_solde_set( const ofoBat *bat )
+ofo_bat_get_end_solde_set( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -433,7 +433,7 @@ ofo_bat_get_end_solde_set( const ofoBat *bat )
  * ofo_bat_get_rib:
  */
 const gchar *
-ofo_bat_get_rib( const ofoBat *bat )
+ofo_bat_get_rib( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -449,7 +449,7 @@ ofo_bat_get_rib( const ofoBat *bat )
  * ofo_bat_get_currency:
  */
 const gchar *
-ofo_bat_get_currency( const ofoBat *bat )
+ofo_bat_get_currency( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -465,7 +465,7 @@ ofo_bat_get_currency( const ofoBat *bat )
  * ofo_bat_get_notes:
  */
 const gchar *
-ofo_bat_get_notes( const ofoBat *bat )
+ofo_bat_get_notes( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -481,7 +481,7 @@ ofo_bat_get_notes( const ofoBat *bat )
  * ofo_bat_get_account:
  */
 const gchar *
-ofo_bat_get_account( const ofoBat *bat )
+ofo_bat_get_account( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -497,7 +497,7 @@ ofo_bat_get_account( const ofoBat *bat )
  * ofo_bat_get_upd_user:
  */
 const gchar *
-ofo_bat_get_upd_user( const ofoBat *bat )
+ofo_bat_get_upd_user( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -513,7 +513,7 @@ ofo_bat_get_upd_user( const ofoBat *bat )
  * ofo_bat_get_upd_stamp:
  */
 const GTimeVal *
-ofo_bat_get_upd_stamp( const ofoBat *bat )
+ofo_bat_get_upd_stamp( ofoBat *bat )
 {
 	ofoBatPrivate *priv;
 
@@ -536,7 +536,7 @@ ofo_bat_get_upd_stamp( const ofoBat *bat )
  * imported, and display a message dialog box in this case.
  */
 gboolean
-ofo_bat_exists( const ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end )
+ofo_bat_exists( ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end )
 {
 	gboolean exists;
 	gchar *sbegin, *send;
@@ -606,7 +606,7 @@ ofo_bat_exists( const ofaHub *hub, const gchar *rib, const GDate *begin, const G
  * lines has been yet reconciliated.
  */
 gboolean
-ofo_bat_is_deletable( const ofoBat *bat )
+ofo_bat_is_deletable( ofoBat *bat )
 {
 	gint count;
 
@@ -625,7 +625,7 @@ ofo_bat_is_deletable( const ofoBat *bat )
  * Returns: the count of lines in this BAT.
  */
 gint
-ofo_bat_get_lines_count( const ofoBat *bat )
+ofo_bat_get_lines_count( ofoBat *bat )
 {
 	ofaHub *hub;
 	gchar *query;
@@ -653,7 +653,7 @@ ofo_bat_get_lines_count( const ofoBat *bat )
  * of lines which belong to a conciliation group.
  */
 gint
-ofo_bat_get_used_count( const ofoBat *bat )
+ofo_bat_get_used_count( ofoBat *bat )
 {
 	gchar *query;
 	ofaHub *hub;
@@ -1260,7 +1260,7 @@ bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect )
 }
 
 static gint
-bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b )
+bat_cmp_by_date_desc( ofoBat *a, ofoBat *b )
 {
 	const GDate *a_end, *b_end;
 
@@ -1271,7 +1271,7 @@ bat_cmp_by_date_desc( const ofoBat *a, const ofoBat *b )
 }
 
 static gint
-bat_cmp_by_id( const ofoBat *a, ofxCounter id )
+bat_cmp_by_id( ofoBat *a, ofxCounter id )
 {
 	ofxCounter a_id;
 
@@ -1281,7 +1281,7 @@ bat_cmp_by_id( const ofoBat *a, ofxCounter id )
 }
 
 static gint
-bat_cmp_by_ptr( const ofoBat *a, const ofoBat *b )
+bat_cmp_by_ptr( ofoBat *a, ofoBat *b )
 {
 	gint id_a, id_b;
 
@@ -1847,7 +1847,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
  * provided bat is an being-imported one: datas are set but the id
  */
 static gboolean
-bat_get_exists( const ofoBat *bat, const ofaIDBConnect *connect )
+bat_get_exists( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	gchar *query, *where;
 	gint count;
@@ -1868,7 +1868,7 @@ bat_get_exists( const ofoBat *bat, const ofaIDBConnect *connect )
  * build a where clause without using the id counter
  */
 static gchar *
-bat_get_where( const ofoBat *bat )
+bat_get_where( ofoBat *bat )
 {
 	const GDate *dbegin, *dend;
 	const gchar *rib;
@@ -1907,7 +1907,7 @@ bat_get_where( const ofoBat *bat )
 }
 
 static ofxCounter
-bat_get_id_by_where( const ofoBat *bat, const ofaIDBConnect *connect )
+bat_get_id_by_where( ofoBat *bat, const ofaIDBConnect *connect )
 {
 	gchar *query, *where;
 	GSList *result, *irow, *icol;

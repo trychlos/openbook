@@ -338,7 +338,7 @@ setup_dbms_provider( ofaDossierNewBin *self )
  * Returns: the #GtkSizeGroup which handles the desired @column.
  */
 GtkSizeGroup *
-ofa_dossier_new_bin_get_size_group( const ofaDossierNewBin *bin, guint column )
+ofa_dossier_new_bin_get_size_group( ofaDossierNewBin *bin, guint column )
 {
 	static const gchar *thisfn = "ofa_dossier_new_bin_get_size_group";
 	ofaDossierNewBinPrivate *priv;
@@ -478,7 +478,7 @@ changed_composite( ofaDossierNewBin *self )
  * - the connection informations are valid
  */
 gboolean
-ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_message )
+ofa_dossier_new_bin_get_valid( ofaDossierNewBin *bin, gchar **error_message )
 {
 	static const gchar *thisfn = "ofa_dossier_new_bin_get_valid";
 	ofaDossierNewBinPrivate *priv;
@@ -535,7 +535,7 @@ ofa_dossier_new_bin_get_valid( const ofaDossierNewBin *bin, gchar **error_messag
  * Returns: a newly created #ofaIDBMeta object.
  */
 ofaIDBMeta *
-ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
+ofa_dossier_new_bin_apply( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 	ofaIDBProvider *provider;
@@ -563,7 +563,7 @@ ofa_dossier_new_bin_apply( const ofaDossierNewBin *bin )
  * Returns: the #ofaIDBEditor widget.
  */
 ofaIDBEditor *
-ofa_dossier_new_bin_get_editor( const ofaDossierNewBin *bin )
+ofa_dossier_new_bin_get_editor( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 

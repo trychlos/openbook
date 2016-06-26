@@ -461,7 +461,7 @@ get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *si
  * Return: the identifier of the currently selected BAT file, or 0.
  */
 ofoBat *
-ofa_bat_treeview_get_selected( const ofaBatTreeview *view )
+ofa_bat_treeview_get_selected( ofaBatTreeview *view )
 {
 	static const gchar *thisfn = "ofa_bat_treeview_get_selected";
 	ofaBatTreeviewPrivate *priv;
@@ -543,7 +543,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
  * Returns: the #GtkTreeView widget.
  */
 GtkWidget *
-ofa_bat_treeview_get_treeview( const ofaBatTreeview *view )
+ofa_bat_treeview_get_treeview( ofaBatTreeview *view )
 {
 	ofaBatTreeviewPrivate *priv;
 

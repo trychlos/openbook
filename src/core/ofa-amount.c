@@ -67,7 +67,7 @@ ofa_amount_from_str( const gchar *str )
  * g_free() by the caller.
  */
 gchar *
-ofa_amount_to_csv( ofxAmount amount, ofoCurrency *currency, const ofaStreamFormat *format )
+ofa_amount_to_csv( ofxAmount amount, ofoCurrency *currency, ofaStreamFormat *format )
 {
 	gchar *str1, *str2, *decimal_str;
 	guint digits;

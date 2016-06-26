@@ -1133,7 +1133,7 @@ on_version( ofaApplication *application )
  * be used by the ofaMainWindow implementation of the ofaIGetter interface.
  */
 ofaHub *
-ofa_application_get_hub( const ofaApplication *application )
+ofa_application_get_hub( ofaApplication *application )
 {
 	ofaApplicationPrivate *priv;
 
@@ -1151,7 +1151,7 @@ ofa_application_get_hub( const ofaApplication *application )
  * @application: this #ofaApplication instance.
  */
 GMenuModel *
-ofa_application_get_menu_model( const ofaApplication *application )
+ofa_application_get_menu_model( ofaApplication *application )
 {
 	ofaApplicationPrivate *priv;
 
@@ -1169,7 +1169,7 @@ ofa_application_get_menu_model( const ofaApplication *application )
  * @application: this #ofaApplication instance.
  */
 const GActionEntry *
-ofa_application_get_action_entries( const ofaApplication *application )
+ofa_application_get_action_entries( ofaApplication *application )
 {
 	ofaApplicationPrivate *priv;
 

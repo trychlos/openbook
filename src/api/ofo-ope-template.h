@@ -154,7 +154,7 @@ GList          *ofo_ope_template_get_dataset              ( ofaHub *hub );
 ofoOpeTemplate *ofo_ope_template_get_by_mnemo             ( ofaHub *hub, const gchar *mnemo );
 
 ofoOpeTemplate *ofo_ope_template_new                      ( void );
-ofoOpeTemplate *ofo_ope_template_new_from_template        ( const ofoOpeTemplate *model );
+ofoOpeTemplate *ofo_ope_template_new_from_template        ( ofoOpeTemplate *model );
 
 const gchar    *ofo_ope_template_get_mnemo                ( const ofoOpeTemplate *model );
 gchar          *ofo_ope_template_get_mnemo_new_from       ( const ofoOpeTemplate *model );
@@ -187,16 +187,16 @@ void            ofo_ope_template_add_detail               ( ofoOpeTemplate *mode
 
 void            ofo_ope_template_free_detail_all          ( ofoOpeTemplate *model );
 
-gint            ofo_ope_template_get_detail_count         ( const ofoOpeTemplate *model );
-const gchar    *ofo_ope_template_get_detail_comment       ( const ofoOpeTemplate *model, gint idx );
-const gchar    *ofo_ope_template_get_detail_account       ( const ofoOpeTemplate *model, gint idx );
-gboolean        ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint idx );
-const gchar    *ofo_ope_template_get_detail_label         ( const ofoOpeTemplate *model, gint idx );
-gboolean        ofo_ope_template_get_detail_label_locked  ( const ofoOpeTemplate *model, gint idx );
-const gchar    *ofo_ope_template_get_detail_debit         ( const ofoOpeTemplate *model, gint idx );
-gboolean        ofo_ope_template_get_detail_debit_locked  ( const ofoOpeTemplate *model, gint idx );
-const gchar    *ofo_ope_template_get_detail_credit        ( const ofoOpeTemplate *model, gint idx );
-gboolean        ofo_ope_template_get_detail_credit_locked ( const ofoOpeTemplate *model, gint idx );
+gint            ofo_ope_template_get_detail_count         ( ofoOpeTemplate *model );
+const gchar    *ofo_ope_template_get_detail_comment       ( ofoOpeTemplate *model, gint idx );
+const gchar    *ofo_ope_template_get_detail_account       ( ofoOpeTemplate *model, gint idx );
+gboolean        ofo_ope_template_get_detail_account_locked( ofoOpeTemplate *model, gint idx );
+const gchar    *ofo_ope_template_get_detail_label         ( ofoOpeTemplate *model, gint idx );
+gboolean        ofo_ope_template_get_detail_label_locked  ( ofoOpeTemplate *model, gint idx );
+const gchar    *ofo_ope_template_get_detail_debit         ( ofoOpeTemplate *model, gint idx );
+gboolean        ofo_ope_template_get_detail_debit_locked  ( ofoOpeTemplate *model, gint idx );
+const gchar    *ofo_ope_template_get_detail_credit        ( ofoOpeTemplate *model, gint idx );
+gboolean        ofo_ope_template_get_detail_credit_locked ( ofoOpeTemplate *model, gint idx );
 
 void            ofo_ope_template_update_account           ( ofoOpeTemplate *model, const gchar *prev_id, const gchar *new_id );
 

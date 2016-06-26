@@ -86,15 +86,15 @@ void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
 void                ofa_dossier_treeview_set_show    ( ofaDossierTreeview *view,
 															ofaDossierShow show );
 
-GtkWidget          *ofa_dossier_treeview_get_treeview( const ofaDossierTreeview *view );
+GtkWidget          *ofa_dossier_treeview_get_treeview( ofaDossierTreeview *view );
 
-ofaDossierStore    *ofa_dossier_treeview_get_store   ( const ofaDossierTreeview *view );
+ofaDossierStore    *ofa_dossier_treeview_get_store   ( ofaDossierTreeview *view );
 
-gboolean            ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view,
+gboolean            ofa_dossier_treeview_get_selected( ofaDossierTreeview *view,
 															ofaIDBMeta **meta,
 															ofaIDBPeriod **period );
 
-void                ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view,
+void                ofa_dossier_treeview_set_selected( ofaDossierTreeview *view,
 															const gchar *dname );
 
 G_END_DECLS

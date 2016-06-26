@@ -125,7 +125,7 @@ ofa_importer_pdf_class_init( ofaImporterPdfClass *klass )
  * @accepted_contents.
  */
 gboolean
-ofa_importer_pdf_is_willing_to( const ofaImporterPdf *instance, const gchar *uri, const GList *accepted_contents )
+ofa_importer_pdf_is_willing_to( ofaImporterPdf *instance, const gchar *uri, const GList *accepted_contents )
 {
 	ofaImporterPdfPrivate *priv;
 	gchar *filename, *content;
@@ -164,7 +164,7 @@ ofa_importer_pdf_is_willing_to( const ofaImporterPdf *instance, const gchar *uri
  * So we prefer get the first rc and its text, then skip the n others.
  */
 GList *
-ofa_importer_pdf_get_layout( const ofaImporterPdf *instance, PopplerDocument *doc, guint page_num, const gchar *charset )
+ofa_importer_pdf_get_layout( ofaImporterPdf *instance, PopplerDocument *doc, guint page_num, const gchar *charset )
 {
 	static const gchar *thisfn = "ofa_importer_pdf_get_layout";
 	ofaImporterPdfPrivate *priv;

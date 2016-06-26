@@ -204,7 +204,7 @@ static GList      *icollectionable_load_collection( void *user_data );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
 static void        iimportable_iface_init( ofaIImportableInterface *iface );
 static guint       iimportable_get_interface_version( void );
 static gchar      *iimportable_get_label( const ofaIImportable *instance );
@@ -439,7 +439,7 @@ ofo_tva_form_new( void )
  * copied from @form #ofoTVAForm source.
  */
 ofoTVAForm *
-ofo_tva_form_new_from_form( const ofoTVAForm *form )
+ofo_tva_form_new_from_form( ofoTVAForm *form )
 {
 	ofoTVAForm *dest;
 	gint count, i;
@@ -757,7 +757,7 @@ ofo_tva_form_detail_free_all( ofoTVAForm *form )
  * ofo_tva_form_detail_get_count:
  */
 guint
-ofo_tva_form_detail_get_count( const ofoTVAForm *form )
+ofo_tva_form_detail_get_count( ofoTVAForm *form )
 {
 	ofoTVAFormPrivate *priv;
 
@@ -774,7 +774,7 @@ ofo_tva_form_detail_get_count( const ofoTVAForm *form )
  * @idx is the index in the details list, starting with zero
  */
 guint
-ofo_tva_form_detail_get_level( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_level( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -796,7 +796,7 @@ ofo_tva_form_detail_get_level( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_form_detail_get_code( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_code( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -818,7 +818,7 @@ ofo_tva_form_detail_get_code( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_form_detail_get_label( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_label( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -840,7 +840,7 @@ ofo_tva_form_detail_get_label( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 gboolean
-ofo_tva_form_detail_get_has_base( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_has_base( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -864,7 +864,7 @@ ofo_tva_form_detail_get_has_base( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_form_detail_get_base( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_base( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -886,7 +886,7 @@ ofo_tva_form_detail_get_base( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 gboolean
-ofo_tva_form_detail_get_has_amount( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_has_amount( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -910,7 +910,7 @@ ofo_tva_form_detail_get_has_amount( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_form_detail_get_amount( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_amount( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -932,7 +932,7 @@ ofo_tva_form_detail_get_amount( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 gboolean
-ofo_tva_form_detail_get_has_template( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_has_template( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -956,7 +956,7 @@ ofo_tva_form_detail_get_has_template( const ofoTVAForm *form, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_tva_form_detail_get_template( const ofoTVAForm *form, guint idx )
+ofo_tva_form_detail_get_template( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -1059,7 +1059,7 @@ ofo_tva_form_boolean_free_all( ofoTVAForm *form )
  * ofo_tva_form_boolean_get_count:
  */
 guint
-ofo_tva_form_boolean_get_count( const ofoTVAForm *form )
+ofo_tva_form_boolean_get_count( ofoTVAForm *form )
 {
 	ofoTVAFormPrivate *priv;
 
@@ -1076,7 +1076,7 @@ ofo_tva_form_boolean_get_count( const ofoTVAForm *form )
  * @idx is the index in the booleans list, starting with zero
  */
 const gchar *
-ofo_tva_form_boolean_get_label( const ofoTVAForm *form, guint idx )
+ofo_tva_form_boolean_get_label( ofoTVAForm *form, guint idx )
 {
 	ofoTVAFormPrivate *priv;
 	GList *nth;
@@ -1610,7 +1610,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoTVAFormPrivate *priv;
 	GList *dataset, *it, *det;

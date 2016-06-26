@@ -70,12 +70,12 @@ ofaReconcilBin *ofa_reconcil_bin_new        ( ofaIGetter *getter );
 gboolean        ofa_reconcil_bin_is_valid   ( ofaReconcilBin *bin,
 													gchar **msgerr );
 
-const gchar    *ofa_reconcil_bin_get_account( const ofaReconcilBin *bin );
+const gchar    *ofa_reconcil_bin_get_account( ofaReconcilBin *bin );
 
 void            ofa_reconcil_bin_set_account( ofaReconcilBin *bin,
 													const gchar *number );
 
-const GDate    *ofa_reconcil_bin_get_date   ( const ofaReconcilBin *bin );
+const GDate    *ofa_reconcil_bin_get_date   ( ofaReconcilBin *bin );
 
 G_END_DECLS
 

@@ -69,12 +69,12 @@ GType                   ofa_admin_credentials_bin_get_type      ( void ) G_GNUC_
 
 ofaAdminCredentialsBin *ofa_admin_credentials_bin_new           ( void );
 
-GtkSizeGroup           *ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin,
+GtkSizeGroup           *ofa_admin_credentials_bin_get_size_group( ofaAdminCredentialsBin *bin,
 																			guint column );
 
-void                    ofa_admin_credentials_bin_grab_focus    ( const ofaAdminCredentialsBin *bin );
+void                    ofa_admin_credentials_bin_grab_focus    ( ofaAdminCredentialsBin *bin );
 
-gboolean                ofa_admin_credentials_bin_is_valid      ( const ofaAdminCredentialsBin *bin,
+gboolean                ofa_admin_credentials_bin_is_valid      ( ofaAdminCredentialsBin *bin,
 																			gchar **error_message );
 
 G_END_DECLS

@@ -59,47 +59,47 @@ typedef struct {
 
 	/* input parameters at initialization time
 	 */
-	ofaIGetter           *getter;
-	ofaHub               *hub;
-	GList                *hub_handlers;
+	ofaIGetter     *getter;
+	ofaHub         *hub;
+	GList          *hub_handlers;
 
 	/* from dossier
 	 */
-	const gchar          *def_currency;
+	const gchar    *def_currency;
 
 	/* when selecting an operation template
 	 */
-	const ofoOpeTemplate *model;
-	ofsOpe               *ope;
-	GDate                 deffect_min;			/* max of begin exercice and closed ledger +1 */
+	ofoOpeTemplate *model;
+	ofsOpe         *ope;
+	GDate           deffect_min;			/* max of begin exercice and closed ledger +1 */
 
 	/* UI
 	 */
-	GtkLabel             *model_label;
-	ofaLedgerCombo       *ledger_combo;
-	GtkWidget            *ledger_parent;
-	GtkWidget            *dope_entry;
-	GtkWidget            *deffect_entry;
-	gboolean              deffect_has_focus;
-	GtkWidget            *ref_entry;
-	GtkGrid              *entries_grid;			/* entries grid container */
+	GtkLabel       *model_label;
+	ofaLedgerCombo *ledger_combo;
+	GtkWidget      *ledger_parent;
+	GtkWidget      *dope_entry;
+	GtkWidget      *deffect_entry;
+	gboolean        deffect_has_focus;
+	GtkWidget      *ref_entry;
+	GtkGrid        *entries_grid;			/* entries grid container */
 	/* total count of rows = count of entries + 2 * count of currencies
 	 * rows are at position starting with 1 (as row 0 is for headers) */
-	gint                  rows_count;
-	GtkWidget            *comment;
-	GtkWidget            *message;
+	gint            rows_count;
+	GtkWidget      *comment;
+	GtkWidget      *message;
 
 	/* check that on_entry_changed is not recursively called */
-	gint                  on_changed_count;
-	gboolean              check_allowed;
+	gint            on_changed_count;
+	gboolean        check_allowed;
 
 	/* keep trace of current row/column so that we do not recompute
 	 * the currently modified entry (only for debit and credit) */
-	gint                  focused_row;
-	gint                  focused_column;
+	gint            focused_row;
+	gint            focused_column;
 
 	/* a list of ofsCurrency structs which keeps trace of used currencies */
-	GList                *currency_list;
+	GList          *currency_list;
 }
 	ofaGuidedInputBinPrivate;
 
@@ -125,10 +125,10 @@ enum {
 /* definition of the columns
  */
 typedef struct {
-	gint	        column_id;
+	gint	          column_id;
 	gint            column_type;
-	const gchar * (*get_label)( const ofoOpeTemplate *, gint );
-	gboolean      (*is_locked)( const ofoOpeTemplate *, gint );
+	const gchar * (*get_label)( ofoOpeTemplate *, gint );
+	gboolean      (*is_locked)( ofoOpeTemplate *, gint );
 	gint            width;					/* entry, label */
 	gint            max_width;
 	gboolean        is_double;				/* whether entry is managed by myEditableAmount */
@@ -241,7 +241,7 @@ static void              setup_message_area( ofaGuidedInputBin *self, gint row_i
 static const sColumnDef *find_column_def_from_col_id( const ofaGuidedInputBin *self, gint col_id );
 static void              check_for_enable_dlg( ofaGuidedInputBin *self );
 static gboolean          is_dialog_validable( ofaGuidedInputBin *self );
-static void              set_ope_to_ui( const ofaGuidedInputBin *self, gint row, gint col_id, const gchar *content );
+static void              set_ope_to_ui( ofaGuidedInputBin *self, gint row, gint col_id, const gchar *content );
 static void              display_currency( ofaGuidedInputBin *self, gint row, ofsOpeDetail *detail );
 static void              draw_valid_coche( ofaGuidedInputBin *self, gint row, gboolean bvalid );
 static void              set_comment( ofaGuidedInputBin *self, const gchar *comment );
@@ -516,7 +516,7 @@ setup_dialog( ofaGuidedInputBin *self )
  * main window be set
  */
 void
-ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin, const ofoOpeTemplate *template )
+ofa_guided_input_bin_set_ope_template( ofaGuidedInputBin *bin, ofoOpeTemplate *template )
 {
 	ofaGuidedInputBinPrivate *priv;
 	gint i, count;
@@ -1331,7 +1331,7 @@ is_dialog_validable( ofaGuidedInputBin *self )
 }
 
 static void
-set_ope_to_ui( const ofaGuidedInputBin *self, gint row, gint col_id, const gchar *content )
+set_ope_to_ui( ofaGuidedInputBin *self, gint row, gint col_id, const gchar *content )
 {
 	ofaGuidedInputBinPrivate *priv;
 	const sColumnDef *def;

@@ -169,7 +169,7 @@ static const sEvalDef st_formula_fns[] = {
  * ofs_ope_new:
  */
 ofsOpe *
-ofs_ope_new( const ofoOpeTemplate *template )
+ofs_ope_new( ofoOpeTemplate *template )
 {
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
@@ -226,7 +226,7 @@ compute_simple_formulas( sOpeHelper *helper )
 {
 	static const gchar *thisfn = "ofs_ope_compute_simple_formulas";
 	ofsOpe *ope;
-	const ofoOpeTemplate *template;
+	ofoOpeTemplate *template;
 	ofsOpeDetail *detail;
 	gint i, count;
 	gchar *str;

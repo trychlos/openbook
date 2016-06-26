@@ -210,7 +210,7 @@ static void     p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget 
 static void     p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p6_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static gboolean p6_restore_confirmed( const ofaRestoreAssistant *self );
+static gboolean p6_restore_confirmed( ofaRestoreAssistant *self );
 static gboolean p6_do_restore( ofaRestoreAssistant *self );
 static gboolean p6_do_open( ofaRestoreAssistant *self );
 
@@ -1229,7 +1229,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 }
 
 static gboolean
-p6_restore_confirmed( const ofaRestoreAssistant *self )
+p6_restore_confirmed( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	gboolean ok;

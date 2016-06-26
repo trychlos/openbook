@@ -343,7 +343,7 @@ ofa_mysql_meta_new( void )
  * freed by the caller.
  */
 const gchar *
-ofa_mysql_meta_get_host( const ofaMySQLMeta *meta )
+ofa_mysql_meta_get_host( ofaMySQLMeta *meta )
 {
 	ofaMySQLMetaPrivate *priv;
 
@@ -366,7 +366,7 @@ ofa_mysql_meta_get_host( const ofaMySQLMeta *meta )
  * freed by the caller.
  */
 const gchar *
-ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta )
+ofa_mysql_meta_get_socket( ofaMySQLMeta *meta )
 {
 	ofaMySQLMetaPrivate *priv;
 
@@ -387,7 +387,7 @@ ofa_mysql_meta_get_socket( const ofaMySQLMeta *meta )
  * default value.
  */
 guint
-ofa_mysql_meta_get_port( const ofaMySQLMeta *meta )
+ofa_mysql_meta_get_port( ofaMySQLMeta *meta )
 {
 	ofaMySQLMetaPrivate *priv;
 

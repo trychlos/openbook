@@ -78,7 +78,7 @@ ofoTVARecord   *ofo_tva_record_get_by_key             ( ofaHub *hub, const gchar
 ofoTVARecord   *ofo_tva_record_get_by_begin           ( ofaHub *hub, const gchar *mnemo, const GDate *candidate_begin, const GDate *end );
 
 ofoTVARecord   *ofo_tva_record_new                    ( void );
-ofoTVARecord   *ofo_tva_record_new_from_form          ( const ofoTVAForm *form );
+ofoTVARecord   *ofo_tva_record_new_from_form          ( ofoTVAForm *form );
 
 void            ofo_tva_record_dump                   ( const ofoTVARecord *record );
 
@@ -113,10 +113,10 @@ void            ofo_tva_record_detail_add             ( ofoTVARecord *record,
 
 void            ofo_tva_record_detail_free_all        ( ofoTVARecord *record );
 
-guint           ofo_tva_record_detail_get_count       ( const ofoTVARecord *record );
-ofxAmount       ofo_tva_record_detail_get_base        ( const ofoTVARecord *record, guint idx );
-ofxAmount       ofo_tva_record_detail_get_amount      ( const ofoTVARecord *record, guint idx );
-ofxCounter      ofo_tva_record_detail_get_ope_number  ( const ofoTVARecord *record, guint idx );
+guint           ofo_tva_record_detail_get_count       ( ofoTVARecord *record );
+ofxAmount       ofo_tva_record_detail_get_base        ( ofoTVARecord *record, guint idx );
+ofxAmount       ofo_tva_record_detail_get_amount      ( ofoTVARecord *record, guint idx );
+ofxCounter      ofo_tva_record_detail_get_ope_number  ( ofoTVARecord *record, guint idx );
 
 void            ofo_tva_record_detail_set_base        ( ofoTVARecord *record, guint idx, ofxAmount base );
 void            ofo_tva_record_detail_set_amount      ( ofoTVARecord *record, guint idx, ofxAmount amount );
@@ -127,8 +127,8 @@ void            ofo_tva_record_boolean_add            ( ofoTVARecord *record,
 
 void            ofo_tva_record_boolean_free_all       ( ofoTVARecord *record );
 
-guint           ofo_tva_record_boolean_get_count      ( const ofoTVARecord *record );
-gboolean        ofo_tva_record_boolean_get_is_true    ( const ofoTVARecord *record, guint idx );
+guint           ofo_tva_record_boolean_get_count      ( ofoTVARecord *record );
+gboolean        ofo_tva_record_boolean_get_is_true    ( ofoTVARecord *record, guint idx );
 
 gboolean        ofo_tva_record_insert                 ( ofoTVARecord *record, ofaHub *hub );
 gboolean        ofo_tva_record_update                 ( ofoTVARecord *record );

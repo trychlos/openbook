@@ -230,8 +230,8 @@ static GList       *icollectionable_load_collection( void *user_data );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
-static gchar       *export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
+static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gchar       *export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( void );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
@@ -1213,7 +1213,7 @@ do_add_archive_list( ofoAccount *account, const GDate *date, ofxAmount debit, of
  * Returns: the count of archived balances.
  */
 guint
-ofo_account_archive_get_count( const ofoAccount *account )
+ofo_account_archive_get_count( ofoAccount *account )
 {
 	ofoAccountPrivate *priv;
 
@@ -1233,7 +1233,7 @@ ofo_account_archive_get_count( const ofoAccount *account )
  * Returns: the effect date of the balance.
  */
 const GDate *
-ofo_account_archive_get_date( const ofoAccount *account, guint idx )
+ofo_account_archive_get_date( ofoAccount *account, guint idx )
 {
 	ofoAccountPrivate *priv;
 	GList *nth;
@@ -1259,7 +1259,7 @@ ofo_account_archive_get_date( const ofoAccount *account, guint idx )
  * Returns: the archived debit.
  */
 ofxAmount
-ofo_account_archive_get_debit( const ofoAccount *account, guint idx )
+ofo_account_archive_get_debit( ofoAccount *account, guint idx )
 {
 	ofoAccountPrivate *priv;
 	GList *nth;
@@ -1285,7 +1285,7 @@ ofo_account_archive_get_debit( const ofoAccount *account, guint idx )
  * Returns: the archived credit.
  */
 ofxAmount
-ofo_account_archive_get_credit( const ofoAccount *account, guint idx )
+ofo_account_archive_get_credit( ofoAccount *account, guint idx )
 {
 	ofoAccountPrivate *priv;
 	GList *nth;
@@ -2016,7 +2016,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	gchar *str;
 	GList *dataset, *it;
@@ -2067,7 +2067,7 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
  * currency of the account
  */
 static gchar *
-export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
+export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;

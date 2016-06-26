@@ -255,7 +255,7 @@ setup_labels( ofaStreamFormatDisp *self )
  * Returns: the #GtkSizeGroup which managed the @column.
  */
 GtkSizeGroup *
-ofa_stream_format_disp_get_size_group( const ofaStreamFormatDisp *bin, guint column )
+ofa_stream_format_disp_get_size_group( ofaStreamFormatDisp *bin, guint column )
 {
 	static const gchar *thisfn = "ofa_stream_format_disp_get_size_group";
 	ofaStreamFormatDispPrivate *priv;

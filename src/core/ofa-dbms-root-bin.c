@@ -71,7 +71,7 @@ static void     setup_bin( ofaDBMSRootBin *bin );
 static void     on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     changed_composite( ofaDBMSRootBin *self );
-static gboolean is_valid_composite( const ofaDBMSRootBin *bin );
+static gboolean is_valid_composite( ofaDBMSRootBin *bin );
 
 G_DEFINE_TYPE_EXTENDED( ofaDBMSRootBin, ofa_dbms_root_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDBMSRootBin ))
@@ -258,7 +258,7 @@ setup_bin( ofaDBMSRootBin *bin )
  * we have just to return as is.
  */
 GtkSizeGroup *
-ofa_dbms_root_bin_get_size_group( const ofaDBMSRootBin *bin, guint column )
+ofa_dbms_root_bin_get_size_group( ofaDBMSRootBin *bin, guint column )
 {
 	static const gchar *thisfn = "ofa_dbms_root_bin_get_size_group";
 	ofaDBMSRootBinPrivate *priv;
@@ -366,7 +366,7 @@ changed_composite( ofaDBMSRootBin *self )
  * The DBMS status message has to be set by the caller.
  */
 gboolean
-ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
+ofa_dbms_root_bin_is_valid( ofaDBMSRootBin *bin, gchar **error_message )
 {
 	ofaDBMSRootBinPrivate *priv;
 	gboolean ok;
@@ -390,7 +390,7 @@ ofa_dbms_root_bin_is_valid( const ofaDBMSRootBin *bin, gchar **error_message )
 }
 
 static gboolean
-is_valid_composite( const ofaDBMSRootBin *bin )
+is_valid_composite( ofaDBMSRootBin *bin )
 {
 	ofaDBMSRootBinPrivate *priv;
 	ofaIDBProvider *provider;
@@ -431,7 +431,7 @@ is_valid_composite( const ofaDBMSRootBin *bin )
  * settings.
  */
 void
-ofa_dbms_root_bin_set_valid( const ofaDBMSRootBin *bin, gboolean valid )
+ofa_dbms_root_bin_set_valid( ofaDBMSRootBin *bin, gboolean valid )
 {
 	ofaDBMSRootBinPrivate *priv;
 
@@ -451,7 +451,7 @@ ofa_dbms_root_bin_set_valid( const ofaDBMSRootBin *bin, gboolean valid )
  * Set the credentials.
  */
 void
-ofa_dbms_root_bin_get_credentials( const ofaDBMSRootBin *bin, gchar **account, gchar **password )
+ofa_dbms_root_bin_get_credentials( ofaDBMSRootBin *bin, gchar **account, gchar **password )
 {
 	ofaDBMSRootBinPrivate *priv;
 

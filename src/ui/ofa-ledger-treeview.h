@@ -87,7 +87,7 @@ GList             *ofa_ledger_treeview_get_selected      ( ofaLedgerTreeview *vi
 void               ofa_ledger_treeview_set_selected      ( ofaLedgerTreeview *view,
 																	const gchar *ledger );
 
-GtkWidget         *ofa_ledger_treeview_get_treeview      ( const ofaLedgerTreeview *view );
+GtkWidget         *ofa_ledger_treeview_get_treeview      ( ofaLedgerTreeview *view );
 
 G_END_DECLS
 

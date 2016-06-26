@@ -131,7 +131,7 @@ static void       book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, gu
 static gboolean   book_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountFrameBin *self );
 static GtkWidget *page_add_treeview( ofaAccountFrameBin *self, GtkWidget *page );
 static void       page_add_columns( ofaAccountFrameBin *self, GtkTreeView *tview );
-static GtkWidget *page_get_treeview( const ofaAccountFrameBin *self );
+static GtkWidget *page_get_treeview( ofaAccountFrameBin *self );
 static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountFrameBin *self );
 static void       tview_cell_renderer_text( GtkCellRendererText *cell, gboolean is_root, gint level, gboolean is_error );
 static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
@@ -771,7 +771,7 @@ page_add_columns( ofaAccountFrameBin *self, GtkTreeView *tview )
 }
 
 static GtkWidget *
-page_get_treeview( const ofaAccountFrameBin *self )
+page_get_treeview( ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
 	gint page_n;
@@ -803,7 +803,7 @@ page_get_treeview( const ofaAccountFrameBin *self )
  * Returns the treeview associated to the current page.
  */
 GtkWidget *
-ofa_account_frame_bin_get_current_treeview( const ofaAccountFrameBin *bin )
+ofa_account_frame_bin_get_current_treeview( ofaAccountFrameBin *bin )
 {
 	static const gchar *thisfn = "ofa_account_frame_bin_get_current_treeview";
 	ofaAccountFrameBinPrivate *priv;
@@ -1662,7 +1662,7 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
  * should be #g_object_unref() after use by the caller.
  */
 ofaAccountStore *
-ofa_account_frame_bin_get_account_store( const ofaAccountFrameBin *bin )
+ofa_account_frame_bin_get_account_store( ofaAccountFrameBin *bin )
 {
 	ofaAccountFrameBinPrivate *priv;
 

@@ -367,7 +367,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
  * ofa_stream_format_get_name:
  */
 const gchar *
-ofa_stream_format_get_name( const ofaStreamFormat *settings )
+ofa_stream_format_get_name( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -384,7 +384,7 @@ ofa_stream_format_get_name( const ofaStreamFormat *settings )
  * ofa_stream_format_get_mode:
  */
 ofeSFMode
-ofa_stream_format_get_mode( const ofaStreamFormat *settings )
+ofa_stream_format_get_mode( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -401,7 +401,7 @@ ofa_stream_format_get_mode( const ofaStreamFormat *settings )
  * ofa_stream_format_get_has_charmap:
  */
 gboolean
-ofa_stream_format_get_has_charmap( const ofaStreamFormat *settings )
+ofa_stream_format_get_has_charmap( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -418,7 +418,7 @@ ofa_stream_format_get_has_charmap( const ofaStreamFormat *settings )
  * ofa_stream_format_get_charmap:
  */
 const gchar *
-ofa_stream_format_get_charmap( const ofaStreamFormat *settings )
+ofa_stream_format_get_charmap( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -435,7 +435,7 @@ ofa_stream_format_get_charmap( const ofaStreamFormat *settings )
  * ofa_stream_format_get_has_date:
  */
 gboolean
-ofa_stream_format_get_has_date( const ofaStreamFormat *settings )
+ofa_stream_format_get_has_date( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -452,7 +452,7 @@ ofa_stream_format_get_has_date( const ofaStreamFormat *settings )
  * ofa_stream_format_get_date_format:
  */
 myDateFormat
-ofa_stream_format_get_date_format( const ofaStreamFormat *settings )
+ofa_stream_format_get_date_format( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -469,7 +469,7 @@ ofa_stream_format_get_date_format( const ofaStreamFormat *settings )
  * ofa_stream_format_get_has_thousand:
  */
 gboolean
-ofa_stream_format_get_has_thousand( const ofaStreamFormat *settings )
+ofa_stream_format_get_has_thousand( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -486,7 +486,7 @@ ofa_stream_format_get_has_thousand( const ofaStreamFormat *settings )
  * ofa_stream_format_get_thousand_sep:
  */
 gchar
-ofa_stream_format_get_thousand_sep( const ofaStreamFormat *settings )
+ofa_stream_format_get_thousand_sep(  ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -503,7 +503,7 @@ ofa_stream_format_get_thousand_sep( const ofaStreamFormat *settings )
  * ofa_stream_format_get_has_decimal:
  */
 gboolean
-ofa_stream_format_get_has_decimal( const ofaStreamFormat *settings )
+ofa_stream_format_get_has_decimal( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -520,7 +520,7 @@ ofa_stream_format_get_has_decimal( const ofaStreamFormat *settings )
  * ofa_stream_format_get_decimal_sep:
  */
 gchar
-ofa_stream_format_get_decimal_sep( const ofaStreamFormat *settings )
+ofa_stream_format_get_decimal_sep( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -537,7 +537,7 @@ ofa_stream_format_get_decimal_sep( const ofaStreamFormat *settings )
  * ofa_stream_format_get_has_field:
  */
 gboolean
-ofa_stream_format_get_has_field( const ofaStreamFormat *settings )
+ofa_stream_format_get_has_field( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -554,7 +554,7 @@ ofa_stream_format_get_has_field( const ofaStreamFormat *settings )
  * ofa_stream_format_get_field_sep:
  */
 gchar
-ofa_stream_format_get_field_sep( const ofaStreamFormat *settings )
+ofa_stream_format_get_field_sep( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -571,7 +571,7 @@ ofa_stream_format_get_field_sep( const ofaStreamFormat *settings )
  * ofa_stream_format_get_has_strdelim:
  */
 gboolean
-ofa_stream_format_get_has_strdelim( const ofaStreamFormat *settings )
+ofa_stream_format_get_has_strdelim( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -588,7 +588,7 @@ ofa_stream_format_get_has_strdelim( const ofaStreamFormat *settings )
  * ofa_stream_format_get_string_delim:
  */
 gchar
-ofa_stream_format_get_string_delim( const ofaStreamFormat *settings )
+ofa_stream_format_get_string_delim( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -605,7 +605,7 @@ ofa_stream_format_get_string_delim( const ofaStreamFormat *settings )
  * ofa_stream_format_get_with_headers:
  */
 gboolean
-ofa_stream_format_get_with_headers( const ofaStreamFormat *settings )
+ofa_stream_format_get_with_headers( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 
@@ -623,7 +623,7 @@ ofa_stream_format_get_with_headers( const ofaStreamFormat *settings )
  * ofa_stream_format_get_headers_count:
  */
 gint
-ofa_stream_format_get_headers_count( const ofaStreamFormat *settings )
+ofa_stream_format_get_headers_count( ofaStreamFormat *settings )
 {
 	ofaStreamFormatPrivate *priv;
 

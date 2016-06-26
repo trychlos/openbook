@@ -340,7 +340,7 @@ ofa_account_book_bin_is_valid( ofaAccountBookBin *bin, gchar **message )
  * ofa_account_book_bin_get_account_filter:
  */
 ofaIAccountFilter *
-ofa_account_book_bin_get_account_filter( const ofaAccountBookBin *bin )
+ofa_account_book_bin_get_account_filter( ofaAccountBookBin *bin )
 {
 	ofaAccountBookBinPrivate *priv;
 	ofaIAccountFilter *filter;
@@ -360,7 +360,7 @@ ofa_account_book_bin_get_account_filter( const ofaAccountBookBin *bin )
  * ofa_account_book_bin_get_new_page_per_account:
  */
 gboolean
-ofa_account_book_bin_get_new_page_per_account( const ofaAccountBookBin *bin )
+ofa_account_book_bin_get_new_page_per_account( ofaAccountBookBin *bin )
 {
 	ofaAccountBookBinPrivate *priv;
 	gboolean new_page;
@@ -379,7 +379,7 @@ return( new_page );
  * ofa_account_book_bin_get_date_filter:
  */
 ofaIDateFilter *
-ofa_account_book_bin_get_date_filter( const ofaAccountBookBin *bin )
+ofa_account_book_bin_get_date_filter( ofaAccountBookBin *bin )
 {
 	ofaAccountBookBinPrivate *priv;
 	ofaIDateFilter *date_filter;

@@ -82,11 +82,11 @@ typedef struct {
 
 GType    ofa_importer_pdf_get_type           ( void );
 
-gboolean ofa_importer_pdf_is_willing_to      ( const ofaImporterPdf *instance,
+gboolean ofa_importer_pdf_is_willing_to      ( ofaImporterPdf *instance,
 													const gchar *uri,
 													const GList *accepted_contents );
 
-GList   *ofa_importer_pdf_get_layout         ( const ofaImporterPdf *instance,
+GList   *ofa_importer_pdf_get_layout         ( ofaImporterPdf *instance,
 													PopplerDocument *doc,
 													guint page_num,
 													const gchar *charset );

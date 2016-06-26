@@ -1202,7 +1202,7 @@ ofa_recurrent_run_treeview_clear( ofaRecurrentRunTreeview *bin )
  * Returns: the underlying #GtkTreeView widget.
  */
 GtkWidget *
-ofa_recurrent_run_treeview_get_treeview( const ofaRecurrentRunTreeview *bin )
+ofa_recurrent_run_treeview_get_treeview( ofaRecurrentRunTreeview *bin )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
 

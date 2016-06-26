@@ -376,7 +376,7 @@ on_database_changed( GtkEntry *entry, ofaMySQLEditorEnter *bin )
  * released by the caller.
  */
 const gchar *
-ofa_mysql_editor_enter_get_host( const ofaMySQLEditorEnter *editor )
+ofa_mysql_editor_enter_get_host( ofaMySQLEditorEnter *editor )
 {
 	ofaMySQLEditorEnterPrivate *priv;
 
@@ -399,7 +399,7 @@ ofa_mysql_editor_enter_get_host( const ofaMySQLEditorEnter *editor )
  * released by the caller.
  */
 const gchar *
-ofa_mysql_editor_enter_get_socket( const ofaMySQLEditorEnter *editor )
+ofa_mysql_editor_enter_get_socket( ofaMySQLEditorEnter *editor )
 {
 	ofaMySQLEditorEnterPrivate *priv;
 
@@ -419,7 +419,7 @@ ofa_mysql_editor_enter_get_socket( const ofaMySQLEditorEnter *editor )
  * Returns: the DBMS listening port.
  */
 guint
-ofa_mysql_editor_enter_get_port( const ofaMySQLEditorEnter *editor )
+ofa_mysql_editor_enter_get_port( ofaMySQLEditorEnter *editor )
 {
 	ofaMySQLEditorEnterPrivate *priv;
 
@@ -442,7 +442,7 @@ ofa_mysql_editor_enter_get_port( const ofaMySQLEditorEnter *editor )
  * released by the caller.
  */
 const gchar *
-ofa_mysql_editor_enter_get_database( const ofaMySQLEditorEnter *editor )
+ofa_mysql_editor_enter_get_database( ofaMySQLEditorEnter *editor )
 {
 	ofaMySQLEditorEnterPrivate *priv;
 

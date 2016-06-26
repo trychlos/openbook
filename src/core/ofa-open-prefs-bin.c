@@ -186,7 +186,7 @@ setup_bin( ofaOpenPrefsBin *self )
  * Set the output values.
  */
 void
-ofa_open_prefs_bin_get_data( const ofaOpenPrefsBin *bin,
+ofa_open_prefs_bin_get_data( ofaOpenPrefsBin *bin,
 		gboolean *display_notes, gboolean *when_non_empty, gboolean *display_properties,  gboolean *check_balances,
 		gboolean *check_integrity )
 {

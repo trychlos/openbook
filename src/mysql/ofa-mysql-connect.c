@@ -381,7 +381,7 @@ idbconnect_query( const ofaIDBConnect *instance, const gchar *query )
  * else.
  */
 gboolean
-ofa_mysql_connect_query( const ofaMySQLConnect *connect, const gchar *query )
+ofa_mysql_connect_query( ofaMySQLConnect *connect, const gchar *query )
 {
 	ofaMySQLConnectPrivate *priv;
 

@@ -335,7 +335,7 @@ load_dossiers( ofaPortfolioCollection *dir, GList *prev_list )
  * Returns: the count of loaded dossiers.
  */
 guint
-ofa_portfolio_collection_get_dossiers_count( const ofaPortfolioCollection *dir )
+ofa_portfolio_collection_get_dossiers_count( ofaPortfolioCollection *dir )
 {
 	ofaPortfolioCollectionPrivate *priv;
 	guint count;
@@ -363,7 +363,7 @@ ofa_portfolio_collection_get_dossiers_count( const ofaPortfolioCollection *dir )
  * The returned reference should be g_object_unref() by the caller.
  */
 ofaIDBMeta *
-ofa_portfolio_collection_get_meta( const ofaPortfolioCollection *dir, const gchar *dossier_name )
+ofa_portfolio_collection_get_meta( ofaPortfolioCollection *dir, const gchar *dossier_name )
 {
 	ofaPortfolioCollectionPrivate *priv;
 	ofaIDBMeta *meta;

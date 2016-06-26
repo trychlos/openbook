@@ -856,7 +856,7 @@ headers_set_sensitive( ofaStreamFormatBin *self )
  * Returns: the #GtkSizeGroup which managed the @column.
  */
 GtkSizeGroup *
-ofa_stream_format_bin_get_size_group( const ofaStreamFormatBin *bin, guint column )
+ofa_stream_format_bin_get_size_group( ofaStreamFormatBin *bin, guint column )
 {
 	static const gchar *thisfn = "ofa_stream_format_bin_get_size_group";
 	ofaStreamFormatBinPrivate *priv;
@@ -885,7 +885,7 @@ ofa_stream_format_bin_get_size_group( const ofaStreamFormatBin *bin, guint colum
  * Returns: the #GtkEntry which managed the name of the format.
  */
 GtkWidget *
-ofa_stream_format_bin_get_name_entry( const ofaStreamFormatBin *bin )
+ofa_stream_format_bin_get_name_entry( ofaStreamFormatBin *bin )
 {
 	ofaStreamFormatBinPrivate *priv;
 

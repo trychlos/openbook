@@ -73,13 +73,13 @@ ofaLedgerBookBin  *ofa_ledger_book_bin_new                    ( ofaIGetter *gett
 gboolean           ofa_ledger_book_bin_is_valid               ( ofaLedgerBookBin *bin,
 																		gchar **message );
 
-ofaLedgerTreeview *ofa_ledger_book_bin_get_treeview           ( const ofaLedgerBookBin *bin );
+ofaLedgerTreeview *ofa_ledger_book_bin_get_treeview           ( ofaLedgerBookBin *bin );
 
-gboolean           ofa_ledger_book_bin_get_all_ledgers        ( const ofaLedgerBookBin *bin );
+gboolean           ofa_ledger_book_bin_get_all_ledgers        ( ofaLedgerBookBin *bin );
 
-gboolean           ofa_ledger_book_bin_get_new_page_per_ledger( const ofaLedgerBookBin *bin );
+gboolean           ofa_ledger_book_bin_get_new_page_per_ledger( ofaLedgerBookBin *bin );
 
-ofaIDateFilter    *ofa_ledger_book_bin_get_date_filter        ( const ofaLedgerBookBin *bin );
+ofaIDateFilter    *ofa_ledger_book_bin_get_date_filter        ( ofaLedgerBookBin *bin );
 
 G_END_DECLS
 

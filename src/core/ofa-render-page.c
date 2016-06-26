@@ -584,7 +584,7 @@ pdf_crs_free( GList **pdf_crs )
  * Returns: the top #GtkPaned widget.
  */
 GtkWidget *
-ofa_render_page_get_top_paned( const ofaRenderPage *page )
+ofa_render_page_get_top_paned( ofaRenderPage *page )
 {
 	ofaRenderPagePrivate *priv;
 

@@ -188,10 +188,10 @@ static sStatus st_status[] = {
 		{ 0 },
 };
 
-static gchar       *effect_in_exercice( const ofaHub *hub );
+static gchar       *effect_in_exercice( ofaHub *hub );
 static GList       *entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order );
 static GDate       *entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub );
-static gboolean     entry_get_import_settled( const ofoEntry *entry );
+static gboolean     entry_get_import_settled( ofoEntry *entry );
 static void         entry_set_number( ofoEntry *entry, ofxCounter number );
 static void         entry_set_status( ofoEntry *entry, ofaEntryStatus status );
 static void         entry_set_upd_user( ofoEntry *entry, const gchar *upd_user );
@@ -218,8 +218,8 @@ static const gchar *iconcil_get_object_type( const ofaIConcil *instance );
 static void         iexportable_iface_init( ofaIExportableInterface *iface );
 static guint        iexportable_get_interface_version( void );
 static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
-static gchar       *export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
+static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gchar       *export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void         iimportable_iface_init( ofaIImportableInterface *iface );
 static guint        iimportable_get_interface_version( void );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
@@ -242,12 +242,12 @@ static void         hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_beg
 static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
 static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate );
 static gint         remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryStatus new_status );
-static void         hub_on_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
-static void         hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void         hub_on_updated_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number );
-static void         hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void         hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
-static void         hub_on_updated_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty );
+static void         hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void         hub_on_updated_account_number( ofaHub *hub, const gchar *prev_id, const gchar *number );
+static void         hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void         hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
+static void         hub_on_updated_model_mnemo( ofaHub *hub, const gchar *prev_id, const gchar *mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoEntry, ofo_entry, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoEntry )
@@ -771,7 +771,7 @@ ofo_entry_get_dataset_for_exercice_by_status( ofaHub *hub, ofaEntryStatus status
  * build a where string for the exercice on the effect date
  */
 static gchar *
-effect_in_exercice( const ofaHub *hub )
+effect_in_exercice( ofaHub *hub )
 {
 	ofoDossier *dossier;
 	GString *where;
@@ -1136,7 +1136,7 @@ entry_get_min_deffect( const ofoEntry *entry, GDate *date, ofaHub *hub )
  * The returned value may be %NULL.
  */
 GDate *
-ofo_entry_get_max_val_deffect( const ofaHub *hub, const gchar *account, GDate *date )
+ofo_entry_get_max_val_deffect( ofaHub *hub, const gchar *account, GDate *date )
 {
 	gchar *query;
 	GSList *result, *icol;
@@ -1175,7 +1175,7 @@ ofo_entry_get_max_val_deffect( const ofaHub *hub, const gchar *account, GDate *d
  * The returned value may be %NULL.
  */
 GDate *
-ofo_entry_get_max_rough_deffect( const ofaHub *hub, const gchar *account, GDate *date )
+ofo_entry_get_max_rough_deffect( ofaHub *hub, const gchar *account, GDate *date )
 {
 	const GDate *exe_end;
 	GString *query;
@@ -1226,7 +1226,7 @@ ofo_entry_get_max_rough_deffect( const ofaHub *hub, const gchar *account, GDate 
  * The returned value may be %NULL.
  */
 GDate *
-ofo_entry_get_max_futur_deffect( const ofaHub *hub, const gchar *account, GDate *date )
+ofo_entry_get_max_futur_deffect( ofaHub *hub, const gchar *account, GDate *date )
 {
 	const GDate *exe_end;
 	GString *query;
@@ -1281,7 +1281,7 @@ ofo_entry_get_max_futur_deffect( const ofaHub *hub, const gchar *account, GDate 
  * The returned value should be ofo_entry_free_currencies() by the caller.
  */
 GSList *
-ofo_entry_get_currencies( const ofaHub *hub )
+ofo_entry_get_currencies( ofaHub *hub )
 {
 	GSList *result, *irow, *icol;
 	GSList *list;
@@ -1307,11 +1307,11 @@ ofo_entry_get_currencies( const ofaHub *hub )
 	return( NULL );
 }
 
-/**
+/*
  * ofo_entry_get_import_settled:
  */
 static gboolean
-entry_get_import_settled( const ofoEntry *entry )
+entry_get_import_settled( ofoEntry *entry )
 {
 	ofoEntryPrivate *priv;
 
@@ -2345,7 +2345,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * at the end of the entry.
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	GList *result, *it;
 	gboolean ok, with_headers;
@@ -2423,7 +2423,7 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
  * currency of the account of the entry
  */
 static gchar *
-export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
+export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;
@@ -3404,7 +3404,7 @@ remediate_status( ofaHub *hub, gboolean remediate, const gchar *where, ofaEntryS
  * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
-hub_on_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
+hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, void *empty )
 {
 	static const gchar *thisfn = "ofo_entry_hub_on_entry_status_change";
 	gchar *query;
@@ -3438,7 +3438,7 @@ hub_on_entry_status_change( const ofaHub *hub, ofoEntry *entry, ofaEntryStatus p
  * attention
  */
 static void
-hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_entry_hub_on_updated_object";
 	const gchar *number;
@@ -3492,7 +3492,7 @@ hub_on_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
  * from a previous exercice)
  */
 static void
-hub_on_updated_account_number( const ofaHub *hub, const gchar *prev_id, const gchar *number )
+hub_on_updated_account_number( ofaHub *hub, const gchar *prev_id, const gchar *number )
 {
 	gchar *query;
 
@@ -3510,7 +3510,7 @@ hub_on_updated_account_number( const ofaHub *hub, const gchar *prev_id, const gc
  * from a previous exercice)
  */
 static void
-hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	gchar *query;
 
@@ -3528,7 +3528,7 @@ hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gch
  * from a previous exercice)
  */
 static void
-hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
 {
 	gchar *query;
 
@@ -3546,7 +3546,7 @@ hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_id, const gcha
  * from a previous exercice)
  */
 static void
-hub_on_updated_model_mnemo( const ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
+hub_on_updated_model_mnemo( ofaHub *hub, const gchar *prev_id, const gchar *mnemo )
 {
 	gchar *query;
 

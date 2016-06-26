@@ -86,15 +86,15 @@ const GTimeVal *ofo_ledger_get_upd_stamp       ( const ofoLedger *ledger );
 const GDate    *ofo_ledger_get_last_close      ( const ofoLedger *ledger );
 GDate          *ofo_ledger_get_last_entry      ( const ofoLedger *ledger, GDate *date );
 
-GList          *ofo_ledger_get_currencies      ( const ofoLedger *ledger );
+GList          *ofo_ledger_get_currencies      ( ofoLedger *ledger );
 void            ofo_ledger_update_currency     ( ofoLedger *ledger, const gchar *prev_id, const gchar *new_id );
 
-ofxAmount       ofo_ledger_get_val_debit       ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_val_credit      ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_rough_debit     ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_rough_credit    ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_futur_debit     ( const ofoLedger *ledger, const gchar *currency );
-ofxAmount       ofo_ledger_get_futur_credit    ( const ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_val_debit       ( ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_val_credit      ( ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_rough_debit     ( ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_rough_credit    ( ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_futur_debit     ( ofoLedger *ledger, const gchar *currency );
+ofxAmount       ofo_ledger_get_futur_credit    ( ofoLedger *ledger, const gchar *currency );
 
 GDate          *ofo_ledger_get_max_last_close  ( GDate *date, ofaHub *hub );
 gboolean        ofo_ledger_has_entries         ( const ofoLedger *ledger );

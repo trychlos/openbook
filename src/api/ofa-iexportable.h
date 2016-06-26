@@ -104,7 +104,7 @@ typedef struct {
 	 * Return: %TRUE if the dataset has been successfully exported.
 	 */
 	gboolean ( *export )               ( ofaIExportable *instance,
-												const ofaStreamFormat *settings,
+												ofaStreamFormat *settings,
 												ofaHub *hub );
 }
 	ofaIExportableInterface;
@@ -128,7 +128,7 @@ gchar   *ofa_iexportable_get_label                 ( const ofaIExportable *expor
 
 gboolean ofa_iexportable_export_to_uri             ( ofaIExportable *exportable,
 															const gchar *uri,
-															const ofaStreamFormat *settings,
+															ofaStreamFormat *settings,
 															ofaHub *hub,
 															myIProgress *progress );
 

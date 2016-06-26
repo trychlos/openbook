@@ -370,6 +370,7 @@
                 cf. todo_1156/trace
                 Note that after rerun we may see that some operation have
                 been generated but not recorded
+     2016- 6-23 not reproductible
 
 1157 2016- 6-23 FEAT: add a Notes indicator in all reference pages
                 (as in AccountsChart)
@@ -381,13 +382,15 @@
 1160 2016- 6-23 FEAT: when closing a period and archiving accounts, have
                 a progress bar on archiving
 
-1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances: sort by
-                date ascending/descending + have a button to change the
-                sort order
+1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances are not
+                properly sorted
 
 1162 2016- 6-23 FEAT: archive ledger balances besides of account balances
 
-1163
+1163 2016- 6-23 FEAT: AccountProperty/Balances/ArchivedBalances: have a
+                button to change the sort order
+
+1164
 
 -----------------------------------------------------------------------
  DONE

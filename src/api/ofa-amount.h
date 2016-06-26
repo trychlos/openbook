@@ -39,7 +39,7 @@ G_BEGIN_DECLS
 
 ofxAmount ofa_amount_from_str( const gchar *str );
 
-gchar    *ofa_amount_to_csv  ( ofxAmount amount, ofoCurrency *currency, const ofaStreamFormat *format );
+gchar    *ofa_amount_to_csv  ( ofxAmount amount, ofoCurrency *currency, ofaStreamFormat *format );
 
 gchar    *ofa_amount_to_sql  ( ofxAmount amount, ofoCurrency *currency );
 

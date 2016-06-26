@@ -65,7 +65,7 @@ static void     setup_bin( ofaUserCredentialsBin *self );
 static void     on_account_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaUserCredentialsBin *self );
 static void     changed_composite( ofaUserCredentialsBin *self );
-static gboolean is_valid_composite( const ofaUserCredentialsBin *self );
+static gboolean is_valid_composite( ofaUserCredentialsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaUserCredentialsBin, ofa_user_credentials_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaUserCredentialsBin ))
@@ -240,7 +240,7 @@ setup_bin( ofaUserCredentialsBin *self )
  * we have just to return as is.
  */
 GtkSizeGroup *
-ofa_user_credentials_bin_get_size_group( const ofaUserCredentialsBin *bin, guint column )
+ofa_user_credentials_bin_get_size_group( ofaUserCredentialsBin *bin, guint column )
 {
 	static const gchar *thisfn = "ofa_user_credentials_bin_get_size_group";
 	ofaUserCredentialsBinPrivate *priv;
@@ -269,7 +269,7 @@ ofa_user_credentials_bin_get_size_group( const ofaUserCredentialsBin *bin, guint
  * If this one is already set, then set the focus on the password entry.
  */
 void
-ofa_user_credentials_bin_grab_focus( const ofaUserCredentialsBin *bin )
+ofa_user_credentials_bin_grab_focus( ofaUserCredentialsBin *bin )
 {
 	static const gchar *thisfn = "ofa_user_credentials_bin_grab_focus";
 	ofaUserCredentialsBinPrivate *priv;
@@ -377,7 +377,7 @@ ofa_user_credentials_bin_set_password( ofaUserCredentialsBin *bin, const gchar *
  * password are set.
  */
 gboolean
-ofa_user_credentials_bin_is_valid( const ofaUserCredentialsBin *bin, gchar **msgerr )
+ofa_user_credentials_bin_is_valid( ofaUserCredentialsBin *bin, gchar **msgerr )
 {
 	ofaUserCredentialsBinPrivate *priv;
 	gboolean is_valid;
@@ -400,7 +400,7 @@ ofa_user_credentials_bin_is_valid( const ofaUserCredentialsBin *bin, gchar **msg
 }
 
 static gboolean
-is_valid_composite( const ofaUserCredentialsBin *self )
+is_valid_composite( ofaUserCredentialsBin *self )
 {
 	ofaUserCredentialsBinPrivate *priv;
 	gboolean ok;

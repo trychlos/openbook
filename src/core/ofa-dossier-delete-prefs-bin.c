@@ -272,7 +272,7 @@ changed_composite( ofaDossierDeletePrefsBin *bin )
  * See definition in api/ofa-idbms.h
  */
 gint
-ofa_dossier_delete_prefs_bin_get_db_mode( const ofaDossierDeletePrefsBin *bin )
+ofa_dossier_delete_prefs_bin_get_db_mode( ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 	gint mode;
@@ -323,7 +323,7 @@ ofa_dossier_delete_prefs_bin_set_db_mode( ofaDossierDeletePrefsBin *bin, gint mo
  * DBMS when deleting a dossier.
  */
 gboolean
-ofa_dossier_delete_prefs_bin_get_account_mode( const ofaDossierDeletePrefsBin *bin )
+ofa_dossier_delete_prefs_bin_get_account_mode( ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 	gboolean drop;
@@ -392,7 +392,7 @@ setup_settings( ofaDossierDeletePrefsBin *bin )
  * @bin:
  */
 void
-ofa_dossier_delete_prefs_bin_set_settings( const ofaDossierDeletePrefsBin *bin )
+ofa_dossier_delete_prefs_bin_set_settings( ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 	gchar *str;

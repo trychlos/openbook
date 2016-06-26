@@ -113,7 +113,7 @@ amount_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-amount_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
+amount_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -166,7 +166,7 @@ counter_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-counter_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
+counter_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -218,7 +218,7 @@ int_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-int_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
+int_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -277,7 +277,7 @@ date_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-date_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
+date_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -342,7 +342,7 @@ string_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-string_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
+string_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 {
 	gchar *temp, *str, *regexp;
 	gchar field_sep, str_delim;
@@ -424,7 +424,7 @@ timestamp_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 }
 
 static gchar *
-timestamp_to_string( const ofsBoxData *box, const ofaStreamFormat *format )
+timestamp_to_string( const ofsBoxData *box, ofaStreamFormat *format )
 {
 	gchar *str;
 
@@ -447,7 +447,7 @@ typedef void          ( *SetFn )       ( gpointer box, gconstpointer value );
 typedef gpointer      ( *FromDBMSFn )  ( const ofsBoxDef *def, const gchar *source );
 typedef gchar       * ( *ToDBMSFn )    ( gconstpointer box );
 typedef gpointer      ( *FromStringFn )( const ofsBoxDef *def, const gchar *source );
-typedef gchar       * ( *ToStringFn )  ( gconstpointer box, const ofaStreamFormat *format );
+typedef gchar       * ( *ToStringFn )  ( gconstpointer box, ofaStreamFormat *format );
 typedef void          ( *FreeFn )      ( gpointer box );
 
 typedef struct {
@@ -689,7 +689,7 @@ ofa_box_dbms_parse_result( const ofsBoxDef *defs, GSList *row )
  * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_csv_get_header( const ofsBoxDef *defs, const ofaStreamFormat *format )
+ofa_box_csv_get_header( const ofsBoxDef *defs, ofaStreamFormat *format )
 {
 	GString *header;
 	const ofsBoxDef *idef;
@@ -779,7 +779,7 @@ compute_csv_name( const gchar *dbms_name )
  * as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_box_csv_get_line( const GList *fields_list, const ofaStreamFormat *format )
+ofa_box_csv_get_line( const GList *fields_list, ofaStreamFormat *format )
 {
 	return( ofa_box_csv_get_line_ex( fields_list, format, NULL, NULL ));
 }
@@ -792,7 +792,7 @@ ofa_box_csv_get_line( const GList *fields_list, const ofaStreamFormat *format )
  * @user_data:
  */
 gchar *
-ofa_box_csv_get_line_ex( const GList *fields_list, const ofaStreamFormat *format, CSVExportFunc cb, void *user_data )
+ofa_box_csv_get_line_ex( const GList *fields_list, ofaStreamFormat *format, CSVExportFunc cb, void *user_data )
 {
 	GString *line;
 	const GList *it;

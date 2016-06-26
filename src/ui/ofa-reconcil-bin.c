@@ -357,7 +357,7 @@ ofa_reconcil_bin_is_valid( ofaReconcilBin *bin, gchar **msgerr )
  * Returns: the current account number, or %NULL.
  */
 const gchar *
-ofa_reconcil_bin_get_account( const ofaReconcilBin *bin )
+ofa_reconcil_bin_get_account( ofaReconcilBin *bin )
 {
 	ofaReconcilBinPrivate *priv;
 	const gchar *label;
@@ -402,7 +402,7 @@ ofa_reconcil_bin_set_account( ofaReconcilBin *bin, const gchar *number )
  * ofa_reconcil_bin_get_date:
  */
 const GDate *
-ofa_reconcil_bin_get_date( const ofaReconcilBin *bin )
+ofa_reconcil_bin_get_date( ofaReconcilBin *bin )
 {
 	ofaReconcilBinPrivate *priv;
 	GDate *date;

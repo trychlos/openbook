@@ -97,7 +97,7 @@ GtkWidget          *ofa_account_frame_bin_add_button          ( ofaAccountFrameB
 																	ofeAccountFrameBtn id,
 																	gboolean sensitive );
 
-GtkWidget          *ofa_account_frame_bin_get_current_treeview( const ofaAccountFrameBin *bin );
+GtkWidget          *ofa_account_frame_bin_get_current_treeview( ofaAccountFrameBin *bin );
 
 gchar              *ofa_account_frame_bin_get_selected        ( ofaAccountFrameBin *bin );
 
@@ -114,7 +114,7 @@ void                ofa_account_frame_bin_cell_data_render    ( ofaAccountFrameB
 																	GtkTreeModel *tmodel,
 																	GtkTreeIter *iter );
 
-ofaAccountStore    *ofa_account_frame_bin_get_account_store   ( const ofaAccountFrameBin *bin );
+ofaAccountStore    *ofa_account_frame_bin_get_account_store   ( ofaAccountFrameBin *bin );
 
 G_END_DECLS
 

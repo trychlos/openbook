@@ -69,7 +69,7 @@ gboolean         ofa_mysql_connect_open_with_meta  ( ofaMySQLConnect *connect,
 															const ofaMySQLMeta *meta,
 															const ofaMySQLPeriod *period );
 
-gboolean         ofa_mysql_connect_query           ( const ofaMySQLConnect *connect,
+gboolean         ofa_mysql_connect_query           ( ofaMySQLConnect *connect,
 															const gchar *query );
 
 gchar           *ofa_mysql_connect_get_new_database( ofaMySQLConnect *connect,

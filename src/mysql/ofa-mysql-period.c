@@ -320,7 +320,7 @@ ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
  * be freed by the caller.
  */
 const gchar *
-ofa_mysql_period_get_database( const ofaMySQLPeriod *period )
+ofa_mysql_period_get_database( ofaMySQLPeriod *period )
 {
 	ofaMySQLPeriodPrivate *priv;
 

@@ -73,19 +73,19 @@ GType           ofa_dbms_root_bin_get_type       ( void ) G_GNUC_CONST;
 
 ofaDBMSRootBin *ofa_dbms_root_bin_new            ( void );
 
-GtkSizeGroup   *ofa_dbms_root_bin_get_size_group ( const ofaDBMSRootBin *bin,
+GtkSizeGroup   *ofa_dbms_root_bin_get_size_group ( ofaDBMSRootBin *bin,
 														guint column );
 
 void            ofa_dbms_root_bin_set_meta       ( ofaDBMSRootBin *bin,
 														ofaIDBMeta *meta );
 
-gboolean        ofa_dbms_root_bin_is_valid       ( const ofaDBMSRootBin *bin,
+gboolean        ofa_dbms_root_bin_is_valid       ( ofaDBMSRootBin *bin,
 														gchar **error_message );
 
-void            ofa_dbms_root_bin_set_valid      ( const ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_set_valid      ( ofaDBMSRootBin *bin,
 														gboolean valid );
 
-void            ofa_dbms_root_bin_get_credentials( const ofaDBMSRootBin *bin,
+void            ofa_dbms_root_bin_get_credentials( ofaDBMSRootBin *bin,
 														gchar **account,
 														gchar **password );
 

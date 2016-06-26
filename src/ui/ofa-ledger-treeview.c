@@ -650,7 +650,7 @@ ofa_ledger_treeview_set_hexpand( ofaLedgerTreeview *view, gboolean hexpand )
  * Returns: the underlying #GtkTreeView widget.
  */
 GtkWidget *
-ofa_ledger_treeview_get_treeview( const ofaLedgerTreeview *view )
+ofa_ledger_treeview_get_treeview( ofaLedgerTreeview *view )
 {
 	ofaLedgerTreeviewPrivate *priv;
 

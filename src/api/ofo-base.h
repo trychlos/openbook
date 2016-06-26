@@ -118,7 +118,7 @@ GList  *ofo_base_load_rows       ( const ofsBoxDef *defs,
 										const ofaIDBConnect *connect,
 										const gchar *from );
 
-ofaHub *ofo_base_get_hub         ( const ofoBase *base );
+ofaHub *ofo_base_get_hub         ( ofoBase *base );
 
 void    ofo_base_set_hub         ( ofoBase *base,
 										ofaHub *hub );

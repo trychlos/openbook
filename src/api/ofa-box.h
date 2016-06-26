@@ -122,13 +122,13 @@ gchar           *ofa_box_dbms_get_columns_list( const ofsBoxDef *defs );
 GList           *ofa_box_dbms_parse_result    ( const ofsBoxDef *defs, GSList *row );
 
 gchar           *ofa_box_csv_get_header       ( const ofsBoxDef *defs,
-													const ofaStreamFormat *format );
+													ofaStreamFormat *format );
 
 gchar           *ofa_box_csv_get_line         ( const GList *fields_list,
-													const ofaStreamFormat *format );
+													ofaStreamFormat *format );
 
 gchar           *ofa_box_csv_get_line_ex      ( const GList *fields_list,
-													const ofaStreamFormat *format,
+													ofaStreamFormat *format,
 													CSVExportFunc cb, void *user_data );
 
 gconstpointer    ofa_box_get_value            ( const GList *fields_list, gint id );

@@ -69,10 +69,10 @@ GType                  ofa_user_credentials_bin_get_type      ( void ) G_GNUC_CO
 
 ofaUserCredentialsBin *ofa_user_credentials_bin_new           ( void );
 
-GtkSizeGroup          *ofa_user_credentials_bin_get_size_group( const ofaUserCredentialsBin *bin,
+GtkSizeGroup          *ofa_user_credentials_bin_get_size_group( ofaUserCredentialsBin *bin,
 																			guint column );
 
-void                   ofa_user_credentials_bin_grab_focus    ( const ofaUserCredentialsBin *bin );
+void                   ofa_user_credentials_bin_grab_focus    ( ofaUserCredentialsBin *bin );
 
 void                   ofa_user_credentials_bin_set_account   ( ofaUserCredentialsBin *bin,
 																			const gchar *account );
@@ -80,7 +80,7 @@ void                   ofa_user_credentials_bin_set_account   ( ofaUserCredentia
 void                   ofa_user_credentials_bin_set_password  ( ofaUserCredentialsBin *bin,
 																			const gchar *account );
 
-gboolean               ofa_user_credentials_bin_is_valid      ( const ofaUserCredentialsBin *bin,
+gboolean               ofa_user_credentials_bin_is_valid      ( ofaUserCredentialsBin *bin,
 																			gchar **msgerr );
 
 G_END_DECLS

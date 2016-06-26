@@ -127,26 +127,26 @@ ofoBat         *ofo_bat_get_most_recent_for_account( ofaHub *hub, const gchar *a
 
 ofoBat         *ofo_bat_new                        ( void );
 
-ofxCounter      ofo_bat_get_id                     ( const ofoBat *bat );
-const gchar    *ofo_bat_get_uri                    ( const ofoBat *bat );
-const gchar    *ofo_bat_get_format                 ( const ofoBat *bat );
-const GDate    *ofo_bat_get_begin_date             ( const ofoBat *bat );
-ofxAmount       ofo_bat_get_begin_solde            ( const ofoBat *bat );
-gboolean        ofo_bat_get_begin_solde_set        ( const ofoBat *bat );
-const GDate    *ofo_bat_get_end_date               ( const ofoBat *bat );
-ofxAmount       ofo_bat_get_end_solde              ( const ofoBat *bat );
-gboolean        ofo_bat_get_end_solde_set          ( const ofoBat *bat );
-const gchar    *ofo_bat_get_rib                    ( const ofoBat *bat );
-const gchar    *ofo_bat_get_currency               ( const ofoBat *bat );
-const gchar    *ofo_bat_get_notes                  ( const ofoBat *bat );
-const gchar    *ofo_bat_get_account                ( const ofoBat *bat );
-const gchar    *ofo_bat_get_upd_user               ( const ofoBat *bat );
-const GTimeVal *ofo_bat_get_upd_stamp              ( const ofoBat *bat );
+ofxCounter      ofo_bat_get_id                     ( ofoBat *bat );
+const gchar    *ofo_bat_get_uri                    ( ofoBat *bat );
+const gchar    *ofo_bat_get_format                 ( ofoBat *bat );
+const GDate    *ofo_bat_get_begin_date             ( ofoBat *bat );
+ofxAmount       ofo_bat_get_begin_solde            ( ofoBat *bat );
+gboolean        ofo_bat_get_begin_solde_set        ( ofoBat *bat );
+const GDate    *ofo_bat_get_end_date               ( ofoBat *bat );
+ofxAmount       ofo_bat_get_end_solde              ( ofoBat *bat );
+gboolean        ofo_bat_get_end_solde_set          ( ofoBat *bat );
+const gchar    *ofo_bat_get_rib                    ( ofoBat *bat );
+const gchar    *ofo_bat_get_currency               ( ofoBat *bat );
+const gchar    *ofo_bat_get_notes                  ( ofoBat *bat );
+const gchar    *ofo_bat_get_account                ( ofoBat *bat );
+const gchar    *ofo_bat_get_upd_user               ( ofoBat *bat );
+const GTimeVal *ofo_bat_get_upd_stamp              ( ofoBat *bat );
 
-gboolean        ofo_bat_exists                     ( const ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end );
-gboolean        ofo_bat_is_deletable               ( const ofoBat *bat );
-gint            ofo_bat_get_lines_count            ( const ofoBat *bat );
-gint            ofo_bat_get_used_count             ( const ofoBat *bat );
+gboolean        ofo_bat_exists                     ( ofaHub *hub, const gchar *rib, const GDate *begin, const GDate *end );
+gboolean        ofo_bat_is_deletable               ( ofoBat *bat );
+gint            ofo_bat_get_lines_count            ( ofoBat *bat );
+gint            ofo_bat_get_used_count             ( ofoBat *bat );
 
 void            ofo_bat_set_uri                    ( ofoBat *bat, const gchar *uri );
 void            ofo_bat_set_format                 ( ofoBat *bat, const gchar *format );

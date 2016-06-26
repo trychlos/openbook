@@ -97,7 +97,7 @@ void                 ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *
 void                 ofa_check_integrity_bin_set_hub    ( ofaCheckIntegrityBin *bin,
 																ofaHub *hub );
 
-gboolean             ofa_check_integrity_bin_get_status ( const ofaCheckIntegrityBin *bin );
+gboolean             ofa_check_integrity_bin_get_status ( ofaCheckIntegrityBin *bin );
 
 G_END_DECLS
 

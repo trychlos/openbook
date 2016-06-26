@@ -68,8 +68,8 @@ static GType st_col_types[BAT_N_COLUMNS] = {
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *store );
 static void     load_dataset( ofaBatStore *store, ofaHub *hub );
-static void     insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat );
-static void     set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat );
+static void     insert_row( ofaBatStore *store, ofaHub *hub, ofoBat *bat );
+static void     set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, ofoBat *bat );
 static gboolean find_bat_by_id( ofaBatStore *store, ofxCounter id, GtkTreeIter *iter );
 static void     connect_to_hub_signaling_system( ofaBatStore *store, ofaHub *hub );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *store );
@@ -236,7 +236,7 @@ load_dataset( ofaBatStore *store, ofaHub *hub )
 }
 
 static void
-insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat )
+insert_row( ofaBatStore *store, ofaHub *hub, ofoBat *bat )
 {
 	GtkTreeIter iter;
 
@@ -245,7 +245,7 @@ insert_row( ofaBatStore *store, ofaHub *hub, const ofoBat *bat )
 }
 
 static void
-set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, const ofoBat *bat )
+set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, ofoBat *bat )
 {
 	static const gchar *thisfn = "ofa_bat_store_set_row_by_store_iter";
 	ofaBatStorePrivate *priv;

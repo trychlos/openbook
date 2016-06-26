@@ -115,7 +115,7 @@ static void       book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, gu
 static void       book_on_finalized_page( sPageData *sdata, gpointer finalized_page );
 static GtkWidget *page_add_treeview( ofaOpeTemplateFrameBin *self, GtkWidget *page );
 static void       page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview );
-static GtkWidget *page_get_treeview( const ofaOpeTemplateFrameBin *self );
+static GtkWidget *page_get_treeview( ofaOpeTemplateFrameBin *self );
 static void       page_set_ledger_mnemo( const ofaOpeTemplateFrameBin *self, GtkWidget *page, const gchar *mnemo );
 static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
@@ -606,7 +606,7 @@ page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
 }
 
 static GtkWidget *
-page_get_treeview( const ofaOpeTemplateFrameBin *self )
+page_get_treeview( ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 	gint page_n;
@@ -646,7 +646,7 @@ page_set_ledger_mnemo( const ofaOpeTemplateFrameBin *self, GtkWidget *page, cons
  * Returns the treeview associated to the current page.
  */
 GtkWidget *
-ofa_ope_template_frame_bin_get_current_treeview( const ofaOpeTemplateFrameBin *bin )
+ofa_ope_template_frame_bin_get_current_treeview( ofaOpeTemplateFrameBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_get_current_treeview";
 	ofaOpeTemplateFrameBinPrivate *priv;
@@ -1331,7 +1331,7 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
  * which should be #g_object_unref() after use by the caller.
  */
 ofaOpeTemplateStore *
-ofa_ope_template_frame_bin_get_ope_template_store( const ofaOpeTemplateFrameBin *bin )
+ofa_ope_template_frame_bin_get_ope_template_store( ofaOpeTemplateFrameBin *bin )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
 

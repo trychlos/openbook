@@ -139,7 +139,7 @@ static GList             *icollectionable_load_collection( void *user_data );
 static void               iexportable_iface_init( ofaIExportableInterface *iface );
 static guint              iexportable_get_interface_version( void );
 static gchar             *iexportable_get_label( const ofaIExportable *instance );
-static gboolean           iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean           iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
 static void               iimportable_iface_init( ofaIImportableInterface *iface );
 static guint              iimportable_get_interface_version( void );
 static gchar             *iimportable_get_label( const ofaIImportable *instance );
@@ -994,7 +994,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	gchar *str;
 	GList *dataset, *it;

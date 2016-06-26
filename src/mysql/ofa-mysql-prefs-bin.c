@@ -70,8 +70,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysq
 static void       setup_bin( ofaMySQLPrefsBin *self );
 static void       on_backup_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
 static void       on_restore_changed( GtkEntry *entry, ofaMySQLPrefsBin *self );
-static gboolean   get_is_valid( const ofaMySQLPrefsBin *self, gchar **message );
-static void       do_apply( const ofaMySQLPrefsBin *self );
+static gboolean   get_is_valid( ofaMySQLPrefsBin *self, gchar **message );
+static void       do_apply( ofaMySQLPrefsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPrefsBin, ofa_mysql_prefs_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaMySQLPrefsBin ))
@@ -289,7 +289,7 @@ ofa_mysql_prefs_bin_set_settings( ofaMySQLPrefsBin *bin, myISettings *settings )
  * Returns: %TRUE if the @bin instance is valid.
  */
 gboolean
-ofa_mysql_prefs_bin_get_valid( const ofaMySQLPrefsBin *bin, gchar **message )
+ofa_mysql_prefs_bin_get_valid( ofaMySQLPrefsBin *bin, gchar **message )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
@@ -303,7 +303,7 @@ ofa_mysql_prefs_bin_get_valid( const ofaMySQLPrefsBin *bin, gchar **message )
 }
 
 static gboolean
-get_is_valid( const ofaMySQLPrefsBin *self, gchar **message )
+get_is_valid( ofaMySQLPrefsBin *self, gchar **message )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
@@ -336,7 +336,7 @@ get_is_valid( const ofaMySQLPrefsBin *self, gchar **message )
  * Apply the change, written them to user settings.
  */
 void
-ofa_mysql_prefs_bin_apply( const ofaMySQLPrefsBin *bin )
+ofa_mysql_prefs_bin_apply( ofaMySQLPrefsBin *bin )
 {
 	ofaMySQLPrefsBinPrivate *priv;
 
@@ -350,7 +350,7 @@ ofa_mysql_prefs_bin_apply( const ofaMySQLPrefsBin *bin )
 }
 
 static void
-do_apply( const ofaMySQLPrefsBin *self )
+do_apply( ofaMySQLPrefsBin *self )
 {
 	GtkWidget *entry;
 

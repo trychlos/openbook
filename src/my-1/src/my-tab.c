@@ -213,8 +213,8 @@ setup_tab_content( myTab *tab, GtkImage *image, const gchar *text )
 	priv->label = g_strdup( text );
 
 	priv->pin_btn = gtk_button_new();
+	gtk_widget_set_focus_on_click( priv->pin_btn, FALSE );
 	gtk_button_set_relief( GTK_BUTTON( priv->pin_btn ), GTK_RELIEF_NONE );
-	gtk_button_set_focus_on_click( GTK_BUTTON( priv->pin_btn ), FALSE );
 	gtk_button_set_image( GTK_BUTTON( priv->pin_btn ),
 			gtk_image_new_from_icon_name( "view-fullscreen", GTK_ICON_SIZE_MENU ));
 	gtk_grid_attach( GTK_GRID( priv->grid ), priv->pin_btn, 2, 0, 1, 1 );
@@ -223,8 +223,8 @@ setup_tab_content( myTab *tab, GtkImage *image, const gchar *text )
 	g_signal_connect( priv->pin_btn, "clicked", G_CALLBACK( on_pin_button_clicked ), tab );
 
 	priv->close_btn = gtk_button_new();
+	gtk_widget_set_focus_on_click( priv->close_btn, FALSE );
 	gtk_button_set_relief( GTK_BUTTON( priv->close_btn ), GTK_RELIEF_NONE );
-	gtk_button_set_focus_on_click( GTK_BUTTON( priv->close_btn ), FALSE );
 	gtk_button_set_image( GTK_BUTTON( priv->close_btn ),
 			gtk_image_new_from_icon_name( "window-close", GTK_ICON_SIZE_MENU ));
 	gtk_grid_attach( GTK_GRID( priv->grid ), priv->close_btn, 3, 0, 1, 1 );
@@ -300,7 +300,7 @@ on_tab_close_clicked_class_handler( myTab *tab )
  *  by the caller.
  */
 gchar *
-my_tab_get_label( const myTab *tab )
+my_tab_get_label( myTab *tab )
 {
 	myTabPrivate *priv;
 

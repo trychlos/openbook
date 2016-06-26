@@ -66,18 +66,18 @@ ofaExtenderModule *ofa_extender_module_new             ( ofaIGetter *getter,
 void               ofa_extender_module_free            ( ofaExtenderModule *module,
 																void *user_data );
 
-const GList       *ofa_extender_module_get_objects     ( const ofaExtenderModule *module );
+const GList       *ofa_extender_module_get_objects     ( ofaExtenderModule *module );
 
 GList             *ofa_extender_module_get_for_type    ( ofaExtenderModule *module,
 															GType type );
 
-gchar             *ofa_extender_module_get_canon_name  ( const ofaExtenderModule *module );
+gchar             *ofa_extender_module_get_canon_name  ( ofaExtenderModule *module );
 
-gchar             *ofa_extender_module_get_display_name( const ofaExtenderModule *module );
+gchar             *ofa_extender_module_get_display_name( ofaExtenderModule *module );
 
-gchar             *ofa_extender_module_get_version     ( const ofaExtenderModule *module );
+gchar             *ofa_extender_module_get_version     ( ofaExtenderModule *module );
 
-gboolean           ofa_extender_module_has_object      ( const ofaExtenderModule *module,
+gboolean           ofa_extender_module_has_object      ( ofaExtenderModule *module,
 																GObject *instance );
 
 G_END_DECLS

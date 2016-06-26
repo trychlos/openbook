@@ -666,7 +666,7 @@ cmp_lists( ofaCheckBalancesBin *self, GList *list_a, GList *list_b )
  * ofa_check_balances_bin_get_status:
  */
 gboolean
-ofa_check_balances_bin_get_status( const ofaCheckBalancesBin *bin )
+ofa_check_balances_bin_get_status( ofaCheckBalancesBin *bin )
 {
 	ofaCheckBalancesBinPrivate *priv;
 

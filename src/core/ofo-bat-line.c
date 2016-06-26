@@ -63,8 +63,8 @@ typedef struct {
 	ofoBatLinePrivate;
 
 static GList       *bat_line_load_dataset( ofaHub *hub, const gchar *where );
-static const GDate *bat_line_get_dope( const ofoBatLine *bat );
-static const gchar *bat_line_get_label( const ofoBatLine *bat );
+static const GDate *bat_line_get_dope( ofoBatLine *bat );
+static const gchar *bat_line_get_label( ofoBatLine *bat );
 static void         bat_line_set_line_id( ofoBatLine *batline, ofxCounter id );
 static gboolean     bat_line_do_insert( ofoBatLine *bat, ofaHub *hub );
 static gboolean     bat_line_insert_main( ofoBatLine *bat, ofaHub *hub );
@@ -310,7 +310,7 @@ ofo_bat_line_new( void )
  * ofo_bat_line_get_bat_id:
  */
 ofxCounter
-ofo_bat_line_get_bat_id( const ofoBatLine *bat )
+ofo_bat_line_get_bat_id( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 
@@ -326,7 +326,7 @@ ofo_bat_line_get_bat_id( const ofoBatLine *bat )
  * ofo_bat_line_get_line_id:
  */
 ofxCounter
-ofo_bat_line_get_line_id( const ofoBatLine *bat )
+ofo_bat_line_get_line_id( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 
@@ -344,7 +344,7 @@ ofo_bat_line_get_line_id( const ofoBatLine *bat )
  * Returns: the effect date.
  */
 const GDate *
-ofo_bat_line_get_deffect( const ofoBatLine *bat )
+ofo_bat_line_get_deffect( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 
@@ -364,7 +364,7 @@ ofo_bat_line_get_deffect( const ofoBatLine *bat )
  * Defaults to the effect date if operation date is not valid.
  */
 const GDate *
-ofo_bat_line_get_dope( const ofoBatLine *bat )
+ofo_bat_line_get_dope( ofoBatLine *bat )
 {
 	const GDate *date, *dope;
 
@@ -383,7 +383,7 @@ ofo_bat_line_get_dope( const ofoBatLine *bat )
  * Returns: the operation date (no default).
  */
 static const GDate *
-bat_line_get_dope( const ofoBatLine *bat )
+bat_line_get_dope( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 
@@ -396,7 +396,7 @@ bat_line_get_dope( const ofoBatLine *bat )
  * ofo_bat_line_get_ref:
  */
 const gchar *
-ofo_bat_line_get_ref( const ofoBatLine *bat )
+ofo_bat_line_get_ref( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 
@@ -416,7 +416,7 @@ ofo_bat_line_get_ref( const ofoBatLine *bat )
  * Defaults to the reference (hoping it is set).
  */
 const gchar *
-ofo_bat_line_get_label( const ofoBatLine *bat )
+ofo_bat_line_get_label( ofoBatLine *bat )
 {
 	const gchar *label_orig, *label_out;
 
@@ -435,7 +435,7 @@ ofo_bat_line_get_label( const ofoBatLine *bat )
  * Returns: the label of the BAT line (no default).
  */
 static const gchar *
-bat_line_get_label( const ofoBatLine *bat )
+bat_line_get_label( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 
@@ -448,7 +448,7 @@ bat_line_get_label( const ofoBatLine *bat )
  * ofo_bat_line_get_currency:
  */
 const gchar *
-ofo_bat_line_get_currency( const ofoBatLine *bat )
+ofo_bat_line_get_currency( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 
@@ -464,7 +464,7 @@ ofo_bat_line_get_currency( const ofoBatLine *bat )
  * ofo_bat_line_get_amount:
  */
 ofxAmount
-ofo_bat_line_get_amount( const ofoBatLine *bat )
+ofo_bat_line_get_amount( ofoBatLine *bat )
 {
 	ofoBatLinePrivate *priv;
 

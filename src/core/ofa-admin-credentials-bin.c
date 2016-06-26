@@ -68,7 +68,7 @@ static void     on_account_changed( GtkEditable *entry, ofaAdminCredentialsBin *
 static void     on_password_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
 static void     on_bis_changed( GtkEditable *entry, ofaAdminCredentialsBin *self );
 static void     changed_composite( ofaAdminCredentialsBin *self );
-static gboolean is_valid_composite( const ofaAdminCredentialsBin *self );
+static gboolean is_valid_composite( ofaAdminCredentialsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAdminCredentialsBin, ofa_admin_credentials_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaAdminCredentialsBin ))
@@ -248,7 +248,7 @@ setup_bin( ofaAdminCredentialsBin *bin )
  * we have just to return as is.
  */
 GtkSizeGroup *
-ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin, guint column )
+ofa_admin_credentials_bin_get_size_group( ofaAdminCredentialsBin *bin, guint column )
 {
 	static const gchar *thisfn = "ofa_admin_credentials_bin_get_size_group";
 	ofaAdminCredentialsBinPrivate *priv;
@@ -275,7 +275,7 @@ ofa_admin_credentials_bin_get_size_group( const ofaAdminCredentialsBin *bin, gui
  * Set the focus.
  */
 void
-ofa_admin_credentials_bin_grab_focus( const ofaAdminCredentialsBin *bin )
+ofa_admin_credentials_bin_grab_focus( ofaAdminCredentialsBin *bin )
 {
 	static const gchar *thisfn = "ofa_admin_credentials_bin_grab_focus";
 	ofaAdminCredentialsBinPrivate *priv;
@@ -365,7 +365,7 @@ changed_composite( ofaAdminCredentialsBin *self )
  * password are set, password is repeated twice and are equal.
  */
 gboolean
-ofa_admin_credentials_bin_is_valid( const ofaAdminCredentialsBin *bin, gchar **error_message )
+ofa_admin_credentials_bin_is_valid( ofaAdminCredentialsBin *bin, gchar **error_message )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 	gboolean is_valid;
@@ -388,7 +388,7 @@ ofa_admin_credentials_bin_is_valid( const ofaAdminCredentialsBin *bin, gchar **e
 }
 
 static gboolean
-is_valid_composite( const ofaAdminCredentialsBin *bin )
+is_valid_composite( ofaAdminCredentialsBin *bin )
 {
 	ofaAdminCredentialsBinPrivate *priv;
 	gboolean ok;

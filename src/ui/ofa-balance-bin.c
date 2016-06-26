@@ -409,7 +409,7 @@ ofa_balance_bin_is_valid( ofaBalanceBin *bin, gchar **message )
  * ofa_balance_bin_get_account_filter:
  */
 ofaIAccountFilter *
-ofa_balance_bin_get_account_filter( const ofaBalanceBin *bin )
+ofa_balance_bin_get_account_filter( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
 	ofaIAccountFilter *filter;
@@ -429,7 +429,7 @@ ofa_balance_bin_get_account_filter( const ofaBalanceBin *bin )
  * ofa_balance_bin_get_accounts_balance:
  */
 gboolean
-ofa_balance_bin_get_accounts_balance( const ofaBalanceBin *bin )
+ofa_balance_bin_get_accounts_balance( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
 	gboolean acc_balance;
@@ -449,7 +449,7 @@ ofa_balance_bin_get_accounts_balance( const ofaBalanceBin *bin )
  * ofa_balance_bin_get_subtotal_per_class:
  */
 gboolean
-ofa_balance_bin_get_subtotal_per_class( const ofaBalanceBin *bin )
+ofa_balance_bin_get_subtotal_per_class( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
 	gboolean subtotal;
@@ -469,7 +469,7 @@ ofa_balance_bin_get_subtotal_per_class( const ofaBalanceBin *bin )
  * ofa_balance_bin_get_new_page_per_class:
  */
 gboolean
-ofa_balance_bin_get_new_page_per_class( const ofaBalanceBin *bin )
+ofa_balance_bin_get_new_page_per_class( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
 	gboolean new_page;
@@ -489,7 +489,7 @@ ofa_balance_bin_get_new_page_per_class( const ofaBalanceBin *bin )
  * ofa_balance_bin_get_date_filter:
  */
 ofaIDateFilter *
-ofa_balance_bin_get_date_filter( const ofaBalanceBin *bin )
+ofa_balance_bin_get_date_filter( ofaBalanceBin *bin )
 {
 	ofaBalanceBinPrivate *priv;
 	ofaIDateFilter *date_filter;

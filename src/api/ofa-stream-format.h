@@ -128,29 +128,29 @@ gboolean         ofa_stream_format_exists            ( const gchar *name,
 ofaStreamFormat *ofa_stream_format_new               ( const gchar *name,
 															ofeSFMode mode );
 
-const gchar     *ofa_stream_format_get_name          ( const ofaStreamFormat *settings );
-ofeSFMode        ofa_stream_format_get_mode          ( const ofaStreamFormat *settings );
+const gchar     *ofa_stream_format_get_name          ( ofaStreamFormat *settings );
+ofeSFMode        ofa_stream_format_get_mode          ( ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_has_charmap   ( const ofaStreamFormat *settings );
-const gchar     *ofa_stream_format_get_charmap       ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_has_charmap   ( ofaStreamFormat *settings );
+const gchar     *ofa_stream_format_get_charmap       ( ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_has_date      ( const ofaStreamFormat *settings );
-myDateFormat     ofa_stream_format_get_date_format   ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_has_date      ( ofaStreamFormat *settings );
+myDateFormat     ofa_stream_format_get_date_format   ( ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_has_thousand  ( const ofaStreamFormat *settings );
-gchar            ofa_stream_format_get_thousand_sep  ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_has_thousand  ( ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_thousand_sep  ( ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_has_decimal   ( const ofaStreamFormat *settings );
-gchar            ofa_stream_format_get_decimal_sep   ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_has_decimal   ( ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_decimal_sep   ( ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_has_field     ( const ofaStreamFormat *settings );
-gchar            ofa_stream_format_get_field_sep     ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_has_field     ( ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_field_sep     ( ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_has_strdelim  ( const ofaStreamFormat *settings );
-gchar            ofa_stream_format_get_string_delim  ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_has_strdelim  ( ofaStreamFormat *settings );
+gchar            ofa_stream_format_get_string_delim  ( ofaStreamFormat *settings );
 
-gboolean         ofa_stream_format_get_with_headers  ( const ofaStreamFormat *settings );
-gint             ofa_stream_format_get_headers_count ( const ofaStreamFormat *settings );
+gboolean         ofa_stream_format_get_with_headers  ( ofaStreamFormat *settings );
+gint             ofa_stream_format_get_headers_count ( ofaStreamFormat *settings );
 
 void             ofa_stream_format_set               ( ofaStreamFormat *settings,
 															gboolean has_charmap, const gchar *charmap,

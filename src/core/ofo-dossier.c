@@ -224,7 +224,7 @@ static gboolean    do_update_currency_properties( ofoDossier *dossier );
 static void        iexportable_iface_init( ofaIExportableInterface *iface );
 static guint       iexportable_get_interface_version( void );
 static gchar      *iexportable_get_label( const ofaIExportable *instance );
-static gboolean    iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
 static void        free_currency_details( ofoDossier *dossier );
 static void        free_cur_detail( GList *fields );
 static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
@@ -234,12 +234,12 @@ static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 static gboolean    hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
 static gboolean    hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
 static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
-static void        on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
-static void        on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
-static void        hub_on_updated_account_id( const ofaHub *hub, const gchar *prev_id, const gchar *new_id );
-static void        hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code );
-static void        hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
-static void        hub_on_updated_ope_template_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
+static void        on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void        on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void        hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id );
+static void        hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
+static void        hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
+static void        hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
 
 G_DEFINE_TYPE_EXTENDED( ofoDossier, ofo_dossier, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoDossier )
@@ -860,7 +860,7 @@ ofo_dossier_get_min_deffect( const ofoDossier *dossier, const ofoLedger *ledger,
  * caller.
  */
 GSList *
-ofo_dossier_get_currencies( const ofoDossier *dossier )
+ofo_dossier_get_currencies( ofoDossier *dossier )
 {
 	ofoDossierPrivate *priv;
 	GSList *list;
@@ -1672,7 +1672,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoDossier *dossier;
 	ofoDossierPrivate *priv;
@@ -1903,7 +1903,7 @@ hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
  * current exercice.
  */
 static void
-on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
+on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
@@ -1932,7 +1932,7 @@ on_hub_exe_dates_changed( const ofaHub *hub, const GDate *prev_begin, const GDat
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
 	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
 	const gchar *code, *new_id, *new_mnemo;
@@ -1979,7 +1979,7 @@ on_hub_updated_object( const ofaHub *hub, ofoBase *object, const gchar *prev_id,
 }
 
 static void
-hub_on_updated_account_id( const ofaHub *hub, const gchar *prev_id, const gchar *new_id )
+hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id )
 {
 	ofoDossier *dossier;
 	gchar *query;
@@ -2002,7 +2002,7 @@ hub_on_updated_account_id( const ofaHub *hub, const gchar *prev_id, const gchar 
 }
 
 static void
-hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gchar *code )
+hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code )
 {
 	ofoDossier *dossier;
 	gchar *query;
@@ -2039,7 +2039,7 @@ hub_on_updated_currency_code( const ofaHub *hub, const gchar *prev_id, const gch
 }
 
 static void
-hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
+hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
 {
 	ofoDossier *dossier;
 	gchar *query;
@@ -2062,7 +2062,7 @@ hub_on_updated_ledger_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const g
 }
 
 static void
-hub_on_updated_ope_template_mnemo( const ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
+hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo )
 {
 	ofoDossier *dossier;
 	gchar *query;

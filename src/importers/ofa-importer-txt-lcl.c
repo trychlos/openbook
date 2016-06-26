@@ -81,13 +81,13 @@ static gboolean         is_willing_to_parse( const ofaImporterTxtLcl *self, cons
 static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms, gchar **msgerr );
-static gboolean         lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, const ofaStreamFormat *format, const GSList *lines );
+static gboolean         lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, ofaStreamFormat *format, const GSList *lines );
 static GSList          *lcl_tabulated_text_v1_parse( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *lines );
 static GSList          *parse_solde_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *fields );
 static GSList          *parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParms *parms, GSList *fields );
-static sParser         *get_willing_to_parser( const ofaImporterTxtLcl *self, const ofaStreamFormat *format, const GSList *lines );
+static sParser         *get_willing_to_parser( const ofaImporterTxtLcl *self, ofaStreamFormat *format, const GSList *lines );
 static ofaStreamFormat *get_default_stream_format( const ofaImporterTxtLcl *self );
-static GSList          *split_by_field( const ofaImporterTxtLcl *self, const gchar *line, const ofaStreamFormat *format );
+static GSList          *split_by_field( const ofaImporterTxtLcl *self, const gchar *line, ofaStreamFormat *format );
 static gchar           *get_ref_paiement( const gchar *str );
 static gchar           *concatenate_string( ofaImporterTxtLcl *self, const sParser *parser, GSList **list, const gchar *prev );
 
@@ -103,7 +103,7 @@ G_DEFINE_TYPE_EXTENDED( ofaImporterTxtLcl, ofa_importer_txt_lcl, OFA_TYPE_IMPORT
 struct _sParser {
 	const gchar *label;
 	guint        version;
-	gboolean   (*fnTest) ( const ofaImporterTxtLcl *, const sParser *, const ofaStreamFormat *, const GSList * );
+	gboolean   (*fnTest) ( const ofaImporterTxtLcl *, const sParser *, ofaStreamFormat *, const GSList * );
 	GSList *   (*fnParse)( ofaImporterTxtLcl *, const sParser *, ofsImporterParms *, GSList * );
 };
 
@@ -322,7 +322,7 @@ do_parse( ofaImporterTxtLcl *self, ofsImporterParms *parms, gchar **msgerr )
  *  07/11/2014	-34,0	Virement		PRLV SEPA Free Telecom
  */
 static gboolean
-lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, const ofaStreamFormat *format, const GSList *lines )
+lcl_tabulated_text_v1_check( const ofaImporterTxtLcl *self, const sParser *parser, ofaStreamFormat *format, const GSList *lines )
 {
 	static const gchar *thisfn = "ofa_importer_txt_lcl_v1_check";
 	GSList *fields, *it;
@@ -473,7 +473,7 @@ parse_detail_v1( ofaImporterTxtLcl *self, const sParser *parser, ofsImporterParm
 }
 
 static sParser *
-get_willing_to_parser( const ofaImporterTxtLcl *self, const ofaStreamFormat *format, const GSList *lines )
+get_willing_to_parser( const ofaImporterTxtLcl *self, ofaStreamFormat *format, const GSList *lines )
 {
 	sParser *parser;
 	gint i;
@@ -514,7 +514,7 @@ get_default_stream_format( const ofaImporterTxtLcl *self )
  * free with g_slist_free_full( list, ( GDestroyNotify ) g_free )
  */
 static GSList *
-split_by_field( const ofaImporterTxtLcl *self, const gchar *line, const ofaStreamFormat *format )
+split_by_field( const ofaImporterTxtLcl *self, const gchar *line, ofaStreamFormat *format )
 {
 	GSList *out;
 	gchar **tokens, **iter;

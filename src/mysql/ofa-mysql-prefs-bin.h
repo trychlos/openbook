@@ -70,10 +70,10 @@ GtkWidget *ofa_mysql_prefs_bin_new         ( void );
 void       ofa_mysql_prefs_bin_set_settings( ofaMySQLPrefsBin *bin,
 												myISettings *settings );
 
-gboolean   ofa_mysql_prefs_bin_get_valid   ( const ofaMySQLPrefsBin *bin,
+gboolean   ofa_mysql_prefs_bin_get_valid   ( ofaMySQLPrefsBin *bin,
 												gchar **msgerr );
 
-void       ofa_mysql_prefs_bin_apply       ( const ofaMySQLPrefsBin *bin );
+void       ofa_mysql_prefs_bin_apply       ( ofaMySQLPrefsBin *bin );
 
 G_END_DECLS
 

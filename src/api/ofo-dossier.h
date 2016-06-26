@@ -120,7 +120,7 @@ ofxCounter           ofo_dossier_get_next_concil           ( ofoDossier *dossier
 GDate               *ofo_dossier_get_min_deffect           ( const ofoDossier *dossier,
 																	const ofoLedger *ledger, GDate *date );
 
-GSList              *ofo_dossier_get_currencies            ( const ofoDossier *dossier );
+GSList              *ofo_dossier_get_currencies            ( ofoDossier *dossier );
 #define              ofo_dossier_free_currencies( L )      g_slist_free_full(( L ), \
 																	( GDestroyNotify ) g_free )
 

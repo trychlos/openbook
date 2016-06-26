@@ -44,17 +44,17 @@
 /* private instance data
  */
 typedef struct {
-	gboolean              dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter           *getter;
-	const ofoOpeTemplate *model;
+	ofaIGetter        *getter;
+	ofoOpeTemplate    *model;
 
 	/* UI
 	 */
-	ofaGuidedInputBin    *input_bin;
-	GtkWidget            *ok_btn;
+	ofaGuidedInputBin *input_bin;
+	GtkWidget         *ok_btn;
 }
 	ofaGuidedInputPrivate;
 
@@ -150,7 +150,7 @@ ofa_guided_input_class_init( ofaGuidedInputClass *klass )
  * Let the user enter a new operation based on the @model template.
  */
 void
-ofa_guided_input_run( ofaIGetter *getter, GtkWindow *parent, const ofoOpeTemplate *model )
+ofa_guided_input_run( ofaIGetter *getter, GtkWindow *parent, ofoOpeTemplate *model )
 {
 	static const gchar *thisfn = "ofa_guided_input_run";
 	ofaGuidedInput *self;

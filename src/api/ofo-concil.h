@@ -82,12 +82,12 @@ ofoConcil      *ofo_concil_get_by_other_id ( ofaHub *hub, const gchar *type, ofx
 
 ofoConcil      *ofo_concil_new             ( void );
 
-ofxCounter      ofo_concil_get_id          ( const ofoConcil *concil );
-const GDate    *ofo_concil_get_dval        ( const ofoConcil *concil );
-const gchar    *ofo_concil_get_user        ( const ofoConcil *concil );
-const GTimeVal *ofo_concil_get_stamp       ( const ofoConcil *concil );
-GList          *ofo_concil_get_ids         ( const ofoConcil *concil );
-gboolean        ofo_concil_has_member      ( const ofoConcil *concil, const gchar *type, ofxCounter id );
+ofxCounter      ofo_concil_get_id          ( ofoConcil *concil );
+const GDate    *ofo_concil_get_dval        ( ofoConcil *concil );
+const gchar    *ofo_concil_get_user        ( ofoConcil *concil );
+const GTimeVal *ofo_concil_get_stamp       ( ofoConcil *concil );
+GList          *ofo_concil_get_ids         ( ofoConcil *concil );
+gboolean        ofo_concil_has_member      ( ofoConcil *concil, const gchar *type, ofxCounter id );
 
 void            ofo_concil_for_each_member ( ofoConcil *concil, ofoConcilEnumerate fn, void *user_data );
 

@@ -66,20 +66,20 @@ static gboolean         is_willing_to_parse( const ofaImporterTxtBourso *self, c
 static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterTxtBourso *self, ofsImporterParms *parms, gchar **msgerr );
-static gboolean         bourso_excel2002_v2_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines );
+static gboolean         bourso_excel2002_v2_check( const ofaImporterTxtBourso *self, const sParser *parser, ofaStreamFormat *format, GSList *lines );
 static GSList          *bourso_excel2002_v2_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList *lines );
-static gboolean         bourso_excel95_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines );
+static gboolean         bourso_excel95_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, ofaStreamFormat *format, GSList *lines );
 static GSList          *bourso_excel95_v1_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList *lines );
-static gboolean         parse_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines, const gchar *thisfn );
+static gboolean         parse_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, ofaStreamFormat *format, GSList *lines, const gchar *thisfn );
 static GSList          *parse_v1_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList *lines, const gchar *thisfn );
-static gboolean         parse_v1_header( const ofaStreamFormat *format, GSList **lines, gchar **dbegin, gchar **dend, gchar **rib, gchar **currency );
-static gboolean         parse_v1_line_1( const gchar *line, gchar **dbegin, gchar **dend, const ofaStreamFormat *format );
-static gboolean         parse_v1_line_2( const gchar *line, gchar **rib, gchar **currency, const ofaStreamFormat *format );
+static gboolean         parse_v1_header( ofaStreamFormat *format, GSList **lines, gchar **dbegin, gchar **dend, gchar **rib, gchar **currency );
+static gboolean         parse_v1_line_1( const gchar *line, gchar **dbegin, gchar **dend, ofaStreamFormat *format );
+static gboolean         parse_v1_line_2( const gchar *line, gchar **rib, gchar **currency, ofaStreamFormat *format );
 static GSList          *parse_v1_header_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, GSList **lines );
 static GSList          *parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterParms *parms, const gchar *line );
-static sParser         *get_willing_to_parser( const ofaImporterTxtBourso *self, const ofaStreamFormat *format, GSList *lines );
+static sParser         *get_willing_to_parser( const ofaImporterTxtBourso *self, ofaStreamFormat *format, GSList *lines );
 static ofaStreamFormat *get_default_stream_format( const ofaImporterTxtBourso *self );
-static GSList          *split_by_field( const gchar *line, const ofaStreamFormat *settings );
+static GSList          *split_by_field( const gchar *line, ofaStreamFormat *settings );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterTxtBourso, ofa_importer_txt_bourso, OFA_TYPE_IMPORTER_TXT, 0,
 		G_ADD_PRIVATE( ofaImporterTxtBourso )
@@ -93,7 +93,7 @@ G_DEFINE_TYPE_EXTENDED( ofaImporterTxtBourso, ofa_importer_txt_bourso, OFA_TYPE_
 struct _sParser {
 	const gchar *label;
 	guint        version;
-	gboolean   (*fnTest) ( const ofaImporterTxtBourso *, const sParser *, const ofaStreamFormat *, GSList * );
+	gboolean   (*fnTest) ( const ofaImporterTxtBourso *, const sParser *, ofaStreamFormat *, GSList * );
 	GSList *   (*fnParse)( ofaImporterTxtBourso *, const sParser *, ofsImporterParms *, GSList * );
 };
 
@@ -309,7 +309,7 @@ do_parse( ofaImporterTxtBourso *self, ofsImporterParms *parms, gchar **msgerr )
 }
 
 static gboolean
-bourso_excel2002_v2_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines )
+bourso_excel2002_v2_check( const ofaImporterTxtBourso *self, const sParser *parser, ofaStreamFormat *format, GSList *lines )
 {
 	static const gchar *thisfn = "ofa_importer_txt_bourso_excel2002_v2_check";
 
@@ -348,7 +348,7 @@ bourso_excel2002_v2_parse( ofaImporterTxtBourso *self, const sParser *parser, of
  * functions will never be called
  */
 static gboolean
-bourso_excel95_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines )
+bourso_excel95_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, ofaStreamFormat *format, GSList *lines )
 {
 	static const gchar *thisfn = "ofa_importer_txt_bourso_excel95_v1_check";
 
@@ -364,7 +364,7 @@ bourso_excel95_v1_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsI
 }
 
 static gboolean
-parse_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, const ofaStreamFormat *format, GSList *lines, const gchar *thisfn )
+parse_v1_check( const ofaImporterTxtBourso *self, const sParser *parser, ofaStreamFormat *format, GSList *lines, const gchar *thisfn )
 {
 	GSList *itl;
 	gchar *sdbegin, *sdend;
@@ -413,7 +413,7 @@ parse_v1_parse( ofaImporterTxtBourso *self, const sParser *parser, ofsImporterPa
  * used by check
  */
 static gboolean
-parse_v1_header( const ofaStreamFormat *format, GSList **lines, gchar **dbegin, gchar **dend, gchar **rib, gchar **currency )
+parse_v1_header( ofaStreamFormat *format, GSList **lines, gchar **dbegin, gchar **dend, gchar **rib, gchar **currency )
 {
 	static const gchar *thisfn = "ofa_importer_txt_bourso_parse_v1_header";
 	GSList *itl;
@@ -460,7 +460,7 @@ parse_v1_header( const ofaStreamFormat *format, GSList **lines, gchar **dbegin, 
  * when checking if this importer is willing to import the file
  */
 static gboolean
-parse_v1_line_1( const gchar *line, gchar **dbegin, gchar **dend, const ofaStreamFormat *format )
+parse_v1_line_1( const gchar *line, gchar **dbegin, gchar **dend, ofaStreamFormat *format )
 {
 	static const gchar *thisfn = "ofa_importer_txt_bourso_parse_v1_line_1";
 	gchar *found;
@@ -500,7 +500,7 @@ parse_v1_line_1( const gchar *line, gchar **dbegin, gchar **dend, const ofaStrea
  * Also used by check.
  */
 static gboolean
-parse_v1_line_2( const gchar *line, gchar **rib, gchar **currency, const ofaStreamFormat *format )
+parse_v1_line_2( const gchar *line, gchar **rib, gchar **currency, ofaStreamFormat *format )
 {
 	static const gchar *thisfn = "ofa_importer_txt_bourso_parse_v1_line_2";
 	gchar *found;
@@ -604,7 +604,7 @@ parse_v1_line_to_fields( ofaImporterTxtBourso *self, const sParser *parser, ofsI
 }
 
 static sParser *
-get_willing_to_parser( const ofaImporterTxtBourso *self, const ofaStreamFormat *format, GSList *lines )
+get_willing_to_parser( const ofaImporterTxtBourso *self, ofaStreamFormat *format, GSList *lines )
 {
 	sParser *parser;
 	gint i;
@@ -644,7 +644,7 @@ get_default_stream_format( const ofaImporterTxtBourso *self )
  * Returns a GSList of fields.
  */
 static GSList *
-split_by_field( const gchar *line, const ofaStreamFormat *settings )
+split_by_field( const gchar *line, ofaStreamFormat *settings )
 {
 	GSList *out_list;
 	gchar *fieldsep_str;

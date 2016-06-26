@@ -89,17 +89,17 @@ GType                     ofa_dossier_delete_prefs_bin_get_type        ( void ) 
 
 ofaDossierDeletePrefsBin *ofa_dossier_delete_prefs_bin_new             ( void );
 
-gint                      ofa_dossier_delete_prefs_bin_get_db_mode     ( const ofaDossierDeletePrefsBin *bin );
+gint                      ofa_dossier_delete_prefs_bin_get_db_mode     ( ofaDossierDeletePrefsBin *bin );
 
 void                      ofa_dossier_delete_prefs_bin_set_db_mode     ( ofaDossierDeletePrefsBin *bin,
 																				gint mode );
 
-gboolean                  ofa_dossier_delete_prefs_bin_get_account_mode( const ofaDossierDeletePrefsBin *bin );
+gboolean                  ofa_dossier_delete_prefs_bin_get_account_mode( ofaDossierDeletePrefsBin *bin );
 
 void                      ofa_dossier_delete_prefs_bin_set_account_mode( ofaDossierDeletePrefsBin *bin,
 																				gboolean drop_account );
 
-void                      ofa_dossier_delete_prefs_bin_set_settings    ( const ofaDossierDeletePrefsBin *bin );
+void                      ofa_dossier_delete_prefs_bin_set_settings    ( ofaDossierDeletePrefsBin *bin );
 
 G_END_DECLS
 

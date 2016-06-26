@@ -56,8 +56,8 @@ static const GList *iimporter_get_accepted_contents( const ofaIImporter *instanc
 static gboolean     iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
 static GSList      *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList      *do_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
-static GSList      *split_lines_by_field( GSList *lines, const ofaStreamFormat *settings, gchar **msgerr );
-static GSList      *split_by_field( const gchar *line, guint numline, const ofaStreamFormat *settings, gchar **msgerr );
+static GSList      *split_lines_by_field( GSList *lines, ofaStreamFormat *settings, gchar **msgerr );
+static GSList      *split_by_field( const gchar *line, guint numline, ofaStreamFormat *settings, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaImporterCSV, ofa_importer_csv, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaImporterCSV )
@@ -239,7 +239,7 @@ do_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr )
  * inside a quoted field.
  */
 static GSList *
-split_lines_by_field( GSList *lines, const ofaStreamFormat *settings, gchar **msgerr )
+split_lines_by_field( GSList *lines, ofaStreamFormat *settings, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_importer_csv_get_lines_from_content";
 	GSList *splitted, *it;
@@ -261,7 +261,7 @@ split_lines_by_field( GSList *lines, const ofaStreamFormat *settings, gchar **ms
  * Returns a GSList of fields.
  */
 static GSList *
-split_by_field( const gchar *line, guint numline, const ofaStreamFormat *settings, gchar **msgerr )
+split_by_field( const gchar *line, guint numline, ofaStreamFormat *settings, gchar **msgerr )
 {
 	static const gchar *thisfn = "ofa_importer_csv_split_by_field";
 	GSList *out_list;

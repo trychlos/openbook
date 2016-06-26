@@ -80,7 +80,7 @@ void                 ofa_check_balances_bin_set_display( ofaCheckBalancesBin *bi
 void                 ofa_check_balances_bin_set_hub    ( ofaCheckBalancesBin *bin,
 															ofaHub *hub );
 
-gboolean             ofa_check_balances_bin_get_status ( const ofaCheckBalancesBin *bin );
+gboolean             ofa_check_balances_bin_get_status ( ofaCheckBalancesBin *bin );
 
 G_END_DECLS
 

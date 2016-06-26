@@ -41,14 +41,14 @@ typedef struct {
 
 	/* initialization
 	 */
-	const ofaStreamFormat *settings;
-	myIProgress         *instance;
+	ofaStreamFormat *settings;
+	myIProgress     *instance;
 
 	/* runtime data
 	 */
-	GOutputStream       *stream;
-	gulong               count;
-	gulong               progress;
+	GOutputStream   *stream;
+	gulong           count;
+	gulong           progress;
 }
 	sIExportable;
 
@@ -60,7 +60,7 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType         register_type( void );
 static void          interface_base_init( ofaIExportableInterface *klass );
 static void          interface_base_finalize( ofaIExportableInterface *klass );
-static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean      iexportable_export_to_stream( ofaIExportable *exportable, GOutputStream *stream, ofaStreamFormat *settings, ofaHub *hub );
 static sIExportable *get_iexportable_data( ofaIExportable *exportable );
 static void          on_exportable_finalized( sIExportable *sdata, GObject *finalized_object );
 
@@ -237,7 +237,7 @@ ofa_iexportable_get_label( const ofaIExportable *instance )
  */
 gboolean
 ofa_iexportable_export_to_uri( ofaIExportable *exportable,
-									const gchar *uri, const ofaStreamFormat *settings,
+									const gchar *uri, ofaStreamFormat *settings,
 									ofaHub *hub, myIProgress *progress )
 {
 	GFile *output_file;
@@ -268,7 +268,7 @@ ofa_iexportable_export_to_uri( ofaIExportable *exportable,
 
 static gboolean
 iexportable_export_to_stream( ofaIExportable *exportable,
-									GOutputStream *stream, const ofaStreamFormat *settings,
+									GOutputStream *stream, ofaStreamFormat *settings,
 									ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_iexportable_export_to_stream";

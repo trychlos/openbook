@@ -133,7 +133,7 @@ void       ofa_render_page_set_args_changed  ( ofaRenderPage *page,
 
 void       ofa_render_page_free_dataset      ( ofaRenderPage *page );
 
-GtkWidget *ofa_render_page_get_top_paned     ( const ofaRenderPage *page );
+GtkWidget *ofa_render_page_get_top_paned     ( ofaRenderPage *page );
 
 G_END_DECLS
 

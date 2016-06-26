@@ -64,11 +64,11 @@ ofaMySQLMeta *ofa_mysql_meta_new         ( void );
 void          ofa_mysql_meta_load_periods( ofaMySQLMeta *meta,
 												GList *keys );
 
-const gchar  *ofa_mysql_meta_get_host    ( const ofaMySQLMeta *meta );
+const gchar  *ofa_mysql_meta_get_host    ( ofaMySQLMeta *meta );
 
-const gchar  *ofa_mysql_meta_get_socket  ( const ofaMySQLMeta *meta );
+const gchar  *ofa_mysql_meta_get_socket  ( ofaMySQLMeta *meta );
 
-guint         ofa_mysql_meta_get_port    ( const ofaMySQLMeta *meta );
+guint         ofa_mysql_meta_get_port    ( ofaMySQLMeta *meta );
 
 void          ofa_mysql_meta_add_period  ( ofaMySQLMeta *meta,
 												gboolean current,

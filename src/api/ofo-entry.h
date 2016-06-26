@@ -147,11 +147,11 @@ gint            ofo_entry_get_exe_changed_count      ( ofaHub *hub,
 															const GDate *prev_begin, const GDate *prev_end,
 															const GDate *new_begin, const GDate *new_end );
 
-GDate          *ofo_entry_get_max_val_deffect        ( const ofaHub *hub, const gchar *account, GDate *date );
-GDate          *ofo_entry_get_max_rough_deffect      ( const ofaHub *hub, const gchar *account, GDate *date );
-GDate          *ofo_entry_get_max_futur_deffect      ( const ofaHub *hub, const gchar *account, GDate *date );
+GDate          *ofo_entry_get_max_val_deffect        ( ofaHub *hub, const gchar *account, GDate *date );
+GDate          *ofo_entry_get_max_rough_deffect      ( ofaHub *hub, const gchar *account, GDate *date );
+GDate          *ofo_entry_get_max_futur_deffect      ( ofaHub *hub, const gchar *account, GDate *date );
 
-GSList         *ofo_entry_get_currencies             ( const ofaHub *hub );
+GSList         *ofo_entry_get_currencies             ( ofaHub *hub );
 #define         ofo_entry_free_currencies( L )       g_slist_free_full(( L ), ( GDestroyNotify ) g_free )
 
 gboolean        ofo_entry_is_editable                ( const ofoEntry *entry );

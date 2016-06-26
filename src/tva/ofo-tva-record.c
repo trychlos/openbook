@@ -465,7 +465,7 @@ ofo_tva_record_new( void )
  * from @form #ofoTVAForm source.
  */
 ofoTVARecord *
-ofo_tva_record_new_from_form( const ofoTVAForm *form )
+ofo_tva_record_new_from_form( ofoTVAForm *form )
 {
 	ofoTVARecord *dest;
 	gint count, i;
@@ -869,7 +869,7 @@ ofo_tva_record_detail_free_all( ofoTVARecord *record )
  * ofo_tva_record_detail_get_count:
  */
 guint
-ofo_tva_record_detail_get_count( const ofoTVARecord *record )
+ofo_tva_record_detail_get_count( ofoTVARecord *record )
 {
 	ofoTVARecordPrivate *priv;
 
@@ -886,7 +886,7 @@ ofo_tva_record_detail_get_count( const ofoTVARecord *record )
  * @idx is the index in the details list, starting with zero
  */
 ofxAmount
-ofo_tva_record_detail_get_base( const ofoTVARecord *record, guint idx )
+ofo_tva_record_detail_get_base( ofoTVARecord *record, guint idx )
 {
 	ofoTVARecordPrivate *priv;
 	GList *nth;
@@ -908,7 +908,7 @@ ofo_tva_record_detail_get_base( const ofoTVARecord *record, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 ofxAmount
-ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
+ofo_tva_record_detail_get_amount( ofoTVARecord *record, guint idx )
 {
 	ofoTVARecordPrivate *priv;
 	GList *nth;
@@ -930,7 +930,7 @@ ofo_tva_record_detail_get_amount( const ofoTVARecord *record, guint idx )
  * @idx is the index in the details list, starting with zero
  */
 ofxCounter
-ofo_tva_record_detail_get_ope_number( const ofoTVARecord *record, guint idx )
+ofo_tva_record_detail_get_ope_number( ofoTVARecord *record, guint idx )
 {
 	ofoTVARecordPrivate *priv;
 	GList *nth;
@@ -1048,7 +1048,7 @@ ofo_tva_record_boolean_free_all( ofoTVARecord *record )
  * ofo_tva_record_boolean_get_count:
  */
 guint
-ofo_tva_record_boolean_get_count( const ofoTVARecord *record )
+ofo_tva_record_boolean_get_count( ofoTVARecord *record )
 {
 	ofoTVARecordPrivate *priv;
 
@@ -1065,7 +1065,7 @@ ofo_tva_record_boolean_get_count( const ofoTVARecord *record )
  * @idx is the index in the booleans list, starting with zero
  */
 gboolean
-ofo_tva_record_boolean_get_is_true( const ofoTVARecord *record, guint idx )
+ofo_tva_record_boolean_get_is_true( ofoTVARecord *record, guint idx )
 {
 	ofoTVARecordPrivate *priv;
 	GList *nth;

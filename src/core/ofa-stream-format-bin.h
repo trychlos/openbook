@@ -68,10 +68,10 @@ GType               ofa_stream_format_bin_get_type          ( void ) G_GNUC_CONS
 
 ofaStreamFormatBin *ofa_stream_format_bin_new               ( ofaStreamFormat *format );
 
-GtkSizeGroup       *ofa_stream_format_bin_get_size_group    ( const ofaStreamFormatBin *bin,
+GtkSizeGroup       *ofa_stream_format_bin_get_size_group    ( ofaStreamFormatBin *bin,
 																guint col_number );
 
-GtkWidget          *ofa_stream_format_bin_get_name_entry    ( const ofaStreamFormatBin *bin );
+GtkWidget          *ofa_stream_format_bin_get_name_entry    ( ofaStreamFormatBin *bin );
 
 void                ofa_stream_format_bin_set_mode_sensitive( ofaStreamFormatBin *bin,
 																	gboolean sensitive );

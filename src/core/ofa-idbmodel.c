@@ -382,7 +382,7 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
  * be unreffed by the caller.
  */
 ofaIDBModel *
-ofa_idbmodel_get_by_name( const ofaHub *hub, const gchar *name )
+ofa_idbmodel_get_by_name( ofaHub *hub, const gchar *name )
 {
 	ofaExtenderCollection *extenders;
 	GList *plugins_list, *it;

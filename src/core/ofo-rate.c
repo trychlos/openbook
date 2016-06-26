@@ -159,7 +159,7 @@ static GList    *icollectionable_load_collection( void *user_data );
 static void      iexportable_iface_init( ofaIExportableInterface *iface );
 static guint     iexportable_get_interface_version( void );
 static gchar    *iexportable_get_label( const ofaIExportable *instance );
-static gboolean  iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
+static gboolean  iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
 static void      iimportable_iface_init( ofaIImportableInterface *iface );
 static guint     iimportable_get_interface_version( void );
 static gchar    *iimportable_get_label( const ofaIImportable *instance );
@@ -367,7 +367,7 @@ ofo_rate_get_upd_stamp( const ofoRate *rate )
  * as infinite in the past.
  */
 const GDate *
-ofo_rate_get_min_valid( const ofoRate *rate )
+ofo_rate_get_min_valid( ofoRate *rate )
 {
 	ofoRatePrivate *priv;
 	GList *it;
@@ -398,7 +398,7 @@ ofo_rate_get_min_valid( const ofoRate *rate )
  * infinite in the future.
  */
 const GDate *
-ofo_rate_get_max_valid( const ofoRate *rate )
+ofo_rate_get_max_valid( ofoRate *rate )
 {
 	ofoRatePrivate *priv;
 	GList *it;
@@ -427,7 +427,7 @@ ofo_rate_get_max_valid( const ofoRate *rate )
  * Returns: the count of validity rows for this @rate
  */
 gint
-ofo_rate_get_val_count( const ofoRate *rate )
+ofo_rate_get_val_count( ofoRate *rate )
 {
 	ofoRatePrivate *priv;
 
@@ -443,7 +443,7 @@ ofo_rate_get_val_count( const ofoRate *rate )
  * ofo_rate_get_val_begin:
  */
 const GDate *
-ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
+ofo_rate_get_val_begin( ofoRate *rate, gint idx )
 {
 	ofoRatePrivate *priv;
 	GList *nth;
@@ -465,7 +465,7 @@ ofo_rate_get_val_begin( const ofoRate *rate, gint idx )
  * ofo_rate_get_val_end:
  */
 const GDate *
-ofo_rate_get_val_end( const ofoRate *rate, gint idx )
+ofo_rate_get_val_end( ofoRate *rate, gint idx )
 {
 	ofoRatePrivate *priv;
 	GList *nth;
@@ -487,7 +487,7 @@ ofo_rate_get_val_end( const ofoRate *rate, gint idx )
  * ofo_rate_get_val_rate:
  */
 ofxAmount
-ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
+ofo_rate_get_val_rate( ofoRate *rate, gint idx )
 {
 	ofoRatePrivate *priv;
 	GList *nth;
@@ -514,7 +514,7 @@ ofo_rate_get_val_rate( const ofoRate *rate, gint idx )
  * Returns the value of the rate at the given date, or zero.
  */
 ofxAmount
-ofo_rate_get_rate_at_date( const ofoRate *rate, const GDate *date )
+ofo_rate_get_rate_at_date( ofoRate *rate, const GDate *date )
 {
 	ofoRatePrivate *priv;
 	GList *it;
@@ -1256,7 +1256,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoRatePrivate *priv;
 	GList *dataset, *it, *det;

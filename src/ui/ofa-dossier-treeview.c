@@ -471,7 +471,7 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
  * Returns: the underlying #GtkTreeView widget.
  */
 GtkWidget *
-ofa_dossier_treeview_get_treeview( const ofaDossierTreeview *view )
+ofa_dossier_treeview_get_treeview( ofaDossierTreeview *view )
 {
 	ofaDossierTreeviewPrivate *priv;
 	GtkWidget *tview;
@@ -494,7 +494,7 @@ ofa_dossier_treeview_get_treeview( const ofaDossierTreeview *view )
  * Returns: the underlying #ofaDossierStore store.
  */
 ofaDossierStore *
-ofa_dossier_treeview_get_store( const ofaDossierTreeview *view )
+ofa_dossier_treeview_get_store( ofaDossierTreeview *view )
 {
 	ofaDossierTreeviewPrivate *priv;
 	ofaDossierStore *store;
@@ -523,7 +523,7 @@ ofa_dossier_treeview_get_store( const ofaDossierTreeview *view )
  * Returns: %TRUE if a selection exists, %FALSE else.
  */
 gboolean
-ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view, ofaIDBMeta **meta, ofaIDBPeriod **period )
+ofa_dossier_treeview_get_selected( ofaDossierTreeview *view, ofaIDBMeta **meta, ofaIDBPeriod **period )
 {
 	ofaDossierTreeviewPrivate *priv;
 	gboolean ok;
@@ -573,7 +573,7 @@ ofa_dossier_treeview_get_selected( const ofaDossierTreeview *view, ofaIDBMeta **
  * Only a visible row may be selected, so iterate on the filter store.
  */
 void
-ofa_dossier_treeview_set_selected( const ofaDossierTreeview *view, const gchar *dname )
+ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname )
 {
 	static const gchar *thisfn = "ofa_dossier_treeview_set_selected";
 	ofaDossierTreeviewPrivate *priv;

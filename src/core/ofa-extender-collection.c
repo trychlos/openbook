@@ -252,7 +252,7 @@ ofa_extender_collection_free_types( GList *list )
  * not be modified nor freed.
  */
 const GList *
-ofa_extender_collection_get_modules( const ofaExtenderCollection *collection )
+ofa_extender_collection_get_modules( ofaExtenderCollection *collection )
 {
 	ofaExtenderCollectionPrivate *priv;
 

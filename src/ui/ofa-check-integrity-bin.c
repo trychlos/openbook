@@ -1022,7 +1022,7 @@ on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaCheckIntegr
  * ofa_check_integrity_bin_get_status:
  */
 gboolean
-ofa_check_integrity_bin_get_status( const ofaCheckIntegrityBin *bin )
+ofa_check_integrity_bin_get_status( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 

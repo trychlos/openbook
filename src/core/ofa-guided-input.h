@@ -71,7 +71,7 @@ GType ofa_guided_input_get_type( void ) G_GNUC_CONST;
 
 void  ofa_guided_input_run     ( ofaIGetter *getter,
 										GtkWindow *parent,
-										const ofoOpeTemplate *model );
+										ofoOpeTemplate *model );
 
 G_END_DECLS
 

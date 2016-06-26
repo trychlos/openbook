@@ -95,7 +95,7 @@ static guint    icollector_get_interface_version( void );
 static void     connect_signaling_system_to( ofaHub *hub, GType type );
 static gboolean on_deletable_default_handler( ofaHub *hub, GObject *object );
 static void     dossier_do_close( ofaHub *hub );
-static void     check_db_vs_settings( const ofaHub *hub );
+static void     check_db_vs_settings( ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
@@ -519,7 +519,7 @@ ofa_hub_new( void )
  * be unreffed by the caller.
  */
 ofaExtenderCollection *
-ofa_hub_get_extender_collection( const ofaHub *hub )
+ofa_hub_get_extender_collection( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -750,7 +750,7 @@ ofa_hub_get_for_type( ofaHub *hub, GType type )
  * be unreffed by the caller.
  */
 ofaPortfolioCollection *
-ofa_hub_get_portfolio_collection( const ofaHub *hub )
+ofa_hub_get_portfolio_collection( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -794,7 +794,7 @@ ofa_hub_set_portfolio_collection( ofaHub *hub, ofaPortfolioCollection *collectio
  * not be released by the caller.
  */
 const ofaIDBConnect *
-ofa_hub_get_connect( const ofaHub *hub )
+ofa_hub_get_connect( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -817,7 +817,7 @@ ofa_hub_get_connect( const ofaHub *hub )
  * not be released by the caller.
  */
 ofoDossier *
-ofa_hub_get_dossier( const ofaHub *hub )
+ofa_hub_get_dossier( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -931,7 +931,7 @@ dossier_do_close( ofaHub *hub )
  * which has not been opened in read-only mode.
  */
 gboolean
-ofa_hub_dossier_is_writable( const ofaHub *hub )
+ofa_hub_dossier_is_writable( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 	gboolean is_writable;
@@ -960,7 +960,7 @@ ofa_hub_dossier_is_writable( const ofaHub *hub )
  * not be released by the caller.
  */
 ofaDossierPrefs *
-ofa_hub_dossier_get_prefs( const ofaHub *hub )
+ofa_hub_dossier_get_prefs( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -983,7 +983,7 @@ ofa_hub_dossier_get_prefs( const ofaHub *hub )
  * - begin and end dates of the exercice.
  */
 void
-ofa_hub_dossier_remediate_settings( const ofaHub *hub )
+ofa_hub_dossier_remediate_settings( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -1006,7 +1006,7 @@ ofa_hub_dossier_remediate_settings( const ofaHub *hub )
  * user.
  */
 static void
-check_db_vs_settings( const ofaHub *hub )
+check_db_vs_settings( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_hub_check_db_vs_settings";
 	ofoDossier *dossier;

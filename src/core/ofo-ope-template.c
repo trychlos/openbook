@@ -197,8 +197,8 @@ static GList          *icollectionable_load_collection( void *user_data );
 static void            iexportable_iface_init( ofaIExportableInterface *iface );
 static guint           iexportable_get_interface_version( void );
 static gchar          *iexportable_get_label( const ofaIExportable *instance );
-static gboolean        iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
-static gchar          *update_decimal_sep( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, void *empty );
+static gboolean        iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gchar          *update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, void *empty );
 static void            iimportable_iface_init( ofaIImportableInterface *iface );
 static guint           iimportable_get_interface_version( void );
 static gchar          *iimportable_get_label( const ofaIImportable *instance );
@@ -379,7 +379,7 @@ ofo_ope_template_new( void )
  * copied from @model #ofoOpeTemplate source.
  */
 ofoOpeTemplate *
-ofo_ope_template_new_from_template( const ofoOpeTemplate *model )
+ofo_ope_template_new_from_template( ofoOpeTemplate *model )
 {
 	ofoOpeTemplate *dest;
 	gint count, i;
@@ -744,7 +744,7 @@ ofo_ope_template_free_detail_all( ofoOpeTemplate *model )
  * ofo_ope_template_get_detail_count:
  */
 gint
-ofo_ope_template_get_detail_count( const ofoOpeTemplate *model )
+ofo_ope_template_get_detail_count( ofoOpeTemplate *model )
 {
 	ofoOpeTemplatePrivate *priv;
 
@@ -761,7 +761,7 @@ ofo_ope_template_get_detail_count( const ofoOpeTemplate *model )
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_ope_template_get_detail_comment( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_comment( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -785,7 +785,7 @@ ofo_ope_template_get_detail_comment( const ofoOpeTemplate *model, gint idx )
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_ope_template_get_detail_account( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_account( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -809,7 +809,7 @@ ofo_ope_template_get_detail_account( const ofoOpeTemplate *model, gint idx )
  * @idx is the index in the details list, starting with zero
  */
 gboolean
-ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_account_locked( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -835,7 +835,7 @@ ofo_ope_template_get_detail_account_locked( const ofoOpeTemplate *model, gint id
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_ope_template_get_detail_label( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_label( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -859,7 +859,7 @@ ofo_ope_template_get_detail_label( const ofoOpeTemplate *model, gint idx )
  * @idx is the index in the details list, starting with zero
  */
 gboolean
-ofo_ope_template_get_detail_label_locked( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_label_locked( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -885,7 +885,7 @@ ofo_ope_template_get_detail_label_locked( const ofoOpeTemplate *model, gint idx 
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_ope_template_get_detail_debit( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_debit( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -909,7 +909,7 @@ ofo_ope_template_get_detail_debit( const ofoOpeTemplate *model, gint idx )
  * @idx is the index in the details list, starting with zero
  */
 gboolean
-ofo_ope_template_get_detail_debit_locked( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_debit_locked( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -935,7 +935,7 @@ ofo_ope_template_get_detail_debit_locked( const ofoOpeTemplate *model, gint idx 
  * @idx is the index in the details list, starting with zero
  */
 const gchar *
-ofo_ope_template_get_detail_credit( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_credit( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -959,7 +959,7 @@ ofo_ope_template_get_detail_credit( const ofoOpeTemplate *model, gint idx )
  * @idx is the index in the details list, starting with zero
  */
 gboolean
-ofo_ope_template_get_detail_credit_locked( const ofoOpeTemplate *model, gint idx )
+ofo_ope_template_get_detail_credit_locked( ofoOpeTemplate *model, gint idx )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *nth;
@@ -1474,7 +1474,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoOpeTemplatePrivate *priv;
 	GList *dataset, *it, *det;
@@ -1554,7 +1554,7 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
  * => this user-remediation function
  */
 static gchar *
-update_decimal_sep( const ofsBoxData *box_data, const ofaStreamFormat *settings, const gchar *text, void *empty )
+update_decimal_sep( const ofsBoxData *box_data, ofaStreamFormat *settings, const gchar *text, void *empty )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;

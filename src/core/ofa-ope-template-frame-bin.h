@@ -90,7 +90,7 @@ GtkWidget              *ofa_ope_template_frame_bin_add_button            ( ofaOp
 																				ofeOpeTemplateFrameBtn id,
 																				gboolean sensitive );
 
-GtkWidget              *ofa_ope_template_frame_bin_get_current_treeview  ( const ofaOpeTemplateFrameBin *bin );
+GtkWidget              *ofa_ope_template_frame_bin_get_current_treeview  ( ofaOpeTemplateFrameBin *bin );
 
 gchar                  *ofa_ope_template_frame_bin_get_selected          ( ofaOpeTemplateFrameBin *bin );
 
@@ -99,7 +99,7 @@ void                    ofa_ope_template_frame_bin_set_selected          ( ofaOp
 
 void                    ofa_ope_template_frame_bin_write_settings        ( ofaOpeTemplateFrameBin *bin );
 
-ofaOpeTemplateStore    *ofa_ope_template_frame_bin_get_ope_template_store( const ofaOpeTemplateFrameBin *bin );
+ofaOpeTemplateStore    *ofa_ope_template_frame_bin_get_ope_template_store( ofaOpeTemplateFrameBin *bin );
 
 G_END_DECLS
 

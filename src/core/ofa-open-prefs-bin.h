@@ -72,7 +72,7 @@ GType            ofa_open_prefs_bin_get_type      ( void ) G_GNUC_CONST;
 
 ofaOpenPrefsBin *ofa_open_prefs_bin_new           ( void );
 
-void             ofa_open_prefs_bin_get_data      ( const ofaOpenPrefsBin *bin,
+void             ofa_open_prefs_bin_get_data      ( ofaOpenPrefsBin *bin,
 														gboolean *display_notes,
 														gboolean *when_non_empty,
 														gboolean *display_properties,

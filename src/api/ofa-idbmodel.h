@@ -209,7 +209,7 @@ guint        ofa_idbmodel_get_interface_version     ( GType type );
 gboolean     ofa_idbmodel_update                    ( ofaHub *hub,
 															GtkWindow *parent );
 
-ofaIDBModel *ofa_idbmodel_get_by_name               ( const ofaHub *hub,
+ofaIDBModel *ofa_idbmodel_get_by_name               ( ofaHub *hub,
 															const gchar *name );
 
 guint        ofa_idbmodel_get_current_version       ( const ofaIDBModel *instance,

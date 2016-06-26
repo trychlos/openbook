@@ -88,7 +88,7 @@ void                     ofa_recurrent_run_treeview_set_from_db       ( ofaRecur
 
 void                     ofa_recurrent_run_treeview_clear             ( ofaRecurrentRunTreeview *bin );
 
-GtkWidget               *ofa_recurrent_run_treeview_get_treeview      ( const ofaRecurrentRunTreeview *bin );
+GtkWidget               *ofa_recurrent_run_treeview_get_treeview      ( ofaRecurrentRunTreeview *bin );
 
 #define                  ofa_recurrent_run_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 

@@ -274,7 +274,7 @@ static void                  do_open_dossier( ofaMainWindow *self, ofaHub *hub, 
 static void                  do_open_run_prefs( ofaMainWindow *self, ofaHub *hub, gboolean read_only );
 static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub );
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
-static void                  set_window_title( const ofaMainWindow *window, gboolean with_dossier );
+static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
 static void                  pane_restore_position( GtkPaned *pane );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
@@ -292,7 +292,7 @@ static void                  enable_action_close_exercice( ofaMainWindow *window
 static void                  enable_action_import( ofaMainWindow *window, gboolean enable );
 static void                  do_backup( ofaMainWindow *self );
 static void                  do_properties( const ofaMainWindow *self );
-static GtkNotebook          *notebook_get_book( const ofaMainWindow *window );
+static GtkNotebook          *notebook_get_book( ofaMainWindow *window );
 static ofaPage              *notebook_get_page( const ofaMainWindow *window, GtkNotebook *book, const sThemeDef *def );
 static ofaPage              *notebook_create_page( const ofaMainWindow *main, GtkNotebook *book, const sThemeDef *def );
 static void                  book_attach_page( const ofaMainWindow *main, GtkNotebook *book, GtkWidget *page, const gchar *title );
@@ -863,7 +863,7 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
  * because it has not yet been reset when closing the dossier
  */
 static void
-set_window_title( const ofaMainWindow *self, gboolean with_dossier )
+set_window_title( ofaMainWindow *self, gboolean with_dossier )
 {
 	ofaMainWindowPrivate *priv;
 	ofaHub *hub;
@@ -1590,7 +1590,7 @@ on_check_integrity( GSimpleAction *action, GVariant *parameter, gpointer user_da
 }
 
 static GtkNotebook *
-notebook_get_book( const ofaMainWindow *window )
+notebook_get_book( ofaMainWindow *window )
 {
 	ofaMainWindowPrivate *priv;
 	GtkWidget *book;

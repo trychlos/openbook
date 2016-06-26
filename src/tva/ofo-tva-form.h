@@ -100,7 +100,7 @@ ofoTVAForm     *ofo_tva_form_get_by_mnemo           ( ofaHub *hub, const gchar *
 gboolean        ofo_tva_form_use_ope_template       ( ofaHub *hub, const gchar *mnemo );
 
 ofoTVAForm     *ofo_tva_form_new                    ( void );
-ofoTVAForm     *ofo_tva_form_new_from_form          ( const ofoTVAForm *form );
+ofoTVAForm     *ofo_tva_form_new_from_form          ( ofoTVAForm *form );
 
 const gchar    *ofo_tva_form_get_mnemo              ( const ofoTVAForm *form );
 gchar          *ofo_tva_form_get_mnemo_new_from     ( const ofoTVAForm *form );
@@ -133,16 +133,16 @@ void            ofo_tva_form_detail_add             ( ofoTVAForm *form,
 
 void            ofo_tva_form_detail_free_all        ( ofoTVAForm *form );
 
-guint           ofo_tva_form_detail_get_count       ( const ofoTVAForm *form );
-guint           ofo_tva_form_detail_get_level       ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_code        ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_label       ( const ofoTVAForm *form, guint idx );
-gboolean        ofo_tva_form_detail_get_has_base    ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_base        ( const ofoTVAForm *form, guint idx );
-gboolean        ofo_tva_form_detail_get_has_amount  ( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_amount      ( const ofoTVAForm *form, guint idx );
-gboolean        ofo_tva_form_detail_get_has_template( const ofoTVAForm *form, guint idx );
-const gchar    *ofo_tva_form_detail_get_template    ( const ofoTVAForm *form, guint idx );
+guint           ofo_tva_form_detail_get_count       ( ofoTVAForm *form );
+guint           ofo_tva_form_detail_get_level       ( ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_code        ( ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_label       ( ofoTVAForm *form, guint idx );
+gboolean        ofo_tva_form_detail_get_has_base    ( ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_base        ( ofoTVAForm *form, guint idx );
+gboolean        ofo_tva_form_detail_get_has_amount  ( ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_amount      ( ofoTVAForm *form, guint idx );
+gboolean        ofo_tva_form_detail_get_has_template( ofoTVAForm *form, guint idx );
+const gchar    *ofo_tva_form_detail_get_template    ( ofoTVAForm *form, guint idx );
 
 void            ofo_tva_form_update_ope_template    ( ofoTVAForm *form, const gchar *prev_id, const gchar *new_id );
 
@@ -151,8 +151,8 @@ void            ofo_tva_form_boolean_add            ( ofoTVAForm *form,
 
 void            ofo_tva_form_boolean_free_all       ( ofoTVAForm *form );
 
-guint           ofo_tva_form_boolean_get_count      ( const ofoTVAForm *form );
-const gchar    *ofo_tva_form_boolean_get_label      ( const ofoTVAForm *form, guint idx );
+guint           ofo_tva_form_boolean_get_count      ( ofoTVAForm *form );
+const gchar    *ofo_tva_form_boolean_get_label      ( ofoTVAForm *form, guint idx );
 
 gboolean        ofo_tva_form_insert                 ( ofoTVAForm *form, ofaHub *hub );
 gboolean        ofo_tva_form_update                 ( ofoTVAForm *form, const gchar *prev_mnemo );

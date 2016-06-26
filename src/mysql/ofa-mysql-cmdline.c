@@ -72,10 +72,10 @@ typedef struct {
 
 static const gchar *st_window_name = "MySQLExecutionWindow";
 
-static gchar      *cmdline_build_from_connect( const gchar *template, const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *filename, const gchar *database );
+static gchar      *cmdline_build_from_connect( const gchar *template, const ofaMySQLConnect *connect, ofaMySQLPeriod *period, const gchar *filename, const gchar *database );
 static gchar      *cmdline_build_from_args( const gchar *template, const gchar *host, const gchar *socket, guint port, const gchar *account, const gchar *password, const gchar *dbname, const gchar *fname, const gchar *new_dbname );
-static gboolean    do_execute_sync( const gchar *template, const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *fname, const gchar *newdb );
-static gboolean    do_execute_async( const gchar *template, const ofaMySQLConnect *connect, const ofaMySQLPeriod *period, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
+static gboolean    do_execute_sync( const gchar *template, const ofaMySQLConnect *connect, ofaMySQLPeriod *period, const gchar *fname, const gchar *newdb );
+static gboolean    do_execute_async( const gchar *template, const ofaMySQLConnect *connect, ofaMySQLPeriod *period, const gchar *fname, const gchar *window_title, GChildWatchFunc pfn, gboolean verbose );
 static void        async_create_window( sExecuteInfos *infos, const gchar *window_title );
 static GPid        async_exec_command( const gchar *cmdline, sExecuteInfos *infos );
 static GIOChannel *async_setup_io_channel( gint fd, GIOFunc func, sExecuteInfos *infos );
@@ -114,7 +114,7 @@ ofa_mysql_cmdline_backup_get_default_command( void )
  * %FALSE else.
  */
 gboolean
-ofa_mysql_cmdline_backup_run( const ofaMySQLConnect *connect, const gchar *uri )
+ofa_mysql_cmdline_backup_run( ofaMySQLConnect *connect, const gchar *uri )
 {
 	gchar *template, *fname;
 	ofaIDBPeriod *period;
@@ -176,8 +176,8 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  * else.
  */
 gboolean
-ofa_mysql_cmdline_restore_run( const ofaMySQLConnect *connect,
-									const ofaMySQLPeriod *period, const gchar *uri )
+ofa_mysql_cmdline_restore_run( ofaMySQLConnect *connect,
+									ofaMySQLPeriod *period, const gchar *uri )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_restore";
 	gboolean ok;
@@ -227,7 +227,7 @@ ofa_mysql_cmdline_restore_run( const ofaMySQLConnect *connect,
  * corresponding line accordingly in the dossier settings.
  */
 gboolean
-ofa_mysql_cmdline_archive_and_new( const ofaMySQLConnect *connect,
+ofa_mysql_cmdline_archive_and_new( ofaMySQLConnect *connect,
 						const gchar *root_account, const gchar *root_password,
 						const GDate *begin_next, const GDate *end_next )
 {
@@ -323,7 +323,7 @@ ofa_mysql_cmdline_archive_and_new( const ofaMySQLConnect *connect,
  */
 static gchar *
 cmdline_build_from_connect( const gchar *template,
-								const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
+								const ofaMySQLConnect *connect, ofaMySQLPeriod *period,
 								const gchar *filename, const gchar *database )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_build_from_connect";
@@ -438,7 +438,7 @@ cmdline_build_from_args( const gchar *template,
 
 static gboolean
 do_execute_sync( const gchar *template,
-					const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
+					const ofaMySQLConnect *connect, ofaMySQLPeriod *period,
 					const gchar *fname, const gchar *newdb )
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_do_execute_sync";
@@ -466,7 +466,7 @@ do_execute_sync( const gchar *template,
 
 static gboolean
 do_execute_async( const gchar *template,
-					const ofaMySQLConnect *connect, const ofaMySQLPeriod *period,
+					const ofaMySQLConnect *connect, ofaMySQLPeriod *period,
 					const gchar *fname, const gchar *window_title, GChildWatchFunc pfn,
 					gboolean verbose )
 {

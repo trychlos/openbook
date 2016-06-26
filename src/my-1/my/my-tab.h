@@ -76,7 +76,7 @@ GType   my_tab_get_type       ( void ) G_GNUC_CONST;
 
 myTab  *my_tab_new            ( GtkImage *image, const gchar *text );
 
-gchar  *my_tab_get_label      ( const myTab *tab );
+gchar  *my_tab_get_label      ( myTab *tab );
 
 void    my_tab_set_show_close ( myTab *tab,
 									gboolean show );

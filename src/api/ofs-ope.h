@@ -47,16 +47,16 @@ G_BEGIN_DECLS
  *  template.
  */
 typedef struct {
-	const ofoOpeTemplate *ope_template;
-	gchar                *ledger;
-	gboolean              ledger_user_set;
-	GDate                 dope;
-	gboolean              dope_user_set;
-	GDate                 deffect;
-	gboolean              deffect_user_set;
-	gchar                *ref;
-	gboolean              ref_user_set;
-	GList                *detail;
+	ofoOpeTemplate *ope_template;
+	gchar          *ledger;
+	gboolean        ledger_user_set;
+	GDate           dope;
+	gboolean        dope_user_set;
+	GDate           deffect;
+	gboolean        deffect_user_set;
+	gchar          *ref;
+	gboolean        ref_user_set;
+	GList          *detail;
 }
 	ofsOpe;
 
@@ -69,18 +69,18 @@ typedef struct {
  *  takes precedence over a possible formula originating from template
  */
 typedef struct {
-	gchar                *account;
-	gboolean              account_user_set;
-	gboolean              account_is_valid;
-	ofoCurrency          *currency;
-	gchar                *label;
-	gboolean              label_user_set;
-	gboolean              label_is_valid;
-	gdouble               debit;
-	gboolean              debit_user_set;
-	gdouble               credit;
-	gboolean              credit_user_set;
-	gboolean              amounts_are_valid;
+	gchar          *account;
+	gboolean        account_user_set;
+	gboolean        account_is_valid;
+	ofoCurrency    *currency;
+	gchar          *label;
+	gboolean        label_user_set;
+	gboolean        label_is_valid;
+	gdouble         debit;
+	gboolean        debit_user_set;
+	gdouble         credit;
+	gboolean        credit_user_set;
+	gboolean        amounts_are_valid;
 }
 	ofsOpeDetail;
 
@@ -99,7 +99,7 @@ typedef enum {
 }
 	ofeOpeColumns;
 
-ofsOpe   *ofs_ope_new             ( const ofoOpeTemplate *template );
+ofsOpe   *ofs_ope_new             ( ofoOpeTemplate *template );
 
 void      ofs_ope_apply_template  ( ofsOpe *ope );
 

@@ -206,7 +206,7 @@ ofo_base_load_rows( const ofsBoxDef *defs, const ofaIDBConnect *cnx, const gchar
  * object when this later is loaded from the database.
  */
 ofaHub *
-ofo_base_get_hub( const ofoBase *base )
+ofo_base_get_hub( ofoBase *base )
 {
 	ofoBasePrivate *priv;
 

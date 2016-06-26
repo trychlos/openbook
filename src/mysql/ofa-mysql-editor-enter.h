@@ -65,13 +65,13 @@ GType         ofa_mysql_editor_enter_get_type    ( void ) G_GNUC_CONST;
 
 GtkWidget    *ofa_mysql_editor_enter_new         ( void );
 
-const gchar  *ofa_mysql_editor_enter_get_host    ( const ofaMySQLEditorEnter *editor );
+const gchar  *ofa_mysql_editor_enter_get_host    ( ofaMySQLEditorEnter *editor );
 
-const gchar  *ofa_mysql_editor_enter_get_socket  ( const ofaMySQLEditorEnter *editor );
+const gchar  *ofa_mysql_editor_enter_get_socket  ( ofaMySQLEditorEnter *editor );
 
-guint         ofa_mysql_editor_enter_get_port    ( const ofaMySQLEditorEnter *editor );
+guint         ofa_mysql_editor_enter_get_port    ( ofaMySQLEditorEnter *editor );
 
-const gchar  *ofa_mysql_editor_enter_get_database( const ofaMySQLEditorEnter *editor );
+const gchar  *ofa_mysql_editor_enter_get_database( ofaMySQLEditorEnter *editor );
 
 G_END_DECLS
 

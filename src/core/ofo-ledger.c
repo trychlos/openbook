@@ -168,7 +168,7 @@ typedef struct {
 
 static ofoLedger *ledger_find_by_mnemo( GList *set, const gchar *mnemo );
 static gint       cmp_currencies( const gchar *a_currency, const gchar *b_currency );
-static GList     *ledger_find_balance_by_code( const ofoLedger *ledger, const gchar *currency );
+static GList     *ledger_find_balance_by_code( ofoLedger *ledger, const gchar *currency );
 static GList     *ledger_new_balance_with_code( ofoLedger *ledger, const gchar *currency );
 static GList     *ledger_add_balance_rough( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit );
 static GList     *ledger_add_balance_validated( ofoLedger *ledger, const gchar *currency, ofxAmount debit, ofxAmount credit );
@@ -180,7 +180,7 @@ static void       ledger_set_last_clo( ofoLedger *ledger, const GDate *date );
 static gboolean   ledger_do_insert( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_insert_main( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gboolean   ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, const ofaIDBConnect *connect );
-static gboolean   ledger_do_update_balance( const ofoLedger *ledger, GList *balance, ofaHub *hub );
+static gboolean   ledger_do_update_balance( ofoLedger *ledger, GList *balance, ofaHub *hub );
 static gboolean   ledger_do_delete( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gint       ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
 static gint       ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
@@ -190,8 +190,8 @@ static GList     *icollectionable_load_collection( void *user_data );
 static void       iexportable_iface_init( ofaIExportableInterface *iface );
 static guint      iexportable_get_interface_version( void );
 static gchar     *iexportable_get_label( const ofaIExportable *instance );
-static gboolean   iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub );
-static gchar     *export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
+static gboolean   iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static gchar     *export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency );
 static void       iimportable_iface_init( ofaIImportableInterface *iface );
 static guint      iimportable_get_interface_version( void );
 static gchar     *iimportable_get_label( const ofaIImportable *instance );
@@ -457,7 +457,7 @@ ofo_ledger_get_last_entry( const ofoLedger *ledger, GDate *date )
  * be g_list_free() by the caller.
  */
 GList *
-ofo_ledger_get_currencies( const ofoLedger *ledger )
+ofo_ledger_get_currencies( ofoLedger *ledger )
 {
 	ofoLedgerPrivate *priv;
 	GList *list, *it, *balance;
@@ -517,7 +517,7 @@ ofo_ledger_update_currency( ofoLedger *ledger, const gchar *prev_id, const gchar
  * the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_val_debit( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_val_debit( ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
@@ -541,7 +541,7 @@ ofo_ledger_get_val_debit( const ofoLedger *ledger, const gchar *currency )
  * the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_val_credit( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_val_credit( ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
@@ -565,7 +565,7 @@ ofo_ledger_get_val_credit( const ofoLedger *ledger, const gchar *currency )
  * the currency specified in the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_rough_debit( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_rough_debit( ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
@@ -589,7 +589,7 @@ ofo_ledger_get_rough_debit( const ofoLedger *ledger, const gchar *currency )
  * the currency specified in the exercice, or zero if not found.
  */
 ofxAmount
-ofo_ledger_get_rough_credit( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_rough_credit( ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
@@ -614,7 +614,7 @@ ofo_ledger_get_rough_credit( const ofoLedger *ledger, const gchar *currency )
  * found.
  */
 ofxAmount
-ofo_ledger_get_futur_debit( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_futur_debit( ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
@@ -639,7 +639,7 @@ ofo_ledger_get_futur_debit( const ofoLedger *ledger, const gchar *currency )
  * found.
  */
 ofxAmount
-ofo_ledger_get_futur_credit( const ofoLedger *ledger, const gchar *currency )
+ofo_ledger_get_futur_credit( ofoLedger *ledger, const gchar *currency )
 {
 	GList *sdev;
 
@@ -655,7 +655,7 @@ ofo_ledger_get_futur_credit( const ofoLedger *ledger, const gchar *currency )
 }
 
 static GList *
-ledger_find_balance_by_code( const ofoLedger *ledger, const gchar *currency )
+ledger_find_balance_by_code( ofoLedger *ledger, const gchar *currency )
 {
 	static const gchar *thisfn = "ofo_ledger_find_balance_by_code";
 	ofoLedgerPrivate *priv;
@@ -1325,7 +1325,7 @@ ofo_ledger_update_balance( ofoLedger *ledger, const gchar *currency )
 }
 
 static gboolean
-ledger_do_update_balance( const ofoLedger *ledger, GList *balance, ofaHub *hub )
+ledger_do_update_balance( ofoLedger *ledger, GList *balance, ofaHub *hub )
 {
 	gchar *query;
 	const gchar *currency;
@@ -1540,7 +1540,7 @@ iexportable_get_label( const ofaIExportable *instance )
  * Returns: TRUE at the end if no error has been detected
  */
 static gboolean
-iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings, ofaHub *hub )
+iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub )
 {
 	ofoLedgerPrivate *priv;
 	GList *dataset, *it, *ic, *bal;
@@ -1626,7 +1626,7 @@ iexportable_export( ofaIExportable *exportable, const ofaStreamFormat *settings,
  * currency
  */
 static gchar *
-export_cb( const ofsBoxData *box_data, const ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
+export_cb( const ofsBoxData *box_data, ofaStreamFormat *format, const gchar *text, ofoCurrency *currency )
 {
 	const ofsBoxDef *box_def;
 	gchar *str;

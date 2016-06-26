@@ -65,6 +65,7 @@
    - ofa_prefs_date_overwrite(): new function.
    - ofa_recurrent_manage_page_get_selected(): new method.
    - ofa-recurrent-manage-page.ui: removed (unused) file.
+   - Update for Gtk+ 3.20.
 
 -----------------------------------------------------------------------
  Version 0.57

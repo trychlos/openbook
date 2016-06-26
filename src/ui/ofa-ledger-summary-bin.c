@@ -276,7 +276,7 @@ ofa_ledger_summary_bin_is_valid( ofaLedgerSummaryBin *bin, gchar **msgerr )
  * ofa_ledger_summary_bin_get_date_filter:
  */
 ofaIDateFilter *
-ofa_ledger_summary_bin_get_date_filter( const ofaLedgerSummaryBin *bin )
+ofa_ledger_summary_bin_get_date_filter( ofaLedgerSummaryBin *bin )
 {
 	ofaLedgerSummaryBinPrivate *priv;
 	ofaIDateFilter *date_filter;

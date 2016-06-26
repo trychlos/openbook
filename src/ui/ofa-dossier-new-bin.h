@@ -71,15 +71,15 @@ GType             ofa_dossier_new_bin_get_type             ( void ) G_GNUC_CONST
 
 ofaDossierNewBin *ofa_dossier_new_bin_new                  ( ofaIGetter *getter );
 
-GtkSizeGroup     *ofa_dossier_new_bin_get_size_group       ( const ofaDossierNewBin *bin,
+GtkSizeGroup     *ofa_dossier_new_bin_get_size_group       ( ofaDossierNewBin *bin,
 																	guint column );
 
-gboolean          ofa_dossier_new_bin_get_valid            ( const ofaDossierNewBin *bin,
+gboolean          ofa_dossier_new_bin_get_valid            ( ofaDossierNewBin *bin,
 																	gchar **error_message );
 
-ofaIDBMeta       *ofa_dossier_new_bin_apply                ( const ofaDossierNewBin *bin );
+ofaIDBMeta       *ofa_dossier_new_bin_apply                ( ofaDossierNewBin *bin );
 
-ofaIDBEditor     *ofa_dossier_new_bin_get_editor           ( const ofaDossierNewBin *bin );
+ofaIDBEditor     *ofa_dossier_new_bin_get_editor           ( ofaDossierNewBin *bin );
 
 G_END_DECLS
 

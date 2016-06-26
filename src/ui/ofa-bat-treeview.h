@@ -98,12 +98,12 @@ void            ofa_bat_treeview_set_delete  ( ofaBatTreeview *view,
 void            ofa_bat_treeview_set_hub     ( ofaBatTreeview *view,
 													ofaHub *hub );
 
-ofoBat         *ofa_bat_treeview_get_selected( const ofaBatTreeview *view );
+ofoBat         *ofa_bat_treeview_get_selected( ofaBatTreeview *view );
 
 void            ofa_bat_treeview_set_selected( ofaBatTreeview *view,
 													ofxCounter id );
 
-GtkWidget      *ofa_bat_treeview_get_treeview( const ofaBatTreeview *view );
+GtkWidget      *ofa_bat_treeview_get_treeview( ofaBatTreeview *view );
 
 void            ofa_bat_treeview_delete_bat  ( ofaBatTreeview *view,
 													ofoBat *bat );

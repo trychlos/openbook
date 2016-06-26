@@ -389,7 +389,7 @@ ofa_ledger_book_bin_is_valid( ofaLedgerBookBin *bin, gchar **message )
  * @bin:
  */
 ofaLedgerTreeview *
-ofa_ledger_book_bin_get_treeview( const ofaLedgerBookBin *bin )
+ofa_ledger_book_bin_get_treeview( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
 	ofaLedgerTreeview *tview;
@@ -410,7 +410,7 @@ ofa_ledger_book_bin_get_treeview( const ofaLedgerBookBin *bin )
  * @bin:
  */
 gboolean
-ofa_ledger_book_bin_get_all_ledgers( const ofaLedgerBookBin *bin )
+ofa_ledger_book_bin_get_all_ledgers( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
 	gboolean all_ledgers;
@@ -431,7 +431,7 @@ ofa_ledger_book_bin_get_all_ledgers( const ofaLedgerBookBin *bin )
  * @bin:
  */
 gboolean
-ofa_ledger_book_bin_get_new_page_per_ledger( const ofaLedgerBookBin *bin )
+ofa_ledger_book_bin_get_new_page_per_ledger( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
 	gboolean new_page;
@@ -451,7 +451,7 @@ ofa_ledger_book_bin_get_new_page_per_ledger( const ofaLedgerBookBin *bin )
  * ofa_ledger_book_bin_get_date_filter:
  */
 ofaIDateFilter *
-ofa_ledger_book_bin_get_date_filter( const ofaLedgerBookBin *bin )
+ofa_ledger_book_bin_get_date_filter( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
 	ofaIDateFilter *date_filter;

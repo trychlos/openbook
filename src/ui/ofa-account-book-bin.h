@@ -94,11 +94,11 @@ ofaAccountBookBin *ofa_account_book_bin_new                     ( ofaIGetter *ge
 gboolean           ofa_account_book_bin_is_valid                ( ofaAccountBookBin *bin,
 																		gchar **message );
 
-gboolean           ofa_account_book_bin_get_new_page_per_account( const ofaAccountBookBin *bin );
+ofaIAccountFilter *ofa_account_book_bin_get_account_filter      ( ofaAccountBookBin *bin );
 
-ofaIAccountFilter *ofa_account_book_bin_get_account_filter      ( const ofaAccountBookBin *bin );
+gboolean           ofa_account_book_bin_get_new_page_per_account( ofaAccountBookBin *bin );
 
-ofaIDateFilter    *ofa_account_book_bin_get_date_filter         ( const ofaAccountBookBin *bin );
+ofaIDateFilter    *ofa_account_book_bin_get_date_filter         ( ofaAccountBookBin *bin );
 
 G_END_DECLS
 

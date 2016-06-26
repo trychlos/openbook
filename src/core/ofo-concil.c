@@ -63,7 +63,7 @@ static ofoConcil *concil_get_by_query( const gchar *query, ofaHub *hub );
 static void       concil_set_id( ofoConcil *concil, ofxCounter id );
 static void       concil_add_other_id( ofoConcil *concil, const gchar *type, ofxCounter id );
 static gboolean   concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect );
-static gint       concil_cmp_by_ptr( const ofoConcil *a, const ofoConcil *b );
+static gint       concil_cmp_by_ptr( ofoConcil *a, ofoConcil *b );
 static gboolean   concil_do_insert_id( ofoConcil *concil, const gchar *type, ofxCounter id, const ofaIDBConnect *connect );
 static gboolean   concil_do_delete( ofoConcil *concil, const ofaIDBConnect *connect );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
@@ -270,7 +270,7 @@ ofo_concil_new( void )
  * @concil:
  */
 ofxCounter
-ofo_concil_get_id( const ofoConcil *concil )
+ofo_concil_get_id( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
 
@@ -287,7 +287,7 @@ ofo_concil_get_id( const ofoConcil *concil )
  * @concil:
  */
 const GDate *
-ofo_concil_get_dval( const ofoConcil *concil )
+ofo_concil_get_dval( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
 
@@ -304,7 +304,7 @@ ofo_concil_get_dval( const ofoConcil *concil )
  * @concil:
  */
 const gchar *
-ofo_concil_get_user( const ofoConcil *concil )
+ofo_concil_get_user( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
 
@@ -321,7 +321,7 @@ ofo_concil_get_user( const ofoConcil *concil )
  * @concil:
  */
 const GTimeVal *
-ofo_concil_get_stamp( const ofoConcil *concil )
+ofo_concil_get_stamp( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
 
@@ -343,7 +343,7 @@ ofo_concil_get_stamp( const ofoConcil *concil )
  * by the caller.
  */
 GList *
-ofo_concil_get_ids( const ofoConcil *concil )
+ofo_concil_get_ids( ofoConcil *concil )
 {
 	ofoConcilPrivate *priv;
 
@@ -362,7 +362,7 @@ ofo_concil_get_ids( const ofoConcil *concil )
  * @id:
  */
 gboolean
-ofo_concil_has_member( const ofoConcil *concil, const gchar *type, ofxCounter id )
+ofo_concil_has_member( ofoConcil *concil, const gchar *type, ofxCounter id )
 {
 	ofoConcilPrivate *priv;
 	gboolean found;
@@ -556,7 +556,7 @@ concil_do_insert( ofoConcil *concil, const ofaIDBConnect *connect )
 }
 
 static gint
-concil_cmp_by_ptr( const ofoConcil *a, const ofoConcil *b )
+concil_cmp_by_ptr( ofoConcil *a, ofoConcil *b )
 {
 	ofxCounter id_a, id_b;
 

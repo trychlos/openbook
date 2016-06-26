@@ -195,11 +195,11 @@ int                 ofa_application_run_with_args     ( ofaApplication *applicat
 																	int argc,
 																	GStrv argv );
 
-ofaHub             *ofa_application_get_hub           ( const ofaApplication *application );
+ofaHub             *ofa_application_get_hub           ( ofaApplication *application );
 
-GMenuModel         *ofa_application_get_menu_model    ( const ofaApplication *application );
+GMenuModel         *ofa_application_get_menu_model    ( ofaApplication *application );
 
-const GActionEntry *ofa_application_get_action_entries( const ofaApplication *application );
+const GActionEntry *ofa_application_get_action_entries( ofaApplication *application );
 
 G_END_DECLS
 

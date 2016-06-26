@@ -71,7 +71,7 @@ ofaLedgerSummaryBin *ofa_ledger_summary_bin_new            ( ofaIGetter *getter 
 gboolean             ofa_ledger_summary_bin_is_valid       ( ofaLedgerSummaryBin *bin,
 																	gchar **msgerr );
 
-ofaIDateFilter      *ofa_ledger_summary_bin_get_date_filter( const ofaLedgerSummaryBin *bin );
+ofaIDateFilter      *ofa_ledger_summary_bin_get_date_filter( ofaLedgerSummaryBin *bin );
 
 G_END_DECLS
 

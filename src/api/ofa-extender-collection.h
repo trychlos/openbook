@@ -69,7 +69,7 @@ GList                 *ofa_extender_collection_get_for_type( ofaExtenderCollecti
 
 void                   ofa_extender_collection_free_types  ( GList *list );
 
-const GList           *ofa_extender_collection_get_modules ( const ofaExtenderCollection *collection );
+const GList           *ofa_extender_collection_get_modules ( ofaExtenderCollection *collection );
 
 G_END_DECLS
 

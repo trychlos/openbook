@@ -394,7 +394,7 @@ on_object_finalized( ofaExtenderModule *self, GObject *finalized_object )
  * released by the caller.
  */
 const GList *
-ofa_extender_module_get_objects( const ofaExtenderModule *module )
+ofa_extender_module_get_objects( ofaExtenderModule *module )
 {
 	ofaExtenderModulePrivate *priv;
 
@@ -456,7 +456,7 @@ ofa_extender_module_get_for_type( ofaExtenderModule *module, GType type )
  * implements the interface.
  */
 gchar *
-ofa_extender_module_get_canon_name( const ofaExtenderModule *module )
+ofa_extender_module_get_canon_name( ofaExtenderModule *module )
 {
 	ofaExtenderModulePrivate *priv;
 	GList *it;
@@ -493,7 +493,7 @@ ofa_extender_module_get_canon_name( const ofaExtenderModule *module )
  * implements the interface.
  */
 gchar *
-ofa_extender_module_get_display_name( const ofaExtenderModule *module )
+ofa_extender_module_get_display_name( ofaExtenderModule *module )
 {
 	ofaExtenderModulePrivate *priv;
 	GList *it;
@@ -528,7 +528,7 @@ ofa_extender_module_get_display_name( const ofaExtenderModule *module )
  * implements the interface.
  */
 gchar *
-ofa_extender_module_get_version( const ofaExtenderModule *module )
+ofa_extender_module_get_version( ofaExtenderModule *module )
 {
 	ofaExtenderModulePrivate *priv;
 	GList *it;
@@ -555,7 +555,7 @@ ofa_extender_module_get_version( const ofaExtenderModule *module )
  *  its host plugin
  */
 gboolean
-ofa_extender_module_has_object( const ofaExtenderModule *module, GObject *instance )
+ofa_extender_module_has_object( ofaExtenderModule *module, GObject *instance )
 {
 	ofaExtenderModulePrivate *priv;
 	GList *it;

@@ -79,9 +79,9 @@ GList                  *ofa_portfolio_collection_get_dossiers        ( ofaPortfo
 #define                 ofa_portfolio_collection_free_dossiers(L)    g_list_free_full(( L ), \
 																			( GDestroyNotify ) g_object_unref )
 
-guint                   ofa_portfolio_collection_get_dossiers_count  ( const ofaPortfolioCollection *collection );
+guint                   ofa_portfolio_collection_get_dossiers_count  ( ofaPortfolioCollection *collection );
 
-ofaIDBMeta             *ofa_portfolio_collection_get_meta            ( const ofaPortfolioCollection *collection,
+ofaIDBMeta             *ofa_portfolio_collection_get_meta            ( ofaPortfolioCollection *collection,
 																			const gchar *dossier_name );
 
 void                    ofa_portfolio_collection_set_meta_from_editor( ofaPortfolioCollection *collection,

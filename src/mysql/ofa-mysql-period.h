@@ -70,7 +70,7 @@ ofaMySQLPeriod *ofa_mysql_period_new_to_settings  ( myISettings *settings,
 														const GDate *end,
 														const gchar *database );
 
-const gchar    *ofa_mysql_period_get_database     ( const ofaMySQLPeriod *period );
+const gchar    *ofa_mysql_period_get_database     ( ofaMySQLPeriod *period );
 
 void            ofa_mysql_period_update           ( ofaMySQLPeriod *period,
 														myISettings *settings,

@@ -161,7 +161,7 @@ ofa_dossier_prefs_new( ofaHub *hub )
  * Returns: whether the notes should be displayed on dossier opening.
  */
 gboolean
-ofa_dossier_prefs_get_open_notes( const ofaDossierPrefs *prefs )
+ofa_dossier_prefs_get_open_notes( ofaDossierPrefs *prefs )
 {
 	ofaDossierPrefsPrivate *priv;
 
@@ -201,7 +201,7 @@ ofa_dossier_prefs_set_open_notes( ofaDossierPrefs *prefs, gboolean open )
  * Returns: whether the notes should be displayed only when non empty.
  */
 gboolean
-ofa_dossier_prefs_get_nonempty( const ofaDossierPrefs *prefs )
+ofa_dossier_prefs_get_nonempty( ofaDossierPrefs *prefs )
 {
 	ofaDossierPrefsPrivate *priv;
 
@@ -241,7 +241,7 @@ ofa_dossier_prefs_set_nonempty( ofaDossierPrefs *prefs, gboolean nonempty )
  * Returns: whether the properties should be displayed on dossier opening.
  */
 gboolean
-ofa_dossier_prefs_get_properties( const ofaDossierPrefs *prefs )
+ofa_dossier_prefs_get_properties( ofaDossierPrefs *prefs )
 {
 	ofaDossierPrefsPrivate *priv;
 
@@ -281,7 +281,7 @@ ofa_dossier_prefs_set_properties( ofaDossierPrefs *prefs, gboolean properties )
  * Returns: whether the balances should be checked on dossier opening.
  */
 gboolean
-ofa_dossier_prefs_get_balances( const ofaDossierPrefs *prefs )
+ofa_dossier_prefs_get_balances( ofaDossierPrefs *prefs )
 {
 	ofaDossierPrefsPrivate *priv;
 
@@ -321,7 +321,7 @@ ofa_dossier_prefs_set_balances( ofaDossierPrefs *prefs, gboolean balances )
  * Returns: whether the integrity should be checked on dossier opening.
  */
 gboolean
-ofa_dossier_prefs_get_integrity( const ofaDossierPrefs *prefs )
+ofa_dossier_prefs_get_integrity( ofaDossierPrefs *prefs )
 {
 	ofaDossierPrefsPrivate *priv;
 
@@ -362,7 +362,7 @@ ofa_dossier_prefs_set_integrity( ofaDossierPrefs *prefs, gboolean integrity )
  * should be g_free() by the caller.
  */
 gchar *
-ofa_dossier_prefs_get_background_img( const ofaDossierPrefs *prefs )
+ofa_dossier_prefs_get_background_img( ofaDossierPrefs *prefs )
 {
 	ofaDossierPrefsPrivate *priv;
 
