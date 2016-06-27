@@ -244,17 +244,16 @@ enum {
 };
 
 static sTreeDef st_tree_defs[] = {
-
-		{ N_( "Guided input" ),        ofa_guided_ex_get_type },
-		{ N_( "Reconciliation" ),      ofa_reconcil_page_get_type },
-		{ N_( "Chart of accounts" ),   ofa_account_page_get_type },
-		{ N_( "Ledgers" ),             ofa_ledger_page_get_type },
-		{ N_( "Operation templates" ), ofa_ope_template_page_get_type },
-		{ N_( "Currencies" ),          ofa_currency_page_get_type },
-		{ N_( "Rates" ),               ofa_rate_page_get_type },
-		{ N_( "Account classes" ),     ofa_class_page_get_type },
-		{ N_( "Imported BAT files" ),  ofa_bat_page_get_type },
-		{ 0 }
+	{ N_( "Guided input" ),        ofa_guided_ex_get_type },
+	{ N_( "Reconciliation" ),      ofa_reconcil_page_get_type },
+	{ N_( "Chart of accounts" ),   ofa_account_page_get_type },
+	{ N_( "Ledgers" ),             ofa_ledger_page_get_type },
+	{ N_( "Operation templates" ), ofa_ope_template_page_get_type },
+	{ N_( "Currencies" ),          ofa_currency_page_get_type },
+	{ N_( "Rates" ),               ofa_rate_page_get_type },
+	{ N_( "Account classes" ),     ofa_class_page_get_type },
+	{ N_( "Imported BAT files" ),  ofa_bat_page_get_type },
+	{ 0 }
 };
 
 static const gchar *st_main_window_name = "MainWindow";
