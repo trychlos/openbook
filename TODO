@@ -355,9 +355,6 @@
 1151 2016- 6-21 ViewEntries columns: add Settlement and Reconciliation
                 indicators (S/R)
 
-1152 2016- 6-21 BUG: GuidedInput: does not take into account the selected
-                ledger
-
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
@@ -381,9 +378,6 @@
 
 1160 2016- 6-23 FEAT: when closing a period and archiving accounts, have
                 a progress bar on archiving
-
-1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances are not
-                properly sorted
 
 1162 2016- 6-23 FEAT: archive ledger balances besides of account balances
 
@@ -1488,6 +1482,10 @@
                 should sort on number (depending of periodicity content)
      2016- 6- 7 done
 
+1152 2016- 6-21 BUG: GuidedInput: does not take into account the selected
+                ledger
+     2016- 6-27 fixed
+
 1155 2016- 6-22 BUG: when saving a new recurrent model
                 cf. todo_1155/trace
      2016- 6-23 fixed
@@ -1498,6 +1496,10 @@
                 of entries on the period declaration
                 => have a BALANCE() function for the current balance.
      2016- 6-23 done
+
+1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances are not
+                properly sorted
+     2016- 6-23 should have taken a screenshot -> cancelled
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

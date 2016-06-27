@@ -802,6 +802,7 @@ on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaGuidedInputBin 
 
 	g_free( ope->ledger );
 	ope->ledger = g_strdup( mnemo );
+	ope->ledger_user_set = TRUE;
 
 	ofo_dossier_get_min_deffect( dossier, ledger, &priv->deffect_min );
 
