@@ -390,7 +390,13 @@
 1163 2016- 6-23 FEAT: AccountProperty/Balances/ArchivedBalances: have a
                 button to change the sort order
 
-1164
+1164 2016- 6-27 Open Freelance Accounting: should be renamed Open F. Accounting
+
+1165 2016- 6-27 BUG: dossier settings are not updated when the begin and the
+                end of the exercice are set (but only when the dossier is
+                opened ?)
+
+1166
 
 -----------------------------------------------------------------------
  DONE
