@@ -42,6 +42,7 @@
  Bug fixes:
 
    - GuidedInput: take into account the user set ledger (todo #1152).
+   - SettlementPage: fix column header (todo #1148).
 
  Other changes:
 

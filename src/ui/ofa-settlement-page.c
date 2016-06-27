@@ -659,7 +659,7 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	text_cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
-			_( "SettlementPage" ),
+			_( "Settlement" ),
 			text_cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_alignment( column, 1.0 );
