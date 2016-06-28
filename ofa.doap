@@ -4,14 +4,14 @@
          xmlns:gnome="http://api.gnome.org/doap-extensions#"
          xmlns="http://usefulinc.com/ns/doap#">
 
-  <name xml:lang="en">Open Freelance Accounting</name>
+  <name xml:lang="en">Open Firm Accounting</name>
 
   <category rdf:resource="http://api.gnome.org/doap-extensions#desktop" />
 
   <shortdesc xml:lang="en">Open-source, double-entry, multi-currencies, accounting application</shortdesc>
 
   <description xml:lang="en">
-    Open Freelance Accounting is a double-entry multi-currencies accounting 
+    Open Firm Accounting is a double-entry multi-currencies accounting 
     application which first targets freelance workers or small companies. 
   </description>
 

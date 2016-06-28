@@ -1,21 +1,21 @@
 /*
- * Open Freelance Accounting
- * A double-entry accounting application for freelances.
+ * Open Firm Accounting
+ * A double-entry accounting application for professional services.
  *
  * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
  *
- * Open Freelance Accounting is free software; you can redistribute it
+ * Open Firm Accounting is free software; you can redistribute it
  * and/or modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of the
  * License, or (at your option) any later version.
  *
- * Open Freelance Accounting is distributed in the hope that it will be
+ * Open Firm Accounting is distributed in the hope that it will be
  * useful, but WITHOUT ANY WARRANTY; without even the implied warranty
  * of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License
- * along with Open Freelance Accounting; see the file COPYING. If not,
+ * along with Open Firm Accounting; see the file COPYING. If not,
  * see <http://www.gnu.org/licenses/>.
  *
  * Authors:
@@ -107,8 +107,8 @@ static guint             st_signals[ N_SIGNALS ] = { 0 };
 
 static const gchar       *st_application_id     = "org.trychlos.openbook.ui";
 
-static const gchar       *st_application_name   = N_( "Open Freelance Accounting" );
-static const gchar       *st_description        = N_( "Une comptabilité en partie-double orientée vers les freelances" );
+static const gchar       *st_application_name   = N_( "Open Firm Accounting" );
+static const gchar       *st_description        = N_( "A double-entry accounting application for professional services" );
 static const gchar       *st_icon_name          = N_( "openbook" );
 
 static       gboolean     st_version_opt        = FALSE;
