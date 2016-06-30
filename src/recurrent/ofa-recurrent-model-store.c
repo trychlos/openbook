@@ -51,7 +51,8 @@ static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ope_template, periodicity, detail */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* def_amount1,def_amount2,def_amount3 */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
+		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
+		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoRecurrentModel itself */
 };
 
@@ -63,7 +64,10 @@ enum {
 	N_SIGNALS
 };
 
-static guint st_signals[ N_SIGNALS ]    = { 0 };
+static guint        st_signals[ N_SIGNALS ] = { 0 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentModelStore *self );
 static void     load_dataset( ofaRecurrentModelStore *self, ofaHub *hub );
@@ -218,6 +222,7 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_RECURRENT_MODEL_STORE, NULL );
 
+		st_col_types[REC_MODEL_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), REC_N_COLUMNS, st_col_types );
 
@@ -300,9 +305,12 @@ insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *
 static void
 set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_recurrent_model_store_set_row";
 	gchar *stamp;
 	const gchar *csper, *csdet, *csdef1, *csdef2, *csdef3;
-	const gchar *periodicity;
+	const gchar *periodicity, *notes;
+	GError *error;
+	GdkPixbuf *notes_png;
 
 	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 	periodicity = ofo_recurrent_model_get_periodicity( model );
@@ -311,6 +319,14 @@ set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *mod
 	csdef1 = ofo_recurrent_model_get_def_amount1( model );
 	csdef2 = ofo_recurrent_model_get_def_amount2( model );
 	csdef3 = ofo_recurrent_model_get_def_amount3( model );
+
+	notes = ofo_recurrent_model_get_notes( model );
+	error = NULL;
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
@@ -323,11 +339,14 @@ set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *mod
 			REC_MODEL_COL_DEF_AMOUNT1,        csdef1 ? csdef1 : "",
 			REC_MODEL_COL_DEF_AMOUNT2,        csdef2 ? csdef2 : "",
 			REC_MODEL_COL_DEF_AMOUNT3,        csdef3 ? csdef3 : "",
+			REC_MODEL_COL_NOTES,              notes,
+			REC_MODEL_COL_NOTES_PNG,          notes_png,
 			REC_MODEL_COL_UPD_USER,           ofo_recurrent_model_get_upd_user( model ),
 			REC_MODEL_COL_UPD_STAMP,          stamp,
 			REC_MODEL_COL_OBJECT,             model,
 			-1 );
 
+	g_object_unref( notes_png );
 	g_free( stamp );
 }
 

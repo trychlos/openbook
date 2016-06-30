@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "my/my-date.h"
 #include "my/my-utils.h"
@@ -89,6 +90,7 @@ static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
 static gint       tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentManagePage *self );
+static gint       tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb );
 static gint       tview_on_sort_detail( const gchar *detaila, const gchar *detailb );
 static gboolean   tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRecurrentManagePage *self );
 static void       tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
@@ -204,7 +206,7 @@ setup_treeview( ofaRecurrentManagePage *self )
 	GtkTreeModel *tsort;
 	GtkTreeViewColumn *sort_column;
 	gint column_id;
-	GtkCellRenderer *text_cell;
+	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	ofaRecurrentModelStore *store;
@@ -256,10 +258,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	column_id = REC_MODEL_COL_MNEMO;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Mnemonic" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -272,10 +274,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	column_id = REC_MODEL_COL_LABEL;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -288,11 +290,26 @@ setup_treeview( ofaRecurrentManagePage *self )
 		sort_column = column;
 	}
 
+	column_id = REC_MODEL_COL_NOTES_PNG;
+	cell = gtk_cell_renderer_pixbuf_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			"",
+			cell, "pixbuf", column_id,
+			NULL );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	if( priv->sort_column_id == column_id ){
+		sort_column = column;
+	}
+
 	column_id = REC_MODEL_COL_OPE_TEMPLATE;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Operation" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -305,10 +322,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	column_id = REC_MODEL_COL_PERIODICITY;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Periodicity" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -321,10 +338,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	column_id = REC_MODEL_COL_PERIODICITY_DETAIL;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Detail" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -337,10 +354,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	column_id = REC_MODEL_COL_DEF_AMOUNT1;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Edit. 1" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -353,10 +370,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	column_id = REC_MODEL_COL_DEF_AMOUNT2;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Edit. 2" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -369,10 +386,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 	}
 
 	column_id = REC_MODEL_COL_DEF_AMOUNT3;
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Edit. 3" ),
-			text_cell, "text", column_id,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 	gtk_tree_view_column_set_resizable( column, TRUE );
@@ -494,10 +511,12 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 	gint cmp;
 	gchar *smnemoa, *slabela, *stemplatea, *sperioda, *sdetaila, *sdef1a, *sdef2a, *sdef3a;
 	gchar *smnemob, *slabelb, *stemplateb, *speriodb, *sdetailb, *sdef1b, *sdef2b, *sdef3b;
+	GdkPixbuf *pnga, *pngb;
 
 	gtk_tree_model_get( tmodel, a,
 			REC_MODEL_COL_MNEMO,              &smnemoa,
 			REC_MODEL_COL_LABEL,              &slabela,
+			REC_MODEL_COL_NOTES_PNG,          &pnga,
 			REC_MODEL_COL_OPE_TEMPLATE,       &stemplatea,
 			REC_MODEL_COL_PERIODICITY,        &sperioda,
 			REC_MODEL_COL_PERIODICITY_DETAIL, &sdetaila,
@@ -509,6 +528,7 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 	gtk_tree_model_get( tmodel, b,
 			REC_MODEL_COL_MNEMO,              &smnemob,
 			REC_MODEL_COL_LABEL,              &slabelb,
+			REC_MODEL_COL_NOTES_PNG,          &pngb,
 			REC_MODEL_COL_OPE_TEMPLATE,       &stemplateb,
 			REC_MODEL_COL_PERIODICITY,        &speriodb,
 			REC_MODEL_COL_PERIODICITY_DETAIL, &sdetailb,
@@ -527,6 +547,9 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 			break;
 		case REC_MODEL_COL_LABEL:
 			cmp = my_collate( slabela, slabelb );
+			break;
+		case REC_MODEL_COL_NOTES_PNG:
+			cmp = tview_on_sort_png( pnga, pngb );
 			break;
 		case REC_MODEL_COL_OPE_TEMPLATE:
 			cmp = my_collate( stemplatea, stemplateb );
@@ -574,6 +597,31 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 	 * v: means from greatest to smallest (descending order)
 	 */
 	return( -cmp );
+}
+
+static gint
+tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb )
+{
+	gsize lena, lenb;
+
+	if( !pnga ){
+		return( -1 );
+	}
+	lena = gdk_pixbuf_get_byte_length( pnga );
+
+	if( !pngb ){
+		return( 1 );
+	}
+	lenb = gdk_pixbuf_get_byte_length( pngb );
+
+	if( lena < lenb ){
+		return( -1 );
+	}
+	if( lena > lenb ){
+		return( 1 );
+	}
+
+	return( memcmp( pnga, pngb, lena ));
 }
 
 static gint

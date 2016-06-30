@@ -374,7 +374,7 @@
                 currency       : ok le 30/6
                 ledger         : ok le 30/6
                 ope_template   : ok le 30/6
-                recurrent_model:
+                recurrent_model: ok le 30/6
                 tva_form       :
 
 1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
@@ -403,7 +403,7 @@
 
 1169 2016- 6-30 when defining displayable columns for a treeview, choose
                 between enum (e.g. account) and bit array (e.g. currency,
-                ledger)
+                ledger, rec_model)
                 -> this should be an enum, so that the caller has to provide
                 an array, and so the caller may decide the order of the
                 columns 
