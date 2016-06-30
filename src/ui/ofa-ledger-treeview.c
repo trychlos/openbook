@@ -343,6 +343,13 @@ create_treeview_columns( ofaLedgerTreeview *view )
 		gtk_tree_view_append_column( priv->tview, column );
 	}
 
+	if( priv->columns & LEDGER_DISP_NOTES_PNG ){
+		cell = gtk_cell_renderer_pixbuf_new();
+		column = gtk_tree_view_column_new_with_attributes(
+						"", cell, "pixbuf", LEDGER_COL_NOTES_PNG, NULL );
+		gtk_tree_view_append_column( priv->tview, column );
+	}
+
 	gtk_widget_show_all( GTK_WIDGET( view ));
 }
 

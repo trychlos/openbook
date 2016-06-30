@@ -51,10 +51,14 @@ typedef struct {
 
 static GType st_col_types[LEDGER_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, last_entry */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* las_close, notes, upd_user */
+		G_TYPE_STRING, G_TYPE_STRING, 0,				/* las_close, notes, notes_png */
+		G_TYPE_STRING,									/* upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoLedger itself */
 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerStore *store );
 static void     load_dataset( ofaLedgerStore *store, ofaHub *hub );
@@ -164,6 +168,7 @@ ofa_ledger_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_LEDGER_STORE, NULL );
 
+		st_col_types[LEDGER_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), LEDGER_N_COLUMNS, st_col_types );
 
@@ -229,15 +234,27 @@ insert_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger )
 static void
 set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_ledger_store_set_row";
 	gchar *sdentry, *sdclose, *stamp;
+	const gchar *notes;
 	const GDate *dclose;
 	GDate dentry;
+	GError *error;
+	GdkPixbuf *notes_png;
 
 	ofo_ledger_get_last_entry( ledger, &dentry );
 	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display());
 	dclose = ofo_ledger_get_last_close( ledger );
 	sdclose = my_date_to_str( dclose, ofa_prefs_date_display());
 	stamp  = my_utils_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
+
+	notes = ofo_ledger_get_notes( ledger );
+	error = NULL;
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
@@ -246,12 +263,14 @@ set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIte
 			LEDGER_COL_LABEL,      ofo_ledger_get_label( ledger ),
 			LEDGER_COL_LAST_ENTRY, sdentry,
 			LEDGER_COL_LAST_CLOSE, sdclose,
-			LEDGER_COL_NOTES,      ofo_ledger_get_notes( ledger ),
+			LEDGER_COL_NOTES,      notes,
+			LEDGER_COL_NOTES_PNG,  notes_png,
 			LEDGER_COL_UPD_USER,   ofo_ledger_get_upd_user( ledger ),
 			LEDGER_COL_UPD_STAMP,  stamp,
 			LEDGER_COL_OBJECT,     ledger,
 			-1 );
 
+	g_object_unref( notes_png );
 	g_free( stamp );
 	g_free( sdclose );
 	g_free( sdentry );
