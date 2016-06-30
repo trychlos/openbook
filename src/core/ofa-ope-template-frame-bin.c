@@ -603,6 +603,13 @@ page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_cell_data_func(
 			column, cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
+
+	cell = gtk_cell_renderer_pixbuf_new();
+	column = gtk_tree_view_column_new_with_attributes(
+				"", cell, "pixbuf", OPE_TEMPLATE_COL_NOTES_PNG, NULL );
+	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_cell_data_func(
+			column, cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
 }
 
 static GtkWidget *
@@ -737,7 +744,7 @@ tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
 						ofaOpeTemplateFrameBin *self )
 {
-	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
+	g_return_if_fail( GTK_IS_CELL_RENDERER( cell ));
 }
 
 /*

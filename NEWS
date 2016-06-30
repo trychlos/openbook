@@ -42,6 +42,7 @@
    - ClassPage: add a Notes indicator (todo #1157).
    - CurrencyPage: add a Notes indicator (todo #1157).
    - LedgerPage: add a Notes indicator (todo #1157).
+   - OpeTemplateFrame: add a Notes indicator (todo #1157).
 
  Bug fixes:
 

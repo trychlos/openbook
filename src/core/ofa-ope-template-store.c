@@ -50,10 +50,14 @@ typedef struct {
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
+		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
+		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_STRING, G_TYPE_STRING,					/* is_recurrent_model, used_by_vat */
 		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *self );
 static void     list_store_load_dataset( ofaListStore *self, ofaHub *hub );
@@ -169,7 +173,9 @@ ofa_ope_template_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_OPE_TEMPLATE_STORE, NULL );
 
-		ofa_istore_set_columns_type( OFA_ISTORE( store ), hub, OPE_TEMPLATE_COL_OBJECT, OPE_TEMPLATE_N_COLUMNS, st_col_types );
+		st_col_types[OPE_TEMPLATE_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
+		ofa_istore_set_columns_type(
+				OFA_ISTORE( store ), hub, OPE_TEMPLATE_COL_OBJECT, OPE_TEMPLATE_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ),
@@ -244,22 +250,36 @@ insert_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope )
 static void
 set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_ope_template_store_set_row";
 	gchar *stamp;
+	const gchar *notes;
+	GError *error;
+	GdkPixbuf *notes_png;
 
 	stamp  = my_utils_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
+
+	notes = ofo_ope_template_get_notes( ope );
+	error = NULL;
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
 			OPE_TEMPLATE_COL_LABEL,     ofo_ope_template_get_label( ope ),
 			OPE_TEMPLATE_COL_LEDGER,    ofo_ope_template_get_ledger( ope ),
-			OPE_TEMPLATE_COL_NOTES,     ofo_ope_template_get_notes( ope ),
+			OPE_TEMPLATE_COL_NOTES,     notes,
+			OPE_TEMPLATE_COL_NOTES_PNG, notes_png,
 			OPE_TEMPLATE_COL_UPD_USER,  ofo_ope_template_get_upd_user( ope ),
 			OPE_TEMPLATE_COL_UPD_STAMP, stamp,
 			OPE_TEMPLATE_COL_RECURRENT, "",
 			OPE_TEMPLATE_COL_VAT,       "",
 			-1 );
 
+	g_object_unref( notes_png );
 	g_free( stamp );
 
 	ofa_itree_adder_set_values( hub, OFA_ISTORE( self ), iter, ( void * ) ope );

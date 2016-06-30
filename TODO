@@ -372,8 +372,8 @@
      2016- 6-28 bat            : ok le 28/6 
                 class          : ok le 30/6
                 currency       : ok le 30/6
-                ledger         :
-                ope_template   :
+                ledger         : ok le 30/6
+                ope_template   : ok le 30/6
                 recurrent_model:
                 tva_form       :
 
