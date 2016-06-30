@@ -367,16 +367,6 @@
                 been generated but not recorded
      2016- 6-23 not reproductible
 
-1157 2016- 6-23 FEAT: add a Notes indicator in all reference pages
-                (as in AccountsChart)
-     2016- 6-28 bat            : ok le 28/6 
-                class          : ok le 30/6
-                currency       : ok le 30/6
-                ledger         : ok le 30/6
-                ope_template   : ok le 30/6
-                recurrent_model: ok le 30/6
-                tva_form       :
-
 1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
                 generating any operation (and so without the need for
                 an operation date)
@@ -403,7 +393,7 @@
 
 1169 2016- 6-30 when defining displayable columns for a treeview, choose
                 between enum (e.g. account) and bit array (e.g. currency,
-                ledger, rec_model)
+                ledger, rec_model, tva_form)
                 -> this should be an enum, so that the caller has to provide
                 an array, and so the caller may decide the order of the
                 columns 
@@ -1510,6 +1500,17 @@
 1155 2016- 6-22 BUG: when saving a new recurrent model
                 cf. todo_1155/trace
      2016- 6-23 fixed
+
+1157 2016- 6-23 FEAT: add a Notes indicator in all reference pages
+                (as in AccountsChart)
+     2016- 6-28 bat            : ok le 28/6 
+                class          : ok le 30/6
+                currency       : ok le 30/6
+                ledger         : ok le 30/6
+                ope_template   : ok le 30/6
+                recurrent_model: ok le 30/6
+                tva_form       : ok le 30/6
+     2016- 6-30 done
 
 1158 2016- 6-23 BUG: =-%ACCOUNT(44581) formula returns -748 while account
                 balance is zero

@@ -48,9 +48,13 @@ typedef struct {
 
 static GType st_col_types[TVA_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, upd_user, upd_stamp */
+		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
+		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoTVAForm itself */
 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVAFormStore *store );
 static void     load_dataset( ofaTVAFormStore *store, ofaHub *hub );
@@ -161,6 +165,7 @@ ofa_tva_form_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_TVA_FORM_STORE, NULL );
 
+		st_col_types[TVA_FORM_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), TVA_N_COLUMNS, st_col_types );
 
@@ -241,20 +246,35 @@ insert_row( ofaTVAFormStore *store, ofaHub *hub, const ofoTVAForm *form )
 static void
 set_row( ofaTVAFormStore *store, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_tva_form_store_set_row";
 	gchar *stamp;
+	const gchar *notes;
+	GError *error;
+	GdkPixbuf *notes_png;
 
 	stamp  = my_utils_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
+
+	notes = ofo_tva_form_get_notes( form );
+	error = NULL;
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
 			TVA_FORM_COL_MNEMO,     ofo_tva_form_get_mnemo( form ),
 			TVA_FORM_COL_LABEL,     ofo_tva_form_get_label( form ),
+			TVA_FORM_COL_NOTES,     notes,
+			TVA_FORM_COL_NOTES_PNG, notes_png,
 			TVA_FORM_COL_UPD_USER,  ofo_tva_form_get_upd_user( form ),
 			TVA_FORM_COL_UPD_STAMP, stamp,
 			TVA_FORM_COL_OBJECT,    form,
 			-1 );
 
+	g_object_unref( notes_png );
 	g_free( stamp );
 }
 

@@ -173,7 +173,7 @@ setup_form_treeview( ofaTVAManagePage *self )
 {
 	ofaTVAManagePagePrivate *priv;
 	GtkWidget *frame, *scrolled, *tview;
-	GtkCellRenderer *text_cell;
+	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 	ofaTVAFormStore *store;
@@ -200,19 +200,26 @@ setup_form_treeview( ofaTVAManagePage *self )
 	store = ofa_tva_form_store_new( hub );
 	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), GTK_TREE_MODEL( store ));
 
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Mnemo" ),
-			text_cell, "text", TVA_FORM_COL_MNEMO,
+			cell, "text", TVA_FORM_COL_MNEMO,
 			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			text_cell, "text", TVA_FORM_COL_LABEL,
+			cell, "text", TVA_FORM_COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
+
+	cell = gtk_cell_renderer_pixbuf_new();
+	column = gtk_tree_view_column_new_with_attributes(
+			"",
+			cell, "pixbuf", TVA_FORM_COL_NOTES_PNG,
+			NULL );
 	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
 
 	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
