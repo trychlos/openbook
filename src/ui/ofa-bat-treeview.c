@@ -367,6 +367,13 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, ofaBatColumns *columns )
 			gtk_tree_view_append_column( priv->tview, column );
 		}
 
+		if( columns[i] == BAT_DISP_NOTES_PNG ){
+			cell = gtk_cell_renderer_pixbuf_new();
+			column = gtk_tree_view_column_new_with_attributes(
+							"", cell, "pixbuf", BAT_COL_NOTES_PNG, NULL );
+			gtk_tree_view_append_column( priv->tview, column );
+		}
+
 		if( columns[i] == BAT_DISP_UPD_USER ){
 			cell = gtk_cell_renderer_text_new();
 			column = gtk_tree_view_column_new_with_attributes(

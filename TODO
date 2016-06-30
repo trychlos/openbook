@@ -369,6 +369,13 @@
 
 1157 2016- 6-23 FEAT: add a Notes indicator in all reference pages
                 (as in AccountsChart)
+     2016- 6-28 bat            : ok le 28/6 
+                class          :
+                currency       :
+                ledger         :
+                ope_template   :
+                recurrent_model:
+                tva_form       :
 
 1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
                 generating any operation (and so without the need for
@@ -386,7 +393,15 @@
                 end of the exercice are set (but only when the dossier is
                 opened ?)
 
-1166
+1166 2016- 6-28 FEAT: have a progress bar when validating more than one
+                recurrent operation
+
+1167 2016- 6-28 FEAT: BatPage: be able to sort
+
+1168 2016- 6-28 VAT Declaration: "invalid operation date" message should
+                be italic (same than real error, but the color)
+
+1169
 
 -----------------------------------------------------------------------
  DONE

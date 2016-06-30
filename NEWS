@@ -38,6 +38,7 @@
  New features and improvements:
 
    - Rename the application to Open Firm Accounting (todo #1164).
+   - BatTreeview: add a Notes indicator (todo #1157).
  
  Bug fixes:
 

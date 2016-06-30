@@ -52,16 +52,16 @@ typedef struct {
 	ofaAccountStorePrivate;
 
 static GType st_col_types[ACCOUNT_N_COLUMNS] = {
-		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
-		G_TYPE_BOOLEAN, G_TYPE_STRING, 0,				/* root, notes, notes_png */
-		G_TYPE_STRING,									/* upd_user */
-		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
-		G_TYPE_STRING,  G_TYPE_STRING,					/* rough_debit, rough_credit */
-		G_TYPE_STRING,  G_TYPE_STRING,					/* fut_debit, fut_credit */
-		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
-		G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
-		G_TYPE_STRING,  								/* exe_solde */
-		G_TYPE_OBJECT									/* the #ofoAccount itself */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
+	G_TYPE_BOOLEAN, G_TYPE_STRING, 0,				/* root, notes, notes_png */
+	G_TYPE_STRING,									/* upd_user */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
+	G_TYPE_STRING,  G_TYPE_STRING,					/* rough_debit, rough_credit */
+	G_TYPE_STRING,  G_TYPE_STRING,					/* fut_debit, fut_credit */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
+	G_TYPE_STRING,  								/* exe_solde */
+	G_TYPE_OBJECT									/* the #ofoAccount itself */
 };
 
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
@@ -325,9 +325,9 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 	stamp = my_utils_stamp_to_str( ofo_account_get_upd_stamp( account ), MY_STAMP_DMYYHM );
 	notes = ofo_account_get_notes( account );
 	error = NULL;
-	notes_png = gdk_pixbuf_new_from_resource( notes ? st_resource_notes_png : st_resource_filler_png, &error );
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
 	if( error ){
-		g_warning( "%s: gdk_pixbuf_new_from_file: %s", thisfn, error->message );
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
 		g_error_free( error );
 	}
 
@@ -356,6 +356,7 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 			ACCOUNT_COL_EXE_SOLDE,     sesol,
 			-1 );
 
+	g_object_unref( notes_png );
 	g_free( svdeb );
 	g_free( svcre );
 	g_free( srdeb );

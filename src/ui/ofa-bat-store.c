@@ -57,14 +57,18 @@ typedef struct {
 	ofaBatStorePrivate;
 
 static GType st_col_types[BAT_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* id, uri, format */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, rib */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* currency, begin_solde, begin_solde_set */
-		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* end_solde, end_solde_set */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* notes, count, unused */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* acccount, upd_user, upd_stamp */
-		G_TYPE_OBJECT									/* the #ofoBat itself */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* id, uri, format */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* begin, end, rib */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* currency, begin_solde, begin_solde_set */
+	G_TYPE_STRING, G_TYPE_BOOLEAN,					/* end_solde, end_solde_set */
+	G_TYPE_STRING, 0,								/* notes, notes_png */
+	G_TYPE_STRING, G_TYPE_STRING,					/* count, unused */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* acccount, upd_user, upd_stamp */
+	G_TYPE_OBJECT									/* the #ofoBat itself */
 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *store );
 static void     load_dataset( ofaBatStore *store, ofaHub *hub );
@@ -178,6 +182,7 @@ ofa_bat_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_BAT_STORE, NULL );
 
+		st_col_types[BAT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), BAT_N_COLUMNS, st_col_types );
 
@@ -251,9 +256,11 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, ofoBat *bat )
 	ofaBatStorePrivate *priv;
 	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp, *sunused;
 	const GDate *date;
-	const gchar *cscurrency, *caccount;
+	const gchar *cscurrency, *caccount, *notes;
 	gint count, used;
 	ofoCurrency *cur_obj;
+	GError *error;
+	GdkPixbuf *notes_png;
 
 	priv = ofa_bat_store_get_instance_private( store );
 
@@ -296,6 +303,14 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, ofoBat *bat )
 	sunused = g_strdup_printf( "%u", count-used );
 	stamp  = my_utils_stamp_to_str( ofo_bat_get_upd_stamp( bat ), MY_STAMP_DMYYHM );
 
+	error = NULL;
+	notes = ofo_bat_get_notes( bat );
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
+
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
 			iter,
@@ -310,7 +325,8 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, ofoBat *bat )
 			BAT_COL_BEGIN_SOLDE_SET, ofo_bat_get_begin_solde_set( bat ),
 			BAT_COL_END_SOLDE,       sendsolde,
 			BAT_COL_END_SOLDE_SET,   ofo_bat_get_end_solde_set( bat ),
-			BAT_COL_NOTES,           ofo_bat_get_notes( bat ),
+			BAT_COL_NOTES,           notes,
+			BAT_COL_NOTES_PNG,       notes_png,
 			BAT_COL_COUNT,           scount,
 			BAT_COL_UNUSED,          sunused,
 			BAT_COL_ACCOUNT,         caccount,
@@ -321,6 +337,7 @@ set_row_by_store_iter( ofaBatStore *store, GtkTreeIter *iter, ofoBat *bat )
 
 	g_debug( "%s: count=%s, unused=%s", thisfn, scount, sunused );
 
+	g_object_unref( notes_png );
 	g_free( stamp );
 	g_free( scount );
 	g_free( sunused );
