@@ -66,9 +66,13 @@ enum {
 	COL_ID = 0,
 	COL_NUMBER,
 	COL_LABEL,
+	COL_NOTES_PNG,
 	COL_OBJECT,
 	N_COLUMNS
 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
@@ -78,6 +82,7 @@ static ofoClass  *tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel,
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       insert_dataset( ofaClassPage *self );
 static void       insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection );
+static void       set_row_by_iter( ofaClassPage *self, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self );
 static void       setup_first_selection( ofaClassPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
@@ -206,7 +211,7 @@ setup_tree_view( ofaPage *page )
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
 	GtkTreeModel *tmodel;
-	GtkCellRenderer *text_cell;
+	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
@@ -234,24 +239,29 @@ setup_tree_view( ofaPage *page )
 
 	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
 			N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
+			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING, GDK_TYPE_PIXBUF, G_TYPE_OBJECT ));
 	gtk_tree_view_set_model( tview, tmodel );
 	g_object_unref( tmodel );
 
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Number" ),
-			text_cell, "text", COL_NUMBER,
+			cell, "text", COL_NUMBER,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			text_cell, "text", COL_LABEL,
+			cell, "text", COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
+	gtk_tree_view_append_column( tview, column );
+
+	cell = gtk_cell_renderer_pixbuf_new();
+	column = gtk_tree_view_column_new_with_attributes(
+				"", cell, "pixbuf", COL_NOTES_PNG, NULL );
 	gtk_tree_view_append_column( tview, column );
 
 	select = gtk_tree_view_get_selection( tview );
@@ -376,26 +386,22 @@ insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection )
 	GtkTreeIter iter;
 	GtkTreePath *path;
 	gint id;
-	gchar *str;
 
 	priv = ofa_class_page_get_instance_private( self );
 
 	tmodel = gtk_tree_view_get_model( priv->tview );
 
 	id = ofo_class_get_number( class );
-	str = g_strdup_printf( "%d", id );
 
 	gtk_list_store_insert_with_values(
 			GTK_LIST_STORE( tmodel ),
 			&iter,
 			-1,
 			COL_ID,     id,
-			COL_NUMBER, str,
-			COL_LABEL,  ofo_class_get_label( class ),
 			COL_OBJECT, class,
 			-1 );
 
-	g_free( str );
+	set_row_by_iter( self, class, tmodel, &iter );
 
 	/* select the newly added class */
 	if( with_selection ){
@@ -404,6 +410,37 @@ insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection )
 		gtk_tree_path_free( path );
 		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
 	}
+}
+
+static void
+set_row_by_iter( ofaClassPage *self, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	static const gchar *thisfn = "ofa_class_page_set_row_by_iter";
+	gchar *str;
+	const gchar *notes;
+	GdkPixbuf *notes_png;
+	GError *error;
+
+	str = g_strdup_printf( "%d", ofo_class_get_number( class ));
+
+	notes = ofo_class_get_notes( class );
+	error = NULL;
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
+
+	gtk_list_store_set(
+			GTK_LIST_STORE( tmodel ),
+			iter,
+			COL_NUMBER,    str,
+			COL_LABEL,     ofo_class_get_label( class ),
+			COL_NOTES_PNG, notes_png,
+			-1 );
+
+	g_object_unref( notes_png );
+	g_free( str );
 }
 
 static gint
@@ -610,12 +647,9 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCl
 			if( prev_num != class_num ){
 				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
 				insert_new_row( self, OFO_CLASS( object ), TRUE );
+
 			} else if( find_row_by_id( self, class_num, &tmodel, &iter )){
-				gtk_list_store_set(
-						GTK_LIST_STORE( tmodel ),
-						&iter,
-						COL_LABEL,  ofo_class_get_label( OFO_CLASS( object )),
-						-1 );
+				set_row_by_iter( self, OFO_CLASS( object ), tmodel, &iter );
 			}
 		}
 	}

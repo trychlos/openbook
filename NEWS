@@ -39,7 +39,8 @@
 
    - Rename the application to Open Firm Accounting (todo #1164).
    - BatTreeview: add a Notes indicator (todo #1157).
- 
+   - ClassPage: add a Notes indicator (todo #1157).
+
  Bug fixes:
 
    - GuidedInput: take into account the user set ledger (todo #1152).
