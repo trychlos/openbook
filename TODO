@@ -371,7 +371,7 @@
                 (as in AccountsChart)
      2016- 6-28 bat            : ok le 28/6 
                 class          : ok le 30/6
-                currency       :
+                currency       : ok le 30/6
                 ledger         :
                 ope_template   :
                 recurrent_model:
@@ -401,7 +401,10 @@
 1168 2016- 6-28 VAT Declaration: "invalid operation date" message should
                 be italic (same than real error, but the color)
 
-1169
+1169 2016- 6-30 when defining displayable columns for a treeview, choose
+                between enum (e.g. account) and bit array (e.g. currency) 
+
+1170
 
 -----------------------------------------------------------------------
  DONE

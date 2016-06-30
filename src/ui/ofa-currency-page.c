@@ -201,7 +201,7 @@ setup_tree_view( ofaCurrencyPage *self )
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
-	GtkCellRenderer *text_cell;
+	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
 
@@ -230,32 +230,37 @@ setup_tree_view( ofaCurrencyPage *self )
 	priv->store = ofa_currency_store_new( priv->hub );
 	gtk_tree_view_set_model( priv->tview, GTK_TREE_MODEL( priv->store ));
 
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "ISO 3A code" ),
-			text_cell, "text", CURRENCY_COL_CODE,
+			cell, "text", CURRENCY_COL_CODE,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			text_cell, "text", CURRENCY_COL_LABEL,
+			cell, "text", CURRENCY_COL_LABEL,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
 
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_pixbuf_new();
+	column = gtk_tree_view_column_new_with_attributes(
+				"", cell, "pixbuf", CURRENCY_COL_NOTES_PNG, NULL );
+	gtk_tree_view_append_column( tview, column );
+
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Symbol" ),
-			text_cell, "text", CURRENCY_COL_SYMBOL,
+			cell, "text", CURRENCY_COL_SYMBOL,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 
-	text_cell = gtk_cell_renderer_text_new();
+	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Digits" ),
-			text_cell, "text", CURRENCY_COL_DIGITS,
+			cell, "text", CURRENCY_COL_DIGITS,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
 

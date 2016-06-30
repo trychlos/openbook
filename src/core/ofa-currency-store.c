@@ -47,10 +47,14 @@ typedef struct {
 
 static GType st_col_types[CURRENCY_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* code, label, symbol */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* digits, notes, upd_user */
+		G_TYPE_STRING, G_TYPE_STRING, 0,				/* digits, notes, notes_png */
+		G_TYPE_STRING,									/* upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoCurrency itself */
 };
+
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrencyStore *store );
 static void     load_dataset( ofaCurrencyStore *store, ofaHub *hub );
@@ -159,6 +163,7 @@ ofa_currency_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_CURRENCY_STORE, NULL );
 
+		st_col_types[CURRENCY_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), CURRENCY_N_COLUMNS, st_col_types );
 
@@ -224,10 +229,22 @@ insert_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency )
 static void
 set_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency, GtkTreeIter *iter )
 {
+	static const gchar *thisfn = "ofa_currency_store_set_row";
 	gchar *str, *stamp;
+	const gchar *notes;
+	GError *error;
+	GdkPixbuf *notes_png;
 
 	str = g_strdup_printf( "%d", ofo_currency_get_digits( currency ));
 	stamp  = my_utils_stamp_to_str( ofo_currency_get_upd_stamp( currency ), MY_STAMP_DMYYHM );
+
+	notes = ofo_currency_get_notes( currency );
+	error = NULL;
+	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
+	if( error ){
+		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
+		g_error_free( error );
+	}
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( store ),
@@ -236,11 +253,14 @@ set_row( ofaCurrencyStore *store, ofaHub *hub, const ofoCurrency *currency, GtkT
 			CURRENCY_COL_LABEL,     ofo_currency_get_label( currency ),
 			CURRENCY_COL_SYMBOL,    ofo_currency_get_symbol( currency ),
 			CURRENCY_COL_DIGITS,    str,
+			CURRENCY_COL_NOTES,     notes,
+			CURRENCY_COL_NOTES_PNG, notes_png,
 			CURRENCY_COL_UPD_USER,  ofo_currency_get_upd_user( currency ),
 			CURRENCY_COL_UPD_STAMP, stamp,
 			CURRENCY_COL_OBJECT,    currency,
 			-1 );
 
+	g_object_unref( notes_png );
 	g_free( stamp );
 	g_free( str );
 }
