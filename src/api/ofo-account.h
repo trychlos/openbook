@@ -63,18 +63,9 @@ typedef struct {
 }
 	ofoAccountClass;
 
-/* This is needed by ofoEntry
- */
-#define ACCOUNT_TYPE_ROOT               "R"
-#define ACCOUNT_TYPE_DETAIL             "D"
-#define ACCOUNT_SETTLEABLE              "S"
-#define ACCOUNT_RECONCILIABLE           "R"
-#define ACCOUNT_FORWARDABLE             "F"
-#define ACCOUNT_CLOSED                  "C"
-
 /**
- * When selecting an account, specify which type of account if allowed
- * to be selected
+ * When editing/selecting an account, specify which type of account if
+ * allowed to be selected
  * Note that closed account are never allowed, unless explicitely specified.
  */
 typedef enum {
@@ -82,7 +73,8 @@ typedef enum {
 	ACCOUNT_ALLOW_DETAIL        = 1 << 1,
 	ACCOUNT_ALLOW_SETTLEABLE    = 1 << 2,
 	ACCOUNT_ALLOW_RECONCILIABLE = 1 << 3,
-	ACCOUNT_ALLOW_CLOSED        = 1 << 4,
+	ACCOUNT_ALLOW_FORWARDABLE   = 1 << 4,
+	ACCOUNT_ALLOW_CLOSED        = 1 << 5,
 	ACCOUNT_ALLOW_ALL = ACCOUNT_ALLOW_ROOT | ACCOUNT_ALLOW_DETAIL
 }
 	ofeAccountAllowed;

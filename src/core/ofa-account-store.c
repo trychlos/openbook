@@ -51,6 +51,14 @@ typedef struct {
 }
 	ofaAccountStorePrivate;
 
+#define ACCOUNT_SETTLEABLE_STR          _( "S" )
+#define ACCOUNT_RECONCILIABLE_STR       _( "R" )
+#define ACCOUNT_FORWARDABLE_STR         _( "F" )
+#define ACCOUNT_CLOSED_STR              _( "C" )
+
+/* store data types
+ * GDK_PIXBUF is not a constant, and has thus to be set at runtime
+ */
 static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* number, label, currency */
 	G_TYPE_BOOLEAN, G_TYPE_STRING, 0,				/* root, notes, notes_png */
@@ -347,10 +355,10 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 			ACCOUNT_COL_ROUGH_CREDIT,  srcre,
 			ACCOUNT_COL_FUT_DEBIT,     sfdeb,
 			ACCOUNT_COL_FUT_CREDIT,    sfcre,
-			ACCOUNT_COL_SETTLEABLE,    ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE : "",
-			ACCOUNT_COL_RECONCILIABLE, ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE : "",
-			ACCOUNT_COL_FORWARD,       ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE : "",
-			ACCOUNT_COL_CLOSED,        ofo_account_is_closed( account ) ? ACCOUNT_CLOSED : "",
+			ACCOUNT_COL_SETTLEABLE,    ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE_STR : "",
+			ACCOUNT_COL_RECONCILIABLE, ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE_STR : "",
+			ACCOUNT_COL_FORWARD,       ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE_STR : "",
+			ACCOUNT_COL_CLOSED,        ofo_account_is_closed( account ) ? ACCOUNT_CLOSED_STR : "",
 			ACCOUNT_COL_EXE_DEBIT,     sedeb,
 			ACCOUNT_COL_EXE_CREDIT,    secre,
 			ACCOUNT_COL_EXE_SOLDE,     sesol,

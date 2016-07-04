@@ -206,6 +206,15 @@ typedef struct {
 }
 	sChildren;
 
+/* these are legacy exported strings, in case we would import old datas
+ */
+#define EXPORTED_TYPE_ROOT              "R"
+#define EXPORTED_TYPE_DETAIL            "D"
+#define EXPORTED_SETTLEABLE             "S"
+#define EXPORTED_RECONCILIABLE          "R"
+#define EXPORTED_FORWARDABLE            "F"
+#define EXPORTED_CLOSED                 "C"
+
 static void         archives_list_free_detail( GList *fields );
 static void         archives_list_free( ofoAccount *account );
 static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
@@ -2241,8 +2250,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !my_strlen( cstr )){
 			cstr = "N";
-		} else if( my_collate( cstr, ACCOUNT_TYPE_DETAIL ) &&
-					my_collate( cstr, ACCOUNT_TYPE_ROOT ) &&
+		} else if( my_collate( cstr, EXPORTED_TYPE_DETAIL ) &&
+					my_collate( cstr, EXPORTED_TYPE_ROOT ) &&
 					my_collate( cstr, "Y" ) &&
 					my_collate( cstr, "N" )){
 			str = g_strdup_printf( _( "invalid account type: %s" ), cstr );
@@ -2251,7 +2260,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			parms->parse_errs += 1;
 			continue;
 		}
-		is_root = !my_collate( cstr, ACCOUNT_TYPE_ROOT ) || !my_collate( cstr, "Y" );
+		is_root = !my_collate( cstr, EXPORTED_TYPE_ROOT ) || !my_collate( cstr, "Y" );
 		ofo_account_set_root( account, is_root );
 
 		/* check the currency code if a detail account */
@@ -2279,7 +2288,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			if( my_collate( cstr, ACCOUNT_SETTLEABLE ) &&
+			if( my_collate( cstr, EXPORTED_SETTLEABLE ) &&
 					my_collate( cstr, "Y" ) &&
 					my_collate( cstr, "N" )){
 				str = g_strdup_printf( _( "invalid settleable account indicator: %s" ), cstr );
@@ -2289,7 +2298,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				continue;
 			} else {
 				ofo_account_set_settleable( account,
-						!my_collate( cstr, ACCOUNT_SETTLEABLE ) || !my_collate( cstr, "Y" ));
+						!my_collate( cstr, EXPORTED_SETTLEABLE ) || !my_collate( cstr, "Y" ));
 			}
 		}
 
@@ -2297,7 +2306,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			if( my_collate( cstr, ACCOUNT_RECONCILIABLE ) &&
+			if( my_collate( cstr, EXPORTED_RECONCILIABLE ) &&
 					my_collate( cstr, "Y" ) &&
 					my_collate( cstr, "N" )){
 				str = g_strdup_printf( _( "invalid reconciliable account indicator: %s" ), cstr );
@@ -2307,7 +2316,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				continue;
 			} else {
 				ofo_account_set_reconciliable( account,
-						!my_collate( cstr, ACCOUNT_RECONCILIABLE ) || !my_collate( cstr, "Y" ));
+						!my_collate( cstr, EXPORTED_RECONCILIABLE ) || !my_collate( cstr, "Y" ));
 			}
 		}
 
@@ -2315,7 +2324,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			if( my_collate( cstr, ACCOUNT_FORWARDABLE ) &&
+			if( my_collate( cstr, EXPORTED_FORWARDABLE ) &&
 					my_collate( cstr, "Y" ) &&
 					my_collate( cstr, "N" )){
 				str = g_strdup_printf( _( "invalid forwardable account indicator: %s" ), cstr );
@@ -2325,7 +2334,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				continue;
 			} else {
 				ofo_account_set_forwardable( account,
-						!my_collate( cstr, ACCOUNT_FORWARDABLE ) || !my_collate( cstr, "Y" ));
+						!my_collate( cstr, EXPORTED_FORWARDABLE ) || !my_collate( cstr, "Y" ));
 			}
 		}
 
@@ -2333,7 +2342,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
-			if( my_collate( cstr, ACCOUNT_CLOSED ) &&
+			if( my_collate( cstr, EXPORTED_CLOSED ) &&
 					my_collate( cstr, "Y" ) &&
 					my_collate( cstr, "N" )){
 				str = g_strdup_printf( _( "invalid closed account indicator: %s" ), cstr );
@@ -2343,7 +2352,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				continue;
 			} else {
 				ofo_account_set_closed( account,
-						!my_collate( cstr, ACCOUNT_CLOSED ) || !my_collate( cstr, "Y" ));
+						!my_collate( cstr, EXPORTED_CLOSED ) || !my_collate( cstr, "Y" ));
 			}
 		}
 

@@ -396,7 +396,7 @@
                 ledger, rec_model, tva_form)
                 -> this should be an enum, so that the caller has to provide
                 an array, and so the caller may decide the order of the
-                columns 
+                columns
 
 1170
 
