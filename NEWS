@@ -48,6 +48,7 @@
    - OpeTemplateFrame: add a Notes indicator (todo #1157).
    - RecurrentManagePage: add a Notes indicator (todo #1157).
    - StreamFormat: provides a default character set list (todo #1170).
+   - UserPreferences: display an error message if needed.
    - VATManagePage: add a Notes indicator (todo #1157).
 
  Bug fixes:

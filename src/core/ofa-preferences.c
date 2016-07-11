@@ -34,6 +34,7 @@
 #include "my/my-decimal-combo.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
@@ -59,6 +60,7 @@ typedef struct {
 	/* UI - General
 	 */
 	GtkWidget                *book;			/* main notebook of the dialog */
+	GtkWidget                *msg_label;
 	GtkWidget                *ok_btn;
 
 	/* when opening the preferences from the plugin manager
@@ -166,6 +168,7 @@ static void           setup_amount_formats( void );
 static gboolean       do_update_export_page( ofaPreferences *self, gchar **msgerr );
 static gboolean       do_update_import_page( ofaPreferences *self, gchar **msgerr );
 static gboolean       update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
+static void           set_message( ofaPreferences *self, const gchar *message );
 
 G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPreferences )
@@ -316,6 +319,10 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
+	priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "message" );
+	g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+	my_style_add( priv->msg_label, "labelerror" );
+
 	priv->book = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "notebook" );
 	g_return_if_fail( priv->book && GTK_IS_NOTEBOOK( priv->book ));
 
@@ -327,6 +334,7 @@ idialog_init( myIDialog *instance )
 	init_import_page( OFA_PREFERENCES( instance ));
 	enumerate_prefs_plugins( OFA_PREFERENCES( instance ), NULL, init_plugin_page );
 
+	check_for_activable_dlg( OFA_PREFERENCES( instance ));
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
@@ -772,6 +780,7 @@ on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self )
 /*
  * refuse to validate the dialog if:
  * - the user doesn't accept dot decimal separator, nor comma
+ * - or export or import pages are not valid
  */
 static void
 check_for_activable_dlg( ofaPreferences *self )
@@ -779,9 +788,13 @@ check_for_activable_dlg( ofaPreferences *self )
 	ofaPreferencesPrivate *priv;
 	gboolean accept_dot, accept_comma;
 	gboolean activable;
+	gchar *msg, *msgerr;
 
 	priv = ofa_preferences_get_instance_private( self );
+
 	activable = TRUE;
+	set_message( self, "" );
+	msg = NULL;
 
 	if( !priv->p4_accept_dot || !priv->p4_accept_comma ){
 		activable = FALSE;
@@ -789,6 +802,24 @@ check_for_activable_dlg( ofaPreferences *self )
 		accept_dot = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_dot ));
 		accept_comma = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p4_accept_comma ));
 		activable &= ( accept_dot || accept_comma );
+	}
+
+	if( !activable ){
+		set_message( self, _( "Language must accept either dot or comma decimal separator" ));
+
+	} else if( priv->export_settings && !ofa_stream_format_bin_is_valid( priv->export_settings, &msg )){
+		msgerr = g_strdup_printf( _( "Export settings: %s" ), msg );
+		set_message( self, msgerr );
+		g_free( msg );
+		g_free( msgerr );
+		activable = FALSE;
+
+	} else if( priv->import_settings && !ofa_stream_format_bin_is_valid( priv->import_settings, &msg )){
+		msgerr = g_strdup_printf( _( "Import settings: %s" ), msg );
+		set_message( self, msgerr );
+		g_free( msg );
+		g_free( msgerr );
+		activable = FALSE;
 	}
 
 	gtk_widget_set_sensitive( priv->ok_btn, activable );
@@ -1298,4 +1329,14 @@ update_prefs_plugin( ofaPreferences *self, gchar **msgerr )
 	}
 
 	return( TRUE );
+}
+
+static void
+set_message( ofaPreferences *self, const gchar *message )
+{
+	ofaPreferencesPrivate *priv;
+
+	priv = ofa_preferences_get_instance_private( self );
+
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), message ? message : "" );
 }
