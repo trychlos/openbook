@@ -37,6 +37,7 @@
   
  New features and improvements:
 
+   - RecurrentOperation: DB Model v4.
    - Rename the application to Open Firm Accounting (todo #1164).
    - BatTreeview: add a Notes indicator (todo #1157).
    - ClassPage: add a Notes indicator (todo #1157).
@@ -49,6 +50,7 @@
 
  Bug fixes:
 
+   - ImporterPdfBoursorama: fix import when more than one page (todo #1173).
    - GuidedInput: take into account the user set ledger (todo #1152).
    - RecurrentRun: fix validation status recording (todo #1176).
    - SettlementPage: fix column header (todo #1148).

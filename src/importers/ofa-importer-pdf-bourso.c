@@ -84,6 +84,7 @@ static gchar   *st_header_iban          = "I.B.A.N. ";
 static gchar   *st_header_begin_solde   = "SOLDE AU : ";
 static gchar   *st_footer_end_solde     = "Nouveau solde en ";
 static gchar   *st_page_credit          = "Crédit";
+static gchar   *st_page_reclamation     = "A réception d'un extrait de compte";
 
 static gdouble  st_label_min_x          = 80;
 static gdouble  st_valeur_min_x         = 300;
@@ -399,7 +400,7 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 
 	pages_count = poppler_document_get_n_pages( doc );
 
-	/* get the bat datas from first and last page
+	/* get the bat datas from first and last pages
 	 */
 	rc_list = ofa_importer_pdf_get_layout(
 					OFA_IMPORTER_PDF( self ), doc, 0, ofa_stream_format_get_charmap( parms->format ));
@@ -706,14 +707,14 @@ bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *self, const sParser *pars
 			if( page_num == 0 && g_str_has_prefix( rc->text, st_header_begin_solde ) && rc->x2 < st_debit_min_x ){
 				first_y = rc->y2 + acceptable_diff;
 			}
-			if( page_num > 0 && g_str_has_prefix( rc->text, st_page_credit ) && rc->x2 < st_debit_min_x ){
+			if( page_num > 0 && g_str_has_prefix( rc->text, st_page_credit ) && rc->x2 > st_debit_min_x ){
 				first_y = rc->y2 + acceptable_diff;
 			}
 		}
 
 		if( first_y > 0 && rc->y1 > first_y ){
 			/* end of the page */
-			if( g_str_has_prefix( rc->text, st_footer_end_solde )){
+			if( g_str_has_prefix( rc->text, st_footer_end_solde ) || g_str_has_prefix( rc->text, st_page_reclamation )){
 				break;
 			}
 
