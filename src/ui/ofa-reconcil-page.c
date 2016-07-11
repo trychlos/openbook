@@ -33,6 +33,7 @@
 #include <string.h>
 
 #include "my/my-date-editable.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
@@ -811,11 +812,11 @@ setup_treeview_footer( ofaReconcilPage *self, GtkContainer *parent )
 
 	priv->select_debit = my_utils_container_get_child_by_name( parent, "select-debit" );
 	g_return_if_fail( priv->select_debit && GTK_IS_LABEL( priv->select_debit ));
-	my_utils_widget_set_style( priv->select_debit, "labelhelp" );
+	my_style_add( priv->select_debit, "labelhelp" );
 
 	priv->select_credit = my_utils_container_get_child_by_name( parent, "select-credit" );
 	g_return_if_fail( priv->select_credit && GTK_IS_LABEL( priv->select_credit ));
-	my_utils_widget_set_style( priv->select_credit, "labelhelp" );
+	my_style_add( priv->select_credit, "labelhelp" );
 
 	priv->select_light = my_utils_container_get_child_by_name( parent, "select-light" );
 	g_return_if_fail( priv->select_light && GTK_IS_IMAGE( priv->select_light ));
@@ -850,7 +851,7 @@ setup_account_selection( ofaReconcilPage *self, GtkContainer *parent )
 
 	priv->acc_label = my_utils_container_get_child_by_name( parent, "account-label" );
 	g_return_if_fail( priv->acc_label && GTK_IS_LABEL( priv->acc_label ));
-	my_utils_widget_set_style( priv->acc_label, "labelnormal" );
+	my_style_add( priv->acc_label, "labelnormal" );
 }
 
 /*
@@ -1007,7 +1008,7 @@ setup_auto_rappro( ofaReconcilPage *self, GtkContainer *parent )
 
 	label = my_utils_container_get_child_by_name( parent, "assist-count2" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelbatunconcil" );
+	my_style_add( label, "labelbatunconcil" );
 	priv->unused_label = label;
 
 	label = my_utils_container_get_child_by_name( parent, "assist-count3" );
@@ -1186,9 +1187,9 @@ account_get_reconciliable( ofaReconcilPage *self )
 	label = account ? ofo_account_get_label( account ) : "";
 	gtk_label_set_text( GTK_LABEL( priv->acc_label ), label );
 	if( ok ){
-		my_utils_widget_remove_style( priv->acc_label, "labelerror" );
+		my_style_remove( priv->acc_label, "labelerror" );
 	} else {
-		my_utils_widget_set_style( priv->acc_label, "labelerror" );
+		my_style_add( priv->acc_label, "labelerror" );
 	}
 
 	set_message( self, msgerr );
@@ -4020,7 +4021,7 @@ set_message( ofaReconcilPage *page, const gchar *msg )
 	priv = ofa_reconcil_page_get_instance_private( page );
 
 	if( priv->msg_label ){
-		my_utils_widget_set_style( priv->msg_label, "labelerror" );
+		my_style_add( priv->msg_label, "labelerror" );
 		gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 	}
 }

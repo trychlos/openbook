@@ -36,6 +36,7 @@
 #include "my/my-dnd-window.h"
 #include "my/my-iaction-map.h"
 #include "my/my-iwindow.h"
+#include "my/my-style.h"
 #include "my/my-tab.h"
 #include "my/my-utils.h"
 
@@ -258,6 +259,7 @@ static sTreeDef st_tree_defs[] = {
 
 static const gchar *st_main_window_name = "MainWindow";
 static const gchar *st_resource_dosmenu = "/org/trychlos/openbook/ui/ofa-dos-menubar.ui";
+static const gchar *st_resource_css     = "/org/trychlos/openbook/ui/ofa.css";
 static const gchar *st_dosmenu_id       = "dos-menu";
 static const gchar *st_icon_fname       = ICONFNAME;
 
@@ -371,6 +373,8 @@ main_window_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->menu );
 		g_list_free_full( priv->themes, ( GDestroyNotify ) theme_free );
+
+		my_style_free();
 	}
 
 	/* chain up to the parent class */
@@ -481,6 +485,9 @@ main_window_constructed( GObject *instance )
 			g_warning( "%s: %s", thisfn, error->message );
 			g_error_free( error );
 		}
+
+		/* style class initialisation */
+		my_style_set_css_resource( st_resource_css );
 	}
 }
 

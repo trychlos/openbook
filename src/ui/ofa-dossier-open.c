@@ -30,6 +30,7 @@
 
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -576,7 +577,7 @@ set_message( ofaDossierOpen *self, const gchar *msg )
 		priv->message_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "message" );
 		g_return_if_fail( priv->message_label && GTK_IS_LABEL( priv->message_label ));
 
-		my_utils_widget_set_style( priv->message_label, "labelerror" );
+		my_style_add( priv->message_label, "labelerror" );
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->message_label ), msg );

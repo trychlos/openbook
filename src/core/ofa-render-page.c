@@ -31,6 +31,7 @@
 #include <glib/gi18n.h>
 #include <math.h>
 
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-iprintable.h"
@@ -567,7 +568,7 @@ set_message( ofaRenderPage *page, const gchar *message, const gchar *spec )
 	priv = ofa_render_page_get_instance_private( page );
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), message );
-	my_utils_widget_set_style( priv->msg_label, spec );
+	my_style_add( priv->msg_label, spec );
 }
 
 static void

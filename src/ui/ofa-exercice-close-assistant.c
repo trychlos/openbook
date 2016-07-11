@@ -34,6 +34,7 @@
 #include "my/my-iassistant.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
@@ -691,7 +692,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelerror" );
+	my_style_add( label, "labelerror" );
 	priv->p2_message = label;
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), FALSE );

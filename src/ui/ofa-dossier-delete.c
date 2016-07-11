@@ -30,6 +30,7 @@
 
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idbeditor.h"
@@ -282,7 +283,7 @@ idialog_init( myIDialog *instance )
 	/* other widgets */
 	priv->err_msg = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "px-errmsg" );
 	g_return_if_fail( priv->err_msg && GTK_IS_LABEL( priv->err_msg ));
-	my_utils_widget_set_style( priv->err_msg, "labelerror" );
+	my_style_add( priv->err_msg, "labelerror" );
 
 	priv->delete_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->delete_btn && GTK_IS_BUTTON( priv->delete_btn ));

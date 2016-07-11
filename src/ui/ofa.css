@@ -31,8 +31,18 @@ ofaTabLabel GtkGrid GtkButton {
 	padding: 0px;
 }
 
+entry.entrynormal {
+	border-color: @inset_light_color;
+}
+
 GtkEntry.entrynormal {
 	border-color: @inset_light_color;
+}
+
+entry.entryerror {
+	border-color: red;
+	color: #ff0000;
+	font-style: italic;
 }
 
 GtkEntry.entryerror {
@@ -41,13 +51,27 @@ GtkEntry.entryerror {
 	font-style: italic;
 }
 
+label.labelnormal {
+	color: #000000;				/* black */
+	font-style: normal;
+}
+
 GtkLabel.labelnormal {
 	color: #000000;				/* black */
 	font-style: normal;
 }
 
+label.labelwarning {
+	color: #ff8000;				/* orange */
+}
+
 GtkLabel.labelwarning {
 	color: #ff8000;				/* orange */
+}
+
+label.labelerror {
+	color: #ff0000;				/* error: red italic */
+	font-style: italic;
 }
 
 GtkLabel.labelerror {
@@ -55,20 +79,40 @@ GtkLabel.labelerror {
 	font-style: italic;
 }
 
+label.labelhelp {
+	color: #808080;				/* entering help: middle gray */
+}
+
 GtkLabel.labelhelp {
 	color: #808080;				/* entering help: middle gray */
+}
+
+label.labelinvalid {
+	color: #808080;
 }
 
 GtkLabel.labelinvalid {
 	color: #808080;
 }
 
+label.labelinfo {
+	color: #0000ff;				/* blue */
+}
+
 GtkLabel.labelinfo {
 	color: #0000ff;				/* blue */
 }
 
+label.labelbalance {
+	color: #0000ff;
+}
+
 GtkLabel.labelbalance {
 	color: #0000ff;
+}
+
+label.labelbatunconcil {
+	color: #00ff00;
 }
 
 GtkLabel.labelbatunconcil {
@@ -77,6 +121,10 @@ GtkLabel.labelbatunconcil {
 
 myProgressBar.bar12 {
 	-GtkProgressBar-min-horizontal-bar-height: 12;
+}
+
+textview.textviewinsensitive {
+	background-color: #f6f6f6;
 }
 
 GtkTextView.textviewinsensitive {

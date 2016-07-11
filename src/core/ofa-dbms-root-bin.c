@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idbconnect.h"
@@ -234,7 +235,7 @@ setup_bin( ofaDBMSRootBin *bin )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->password_entry );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-message" );
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->msg_label = label;
 

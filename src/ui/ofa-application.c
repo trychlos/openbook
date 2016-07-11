@@ -228,7 +228,6 @@ application_dispose( GObject *instance )
 		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->menu );
 		ofa_settings_free();
-		my_utils_css_provider_free();
 	}
 
 	/* chain up to the parent class */

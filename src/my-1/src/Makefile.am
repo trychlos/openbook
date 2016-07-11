@@ -86,6 +86,7 @@ liborgtrychlosmy1_la_SOURCES = \
 	my-progress-bar.c									\
 	my-settings.c										\
 	my-signal.c											\
+	my-style.c											\
 	my-tab.c											\
 	my-thousand-combo.c									\
 	my-timeout.c										\

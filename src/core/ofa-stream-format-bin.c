@@ -547,6 +547,7 @@ encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 
 	active = gtk_toggle_button_get_active( btn );
 	gtk_widget_set_sensitive( priv->encoding_combo, active && priv->updatable );
+	g_debug( "set_sensitive_combo: %s", active && priv->updatable ? "True":"False" );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }

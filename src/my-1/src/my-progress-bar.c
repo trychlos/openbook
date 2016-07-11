@@ -27,7 +27,7 @@
 #endif
 
 #include "my/my-progress-bar.h"
-#include "my/my-utils.h"
+#include "my/my-style.h"
 
 /* private instance data
  */
@@ -197,7 +197,7 @@ my_progress_bar_new( void )
 	self = g_object_new( MY_TYPE_PROGRESS_BAR, NULL );
 
 	gtk_widget_set_hexpand( GTK_WIDGET( self ), TRUE );
-	my_utils_widget_set_style( GTK_WIDGET( self ), "bar12" );
+	my_style_add( GTK_WIDGET( self ), "bar12" );
 
 	g_signal_connect( G_OBJECT( self ), "my-double", G_CALLBACK( on_double ), NULL );
 	g_signal_connect( G_OBJECT( self ), "my-text", G_CALLBACK( on_text ), NULL );

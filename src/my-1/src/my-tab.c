@@ -53,7 +53,6 @@ enum {
 static gint st_signals[ N_SIGNALS ] = { 0 };
 
 static void setup_tab_content( myTab *tab, GtkImage *image, const gchar *text );
-static void setup_tab_style( myTab *tab );
 static void on_pin_button_clicked( GtkButton *button, myTab *tab );
 static void on_tab_pin_clicked_class_handler( myTab *tab );
 static void on_close_button_clicked( GtkButton *button, myTab *tab );
@@ -184,7 +183,6 @@ my_tab_new( GtkImage *image, const gchar *text )
 	self = g_object_new( MY_TYPE_TAB, NULL );
 
 	setup_tab_content( self, image, text );
-	setup_tab_style( self );
 
 	gtk_widget_show_all( GTK_WIDGET( self ));
 
@@ -230,38 +228,6 @@ setup_tab_content( myTab *tab, GtkImage *image, const gchar *text )
 	gtk_grid_attach( GTK_GRID( priv->grid ), priv->close_btn, 3, 0, 1, 1 );
 
 	g_signal_connect( priv->close_btn, "clicked", G_CALLBACK( on_close_button_clicked ), tab );
-}
-
-static void
-setup_tab_style( myTab *tab )
-{
-	static const gchar *thisfn = "my_tab_setup_tab_style";
-	static GtkCssProvider *css_provider = NULL;
-	myTabPrivate *priv;
-	GError *error;
-	GtkStyleContext *style;
-
-	priv = my_tab_get_instance_private( tab );
-
-	if( !css_provider ){
-		css_provider = gtk_css_provider_new();
-		error = NULL;
-		if( !gtk_css_provider_load_from_path( css_provider, PKGCSSDIR "/ofa.css", &error )){
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-			g_clear_object( &css_provider );
-		}
-	}
-
-	if( css_provider ){
-		style = gtk_widget_get_style_context( priv->close_btn );
-		gtk_style_context_add_provider(
-				style,
-				GTK_STYLE_PROVIDER( css_provider ),
-				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
-	}
-
-
 }
 
 static void

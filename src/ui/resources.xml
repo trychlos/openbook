@@ -42,6 +42,8 @@
     <file>ofa-settlement-page.ui</file>
     <file>ofa-user-credentials-bin.ui</file>
 
+    <file>ofa.css</file>
+
     <file>ofa-app-menubar.ui</file>
     <file>ofa-dos-menubar.ui</file>
 

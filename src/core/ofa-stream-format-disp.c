@@ -33,6 +33,7 @@
 #include "my/my-decimal-combo.h"
 #include "my/my-field-combo.h"
 #include "my/my-thousand-combo.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "ofa-stream-format-disp.h"
@@ -317,7 +318,7 @@ setup_format( ofaStreamFormatDisp *self )
 	/* name */
 	cstr = ofa_stream_format_get_name( priv->settings );
 	gtk_label_set_text( GTK_LABEL( priv->name_data ), cstr ? cstr : "" ),
-	my_utils_widget_set_style( priv->name_data, "labelinfo" );
+	my_style_add( priv->name_data, "labelinfo" );
 
 	/* mode */
 	mode = ofa_stream_format_get_mode( priv->settings );
@@ -330,9 +331,9 @@ setup_format( ofaStreamFormatDisp *self )
 	gtk_label_set_text( GTK_LABEL( priv->charmap_data ), cstr ? cstr : "" );
 	gtk_widget_set_sensitive( priv->charmap_label, has );
 	if( has ){
-		my_utils_widget_set_style( priv->charmap_data, "labelinfo" );
+		my_style_add( priv->charmap_data, "labelinfo" );
 	} else {
-		my_utils_widget_remove_style( priv->headers_data, "labelinfo" );
+		my_style_remove( priv->headers_data, "labelinfo" );
 	}
 	gtk_widget_set_sensitive( priv->charmap_data, has );
 
@@ -343,9 +344,9 @@ setup_format( ofaStreamFormatDisp *self )
 	gtk_label_set_text( GTK_LABEL( priv->date_data ), cstr ? cstr : "" );
 	gtk_widget_set_sensitive( priv->date_label, has );
 	if( has ){
-		my_utils_widget_set_style( priv->date_data, "labelinfo" );
+		my_style_add( priv->date_data, "labelinfo" );
 	} else {
-		my_utils_widget_remove_style( priv->headers_data, "labelinfo" );
+		my_style_remove( priv->headers_data, "labelinfo" );
 	}
 	gtk_widget_set_sensitive( priv->date_data, has );
 
@@ -356,9 +357,9 @@ setup_format( ofaStreamFormatDisp *self )
 	gtk_label_set_text( GTK_LABEL( priv->thousand_data ), cstr );
 	gtk_widget_set_sensitive( priv->thousand_label, has );
 	if( has ){
-		my_utils_widget_set_style( priv->thousand_data, "labelinfo" );
+		my_style_add( priv->thousand_data, "labelinfo" );
 	} else {
-		my_utils_widget_remove_style( priv->headers_data, "labelinfo" );
+		my_style_remove( priv->headers_data, "labelinfo" );
 	}
 	gtk_widget_set_sensitive( priv->thousand_data, has );
 
@@ -369,9 +370,9 @@ setup_format( ofaStreamFormatDisp *self )
 	gtk_label_set_text( GTK_LABEL( priv->decimal_data ), cstr );
 	gtk_widget_set_sensitive( priv->decimal_label, has );
 	if( has ){
-		my_utils_widget_set_style( priv->decimal_data, "labelinfo" );
+		my_style_add( priv->decimal_data, "labelinfo" );
 	} else {
-		my_utils_widget_remove_style( priv->headers_data, "labelinfo" );
+		my_style_remove( priv->headers_data, "labelinfo" );
 	}
 	gtk_widget_set_sensitive( priv->decimal_data, has );
 
@@ -382,9 +383,9 @@ setup_format( ofaStreamFormatDisp *self )
 	gtk_label_set_text( GTK_LABEL( priv->field_data ), cstr );
 	gtk_widget_set_sensitive( priv->field_label, has );
 	if( has ){
-		my_utils_widget_set_style( priv->field_data, "labelinfo" );
+		my_style_add( priv->field_data, "labelinfo" );
 	} else {
-		my_utils_widget_remove_style( priv->headers_data, "labelinfo" );
+		my_style_remove( priv->headers_data, "labelinfo" );
 	}
 	gtk_widget_set_sensitive( priv->field_data, has );
 
@@ -396,9 +397,9 @@ setup_format( ofaStreamFormatDisp *self )
 	g_free( str );
 	gtk_widget_set_sensitive( priv->strdelim_label, has );
 	if( has ){
-		my_utils_widget_set_style( priv->strdelim_data, "labelinfo" );
+		my_style_add( priv->strdelim_data, "labelinfo" );
 	} else {
-		my_utils_widget_remove_style( priv->headers_data, "labelinfo" );
+		my_style_remove( priv->headers_data, "labelinfo" );
 	}
 	gtk_widget_set_sensitive( priv->strdelim_data, has );
 
@@ -420,5 +421,5 @@ setup_format( ofaStreamFormatDisp *self )
 	}
 	gtk_label_set_text( GTK_LABEL( priv->headers_data ), str );
 	g_free( str );
-	my_utils_widget_set_style( priv->headers_data, "labelinfo" );
+	my_style_add( priv->headers_data, "labelinfo" );
 }

@@ -50,9 +50,11 @@
 
    - GuidedInput: take into account the user set ledger (todo #1152).
    - SettlementPage: fix column header (todo #1148).
+   - Style: fix selector change introduced with Gtk 3.20 (todo #1171).
 
  Other changes:
 
+   - myStyle: new style management class.
    - ofa.css: remove obsolete styles.
 
 -----------------------------------------------------------------------

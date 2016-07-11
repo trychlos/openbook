@@ -33,6 +33,7 @@
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-counter.h"
@@ -946,7 +947,7 @@ set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
 
 	if( priv->msgerr ){
 		gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
-		my_utils_widget_set_style( priv->msgerr, spec );
+		my_style_add( priv->msgerr, spec );
 	}
 }
 

@@ -32,6 +32,7 @@
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -386,7 +387,7 @@ setup_others( ofaLedgerClose *self )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->message_label = label;
-	my_utils_widget_set_style( label, "labelerror" );
+	my_style_add( label, "labelerror" );
 }
 
 /*

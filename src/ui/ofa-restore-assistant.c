@@ -32,6 +32,7 @@
 #include "my/my-iassistant.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-portfolio-collection.h"
@@ -624,7 +625,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p2_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
 	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
-	my_utils_widget_set_style( priv->p2_furi, "labelinfo" );
+	my_style_add( priv->p2_furi, "labelinfo" );
 
 	priv->p2_dossier_treeview = ofa_dossier_treeview_new();
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-dossier-parent" );
@@ -765,11 +766,11 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p3_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
 	g_return_if_fail( priv->p3_furi && GTK_IS_LABEL( priv->p3_furi ));
-	my_utils_widget_set_style( priv->p3_furi, "labelinfo" );
+	my_style_add( priv->p3_furi, "labelinfo" );
 
 	priv->p3_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dossier" );
 	g_return_if_fail( priv->p3_dossier && GTK_IS_LABEL( priv->p3_dossier ));
-	my_utils_widget_set_style( priv->p3_dossier, "labelinfo" );
+	my_style_add( priv->p3_dossier, "labelinfo" );
 
 	priv->p3_hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
@@ -793,7 +794,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p3_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" );
 	g_return_if_fail( priv->p3_message && GTK_IS_LABEL( priv->p3_message ));
-	my_utils_widget_set_style( priv->p3_message, "labelerror" );
+	my_style_add( priv->p3_message, "labelerror" );
 }
 
 static void
@@ -947,15 +948,15 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p4_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
 	g_return_if_fail( priv->p4_furi && GTK_IS_LABEL( priv->p4_furi ));
-	my_utils_widget_set_style( priv->p4_furi, "labelinfo" );
+	my_style_add( priv->p4_furi, "labelinfo" );
 
 	priv->p4_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-dossier" );
 	g_return_if_fail( priv->p4_dossier && GTK_IS_LABEL( priv->p4_dossier ));
-	my_utils_widget_set_style( priv->p4_dossier, "labelinfo" );
+	my_style_add( priv->p4_dossier, "labelinfo" );
 
 	priv->p4_database = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-database" );
 	g_return_if_fail( priv->p4_database && GTK_IS_LABEL( priv->p4_database ));
-	my_utils_widget_set_style( priv->p4_database, "labelinfo" );
+	my_style_add( priv->p4_database, "labelinfo" );
 
 	hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
@@ -988,7 +989,7 @@ p4_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p4_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
 	g_return_if_fail( priv->p4_message && GTK_IS_LABEL( priv->p4_message ));
-	my_utils_widget_set_style( priv->p4_message, "labelerror" );
+	my_style_add( priv->p4_message, "labelerror" );
 
 	g_object_unref( hgroup );
 }
@@ -1112,35 +1113,35 @@ p5_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p5_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-furi" );
 	g_return_if_fail( priv->p5_furi && GTK_IS_LABEL( priv->p5_furi ));
-	my_utils_widget_set_style( priv->p5_furi, "labelinfo" );
+	my_style_add( priv->p5_furi, "labelinfo" );
 
 	priv->p5_dossier = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dossier" );
 	g_return_if_fail( priv->p5_dossier && GTK_IS_LABEL( priv->p5_dossier ));
-	my_utils_widget_set_style( priv->p5_dossier, "labelinfo" );
+	my_style_add( priv->p5_dossier, "labelinfo" );
 
 	priv->p5_database = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-database" );
 	g_return_if_fail( priv->p5_database && GTK_IS_LABEL( priv->p5_database ));
-	my_utils_widget_set_style( priv->p5_database, "labelinfo" );
+	my_style_add( priv->p5_database, "labelinfo" );
 
 	priv->p5_root_account = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dbms-account" );
 	g_return_if_fail( priv->p5_root_account && GTK_IS_LABEL( priv->p5_root_account ));
-	my_utils_widget_set_style( priv->p5_root_account, "labelinfo" );
+	my_style_add( priv->p5_root_account, "labelinfo" );
 
 	priv->p5_root_password = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-dbms-password" );
 	g_return_if_fail( priv->p5_root_password && GTK_IS_LABEL( priv->p5_root_password ));
-	my_utils_widget_set_style( priv->p5_root_password, "labelinfo" );
+	my_style_add( priv->p5_root_password, "labelinfo" );
 
 	priv->p5_admin_account = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-adm-account" );
 	g_return_if_fail( priv->p5_admin_account && GTK_IS_LABEL( priv->p5_admin_account ));
-	my_utils_widget_set_style( priv->p5_admin_account, "labelinfo" );
+	my_style_add( priv->p5_admin_account, "labelinfo" );
 
 	priv->p5_admin_password = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-adm-password" );
 	g_return_if_fail( priv->p5_admin_password && GTK_IS_LABEL( priv->p5_admin_password ));
-	my_utils_widget_set_style( priv->p5_admin_password, "labelinfo" );
+	my_style_add( priv->p5_admin_password, "labelinfo" );
 
 	priv->p5_open = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-open" );
 	g_return_if_fail( priv->p5_open && GTK_IS_LABEL( priv->p5_open ));
-	my_utils_widget_set_style( priv->p5_open, "labelinfo" );
+	my_style_add( priv->p5_open, "labelinfo" );
 }
 
 static void
@@ -1286,7 +1287,7 @@ p6_do_restore( ofaRestoreAssistant *self )
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->p6_label1 ), str );
-	my_utils_widget_set_style( priv->p6_label1, style );
+	my_style_add( priv->p6_label1, style );
 
 	g_free( dossier_name );
 	g_free( str );

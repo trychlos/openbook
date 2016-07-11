@@ -35,6 +35,7 @@
 #include "my/my-iprogress.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -671,11 +672,11 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* previously set */
 	priv->p2_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
 	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
-	my_utils_widget_set_style( priv->p2_furi, "labelinfo" );
+	my_style_add( priv->p2_furi, "labelinfo" );
 
 	priv->p2_content = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-content" );
 	g_return_if_fail( priv->p2_content && GTK_IS_LABEL( priv->p2_content ));
-	my_utils_widget_set_style( priv->p2_content, "labelinfo" );
+	my_style_add( priv->p2_content, "labelinfo" );
 
 	/* expected data */
 	hub = ofa_igetter_get_hub( priv->getter );
@@ -707,7 +708,7 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* error message */
 	priv->p2_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-message" );
 	g_return_if_fail( priv->p2_message && GTK_IS_LABEL( priv->p2_message ));
-	my_utils_widget_set_style( priv->p2_message, "labelerror" );
+	my_style_add( priv->p2_message, "labelerror" );
 }
 
 static void
@@ -824,15 +825,15 @@ p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* previously set */
 	priv->p3_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-furi" );
 	g_return_if_fail( priv->p3_furi && GTK_IS_LABEL( priv->p3_furi ));
-	my_utils_widget_set_style( priv->p3_furi, "labelinfo" );
+	my_style_add( priv->p3_furi, "labelinfo" );
 
 	priv->p3_content = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-content" );
 	g_return_if_fail( priv->p3_content && GTK_IS_LABEL( priv->p3_content ));
-	my_utils_widget_set_style( priv->p3_content, "labelinfo" );
+	my_style_add( priv->p3_content, "labelinfo" );
 
 	priv->p3_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-datatype" );
 	g_return_if_fail( priv->p3_datatype && GTK_IS_LABEL( priv->p3_datatype ));
-	my_utils_widget_set_style( priv->p3_datatype, "labelinfo" );
+	my_style_add( priv->p3_datatype, "labelinfo" );
 
 	/* available importers */
 	priv->p3_import_tview = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-treeview" );
@@ -865,7 +866,7 @@ p3_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* error message */
 	priv->p3_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-message" );
 	g_return_if_fail( priv->p3_message && GTK_IS_LABEL( priv->p3_message ));
-	my_utils_widget_set_style( priv->p3_message, "labelerror" );
+	my_style_add( priv->p3_message, "labelerror" );
 }
 
 static void
@@ -996,19 +997,19 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* previously set */
 	priv->p4_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
 	g_return_if_fail( priv->p4_furi && GTK_IS_LABEL( priv->p4_furi ));
-	my_utils_widget_set_style( priv->p4_furi, "labelinfo" );
+	my_style_add( priv->p4_furi, "labelinfo" );
 
 	priv->p4_content = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-content" );
 	g_return_if_fail( priv->p4_content && GTK_IS_LABEL( priv->p4_content ));
-	my_utils_widget_set_style( priv->p4_content, "labelinfo" );
+	my_style_add( priv->p4_content, "labelinfo" );
 
 	priv->p4_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-datatype" );
 	g_return_if_fail( priv->p4_datatype && GTK_IS_LABEL( priv->p4_datatype ));
-	my_utils_widget_set_style( priv->p4_datatype, "labelinfo" );
+	my_style_add( priv->p4_datatype, "labelinfo" );
 
 	priv->p4_importer = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-importer" );
 	g_return_if_fail( priv->p4_importer && GTK_IS_LABEL( priv->p4_importer ));
-	my_utils_widget_set_style( priv->p4_importer, "labelinfo" );
+	my_style_add( priv->p4_importer, "labelinfo" );
 
 	/* import behavior */
 	priv->p4_empty_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-empty" );
@@ -1039,7 +1040,7 @@ p4_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* error message */
 	priv->p4_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-message" );
 	g_return_if_fail( priv->p4_message && GTK_IS_LABEL( priv->p4_message ));
-	my_utils_widget_set_style( priv->p4_message, "labelerror" );
+	my_style_add( priv->p4_message, "labelerror" );
 }
 
 static void
@@ -1185,31 +1186,31 @@ p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	/* previously set */
 	priv->p5_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-furi" );
 	g_return_if_fail( priv->p5_furi && GTK_IS_LABEL( priv->p5_furi ));
-	my_utils_widget_set_style( priv->p5_furi, "labelinfo" );
+	my_style_add( priv->p5_furi, "labelinfo" );
 
 	priv->p5_content = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-content" );
 	g_return_if_fail( priv->p5_content && GTK_IS_LABEL( priv->p5_content ));
-	my_utils_widget_set_style( priv->p5_content, "labelinfo" );
+	my_style_add( priv->p5_content, "labelinfo" );
 
 	priv->p5_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-datatype" );
 	g_return_if_fail( priv->p5_datatype && GTK_IS_LABEL( priv->p5_datatype ));
-	my_utils_widget_set_style( priv->p5_datatype, "labelinfo" );
+	my_style_add( priv->p5_datatype, "labelinfo" );
 
 	priv->p5_importer = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-importer" );
 	g_return_if_fail( priv->p5_importer && GTK_IS_LABEL( priv->p5_importer ));
-	my_utils_widget_set_style( priv->p5_importer, "labelinfo" );
+	my_style_add( priv->p5_importer, "labelinfo" );
 
 	priv->p5_empty = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-empty" );
 	g_return_if_fail( priv->p5_empty && GTK_IS_LABEL( priv->p5_empty ));
-	my_utils_widget_set_style( priv->p5_empty, "labelinfo" );
+	my_style_add( priv->p5_empty, "labelinfo" );
 
 	priv->p5_mode = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-mode" );
 	g_return_if_fail( priv->p5_mode && GTK_IS_LABEL( priv->p5_mode ));
-	my_utils_widget_set_style( priv->p5_mode, "labelinfo" );
+	my_style_add( priv->p5_mode, "labelinfo" );
 
 	priv->p5_stop = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-stop" );
 	g_return_if_fail( priv->p5_stop && GTK_IS_LABEL( priv->p5_stop ));
-	my_utils_widget_set_style( priv->p5_stop, "labelinfo" );
+	my_style_add( priv->p5_stop, "labelinfo" );
 
 	hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
@@ -1253,9 +1254,10 @@ p5_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	g_signal_connect(
 			priv->p5_settings_prefs, "ofa-changed", G_CALLBACK( p5_on_settings_changed ), self );
 
+	/* error message */
 	priv->p5_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p5-message" );
 	g_return_if_fail( priv->p5_message && GTK_IS_LABEL( priv->p5_message ));
-	my_utils_widget_set_style( priv->p5_message, "labelerror" );
+	my_style_add( priv->p5_message, "labelerror" );
 
 	g_object_unref( hgroup );
 }
@@ -1411,43 +1413,43 @@ p6_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-furi" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p1_furi );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-content" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p1_content );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-type" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p2_selected_label );
 
 	str = ofa_iimporter_get_version( priv->p3_importer_obj );
 	str2 = g_strdup_printf( "%s %s", priv->p3_importer_label, str );
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-importer" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ),  str2 );
 	g_free( str2 );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-empty" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), gettext( priv->p4_empty ? st_empty_true : st_empty_false ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-import-mode" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	str = ofa_import_duplicate_get_label( priv->p4_import_mode );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p6-stop" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), gettext( priv->p4_stop ? st_stop_true : st_stop_false ));
 
 	ofa_stream_format_disp_set_format( priv->p6_format, priv->p5_import_settings );
@@ -1581,7 +1583,7 @@ p7_do_import( ofaImportAssistant *self )
 	if( text ){
 		gtk_label_set_text( GTK_LABEL( label ), text );
 		g_free( text );
-		my_utils_widget_set_style( label, style );
+		my_style_add( label, style );
 	}
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
@@ -1597,7 +1599,7 @@ p7_do_user_cancelled( ofaImportAssistant *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p7-label" );
 	gtk_label_set_text( GTK_LABEL( label ), _( "Import has been cancelled on user decision." ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 }

@@ -31,6 +31,7 @@
 
 #include "my/my-double-editable.h"
 #include "my/my-date-editable.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
@@ -1443,7 +1444,7 @@ set_message( ofaGuidedInputBin *self, const gchar *errmsg )
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->message ), errmsg );
-	my_utils_widget_set_style( priv->message, my_strlen( errmsg ) ? "labelerror" : "labelnormal" );
+	my_style_add( priv->message, my_strlen( errmsg ) ? "labelerror" : "labelnormal" );
 }
 
 /*
@@ -1616,7 +1617,7 @@ total_display_diff( ofaGuidedInputBin *self, ofoCurrency *currency, gint row, gd
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );
 	g_free( amount_str );
-	my_utils_widget_set_style( label, "labelerror" );
+	my_style_add( label, "labelerror" );
 
 	/* set the credit diff amount (or empty) */
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CREDIT, row );
@@ -1628,13 +1629,13 @@ total_display_diff( ofaGuidedInputBin *self, ofoCurrency *currency, gint row, gd
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );
 	g_free( amount_str );
-	my_utils_widget_set_style( label, "labelerror" );
+	my_style_add( label, "labelerror" );
 
 	/* set the currency */
 	label = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_CURRENCY, row );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_text( GTK_LABEL( label ), has_diff ? ofo_currency_get_label( currency ) : "" );
-	my_utils_widget_set_style( label, "labelerror" );
+	my_style_add( label, "labelerror" );
 }
 
 /**

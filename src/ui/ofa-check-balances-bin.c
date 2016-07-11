@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -514,7 +515,7 @@ set_balance_status( ofaCheckBalancesBin *self, gboolean ok, const gchar *w_name 
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 		gtk_label_set_text( GTK_LABEL( label ), ok ? _( "OK" ) : _( "NOT OK" ));
-		my_utils_widget_set_style( label, ok ? "labelinfo" : "labelerror" );
+		my_style_add( label, ok ? "labelinfo" : "labelerror" );
 	}
 }
 
@@ -615,7 +616,7 @@ set_checks_result( ofaCheckBalancesBin *self )
 		if( priv->result ){
 			gtk_label_set_text( GTK_LABEL( label ),
 					_( "Your books are rightly balanced. Good !" ));
-			my_utils_widget_set_style( label, "labelinfo" );
+			my_style_add( label, "labelinfo" );
 
 		} else {
 			gtk_label_set_text( GTK_LABEL( label ),
@@ -623,7 +624,7 @@ set_checks_result( ofaCheckBalancesBin *self )
 						"that some distorsion has happened among them.\n"
 						"In this current state, we will be unable to close this "
 						"exercice until you fix your balances." ));
-			my_utils_widget_set_style( label, "labelerror" );
+			my_style_add( label, "labelerror" );
 		}
 	}
 }

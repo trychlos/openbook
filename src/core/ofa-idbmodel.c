@@ -35,6 +35,7 @@
 #include "my/my-iprogress.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
@@ -1045,7 +1046,7 @@ iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, 
 	if( sdata->bar ){
 		label = gtk_label_new( errs_count ? _( "NOT OK" ) : _( "OK" ));
 		gtk_widget_set_valign( label, GTK_ALIGN_END );
-		my_utils_widget_set_style( label, errs_count == 0 ? "labelinfo" : "labelerror" );
+		my_style_add( label, errs_count == 0 ? "labelinfo" : "labelerror" );
 
 		gtk_grid_attach( GTK_GRID( sdata->grid2 ), label, 2, sdata->row2-1, 1, 1 );
 	}

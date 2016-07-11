@@ -31,6 +31,7 @@
 
 #include "my/my-date-renderer.h"
 #include "my/my-double-renderer.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
@@ -1848,12 +1849,12 @@ display_balance( ofsCurrency *pc, ofaEntryPage *self )
 		//g_debug( "display_balance: ldebit=%lf lcredit=%lf egal=%s", pc->debit, pc->credit, egal ? "True":"False" );
 
 		label = gtk_label_new( ofo_currency_get_code( pc->currency ));
-		my_utils_widget_set_style( label, egal ? "labelbalance" : "labelwarning" );
+		my_style_add( label, egal ? "labelbalance" : "labelwarning" );
 		my_utils_widget_set_xalign( label, 0 );
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
-		my_utils_widget_set_style( label, egal ? "labelbalance" : "labelwarning" );
+		my_style_add( label, egal ? "labelbalance" : "labelwarning" );
 		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = ofa_amount_to_str( pc->credit, pc->currency );
@@ -1862,7 +1863,7 @@ display_balance( ofsCurrency *pc, ofaEntryPage *self )
 		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
 
 		label = gtk_label_new( NULL );
-		my_utils_widget_set_style( label, egal ? "labelbalance" : "labelwarning" );
+		my_style_add( label, egal ? "labelbalance" : "labelwarning" );
 		my_utils_widget_set_xalign( label, 1.0 );
 		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
 		str = ofa_amount_to_str( pc->debit, pc->currency );
@@ -2867,7 +2868,7 @@ display_error_msg( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	}
 
 	gtk_label_set_text( priv->comment, text );
-	my_utils_widget_set_style( GTK_WIDGET( priv->comment ), color_str );
+	my_style_add( GTK_WIDGET( priv->comment ), color_str );
 
 	g_free( msgerr );
 	g_free( msgwarn );

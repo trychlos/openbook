@@ -26,7 +26,6 @@ SUBDIRS = \
 	my-1												\
 	api													\
 	core												\
-	css													\
 	importers											\
 	mysql												\
 	postgre												\

@@ -32,6 +32,7 @@
 #include <stdarg.h>
 
 #include "my/my-isettings.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 typedef struct {
@@ -41,8 +42,6 @@ typedef struct {
 	sBuildableByName;
 
 static GRegex         *st_quote_single_regex    = NULL;
-static const gchar    *st_cssfile               = PKGCSSDIR "/ofa.css";
-static GtkCssProvider *st_css_provider          = NULL;
 static const gchar    *st_save_restore_group    = "orgtrychlosmy";
 
 static gchar   *quote_backslashes( const gchar *str );
@@ -51,7 +50,6 @@ static gboolean utils_unquote_cb( const GMatchInfo *info, GString *res, gpointer
 static void     child_set_editable_cb( GtkWidget *widget, gpointer data );
 static void     my_utils_container_dump_rec( GtkContainer *container, const gchar *prefix );
 static void     on_notes_changed( GtkTextBuffer *buffer, void *user_data );
-static gboolean utils_css_provider_setup( void );
 static void     position_set_from_int_list( GList *list, gint *x, gint *y, gint *width, gint *height );
 static gchar   *position_get_key( const gchar *name );
 static GSList  *split_by_line( const gchar *content );
@@ -1354,7 +1352,7 @@ my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
 	} else if( GTK_IS_TEXT_VIEW( widget )){
 		gtk_text_view_set_editable( GTK_TEXT_VIEW( widget ), editable );
 		if( !editable ){
-			my_utils_widget_set_style( widget, "textviewinsensitive" );
+			my_style_add( widget, "textviewinsensitive" );
 		}
 
 	} else if( GTK_IS_TREE_VIEW( widget )){
@@ -1369,56 +1367,6 @@ my_utils_widget_set_editable( GtkWidget *widget, gboolean editable )
 			g_list_free( renderers );
 		}
 		g_list_free( columns );
-	}
-}
-
-/**
- * my_utils_widget_remove_style:
- * @widget:
- * @style:
- *
- * Remove the specified @style from the given @widget.
- */
-void
-my_utils_widget_remove_style( GtkWidget *widget, const gchar *style )
-{
-	static const gchar *thisfn = "my_utils_widget_remove_style";
-	GtkStyleContext *context;
-
-	g_debug( "%s: widget=%p (%s), style=%s",
-			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), style );
-
-	if( utils_css_provider_setup()){
-		context = gtk_widget_get_style_context( widget );
-		gtk_style_context_add_provider( context,
-				GTK_STYLE_PROVIDER( st_css_provider ),
-				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
-		gtk_style_context_remove_class( context, style );
-	}
-}
-
-/**
- * my_utils_widget_set_style:
- * @widget:
- * @style:
- *
- * Set the desired @style on the given @widget.
- */
-void
-my_utils_widget_set_style( GtkWidget *widget, const gchar *style )
-{
-	static const gchar *thisfn = "my_utils_widget_set_style";
-	GtkStyleContext *context;
-
-	g_debug( "%s: widget=%p (%s), style=%s",
-			thisfn, ( void * ) widget, G_OBJECT_TYPE_NAME( widget ), style );
-
-	if( utils_css_provider_setup()){
-		context = gtk_widget_get_style_context( widget );
-		gtk_style_context_add_provider( context,
-				GTK_STYLE_PROVIDER( st_css_provider ),
-				GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
-		gtk_style_context_add_class( context, style );
 	}
 }
 
@@ -1500,43 +1448,6 @@ my_utils_widget_set_xalign( GtkWidget *widget, gfloat xalign )
 			gtk_misc_set_alignment( GTK_MISC( widget ), xalign, 0.5 );
 		}
 #endif
-}
-
-/*
- * returns: %TRUE if the CSS provider has been successfully setup
- */
-static gboolean
-utils_css_provider_setup( void )
-{
-	static const gchar *thisfn = "my_utils_widget_setup_css_provider";
-	GError *error;
-
-	if( !st_css_provider ){
-		st_css_provider = gtk_css_provider_new();
-		error = NULL;
-		g_debug( "%s: css=%s", thisfn, st_cssfile );
-		if( !gtk_css_provider_load_from_path( st_css_provider, st_cssfile, &error )){
-			g_warning( "%s: %s", thisfn, error->message );
-			g_error_free( error );
-			g_clear_object( &st_css_provider );
-		}
-	}
-	return( st_css_provider && GTK_IS_CSS_PROVIDER( st_css_provider ));
-}
-
-/**
- * my_utils_css_provider_free:
- *
- * Release the memory allocated to the CSS provider.
- */
-void
-my_utils_css_provider_free( void )
-{
-	static const gchar *thisfn = "my_utils_css_provider_free";
-
-	g_debug( "%s", thisfn );
-
-	g_clear_object( &st_css_provider );
 }
 
 /**

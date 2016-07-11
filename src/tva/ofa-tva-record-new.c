@@ -31,6 +31,7 @@
 #include "my/my-date-editable.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -425,7 +426,7 @@ set_msgerr( ofaTVARecordNew *self, const gchar *msg )
 	if( !priv->msg_label ){
 		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-		my_utils_widget_set_style( priv->msg_label, "labelerror");
+		my_style_add( priv->msg_label, "labelerror");
 	}
 
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );

@@ -31,6 +31,7 @@
 #include "my/my-date.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
@@ -386,7 +387,7 @@ init_balances_page( ofaLedgerProperties *self )
 		str = g_strdup_printf( _( "%s balance" ), code );
 		label = gtk_label_new( str );
 		g_free( str );
-		my_utils_widget_set_style( label, "labelinfo" );
+		my_style_add( label, "labelinfo" );
 		my_utils_widget_set_xalign( label, 0 );
 		gtk_grid_attach( GTK_GRID( grid ), label, 0, 5*i+1, 2, 1 );
 
@@ -488,29 +489,29 @@ init_balances_page( ofaLedgerProperties *self )
 		label = gtk_label_new( str );
 		g_free( str );
 		my_utils_widget_set_xalign( label, 1.0 );
-		my_utils_widget_set_style( label, "labelinfo" );
+		my_style_add( label, "labelinfo" );
 		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+5, 1, 1 );
 
 		str = ofa_amount_to_str( tot_debit, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		my_utils_widget_set_xalign( label, 1.0 );
-		my_utils_widget_set_style( label, "labelinfo" );
+		my_style_add( label, "labelinfo" );
 		gtk_grid_attach( GTK_GRID( grid ), label, 2, 5*i+5, 1, 1 );
 
 		label = gtk_label_new( symbol );
-		my_utils_widget_set_style( label, "labelinfo" );
+		my_style_add( label, "labelinfo" );
 		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+5, 1, 1 );
 
 		str = ofa_amount_to_str( tot_credit, currency );
 		label = gtk_label_new( str );
 		g_free( str );
 		my_utils_widget_set_xalign( label, 1.0 );
-		my_utils_widget_set_style( label, "labelinfo" );
+		my_style_add( label, "labelinfo" );
 		gtk_grid_attach( GTK_GRID( grid ), label, 4, 5*i+5, 1, 1 );
 
 		label = gtk_label_new( symbol );
-		my_utils_widget_set_style( label, "labelinfo" );
+		my_style_add( label, "labelinfo" );
 		gtk_grid_attach( GTK_GRID( grid ), label, 5, 5*i+5, 1, 1 );
 	}
 }
@@ -638,7 +639,7 @@ set_msgerr( ofaLedgerProperties *self, const gchar *msg )
 	if( !priv->msg_label ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		my_utils_widget_set_style( label, "labelerror" );
+		my_style_add( label, "labelerror" );
 		priv->msg_label = label;
 	}
 

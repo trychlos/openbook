@@ -32,6 +32,7 @@
 
 #include "my/my-iident.h"
 #include "my/my-iprogress.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -323,7 +324,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 					label = gtk_label_new( str );
 					g_free( str );
 					my_utils_widget_set_margins( label, 0, 0, 2*MARGIN_LEFT, 0 );
-					my_utils_widget_set_style( label, "labelerror" );
+					my_style_add( label, "labelerror" );
 					gtk_label_set_xalign( GTK_LABEL( label ), 0 );
 					my_iprogress_start_progress( window, instance, label, FALSE );
 					ok = FALSE;

@@ -32,6 +32,7 @@
 
 #include "my/my-iprogress.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-extender-collection.h"
@@ -992,12 +993,12 @@ set_checks_result( ofaCheckIntegrityBin *self )
 			if( priv->total_errs == 0 ){
 				gtk_label_set_text( GTK_LABEL( label ),
 						_( "Your DBMS is right. Good !" ));
-				my_utils_widget_set_style( label, "labelinfo" );
+				my_style_add( label, "labelinfo" );
 
 			} else {
 				gtk_label_set_text( GTK_LABEL( label ),
 						_( "Detected integrity errors have to be fixed." ));
-				my_utils_widget_set_style( label, "labelerror" );
+				my_style_add( label, "labelerror" );
 			}
 		}
 	}
@@ -1154,7 +1155,7 @@ iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, 
 		}
 
 		gtk_widget_set_valign( label, GTK_ALIGN_END );
-		my_utils_widget_set_style( label, errs_count == 0 ? "labelinfo" : "labelerror" );
+		my_style_add( label, errs_count == 0 ? "labelinfo" : "labelerror" );
 
 		gtk_grid_attach( GTK_GRID( sdata->grid ), label, 2, 0, 1, 1 );
 

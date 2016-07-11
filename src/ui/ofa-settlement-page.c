@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
@@ -1260,31 +1261,31 @@ on_entries_treeview_selection_changed( GtkTreeSelection *select, ofaSettlementPa
 	gtk_widget_set_sensitive( priv->settle_btn, ses.unsettled > 0 );
 	gtk_widget_set_sensitive( priv->unsettle_btn, ses.settled > 0 );
 
-	my_utils_widget_remove_style(
+	my_style_remove(
 			priv->footer_label, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
-	my_utils_widget_set_style(
+	my_style_add(
 			priv->footer_label, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	samount = ofa_amount_to_str( ses.debit, priv->account_currency );
 	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 	g_free( samount );
-	my_utils_widget_remove_style(
+	my_style_remove(
 			priv->debit_balance, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
-	my_utils_widget_set_style(
+	my_style_add(
 			priv->debit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	samount = ofa_amount_to_str( ses.credit, priv->account_currency );
 	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 	g_free( samount );
-	my_utils_widget_remove_style(
+	my_style_remove(
 			priv->credit_balance, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
-	my_utils_widget_set_style(
+	my_style_add(
 			priv->credit_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 
 	gtk_label_set_text( GTK_LABEL( priv->currency_balance ), ofo_currency_get_code( priv->account_currency ));
-	my_utils_widget_remove_style(
+	my_style_remove(
 			priv->currency_balance, ses.debit == ses.credit ? "labelwarning" : "labelinfo" );
-	my_utils_widget_set_style(
+	my_style_add(
 			priv->currency_balance, ses.debit == ses.credit ? "labelinfo" : "labelwarning" );
 }
 

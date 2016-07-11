@@ -33,6 +33,7 @@
 #include "my/my-iassistant.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -606,7 +607,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p2_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-datatype" );
 	g_return_if_fail( priv->p2_datatype && GTK_IS_LABEL( priv->p2_datatype ));
-	my_utils_widget_set_style( priv->p2_datatype, "labelinfo" );
+	my_style_add( priv->p2_datatype, "labelinfo" );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-settings-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -623,7 +624,7 @@ p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p2_message = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-message" );
 	g_return_if_fail( priv->p2_message && GTK_IS_LABEL( priv->p2_message ));
-	my_utils_widget_set_style( priv->p2_message, "labelerror" );
+	my_style_add( priv->p2_message, "labelerror" );
 
 	hgroup = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
@@ -730,11 +731,11 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv->p3_datatype = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-datatype" );
 	g_return_if_fail( priv->p3_datatype && GTK_IS_LABEL( priv->p3_datatype ));
-	my_utils_widget_set_style( priv->p3_datatype, "labelinfo" );
+	my_style_add( priv->p3_datatype, "labelinfo" );
 
 	priv->p3_format = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-format" );
 	g_return_if_fail( priv->p3_format && GTK_IS_LABEL( priv->p3_format ));
-	my_utils_widget_set_style( priv->p3_format, "labelinfo" );
+	my_style_add( priv->p3_format, "labelinfo" );
 
 	priv->p3_chooser =
 			( GtkFileChooser * ) my_utils_container_get_child_by_name(
@@ -974,14 +975,14 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-data" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p1_selected_label );
 
 	ofa_stream_format_disp_set_format( priv->p4_format, priv->p2_export_settings );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelinfo" );
+	my_style_add( label, "labelinfo" );
 	gtk_label_set_text( GTK_LABEL( label ), priv->p3_furi );
 
 	complete = ( my_strlen( priv->p3_furi ) > 0 );

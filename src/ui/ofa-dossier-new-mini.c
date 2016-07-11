@@ -32,6 +32,7 @@
 
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
+#include "my/my-style.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-idbmeta.h"
@@ -248,7 +249,7 @@ idialog_init( myIDialog *instance )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "err-message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_utils_widget_set_style( label, "labelerror" );
+	my_style_add( label, "labelerror" );
 	priv->msg_label = label;
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
