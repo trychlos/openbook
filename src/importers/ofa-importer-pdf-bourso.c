@@ -434,62 +434,6 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 	}
 
 	g_object_unref( doc );
-#if 0
-	ofa_iimportable_set_count( OFA_IIMPORTABLE( importer ), priv->count );
-
-	/* check the totals: this make sure we have all lines with right amounts */
-	if( bat && ( priv->tot_debit || priv->tot_credit )){
-		debit = 0;
-		credit = 0;
-		for( it=bat->details ; it ; it=it->next ){
-			detail = ( ofsBatDetail *  ) it->data;
-			if( detail->amount < 0 ){
-				debit += -1*detail->amount;
-			} else {
-				credit += detail->amount;
-			}
-		}
-
-		if( bat->begin_solde < 0 ){
-			debit += -1*bat->begin_solde;
-		} else {
-			credit += bat->begin_solde;
-		}
-
-		sdebit = ofa_amount_to_str( priv->tot_debit, NULL );
-		scredit = ofa_amount_to_str( priv->tot_credit, NULL );
-		msg = g_strdup_printf( "Bank debit=%s, bank credit=%s", sdebit, scredit );
-		ofa_iimportable_set_message(
-				OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD, msg );
-		g_free( msg );
-		g_free( scredit );
-		g_free( sdebit );
-
-		if( debit == priv->tot_debit && credit == priv->tot_credit ){
-			ofa_iimportable_set_message(
-					OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_STANDARD,
-					_( "All lines successfully imported" ));
-
-		} else {
-			if( debit != priv->tot_debit ){
-				sdebit = ofa_amount_to_str( debit, NULL );
-				msg = g_strdup_printf( _( "Error detected: computed debit=%s" ), sdebit );
-				ofa_iimportable_set_message(
-						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				g_free( sdebit );
-			}
-			if( credit != priv->tot_credit ){
-				scredit = ofa_amount_to_str( credit, NULL );
-				msg = g_strdup_printf( _( "Error detected: computed credit=%s" ), scredit );
-				ofa_iimportable_set_message(
-						OFA_IIMPORTABLE( importer ), priv->count, IMPORTABLE_MSG_ERROR, msg );
-				g_free( msg );
-				g_free( scredit );
-			}
-		}
-	}
-#endif
 
 	return( output );
 }

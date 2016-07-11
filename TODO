@@ -408,7 +408,7 @@
 1174 2016- 7- 5 BUG: when importing via the assistant, provided stream
                 format has character encoding set, but empty
 
-1175 2016- 7-11 BUG: Recurrentnew: amount modified in the first dialog are
+1175 2016- 7-11 BUG: RecurrentNew: amount modified in the first dialog are
                 not saved
 
 1177 2016- 7-11 RecurrentOperation: do not warns when no entry is generated

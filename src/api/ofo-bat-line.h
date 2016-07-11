@@ -62,37 +62,35 @@ typedef struct {
 }
 	ofoBatLineClass;
 
-GType        ofo_bat_line_get_type         ( void ) G_GNUC_CONST;
+GType        ofo_bat_line_get_type                      ( void ) G_GNUC_CONST;
 
-GList       *ofo_bat_line_get_dataset      ( ofaHub *hub, ofxCounter bat_id );
-#define      ofo_bat_line_free_dataset(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
+GList       *ofo_bat_line_get_dataset                   ( ofaHub *hub, ofxCounter bat_id );
+#define      ofo_bat_line_free_dataset(L)               g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
-GList       *ofo_bat_line_get_dataset_for_print_reconcil
-                                           ( ofaHub *hub, const gchar *account_id );
+GList       *ofo_bat_line_get_dataset_for_print_reconcil( ofaHub *hub, const gchar *account_id );
 
-ofxCounter   ofo_bat_line_get_bat_id_from_bat_line_id
-                                           ( ofaHub *hub, ofxCounter line_id );
+ofxCounter   ofo_bat_line_get_bat_id_from_bat_line_id   ( ofaHub *hub, ofxCounter line_id );
 
-ofoBatLine  *ofo_bat_line_new              ( void );
+ofoBatLine  *ofo_bat_line_new                           ( void );
 
-ofxCounter   ofo_bat_line_get_bat_id       ( ofoBatLine *batline );
-ofxCounter   ofo_bat_line_get_line_id      ( ofoBatLine *batline );
-const GDate *ofo_bat_line_get_deffect      ( ofoBatLine *batline );
-const GDate *ofo_bat_line_get_dope         ( ofoBatLine *batline );
-const gchar *ofo_bat_line_get_ref          ( ofoBatLine *batline );
-const gchar *ofo_bat_line_get_label        ( ofoBatLine *batline );
-const gchar *ofo_bat_line_get_currency     ( ofoBatLine *batline );
-ofxAmount    ofo_bat_line_get_amount       ( ofoBatLine *batline );
+ofxCounter   ofo_bat_line_get_bat_id                    ( ofoBatLine *batline );
+ofxCounter   ofo_bat_line_get_line_id                   ( ofoBatLine *batline );
+const GDate *ofo_bat_line_get_deffect                   ( ofoBatLine *batline );
+const GDate *ofo_bat_line_get_dope                      ( ofoBatLine *batline );
+const gchar *ofo_bat_line_get_ref                       ( ofoBatLine *batline );
+const gchar *ofo_bat_line_get_label                     ( ofoBatLine *batline );
+const gchar *ofo_bat_line_get_currency                  ( ofoBatLine *batline );
+ofxAmount    ofo_bat_line_get_amount                    ( ofoBatLine *batline );
 
-void         ofo_bat_line_set_bat_id       ( ofoBatLine *batline, ofxCounter bat_id );
-void         ofo_bat_line_set_deffect      ( ofoBatLine *batline, const GDate *date );
-void         ofo_bat_line_set_dope         ( ofoBatLine *batline, const GDate *date );
-void         ofo_bat_line_set_ref          ( ofoBatLine *batline, const gchar *ref );
-void         ofo_bat_line_set_label        ( ofoBatLine *batline, const gchar *label );
-void         ofo_bat_line_set_currency     ( ofoBatLine *batline, const gchar *currency );
-void         ofo_bat_line_set_amount       ( ofoBatLine *batline, ofxAmount montant );
+void         ofo_bat_line_set_bat_id                    ( ofoBatLine *batline, ofxCounter bat_id );
+void         ofo_bat_line_set_deffect                   ( ofoBatLine *batline, const GDate *date );
+void         ofo_bat_line_set_dope                      ( ofoBatLine *batline, const GDate *date );
+void         ofo_bat_line_set_ref                       ( ofoBatLine *batline, const gchar *ref );
+void         ofo_bat_line_set_label                     ( ofoBatLine *batline, const gchar *label );
+void         ofo_bat_line_set_currency                  ( ofoBatLine *batline, const gchar *currency );
+void         ofo_bat_line_set_amount                    ( ofoBatLine *batline, ofxAmount montant );
 
-gboolean     ofo_bat_line_insert           ( ofoBatLine *batline, ofaHub *hub );
+gboolean     ofo_bat_line_insert                        ( ofoBatLine *batline, ofaHub *hub );
 
 G_END_DECLS
 
