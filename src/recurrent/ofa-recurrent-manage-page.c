@@ -446,8 +446,6 @@ v_setup_buttons( ofaPage *page )
 			ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, _( "_Generate with selected..." ), G_CALLBACK( action_on_generate_clicked ), page );
 
-	ofa_buttons_box_add_spacer( buttons_box );
-
 	btn = ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, _( "_View waiting operations..." ), G_CALLBACK( action_on_view_clicked ), page );
 	gtk_widget_set_sensitive( btn, TRUE );

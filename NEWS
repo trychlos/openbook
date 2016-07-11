@@ -53,6 +53,7 @@
 
    - ImporterPdfBoursorama: fix import when more than one page (todo #1173).
    - GuidedInput: take into account the user set ledger (todo #1152).
+   - RecurrentManagePage: remove extraneous button spacer.
    - RecurrentRun: fix validation status recording (todo #1176).
    - SettlementPage: fix column header (todo #1148).
    - Style: fix selector change introduced with Gtk 3.20 (todo #1171).
