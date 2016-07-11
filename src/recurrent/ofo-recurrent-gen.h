@@ -65,6 +65,8 @@ const GDate *ofo_recurrent_gen_get_last_run_date( ofaHub *hub );
 
 void         ofo_recurrent_gen_set_last_run_date( ofaHub *hub, const GDate *date );
 
+ofxCounter   ofo_recurrent_gen_get_next_numseq  ( ofaHub *hub );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFO_RECURRENT_GEN_H__ */

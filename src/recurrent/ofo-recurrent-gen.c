@@ -43,6 +43,7 @@
 enum {
 	REC_ID = 1,
 	REC_LAST_RUN,
+	REC_LAST_NUMSEQ,
 };
 
 /*
@@ -61,6 +62,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				OFA_TYPE_DATE,
 				TRUE,
 				FALSE },
+		{ OFA_BOX_CSV( REC_LAST_NUMSEQ ),
+				OFA_TYPE_COUNTER,
+				TRUE,
+				FALSE },
 		{ 0 }
 };
 
@@ -71,6 +76,8 @@ typedef struct {
 
 static ofoRecurrentGen *get_this( ofaHub *hub );
 static ofoRecurrentGen *gen_do_read( ofaHub *hub );
+static ofxCounter       recurrent_gen_get_last_numseq( ofoRecurrentGen *gen );
+static void             recurrent_gen_set_last_numseq( ofoRecurrentGen *gen, ofxCounter counter );
 static gboolean         gen_do_update( ofoRecurrentGen *gen );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentGen, ofo_recurrent_gen, OFO_TYPE_BASE, 0,
@@ -180,6 +187,36 @@ ofo_recurrent_gen_get_last_run_date( ofaHub *hub )
 	ofo_base_getter( RECURRENT_GEN, gen, date, NULL, REC_LAST_RUN );
 }
 
+/*
+ * ofo_recurrent_gen_get_last_numseq:
+ */
+static ofxCounter
+recurrent_gen_get_last_numseq( ofoRecurrentGen *gen )
+{
+	g_return_val_if_fail( gen && OFO_IS_RECURRENT_GEN( gen ), 0 );
+
+	ofo_base_getter( RECURRENT_GEN, gen, counter, 0, REC_LAST_NUMSEQ );
+}
+
+/**
+ * ofo_recurrent_gen_get_next_numseq:
+ */
+ofxCounter
+ofo_recurrent_gen_get_next_numseq( ofaHub *hub )
+{
+	ofxCounter last, next;
+
+	ofoRecurrentGen *gen = get_this( hub );
+	g_return_val_if_fail( gen && OFO_IS_RECURRENT_GEN( gen ), 0 );
+
+	last = recurrent_gen_get_last_numseq( gen );
+	next = last+1;
+	recurrent_gen_set_last_numseq( gen, next );
+	gen_do_update( gen );
+
+	return( next );
+}
+
 /**
  * ofo_recurrent_gen_set_last_run_date:
  */
@@ -193,6 +230,17 @@ ofo_recurrent_gen_set_last_run_date( ofaHub *hub, const GDate *date )
 	gen_do_update( gen );
 }
 
+/*
+ * ofo_recurrent_gen_set_last_run_date:
+ */
+static void
+recurrent_gen_set_last_numseq( ofoRecurrentGen *gen, ofxCounter counter )
+{
+	g_return_if_fail( gen && OFO_IS_RECURRENT_GEN( gen ));
+
+	ofo_base_setter( RECURRENT_GEN, gen, counter, REC_LAST_NUMSEQ, counter );
+}
+
 static gboolean
 gen_do_update( ofoRecurrentGen *gen )
 {
@@ -202,6 +250,7 @@ gen_do_update( ofoRecurrentGen *gen )
 	GString *query;
 	const GDate *lastrun;
 	gchar *slastrun;
+	ofxCounter last_numseq;
 
 	hub = ofo_base_get_hub( OFO_BASE( gen ));
 	connect = ofa_hub_get_connect( hub );
@@ -216,6 +265,9 @@ gen_do_update( ofoRecurrentGen *gen )
 	} else {
 		query = g_string_append( query, "REC_LAST_RUN=NULL" );
 	}
+
+	last_numseq = recurrent_gen_get_last_numseq( gen );
+	g_string_append_printf( query, ", REC_LAST_NUMSEQ=%ld", last_numseq );
 
 	ok = ofa_idbconnect_query( connect, query->str, TRUE );
 

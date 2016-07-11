@@ -42,6 +42,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 
+#include "ofo-recurrent-gen.h"
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
 
@@ -127,6 +128,7 @@ static const sLabels st_labels[] = {
 };
 
 static ofxCounter recurrent_run_get_numseq( const ofoRecurrentRun *model );
+static void       recurrent_run_set_numseq( ofoRecurrentRun *model, ofxCounter numseq );
 static void       recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
 static void       recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
 static gboolean   recurrent_run_do_insert( ofoRecurrentRun *model, ofaHub *hub );
@@ -412,6 +414,15 @@ ofo_recurrent_run_compare( const ofoRecurrentRun *a, const ofoRecurrentRun *b )
 	return( recurrent_run_cmp_by_ptr( a, b ));
 }
 
+/*
+ * ofo_recurrent_run_set_numseq:
+ */
+static void
+recurrent_run_set_numseq( ofoRecurrentRun *model, ofxCounter numseq )
+{
+	ofo_base_setter( RECURRENT_RUN, model, counter, REC_NUMSEQ, numseq );
+}
+
 /**
  * ofo_recurrent_run_set_mnemo:
  */
@@ -531,6 +542,7 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	gchar *sdate, *userid, *stamp_str, *samount;
 	GTimeVal stamp;
 	ofoRecurrentModel *model;
+	ofxCounter numseq;
 
 	connect = ofa_hub_get_connect( hub );
 
@@ -541,13 +553,16 @@ recurrent_run_insert_main( ofoRecurrentRun *recrun, ofaHub *hub )
 	mnemo = ofo_recurrent_run_get_mnemo( recrun );
 	model = ofo_recurrent_model_get_by_mnemo( hub, mnemo );
 
+	numseq = ofo_recurrent_gen_get_next_numseq( hub );
+	recurrent_run_set_numseq( recrun, numseq );
+
 	query = g_string_new( "INSERT INTO REC_T_RUN " );
 
 	g_string_append_printf( query,
-			"	(REC_MNEMO,REC_DATE,REC_STATUS,"
+			"	(REC_NUMSEQ,REC_MNEMO,REC_DATE,REC_STATUS,"
 			"	 REC_AMOUNT1,REC_AMOUNT2,REC_AMOUNT3,"
-			"	 REC_UPD_USER, REC_UPD_STAMP) VALUES ('%s',",
-			mnemo );
+			"	 REC_UPD_USER, REC_UPD_STAMP) VALUES (%ld,'%s',",
+			numseq,mnemo );
 
 	date = ofo_recurrent_run_get_date( recrun );
 	g_return_val_if_fail( my_date_is_valid( date ), FALSE );

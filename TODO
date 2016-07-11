@@ -412,9 +412,10 @@
 1175 2016- 7-11 BUG: Recurrentnew: amount modified in the first dialog are
                 not saved
 
-1176 2016- 7-11 BUG: Recurrent: validating operation is not recorded
+1177 2016- 7-11 RecurrentOperation: do not warns when no entry is generated
+                (but only display the info)
 
-1177
+1178
 
 -----------------------------------------------------------------------
  DONE
@@ -1545,6 +1546,10 @@
 1171 2016- 6- 7 BUG: style no more works
      2016- 6- 7 This is due to a change in main CSS selector
      2016- 7-11 fixed
+
+1176 2016- 7-11 BUG: Recurrent: validating operation is not recorded
+     2016- 7-11 because of auto-increment, did not have numseq up to date
+                -> fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
