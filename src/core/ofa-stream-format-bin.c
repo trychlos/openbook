@@ -110,6 +110,7 @@ static void     mode_on_changed( GtkComboBox *combo, ofaStreamFormatBin *self );
 static void     mode_set_sensitive( ofaStreamFormatBin *self );
 static void     encoding_init( ofaStreamFormatBin *self );
 static GList   *encoding_get_available( void );
+static GList   *encoding_get_defaults( void );
 static gchar   *encoding_get_selected( ofaStreamFormatBin *self );
 static void     encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self );
 static void     encoding_on_changed( GtkComboBox *box, ofaStreamFormatBin *self );
@@ -455,6 +456,9 @@ encoding_init( ofaStreamFormatBin *self )
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( priv->encoding_combo ), cell, "text", MAP_COL_CODE );
 
 	charmaps = encoding_get_available();
+	if( !g_list_length( charmaps )){
+		charmaps = encoding_get_defaults();
+	}
 
 	for( it=charmaps, i=0 ; it ; it=it->next, ++i ){
 		cstr = ( const gchar * ) it->data;
@@ -462,9 +466,10 @@ encoding_init( ofaStreamFormatBin *self )
 				MAP_COL_CODE, cstr,
 				-1 );
 	}
-	gtk_combo_box_set_id_column( GTK_COMBO_BOX( priv->encoding_combo ), MAP_COL_CODE );
 
 	g_list_free_full( charmaps, ( GDestroyNotify ) g_free );
+
+	gtk_combo_box_set_id_column( GTK_COMBO_BOX( priv->encoding_combo ), MAP_COL_CODE );
 
 	g_signal_connect( priv->encoding_combo, "changed", G_CALLBACK( encoding_on_changed ), self );
 
@@ -475,8 +480,13 @@ encoding_init( ofaStreamFormatBin *self )
 }
 
 /*
- * on Fedora, the 'locales -m' command returns available charmaps
+ * On Fedora, the 'locale -m' command returns available charmaps
  * alphabetically sorted.
+ *
+ * Fedora 24:
+ * 'locale -m' returns an empty list
+ * 'iconv -l' returns a lot of comma-separated known character sets with aliases
+ * grep -e ^module /usr/lib64/gconv/gconv-modules | awk '{ print $2 }' | grep -v INTERNAL | sort -u returns 270 lines
  */
 static GList *
 encoding_get_available( void )
@@ -517,24 +527,67 @@ encoding_get_available( void )
 	return( g_list_reverse( charmaps ));
 }
 
+/*
+ * when unable to get locally installed charsets,
+ * we provide this set of defaults from charsets (7) man page
+ */
+static GList *
+encoding_get_defaults( void )
+{
+	static gchar* st_charsets[] = {
+			"ASCII",
+			"BIG5",
+			"ISO-2022",
+			"ISO-4873",
+			"ISO-8859-1",
+			"ISO-8859-2",
+			"ISO-8859-3",
+			"ISO-8859-4",
+			"ISO-8859-5",
+			"ISO-8859-6",
+			"ISO-8859-7",
+			"ISO-8859-8",
+			"ISO-8859-9",
+			"ISO-8859-10",
+			"ISO-8859-11",
+			"ISO-8859-12",
+			"ISO-8859-13",
+			"ISO-8859-14",
+			"ISO-8859-15",
+			"ISO-8859-16",
+			"GB-2312",
+			"JIS-X-0208",
+			"KOI8-R",
+			"KOI8-U",
+			"KS-X-1001",
+			"TIS-620",
+			"UTF-8",
+			"UTF-16",
+			NULL,
+	};
+	gint i;
+	GList *charmaps;
+
+	charmaps = NULL;
+
+	for( i=0 ; st_charsets[i] ; ++i ){
+		charmaps = g_list_prepend( charmaps, g_strdup( st_charsets[i] ));
+	}
+
+	return( g_list_reverse( charmaps ));
+}
+
 static gchar *
 encoding_get_selected( ofaStreamFormatBin *self )
 {
 	ofaStreamFormatBinPrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *charmap;
+	const gchar *charmap;
 
 	priv = ofa_stream_format_bin_get_instance_private( self );
-	charmap = NULL;
 
-	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( priv->encoding_combo ), &iter )){
-		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( priv->encoding_combo ));
-		g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL( tmodel ), FALSE );
-		gtk_tree_model_get( tmodel, &iter, MAP_COL_CODE, &charmap, -1 );
-	}
+	charmap = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->encoding_combo ));
 
-	return( charmap );
+	return( g_strdup( charmap ));
 }
 
 static void
@@ -547,7 +600,6 @@ encoding_on_has_toggled( GtkToggleButton *btn, ofaStreamFormatBin *self )
 
 	active = gtk_toggle_button_get_active( btn );
 	gtk_widget_set_sensitive( priv->encoding_combo, active && priv->updatable );
-	g_debug( "set_sensitive_combo: %s", active && priv->updatable ? "True":"False" );
 
 	g_signal_emit_by_name( self, "ofa-changed" );
 }

@@ -399,9 +399,6 @@
                 columns
      2016- 7-11 currency: done
 
-1170 2016- 6- 7 BUG: import assistant: stream format: encoding format
-                does not get sensitive when toggled
-
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
@@ -1541,6 +1538,11 @@
 
 1164 2016- 6-27 Open Freelance Accounting: should be renamed Open F. Accounting
      2016- 6-28 done
+
+1170 2016- 6- 7 BUG: import assistant: stream format: encoding format
+                does not get sensitive when toggled
+     2016- 7-11 this is because the charmaps is empty
+                -> fixed
 
 1171 2016- 6- 7 BUG: style no more works
      2016- 6- 7 This is due to a change in main CSS selector

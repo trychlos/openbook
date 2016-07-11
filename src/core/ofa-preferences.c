@@ -223,10 +223,7 @@ ofa_preferences_init( ofaPreferences *self )
 
 	priv->dispose_has_run = FALSE;
 
-	/* this init_template() is very long, but why !? */
-	g_debug( "%s: before init_template", thisfn );
 	gtk_widget_init_template( GTK_WIDGET( self ));
-	g_debug( "%s: after init_template", thisfn );
 }
 
 static void
