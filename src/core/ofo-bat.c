@@ -1473,11 +1473,15 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 }
 
 /*
- * parse to a dataset
+ * parse a dataset
+ *
+ * If the importer has been able to provide both begin and and soldes,
+ * then we can check the completeness of the lines here.
  */
 static GList *
 iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines )
 {
+	static const gchar *thisfn = "ofo_bat_iimportable_import_parse";
 	GList *dataset;
 	GSList *itl, *fields, *itf;
 	const gchar *cstr;
@@ -1487,11 +1491,15 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	ofoBatLine *line;
 	gint year;
 	const GDate *date;
+	gboolean checkable;
+	ofxAmount end_solde, amount;
 
 	year = 0;
 	numline = 0;
 	bat = NULL;
 	dataset = NULL;
+	amount = 0;
+	checkable = FALSE;
 	total = g_slist_length( lines );
 
 	ofa_iimporter_progress_start( importer, parms );
@@ -1520,24 +1528,39 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				if( bat ){
 					dataset = g_list_prepend( dataset, bat );
 					parms->parsed_count += 1;
+					checkable = ofo_bat_get_begin_solde_set( bat ) && ofo_bat_get_end_solde_set( bat );
+					if( checkable ){
+						amount = ofo_bat_get_begin_solde( bat );
+					}
 				}
 				break;
 			case 2:
-				if( year == 0 && bat ){
-					date = ofo_bat_get_begin_date( bat );
-					if( my_date_is_valid( date )){
-						year = g_date_get_year( date );
-					} else {
-						date = ofo_bat_get_end_date( bat );
+				if( !bat ){
+					str = g_strdup_printf( _( "invalid line type %d while BAT not defined" ), type );
+					ofa_iimporter_progress_num_text( importer, parms, numline, str );
+					g_free( str );
+					parms->parse_errs += 1;
+					total -= 1;
+				} else {
+					if( year == 0 ){
+						date = ofo_bat_get_begin_date( bat );
 						if( my_date_is_valid( date )){
 							year = g_date_get_year( date );
+						} else {
+							date = ofo_bat_get_end_date( bat );
+							if( my_date_is_valid( date )){
+								year = g_date_get_year( date );
+							}
 						}
 					}
-				}
-				line = iimportable_import_parse_line( importer, parms, numline, itf, year );
-				if( line ){
-					dataset = g_list_prepend( dataset, line );
-					parms->parsed_count += 1;
+					line = iimportable_import_parse_line( importer, parms, numline, itf, year );
+					if( line ){
+						dataset = g_list_prepend( dataset, line );
+						parms->parsed_count += 1;
+						if( checkable ){
+							amount += ofo_bat_line_get_amount( line );
+						}
+					}
 				}
 				break;
 			default:
@@ -1550,6 +1573,17 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		}
 
 		ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
+	}
+
+	if( checkable ){
+		end_solde = ofo_bat_get_end_solde( bat );
+		if( !my_double_is_zero( amount-end_solde, 1+CUR_DEFAULT_DIGITS )){
+			str = g_strdup_printf( _( "expected end solde %lf not equal to computed one %lf" ), end_solde, amount );
+			ofa_iimporter_progress_num_text( importer, parms, numline, str );
+			g_debug( "%s: %s", thisfn, str );
+			g_free( str );
+			parms->parse_errs += 1;
+		}
 	}
 
 	return( g_list_reverse( dataset ));
