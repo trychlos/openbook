@@ -395,6 +395,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	ofaCurrencyCombo *combo;
 	gint row;
 	ofaHub *hub;
+	static gint currency_cols[] = { CURRENCY_COL_CODE, -1 };
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
@@ -408,7 +409,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	gtk_grid_attach( priv->grid, widget, COL_CURRENCY, row, 1, 1 );
 	combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( combo ));
-	ofa_currency_combo_set_columns( combo, CURRENCY_DISP_CODE );
+	ofa_currency_combo_set_columns( combo, currency_cols );
 	ofa_currency_combo_set_hub( combo, hub );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));
@@ -417,8 +418,8 @@ add_empty_row( ofaClosingParmsBin *self )
 	/* account number */
 	widget = gtk_entry_new();
 	g_object_set_data( G_OBJECT( widget ), DATA_ROW, GINT_TO_POINTER( row ));
-	gtk_entry_set_width_chars( GTK_ENTRY( widget ), 14 );
 	gtk_grid_attach( priv->grid, widget, COL_ACCOUNT, row, 1, 1 );
+	ofa_account_editable_init( GTK_EDITABLE( widget ), priv->getter, ACCOUNT_ALLOW_DETAIL );
 	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
 
 	/* management buttons */
@@ -560,7 +561,6 @@ set_account( ofaClosingParmsBin *self, const gchar *currency, const gchar *accou
 	if( entry ){
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), account );
-		ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_DETAIL );
 	}
 }
 

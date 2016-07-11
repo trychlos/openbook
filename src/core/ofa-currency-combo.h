@@ -66,7 +66,7 @@ GType             ofa_currency_combo_get_type    ( void ) G_GNUC_CONST;
 ofaCurrencyCombo *ofa_currency_combo_new         ( void );
 
 void              ofa_currency_combo_set_columns ( ofaCurrencyCombo *combo,
-														ofaCurrencyColumns columns );
+														gint *columns );
 
 void              ofa_currency_combo_set_hub     ( ofaCurrencyCombo *combo,
 														ofaHub *hub );

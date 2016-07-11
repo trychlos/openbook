@@ -501,7 +501,7 @@ tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentManagePage *self
 }
 
 /*
- * sorting the store
+ * sorting the treeview
  */
 static gint
 tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentManagePage *self )
@@ -582,6 +582,7 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 	g_free( stemplatea );
 	g_free( slabela );
 	g_free( smnemoa );
+	g_object_unref( pnga );
 
 	g_free( sdef1b );
 	g_free( sdef2b );
@@ -591,6 +592,7 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRe
 	g_free( stemplateb );
 	g_free( slabelb );
 	g_free( smnemob );
+	g_object_unref( pngb );
 
 	/* return -1 if a > b, so that the order indicator points to the smallest:
 	 * ^: means from smallest to greatest (ascending order)

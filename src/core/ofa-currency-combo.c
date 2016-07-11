@@ -39,12 +39,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean            dispose_has_run;
+	gboolean          dispose_has_run;
 
 	/* runtime
 	 */
-	ofaCurrencyColumns  columns;
-	ofaCurrencyStore   *store;
+	ofaCurrencyStore *store;
 }
 	ofaCurrencyComboPrivate;
 
@@ -57,7 +56,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void create_combo_columns( ofaCurrencyCombo *combo );
+static void create_combo_columns( ofaCurrencyCombo *combo, gint *columns );
 static void on_currency_changed( ofaCurrencyCombo *combo, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyCombo, ofa_currency_combo, GTK_TYPE_COMBO_BOX, 0,
@@ -168,9 +167,13 @@ ofa_currency_combo_new( void )
 
 /**
  * ofa_currency_combo_set_columns:
+ * @combo: this #ofaCurrencyCombo instance.
+ * @columns: a [-1] - terminated array of columns identifiers.
+ *
+ * Create the desired columns in the specified order.
  */
 void
-ofa_currency_combo_set_columns( ofaCurrencyCombo *combo, ofaCurrencyColumns columns )
+ofa_currency_combo_set_columns( ofaCurrencyCombo *combo, gint *columns )
 {
 	ofaCurrencyComboPrivate *priv;
 
@@ -180,40 +183,36 @@ ofa_currency_combo_set_columns( ofaCurrencyCombo *combo, ofaCurrencyColumns colu
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->columns = columns;
-	create_combo_columns( combo );
+	create_combo_columns( combo, columns );
 }
 
 static void
-create_combo_columns( ofaCurrencyCombo *combo )
+create_combo_columns( ofaCurrencyCombo *combo, gint *columns )
 {
-	ofaCurrencyComboPrivate *priv;
+	gint i;
 	GtkCellRenderer *cell;
 
-	priv = ofa_currency_combo_get_instance_private( combo );
+	for( i=0 ; columns[i]>=0 ; ++i ){
+		if( columns[i] == CURRENCY_COL_CODE ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
 
-	if( priv->columns & CURRENCY_DISP_CODE ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", CURRENCY_COL_CODE );
-	}
+		} else if( columns[i] == CURRENCY_COL_LABEL ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, TRUE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
 
-	if( priv->columns & CURRENCY_DISP_LABEL ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", CURRENCY_COL_LABEL );
-	}
+		} else if( columns[i] == CURRENCY_COL_SYMBOL ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
 
-	if( priv->columns & CURRENCY_DISP_SYMBOL ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", CURRENCY_COL_SYMBOL );
-	}
-
-	if( priv->columns & CURRENCY_DISP_DIGITS ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", CURRENCY_COL_DIGITS );
+		} else if( columns[i] == CURRENCY_COL_DIGITS ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
+		}
 	}
 
 	gtk_combo_box_set_id_column ( GTK_COMBO_BOX( combo ), CURRENCY_COL_CODE );

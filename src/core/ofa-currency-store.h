@@ -73,6 +73,17 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
+ *                                                                Type     Displayable
+ *                                                                -------  -----------
+ * @CURRENCY_COL_CODE      : identifier                           String       Yes
+ * @CURRENCY_COL_LABEL     : label                                String       Yes
+ * @CURRENCY_COL_SYMBOL    : symbol                               String       Yes
+ * @CURRENCY_COL_DIGITS    : decimal digits count                 String       Yes
+ * @CURRENCY_COL_NOTES     : notes                                String        ?
+ * @CURRENCY_COL_NOTES_PNG : notes indicator                      Pixbuf       Yes
+ * @CURRENCY_COL_UPD_USER  : last update user                     String       Yes
+ * @CURRENCY_COL_UPD_STAMP : last update timestamp                String       Yes
+ * @CURRENCY_COL_OBJECT    : #ofoCurrency object                  GObject       No
  */
 enum {
 	CURRENCY_COL_CODE = 0,
@@ -86,22 +97,6 @@ enum {
 	CURRENCY_COL_OBJECT,
 	CURRENCY_N_COLUMNS
 };
-
-/**
- * ofaCurrencyColumns:
- * The columns displayed in the views.
- */
-typedef enum {
-	CURRENCY_DISP_CODE      = 1 << 0,
-	CURRENCY_DISP_LABEL     = 1 << 1,
-	CURRENCY_DISP_SYMBOL    = 1 << 2,
-	CURRENCY_DISP_DIGITS    = 1 << 3,
-	CURRENCY_DISP_NOTES     = 1 << 4,
-	CURRENCY_DISP_NOTES_PNG = 1 << 5,
-	CURRENCY_DISP_UPD_USER  = 1 << 6,
-	CURRENCY_DISP_UPD_STAMP = 1 << 7,
-}
-	ofaCurrencyColumns;
 
 GType             ofa_currency_store_get_type( void );
 

@@ -41,6 +41,7 @@
    - BatTreeview: add a Notes indicator (todo #1157).
    - ClassPage: add a Notes indicator (todo #1157).
    - CurrencyPage: add a Notes indicator (todo #1157).
+   - CurrencyPage: make the treeview sortable.
    - LedgerPage: add a Notes indicator (todo #1157).
    - OpeTemplateFrame: add a Notes indicator (todo #1157).
    - RecurrentManagePage: add a Notes indicator (todo #1157).

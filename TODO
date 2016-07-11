@@ -397,13 +397,24 @@
                 -> this should be an enum, so that the caller has to provide
                 an array, and so the caller may decide the order of the
                 columns
+     2016- 7-11 currency: done
 
 1170 2016- 6- 7 BUG: import assistant: stream format: encoding format
                 does not get sensitive when toggled
 
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
 
-1173
+1173 2016- 7- 5 BUG: unable to import boursorama 30/6
+
+1174 2016- 7- 5 BUG: when importing via the assistant, provided stream
+                format has character encoding set, but empty
+
+1175 2016- 7-11 BUG: Recurrentnew: amount modified in the first dialog are
+                not saved
+
+1176 2016- 7-11 BUG: Recurrent: validating operation is not recorded
+
+1177
 
 -----------------------------------------------------------------------
  DONE

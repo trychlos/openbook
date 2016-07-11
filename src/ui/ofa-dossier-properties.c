@@ -365,6 +365,7 @@ init_properties_page( ofaDossierProperties *self )
 	gint ivalue;
 	const GDate *last_closed;
 	ofaHub *hub;
+	static gint currency_cols[] = { CURRENCY_COL_CODE, -1 };
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
@@ -415,7 +416,7 @@ init_properties_page( ofaDossierProperties *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	c_combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( c_combo ));
-	ofa_currency_combo_set_columns( c_combo, CURRENCY_DISP_CODE );
+	ofa_currency_combo_set_columns( c_combo, currency_cols );
 	ofa_currency_combo_set_hub( c_combo, hub );
 	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
