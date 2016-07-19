@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "my/my-utils.h"
 
@@ -78,10 +79,10 @@ typedef struct {
  * we are defining the inverse indicator, and we are going to sort
  * in reverse order to have our own illusion
  */
-#define OFA_SORT_ASCENDING                   GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING                  GTK_SORT_ASCENDING
+#define OFA_SORT_ASCENDING                 GTK_SORT_DESCENDING
+#define OFA_SORT_DESCENDING                GTK_SORT_ASCENDING
 
-static const gchar *st_page_sort_settings = "ofaCurrencyPage-sort";
+static const gchar *st_sort_settings    = "ofaCurrencyPage-sort";
 
 static GtkWidget   *v_setup_view( ofaPage *page );
 static GtkWidget   *setup_tree_view( ofaCurrencyPage *self );
@@ -878,7 +879,7 @@ get_sort_settings( ofaCurrencyPage *self )
 
 	priv = ofa_currency_page_get_instance_private( self );
 
-	slist = ofa_settings_user_get_string_list( st_page_sort_settings );
+	slist = ofa_settings_user_get_string_list( st_sort_settings );
 
 	it = slist ? slist : NULL;
 	cstr = it ? it->data : NULL;
@@ -904,7 +905,7 @@ static void set_sort_settings( ofaCurrencyPage *self )
 
 	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_sens );
 
-	ofa_settings_user_set_string( st_page_sort_settings, str );
+	ofa_settings_user_set_string( st_sort_settings, str );
 
 	g_free( str );
 }
