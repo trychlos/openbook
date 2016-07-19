@@ -41,6 +41,7 @@
    - Rename the application to Open Firm Accounting (todo #1164).
    - BatImport: add a completeness check on imported lines.
    - BatTreeview: add a Notes indicator (todo #1157).
+   - BatTreeview: make the treeview sortable (todo #1167).
    - ClassPage: add a Notes indicator (todo #1157).
    - CurrencyPage: add a Notes indicator (todo #1157).
    - CurrencyPage: make the treeview sortable.

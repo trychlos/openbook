@@ -73,6 +73,27 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
+ *                                                                Type     Displayable
+ *                                                                -------  -----------
+ * @BAT_COL_ID                : identifier                        String       Yes
+ * @BAT_COL_URI               : source uri                        String       Yes
+ * @BAT_COL_FORMAT            : format                            String       Yes
+ * @BAT_COL_BEGIN             : begin date                        String       Yes
+ * @BAT_COL_END               : end date                          String       Yes
+ * @BAT_COL_RIB               : rib                               String       Yes
+ * @BAT_COL_CURRENCY          : currency iso 3a                   String       Yes
+ * @BAT_COL_BEGIN_SOLDE       : beginning solde                   String       Yes
+ * @BAT_COL_BEGIN_SOLDE_SET   : whether begin solde is set        Bool          No
+ * @BAT_COL_END_SOLDE         : ending solde                      String       Yes
+ * @BAT_COL_END_SOLDE_SET     : whether end solde is set          Bool          No
+ * @BAT_COL_NOTES             : notes                             String       Yes
+ * @BAT_COL_NOTES_PNG         : notes indicator                   Pixbuf       Yes
+ * @BAT_COL_COUNT             : total lines count                 String       Yes
+ * @BAT_COL_UNUSED            : unused lines count                String       Yes
+ * @BAT_COL_ACCOUNT           : Openbook account                  String       Yes
+ * @BAT_COL_UPD_USER          : last update user                  String       Yes
+ * @BAT_COL_UPD_STAMP         : last update timestamp             String       Yes
+ * @BAT_COL_OBJECT            : #ofoBat object                    GObject       No
  */
 enum {
 	BAT_COL_ID = 0,

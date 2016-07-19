@@ -386,7 +386,12 @@
 1166 2016- 6-28 FEAT: have a progress bar when validating more than one
                 recurrent operation
 
-1167 2016- 6-28 FEAT: BatPage: be able to sort
+1167 2016- 6-28 FEAT: BatPage: be able to sort: done
+     2016- 7-18 id. LedgerPage
+                id. OpeTemplatePage
+                id. RatePage
+                id. ClassPage
+                id. VAT form management
 
 1168 2016- 6-28 VAT Declaration: "invalid operation date" message should
                 be italic (same than real error, but the color)
@@ -395,15 +400,11 @@
                 between enum (e.g. account) and bit array (e.g. currency,
                 ledger, rec_model, tva_form)
                 -> this should be an enum, so that the caller has to provide
-                an array, and so the caller may decide the order of the
-                columns
+                an array, and thus may decide the order of the columns
      2016- 7-11 currency: done
 
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
-
-1174 2016- 7- 5 BUG: when importing via the assistant, provided stream
-                format has character encoding set, but empty
 
 1175 2016- 7-11 BUG: RecurrentNew: amount modified in the first dialog are
                 not saved
@@ -1551,6 +1552,10 @@
 1173 2016- 7- 5 BUG: unable to import boursorama 30/6
      2016- 7-11 first time we have two pages
                 -> fixed
+
+1174 2016- 7- 5 BUG: when importing via the assistant, provided stream
+                format has character encoding set, but empty
+     2016- 7-11 duplicate of #1170
 
 1176 2016- 7-11 BUG: Recurrent: validating operation is not recorded
      2016- 7-11 because of auto-increment, did not have numseq up to date

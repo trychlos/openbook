@@ -60,41 +60,12 @@ typedef struct {
 }
 	ofaBatTreeviewClass;
 
-/**
- * ofaBatColumns:
- * The columns displayed in the views.
- */
-typedef enum {
-	BAT_DISP_ID = 1,
-	BAT_DISP_URI,
-	BAT_DISP_FORMAT,
-	BAT_DISP_BEGIN,
-	BAT_DISP_END,
-	BAT_DISP_RIB,
-	BAT_DISP_CURRENCY,
-	BAT_DISP_BEGIN_SOLDE,
-	BAT_DISP_BEGIN_SOLDE_SET,
-	BAT_DISP_END_SOLDE,
-	BAT_DISP_END_SOLDE_SET,
-	BAT_DISP_NOTES,
-	BAT_DISP_NOTES_PNG,
-	BAT_DISP_COUNT,
-	BAT_DISP_UNUSED,
-	BAT_DISP_ACCOUNT,
-	BAT_DISP_UPD_USER,
-	BAT_DISP_UPD_STAMP
-}
-	ofaBatColumns;
-
 GType           ofa_bat_treeview_get_type    ( void ) G_GNUC_CONST;
 
 ofaBatTreeview *ofa_bat_treeview_new         ( void );
 
 void            ofa_bat_treeview_set_columns ( ofaBatTreeview *view,
-													ofaBatColumns *columns );
-
-void            ofa_bat_treeview_set_delete  ( ofaBatTreeview *view,
-													gboolean authorize );
+													gint *columns );
 
 void            ofa_bat_treeview_set_hub     ( ofaBatTreeview *view,
 													ofaHub *hub );

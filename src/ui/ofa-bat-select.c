@@ -41,6 +41,7 @@
 
 #include "ui/ofa-bat-properties-bin.h"
 #include "ui/ofa-bat-select.h"
+#include "ui/ofa-bat-store.h"
 #include "ui/ofa-bat-treeview.h"
 
 /* private instance data
@@ -257,7 +258,9 @@ static void
 setup_treeview( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	static ofaBatColumns st_columns[] = { BAT_DISP_URI, BAT_DISP_UNUSED, BAT_DISP_ACCOUNT, 0 };
+	static gint st_columns[] = {
+			BAT_COL_URI, BAT_COL_UNUSED, BAT_COL_ACCOUNT,
+			-1 };
 	ofaHub *hub;
 	GtkWidget *widget;
 

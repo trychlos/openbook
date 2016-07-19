@@ -45,6 +45,7 @@
 
 #include "ui/ofa-bat-page.h"
 #include "ui/ofa-bat-properties.h"
+#include "ui/ofa-bat-store.h"
 #include "ui/ofa-bat-treeview.h"
 #include "ui/ofa-bat-utils.h"
 
@@ -139,14 +140,14 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
 	ofaHub *hub;
-	static ofaBatColumns st_columns [] = {
-			BAT_DISP_ID, BAT_DISP_BEGIN, BAT_DISP_END,
-			BAT_DISP_FORMAT, BAT_DISP_RIB,
-			BAT_DISP_NOTES_PNG,
-			BAT_DISP_COUNT, BAT_DISP_UNUSED,
-			BAT_DISP_BEGIN_SOLDE, BAT_DISP_END_SOLDE, BAT_DISP_CURRENCY,
-			BAT_DISP_ACCOUNT,
-			0 };
+	static gint st_columns [] = {
+			BAT_COL_ID, BAT_COL_BEGIN, BAT_COL_END,
+			BAT_COL_FORMAT, BAT_COL_RIB,
+			BAT_COL_NOTES_PNG,
+			BAT_COL_COUNT, BAT_COL_UNUSED,
+			BAT_COL_BEGIN_SOLDE, BAT_COL_END_SOLDE, BAT_COL_CURRENCY,
+			BAT_COL_ACCOUNT,
+			-1 };
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
