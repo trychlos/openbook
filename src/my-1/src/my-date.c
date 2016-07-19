@@ -108,8 +108,8 @@ my_date_compare( const GDate *a, const GDate *b )
 
 /**
  * my_date_compare_ex:
- * @a: the first #GDate to be compared
- * @b: the second #GDate to be compared to @a
+ * @a: [allow-none]: the first #GDate to be compared
+ * @b: [allow-none]: the second #GDate to be compared to @a
  * @clear_is_past_infinite: if %TRUE, then any cleared or invalid date
  *  is considered as a past infinite value, and set as lesser than
  *  anything, but another past infinite value.
