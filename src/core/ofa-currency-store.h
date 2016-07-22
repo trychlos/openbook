@@ -73,17 +73,18 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                                Type     Displayable
- *                                                                -------  -----------
- * @CURRENCY_COL_CODE      : identifier                           String       Yes
- * @CURRENCY_COL_LABEL     : label                                String       Yes
- * @CURRENCY_COL_SYMBOL    : symbol                               String       Yes
- * @CURRENCY_COL_DIGITS    : decimal digits count                 String       Yes
- * @CURRENCY_COL_NOTES     : notes                                String        ?
- * @CURRENCY_COL_NOTES_PNG : notes indicator                      Pixbuf       Yes
- * @CURRENCY_COL_UPD_USER  : last update user                     String       Yes
- * @CURRENCY_COL_UPD_STAMP : last update timestamp                String       Yes
- * @CURRENCY_COL_OBJECT    : #ofoCurrency object                  GObject       No
+ *                                                                      Displayable  Displayable
+ *                                                             Type     in treeview    in combo
+ *                                                             -------  -----------  -----------
+ * @CURRENCY_COL_CODE      : identifier                        String       Yes          xxx
+ * @CURRENCY_COL_LABEL     : label                             String       Yes
+ * @CURRENCY_COL_SYMBOL    : symbol                            String       Yes
+ * @CURRENCY_COL_DIGITS    : decimal digits count              String       Yes
+ * @CURRENCY_COL_NOTES     : notes                             String        ?
+ * @CURRENCY_COL_NOTES_PNG : notes indicator                   Pixbuf       Yes
+ * @CURRENCY_COL_UPD_USER  : last update user                  String       Yes
+ * @CURRENCY_COL_UPD_STAMP : last update timestamp             String       Yes
+ * @CURRENCY_COL_OBJECT    : #ofoCurrency object               GObject       No
  */
 enum {
 	CURRENCY_COL_CODE = 0,

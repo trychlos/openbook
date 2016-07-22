@@ -387,10 +387,10 @@
                 recurrent operation
 
 1167 2016- 6-28 FEAT: BatPage: be able to sort: done
-     2016- 7-18 id. LedgerPage: done
+     2016- 7-18 id. LedgerPage:                 done
                 id. OpeTemplatePage
                 id. RatePage
-                id. ClassPage
+                id. ClassPage:                  done
                 id. VAT form management
 
 1168 2016- 6-28 VAT Declaration: "invalid operation date" message should

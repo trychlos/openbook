@@ -243,7 +243,7 @@ setup_tree_view( ofaClassPage *self )
 	priv->store = ofa_class_store_new( priv->hub );
 
 	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
-	/* the sortable model maintains its own reference to the store */
+	/* the sortable model maintains its own reference on the store */
 	g_object_unref( priv->store );
 
 	gtk_tree_sortable_set_default_sort_func(
@@ -252,7 +252,7 @@ setup_tree_view( ofaClassPage *self )
 			GTK_TREE_SORTABLE( priv->sort_model ), CLASS_COL_NOTES_PNG, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
 
 	gtk_tree_view_set_model( priv->tview, priv->sort_model );
-	/* the treeview maintains its own reference to the sortable model */
+	/* the treeview maintains its own reference on the sortable model */
 	g_object_unref( priv->sort_model );
 
 	get_sort_settings( self );

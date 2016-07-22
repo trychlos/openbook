@@ -257,7 +257,11 @@ setup_tree_view( ofaCurrencyPage *self )
 	priv->store = ofa_currency_store_new( priv->hub );
 
 	priv->tsort = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
+	/* the sortable model maintains its own reference on the store */
+	g_object_unref( priv->store );
+
 	gtk_tree_view_set_model( priv->tview, priv->tsort );
+	/* the treeview maintains its own reference on the sortable model */
 	g_object_unref( priv->tsort );
 
 	/* default is to sort by ascending iso 3a identifier

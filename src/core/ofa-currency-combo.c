@@ -237,7 +237,10 @@ ofa_currency_combo_set_hub( ofaCurrencyCombo *combo, ofaHub *hub )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->store = ofa_currency_store_new( hub );
+
 	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
+	/* the combo box maintains its own reference on the store */
+	g_object_unref( priv->store );
 }
 
 static void

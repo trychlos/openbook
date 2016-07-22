@@ -73,18 +73,18 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                                         Displayable  Displayable
- *                                                                Type     in treeview    in combo
- *                                                                -------  -----------  -----------
- * @LEDGER_COL_MNEMO          : identifier                        String       Yes          Yes
- * @LEDGER_COL_LABEL          : label                             String       Yes          Yes
- * @LEDGER_COL_LAST_ENTRY     : last entry number                 String       Yes          Yes
- * @LEDGER_COL_LAST_CLOSE     : last closing date                 String       Yes          Yes
- * @LEDGER_COL_NOTES          : notes                             String       Yes           No
- * @LEDGER_COL_NOTES_PNG      : notes indicator                   Pixbuf       Yes           No
- * @LEDGER_COL_UPD_USER       : last update user                  String       Yes           No
- * @LEDGER_COL_UPD_STAMP      : last update timestamp             String       Yes           No
- * @LEDGER_COL_OBJECT         : #ofoLedger                        GObject       No           No
+ *                                                                      Displayable  Displayable
+ *                                                             Type     in treeview    in combo
+ *                                                             -------  -----------  -----------
+ * @LEDGER_COL_MNEMO       : identifier                        String       Yes          Yes
+ * @LEDGER_COL_LABEL       : label                             String       Yes          Yes
+ * @LEDGER_COL_LAST_ENTRY  : last entry number                 String       Yes          Yes
+ * @LEDGER_COL_LAST_CLOSE  : last closing date                 String       Yes          Yes
+ * @LEDGER_COL_NOTES       : notes                             String       Yes           No
+ * @LEDGER_COL_NOTES_PNG   : notes indicator                   Pixbuf       Yes           No
+ * @LEDGER_COL_UPD_USER    : last update user                  String       Yes           No
+ * @LEDGER_COL_UPD_STAMP   : last update timestamp             String       Yes           No
+ * @LEDGER_COL_OBJECT      : #ofoLedger                        GObject       No           No
  */
 enum {
 	LEDGER_COL_MNEMO = 0,

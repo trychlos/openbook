@@ -453,7 +453,7 @@ ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
 	priv->store = ofa_ledger_store_new( hub );
 
 	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
-	/* the sortable model maintains its own reference to the store */
+	/* the sortable model maintains its own reference on the store */
 	g_object_unref( priv->store );
 
 	gtk_tree_sortable_set_default_sort_func(
@@ -462,7 +462,7 @@ ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
 			GTK_TREE_SORTABLE( priv->sort_model ), LEDGER_COL_NOTES_PNG, ( GtkTreeIterCompareFunc ) tview_on_sort_model, view, NULL );
 
 	gtk_tree_view_set_model( priv->tview, priv->sort_model );
-	/* the treeview maintains its own reference to the sortable model */
+	/* the treeview maintains its own reference on the sortable model */
 	g_object_unref( priv->sort_model );
 
 	get_sort_settings( view );
