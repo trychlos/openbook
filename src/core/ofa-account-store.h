@@ -73,30 +73,31 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkTreeStore.
- *                                                                Type     Displayable
- *                                                                -------  -----------
- * @ACCOUNT_COL_NUMBER        : identifier                        String       Yes
- * @ACCOUNT_COL_LABEL         : label                             String       Yes
- * @ACCOUNT_COL_CURRENCY      : currency identifier               String       Yes
- * @ACCOUNT_COL_ROOT          : whether is root                   Bool          No
- * @ACCOUNT_COL_NOTES         : notes                             String        ?
- * @ACCOUNT_COL_NOTES_PNG     : notes indicator                   Pixbuf       Yes
- * @ACCOUNT_COL_UPD_USER      : last update user                  String       Yes
- * @ACCOUNT_COL_UPD_STAMP     : last update timestamp             String       Yes
- * @ACCOUNT_COL_VAL_DEBIT     : validated debit                   String       Yes
- * @ACCOUNT_COL_VAL_CREDIT    : validated credit                  String       Yes
- * @ACCOUNT_COL_ROUGH_DEBIT   : rough debit                       String       Yes
- * @ACCOUNT_COL_ROUGH_CREDIT  : rough credit                      String       Yes
- * @ACCOUNT_COL_FUT_DEBIT     : future debit                      String       Yes
- * @ACCOUNT_COL_FUT_CREDIT    : future credit                     String       Yes
- * @ACCOUNT_COL_SETTLEABLE    : whether is settleable             String       Yes
- * @ACCOUNT_COL_RECONCILIABLE : whether is reconciliable          String       Yes
- * @ACCOUNT_COL_FORWARD       : whether is forwardable            String       Yes
- * @ACCOUNT_COL_CLOSED        : whether is closed                 String       Yes
- * @ACCOUNT_COL_EXE_DEBIT     : current (validated+rough) debit   String       Yes
- * @ACCOUNT_COL_EXE_CREDIT    : current (validated+rough) credit  String       Yes
- * @ACCOUNT_COL_EXE_SOLDE     : current solde                     String       Yes
- * @ACCOUNT_COL_OBJECT        : #ofoAccount object                GObject       No
+ *                                                                         Displayed
+ *                                                                Type      in chart
+ *                                                                -------  ---------
+ * @ACCOUNT_COL_NUMBER        : identifier                        String      Yes
+ * @ACCOUNT_COL_LABEL         : label                             String      Yes
+ * @ACCOUNT_COL_CURRENCY      : currency identifier               String      Yes
+ * @ACCOUNT_COL_ROOT          : whether is root                   Bool         No
+ * @ACCOUNT_COL_NOTES         : notes                             String       No
+ * @ACCOUNT_COL_NOTES_PNG     : notes indicator                   Pixbuf      Yes
+ * @ACCOUNT_COL_UPD_USER      : last update user                  String       No
+ * @ACCOUNT_COL_UPD_STAMP     : last update timestamp             String       No
+ * @ACCOUNT_COL_VAL_DEBIT     : validated debit                   String       No
+ * @ACCOUNT_COL_VAL_CREDIT    : validated credit                  String       No
+ * @ACCOUNT_COL_ROUGH_DEBIT   : rough debit                       String       No
+ * @ACCOUNT_COL_ROUGH_CREDIT  : rough credit                      String       No
+ * @ACCOUNT_COL_FUT_DEBIT     : future debit                      String       No
+ * @ACCOUNT_COL_FUT_CREDIT    : future credit                     String       No
+ * @ACCOUNT_COL_SETTLEABLE    : whether is settleable             String      Yes
+ * @ACCOUNT_COL_RECONCILIABLE : whether is reconciliable          String      Yes
+ * @ACCOUNT_COL_FORWARD       : whether is forwardable            String      Yes
+ * @ACCOUNT_COL_CLOSED        : whether is closed                 String      Yes
+ * @ACCOUNT_COL_EXE_DEBIT     : current (validated+rough) debit   String      Yes
+ * @ACCOUNT_COL_EXE_CREDIT    : current (validated+rough) credit  String      Yes
+ * @ACCOUNT_COL_EXE_SOLDE     : current solde                     String      Yes
+ * @ACCOUNT_COL_OBJECT        : #ofoAccount object                GObject      No
  *
  * NB: accounts chart is not sortable (is always sorted by account number).
  */
