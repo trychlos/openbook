@@ -66,27 +66,17 @@ typedef struct {
 
 	/* sorted model
 	 */
-	GtkTreeModel      *tsort;			/* a sort model stacked on top of the currency store */
+	GtkTreeModel      *sort_model;		/* a sort model stacked on top of the store */
 	GtkTreeViewColumn *sort_column;
 	gint               sort_column_id;
-	gint               sort_sens;
+	gint               sort_order;
 }
 	ofaCurrencyPagePrivate;
-
-/* it appears that Gtk+ displays a counter intuitive sort indicator:
- * when asking for ascending sort, Gtk+ displays a 'v' indicator
- * while we would prefer the '^' version -
- * we are defining the inverse indicator, and we are going to sort
- * in reverse order to have our own illusion
- */
-#define OFA_SORT_ASCENDING                 GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING                GTK_SORT_ASCENDING
-
-static const gchar *st_sort_settings    = "ofaCurrencyPage-sort";
 
 static GtkWidget   *v_setup_view( ofaPage *page );
 static GtkWidget   *setup_tree_view( ofaCurrencyPage *self );
 static void         tview_on_header_clicked( GtkTreeViewColumn *column, ofaCurrencyPage *self );
+static void         tview_set_sort_indicator( ofaCurrencyPage *self );
 static gint         tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrencyPage *self );
 static gint         tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb );
 static gboolean     tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaCurrencyPage *self );
@@ -254,27 +244,6 @@ setup_tree_view( ofaCurrencyPage *self )
 			G_OBJECT( tview ), "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
 	priv->tview = tview;
 
-	priv->store = ofa_currency_store_new( priv->hub );
-
-	priv->tsort = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
-	/* the sortable model maintains its own reference on the store */
-	g_object_unref( priv->store );
-
-	gtk_tree_view_set_model( priv->tview, priv->tsort );
-	/* the treeview maintains its own reference on the sortable model */
-	g_object_unref( priv->tsort );
-
-	/* default is to sort by ascending iso 3a identifier
-	 */
-	priv->sort_column = NULL;
-	get_sort_settings( self );
-	if( priv->sort_column_id < 0 ){
-		priv->sort_column_id = CURRENCY_COL_CODE;
-	}
-	if( priv->sort_sens < 0 ){
-		priv->sort_sens = OFA_SORT_ASCENDING;
-	}
-
 	/* iso 3a identifier */
 	column_id = CURRENCY_COL_CODE;
 	cell = gtk_cell_renderer_text_new();
@@ -285,11 +254,6 @@ setup_tree_view( ofaCurrencyPage *self )
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		priv->sort_column = column;
-	}
 
 	/* label */
 	column_id = CURRENCY_COL_LABEL;
@@ -302,11 +266,6 @@ setup_tree_view( ofaCurrencyPage *self )
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		priv->sort_column = column;
-	}
 
 	/* notes indicator */
 	column_id = CURRENCY_COL_NOTES_PNG;
@@ -316,11 +275,6 @@ setup_tree_view( ofaCurrencyPage *self )
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		priv->sort_column = column;
-	}
 
 	/* symbol */
 	column_id = CURRENCY_COL_SYMBOL;
@@ -332,11 +286,6 @@ setup_tree_view( ofaCurrencyPage *self )
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		priv->sort_column = column;
-	}
 
 	/* decimal digits count */
 	column_id = CURRENCY_COL_DIGITS;
@@ -348,15 +297,28 @@ setup_tree_view( ofaCurrencyPage *self )
 	gtk_tree_view_append_column( tview, column );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		priv->sort_column = column;
-	}
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
 	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_currency_selected ), self );
+
+	priv->store = ofa_currency_store_new( priv->hub );
+
+	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
+	/* the sortable model maintains its own reference on the store */
+	g_object_unref( priv->store );
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( priv->sort_model ), ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->sort_model ), CURRENCY_COL_NOTES_PNG, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+
+	gtk_tree_view_set_model( priv->tview, priv->sort_model );
+	/* the treeview maintains its own reference on the sortable model */
+	g_object_unref( priv->sort_model );
+
+	get_sort_settings( self );
+	tview_set_sort_indicator( self );
 
 	return( GTK_WIDGET( frame ));
 }
@@ -372,24 +334,49 @@ static void
 tview_on_header_clicked( GtkTreeViewColumn *column, ofaCurrencyPage *self )
 {
 	ofaCurrencyPagePrivate *priv;
-	gint sort_column_id, new_column_id;
-	GtkSortType sort_order;
 
 	priv = ofa_currency_page_get_instance_private( self );
 
-	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-	gtk_tree_view_column_set_sort_indicator( column, TRUE );
-	priv->sort_column = column;
+	if( column != priv->sort_column ){
+		gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
+		priv->sort_column = column;
+		priv->sort_column_id = gtk_tree_view_column_get_sort_column_id( column );
+		priv->sort_order = GTK_SORT_ASCENDING;
 
-	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
-
-	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
-	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), new_column_id, sort_order );
-
-	priv->sort_column_id = new_column_id;
-	priv->sort_sens = sort_order;
+	} else {
+		priv->sort_order = priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
+	}
 
 	set_sort_settings( self );
+	tview_set_sort_indicator( self );
+}
+
+/*
+ * It happens that Gtk+ makes use of up arrow '^' (resp. a down arrow 'v')
+ * to indicate a descending (resp. ascending) sort order. This is counter-
+ * intuitive as we are expecting the arrow pointing to the smallest item.
+ *
+ * So inverse the sort order of the sort indicator.
+ */
+static void
+tview_set_sort_indicator( ofaCurrencyPage *self )
+{
+	ofaCurrencyPagePrivate *priv;
+
+	priv = ofa_currency_page_get_instance_private( self );
+
+	if( priv->sort_model ){
+		gtk_tree_sortable_set_sort_column_id(
+				GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, priv->sort_order );
+	}
+
+	if( priv->sort_column ){
+		gtk_tree_view_column_set_sort_indicator(
+				priv->sort_column, TRUE );
+		gtk_tree_view_column_set_sort_order(
+				priv->sort_column,
+				priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING );
+	}
 }
 
 /*
@@ -478,11 +465,7 @@ tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCu
 	g_free( stampb );
 	g_object_unref( pngb );
 
-	/* return -1 if a > b, so that the order indicator points to the smallest:
-	 * ^: means from smallest to greatest (ascending order)
-	 * v: means from greatest to smallest (descending order)
-	 */
-	return( -cmp );
+	return( cmp );
 }
 
 static gint
@@ -872,18 +855,29 @@ on_hub_reload_dataset( ofaHub *hub, GType type, ofaCurrencyPage *self )
 }
 
 /*
- * sort_settings: sort_column_id;sort_sens;
+ * sort_settings: sort_column_id;sort_order;
  */
 static void
 get_sort_settings( ofaCurrencyPage *self )
 {
 	ofaCurrencyPagePrivate *priv;
-	GList *slist, *it;
+	GList *slist, *it, *columns;
 	const gchar *cstr;
+	gchar *sort_key;
+	GtkTreeViewColumn *column;
 
 	priv = ofa_currency_page_get_instance_private( self );
 
-	slist = ofa_settings_user_get_string_list( st_sort_settings );
+	/* default is to sort by ascending iso 3a code
+	 */
+	priv->sort_column = NULL;
+	priv->sort_column_id = CURRENCY_COL_CODE;
+	priv->sort_order = GTK_SORT_ASCENDING;
+
+	/* get the settings (if any)
+	 */
+	sort_key = g_strdup_printf( "%s-sort", G_OBJECT_TYPE_NAME( self ));
+	slist = ofa_settings_user_get_string_list( sort_key );
 
 	it = slist ? slist : NULL;
 	cstr = it ? it->data : NULL;
@@ -894,22 +888,37 @@ get_sort_settings( ofaCurrencyPage *self )
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		priv->sort_sens = atoi( cstr );
+		priv->sort_order = atoi( cstr );
 	}
 
 	ofa_settings_free_string_list( slist );
+	g_free( sort_key );
+
+	/* setup the sort treeview column
+	 */
+	columns = gtk_tree_view_get_columns( priv->tview );
+	for( it=columns ; it ; it=it->next ){
+		column = GTK_TREE_VIEW_COLUMN( it->data );
+		if( gtk_tree_view_column_get_sort_column_id( column ) == priv->sort_column_id ){
+			priv->sort_column = column;
+			break;
+		}
+	}
+	g_list_free( columns );
 }
 
 static void set_sort_settings( ofaCurrencyPage *self )
 {
 	ofaCurrencyPagePrivate *priv;
-	gchar *str;
+	gchar *str, *sort_key;
 
 	priv = ofa_currency_page_get_instance_private( self );
 
-	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_sens );
+	sort_key = g_strdup_printf( "%s-sort", G_OBJECT_TYPE_NAME( self ));
+	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_order );
 
-	ofa_settings_user_set_string( st_sort_settings, str );
+	ofa_settings_user_set_string( sort_key, str );
 
 	g_free( str );
+	g_free( sort_key );
 }

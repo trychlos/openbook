@@ -58,7 +58,7 @@ typedef struct {
 	GtkTreeModel      *sort_model;			/* a sort model stacked on top of the store */
 	GtkTreeViewColumn *sort_column;
 	gint               sort_column_id;
-	gint               sort_sens;
+	gint               sort_order;
 }
 	ofaLedgerTreeviewPrivate;
 
@@ -480,10 +480,10 @@ tview_on_header_clicked( GtkTreeViewColumn *column, ofaLedgerTreeview *self )
 		gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
 		priv->sort_column = column;
 		priv->sort_column_id = gtk_tree_view_column_get_sort_column_id( column );
-		priv->sort_sens = GTK_SORT_ASCENDING;
+		priv->sort_order = GTK_SORT_ASCENDING;
 
 	} else {
-		priv->sort_sens = priv->sort_sens == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
+		priv->sort_order = priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
 	}
 
 	set_sort_settings( self );
@@ -506,7 +506,7 @@ tview_set_sort_indicator( ofaLedgerTreeview *self )
 
 	if( priv->sort_model ){
 		gtk_tree_sortable_set_sort_column_id(
-				GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, priv->sort_sens );
+				GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, priv->sort_order );
 	}
 
 	if( priv->sort_column ){
@@ -514,7 +514,7 @@ tview_set_sort_indicator( ofaLedgerTreeview *self )
 				priv->sort_column, TRUE );
 		gtk_tree_view_column_set_sort_order(
 				priv->sort_column,
-				priv->sort_sens == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING );
+				priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING );
 	}
 }
 
@@ -940,7 +940,7 @@ get_default_settings_key( ofaLedgerTreeview *self )
 }
 
 /*
- * sort_settings: sort_column_id;sort_sens;
+ * sort_settings: sort_column_id;sort_order;
  *
  * Note that we record the actual sort order (gtk_sort_ascending for
  * ascending order); only the sort indicator of the column is reversed.
@@ -960,7 +960,7 @@ get_sort_settings( ofaLedgerTreeview *self )
 	 */
 	priv->sort_column = NULL;
 	priv->sort_column_id = LEDGER_COL_MNEMO;
-	priv->sort_sens = GTK_SORT_ASCENDING;
+	priv->sort_order = GTK_SORT_ASCENDING;
 
 	/* get the settings (if any)
 	 */
@@ -976,7 +976,7 @@ get_sort_settings( ofaLedgerTreeview *self )
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		priv->sort_sens = atoi( cstr );
+		priv->sort_order = atoi( cstr );
 	}
 
 	ofa_settings_free_string_list( slist );
@@ -1004,7 +1004,7 @@ set_sort_settings( ofaLedgerTreeview *self )
 	priv = ofa_ledger_treeview_get_instance_private( self );
 
 	sort_key = g_strdup_printf( "%s-sort", priv->settings_key );
-	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_sens );
+	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_order );
 
 	ofa_settings_user_set_string( sort_key, str );
 
