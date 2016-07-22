@@ -258,7 +258,7 @@ static void
 setup_treeview( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	static gint st_columns[] = {
+	static const gint st_bat_cols[] = {
 			BAT_COL_URI, BAT_COL_UNUSED, BAT_COL_ACCOUNT,
 			-1 };
 	ofaHub *hub;
@@ -273,7 +273,7 @@ setup_treeview( ofaBatSelect *self )
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 
-	ofa_bat_treeview_set_columns( priv->tview, st_columns );
+	ofa_bat_treeview_set_columns( priv->tview, st_bat_cols );
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
 

@@ -73,7 +73,8 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                                Type     Displayable
+ *                                                                         Displayable
+ *                                                                Type     in treeview
  *                                                                -------  -----------
  * @BAT_COL_ID                : identifier                        String       Yes
  * @BAT_COL_URI               : source uri                        String       Yes

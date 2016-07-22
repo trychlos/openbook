@@ -163,7 +163,14 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
  * if not already done. Else get the already allocated #ofaBatStore
  * from the @hub.
  *
- * Returns: the #ofaBatStore unique object.
+ * A weak notify reference is put on this same @hub, so that the
+ * instance will be unreffed when the @hub will be destroyed.
+ *
+ * Note that the #myICollector associated to the @hub maintains its own
+ * reference to the #ofaBatStore object, reference which will be
+ * freed on @hub finalization.
+ *
+ * Returns: a new reference to the #ofaBatStore object.
  */
 ofaBatStore *
 ofa_bat_store_new( ofaHub *hub )
@@ -199,7 +206,7 @@ ofa_bat_store_new( ofaHub *hub )
 		load_dataset( store, hub );
 	}
 
-	return( store );
+	return( g_object_ref( store ));
 }
 
 /*

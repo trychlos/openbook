@@ -140,7 +140,7 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
 	ofaHub *hub;
-	static gint st_columns [] = {
+	static const gint st_bat_cols [] = {
 			BAT_COL_ID, BAT_COL_BEGIN, BAT_COL_END,
 			BAT_COL_FORMAT, BAT_COL_RIB,
 			BAT_COL_NOTES_PNG,
@@ -159,7 +159,7 @@ v_setup_view( ofaPage *page )
 
 	priv->tview = ofa_bat_treeview_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 4, 4, 4, 0 );
-	ofa_bat_treeview_set_columns( priv->tview, st_columns );
+	ofa_bat_treeview_set_columns( priv->tview, st_bat_cols );
 	ofa_bat_treeview_set_hub( priv->tview, hub );
 
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_row_selected ), page );

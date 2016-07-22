@@ -60,25 +60,28 @@ typedef struct {
 }
 	ofaBatTreeviewClass;
 
-GType           ofa_bat_treeview_get_type    ( void ) G_GNUC_CONST;
+GType           ofa_bat_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaBatTreeview *ofa_bat_treeview_new         ( void );
+ofaBatTreeview *ofa_bat_treeview_new             ( void );
 
-void            ofa_bat_treeview_set_columns ( ofaBatTreeview *view,
-													gint *columns );
+void            ofa_bat_treeview_set_columns     ( ofaBatTreeview *view,
+														const gint *columns );
 
-void            ofa_bat_treeview_set_hub     ( ofaBatTreeview *view,
-													ofaHub *hub );
+void            ofa_bat_treeview_set_settings_key( ofaBatTreeview *view,
+														const gchar *key );
 
-ofoBat         *ofa_bat_treeview_get_selected( ofaBatTreeview *view );
+void            ofa_bat_treeview_set_hub         ( ofaBatTreeview *view,
+														ofaHub *hub );
 
-void            ofa_bat_treeview_set_selected( ofaBatTreeview *view,
-													ofxCounter id );
+ofoBat         *ofa_bat_treeview_get_selected    ( ofaBatTreeview *view );
 
-GtkWidget      *ofa_bat_treeview_get_treeview( ofaBatTreeview *view );
+void            ofa_bat_treeview_set_selected    ( ofaBatTreeview *view,
+														ofxCounter id );
 
-void            ofa_bat_treeview_delete_bat  ( ofaBatTreeview *view,
-													ofoBat *bat );
+GtkWidget      *ofa_bat_treeview_get_treeview    ( ofaBatTreeview *view );
+
+void            ofa_bat_treeview_delete_bat      ( ofaBatTreeview *view,
+														ofoBat *bat );
 
 G_END_DECLS
 
