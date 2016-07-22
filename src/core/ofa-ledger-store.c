@@ -59,17 +59,17 @@ static GType st_col_types[LEDGER_N_COLUMNS] = {
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
-static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerStore *store );
-static void     load_dataset( ofaLedgerStore *store, ofaHub *hub );
-static void     insert_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger );
-static void     set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub );
-static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
-static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store );
-static gboolean find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo, GtkTreeIter *iter );
+static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerStore *self );
+static void     load_dataset( ofaLedgerStore *self, ofaHub *hub );
+static void     insert_row( ofaLedgerStore *self, ofaHub *hub, const ofoLedger *ledger );
+static void     set_row_by_iter( ofaLedgerStore *self, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter );
+static void     setup_signaling_connect( ofaLedgerStore *self, ofaHub *hub );
+static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *self );
+static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *self );
+static gboolean find_ledger_by_mnemo( ofaLedgerStore *self, const gchar *mnemo, GtkTreeIter *iter );
 static void     hub_on_updated_currency( ofaLedgerStore *self, const gchar *prev_id, const gchar *new_id );
-static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store );
-static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *store );
+static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *self );
+static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerStore, ofa_ledger_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaLedgerStore ))
@@ -197,7 +197,7 @@ ofa_ledger_store_new( ofaHub *hub )
  * sorting the store per ledger code
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerStore *store )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerStore *self )
 {
 	gchar *anumber, *bnumber;
 	gint cmp;
@@ -214,7 +214,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerSt
 }
 
 static void
-load_dataset( ofaLedgerStore *store, ofaHub *hub )
+load_dataset( ofaLedgerStore *self, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoLedger *ledger;
@@ -223,23 +223,23 @@ load_dataset( ofaLedgerStore *store, ofaHub *hub )
 
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
-		insert_row( store, hub, ledger );
+		insert_row( self, hub, ledger );
 	}
 }
 
 static void
-insert_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger )
+insert_row( ofaLedgerStore *self, ofaHub *hub, const ofoLedger *ledger )
 {
 	GtkTreeIter iter;
 
-	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, hub, ledger, &iter );
+	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
+	set_row_by_iter( self, hub, ledger, &iter );
 }
 
 static void
-set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter )
+set_row_by_iter( ofaLedgerStore *self, ofaHub *hub, const ofoLedger *ledger, GtkTreeIter *iter )
 {
-	static const gchar *thisfn = "ofa_ledger_store_set_row";
+	static const gchar *thisfn = "ofa_ledger_store_set_row_by_iter";
 	gchar *sdentry, *sdclose, *stamp;
 	const gchar *notes;
 	const GDate *dclose;
@@ -262,7 +262,7 @@ set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIte
 	}
 
 	gtk_list_store_set(
-			GTK_LIST_STORE( store ),
+			GTK_LIST_STORE( self ),
 			iter,
 			LEDGER_COL_MNEMO,      ofo_ledger_get_mnemo( ledger ),
 			LEDGER_COL_LABEL,      ofo_ledger_get_label( ledger ),
@@ -285,25 +285,25 @@ set_row( ofaLedgerStore *store, ofaHub *hub, const ofoLedger *ledger, GtkTreeIte
  * connect to the dossier signaling system
  */
 static void
-setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub )
+setup_signaling_connect( ofaLedgerStore *self, ofaHub *hub )
 {
 	ofaLedgerStorePrivate *priv;
 	gulong handler;
 
-	priv = ofa_ledger_store_get_instance_private( store );
+	priv = ofa_ledger_store_get_instance_private( self );
 
 	priv->hub = hub;
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), store );
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -311,7 +311,7 @@ setup_signaling_connect( ofaLedgerStore *store, ofaHub *hub )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
+on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *self )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_hub_new_object";
 
@@ -319,10 +319,10 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
 			thisfn,
 			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) store );
+			( void * ) self );
 
 	if( OFO_IS_LEDGER( object )){
-		insert_row( store, hub, OFO_LEDGER( object ));
+		insert_row( self, hub, OFO_LEDGER( object ));
 	}
 }
 
@@ -330,49 +330,49 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *store )
+on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaLedgerStore *self )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_hub_updated_object";
 	GtkTreeIter iter;
 	const gchar *mnemo, *new_id;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
 			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) store );
+			( void * ) self );
 
 	if( OFO_IS_LEDGER( object )){
 		new_id = ofo_ledger_get_mnemo( OFO_LEDGER( object ));
 		mnemo = prev_id ? prev_id : new_id;
-		if( find_ledger_by_mnemo( store, mnemo, &iter )){
-			set_row( store, hub, OFO_LEDGER( object ), &iter);
+		if( find_ledger_by_mnemo( self, mnemo, &iter )){
+			set_row_by_iter( self, hub, OFO_LEDGER( object ), &iter);
 		}
 
 	} else if( OFO_IS_CURRENCY( object )){
 		new_id = ofo_currency_get_code( OFO_CURRENCY( object ));
 		if( prev_id && g_utf8_collate( prev_id, new_id )){
-			hub_on_updated_currency( store, prev_id, new_id );
+			hub_on_updated_currency( self, prev_id, new_id );
 		}
 	}
 }
 
 static gboolean
-find_ledger_by_mnemo( ofaLedgerStore *store, const gchar *mnemo, GtkTreeIter *iter )
+find_ledger_by_mnemo( ofaLedgerStore *self, const gchar *mnemo, GtkTreeIter *iter )
 {
 	gchar *str;
 	gint cmp;
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, LEDGER_COL_MNEMO, &str, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, LEDGER_COL_MNEMO, &str, -1 );
 			cmp = g_utf8_collate( str, mnemo );
 			g_free( str );
 			if( cmp == 0 ){
 				return( TRUE );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
 				break;
 			}
 		}
@@ -406,22 +406,22 @@ hub_on_updated_currency( ofaLedgerStore *self, const gchar *prev_id, const gchar
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
+on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *self )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_hub_deleted_object";
 	GtkTreeIter iter;
 
-	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
 			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) store );
+			( void * ) self );
 
 	if( OFO_IS_LEDGER( object )){
-		if( find_ledger_by_mnemo( store,
+		if( find_ledger_by_mnemo( self,
 				ofo_ledger_get_mnemo( OFO_LEDGER( object )), &iter )){
 
-			gtk_list_store_remove( GTK_LIST_STORE( store ), &iter );
+			gtk_list_store_remove( GTK_LIST_STORE( self ), &iter );
 		}
 	}
 }
@@ -430,15 +430,15 @@ on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaLedgerStore *store )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_hub_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *store )
+on_hub_reload_dataset( ofaHub *hub, GType type, ofaLedgerStore *self )
 {
 	static const gchar *thisfn = "ofa_ledger_store_on_hub_reload_dataset";
 
-	g_debug( "%s: hub=%p, type=%lu, store=%p",
-			thisfn, ( void * ) hub, type, ( void * ) store );
+	g_debug( "%s: hub=%p, type=%lu, self=%p",
+			thisfn, ( void * ) hub, type, ( void * ) self );
 
 	if( type == OFO_TYPE_LEDGER ){
-		gtk_list_store_clear( GTK_LIST_STORE( store ));
-		load_dataset( store, hub );
+		gtk_list_store_clear( GTK_LIST_STORE( self ));
+		load_dataset( self, hub );
 	}
 }

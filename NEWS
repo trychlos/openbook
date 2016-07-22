@@ -43,6 +43,7 @@
    - BatTreeview: add a Notes indicator (todo #1157).
    - BatTreeview: make the treeview sortable (todo #1167).
    - ClassPage: add a Notes indicator (todo #1157).
+   - ClassPage: make the treeview sortable (todo #1167).
    - CurrencyPage: add a Notes indicator (todo #1157).
    - CurrencyPage: make the treeview sortable.
    - LedgerPage: add a Notes indicator (todo #1157).
@@ -67,6 +68,7 @@
 
    - myStyle: new style management class.
    - ofa.css: remove obsolete styles.
+   - ofaClassStore: new class.
 
 -----------------------------------------------------------------------
  Version 0.58

@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "my/my-utils.h"
 
@@ -36,11 +37,13 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
+#include "api/ofa-settings.h"
 #include "api/ofo-class.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-class-page.h"
+#include "ui/ofa-class-store.h"
 
 /* private instance data
  */
@@ -48,42 +51,36 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub      *hub;
-	GList       *hub_handlers;
-	gboolean     is_writable;
+	ofaHub            *hub;
+	gboolean           is_writable;
 
 	/* UI
 	 */
-	GtkTreeView *tview;					/* the main treeview of the page */
-	GtkWidget   *update_btn;
-	GtkWidget   *delete_btn;
+	ofaClassStore     *store;
+	GtkTreeView       *tview;				/* the main treeview of the page */
+	GtkWidget         *update_btn;
+	GtkWidget         *delete_btn;
+
+	/* sorted model
+	 */
+	GtkTreeModel      *sort_model;			/* a sort model stacked on top of the store */
+	GtkTreeViewColumn *sort_column;
+	gint               sort_column_id;
+	gint               sort_sens;
 }
 	ofaClassPagePrivate;
 
-/* column ordering in the selection listview
- */
-enum {
-	COL_ID = 0,
-	COL_NUMBER,
-	COL_LABEL,
-	COL_NOTES_PNG,
-	COL_OBJECT,
-	N_COLUMNS
-};
-
-static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
-static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
-
 static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_tree_view( ofaPage *page );
-static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self );
+static GtkWidget *setup_tree_view( ofaClassPage *self );
+static void       tview_on_header_clicked( GtkTreeViewColumn *column, ofaClassPage *self );
+static void       tview_set_sort_indicator( ofaClassPage *self );
+static gint       tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self );
+static gint       tview_on_sort_int( const gchar *a, const gchar *b );
+static gint       tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb );
+static gboolean   tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static ofoClass  *tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       insert_dataset( ofaClassPage *self );
-static void       insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection );
-static void       set_row_by_iter( ofaClassPage *self, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self );
 static void       setup_first_selection( ofaClassPage *self );
 static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
 static void       on_row_selected( GtkTreeSelection *selection, ofaClassPage *self );
@@ -93,11 +90,8 @@ static void       on_delete_clicked( GtkButton *button, ofaClassPage *page );
 static void       try_to_delete_current_row( ofaClassPage *self );
 static gboolean   delete_confirmed( ofaClassPage *self, ofoClass *class );
 static void       do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void       on_hub_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
-static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self );
-static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaClassPage *self );
-static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaClassPage *self );
-static gboolean   find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       get_sort_settings( ofaClassPage *self );
+static void       set_sort_settings( ofaClassPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaClassPage, ofa_class_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaClassPage ))
@@ -121,16 +115,11 @@ classes_page_finalize( GObject *instance )
 static void
 classes_page_dispose( GObject *instance )
 {
-	ofaClassPagePrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_CLASS_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( instance ));
-
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
 
 	/* chain up to the parent class */
@@ -141,16 +130,11 @@ static void
 ofa_class_page_init( ofaClassPage *self )
 {
 	static const gchar *thisfn = "ofa_class_page_init";
-	ofaClassPagePrivate *priv;
 
 	g_return_if_fail( self && OFA_IS_CLASS_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	priv->hub_handlers = NULL;
 }
 
 static void
@@ -173,7 +157,6 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_class_page_v_setup_view";
 	ofaClassPagePrivate *priv;
-	gulong handler;
 	GtkWidget *tview;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -184,38 +167,25 @@ v_setup_view( ofaPage *page )
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	tview = setup_tree_view( page );
-
-	insert_dataset( OFA_CLASS_PAGE( page ));
+	tview = setup_tree_view( OFA_CLASS_PAGE( page ));
+	setup_first_selection( OFA_CLASS_PAGE( page ));
 
 	return( tview );
 }
 
 static GtkWidget *
-setup_tree_view( ofaPage *page )
+setup_tree_view( ofaClassPage *self )
 {
 	ofaClassPagePrivate *priv;
 	GtkFrame *frame;
 	GtkScrolledWindow *scroll;
 	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 	GtkTreeSelection *select;
+	gint column_id;
 
-	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
+	priv = ofa_class_page_get_instance_private( self );
 
 	frame = GTK_FRAME( gtk_frame_new( NULL ));
 	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 0 );
@@ -231,51 +201,216 @@ setup_tree_view( ofaPage *page )
 	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
 	gtk_tree_view_set_headers_visible( tview, TRUE );
 	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect(
-			G_OBJECT( tview ), "row-activated", G_CALLBACK( on_row_activated ), page );
-	g_signal_connect(
-			G_OBJECT( tview ), "key-press-event", G_CALLBACK( on_tview_key_pressed ), page );
+
+	g_signal_connect( tview, "row-activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect( tview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
 	priv->tview = tview;
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING, GDK_TYPE_PIXBUF, G_TYPE_OBJECT ));
-	gtk_tree_view_set_model( tview, tmodel );
-	g_object_unref( tmodel );
-
+	column_id = CLASS_COL_NUMBER;
 	cell = gtk_cell_renderer_text_new();
 	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Number" ),
-			cell, "text", COL_NUMBER,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 
+	column_id = CLASS_COL_LABEL;
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
 			_( "Label" ),
-			cell, "text", COL_LABEL,
+			cell, "text", column_id,
 			NULL );
 	gtk_tree_view_column_set_expand( column, TRUE );
 	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 
+	column_id = CLASS_COL_NOTES_PNG;
 	cell = gtk_cell_renderer_pixbuf_new();
 	column = gtk_tree_view_column_new_with_attributes(
-				"", cell, "pixbuf", COL_NOTES_PNG, NULL );
+				"", cell, "pixbuf", column_id, NULL );
 	gtk_tree_view_append_column( tview, column );
+	gtk_tree_view_column_set_sort_column_id( column, column_id );
+	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
 
 	select = gtk_tree_view_get_selection( tview );
 	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
+
+	priv->store = ofa_class_store_new( priv->hub );
+
+	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
+	/* the sortable model maintains its own reference to the store */
+	g_object_unref( priv->store );
 
 	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, page, NULL );
+			GTK_TREE_SORTABLE( priv->sort_model ), ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
+	gtk_tree_sortable_set_sort_func(
+			GTK_TREE_SORTABLE( priv->sort_model ), CLASS_COL_NOTES_PNG, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
 
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tmodel ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
+	gtk_tree_view_set_model( priv->tview, priv->sort_model );
+	/* the treeview maintains its own reference to the sortable model */
+	g_object_unref( priv->sort_model );
+
+	get_sort_settings( self );
+	tview_set_sort_indicator( self );
 
 	return( GTK_WIDGET( frame ));
+}
+
+static void
+tview_on_header_clicked( GtkTreeViewColumn *column, ofaClassPage *self )
+{
+	ofaClassPagePrivate *priv;
+
+	priv = ofa_class_page_get_instance_private( self );
+
+	if( column != priv->sort_column ){
+		gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
+		priv->sort_column = column;
+		priv->sort_column_id = gtk_tree_view_column_get_sort_column_id( column );
+		priv->sort_sens = GTK_SORT_ASCENDING;
+
+	} else {
+		priv->sort_sens = priv->sort_sens == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
+	}
+
+	set_sort_settings( self );
+	tview_set_sort_indicator( self );
+}
+
+/*
+ * It happens that Gtk+ makes use of up arrow '^' (resp. a down arrow 'v')
+ * to indicate a descending (resp. ascending) sort order. This is counter-
+ * intuitive as we are expecting the arrow pointing to the smallest item.
+ *
+ * So inverse the sort order of the sort indicator.
+ */
+static void
+tview_set_sort_indicator( ofaClassPage *self )
+{
+	ofaClassPagePrivate *priv;
+
+	priv = ofa_class_page_get_instance_private( self );
+
+	if( priv->sort_model ){
+		gtk_tree_sortable_set_sort_column_id(
+				GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, priv->sort_sens );
+	}
+
+	if( priv->sort_column ){
+		gtk_tree_view_column_set_sort_indicator(
+				priv->sort_column, TRUE );
+		gtk_tree_view_column_set_sort_order(
+				priv->sort_column,
+				priv->sort_sens == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING );
+	}
+}
+
+static gint
+tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self )
+{
+	static const gchar *thisfn = "ofa_class_page_tview_on_sort_model";
+	ofaClassPagePrivate *priv;
+	gchar *numa, *labela;
+	gchar *numb, *labelb;
+	gint ida, idb;
+	GdkPixbuf *pnga, *pngb;
+	gint cmp;
+
+	gtk_tree_model_get( tmodel, a,
+			CLASS_COL_ID,        &ida,
+			CLASS_COL_NUMBER,    &numa,
+			CLASS_COL_LABEL,     &labela,
+			CLASS_COL_NOTES_PNG, &pnga,
+			-1 );
+
+	gtk_tree_model_get( tmodel, b,
+			CLASS_COL_ID,        &idb,
+			CLASS_COL_NUMBER,    &numb,
+			CLASS_COL_LABEL,     &labelb,
+			CLASS_COL_NOTES_PNG, &pngb,
+			-1 );
+
+	cmp = 0;
+	priv = ofa_class_page_get_instance_private( self );
+
+	switch( priv->sort_column_id ){
+		case CLASS_COL_ID:
+			cmp = ( ida < idb ? -1 : ( ida > idb ? 1 : 0 ));
+			break;
+		case CLASS_COL_NUMBER:
+			cmp = tview_on_sort_int( numa, numb );
+			break;
+		case CLASS_COL_LABEL:
+			cmp = my_collate( labela, labelb );
+			break;
+		case CLASS_COL_NOTES_PNG:
+			cmp = tview_on_sort_png( pnga, pngb );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
+			break;
+	}
+
+	g_free( numa );
+	g_free( labela );
+	g_object_unref( pnga );
+
+	g_free( numb );
+	g_free( labelb );
+	g_object_unref( pngb );
+
+	return( cmp );
+}
+
+static gint
+tview_on_sort_int( const gchar *a, const gchar *b )
+{
+	int inta, intb;
+
+	if( !my_strlen( a )){
+		if( !my_strlen( b )){
+			return( 0 );
+		}
+		return( -1 );
+	}
+	inta = atoi( a );
+
+	if( !my_strlen( b )){
+		return( 1 );
+	}
+	intb = atoi( b );
+
+	return( inta < intb ? -1 : ( inta > intb ? 1 : 0 ));
+}
+
+static gint
+tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb )
+{
+	gsize lena, lenb;
+
+	if( !pnga ){
+		return( -1 );
+	}
+	lena = gdk_pixbuf_get_byte_length( pnga );
+
+	if( !pngb ){
+		return( 1 );
+	}
+	lenb = gdk_pixbuf_get_byte_length( pngb );
+
+	if( lena < lenb ){
+		return( -1 );
+	}
+	if( lena > lenb ){
+		return( 1 );
+	}
+
+	return( memcmp( pnga, pngb, lena ));
 }
 
 /*
@@ -284,7 +419,7 @@ setup_tree_view( ofaPage *page )
  * FALSE to propagate the event further.
  */
 static gboolean
-on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self )
+tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self )
 {
 	gboolean stop;
 
@@ -341,7 +476,7 @@ tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter
 	class = NULL;
 	select = gtk_tree_view_get_selection( priv->tview );
 	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
-		gtk_tree_model_get( *tmodel, iter, COL_OBJECT, &class, -1 );
+		gtk_tree_model_get( *tmodel, iter, CLASS_COL_OBJECT, &class, -1 );
 		g_object_unref( class );
 	}
 	return( class );
@@ -357,101 +492,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
 
 	return( GTK_WIDGET( priv->tview ));
-}
-
-static void
-insert_dataset( ofaClassPage *self )
-{
-	ofaClassPagePrivate *priv;
-	GList *dataset, *iset;
-	ofoClass *class;
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	dataset = ofo_class_get_dataset( priv->hub );
-
-	for( iset=dataset ; iset ; iset=iset->next ){
-		class = OFO_CLASS( iset->data );
-		insert_new_row( self, class, FALSE );
-	}
-
-	setup_first_selection( self );
-}
-
-static void
-insert_new_row( ofaClassPage *self, ofoClass *class, gboolean with_selection )
-{
-	ofaClassPagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-	gint id;
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	tmodel = gtk_tree_view_get_model( priv->tview );
-
-	id = ofo_class_get_number( class );
-
-	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( tmodel ),
-			&iter,
-			-1,
-			COL_ID,     id,
-			COL_OBJECT, class,
-			-1 );
-
-	set_row_by_iter( self, class, tmodel, &iter );
-
-	/* select the newly added class */
-	if( with_selection ){
-		path = gtk_tree_model_get_path( tmodel, &iter );
-		gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
-		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
-	}
-}
-
-static void
-set_row_by_iter( ofaClassPage *self, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
-{
-	static const gchar *thisfn = "ofa_class_page_set_row_by_iter";
-	gchar *str;
-	const gchar *notes;
-	GdkPixbuf *notes_png;
-	GError *error;
-
-	str = g_strdup_printf( "%d", ofo_class_get_number( class ));
-
-	notes = ofo_class_get_notes( class );
-	error = NULL;
-	notes_png = gdk_pixbuf_new_from_resource( my_strlen( notes ) ? st_resource_notes_png : st_resource_filler_png, &error );
-	if( error ){
-		g_warning( "%s: gdk_pixbuf_new_from_resource: %s", thisfn, error->message );
-		g_error_free( error );
-	}
-
-	gtk_list_store_set(
-			GTK_LIST_STORE( tmodel ),
-			iter,
-			COL_NUMBER,    str,
-			COL_LABEL,     ofo_class_get_label( class ),
-			COL_NOTES_PNG, notes_png,
-			-1 );
-
-	g_object_unref( notes_png );
-	g_free( str );
-}
-
-static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self )
-{
-	gint anum, bnum;
-
-	gtk_tree_model_get( tmodel, a, COL_ID, &anum, -1 );
-	gtk_tree_model_get( tmodel, b, COL_ID, &bnum, -1 );
-
-	return( anum < bnum ? -1 : ( anum > bnum ? 1 : 0 ));
 }
 
 static void
@@ -491,7 +531,7 @@ on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
 	class = NULL;
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &class, -1 );
+		gtk_tree_model_get( tmodel, &iter, CLASS_COL_OBJECT, &class, -1 );
 		g_object_unref( class );
 	}
 
@@ -592,132 +632,78 @@ do_delete( ofaClassPage *self, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIte
 
 	if( delete_confirmed( self, class )){
 		ofo_class_delete( class );
-
-		/* remove the row from the tmodel
-		 * this will cause an automatic new selection */
-		gtk_list_store_remove( GTK_LIST_STORE( tmodel ), iter );
 	}
 }
 
 /*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaClassPage *self )
-{
-	static const gchar *thisfn = "ofa_class_page_on_hub_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_CLASS( object )){
-		insert_new_row( self, OFO_CLASS( object ), TRUE );
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
+ * sort_settings: sort_column_id;sort_sens;
  *
- * Modifying the class number is forbidden
+ * Note that we record the actual sort order (gtk_sort_ascending for
+ * ascending order); only the sort indicator of the column is reversed.
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassPage *self )
+get_sort_settings( ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_on_hub_updated_object";
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gint prev_num, class_num;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( OFO_IS_CLASS( object )){
-
-		prev_num = atoi( prev_id );
-		class_num = ofo_class_get_number( OFO_CLASS( object ));
-
-		if( find_row_by_id( self, prev_num, &tmodel, &iter )){
-			if( prev_num != class_num ){
-				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-				insert_new_row( self, OFO_CLASS( object ), TRUE );
-
-			} else if( find_row_by_id( self, class_num, &tmodel, &iter )){
-				set_row_by_iter( self, OFO_CLASS( object ), tmodel, &iter );
-			}
-		}
-	}
-}
-
-/*
- * SIGNAL_HUB_DELETED signal handler
- */
-static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaClassPage *self )
-{
-	static const gchar *thisfn = "ofa_class_page_on_hub_deleted_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-}
-
-/*
- * SIGNAL_HUB_RELOAD signal handler
- */
-static void
-on_hub_reload_dataset( ofaHub *hub, GType type, ofaClassPage *self )
-{
-	static const gchar *thisfn = "ofa_class_page_on_hub_reload_dataset";
 	ofaClassPagePrivate *priv;
-	GtkTreeModel *tmodel;
-
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn,
-			( void * ) hub,
-			type,
-			( void * ) self );
+	GList *slist, *it, *columns;
+	const gchar *cstr;
+	gchar *sort_key;
+	GtkTreeViewColumn *column;
 
 	priv = ofa_class_page_get_instance_private( self );
 
-	if( type == OFO_TYPE_CLASS ){
-		tmodel = gtk_tree_view_get_model( priv->tview );
-		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
-		insert_dataset( self );
+	/* default is to sort by ascending class number
+	 */
+	priv->sort_column = NULL;
+	priv->sort_column_id = CLASS_COL_NUMBER;
+	priv->sort_sens = GTK_SORT_ASCENDING;
+
+	/* get the settings (if any)
+	 */
+	sort_key = g_strdup_printf( "%s-sort", G_OBJECT_TYPE_NAME( self ));
+	slist = ofa_settings_user_get_string_list( sort_key );
+
+	it = slist ? slist : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->sort_column_id = atoi( cstr );
 	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->sort_sens = atoi( cstr );
+	}
+
+	ofa_settings_free_string_list( slist );
+	g_free( sort_key );
+
+	/* setup the sort treeview column
+	 */
+	columns = gtk_tree_view_get_columns( priv->tview );
+	for( it=columns ; it ; it=it->next ){
+		column = GTK_TREE_VIEW_COLUMN( it->data );
+		if( gtk_tree_view_column_get_sort_column_id( column ) == priv->sort_column_id ){
+			priv->sort_column = column;
+			break;
+		}
+	}
+	g_list_free( columns );
 }
 
-static gboolean
-find_row_by_id( ofaClassPage *self, gint id, GtkTreeModel **tmodel, GtkTreeIter *iter )
+static void
+set_sort_settings( ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_find_row_by_id";
 	ofaClassPagePrivate *priv;
-	gint num;
+	gchar *str, *sort_key;
 
 	priv = ofa_class_page_get_instance_private( self );
 
-	*tmodel = gtk_tree_view_get_model( priv->tview );
+	sort_key = g_strdup_printf( "%s-sort", G_OBJECT_TYPE_NAME( self ));
+	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_sens );
 
-	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
-		while( TRUE ){
-			gtk_tree_model_get( *tmodel, iter, COL_ID, &num, -1 );
-			if( num == id ){
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( *tmodel, iter )){
-				return( FALSE );
-			}
-		}
-	}
+	ofa_settings_user_set_string( sort_key, str );
 
-	g_warning( "%s: id=%d not found", thisfn, id );
-	return( FALSE );
+	g_free( str );
+	g_free( sort_key );
 }
