@@ -228,6 +228,9 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 	ofaLedgerBookBinPrivate *priv;
 	GtkWidget *widget, *toggle, *label;
 	ofaHub *hub;
+	static const gint st_ledger_cols[] = {
+			LEDGER_COL_MNEMO, LEDGER_COL_LAST_ENTRY, LEDGER_COL_LAST_CLOSE,
+			-1 };
 
 	priv = ofa_ledger_book_bin_get_instance_private( bin );
 
@@ -241,10 +244,10 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 	priv->ledgers_tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ledgers_tview ));
 	ofa_ledger_treeview_set_hexpand( priv->ledgers_tview, FALSE );
-	ofa_ledger_treeview_set_columns( priv->ledgers_tview,
-			LEDGER_DISP_MNEMO | LEDGER_DISP_LAST_ENTRY | LEDGER_DISP_LAST_CLOSE );
-	ofa_ledger_treeview_set_hub( priv->ledgers_tview, hub );
+	ofa_ledger_treeview_set_columns( priv->ledgers_tview, st_ledger_cols );
+	ofa_ledger_treeview_set_settings_key( priv->ledgers_tview, G_OBJECT_TYPE_NAME( bin ));
 	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
+	ofa_ledger_treeview_set_hub( priv->ledgers_tview, hub );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

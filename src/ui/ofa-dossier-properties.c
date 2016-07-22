@@ -53,6 +53,7 @@
 #include "core/ofa-open-prefs-bin.h"
 #include "core/ofa-currency-combo.h"
 #include "core/ofa-ledger-combo.h"
+#include "core/ofa-ledger-store.h"
 
 #include "ui/ofa-closing-parms-bin.h"
 #include "ui/ofa-dossier-properties.h"
@@ -365,7 +366,8 @@ init_properties_page( ofaDossierProperties *self )
 	gint ivalue;
 	const GDate *last_closed;
 	ofaHub *hub;
-	static gint currency_cols[] = { CURRENCY_COL_CODE, -1 };
+	static gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
+	static const gint st_ledger_cols[] = { LEDGER_COL_LABEL, -1 };
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
@@ -416,7 +418,7 @@ init_properties_page( ofaDossierProperties *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	c_combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( c_combo ));
-	ofa_currency_combo_set_columns( c_combo, currency_cols );
+	ofa_currency_combo_set_columns( c_combo, st_currency_cols );
 	ofa_currency_combo_set_hub( c_combo, hub );
 	g_signal_connect( c_combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	ofa_currency_combo_set_selected( c_combo, ofo_dossier_get_default_currency( priv->dossier ));
@@ -430,7 +432,7 @@ init_properties_page( ofaDossierProperties *self )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	l_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( l_combo ));
-	ofa_ledger_combo_set_columns( l_combo, LEDGER_DISP_LABEL );
+	ofa_ledger_combo_set_columns( l_combo, st_ledger_cols );
 	ofa_ledger_combo_set_hub( l_combo, hub );
 	g_signal_connect( l_combo, "ofa-changed", G_CALLBACK( on_import_ledger_changed ), self );
 	ofa_ledger_combo_set_selected( l_combo, ofo_dossier_get_import_ledger( priv->dossier ));

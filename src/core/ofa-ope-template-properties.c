@@ -43,6 +43,7 @@
 #include "api/ofo-ope-template.h"
 
 #include "core/ofa-ledger-combo.h"
+#include "core/ofa-ledger-store.h"
 #include "core/ofa-ope-template-help.h"
 #include "core/ofa-ope-template-properties.h"
 
@@ -436,6 +437,9 @@ init_ledger( ofaOpeTemplateProperties *self )
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkWidget *label;
 	ofaHub *hub;
+	static const gint st_ledger_cols[] = {
+			LEDGER_COL_LABEL,
+			-1 };
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
@@ -446,7 +450,7 @@ init_ledger( ofaOpeTemplateProperties *self )
 
 	priv->ledger_combo = ofa_ledger_combo_new();
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
-	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
+	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
 	ofa_ledger_combo_set_hub( priv->ledger_combo, hub );
 
 	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );

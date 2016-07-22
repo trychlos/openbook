@@ -51,6 +51,7 @@
 
 #include "core/ofa-account-select.h"
 #include "core/ofa-ledger-combo.h"
+#include "core/ofa-ledger-store.h"
 #include "core/ofa-guided-input-bin.h"
 
 /* private instance data
@@ -415,6 +416,9 @@ setup_dialog( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
 	GtkWidget *label, *widget, *view;
+	static const gint st_ledger_cols[] = {
+			LEDGER_COL_LABEL,
+			-1 };
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
@@ -423,7 +427,7 @@ setup_dialog( ofaGuidedInputBin *self )
 	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
-	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
+	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
 	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
 	gtk_widget_set_sensitive( priv->ledger_parent, FALSE );
 

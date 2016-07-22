@@ -67,13 +67,16 @@ GType              ofa_ledger_treeview_get_type          ( void ) G_GNUC_CONST;
 ofaLedgerTreeview *ofa_ledger_treeview_new               ( void );
 
 void               ofa_ledger_treeview_set_columns       ( ofaLedgerTreeview *view,
-																ofaLedgerColumns columns );
+																const gint *columns );
 
 void               ofa_ledger_treeview_set_hub           ( ofaLedgerTreeview *view,
 																ofaHub *hub );
 
 void               ofa_ledger_treeview_set_selection_mode( ofaLedgerTreeview *view,
 																GtkSelectionMode mode );
+
+void               ofa_ledger_treeview_set_settings_key  ( ofaLedgerTreeview *view,
+																const gchar *key );
 
 void               ofa_ledger_treeview_set_hexpand       ( ofaLedgerTreeview *view,
 																gboolean hexpand );

@@ -35,8 +35,6 @@
 
 #include "api/ofa-hub-def.h"
 
-#include "core/ofa-ledger-store.h"
-
 G_BEGIN_DECLS
 
 #define OFA_TYPE_LEDGER_COMBO                ( ofa_ledger_combo_get_type())
@@ -62,10 +60,10 @@ GType           ofa_ledger_combo_get_type    ( void );
 
 ofaLedgerCombo *ofa_ledger_combo_new         ( void );
 
-void            ofa_ledger_combo_set_columns ( ofaLedgerCombo *instance,
-													ofaLedgerColumns columns );
+void            ofa_ledger_combo_set_columns ( ofaLedgerCombo *combo,
+													const gint *columns );
 
-void            ofa_ledger_combo_set_hub     ( ofaLedgerCombo *instance,
+void            ofa_ledger_combo_set_hub     ( ofaLedgerCombo *combo,
 													ofaHub *hub );
 
 gchar          *ofa_ledger_combo_get_selected( ofaLedgerCombo *combo );

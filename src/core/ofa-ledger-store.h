@@ -73,6 +73,17 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
+ *                                                                Type     Treeview  Combo
+ *                                                                -------  --------  -----
+ * @LEDGER_COL_MNEMO          : identifier                        String     Yes      Yes
+ * @LEDGER_COL_LABEL          : label                             String     Yes      Yes
+ * @LEDGER_COL_LAST_ENTRY     : last entry number                 String     Yes      Yes
+ * @LEDGER_COL_LAST_CLOSE     : last closing date                 String     Yes      Yes
+ * @LEDGER_COL_NOTES          : notes                             String     Yes       No
+ * @LEDGER_COL_NOTES_PNG      : notes indicator                   Pixbuf     Yes       No
+ * @LEDGER_COL_UPD_USER       : last update user                  String     Yes       No
+ * @LEDGER_COL_UPD_STAMP      : last update timestamp             String     Yes       No
+ * @LEDGER_COL_OBJECT         : #ofoLedger                        GObject     No       No
  */
 enum {
 	LEDGER_COL_MNEMO = 0,
@@ -86,22 +97,6 @@ enum {
 	LEDGER_COL_OBJECT,
 	LEDGER_N_COLUMNS
 };
-
-/**
- * ofaLedgerColumns:
- * The columns displayed in the ComboBox or the Treeview.
- */
-typedef enum {
-	LEDGER_DISP_MNEMO      = 1 << 0,
-	LEDGER_DISP_LABEL      = 1 << 1,
-	LEDGER_DISP_LAST_ENTRY = 1 << 2,
-	LEDGER_DISP_LAST_CLOSE = 1 << 3,
-	LEDGER_DISP_NOTES      = 1 << 4,
-	LEDGER_DISP_NOTES_PNG  = 1 << 5,
-	LEDGER_DISP_UPD_USER   = 1 << 6,
-	LEDGER_DISP_UPD_STAMP  = 1 << 7,
-}
-	ofaLedgerColumns;
 
 GType           ofa_ledger_store_get_type( void );
 

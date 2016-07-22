@@ -51,9 +51,8 @@ typedef struct {
 
 static GType st_col_types[LEDGER_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, last_entry */
-		G_TYPE_STRING, G_TYPE_STRING, 0,				/* las_close, notes, notes_png */
-		G_TYPE_STRING,									/* upd_user */
-		G_TYPE_STRING,									/* upd_stamp */
+		G_TYPE_STRING, G_TYPE_STRING, 0,				/* last_close, notes, notes_png */
+		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoLedger itself */
 };
 
@@ -144,12 +143,18 @@ ofa_ledger_store_class_init( ofaLedgerStoreClass *klass )
  * ofa_ledger_store_new:
  * @hub: the current #ofaHub object.
  *
- * Instanciates a new #ofaLedgerStore and attached it to the @dossier
+ * Instanciates a new #ofaLedgerStore and attached it to the @hub
  * if not already done. Else get the already allocated #ofaLedgerStore
  * from the #ofoDossier attached to the @hub.
  *
  * A weak notify reference is put on this same @hub, so that the
  * instance will be unreffed when the @hub will be destroyed.
+ *
+ * Note that the #myICollector associated to the @hub maintains its own
+ * reference to the #ofaLedgerStore object, reference which will be
+ * freed on @hub finalization.
+ *
+ * Returns: a new reference to the #ofaLedgerStore object.
  */
 ofaLedgerStore *
 ofa_ledger_store_new( ofaHub *hub )
@@ -185,7 +190,7 @@ ofa_ledger_store_new( ofaHub *hub )
 		setup_signaling_connect( store, hub );
 	}
 
-	return( store );
+	return( g_object_ref( store ));
 }
 
 /*

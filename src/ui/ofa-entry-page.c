@@ -58,6 +58,7 @@
 #include "core/ofa-account-select.h"
 #include "core/ofa-iconcil.h"
 #include "core/ofa-ledger-combo.h"
+#include "core/ofa-ledger-store.h"
 
 #include "ui/ofa-entry-page.h"
 #include "ui/ofa-itreeview-column.h"
@@ -569,6 +570,9 @@ setup_ledger_selection( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	gchar *initial_mnemo;
+	static const gint st_ledger_cols[] = {
+			LEDGER_COL_LABEL,
+			-1 };
 
 	priv = ofa_entry_page_get_instance_private( self );
 
@@ -579,7 +583,7 @@ setup_ledger_selection( ofaEntryPage *self )
 	priv->ledger_parent = my_utils_container_get_child_by_name( priv->top_box, "f1-ledger-parent" );
 	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
 	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
-	ofa_ledger_combo_set_columns( priv->ledger_combo, LEDGER_DISP_LABEL );
+	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
 	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
 
 	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );

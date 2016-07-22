@@ -32,16 +32,21 @@
 #include "api/ofo-ledger.h"
 
 #include "core/ofa-ledger-combo.h"
+#include "core/ofa-ledger-store.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean          dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* runtime data
 	 */
-	ofaLedgerColumns  columns;
-	ofaLedgerStore   *store;
+	ofaLedgerStore *store;
+
+	/* sorted combo
+	 */
+	GtkTreeModel   *sort_model;
+	gint            sort_column_id;
 }
 	ofaLedgerComboPrivate;
 
@@ -54,8 +59,9 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void on_ledger_changed( ofaLedgerCombo *combo, void *empty );
-static void create_combo_columns( ofaLedgerCombo *combo );
+static void         on_ledger_changed( ofaLedgerCombo *combo, void *empty );
+static void         create_combo_columns( ofaLedgerCombo *self, const gint *columns );
+static gint         on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerCombo *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerCombo, ofa_ledger_combo, GTK_TYPE_COMBO_BOX, 0,
 		G_ADD_PRIVATE( ofaLedgerCombo ))
@@ -110,6 +116,8 @@ ofa_ledger_combo_init( ofaLedgerCombo *self )
 	priv = ofa_ledger_combo_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->sort_model = NULL;
+	priv->sort_column_id = -1;
 }
 
 static void
@@ -150,6 +158,8 @@ ofa_ledger_combo_class_init( ofaLedgerComboClass *klass )
 
 /**
  * ofa_ledger_combo_new:
+ *
+ * Returns: a new #ofaLedgerCombo combobox instance.
  */
 ofaLedgerCombo *
 ofa_ledger_combo_new( void )
@@ -176,9 +186,16 @@ on_ledger_changed( ofaLedgerCombo *combo, void *empty )
 
 /**
  * ofa_ledger_combo_set_columns:
+ * @combo: this #ofaLedgerCombo instance.
+ * @columns: a -1-terminated list of columns to be displayed.
+ *
+ * Setup the displayable columns.
+ *
+ * The @combo combobox will be sorted on the first displayed (the
+ * leftmost) column.
  */
 void
-ofa_ledger_combo_set_columns( ofaLedgerCombo *combo, ofaLedgerColumns columns )
+ofa_ledger_combo_set_columns( ofaLedgerCombo *combo, const gint *columns )
 {
 	ofaLedgerComboPrivate *priv;
 
@@ -188,50 +205,57 @@ ofa_ledger_combo_set_columns( ofaLedgerCombo *combo, ofaLedgerColumns columns )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->columns = columns;
-	create_combo_columns( combo );
+	create_combo_columns( combo, columns );
 }
 
 static void
-create_combo_columns( ofaLedgerCombo *combo )
+create_combo_columns( ofaLedgerCombo *self, const gint *columns )
 {
 	ofaLedgerComboPrivate *priv;
 	GtkCellRenderer *cell;
+	gint i;
 
-	priv = ofa_ledger_combo_get_instance_private( combo );
+	priv = ofa_ledger_combo_get_instance_private( self );
 
-	if( priv->columns & LEDGER_DISP_MNEMO ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", LEDGER_COL_MNEMO );
+	for( i=0 ; columns[i] >= 0 ; ++i ){
+
+		if( columns[i] == LEDGER_COL_MNEMO ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
+		}
+
+		if( columns[i] == LEDGER_COL_LABEL ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
+		}
+
+		if( columns[i] == LEDGER_COL_LAST_ENTRY ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
+		}
+
+		if( columns[i] == LEDGER_COL_LAST_CLOSE ){
+			cell = gtk_cell_renderer_text_new();
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
+		}
 	}
 
-	if( priv->columns & LEDGER_DISP_LABEL ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", LEDGER_COL_LABEL );
-	}
-
-	if( priv->columns & LEDGER_DISP_LAST_ENTRY ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", LEDGER_COL_LAST_ENTRY );
-	}
-
-	if( priv->columns & LEDGER_DISP_LAST_CLOSE ){
-		cell = gtk_cell_renderer_text_new();
-		gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-		gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", LEDGER_COL_LAST_CLOSE );
-	}
-
-	gtk_combo_box_set_id_column ( GTK_COMBO_BOX( combo ), LEDGER_COL_MNEMO );
+	gtk_combo_box_set_id_column ( GTK_COMBO_BOX( self ), LEDGER_COL_MNEMO );
+	priv->sort_column_id = columns[0];
 }
 
 /**
  * ofa_ledger_combo_set_hub:
+ * @combo: this #ofaLedgerCombo instance.
+ * @hub: the #ofaHub of the application.
  *
- * This is required in order to get the dossier which will permit to
- * create the underlying tree store.
+ * Allocates and associates a #ofaLedgerStore to the @combo.
+ *
+ * This is required in order to create the underlying tree store.
  */
 void
 ofa_ledger_combo_set_hub( ofaLedgerCombo *combo, ofaHub *hub )
@@ -246,7 +270,39 @@ ofa_ledger_combo_set_hub( ofaLedgerCombo *combo, ofaHub *hub )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->store = ofa_ledger_store_new( hub );
-	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
+
+	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
+	/* the sortable model maintains its own reference on the store */
+	g_object_unref( priv->store );
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( priv->sort_model ), ( GtkTreeIterCompareFunc ) on_sort_model, combo, NULL );
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, GTK_SORT_ASCENDING );
+
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), priv->sort_model );
+	/* ofaLedgerCombo maintains its own reference on the sortable model */
+	g_object_unref( priv->sort_model );
+}
+
+static gint
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerCombo *self )
+{
+	ofaLedgerComboPrivate *priv;
+	gint cmp;
+	gchar *stra, *strb;
+
+	priv = ofa_ledger_combo_get_instance_private( self );
+
+	gtk_tree_model_get( tmodel, a, priv->sort_column_id, &stra, -1 );
+	gtk_tree_model_get( tmodel, a, priv->sort_column_id, &strb, -1 );
+
+	cmp = my_collate( stra, strb );
+
+	g_free( stra );
+	g_free( strb );
+
+	return( cmp );
 }
 
 /**
