@@ -46,6 +46,8 @@
    - CurrencyPage: add a Notes indicator (todo #1157).
    - CurrencyPage: make the treeview sortable.
    - LedgerPage: add a Notes indicator (todo #1157).
+   - LedgerCombo: sort on lefmost column.
+   - LedgerTreeview: make the treeview sortable (todo #1167).
    - OpeTemplateFrame: add a Notes indicator (todo #1157).
    - RecurrentManagePage: add a Notes indicator (todo #1157).
    - StreamFormat: provides a default character set list (todo #1170).
