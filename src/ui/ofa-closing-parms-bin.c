@@ -395,7 +395,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	ofaCurrencyCombo *combo;
 	gint row;
 	ofaHub *hub;
-	static gint currency_cols[] = { CURRENCY_COL_CODE, -1 };
+	static const gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
@@ -409,7 +409,7 @@ add_empty_row( ofaClosingParmsBin *self )
 	gtk_grid_attach( priv->grid, widget, COL_CURRENCY, row, 1, 1 );
 	combo = ofa_currency_combo_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( combo ));
-	ofa_currency_combo_set_columns( combo, currency_cols );
+	ofa_currency_combo_set_columns( combo, st_currency_cols );
 	ofa_currency_combo_set_hub( combo, hub );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), self );
 	g_object_set_data( G_OBJECT( combo ), DATA_ROW, GINT_TO_POINTER( row ));

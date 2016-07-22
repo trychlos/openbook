@@ -44,6 +44,11 @@ typedef struct {
 	/* runtime
 	 */
 	ofaCurrencyStore *store;
+
+	/* sorted combo
+	 */
+	GtkTreeModel     *sort_model;
+	gint              sort_column_id;
 }
 	ofaCurrencyComboPrivate;
 
@@ -56,8 +61,9 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void create_combo_columns( ofaCurrencyCombo *combo, gint *columns );
-static void on_currency_changed( ofaCurrencyCombo *combo, void *empty );
+static void create_combo_columns( ofaCurrencyCombo *self, const gint *columns );
+static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrencyCombo *self );
+static void on_currency_changed( ofaCurrencyCombo *self, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyCombo, ofa_currency_combo, GTK_TYPE_COMBO_BOX, 0,
 		G_ADD_PRIVATE( ofaCurrencyCombo ))
@@ -173,7 +179,7 @@ ofa_currency_combo_new( void )
  * Create the desired columns in the specified order.
  */
 void
-ofa_currency_combo_set_columns( ofaCurrencyCombo *combo, gint *columns )
+ofa_currency_combo_set_columns( ofaCurrencyCombo *combo, const gint *columns )
 {
 	ofaCurrencyComboPrivate *priv;
 
@@ -187,35 +193,40 @@ ofa_currency_combo_set_columns( ofaCurrencyCombo *combo, gint *columns )
 }
 
 static void
-create_combo_columns( ofaCurrencyCombo *combo, gint *columns )
+create_combo_columns( ofaCurrencyCombo *self, const gint *columns )
 {
+	ofaCurrencyComboPrivate *priv;
 	gint i;
 	GtkCellRenderer *cell;
 
-	for( i=0 ; columns[i]>=0 ; ++i ){
+	priv = ofa_currency_combo_get_instance_private( self );
+
+	for( i=0 ; columns[i] >= 0 ; ++i ){
+
 		if( columns[i] == CURRENCY_COL_CODE ){
 			cell = gtk_cell_renderer_text_new();
-			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
 
 		} else if( columns[i] == CURRENCY_COL_LABEL ){
 			cell = gtk_cell_renderer_text_new();
-			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, TRUE );
-			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, TRUE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
 
 		} else if( columns[i] == CURRENCY_COL_SYMBOL ){
 			cell = gtk_cell_renderer_text_new();
-			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
 
 		} else if( columns[i] == CURRENCY_COL_DIGITS ){
 			cell = gtk_cell_renderer_text_new();
-			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", columns[i] );
+			gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( self ), cell, FALSE );
+			gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( self ), cell, "text", columns[i] );
 		}
 	}
 
-	gtk_combo_box_set_id_column ( GTK_COMBO_BOX( combo ), CURRENCY_COL_CODE );
+	gtk_combo_box_set_id_column ( GTK_COMBO_BOX( self ), CURRENCY_COL_CODE );
+	priv->sort_column_id = columns[0];
 }
 
 /**
@@ -238,19 +249,48 @@ ofa_currency_combo_set_hub( ofaCurrencyCombo *combo, ofaHub *hub )
 
 	priv->store = ofa_currency_store_new( hub );
 
-	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
-	/* the combo box maintains its own reference on the store */
+	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
+	/* the sortable model maintains its own reference on the store */
 	g_object_unref( priv->store );
+
+	gtk_tree_sortable_set_default_sort_func(
+			GTK_TREE_SORTABLE( priv->sort_model ), ( GtkTreeIterCompareFunc ) on_sort_model, combo, NULL );
+	gtk_tree_sortable_set_sort_column_id(
+			GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, GTK_SORT_ASCENDING );
+
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->sort_model ));
+	/* the combo box maintains its own reference on the sort model */
+	g_object_unref( priv->sort_model );
+}
+
+static gint
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrencyCombo *self )
+{
+	ofaCurrencyComboPrivate *priv;
+	gint cmp;
+	gchar *stra, *strb;
+
+	priv = ofa_currency_combo_get_instance_private( self );
+
+	gtk_tree_model_get( tmodel, a, priv->sort_column_id, &stra, -1 );
+	gtk_tree_model_get( tmodel, a, priv->sort_column_id, &strb, -1 );
+
+	cmp = my_collate( stra, strb );
+
+	g_free( stra );
+	g_free( strb );
+
+	return( cmp );
 }
 
 static void
-on_currency_changed( ofaCurrencyCombo *combo, void *empty )
+on_currency_changed( ofaCurrencyCombo *self, void *empty )
 {
 	const gchar *code;
 
-	code = gtk_combo_box_get_active_id( GTK_COMBO_BOX( combo ));
+	code = gtk_combo_box_get_active_id( GTK_COMBO_BOX( self ));
 	if( code ){
-		g_signal_emit_by_name( combo, "ofa-changed", code );
+		g_signal_emit_by_name( self, "ofa-changed", code );
 	}
 }
 

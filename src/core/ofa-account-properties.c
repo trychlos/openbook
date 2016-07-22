@@ -426,7 +426,7 @@ init_ui( ofaAccountProperties *dialog )
 	ofaAccountPropertiesPrivate *priv;
 	ofaCurrencyCombo *combo;
 	GtkWidget *label;
-	static gint currency_cols[] = { CURRENCY_COL_CODE, -1 };
+	static const gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
 
 	priv = ofa_account_properties_get_instance_private( dialog );
 
@@ -478,7 +478,7 @@ init_ui( ofaAccountProperties *dialog )
 	priv->currency_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-currency-parent" );
 	g_return_if_fail( priv->currency_parent && GTK_IS_CONTAINER( priv->currency_parent ));
 	gtk_container_add( GTK_CONTAINER( priv->currency_parent ), GTK_WIDGET( combo ));
-	ofa_currency_combo_set_columns( combo, currency_cols );
+	ofa_currency_combo_set_columns( combo, st_currency_cols );
 	ofa_currency_combo_set_hub( combo, priv->hub );
 	g_signal_connect( combo, "ofa-changed", G_CALLBACK( on_currency_changed ), dialog );
 	priv->currency_etiq = my_utils_container_get_child_by_name( GTK_CONTAINER( dialog ), "p1-currency-label" );

@@ -76,15 +76,15 @@ typedef struct {
  *                                                                      Displayable  Displayable
  *                                                             Type     in treeview    in combo
  *                                                             -------  -----------  -----------
- * @CURRENCY_COL_CODE      : identifier                        String       Yes          xxx
- * @CURRENCY_COL_LABEL     : label                             String       Yes
- * @CURRENCY_COL_SYMBOL    : symbol                            String       Yes
- * @CURRENCY_COL_DIGITS    : decimal digits count              String       Yes
- * @CURRENCY_COL_NOTES     : notes                             String        ?
- * @CURRENCY_COL_NOTES_PNG : notes indicator                   Pixbuf       Yes
- * @CURRENCY_COL_UPD_USER  : last update user                  String       Yes
- * @CURRENCY_COL_UPD_STAMP : last update timestamp             String       Yes
- * @CURRENCY_COL_OBJECT    : #ofoCurrency object               GObject       No
+ * @CURRENCY_COL_CODE      : identifier                        String       Yes          Yes
+ * @CURRENCY_COL_LABEL     : label                             String       Yes          Yes
+ * @CURRENCY_COL_SYMBOL    : symbol                            String       Yes          Yes
+ * @CURRENCY_COL_DIGITS    : decimal digits count              String       Yes          Yes
+ * @CURRENCY_COL_NOTES     : notes                             String        ?            No
+ * @CURRENCY_COL_NOTES_PNG : notes indicator                   Pixbuf       Yes           No
+ * @CURRENCY_COL_UPD_USER  : last update user                  String       Yes           No
+ * @CURRENCY_COL_UPD_STAMP : last update timestamp             String       Yes           No
+ * @CURRENCY_COL_OBJECT    : #ofoCurrency object               GObject       No           No
  */
 enum {
 	CURRENCY_COL_CODE = 0,

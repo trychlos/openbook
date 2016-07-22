@@ -366,7 +366,7 @@ init_properties_page( ofaDossierProperties *self )
 	gint ivalue;
 	const GDate *last_closed;
 	ofaHub *hub;
-	static gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
+	static const gint st_currency_cols[] = { CURRENCY_COL_CODE, -1 };
 	static const gint st_ledger_cols[] = { LEDGER_COL_LABEL, -1 };
 
 	priv = ofa_dossier_properties_get_instance_private( self );
