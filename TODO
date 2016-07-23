@@ -402,6 +402,10 @@
                 -> this should be an enum, so that the caller has to provide
                 an array, and thus may decide the order of the columns
      2016- 7-11 currency: done
+     2016- 7-23 id. RecModel
+                id. TVAForm
+                id. Dossier
+                id. Exercice
 
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page

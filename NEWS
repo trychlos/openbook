@@ -45,7 +45,7 @@
    - ClassPage: add a Notes indicator (todo #1157).
    - ClassPage: make the treeview sortable (todo #1167).
    - CurrencyPage: add a Notes indicator (todo #1157).
-   - CurrencyPage: make the treeview sortable.
+   - CurrencyPage: make the treeview sortable (todo #1167).
    - LedgerPage: add a Notes indicator (todo #1157).
    - LedgerCombo: sort on lefmost column.
    - LedgerTreeview: make the treeview sortable (todo #1167).
