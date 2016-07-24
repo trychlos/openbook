@@ -160,6 +160,7 @@ v_setup_view( ofaPage *page )
 	priv->tview = ofa_bat_treeview_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 4, 4, 4, 0 );
 	ofa_bat_treeview_set_columns( priv->tview, st_bat_cols );
+	ofa_bat_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
 	ofa_bat_treeview_set_hub( priv->tview, hub );
 
 	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_row_selected ), page );

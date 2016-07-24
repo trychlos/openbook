@@ -66,7 +66,6 @@ typedef struct {
 }
 	ofaBatSelectPrivate;
 
-static const gchar *st_settings         = "BatSelect-settings";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-select.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
@@ -274,14 +273,16 @@ setup_treeview( ofaBatSelect *self )
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 
 	ofa_bat_treeview_set_columns( priv->tview, st_bat_cols );
-	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
-	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
+	ofa_bat_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( self ));
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	ofa_bat_treeview_set_hub( priv->tview, hub );
 	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
+
+	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
+	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
 }
 
 static void
@@ -354,27 +355,34 @@ get_settings( ofaBatSelect *self )
 	ofaBatSelectPrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
+	gchar *key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	slist = ofa_settings_user_get_string_list( st_settings );
+	key = g_strdup_printf( "%s-settings", G_OBJECT_TYPE_NAME( self ));
+	slist = ofa_settings_user_get_string_list( key );
 
 	it = slist ? slist : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	priv->pane_pos = cstr ? atoi( cstr ) : 200;
 
 	ofa_settings_free_string_list( slist );
+	g_free( key );
 }
 
 static void
 set_settings( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	gchar *str;
+	gchar *str, *key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
+	key = g_strdup_printf( "%s-settings", G_OBJECT_TYPE_NAME( self ));
 	str = g_strdup_printf( "%u;", priv->pane_pos );
-	ofa_settings_user_set_string( st_settings, str );
+
+	ofa_settings_user_set_string( key, str );
+
 	g_free( str );
+	g_free( key );
 }

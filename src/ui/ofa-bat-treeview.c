@@ -28,13 +28,13 @@
 
 #include <glib/gi18n.h>
 #include <stdlib.h>
-#include <string.h>
 
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-isortable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
@@ -56,13 +56,6 @@ typedef struct {
 	GtkTreeView       *tview;
 	ofaBatStore       *store;
 	gchar             *settings_key;
-
-	/* sorted model
-	 */
-	GtkTreeModel      *sort_model;			/* a sort model stacked on top of the bat store */
-	GtkTreeViewColumn *sort_column;
-	gint               sort_column_id;
-	gint               sort_order;
 }
 	ofaBatTreeviewPrivate;
 
@@ -76,13 +69,10 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
+static void         isortable_iface_init( ofaISortableInterface *iface );
+static guint        isortable_get_interface_version( void );
+static gint         isortable_sort_model( const ofaISortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 static void         attach_top_widget( ofaBatTreeview *self );
-static void         tview_on_header_clicked( GtkTreeViewColumn *column, ofaBatTreeview *self );
-static void         tview_set_sort_indicator( ofaBatTreeview *self );
-static gint         tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatTreeview *self );
-static gint         tview_on_sort_int( const gchar *a, const gchar *b );
-static gint         tview_on_sort_amount( const gchar *a, const gchar *b );
-static gint         tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb );
 static void         on_row_selected( GtkTreeSelection *selection, ofaBatTreeview *self );
 static void         on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaBatTreeview *self );
 static void         get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal );
@@ -90,11 +80,10 @@ static gboolean     on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event,
 static void         try_to_delete_current_row( ofaBatTreeview *self );
 static gboolean     delete_confirmed( ofaBatTreeview *self, ofoBat *bat );
 static const gchar *get_default_settings_key( ofaBatTreeview *self );
-static void         get_sort_settings( ofaBatTreeview *self );
-static void         set_sort_settings( ofaBatTreeview *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatTreeview, ofa_bat_treeview, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaBatTreeview ))
+		G_ADD_PRIVATE( ofaBatTreeview )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISORTABLE, isortable_iface_init ))
 
 static void
 bat_treeview_finalize( GObject *instance )
@@ -230,6 +219,167 @@ ofa_bat_treeview_new( void )
 }
 
 /*
+ * ofaISortable interface management
+ */
+static void
+isortable_iface_init( ofaISortableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_bat_treeview_isortable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = isortable_get_interface_version;
+	iface->sort_model = isortable_sort_model;
+}
+
+static guint
+isortable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static gint
+isortable_sort_model( const ofaISortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+{
+	static const gchar *thisfn = "ofa_bat_treeview_isortable_sort_model";
+	gint cmp;
+	gchar *ida, *uria, *formata, *begina, *enda, *riba, *cura, *bsoldea, *esoldea, *notesa, *counta, *unuseda, *accounta, *updusera, *updstampa;
+	gchar *idb, *urib, *formatb, *beginb, *endb, *ribb, *curb, *bsoldeb, *esoldeb, *notesb, *countb, *unusedb, *accountb, *upduserb, *updstampb;
+	GdkPixbuf *pnga, *pngb;
+
+	gtk_tree_model_get( tmodel, a,
+			BAT_COL_ID,             &ida,
+			BAT_COL_URI,            &uria,
+			BAT_COL_FORMAT,         &formata,
+			BAT_COL_BEGIN,          &begina,
+			BAT_COL_END,            &enda,
+			BAT_COL_RIB,            &riba,
+			BAT_COL_CURRENCY,       &cura,
+			BAT_COL_BEGIN_SOLDE,    &bsoldea,
+			BAT_COL_END_SOLDE,      &esoldea,
+			BAT_COL_NOTES,          &notesa,
+			BAT_COL_NOTES_PNG,      &pnga,
+			BAT_COL_COUNT,          &counta,
+			BAT_COL_UNUSED,         &unuseda,
+			BAT_COL_ACCOUNT,        &accounta,
+			BAT_COL_UPD_USER,       &updusera,
+			BAT_COL_UPD_STAMP,      &updstampa,
+			-1 );
+
+	gtk_tree_model_get( tmodel, b,
+			BAT_COL_ID,             &idb,
+			BAT_COL_URI,            &urib,
+			BAT_COL_FORMAT,         &formatb,
+			BAT_COL_BEGIN,          &beginb,
+			BAT_COL_END,            &endb,
+			BAT_COL_RIB,            &ribb,
+			BAT_COL_CURRENCY,       &curb,
+			BAT_COL_BEGIN_SOLDE,    &bsoldeb,
+			BAT_COL_END_SOLDE,      &esoldeb,
+			BAT_COL_NOTES,          &notesb,
+			BAT_COL_NOTES_PNG,      &pngb,
+			BAT_COL_COUNT,          &countb,
+			BAT_COL_UNUSED,         &unusedb,
+			BAT_COL_ACCOUNT,        &accountb,
+			BAT_COL_UPD_USER,       &upduserb,
+			BAT_COL_UPD_STAMP,      &updstampb,
+			-1 );
+
+	cmp = 0;
+
+	switch( column_id ){
+		case BAT_COL_ID:
+			cmp = ofa_isortable_sort_str_int( ida, idb );
+			break;
+		case BAT_COL_URI:
+			cmp = my_collate( uria, urib );
+			break;
+		case BAT_COL_FORMAT:
+			cmp = my_collate( formata, formatb );
+			break;
+		case BAT_COL_BEGIN:
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
+			break;
+		case BAT_COL_END:
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
+			break;
+		case BAT_COL_RIB:
+			cmp = my_collate( riba, ribb );
+			break;
+		case BAT_COL_CURRENCY:
+			cmp = my_collate( cura, curb );
+			break;
+		case BAT_COL_BEGIN_SOLDE:
+			cmp = ofa_isortable_sort_str_amount( bsoldea, bsoldeb );
+			break;
+		case BAT_COL_END_SOLDE:
+			cmp = ofa_isortable_sort_str_amount( esoldea, esoldeb );
+			break;
+		case BAT_COL_NOTES:
+			cmp = my_collate( begina, beginb );
+			break;
+		case BAT_COL_NOTES_PNG:
+			cmp = ofa_isortable_sort_png( pnga, pngb );
+			break;
+		case BAT_COL_COUNT:
+			cmp = ofa_isortable_sort_str_int( counta, countb );
+			break;
+		case BAT_COL_UNUSED:
+			cmp = ofa_isortable_sort_str_int( unuseda, unusedb );
+			break;
+		case BAT_COL_ACCOUNT:
+			cmp = my_collate( accounta, accountb );
+			break;
+		case BAT_COL_UPD_USER:
+			cmp = my_collate( updusera, upduserb );
+			break;
+		case BAT_COL_UPD_STAMP:
+			cmp = my_collate( updstampa, updstampb );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, column_id );
+			break;
+	}
+
+	g_free( ida );
+	g_free( uria );
+	g_free( formata );
+	g_free( begina );
+	g_free( enda );
+	g_free( riba );
+	g_free( cura );
+	g_free( bsoldea );
+	g_free( esoldea );
+	g_free( notesa );
+	g_free( counta );
+	g_free( unuseda );
+	g_free( accounta );
+	g_free( updusera );
+	g_free( updstampa );
+	g_object_unref( pnga );
+
+	g_free( idb );
+	g_free( urib );
+	g_free( formatb );
+	g_free( beginb );
+	g_free( endb );
+	g_free( ribb );
+	g_free( curb );
+	g_free( bsoldeb );
+	g_free( esoldeb );
+	g_free( notesb );
+	g_free( countb );
+	g_free( unusedb );
+	g_free( accountb );
+	g_free( upduserb );
+	g_free( updstampb );
+	g_object_unref( pngb );
+
+	return( cmp );
+}
+
+
+/*
  * call right after the object instanciation
  * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
  */
@@ -300,7 +450,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 			gtk_tree_view_column_set_alignment( column, 1.0 );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_URI ){
@@ -309,7 +458,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "URI" ), cell, "text", columns[i], NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_FORMAT ){
@@ -318,8 +466,7 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "Format" ), cell, "text", columns[i], NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
-	}
+		}
 
 		if( columns[i] == BAT_COL_BEGIN ){
 			cell = gtk_cell_renderer_text_new();
@@ -327,7 +474,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "Begin" ), cell, "text", columns[i], NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_END ){
@@ -336,8 +482,7 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "End" ), cell, "text", columns[i], NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
-	}
+		}
 
 		if( columns[i] == BAT_COL_COUNT ){
 			cell = gtk_cell_renderer_text_new();
@@ -347,7 +492,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 			gtk_tree_view_column_set_alignment( column, 1.0 );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_UNUSED ){
@@ -358,7 +502,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 			gtk_tree_view_column_set_alignment( column, 1.0 );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_RIB ){
@@ -367,7 +510,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "RIB" ), cell, "text", columns[i], NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_BEGIN_SOLDE ){
@@ -378,7 +520,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 			gtk_tree_view_column_set_alignment( column, 1.0 );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_END_SOLDE ){
@@ -389,7 +530,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 			gtk_tree_view_column_set_alignment( column, 1.0 );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_CURRENCY ){
@@ -398,7 +538,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "Cur." ), cell, "text", BAT_COL_CURRENCY, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_ACCOUNT ){
@@ -407,7 +546,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "Account" ), cell, "text", BAT_COL_ACCOUNT, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_NOTES ){
@@ -416,7 +554,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "Notes" ), cell, "text", BAT_COL_NOTES, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_NOTES_PNG ){
@@ -425,7 +562,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							"", cell, "pixbuf", BAT_COL_NOTES_PNG, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_UPD_USER ){
@@ -434,7 +570,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "User" ), cell, "text", BAT_COL_UPD_USER, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 
 		if( columns[i] == BAT_COL_UPD_STAMP ){
@@ -443,7 +578,6 @@ ofa_bat_treeview_set_columns( ofaBatTreeview *view, const gint *columns )
 							_( "Timestamp" ), cell, "text", BAT_COL_UPD_STAMP, NULL );
 			gtk_tree_view_append_column( priv->tview, column );
 			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), view );
 		}
 	}
 
@@ -475,6 +609,8 @@ ofa_bat_treeview_set_settings_key( ofaBatTreeview *view, const gchar *key )
 
 	g_free( priv->settings_key );
 	priv->settings_key = g_strdup( my_strlen( key ) ? key : get_default_settings_key( view ));
+
+	ofa_isortable_set_settings_key( OFA_ISORTABLE( view ), priv->settings_key );
 }
 
 /**
@@ -498,282 +634,10 @@ ofa_bat_treeview_set_hub( ofaBatTreeview *view, ofaHub *hub )
 
 	priv->store = ofa_bat_store_new( hub );
 
-	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
-	/* the sortable model maintains its own reference on the store */
-	g_object_unref( priv->store );
-
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( priv->sort_model ), ( GtkTreeIterCompareFunc ) tview_on_sort_model, view, NULL );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->sort_model ), BAT_COL_NOTES_PNG, ( GtkTreeIterCompareFunc ) tview_on_sort_model, view, NULL );
-
-	gtk_tree_view_set_model( priv->tview, priv->sort_model );
-	/* the treeview maintains its own reference on the sortable model */
-	g_object_unref( priv->sort_model );
-
-	get_sort_settings( view );
-	tview_set_sort_indicator( view );
-}
-
-static void
-tview_on_header_clicked( GtkTreeViewColumn *column, ofaBatTreeview *self )
-{
-	ofaBatTreeviewPrivate *priv;
-
-	priv = ofa_bat_treeview_get_instance_private( self );
-
-	if( column != priv->sort_column ){
-		gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-		priv->sort_column = column;
-		priv->sort_column_id = gtk_tree_view_column_get_sort_column_id( column );
-		priv->sort_order = GTK_SORT_ASCENDING;
-
-	} else {
-		priv->sort_order = priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
-	}
-
-	set_sort_settings( self );
-	tview_set_sort_indicator( self );
-}
-
-/*
- * It happens that Gtk+ makes use of up arrow '^' (resp. a down arrow 'v')
- * to indicate a descending (resp. ascending) sort order. This is counter-
- * intuitive as we are expecting the arrow pointing to the smallest item.
- *
- * So inverse the sort order of the sort indicator.
- */
-static void
-tview_set_sort_indicator( ofaBatTreeview *self )
-{
-	ofaBatTreeviewPrivate *priv;
-
-	priv = ofa_bat_treeview_get_instance_private( self );
-
-	if( priv->sort_model ){
-		gtk_tree_sortable_set_sort_column_id(
-				GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, priv->sort_order );
-	}
-
-	if( priv->sort_column ){
-		gtk_tree_view_column_set_sort_indicator(
-				priv->sort_column, TRUE );
-		gtk_tree_view_column_set_sort_order(
-				priv->sort_column,
-				priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING );
-	}
-}
-
-/*
- * sorting the treeview
- */
-static gint
-tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatTreeview *self )
-{
-	static const gchar *thisfn = "ofa_bat_treeview_tview_on_sort_model";
-	ofaBatTreeviewPrivate *priv;
-	gint cmp;
-	gchar *ida, *uria, *formata, *begina, *enda, *riba, *cura, *bsoldea, *esoldea, *notesa, *counta, *unuseda, *accounta, *updusera, *updstampa;
-	gchar *idb, *urib, *formatb, *beginb, *endb, *ribb, *curb, *bsoldeb, *esoldeb, *notesb, *countb, *unusedb, *accountb, *upduserb, *updstampb;
-	GdkPixbuf *pnga, *pngb;
-
-	gtk_tree_model_get( tmodel, a,
-			BAT_COL_ID,             &ida,
-			BAT_COL_URI,            &uria,
-			BAT_COL_FORMAT,         &formata,
-			BAT_COL_BEGIN,          &begina,
-			BAT_COL_END,            &enda,
-			BAT_COL_RIB,            &riba,
-			BAT_COL_CURRENCY,       &cura,
-			BAT_COL_BEGIN_SOLDE,    &bsoldea,
-			BAT_COL_END_SOLDE,      &esoldea,
-			BAT_COL_NOTES,          &notesa,
-			BAT_COL_NOTES_PNG,      &pnga,
-			BAT_COL_COUNT,          &counta,
-			BAT_COL_UNUSED,         &unuseda,
-			BAT_COL_ACCOUNT,        &accounta,
-			BAT_COL_UPD_USER,       &updusera,
-			BAT_COL_UPD_STAMP,      &updstampa,
-			-1 );
-
-	gtk_tree_model_get( tmodel, b,
-			BAT_COL_ID,             &idb,
-			BAT_COL_URI,            &urib,
-			BAT_COL_FORMAT,         &formatb,
-			BAT_COL_BEGIN,          &beginb,
-			BAT_COL_END,            &endb,
-			BAT_COL_RIB,            &ribb,
-			BAT_COL_CURRENCY,       &curb,
-			BAT_COL_BEGIN_SOLDE,    &bsoldeb,
-			BAT_COL_END_SOLDE,      &esoldeb,
-			BAT_COL_NOTES,          &notesb,
-			BAT_COL_NOTES_PNG,      &pngb,
-			BAT_COL_COUNT,          &countb,
-			BAT_COL_UNUSED,         &unusedb,
-			BAT_COL_ACCOUNT,        &accountb,
-			BAT_COL_UPD_USER,       &upduserb,
-			BAT_COL_UPD_STAMP,      &updstampb,
-			-1 );
-
-	cmp = 0;
-	priv = ofa_bat_treeview_get_instance_private( self );
-
-	switch( priv->sort_column_id ){
-		case BAT_COL_ID:
-			cmp = tview_on_sort_int( ida, idb );
-			break;
-		case BAT_COL_URI:
-			cmp = my_collate( uria, urib );
-			break;
-		case BAT_COL_FORMAT:
-			cmp = my_collate( formata, formatb );
-			break;
-		case BAT_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
-			break;
-		case BAT_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
-			break;
-		case BAT_COL_RIB:
-			cmp = my_collate( riba, ribb );
-			break;
-		case BAT_COL_CURRENCY:
-			cmp = my_collate( cura, curb );
-			break;
-		case BAT_COL_BEGIN_SOLDE:
-			cmp = tview_on_sort_amount( bsoldea, bsoldeb );
-			break;
-		case BAT_COL_END_SOLDE:
-			cmp = tview_on_sort_amount( esoldea, esoldeb );
-			break;
-		case BAT_COL_NOTES:
-			cmp = my_collate( begina, beginb );
-			break;
-		case BAT_COL_NOTES_PNG:
-			cmp = tview_on_sort_png( pnga, pngb );
-			break;
-		case BAT_COL_COUNT:
-			cmp = tview_on_sort_int( counta, countb );
-			break;
-		case BAT_COL_UNUSED:
-			cmp = tview_on_sort_int( unuseda, unusedb );
-			break;
-		case BAT_COL_ACCOUNT:
-			cmp = my_collate( accounta, accountb );
-			break;
-		case BAT_COL_UPD_USER:
-			cmp = my_collate( updusera, upduserb );
-			break;
-		case BAT_COL_UPD_STAMP:
-			cmp = my_collate( updstampa, updstampb );
-			break;
-		default:
-			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
-			break;
-	}
-
-	g_free( ida );
-	g_free( uria );
-	g_free( formata );
-	g_free( begina );
-	g_free( enda );
-	g_free( riba );
-	g_free( cura );
-	g_free( bsoldea );
-	g_free( esoldea );
-	g_free( notesa );
-	g_free( counta );
-	g_free( unuseda );
-	g_free( accounta );
-	g_free( updusera );
-	g_free( updstampa );
-	g_object_unref( pnga );
-
-	g_free( idb );
-	g_free( urib );
-	g_free( formatb );
-	g_free( beginb );
-	g_free( endb );
-	g_free( ribb );
-	g_free( curb );
-	g_free( bsoldeb );
-	g_free( esoldeb );
-	g_free( notesb );
-	g_free( countb );
-	g_free( unusedb );
-	g_free( accountb );
-	g_free( upduserb );
-	g_free( updstampb );
-	g_object_unref( pngb );
-
-	return( cmp );
-}
-
-static gint
-tview_on_sort_int( const gchar *a, const gchar *b )
-{
-	int inta, intb;
-
-	if( !my_strlen( a )){
-		if( !my_strlen( b )){
-			return( 0 );
-		}
-		return( -1 );
-	}
-	inta = atoi( a );
-
-	if( !my_strlen( b )){
-		return( 1 );
-	}
-	intb = atoi( b );
-
-	return( inta < intb ? -1 : ( inta > intb ? 1 : 0 ));
-}
-
-static gint
-tview_on_sort_amount( const gchar *a, const gchar *b )
-{
-	ofxAmount amounta, amountb;
-
-	if( !my_strlen( a )){
-		if( !my_strlen( b )){
-			return( 0 );
-		}
-		return( -1 );
-	}
-	amounta = ofa_amount_from_str( a );
-
-	if( !my_strlen( b )){
-		return( 1 );
-	}
-	amountb = ofa_amount_from_str( b );
-
-	return( amounta < amountb ? -1 : ( amounta > amountb ? 1 : 0 ));
-}
-
-static gint
-tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb )
-{
-	gsize lena, lenb;
-
-	if( !pnga ){
-		return( -1 );
-	}
-	lena = gdk_pixbuf_get_byte_length( pnga );
-
-	if( !pngb ){
-		return( 1 );
-	}
-	lenb = gdk_pixbuf_get_byte_length( pngb );
-
-	if( lena < lenb ){
-		return( -1 );
-	}
-	if( lena > lenb ){
-		return( 1 );
-	}
-
-	return( memcmp( pnga, pngb, lena ));
+	ofa_isortable_set_treeview( OFA_ISORTABLE( view ), priv->tview );
+	ofa_isortable_add_sortable_column( OFA_ISORTABLE( view ), BAT_COL_NOTES_PNG );
+	ofa_isortable_set_default_sort( OFA_ISORTABLE( view ), BAT_COL_ID, GTK_SORT_DESCENDING );
+	ofa_isortable_set_store( OFA_ISORTABLE( view ), OFA_ISTORE( priv->store ));
 }
 
 static void
@@ -986,77 +850,4 @@ static const gchar *
 get_default_settings_key( ofaBatTreeview *self )
 {
 	return( G_OBJECT_TYPE_NAME( self ));
-}
-
-/*
- * sort_settings: sort_column_id;sort_order;
- *
- * Note that we record the actual sort order (gtk_sort_ascending for
- * ascending order); only the sort indicator of the column is reversed.
- */
-static void
-get_sort_settings( ofaBatTreeview *self )
-{
-	ofaBatTreeviewPrivate *priv;
-	GList *slist, *it, *columns;
-	const gchar *cstr;
-	gchar *sort_key;
-	GtkTreeViewColumn *column;
-
-	priv = ofa_bat_treeview_get_instance_private( self );
-
-	/* default is to sort by descending identifier (most recent first)
-	 */
-	priv->sort_column = NULL;
-	priv->sort_column_id = BAT_COL_ID;
-	priv->sort_order = GTK_SORT_DESCENDING;
-
-	/* get the settings (if any)
-	 */
-	sort_key = g_strdup_printf( "%s-sort", priv->settings_key );
-	slist = ofa_settings_user_get_string_list( sort_key );
-
-	it = slist ? slist : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_column_id = atoi( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_order = atoi( cstr );
-	}
-
-	ofa_settings_free_string_list( slist );
-	g_free( sort_key );
-
-	/* setup the sort treeview column
-	 */
-	columns = gtk_tree_view_get_columns( priv->tview );
-	for( it=columns ; it ; it=it->next ){
-		column = GTK_TREE_VIEW_COLUMN( it->data );
-		if( gtk_tree_view_column_get_sort_column_id( column ) == priv->sort_column_id ){
-			priv->sort_column = column;
-			break;
-		}
-	}
-	g_list_free( columns );
-}
-
-static void
-set_sort_settings( ofaBatTreeview *self )
-{
-	ofaBatTreeviewPrivate *priv;
-	gchar *str, *sort_key;
-
-	priv = ofa_bat_treeview_get_instance_private( self );
-
-	sort_key = g_strdup_printf( "%s-sort", priv->settings_key );
-	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_order );
-
-	ofa_settings_user_set_string( sort_key, str );
-
-	g_free( str );
-	g_free( sort_key );
 }

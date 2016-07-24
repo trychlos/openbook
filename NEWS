@@ -69,6 +69,7 @@
    - myStyle: new style management class.
    - ofa.css: remove obsolete styles.
    - ofaClassStore: new class.
+   - ofaISortable: new interface.
 
 -----------------------------------------------------------------------
  Version 0.58
