@@ -70,6 +70,8 @@
    - ofa.css: remove obsolete styles.
    - ofaClassStore: new class.
    - ofaISortable: new interface.
+   - ofaITVColumnable: new interface.
+   - ofaTVBin: new base class.
 
 -----------------------------------------------------------------------
  Version 0.58

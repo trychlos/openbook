@@ -32,12 +32,15 @@
  *
  * Manage a treeview with the list of the BAT files imported in the
  * dossier.
+ *
+ * Provides the signals:
+ * - 'ofa-batchanged'
+ * - 'ofa-batactivated'
  */
 
+#include "api/ofa-tvbin.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofo-bat-def.h"
-
-#include "ui/ofa-bat-store.h"
 
 G_BEGIN_DECLS
 
@@ -50,22 +53,19 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	GtkBin      parent;
+	ofaTVBin      parent;
 }
 	ofaBatTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass parent;
+	ofaTVBinClass parent;
 }
 	ofaBatTreeviewClass;
 
 GType           ofa_bat_treeview_get_type        ( void ) G_GNUC_CONST;
 
 ofaBatTreeview *ofa_bat_treeview_new             ( void );
-
-void            ofa_bat_treeview_set_columns     ( ofaBatTreeview *view,
-														const gint *columns );
 
 void            ofa_bat_treeview_set_settings_key( ofaBatTreeview *view,
 														const gchar *key );
@@ -75,13 +75,10 @@ void            ofa_bat_treeview_set_hub         ( ofaBatTreeview *view,
 
 ofoBat         *ofa_bat_treeview_get_selected    ( ofaBatTreeview *view );
 
+ofoBat         *ofa_bat_treeview_get_selected    ( ofaBatTreeview *view );
+
 void            ofa_bat_treeview_set_selected    ( ofaBatTreeview *view,
 														ofxCounter id );
-
-GtkWidget      *ofa_bat_treeview_get_treeview    ( ofaBatTreeview *view );
-
-void            ofa_bat_treeview_delete_bat      ( ofaBatTreeview *view,
-														ofoBat *bat );
 
 G_END_DECLS
 

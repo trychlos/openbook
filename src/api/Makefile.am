@@ -63,6 +63,7 @@ api_include_HEADERS = \
 	ofa-istore.h										\
 	ofa-itheme-manager.h								\
 	ofa-itheme-manager-def.h							\
+	ofa-itvcolumnable.h									\
 	ofa-itree-adder.h									\
 	ofa-list-store.h									\
 	ofa-ope-template-editable.h							\
@@ -78,6 +79,7 @@ api_include_HEADERS = \
 	ofa-settings.h										\
 	ofa-stream-format.h									\
 	ofa-tree-store.h									\
+	ofa-tvbin.h											\
 	\
 	ofo-account.h										\
 	ofo-account-def.h									\

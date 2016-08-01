@@ -45,7 +45,6 @@ typedef struct {
 	GtkTreeView       *tview;
 	gint               def_column;
 	GtkSortType        def_order;
-	gchar             *settings_key;
 
 	/* runtime
 	 */
@@ -69,6 +68,7 @@ static void        setup_columns_for_sort( ofaISortable *instance, sISortable *s
 static void        on_header_clicked( GtkTreeViewColumn *column, ofaISortable *instance );
 static void        set_sort_indicator( ofaISortable *instance, sISortable *sdata );
 static gint        on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaISortable *instance );
+static gchar      *get_settings_key( const ofaISortable *instance );
 static void        get_sort_settings( ofaISortable *instance, sISortable *sdata );
 static void        set_sort_settings( ofaISortable *instance, sISortable *sdata );
 static sISortable *get_isortable_data( ofaISortable *instance );
@@ -287,34 +287,6 @@ ofa_isortable_sort_str_int( const gchar *a, const gchar *b )
 }
 
 /**
- * ofa_isortable_add_sortable_column:
- * @instance: this #ofaIStorable instance.
- * @column_id: the identifier of the sortable column.
- *
- * Identifies the @column_id as a sortable column.
- *
- * Columns of type G_TYPE_STRING, G_TYPE_INT and G_TYPE_BOOL default to
- * be sortable.
- * Contrarily, GDK_TYPE_PIXBUF has to be explicitely set sortable.
- */
-void
-ofa_isortable_add_sortable_column( ofaISortable *instance, gint column_id )
-{
-	sISortable *sdata;
-
-	g_return_if_fail( instance && OFA_IS_ISORTABLE( instance ));
-	g_return_if_fail( column_id >= 0 );
-
-	sdata = get_isortable_data( instance );
-
-	if( sdata->sort_model ){
-		gtk_tree_sortable_set_sort_func(
-				GTK_TREE_SORTABLE( sdata->sort_model ),
-				column_id, ( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
-	}
-}
-
-/**
  * ofa_isortable_set_default_sort:
  * @instance: this #ofaIStorable instance.
  * @column_id: the identifier of the default sort column.
@@ -339,29 +311,6 @@ ofa_isortable_set_default_sort( ofaISortable *instance, gint column_id, GtkSortT
 
 	sdata->def_column = column_id;
 	sdata->def_order = order;
-}
-
-/**
- * ofa_isortable_set_settings_key:
- * @instance: this #ofaIStorable instance.
- * @key: [allow-none]: the prefix of the settings key to be used.
- *
- * Setup the desired settings key.
- *
- * When called with null or empty @key, this reset the settings key to
- * the default, which happens to be the class name.
- */
-void
-ofa_isortable_set_settings_key( ofaISortable *instance, const gchar *key )
-{
-	sISortable *sdata;
-
-	g_return_if_fail( instance && OFA_IS_ISORTABLE( instance ));
-
-	sdata = get_isortable_data( instance );
-
-	g_free( sdata->settings_key );
-	sdata->settings_key = g_strdup( my_strlen( key ) ? key : G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
@@ -425,10 +374,6 @@ setup_sort_model( ofaISortable *instance, sISortable *sdata )
 		setup_columns_for_sort( instance, sdata );
 		get_sort_settings( instance, sdata );
 
-		gtk_tree_sortable_set_default_sort_func(
-				GTK_TREE_SORTABLE( sdata->sort_model ),
-				( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
-
 		gtk_tree_view_set_model( sdata->tview, sdata->sort_model );
 		/* the treeview maintains its own reference on the sortable model */
 		g_object_unref( sdata->sort_model );
@@ -442,17 +387,33 @@ setup_columns_for_sort( ofaISortable *instance, sISortable *sdata )
 {
 	GList *it, *columns;
 	GtkTreeViewColumn *column;
+	gint column_id;
 
 	columns = gtk_tree_view_get_columns( sdata->tview );
 
 	for( it=columns ; it ; it=it->next ){
 		column = GTK_TREE_VIEW_COLUMN( it->data );
+
 		g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), instance );
+
+		column_id = gtk_tree_view_column_get_sort_column_id( column );
+
+		gtk_tree_sortable_set_sort_func(
+				GTK_TREE_SORTABLE( sdata->sort_model ), column_id,
+				( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
 	}
 
 	g_list_free( columns );
 }
 
+/*
+ * Gtk+ efault behavior:
+ *	initial display: order of insertion in the store
+ *	click 1: ascending order, indicator v
+ *	click 2: descending order, indicator ^
+ *	click 3: ascending order, no indicator
+ *	click 4: ascending order, indicator v (back to click 1)
+ */
 static void
 on_header_clicked( GtkTreeViewColumn *column, ofaISortable *instance )
 {
@@ -514,6 +475,20 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaISortabl
 	return( 0 );
 }
 
+static gchar *
+get_settings_key( const ofaISortable *instance )
+{
+	const gchar *ckey;
+
+	ckey = NULL;
+
+	if( OFA_ISORTABLE_GET_INTERFACE( instance )->get_settings_key ){
+		ckey = OFA_ISORTABLE_GET_INTERFACE( instance )->get_settings_key( instance );
+	}
+
+	return( g_strdup( my_strlen( ckey ) ? ckey : G_OBJECT_TYPE_NAME( instance )));
+}
+
 /*
  * sort_settings: sort_column_id;sort_order;
  *
@@ -526,7 +501,7 @@ get_sort_settings( ofaISortable *instance, sISortable *sdata )
 {
 	GList *slist, *it, *columns;
 	const gchar *cstr;
-	gchar *sort_key;
+	gchar *prefix_key, *sort_key;
 	GtkTreeViewColumn *column;
 
 	/* setup default sort order
@@ -537,7 +512,8 @@ get_sort_settings( ofaISortable *instance, sISortable *sdata )
 
 	/* get the settings (if any)
 	 */
-	sort_key = g_strdup_printf( "%s-sort", sdata->settings_key );
+	prefix_key = get_settings_key( instance );
+	sort_key = g_strdup_printf( "%s-sort", prefix_key );
 	slist = ofa_settings_user_get_string_list( sort_key );
 
 	it = slist ? slist : NULL;
@@ -554,6 +530,7 @@ get_sort_settings( ofaISortable *instance, sISortable *sdata )
 
 	ofa_settings_free_string_list( slist );
 	g_free( sort_key );
+	g_free( prefix_key );
 
 	/* setup the initial sort column
 	 */
@@ -571,15 +548,17 @@ get_sort_settings( ofaISortable *instance, sISortable *sdata )
 static void
 set_sort_settings( ofaISortable *instance, sISortable *sdata )
 {
-	gchar *str, *sort_key;
+	gchar *str, *prefix_key, *sort_key;
 
-	sort_key = g_strdup_printf( "%s-sort", sdata->settings_key );
+	prefix_key = get_settings_key( instance );
+	sort_key = g_strdup_printf( "%s-sort", prefix_key );
 	str = g_strdup_printf( "%d;%d;", sdata->sort_column_id, sdata->sort_order );
 
 	ofa_settings_user_set_string( sort_key, str );
 
 	g_free( str );
 	g_free( sort_key );
+	g_free( prefix_key );
 }
 
 static sISortable *
@@ -594,7 +573,6 @@ get_isortable_data( ofaISortable *instance )
 		g_object_set_data( G_OBJECT( instance ), ISORTABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
-		sdata->settings_key = g_strdup( G_OBJECT_TYPE_NAME( instance ));
 		sdata->def_column = 0;
 		sdata->def_order = GTK_SORT_ASCENDING;
 	}
@@ -613,6 +591,5 @@ on_instance_finalized( sISortable *sdata, GObject *finalized_instance )
 	g_debug( "%s: sdata=%p, finalized_instance=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_instance );
 
-	g_free( sdata->settings_key );
 	g_free( sdata );
 }

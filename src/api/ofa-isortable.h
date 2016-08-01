@@ -50,6 +50,8 @@ typedef struct _ofaISortable                    ofaISortable;
  * ofaISortableInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
+ * @get_settings_key: [should] returns the prefix of the settings key.
+ * @sort_model: [should] sort the model.
  *
  * This defines the interface that an #ofaISortable may/should/must
  * implement.
@@ -70,9 +72,21 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )( void );
+	guint         ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
+	/**
+	 * get_settings_key:
+	 * @instance: this #ofaISortable instance.
+	 *
+	 * Returns: the prefix of the settings key to be used.
+	 *
+	 * Defaults to class name.
+	 *
+	 * Since: version 1.
+	 */
+	const gchar * ( *get_settings_key )     ( const ofaISortable *instance );
+
 	/**
 	 * sort_model:
 	 * @instance: this #ofaISortable instance.
@@ -85,11 +99,11 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	gint  ( *sort_model )           ( const ofaISortable *instance,
-											GtkTreeModel *tmodel,
-											GtkTreeIter *a,
-											GtkTreeIter *b,
-											gint column_id );
+	gint          ( *sort_model )           ( const ofaISortable *instance,
+													GtkTreeModel *tmodel,
+													GtkTreeIter *a,
+													GtkTreeIter *b,
+													gint column_id );
 }
 	ofaISortableInterface;
 
@@ -114,15 +128,9 @@ gint  ofa_isortable_sort_str_int              ( const gchar *a, const gchar *b )
 /*
  * Instance-wide
  */
-void  ofa_isortable_add_sortable_column       ( ofaISortable *instance,
-														gint column_id );
-
 void  ofa_isortable_set_default_sort          ( ofaISortable *instance,
 														gint column_id,
 														GtkSortType order );
-
-void  ofa_isortable_set_settings_key          ( ofaISortable *instance,
-														const gchar *key );
 
 void  ofa_isortable_set_store                 ( ofaISortable *instance,
 														ofaIStore *store );

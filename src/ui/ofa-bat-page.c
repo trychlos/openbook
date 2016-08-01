@@ -69,11 +69,14 @@ typedef struct {
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
+static void       on_delete_key( ofaBatTreeview *tview, ofaBatPage *self );
 static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
+static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
 static void       on_update_clicked( GtkButton *button, ofaBatPage *self );
 static void       on_delete_clicked( GtkButton *button, ofaBatPage *self );
 static void       on_import_clicked( GtkButton *button, ofaBatPage *self );
+static gboolean   check_for_deletability( ofaBatPage *self, ofoBat *bat );
+static void       delete_with_confirm( ofaBatPage *self, ofoBat *bat );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaBatPage ))
@@ -140,17 +143,8 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
 	ofaHub *hub;
-	static const gint st_bat_cols [] = {
-			BAT_COL_ID, BAT_COL_BEGIN, BAT_COL_END,
-			BAT_COL_FORMAT, BAT_COL_RIB,
-			BAT_COL_NOTES_PNG,
-			BAT_COL_COUNT, BAT_COL_UNUSED,
-			BAT_COL_BEGIN_SOLDE, BAT_COL_END_SOLDE, BAT_COL_CURRENCY,
-			BAT_COL_ACCOUNT,
-			-1 };
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
-
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
@@ -158,13 +152,17 @@ v_setup_view( ofaPage *page )
 	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	priv->tview = ofa_bat_treeview_new();
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 4, 4, 4, 0 );
-	ofa_bat_treeview_set_columns( priv->tview, st_bat_cols );
 	ofa_bat_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
 	ofa_bat_treeview_set_hub( priv->tview, hub );
 
-	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_row_selected ), page );
-	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), page );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 2 );
+
+	/* ofaTVBin signal */
+	g_signal_connect( priv->tview, "ofa-seldelete", G_CALLBACK( on_delete_key ), page );
+
+	/* ofaBatTreeview signals */
+	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), page );
 
 	return( GTK_WIDGET( priv->tview ));
 }
@@ -202,12 +200,43 @@ v_setup_buttons( ofaPage *page )
 	return( GTK_WIDGET( buttons_box ));
 }
 
-static void
-on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
+static GtkWidget *
+v_get_top_focusable_widget( const ofaPage *page )
 {
-	on_update_clicked( NULL, OFA_BAT_PAGE( self ));
+	ofaBatPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_BAT_PAGE( page ), NULL );
+
+	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
+/*
+ * signal sent by ofaTVBin on Delete key
+ *
+ * Note that the key may be pressed, even if the dossier is the button
+ * is disabled. So have to check all prerequisite conditions.
+ * If the current row is not deletable, just silently ignore the key.
+ */
+static void
+on_delete_key( ofaBatTreeview *tview, ofaBatPage *self )
+{
+	ofaBatPagePrivate *priv;
+	ofoBat *bat;
+
+	priv = ofa_bat_page_get_instance_private( self );
+
+	bat = ofa_bat_treeview_get_selected( priv->tview );
+
+	if( check_for_deletability( self, bat )){
+		delete_with_confirm( self, bat );
+	}
+}
+
+/*
+ * signal sent by ofaBatTreeview on selection change
+ */
 static void
 on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 {
@@ -218,23 +247,17 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 
 	is_bat = bat && OFO_IS_BAT( bat );
 
-	gtk_widget_set_sensitive( priv->update_btn,
-			is_bat );
-
-	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_writable && is_bat && ofo_bat_is_deletable( bat ));
+	gtk_widget_set_sensitive( priv->update_btn, is_bat );
+	gtk_widget_set_sensitive( priv->delete_btn, check_for_deletability( self, bat ));
 }
 
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+/*
+ * signal sent by ofaBatTreeview on selection activation
+ */
+static void
+on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 {
-	ofaBatPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_BAT_PAGE( page ), NULL );
-
-	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
-
-	return( ofa_bat_treeview_get_treeview( priv->tview ));
+	on_update_clicked( NULL, OFA_BAT_PAGE( self ));
 }
 
 /*
@@ -267,10 +290,9 @@ on_delete_clicked( GtkButton *button, ofaBatPage *self )
 	priv = ofa_bat_page_get_instance_private( self );
 
 	bat = ofa_bat_treeview_get_selected( priv->tview );
-	if( bat ){
-		g_return_if_fail( ofo_bat_is_deletable( bat ));
-		ofa_bat_treeview_delete_bat( priv->tview, bat );
-	}
+	g_return_if_fail( check_for_deletability( self, bat ));
+
+	delete_with_confirm( self, bat );
 
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
@@ -295,4 +317,37 @@ on_import_clicked( GtkButton *button, ofaBatPage *self )
 	}
 
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
+}
+
+static gboolean
+check_for_deletability( ofaBatPage *self, ofoBat *bat )
+{
+	ofaBatPagePrivate *priv;
+	gboolean is_bat, deletable;
+
+	priv = ofa_bat_page_get_instance_private( self );
+
+	is_bat = bat && OFO_IS_BAT( bat );
+
+	deletable = priv->is_writable && is_bat && ofo_bat_is_deletable( bat );
+
+	return( deletable );
+}
+
+static void
+delete_with_confirm( ofaBatPage *self, ofoBat *bat )
+{
+	gchar *msg;
+	gboolean delete_ok;
+
+	msg = g_strdup( _( "Are you sure you want delete this BAT file\n"
+			"(All the corresponding lines will be deleted too) ?" ));
+
+	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
+
+	g_free( msg );
+
+	if( delete_ok ){
+		ofo_bat_delete( bat );
+	}
 }

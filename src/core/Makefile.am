@@ -119,6 +119,7 @@ libofa_core_la_SOURCES = \
 	ofa-istore.c										\
 	ofa-itheme-manager.c								\
 	ofa-itree-adder.c									\
+	ofa-itvcolumnable.c									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
 	ofa-ledger-store.c									\
@@ -149,6 +150,7 @@ libofa_core_la_SOURCES = \
 	ofa-stream-format-disp.c							\
 	ofa-stream-format-disp.h							\
 	ofa-tree-store.c									\
+	ofa-tvbin.c											\
 	\
 	ofo-account.c										\
 	ofo-base.c											\
