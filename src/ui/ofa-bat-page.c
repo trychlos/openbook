@@ -187,8 +187,11 @@ v_setup_view( ofaPage *page )
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_bat_page_v_setup_buttons";
 	ofaBatPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 

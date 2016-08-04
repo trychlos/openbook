@@ -425,7 +425,13 @@
 1181 2016- 8- 4 obsolete ofa_buttons_box_add_button_with_mnemonic
                 + BUTTON_DELETE/NEW/PROPERTIES
 
-1182
+1182 2016- 8- 4 General review:
+                makes use of ofaIActionable, ofaIContext, ofaISortable and
+                ofaITVColumnable interfaces:
+                - check columns list & descriptions in store
+                - have a treeview derived from ofaTVBin (maybe with v_sort)
+                - implement actions in the page
+                - check dialog properties
 
 -----------------------------------------------------------------------
  DONE

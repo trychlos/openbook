@@ -94,7 +94,7 @@ typedef struct {
  * An effort to homogeneïze the label of some common actions.
  */
 #define OFA_IACTIONABLE_DELETE_BTN                  _( "Delete..." )
-#define OFA_IACTIONABLE_DELETE_ITEM                 _( "Delete" )
+#define OFA_IACTIONABLE_DELETE_ITEM                 _( "Delete this" )
 
 #define OFA_IACTIONABLE_IMPORT_BTN                  _( "Import..." )
 #define OFA_IACTIONABLE_IMPORT_ITEM                 _( "Import" )
