@@ -33,15 +33,16 @@
  * Manage a treeview with the list of the BAT files imported in the
  * dossier.
  *
- * The class provides the following signals
- * +------------------+----------+
- * | Signal           | BAT may  |
- * |                  | be %NULL |
- * +------------------+----------+
- * | ofa-batchanged   |   Yes    |
- * | ofa-batactivated |    No    |
- * | ofa-batdelete    |    No    |
- * +------------------+----------+
+ * The class provides the following signals, which are proxyed from
+ * #ofaTVBin base class.
+ *    +------------------+----------+
+ *    | Signal           | BAT may  |
+ *    |                  | be %NULL |
+ *    +------------------+----------+
+ *    | ofa-batchanged   |   Yes    |
+ *    | ofa-batactivated |    No    |
+ *    | ofa-batdelete    |    No    |
+ *    +------------------+----------+
  */
 
 #include "api/ofa-tvbin.h"
@@ -78,8 +79,6 @@ void            ofa_bat_treeview_set_settings_key( ofaBatTreeview *view,
 
 void            ofa_bat_treeview_set_hub         ( ofaBatTreeview *view,
 														ofaHub *hub );
-
-ofoBat         *ofa_bat_treeview_get_selected    ( ofaBatTreeview *view );
 
 ofoBat         *ofa_bat_treeview_get_selected    ( ofaBatTreeview *view );
 

@@ -63,7 +63,7 @@ enum {
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static const gchar *st_group_name           = "tvbin";
+static const gchar *st_action_group_name    = "tvbin";
 
 static void         init_top_widget( ofaTVBin *self );
 static void         tview_on_row_selected( GtkTreeSelection *selection, ofaTVBin *self );
@@ -591,7 +591,7 @@ add_column( ofaTVBin *self, GtkTreeViewColumn *column, gint column_id, const gch
 
 	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->treeview ), column );
 
-	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( self ), column, st_group_name, menu );
+	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( self ), column, st_action_group_name, menu );
 }
 
 /*
@@ -611,7 +611,7 @@ ofa_tvbin_get_menu( ofaTVBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( ofa_iactionable_get_menu( OFA_IACTIONABLE( bin ), st_group_name ));
+	return( ofa_iactionable_get_menu( OFA_IACTIONABLE( bin ), st_action_group_name ));
 }
 
 /*

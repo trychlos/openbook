@@ -48,6 +48,8 @@ typedef struct {
 }
 	sIActionable;
 
+/* each action group handles its own menu
+ */
 typedef struct {
 	GMenu              *menu;
 	GSimpleActionGroup *action_group;
@@ -386,7 +388,6 @@ get_group_by_name( ofaIActionable *instance, sIActionable *sdata, const gchar *g
 		sgroup->menu = g_menu_new();
 		sgroup->action_group = g_simple_action_group_new();
 		g_hash_table_insert( sdata->action_groups, g_strdup( group_name ), sgroup );
-		gtk_widget_insert_action_group( GTK_WIDGET( instance ), group_name, G_ACTION_GROUP( sgroup->action_group ));
 	}
 
 	return( sgroup );

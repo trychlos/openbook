@@ -422,7 +422,10 @@
 
 1180 2016- 8- 3 rename ofaPage::setup_buttons to ofaPage::setup_actions
 
-1181
+1181 2016- 8- 4 obsolete ofa_buttons_box_add_button_with_mnemonic
+                + BUTTON_DELETE/NEW/PROPERTIES
+
+1182
 
 -----------------------------------------------------------------------
  DONE

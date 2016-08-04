@@ -41,15 +41,15 @@
  * - columns may be added by code.
  *
  * The class provides the following signals
- * +------------------+-------------------------+--------------+--------------------+
- * | Signal           | Event                   |   Selection  |     Sent when      |
- * |                  |                         | may be empty | selection is empty |
- * +------------------+-------------------------+--------------+--------------------+
- * | ofa-selchanged   | on selection change     |      Yes     |        Yes         |
- * | ofa-selactivated | on selection activation |       No     |         -          |
- * | ofa-insert       | on Insert key           |       -      |         -          |
- * | ofa-seldelete    | on Delete key.          |      Yes     |         No         |
- * +------------------+-------------------------+--------------+--------------------+
+ *    +------------------+-------------------------+--------------+--------------------+
+ *    | Signal           | Event                   |   Selection  |     Sent when      |
+ *    |                  |                         | may be empty | selection is empty |
+ *    +------------------+-------------------------+--------------+--------------------+
+ *    | ofa-selchanged   | on selection change     |      Yes     |        Yes         |
+ *    | ofa-selactivated | on selection activation |       No     |         -          |
+ *    | ofa-insert       | on Insert key           |       -      |         -          |
+ *    | ofa-seldelete    | on Delete key.          |      Yes     |         No         |
+ *    +------------------+-------------------------+--------------+--------------------+
  *
  * ofaISortable interface.
  * The treeview-derived class is sortable by column if and only if it

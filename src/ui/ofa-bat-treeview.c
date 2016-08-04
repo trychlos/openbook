@@ -48,11 +48,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean           dispose_has_run;
+	gboolean     dispose_has_run;
 
 	/* UI
 	 */
-	ofaBatStore       *store;
+	ofaBatStore *store;
 }
 	ofaBatTreeviewPrivate;
 
