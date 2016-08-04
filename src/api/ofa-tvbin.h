@@ -57,6 +57,12 @@
  *
  * ofaITVColumnable interface.
  * Columns may be dynamically made visible/invisible.
+ *
+ * Properties:
+ * - ofa-tvbin-hpolicy: horizontal scrollbar policy
+ *                      will typically be NEVER for pages, AUTOMATIC (default) for dialogs.
+ * - ofa-tvbin-shadow: shadow type of the surrounding frame
+ *                      will typically be IN for pages, NONE (default) for dialogs.
  */
 
 #include "api/ofa-istore.h"

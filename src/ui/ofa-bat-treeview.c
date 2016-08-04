@@ -234,7 +234,9 @@ ofa_bat_treeview_new( void )
 	ofaBatTreeview *view;
 
 	view = g_object_new( OFA_TYPE_BAT_TREEVIEW,
-					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER, NULL );
+					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER,
+					"ofa-tvbin-shadow", GTK_SHADOW_IN,
+					NULL );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBat object instead of just the raw GtkTreeSelection

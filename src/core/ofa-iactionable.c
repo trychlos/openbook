@@ -322,9 +322,11 @@ ofa_iactionable_set_menu_item( ofaIActionable *instance, const gchar *group_name
 
 	action_name = g_strdup_printf( "%s.%s", group_name, g_action_get_name( action ));
 	menu_item = g_menu_item_new( item_label, action_name );
-	g_menu_append_item( sgroup->menu, menu_item );
-	g_object_unref( menu_item );
 	g_free( action_name );
+
+	g_menu_append_item( sgroup->menu, menu_item );
+
+	g_object_unref( menu_item );
 
 	return( menu_item );
 }
@@ -345,6 +347,7 @@ GtkWidget *
 ofa_iactionable_set_button( ofaIActionable *instance, const gchar *group_name, GAction *action, const gchar *button_label )
 {
 	sIActionable *sdata;
+	sActionGroup *sgroup;
 	gchar *action_name;
 	GtkWidget *button;
 
@@ -355,11 +358,15 @@ ofa_iactionable_set_button( ofaIActionable *instance, const gchar *group_name, G
 
 	sdata = get_instance_data( instance );
 	set_action_group( instance, sdata, group_name, action );
+	sgroup = get_group_by_name( instance, sdata, group_name );
+
+	button = gtk_button_new_with_mnemonic( button_label );
 
 	action_name = g_strdup_printf( "%s.%s", group_name, g_action_get_name( action ));
-	button = gtk_button_new_with_mnemonic( button_label );
 	gtk_actionable_set_action_name( GTK_ACTIONABLE( button ), action_name );
 	g_free( action_name );
+
+	gtk_widget_insert_action_group( button, group_name, G_ACTION_GROUP( sgroup->action_group ));
 
 	return( button );
 }

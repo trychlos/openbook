@@ -43,6 +43,7 @@ typedef struct {
 
 	/* properties
 	 */
+	GtkShadowType       shadow;
 	GtkPolicyType       hscrollbar_policy;
 
 	/* setup
@@ -59,6 +60,7 @@ typedef struct {
  */
 enum {
 	PROP_HPOLICY_ID = 1,
+	PROP_SHADOW_ID,
 };
 
 /* signals defined here
@@ -163,6 +165,10 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 				g_value_set_int( value, priv->hscrollbar_policy );
 				break;
 
+			case PROP_SHADOW_ID:
+				g_value_set_int( value, priv->shadow );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -188,6 +194,10 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 		switch( property_id ){
 			case PROP_HPOLICY_ID:
 				priv->hscrollbar_policy = g_value_get_int( value );
+				break;
+
+			case PROP_SHADOW_ID:
+				priv->shadow = g_value_get_int( value );
 				break;
 
 			default:
@@ -229,7 +239,7 @@ init_top_widget( ofaTVBin *self )
 	priv = ofa_tvbin_get_instance_private( self );
 
 	frame = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
+	gtk_frame_set_shadow_type( GTK_FRAME( frame ), priv->shadow );
 	gtk_container_add( GTK_CONTAINER( self ), frame );
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
@@ -268,6 +278,9 @@ ofa_tvbin_init( ofaTVBin *self )
 	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	/* at this time, self is "only" an ofaTVBin */
 	g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
+
+	priv->shadow = GTK_SHADOW_NONE;
+	priv->hscrollbar_policy = GTK_POLICY_AUTOMATIC;
 }
 
 static void
@@ -291,6 +304,16 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 					"Horizontal scrollbar policy",
 					"Horizontal scrollbar policy",
 					0, 99, GTK_POLICY_AUTOMATIC,
+					G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_SHADOW_ID,
+			g_param_spec_int(
+					"ofa-tvbin-shadow",
+					"Shadow type",
+					"Shadow type of surrounding frame",
+					0, 99, GTK_SHADOW_NONE,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
 	/**
