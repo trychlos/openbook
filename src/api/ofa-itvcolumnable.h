@@ -22,18 +22,21 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ITVCOLUMNABLE_H__
-#define __OFA_ITVCOLUMNABLE_H__
+#ifndef __OPENBOOK_API_OFA_ITVCOLUMNABLE_H__
+#define __OPENBOOK_API_OFA_ITVCOLUMNABLE_H__
 
 /**
  * SECTION: itvcolumnable
  * @title: ofaITVColumnable
  * @short_description: The ITVColumnable Interface
- * @include: ui/ofa-itreeview-column.h
+ * @include: api/ofa-tvcolumnable.h
  *
  * The #ofaITVColumnable interface is used to dynamically display
  * treeview columns. It sends a 'ofa-toggled' signal when the visibility
  * status of a column changes.
+ *
+ * NB: the class which implements the #ofaITVColumnable interface must
+ * also implement the #ofaIActionable interface.
  */
 
 #include <gtk/gtk.h>
@@ -102,14 +105,10 @@ guint ofa_itvcolumnable_get_interface_version     ( GType type );
  */
 void  ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
 															GtkTreeViewColumn *column,
+															const gchar *group_name,
 															const gchar *menu_label );
 
 void  ofa_itvcolumnable_record_settings           ( ofaITVColumnable *instance );
-
-void  ofa_itvcolumnable_set_context_menu          ( ofaITVColumnable *instance,
-															GMenu *parent_menu,
-															GActionGroup *action_group,
-															const gchar *group_name );
 
 void  ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
 															gint column_id );
@@ -119,4 +118,4 @@ void  ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance,
 
 G_END_DECLS
 
-#endif /* __OFA_ITVCOLUMNABLE_H__ */
+#endif /* __OPENBOOK_API_OFA_ITVCOLUMNABLE_H__ */

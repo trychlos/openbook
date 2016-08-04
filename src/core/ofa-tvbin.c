@@ -30,9 +30,11 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-tvbin.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-isortable.h"
 #include "api/ofa-itvcolumnable.h"
+#include "api/ofa-tvbin.h"
 
 /* private instance data
  */
@@ -46,12 +48,6 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget          *treeview;
-
-	/* context menu
-	 */
-	GMenu              *context_menu;
-	GSimpleActionGroup *action_group;
-	GtkWidget          *popup_menu;
 }
 	ofaTVBinPrivate;
 
@@ -70,26 +66,30 @@ static guint        st_signals[ N_SIGNALS ] = { 0 };
 static const gchar *st_group_name           = "tvbin";
 
 static void         init_top_widget( ofaTVBin *self );
-static void         init_context_menu( ofaTVBin *self );
 static void         tview_on_row_selected( GtkTreeSelection *selection, ofaTVBin *self );
 static void         tview_on_row_activated( GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewColumn *column, ofaTVBin *self );
-static gboolean     tview_on_button_pressed( GtkWidget *treeview, GdkEventButton *event, ofaTVBin *self );
-static void         dump_menu_model( ofaTVBin *self, ofaTVBinPrivate *priv, GMenuModel *model );
 static gboolean     tview_on_key_pressed( GtkWidget *treeview, GdkEventKey *event, ofaTVBin *self );
 static void         add_column( ofaTVBin *self, GtkTreeViewColumn *column, gint column_id, const gchar *menu );
 static const gchar *get_settings_key( ofaTVBin *self );
-static void         itvcolumnable_iface_init( ofaITVColumnableInterface *iface );
-static guint        itvcolumnable_get_interface_version( void );
-static const gchar *itvcolumnable_get_settings_key( const ofaITVColumnable *instance );
+static void         iactionable_iface_init( ofaIActionableInterface *iface );
+static guint        iactionable_get_interface_version( void );
+static void         icontext_iface_init( ofaIContextInterface *iface );
+static guint        icontext_get_interface_version( void );
+static GtkWidget   *icontext_get_focused_widget( ofaIContext *instance );
 static void         isortable_iface_init( ofaISortableInterface *iface );
 static guint        isortable_get_interface_version( void );
 static gint         isortable_sort_model( const ofaISortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 static const gchar *isortable_get_settings_key( const ofaISortable *instance );
+static void         itvcolumnable_iface_init( ofaITVColumnableInterface *iface );
+static guint        itvcolumnable_get_interface_version( void );
+static const gchar *itvcolumnable_get_settings_key( const ofaITVColumnable *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVBin, ofa_tvbin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaTVBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVCOLUMNABLE, itvcolumnable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISORTABLE, isortable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONTEXT, icontext_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISORTABLE, isortable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVCOLUMNABLE, itvcolumnable_iface_init ))
 
 static void
 bin_finalize( GObject *instance )
@@ -127,11 +127,6 @@ bin_dispose( GObject *instance )
 		ofa_itvcolumnable_record_settings( OFA_ITVCOLUMNABLE( instance ));
 
 		/* unref object members here */
-		if( priv->popup_menu ){
-			/* remove a floating reference */
-			g_object_ref_sink( priv->popup_menu );
-		}
-		g_object_unref( priv->context_menu );
 	}
 
 	/* chain up to the parent class */
@@ -157,7 +152,6 @@ ofa_tvbin_init( ofaTVBin *self )
 	g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
 
 	init_top_widget( self );
-	init_context_menu( self );
 }
 
 static void
@@ -165,7 +159,7 @@ init_top_widget( ofaTVBin *self )
 {
 	ofaTVBinPrivate *priv;
 	GtkWidget *frame, *scrolled;
-	GtkTreeSelection *select;
+	GtkTreeSelection *selection;
 
 	priv = ofa_tvbin_get_instance_private( self );
 
@@ -185,29 +179,10 @@ init_top_widget( ofaTVBin *self )
 	gtk_container_add( GTK_CONTAINER( scrolled ), priv->treeview );
 
 	g_signal_connect( priv->treeview, "row-activated", G_CALLBACK( tview_on_row_activated ), self );
-	g_signal_connect( priv->treeview, "button-press-event", G_CALLBACK( tview_on_button_pressed ), self );
 	g_signal_connect( priv->treeview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
 
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
-	g_signal_connect( select, "changed", G_CALLBACK( tview_on_row_selected ), self );
-}
-
-static void
-init_context_menu( ofaTVBin *self )
-{
-	ofaTVBinPrivate *priv;
-
-	priv = ofa_tvbin_get_instance_private( self );
-
-	/* create the menu model */
-	priv->context_menu = g_menu_new();
-	priv->action_group = g_simple_action_group_new();
-
-	/* add ofaTVBin-specific items */
-
-	/* let the ofaITVColumnable interface add its items */
-	ofa_itvcolumnable_set_context_menu(
-			OFA_ITVCOLUMNABLE( self ), priv->context_menu, G_ACTION_GROUP( priv->action_group ), st_group_name );
+	selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
+	g_signal_connect( selection, "changed", G_CALLBACK( tview_on_row_selected ), self );
 }
 
 static void
@@ -221,7 +196,7 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = bin_finalize;
 
 	/**
-	 * ofaTVBin::ofa-changed:
+	 * ofaTVBin::ofa-selchanged:
 	 *
 	 * This signal is sent on the #ofaTVBin when the selection is
 	 * changed.
@@ -246,7 +221,7 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 				G_TYPE_OBJECT );
 
 	/**
-	 * ofaTVBin::ofa-activated:
+	 * ofaTVBin::ofa-selactivated:
 	 *
 	 * This signal is sent on the #ofaTVBin when the selection is
 	 * activated.
@@ -295,12 +270,13 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 				G_TYPE_NONE );
 
 	/**
-	 * ofaTVBin::ofa-delete:
+	 * ofaTVBin::ofa-seldelete:
 	 *
 	 * This signal is sent on the #ofaTVBin when the Delete key is
 	 * pressed.
 	 *
 	 * Argument is the current #GtkTreeSelection.
+	 * The signal is not sent if there is no current selection.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaTVBin           *bin,
@@ -332,74 +308,9 @@ tview_on_row_activated( GtkTreeView *treeview, GtkTreePath *path, GtkTreeViewCol
 	GtkTreeSelection *selection;
 
 	selection = gtk_tree_view_get_selection( treeview );
+	g_return_if_fail( gtk_tree_selection_count_selected_rows( selection ) > 0 );
+
 	g_signal_emit_by_name( self, "ofa-selactivated", selection );
-}
-
-/*
- * Opens a context menu.
- * cf. https://developer.gnome.org/gtk3/stable/gtk-migrating-checklist.html#checklist-popup-menu
- */
-static gboolean
-tview_on_button_pressed( GtkWidget *treeview, GdkEventButton *event, ofaTVBin *self )
-{
-	ofaTVBinPrivate *priv;
-	gboolean stop;
-
-	stop = FALSE;
-	priv = ofa_tvbin_get_instance_private( self );
-
-	/* Ignore double-clicks and triple-clicks */
-	if( gdk_event_triggers_context_menu(( GdkEvent * ) event ) &&
-			event->type == GDK_BUTTON_PRESS && event->button == GDK_BUTTON_SECONDARY ){
-
-		if( !priv->popup_menu ){
-			priv->popup_menu = gtk_menu_new_from_model( G_MENU_MODEL( priv->context_menu ));
-			gtk_widget_insert_action_group( priv->popup_menu, st_group_name, G_ACTION_GROUP( priv->action_group ));
-			if( 0 ){
-				dump_menu_model( self, priv, G_MENU_MODEL( priv->context_menu ));
-			}
-		}
-
-		gtk_menu_popup( GTK_MENU( priv->popup_menu ), NULL, NULL, NULL, NULL, event->button, event->time );
-		stop = TRUE;
-	}
-
-	return( stop );
-}
-
-static void
-dump_menu_model( ofaTVBin *self, ofaTVBinPrivate *priv, GMenuModel *model )
-{
-	static const gchar *thisfn = "ofa_tvbin_dump_menu_model";
-	gint i, count;
-	GMenuAttributeIter *attribute_iter;
-	GMenuLinkIter *link_iter;
-	const gchar *attribute_name, *link_name;
-	GMenuModel *link_model;
-	GVariant *attribute_value;
-
-	/* iterate through items */
-	count = g_menu_model_get_n_items( model );
-	g_debug( "%s: model=%p, items_count=%d", thisfn, ( void * ) model, count );
-	for( i=0 ; i<count ; ++i ){
-
-		/* iterate through attributes for this item */
-		attribute_iter = g_menu_model_iterate_item_attributes( model, i );
-		while( g_menu_attribute_iter_get_next( attribute_iter, &attribute_name, &attribute_value )){
-			g_debug( "%s: i=%d, attribute_name=%s, attribute_value=%s", thisfn, i, attribute_name, g_variant_get_string( attribute_value, NULL ));
-			g_variant_unref( attribute_value );
-		}
-		g_object_unref( attribute_iter );
-
-		/* iterates through links for this item */
-		link_iter = g_menu_model_iterate_item_links( model, i );
-		while( g_menu_link_iter_get_next( link_iter, &link_name, &link_model )){
-			g_debug( "%s: i=%d, link_name=%s, link_model=%p", thisfn, i, link_name, ( void * ) link_model );
-			dump_menu_model( self, priv, link_model );
-			g_object_unref( link_model );
-		}
-		g_object_unref( link_iter );
-	}
 }
 
 /*
@@ -420,7 +331,9 @@ tview_on_key_pressed( GtkWidget *treeview, GdkEventKey *event, ofaTVBin *self )
 	if( event->state == 0 ){
 		if( event->keyval == GDK_KEY_Delete || event->keyval == GDK_KEY_KP_Delete ){
 			selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( treeview ));
-			g_signal_emit_by_name( self, "ofa-seldelete", selection );
+			if( gtk_tree_selection_count_selected_rows( selection ) > 0 ){
+				g_signal_emit_by_name( self, "ofa-seldelete", selection );
+			}
 
 		} else if( event->keyval == GDK_KEY_Insert || event->keyval == GDK_KEY_KP_Insert ){
 			g_signal_emit_by_name( self, "ofa-insert" );
@@ -626,6 +539,43 @@ ofa_tvbin_add_column_text( ofaTVBin *bin, gint column_id, const gchar *header, c
 	add_column( bin, column, column_id, menu );
 }
 
+/*
+ * ofa_tvbin_add_column_text_lx:
+ * @bin: this #ofaTVBin instance.
+ * @column_id: the source column id,
+ *  is also used as sortable column identifier.
+ * @header: [allow-none]: the header of the column,
+ *  if NULL, then takes default.
+ * @menu: [allow-none]: the label of the popup menu,
+ *  if NULL, then takes the column header.
+ *
+ * Appends a text column to the treeview, defaulting to non visible.
+ * The text ellipsizes on the left (only the right part may be visible).
+ * This column is marked expandable.
+ */
+void
+ofa_tvbin_add_column_text_lx( ofaTVBin *bin, gint column_id, const gchar *header, const gchar *menu )
+{
+	ofaTVBinPrivate *priv;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( cell ), "ellipsize-set", TRUE, "ellipsize", PANGO_ELLIPSIZE_START, NULL );
+
+	column = gtk_tree_view_column_new_with_attributes(
+					header ? header : _( "Text" ), cell, "text", column_id, NULL );
+	gtk_tree_view_column_set_expand( column, TRUE );
+
+	add_column( bin, column, column_id, menu );
+}
+
 static void
 add_column( ofaTVBin *self, GtkTreeViewColumn *column, gint column_id, const gchar *menu )
 {
@@ -636,11 +586,32 @@ add_column( ofaTVBin *self, GtkTreeViewColumn *column, gint column_id, const gch
 	gtk_tree_view_column_set_visible( column, FALSE );
 	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	gtk_tree_view_column_set_reorderable( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_sizing( column, GTK_TREE_VIEW_COLUMN_GROW_ONLY );
 
 	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->treeview ), column );
 
-	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( self ), column, menu );
+	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( self ), column, st_group_name, menu );
+}
+
+/*
+ * ofa_tvbin_get_menu:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: the current #GMenu used to display columns.
+ */
+GMenu *
+ofa_tvbin_get_menu( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( ofa_iactionable_get_menu( OFA_IACTIONABLE( bin ), st_group_name ));
 }
 
 /*
@@ -653,6 +624,7 @@ GtkTreeSelection *
 ofa_tvbin_get_selection( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
+
 	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
 
 	priv = ofa_tvbin_get_instance_private( bin );
@@ -676,6 +648,7 @@ GtkWidget *
 ofa_tvbin_get_treeview( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
+
 	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
 
 	priv = ofa_tvbin_get_instance_private( bin );
@@ -779,29 +752,52 @@ get_settings_key( ofaTVBin *self )
 }
 
 /*
- * ofaITVColumnable interface management
+ * ofaIActionable interface management
  */
 static void
-itvcolumnable_iface_init( ofaITVColumnableInterface *iface )
+iactionable_iface_init( ofaIActionableInterface *iface )
 {
-	static const gchar *thisfn = "ofa_tvbin_itvcolumnable_iface_init";
+	static const gchar *thisfn = "ofa_tvbin_iactionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = itvcolumnable_get_interface_version;
-	iface->get_settings_key = itvcolumnable_get_settings_key;
+	iface->get_interface_version = iactionable_get_interface_version;
 }
 
 static guint
-itvcolumnable_get_interface_version( void )
+iactionable_get_interface_version( void )
 {
 	return( 1 );
 }
 
-static const gchar *
-itvcolumnable_get_settings_key( const ofaITVColumnable *instance )
+/*
+ * ofaIContext interface management
+ */
+static void
+icontext_iface_init( ofaIContextInterface *iface )
 {
-	return( get_settings_key( OFA_TVBIN( instance )));
+	static const gchar *thisfn = "ofa_bat_treeview_icontext_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = icontext_get_interface_version;
+	iface->get_focused_widget = icontext_get_focused_widget;
+}
+
+static guint
+icontext_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static GtkWidget *
+icontext_get_focused_widget( ofaIContext *instance )
+{
+	ofaTVBinPrivate *priv;
+
+	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( instance ));
+
+	return( priv->treeview );
 }
 
 /*
@@ -845,4 +841,30 @@ isortable_sort_model( const ofaISortable *instance, GtkTreeModel *tmodel, GtkTre
 	}
 
 	return( cmp );
+}
+
+/*
+ * ofaITVColumnable interface management
+ */
+static void
+itvcolumnable_iface_init( ofaITVColumnableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tvbin_itvcolumnable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = itvcolumnable_get_interface_version;
+	iface->get_settings_key = itvcolumnable_get_settings_key;
+}
+
+static guint
+itvcolumnable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static const gchar *
+itvcolumnable_get_settings_key( const ofaITVColumnable *instance )
+{
+	return( get_settings_key( OFA_TVBIN( instance )));
 }

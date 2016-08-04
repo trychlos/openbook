@@ -45,6 +45,7 @@ typedef struct {
 
 /* some styles layout
  */
+#define STYLE_BOX_PADDING               6
 #define STYLE_ROW_MARGIN                4
 #define STYLE_SPACER                    28
 
@@ -140,7 +141,7 @@ setup_top_grid( ofaButtonsBox *box )
 	priv = ofa_buttons_box_get_instance_private( box );
 
 	top_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margins( top_widget, 0, 0, 8, 8 );
+	my_utils_widget_set_margins( top_widget, 0, 0, STYLE_BOX_PADDING, STYLE_BOX_PADDING );
 	gtk_container_add( GTK_CONTAINER( box ), top_widget );
 
 	grid = gtk_grid_new();
@@ -200,16 +201,38 @@ ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box, const gchar *mnemo
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	button = gtk_button_new_with_mnemonic( mnemonic );
-	my_utils_widget_set_margins( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
-	priv->spacers = 0;
-	gtk_widget_set_sensitive( button, FALSE );
+	ofa_buttons_box_append_button( box, button );
 
+	gtk_widget_set_sensitive( button, FALSE );
 	if( cb ){
 		g_signal_connect( button, "clicked", cb, user_data );
 	}
 
+	return( button );
+}
+
+/**
+ * ofa_buttons_box_append_button:
+ * @box: this #ofaButtonsBox object.
+ * @button: the button to append.
+ *
+ * Packs a button in the specified @box.
+ */
+void
+ofa_buttons_box_append_button( ofaButtonsBox *box, GtkWidget *button )
+{
+	ofaButtonsBoxPrivate *priv;
+
+	g_return_if_fail( box && OFA_IS_BUTTONS_BOX( box ));
+	g_return_if_fail( button && GTK_IS_WIDGET( button ));
+
+	priv = ofa_buttons_box_get_instance_private( box );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	my_utils_widget_set_margins( button, priv->spacers*STYLE_SPACER, 0, 0, 0 );
+	priv->spacers = 0;
+
 	gtk_grid_attach( priv->grid, button, 0, priv->rows, 1, 1 );
 	priv->rows += 1;
-
-	return( button );
 }

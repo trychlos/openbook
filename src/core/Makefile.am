@@ -96,6 +96,8 @@ libofa_core_la_SOURCES = \
 	ofa-guided-input-bin.h								\
 	ofa-hub.c											\
 	ofa-iabout.c										\
+	ofa-iactionable.c									\
+	ofa-icontext.c										\
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
 	ofa-idate-filter.c									\

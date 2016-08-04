@@ -416,7 +416,13 @@
 1177 2016- 7-11 RecurrentOperation: do not warns when no entry is generated
                 (but only display the info)
 
-1178
+1178 2016- 8- 2 rename ofaiSortable to ofaITVSortable
+
+1179 2016- 8- 2 obsolete itreeview-column and itreeview-display
+
+1180 2016- 8- 3 rename ofaPage::setup_buttons to ofaPage::setup_actions
+
+1181
 
 -----------------------------------------------------------------------
  DONE

@@ -90,6 +90,9 @@ GtkWidget     *ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box,
 																GCallback cb,
 																void *user_data );
 
+void           ofa_buttons_box_append_button           ( ofaButtonsBox *box,
+																GtkWidget *button );
+
 G_END_DECLS
 
 #endif /* __OFA_BUTTONS_BOX_H__ */

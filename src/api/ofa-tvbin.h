@@ -40,11 +40,16 @@
  * - columns may be added/removed/resized by the user
  * - columns may be added by code.
  *
- * The class provides the following signals:
- * - 'ofa-selchanged' on selection change
- * - 'ofa-selactivated' on row activation
- * - 'ofa-insert' on Insert key
- * - 'ofa-seldelete' on Delete key.
+ * The class provides the following signals
+ * +------------------+-------------------------+--------------+--------------------+
+ * | Signal           | Event                   |   Selection  |     Sent when      |
+ * |                  |                         | may be empty | selection is empty |
+ * +------------------+-------------------------+--------------+--------------------+
+ * | ofa-selchanged   | on selection change     |      Yes     |        Yes         |
+ * | ofa-selactivated | on selection activation |       No     |         -          |
+ * | ofa-insert       | on Insert key           |       -      |         -          |
+ * | ofa-seldelete    | on Delete key.          |      Yes     |         No         |
+ * +------------------+-------------------------+--------------+--------------------+
  *
  * ofaISortable interface.
  * The treeview-derived class is sortable by column if and only if it
@@ -135,6 +140,13 @@ void              ofa_tvbin_add_column_text   ( ofaTVBin *bin,
 													gint column_id,
 													const gchar *header,
 													const gchar *menu );
+
+void              ofa_tvbin_add_column_text_lx( ofaTVBin *bin,
+													gint column_id,
+													const gchar *header,
+													const gchar *menu );
+
+GMenu            *ofa_tvbin_get_menu          ( ofaTVBin *bin );
 
 GtkTreeSelection *ofa_tvbin_get_selection     ( ofaTVBin *bin );
 

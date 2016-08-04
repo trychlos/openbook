@@ -69,6 +69,8 @@
    - myStyle: new style management class.
    - ofa.css: remove obsolete styles.
    - ofaClassStore: new class.
+   - ofaIActionable: new interface.
+   - ofaIContext: new interface.
    - ofaISortable: new interface.
    - ofaITVColumnable: new interface.
    - ofaTVBin: new base class.

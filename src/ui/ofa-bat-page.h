@@ -28,12 +28,19 @@
 /**
  * SECTION: ofa_bat_page
  * @short_description: #ofaBatPage class definition.
- * @include: ui/ofa-bat-set.h
+ * @include: ui/ofa-bat-page.h
  *
  * Display the list of known bat, letting the user edit it.
  *
- * The display treeview is sorted in a the ascending currency code
- * order with insensitive case.
+ * The page manages following actions
+ * +------------+------------+------------+
+ * | Action     | Button     | Context    |
+ * +------------+------------+------------+
+ * |            | New        |            |
+ * | bat.new    | Import     | Import     |
+ * | bat.update | Properties | Properties |
+ * | bat.delete | Delete     | Delete     |
+ * +------------+------------+------------+
  */
 
 #include "api/ofa-page-def.h"

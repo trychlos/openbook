@@ -34,6 +34,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-isortable.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
@@ -60,6 +61,7 @@ typedef struct {
 enum {
 	CHANGED = 0,
 	ACTIVATED,
+	DELETE,
 	N_SIGNALS
 };
 
@@ -67,7 +69,8 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void     init_columns( ofaBatTreeview *self );
 static void     on_selection_changed( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
-static void     on_row_activated( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
+static void     on_selection_activated( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
+static void     on_selection_delete( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoBat  *get_selected_with_selection( ofaBatTreeview *self, GtkTreeSelection *selection );
 static gint     v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
@@ -131,7 +134,13 @@ ofa_bat_treeview_init( ofaBatTreeview *self )
 	 * a #ofoBat object instead of just the raw GtkTreeSelection
 	 */
 	g_signal_connect( self, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
-	g_signal_connect( self, "ofa-selactivated", G_CALLBACK( on_row_activated ), NULL );
+	g_signal_connect( self, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
+
+	/* the 'ofa-seldelete' signal is sent in response to the Delete key press.
+	 * There may be no current selection.
+	 * in this case, the signal is just ignored (not proxied).
+	 */
+	g_signal_connect( self, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( self ), GTK_SELECTION_BROWSE );
 
@@ -148,22 +157,22 @@ init_columns( ofaBatTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_int   ( OFA_TVBIN( self ), BAT_COL_ID,          _( "Id." ),      _( "BAT Id." ));
-	ofa_tvbin_add_column_text  ( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),      _( "URI" ));
-	ofa_tvbin_add_column_text  ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),   _( "Format" ));
-	ofa_tvbin_add_column_date  ( OFA_TVBIN( self ), BAT_COL_BEGIN,       _( "Begin" ),    _( "Begin date" ));
-	ofa_tvbin_add_column_date  ( OFA_TVBIN( self ), BAT_COL_END,         _( "End" ),      _( "End date" ));
-	ofa_tvbin_add_column_int   ( OFA_TVBIN( self ), BAT_COL_COUNT,       _( "Count" ),    _( "Lines count" ));
-	ofa_tvbin_add_column_int   ( OFA_TVBIN( self ), BAT_COL_UNUSED,      _( "Unused" ),   _( "Unused lines" ));
-	ofa_tvbin_add_column_text  ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),      _( "RIB" ));
-	ofa_tvbin_add_column_amount( OFA_TVBIN( self ), BAT_COL_BEGIN_SOLDE, _( "Begin" ),    _( "Begin solde" ));
-	ofa_tvbin_add_column_amount( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),      _( "End solde" ));
-	ofa_tvbin_add_column_text  ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ), _( "Currency" ));
-	ofa_tvbin_add_column_text  ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Account" ));
-	ofa_tvbin_add_column_text  ( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),    _( "Notes" ));
-	ofa_tvbin_add_column_pixbuf( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
-	ofa_tvbin_add_column_text  ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
-	ofa_tvbin_add_column_stamp ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_ID,          _( "Id." ),      _( "BAT Id." ));
+	ofa_tvbin_add_column_text_lx( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),      _( "URI" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),   _( "Format" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_BEGIN,       _( "Begin" ),    _( "Begin date" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_END,         _( "End" ),      _( "End date" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_COUNT,       _( "Count" ),    _( "Lines count" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_UNUSED,      _( "Unused" ),   _( "Unused lines" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),      _( "RIB" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_BEGIN_SOLDE, _( "Begin" ),    _( "Begin solde" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),      _( "End solde" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ), _( "Currency" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Account" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),    _( "Notes" ));
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAT_COL_URI );
 }
@@ -208,9 +217,9 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 				G_TYPE_OBJECT );
 
 	/**
-	 * ofaBatTreeview::ofa-bat-activated:
+	 * ofaBatTreeview::ofa-batactivated:
 	 *
-	 * #ofaTVBin sends a 'ofa-activated' signal, with the current
+	 * #ofaTVBin sends a 'ofa-selactivated' signal, with the current
 	 * #GtkTreeSelection as an argument.
 	 * #ofaBatTreeview proxyes it with this 'ofa-batactivated' signal,
 	 * providing the #ofoBat selected object.
@@ -224,6 +233,33 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
 				"ofa-batactivated",
+				OFA_TYPE_BAT_TREEVIEW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				1,
+				G_TYPE_OBJECT );
+
+	/**
+	 * ofaBatTreeview::ofa-batdelete:
+	 *
+	 * #ofaTVBin sends a 'ofa-seldelete' signal, with the current
+	 * #GtkTreeSelection as an argument.
+	 * #ofaBatTreeview proxyes it with this 'ofa-batdelete' signal,
+	 * providing the #ofoBat selected object.
+	 *
+	 * Argument is the current #ofoBat object.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaBatTreeview *view,
+	 * 						ofoBat       *object,
+	 * 						gpointer      user_data );
+	 */
+	st_signals[ DELETE ] = g_signal_new_class_handler(
+				"ofa-batdelete",
 				OFA_TYPE_BAT_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -298,20 +334,33 @@ on_selection_changed( ofaBatTreeview *self, GtkTreeSelection *selection, void *e
 }
 
 static void
-on_row_activated( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty )
+on_selection_activated( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty )
 {
 	get_and_send( self, selection, "ofa-batactivated" );
 }
 
+/*
+ * Delete key pressed
+ * ofaTVBin base class makes sure the selection is not empty.
+ */
+static void
+on_selection_delete( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty )
+{
+	get_and_send( self, selection, "ofa-batdelete" );
+}
+
+/*
+ * BAT may be %NULL when selection is empty (on 'ofa-batchanged' signal)
+ */
 static void
 get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal )
 {
 	ofoBat *bat;
 
 	bat = get_selected_with_selection( self, selection );
-	if( bat ){
-		g_signal_emit_by_name( self, signal, bat );
-	}
+	g_return_if_fail( !bat || OFO_IS_BAT( bat ));
+
+	g_signal_emit_by_name( self, signal, bat );
 }
 
 /**
@@ -333,6 +382,7 @@ ofa_bat_treeview_get_selected( ofaBatTreeview *view )
 	g_return_val_if_fail( view && OFA_IS_BAT_TREEVIEW( view ), NULL );
 
 	priv = ofa_bat_treeview_get_instance_private( view );
+
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));

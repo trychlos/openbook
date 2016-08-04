@@ -80,6 +80,19 @@
  *
  * ofaEntryPage        several top frames with a treeview on a       No
  *                     list store
+ *
+ * Dynamic of the build
+ * ====================
+ * ofaPage::constructed()
+ *    do_setup_page()
+ *       [ setup_page() ]
+ *           ofaPage::v_setup_page()
+ *             do_setup_view(), attaching it to left=0, top=0
+ *                [ setup_view() ]
+ *             do_setup_buttons(), attaching it to left=1, top=0
+ *                [ setup_buttons() ]
+ *    do_init_view()
+ *       [ init_view() ]
  */
 
 #include <gtk/gtk.h>

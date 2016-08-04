@@ -39,6 +39,8 @@ api_include_HEADERS = \
 	ofa-hub.h											\
 	ofa-hub-def.h										\
 	ofa-iabout.h										\
+	ofa-iactionable.h									\
+	ofa-icontext.h										\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
 	ofa-idbeditor.h										\

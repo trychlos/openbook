@@ -30,6 +30,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-iactionable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -66,6 +67,8 @@ static GApplication         *igetter_get_application( const ofaIGetter *instance
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
 static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
+static void                  iactionable_iface_init( ofaIActionableInterface *iface );
+static guint                 iactionable_get_interface_version( void );
 static void                  do_setup_page( ofaPage *page );
 static void                  v_setup_page( ofaPage *page );
 static GtkWidget            *do_setup_view( ofaPage *page );
@@ -76,6 +79,7 @@ static GtkWidget            *v_get_top_focusable_widget( const ofaPage *page );
 
 G_DEFINE_TYPE_EXTENDED( ofaPage, ofa_page, GTK_TYPE_GRID, 0,
 		G_ADD_PRIVATE( ofaPage )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init ))
 
 static void
@@ -202,6 +206,9 @@ page_constructed( GObject *instance )
 			thisfn,
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) priv->getter, G_OBJECT_TYPE_NAME( priv->getter ));
+
+	/* let the #ofaIActionable interface initialize itself */
+	//ofa_iactionable_init( OFA_IACTIONABLE( self ));
 
 	/* let the child class setup its page before showing it */
 	do_setup_page( self );
@@ -363,6 +370,25 @@ igetter_get_theme_manager( const ofaIGetter *instance )
 	priv = ofa_page_get_instance_private( OFA_PAGE( instance ));
 
 	return( ofa_igetter_get_theme_manager( priv->getter ));
+}
+
+/*
+ * ofaIActionable interface management
+ */
+static void
+iactionable_iface_init( ofaIActionableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_page_iactionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iactionable_get_interface_version;
+}
+
+static guint
+iactionable_get_interface_version( void )
+{
+	return( 1 );
 }
 
 static void

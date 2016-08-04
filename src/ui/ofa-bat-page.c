@@ -34,8 +34,11 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
@@ -55,7 +58,13 @@ typedef struct {
 
 	/* runtime data
 	 */
-	gboolean        is_writable;			/* whether the dossier is current */
+	gboolean        is_writable;		/* whether the dossier is current */
+
+	/* actions
+	 */
+	GSimpleAction  *new_action;
+	GSimpleAction  *update_action;
+	GSimpleAction  *delete_action;
 
 	/* UI
 	 */
@@ -66,12 +75,16 @@ typedef struct {
 }
 	ofaBatPagePrivate;
 
+static const gchar *st_group_name       = "bat";
+
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_delete_key( ofaBatTreeview *tview, ofaBatPage *self );
 static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
 static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
+static void       on_delete_key( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
+static void       on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self );
 static void       on_update_clicked( GtkButton *button, ofaBatPage *self );
 static void       on_delete_clicked( GtkButton *button, ofaBatPage *self );
 static void       on_import_clicked( GtkButton *button, ofaBatPage *self );
@@ -82,7 +95,7 @@ G_DEFINE_TYPE_EXTENDED( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaBatPage ))
 
 static void
-bats_page_finalize( GObject *instance )
+bat_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_bat_page_finalize";
 
@@ -98,13 +111,18 @@ bats_page_finalize( GObject *instance )
 }
 
 static void
-bats_page_dispose( GObject *instance )
+bat_page_dispose( GObject *instance )
 {
+	ofaBatPagePrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_BAT_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( instance ));
+
+		g_object_unref( priv->update_action );
 	}
 
 	/* chain up to the parent class */
@@ -129,11 +147,12 @@ ofa_bat_page_class_init( ofaBatPageClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = bats_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = bats_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = bat_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = bat_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -157,12 +176,10 @@ v_setup_view( ofaPage *page )
 
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 2 );
 
-	/* ofaTVBin signal */
-	g_signal_connect( priv->tview, "ofa-seldelete", G_CALLBACK( on_delete_key ), page );
-
 	/* ofaBatTreeview signals */
 	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( priv->tview, "ofa-batdelete", G_CALLBACK( on_delete_key ), page );
 
 	return( GTK_WIDGET( priv->tview ));
 }
@@ -175,16 +192,36 @@ v_setup_buttons( ofaPage *page )
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
+	/* setup actions and UI */
 	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
-	/* always disabled */
+	/* action 'New' is always here */
+	//ofa_iactionable_add_action_to_menu( OFA_IACTIONABLE( page ), "bat", NULL, _( "New" ));
 	ofa_buttons_box_add_button_with_mnemonic(
 				buttons_box, BUTTON_NEW, NULL, NULL );
 
+	/* update action */
+	priv->update_action = g_simple_action_new( "update", NULL );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( on_update_action_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), st_group_name, G_ACTION( priv->update_action ),
+			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), st_group_name, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE_PROPERTIES_BTN ));
+	/*
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), G_ACTION( priv->update_action ),
+			priv->is_writable ? _( "Edit properties" ) : _( "Display properties" ));
+			*/
+	/*
 	priv->update_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
 					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+	*/
 
 	priv->delete_btn =
 			ofa_buttons_box_add_button_with_mnemonic(
@@ -200,6 +237,28 @@ v_setup_buttons( ofaPage *page )
 	return( GTK_WIDGET( buttons_box ));
 }
 
+static void
+v_init_view( ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_bat_page_v_init_view";
+	ofaBatPagePrivate *priv;
+	GMenu *menu;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), st_group_name );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
+			menu );
+
+	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+}
+
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
@@ -210,28 +269,6 @@ v_get_top_focusable_widget( const ofaPage *page )
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
 	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
-}
-
-/*
- * signal sent by ofaTVBin on Delete key
- *
- * Note that the key may be pressed, even if the dossier is the button
- * is disabled. So have to check all prerequisite conditions.
- * If the current row is not deletable, just silently ignore the key.
- */
-static void
-on_delete_key( ofaBatTreeview *tview, ofaBatPage *self )
-{
-	ofaBatPagePrivate *priv;
-	ofoBat *bat;
-
-	priv = ofa_bat_page_get_instance_private( self );
-
-	bat = ofa_bat_treeview_get_selected( priv->tview );
-
-	if( check_for_deletability( self, bat )){
-		delete_with_confirm( self, bat );
-	}
 }
 
 /*
@@ -247,7 +284,8 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 
 	is_bat = bat && OFO_IS_BAT( bat );
 
-	gtk_widget_set_sensitive( priv->update_btn, is_bat );
+	g_simple_action_set_enabled( priv->update_action, is_bat );
+	//gtk_widget_set_sensitive( priv->update_btn, is_bat );
 	gtk_widget_set_sensitive( priv->delete_btn, check_for_deletability( self, bat ));
 }
 
@@ -261,8 +299,29 @@ on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 }
 
 /*
- * only notes can be updated
+ * signal sent by ofaBatTreeview on Delete key
+ *
+ * Note that the key may be pressed, even if the button
+ * is disabled. So have to check all prerequisite conditions.
+ * If the current row is not deletable, just silently ignore the key.
  */
+static void
+on_delete_key( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
+{
+	if( check_for_deletability( self, bat )){
+		delete_with_confirm( self, bat );
+	}
+}
+
+/*
+ * only notes can be updated if the dossier is writable
+ */
+static void
+on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
+{
+	g_debug( "on_update_action_activated" );
+}
+
 static void
 on_update_clicked( GtkButton *button, ofaBatPage *self )
 {

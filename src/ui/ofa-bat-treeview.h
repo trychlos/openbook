@@ -33,9 +33,15 @@
  * Manage a treeview with the list of the BAT files imported in the
  * dossier.
  *
- * Provides the signals:
- * - 'ofa-batchanged'
- * - 'ofa-batactivated'
+ * The class provides the following signals
+ * +------------------+----------+
+ * | Signal           | BAT may  |
+ * |                  | be %NULL |
+ * +------------------+----------+
+ * | ofa-batchanged   |   Yes    |
+ * | ofa-batactivated |    No    |
+ * | ofa-batdelete    |    No    |
+ * +------------------+----------+
  */
 
 #include "api/ofa-tvbin.h"
