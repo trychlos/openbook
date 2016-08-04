@@ -277,8 +277,8 @@ setup_treeview( ofaBatSelect *self )
 	ofa_bat_treeview_set_hub( priv->tview, hub );
 	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
 
-	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_selection_changed ), self );
-	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_selection_changed ), self );
+	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), self );
 }
 
 static void
