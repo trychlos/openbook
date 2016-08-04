@@ -35,7 +35,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
-#include "api/ofa-isortable.h"
+#include "api/ofa-itvsortable.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -325,7 +325,7 @@ ofa_bat_treeview_set_hub( ofaBatTreeview *view, ofaHub *hub )
 	ofa_tvbin_set_store( OFA_TVBIN( view ), OFA_ISTORE( priv->store ));
 	g_object_unref( priv->store );
 
-	ofa_isortable_set_default_sort( OFA_ISORTABLE( view ), BAT_COL_ID, GTK_SORT_DESCENDING );
+	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), BAT_COL_ID, GTK_SORT_DESCENDING );
 }
 
 static void
@@ -521,7 +521,7 @@ v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *
 
 	switch( column_id ){
 		case BAT_COL_ID:
-			cmp = ofa_isortable_sort_str_int( ida, idb );
+			cmp = ofa_itvsortable_sort_str_int( ida, idb );
 			break;
 		case BAT_COL_URI:
 			cmp = my_collate( uria, urib );
@@ -542,22 +542,22 @@ v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *
 			cmp = my_collate( cura, curb );
 			break;
 		case BAT_COL_BEGIN_SOLDE:
-			cmp = ofa_isortable_sort_str_amount( bsoldea, bsoldeb );
+			cmp = ofa_itvsortable_sort_str_amount( bsoldea, bsoldeb );
 			break;
 		case BAT_COL_END_SOLDE:
-			cmp = ofa_isortable_sort_str_amount( esoldea, esoldeb );
+			cmp = ofa_itvsortable_sort_str_amount( esoldea, esoldeb );
 			break;
 		case BAT_COL_NOTES:
 			cmp = my_collate( begina, beginb );
 			break;
 		case BAT_COL_NOTES_PNG:
-			cmp = ofa_isortable_sort_png( pnga, pngb );
+			cmp = ofa_itvsortable_sort_png( pnga, pngb );
 			break;
 		case BAT_COL_COUNT:
-			cmp = ofa_isortable_sort_str_int( counta, countb );
+			cmp = ofa_itvsortable_sort_str_int( counta, countb );
 			break;
 		case BAT_COL_UNUSED:
-			cmp = ofa_isortable_sort_str_int( unuseda, unusedb );
+			cmp = ofa_itvsortable_sort_str_int( unuseda, unusedb );
 			break;
 		case BAT_COL_ACCOUNT:
 			cmp = my_collate( accounta, accountb );

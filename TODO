@@ -416,8 +416,6 @@
 1177 2016- 7-11 RecurrentOperation: do not warns when no entry is generated
                 (but only display the info)
 
-1178 2016- 8- 2 rename ofaiSortable to ofaITVSortable
-
 1179 2016- 8- 2 obsolete itreeview-column and itreeview-display
 
 1180 2016- 8- 3 rename ofaPage::setup_buttons to ofaPage::setup_actions
@@ -432,6 +430,8 @@
                 - have a treeview derived from ofaTVBin (maybe with v_sort)
                 - implement actions in the page
                 - check dialog properties
+                Done for:
+                - ofatBatPage, ofaBatTreeview
 
 -----------------------------------------------------------------------
  DONE
@@ -1579,6 +1579,9 @@
 1176 2016- 7-11 BUG: Recurrent: validating operation is not recorded
      2016- 7-11 because of auto-increment, did not have numseq up to date
                 -> fixed
+
+1178 2016- 8- 2 rename ofaISortable to ofaITVSortable
+     2016- 8- 4 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

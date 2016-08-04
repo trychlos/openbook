@@ -51,7 +51,7 @@
  *    | ofa-seldelete    | on Delete key.          |      Yes     |         No         |
  *    +------------------+-------------------------+--------------+--------------------+
  *
- * ofaISortable interface.
+ * ofaITVSortable interface.
  * The treeview-derived class is sortable by column if and only if it
  * implements the 'ofaTVBin::sort()' virtual method.
  *
@@ -102,7 +102,7 @@ typedef struct {
 	 * This virtual function is called when sorting the treeview.
 	 *
 	 * If this virtual is not implemented by the derived class,
-	 * then the ISortable interface will not be implemented by the
+	 * then the ITVSortable interface will not be implemented by the
 	 * #ofaTVBin class, and the sort order of the treeview will only
 	 * rely on the sort order of the underlying #ofaListStore (resp.
 	 * #ofaTreeStore).

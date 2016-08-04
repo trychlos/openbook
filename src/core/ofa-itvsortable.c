@@ -32,7 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
-#include "api/ofa-isortable.h"
+#include "api/ofa-itvsortable.h"
 #include "api/ofa-settings.h"
 
 /* data structure associated to the instance
@@ -53,34 +53,34 @@ typedef struct {
 	gint               sort_column_id;
 	gint               sort_order;
 }
-	sISortable;
+	sITVSortable;
 
-#define ISORTABLE_LAST_VERSION          1
-#define ISORTABLE_DATA                 "ofa-isortable-data"
+#define ITVSORTABLE_LAST_VERSION          1
+#define ITVSORTABLE_DATA                 "ofa-itvsortable-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType       register_type( void );
-static void        interface_base_init( ofaISortableInterface *klass );
-static void        interface_base_finalize( ofaISortableInterface *klass );
-static void        setup_sort_model( ofaISortable *instance, sISortable *sdata );
-static void        setup_columns_for_sort( ofaISortable *instance, sISortable *sdata );
-static void        on_header_clicked( GtkTreeViewColumn *column, ofaISortable *instance );
-static void        set_sort_indicator( ofaISortable *instance, sISortable *sdata );
-static gint        on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaISortable *instance );
-static gchar      *get_settings_key( const ofaISortable *instance );
-static void        get_sort_settings( ofaISortable *instance, sISortable *sdata );
-static void        set_sort_settings( ofaISortable *instance, sISortable *sdata );
-static sISortable *get_isortable_data( ofaISortable *instance );
-static void        on_instance_finalized( sISortable *sdata, GObject *finalized_instance );
+static void        interface_base_init( ofaITVSortableInterface *klass );
+static void        interface_base_finalize( ofaITVSortableInterface *klass );
+static void        setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata );
+static void        setup_columns_for_sort( ofaITVSortable *instance, sITVSortable *sdata );
+static void        on_header_clicked( GtkTreeViewColumn *column, ofaITVSortable *instance );
+static void        set_sort_indicator( ofaITVSortable *instance, sITVSortable *sdata );
+static gint        on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSortable *instance );
+static gchar      *get_settings_key( const ofaITVSortable *instance );
+static void        get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
+static void        set_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
+static sITVSortable *get_itvsortable_data( ofaITVSortable *instance );
+static void        on_instance_finalized( sITVSortable *sdata, GObject *finalized_instance );
 
 /**
- * ofa_isortable_get_type:
+ * ofa_itvsortable_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_isortable_get_type( void )
+ofa_itvsortable_get_type( void )
 {
 	static GType type = 0;
 
@@ -92,18 +92,18 @@ ofa_isortable_get_type( void )
 }
 
 /*
- * ofa_isortable_register_type:
+ * ofa_itvsortable_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_isortable_register_type";
+	static const gchar *thisfn = "ofa_itvsortable_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaISortableInterface ),
+		sizeof( ofaITVSortableInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -116,7 +116,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaISortable", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaITVSortable", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -124,9 +124,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaISortableInterface *klass )
+interface_base_init( ofaITVSortableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_isortable_interface_base_init";
+	static const gchar *thisfn = "ofa_itvsortable_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -137,9 +137,9 @@ interface_base_init( ofaISortableInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaISortableInterface *klass )
+interface_base_finalize( ofaITVSortableInterface *klass )
 {
-	static const gchar *thisfn = "ofa_isortable_interface_base_finalize";
+	static const gchar *thisfn = "ofa_itvsortable_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -150,18 +150,18 @@ interface_base_finalize( ofaISortableInterface *klass )
 }
 
 /**
- * ofa_isortable_get_interface_last_version:
+ * ofa_itvsortable_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_isortable_get_interface_last_version( void )
+ofa_itvsortable_get_interface_last_version( void )
 {
-	return( ISORTABLE_LAST_VERSION );
+	return( ITVSORTABLE_LAST_VERSION );
 }
 
 /**
- * ofa_isortable_get_interface_version:
+ * ofa_itvsortable_get_interface_version:
  * @type: the implementation's GType.
  *
  * Returns: the version number of this interface which is managed by
@@ -172,7 +172,7 @@ ofa_isortable_get_interface_last_version( void )
  * Since: version 1.
  */
 guint
-ofa_isortable_get_interface_version( GType type )
+ofa_itvsortable_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -180,16 +180,16 @@ ofa_isortable_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, OFA_TYPE_ISORTABLE );
+	iface = g_type_interface_peek( klass, OFA_TYPE_ITVSORTABLE );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( ofaISortableInterface * ) iface )->get_interface_version ){
-		version = (( ofaISortableInterface * ) iface )->get_interface_version();
+	if((( ofaITVSortableInterface * ) iface )->get_interface_version ){
+		version = (( ofaITVSortableInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'ofaISortable::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'ofaITVSortable::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -199,14 +199,14 @@ ofa_isortable_get_interface_version( GType type )
 }
 
 /**
- * ofa_isortable_sort_png:
+ * ofa_itvsortable_sort_png:
  * @a.
  * @b
  *
  * Returns: -1, 1 or 0.
  */
 gint
-ofa_isortable_sort_png( const GdkPixbuf *a, const GdkPixbuf *b )
+ofa_itvsortable_sort_png( const GdkPixbuf *a, const GdkPixbuf *b )
 {
 	gsize lena, lenb;
 
@@ -231,14 +231,14 @@ ofa_isortable_sort_png( const GdkPixbuf *a, const GdkPixbuf *b )
 }
 
 /**
- * ofa_isortable_sort_str_amount:
+ * ofa_itvsortable_sort_str_amount:
  * @a.
  * @b
  *
  * Returns: -1, 1 or 0.
  */
 gint
-ofa_isortable_sort_str_amount( const gchar *a, const gchar *b )
+ofa_itvsortable_sort_str_amount( const gchar *a, const gchar *b )
 {
 	ofxAmount amounta, amountb;
 
@@ -259,14 +259,14 @@ ofa_isortable_sort_str_amount( const gchar *a, const gchar *b )
 }
 
 /**
- * ofa_isortable_sort_str_int:
+ * ofa_itvsortable_sort_str_int:
  * @a.
  * @b
  *
  * Returns: -1, 1 or 0.
  */
 gint
-ofa_isortable_sort_str_int( const gchar *a, const gchar *b )
+ofa_itvsortable_sort_str_int( const gchar *a, const gchar *b )
 {
 	int inta, intb;
 
@@ -287,7 +287,7 @@ ofa_isortable_sort_str_int( const gchar *a, const gchar *b )
 }
 
 /**
- * ofa_isortable_set_default_sort:
+ * ofa_itvsortable_set_default_sort:
  * @instance: this #ofaIStorable instance.
  * @column_id: the identifier of the default sort column.
  * @order: the default sort order.
@@ -299,22 +299,22 @@ ofa_isortable_sort_str_int( const gchar *a, const gchar *b )
  * ascending order on column #0.
  */
 void
-ofa_isortable_set_default_sort( ofaISortable *instance, gint column_id, GtkSortType order )
+ofa_itvsortable_set_default_sort( ofaITVSortable *instance, gint column_id, GtkSortType order )
 {
-	sISortable *sdata;
+	sITVSortable *sdata;
 
-	g_return_if_fail( instance && OFA_IS_ISORTABLE( instance ));
+	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
 	g_return_if_fail( column_id >= 0 );
 	g_return_if_fail( order == GTK_SORT_ASCENDING || order == GTK_SORT_DESCENDING );
 
-	sdata = get_isortable_data( instance );
+	sdata = get_itvsortable_data( instance );
 
 	sdata->def_column = column_id;
 	sdata->def_order = order;
 }
 
 /**
- * ofa_isortable_set_store:
+ * ofa_itvsortable_set_store:
  * @instance: this #ofaIStorable instance.
  * @store: the underlying #ofaIStore instance.
  *
@@ -328,42 +328,42 @@ ofa_isortable_set_default_sort( ofaISortable *instance, gint column_id, GtkSortT
  * configuration is set before calling this method.
  */
 void
-ofa_isortable_set_store( ofaISortable *instance, ofaIStore *store )
+ofa_itvsortable_set_store( ofaITVSortable *instance, ofaIStore *store )
 {
-	sISortable *sdata;
+	sITVSortable *sdata;
 
-	g_return_if_fail( instance && OFA_IS_ISORTABLE( instance ));
+	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
 	g_return_if_fail( store && OFA_IS_ISTORE( store ));
 
-	sdata = get_isortable_data( instance );
+	sdata = get_itvsortable_data( instance );
 	sdata->store = store;
 
 	setup_sort_model( instance, sdata );
 }
 
 /**
- * ofa_isortable_set_treeview:
+ * ofa_itvsortable_set_treeview:
  * @instance: this #ofaIStorable instance.
  * @treeview: the #GtkTreeView widget.
  *
  * Setup the treeview widget.
  */
 void
-ofa_isortable_set_treeview( ofaISortable *instance, GtkTreeView *tview )
+ofa_itvsortable_set_treeview( ofaITVSortable *instance, GtkTreeView *tview )
 {
-	sISortable *sdata;
+	sITVSortable *sdata;
 
-	g_return_if_fail( instance && OFA_IS_ISORTABLE( instance ));
+	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
 	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
 
-	sdata = get_isortable_data( instance );
+	sdata = get_itvsortable_data( instance );
 	sdata->tview = tview;
 
 	setup_sort_model( instance, sdata );
 }
 
 static void
-setup_sort_model( ofaISortable *instance, sISortable *sdata )
+setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata )
 {
 	if( sdata->store && sdata->tview ){
 
@@ -383,7 +383,7 @@ setup_sort_model( ofaISortable *instance, sISortable *sdata )
 }
 
 static void
-setup_columns_for_sort( ofaISortable *instance, sISortable *sdata )
+setup_columns_for_sort( ofaITVSortable *instance, sITVSortable *sdata )
 {
 	GList *it, *columns;
 	GtkTreeViewColumn *column;
@@ -415,11 +415,11 @@ setup_columns_for_sort( ofaISortable *instance, sISortable *sdata )
  *	click 4: ascending order, indicator v (back to click 1)
  */
 static void
-on_header_clicked( GtkTreeViewColumn *column, ofaISortable *instance )
+on_header_clicked( GtkTreeViewColumn *column, ofaITVSortable *instance )
 {
-	sISortable *sdata;
+	sITVSortable *sdata;
 
-	sdata = get_isortable_data( instance );
+	sdata = get_itvsortable_data( instance );
 
 	if( column != sdata->sort_column ){
 		gtk_tree_view_column_set_sort_indicator( sdata->sort_column, FALSE );
@@ -443,7 +443,7 @@ on_header_clicked( GtkTreeViewColumn *column, ofaISortable *instance )
  * So inverse the sort order of the sort indicator.
  */
 static void
-set_sort_indicator( ofaISortable *instance, sISortable *sdata )
+set_sort_indicator( ofaITVSortable *instance, sITVSortable *sdata )
 {
 	if( sdata->sort_model ){
 		gtk_tree_sortable_set_sort_column_id(
@@ -460,30 +460,30 @@ set_sort_indicator( ofaISortable *instance, sISortable *sdata )
 }
 
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaISortable *instance )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSortable *instance )
 {
-	static const gchar *thisfn = "ofa_isortable_on_sort_model";
-	sISortable *sdata;
+	static const gchar *thisfn = "ofa_itvsortable_on_sort_model";
+	sITVSortable *sdata;
 
-	if( OFA_ISORTABLE_GET_INTERFACE( instance )->sort_model ){
-		sdata = get_isortable_data( instance );
-		return( OFA_ISORTABLE_GET_INTERFACE( instance )->sort_model( instance, tmodel, a, b, sdata->sort_column_id ));
+	if( OFA_ITVSORTABLE_GET_INTERFACE( instance )->sort_model ){
+		sdata = get_itvsortable_data( instance );
+		return( OFA_ITVSORTABLE_GET_INTERFACE( instance )->sort_model( instance, tmodel, a, b, sdata->sort_column_id ));
 	}
 
-	g_info( "%s: ofaISortable's %s implementation does not provide 'sort_model()' method",
+	g_info( "%s: ofaITVSortable's %s implementation does not provide 'sort_model()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( 0 );
 }
 
 static gchar *
-get_settings_key( const ofaISortable *instance )
+get_settings_key( const ofaITVSortable *instance )
 {
 	const gchar *ckey;
 
 	ckey = NULL;
 
-	if( OFA_ISORTABLE_GET_INTERFACE( instance )->get_settings_key ){
-		ckey = OFA_ISORTABLE_GET_INTERFACE( instance )->get_settings_key( instance );
+	if( OFA_ITVSORTABLE_GET_INTERFACE( instance )->get_settings_key ){
+		ckey = OFA_ITVSORTABLE_GET_INTERFACE( instance )->get_settings_key( instance );
 	}
 
 	return( g_strdup( my_strlen( ckey ) ? ckey : G_OBJECT_TYPE_NAME( instance )));
@@ -497,7 +497,7 @@ get_settings_key( const ofaISortable *instance )
  * column is reversed.
  */
 static void
-get_sort_settings( ofaISortable *instance, sISortable *sdata )
+get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
 {
 	GList *slist, *it, *columns;
 	const gchar *cstr;
@@ -546,7 +546,7 @@ get_sort_settings( ofaISortable *instance, sISortable *sdata )
 }
 
 static void
-set_sort_settings( ofaISortable *instance, sISortable *sdata )
+set_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
 {
 	gchar *str, *prefix_key, *sort_key;
 
@@ -561,16 +561,16 @@ set_sort_settings( ofaISortable *instance, sISortable *sdata )
 	g_free( prefix_key );
 }
 
-static sISortable *
-get_isortable_data( ofaISortable *instance )
+static sITVSortable *
+get_itvsortable_data( ofaITVSortable *instance )
 {
-	sISortable *sdata;
+	sITVSortable *sdata;
 
-	sdata = ( sISortable * ) g_object_get_data( G_OBJECT( instance ), ISORTABLE_DATA );
+	sdata = ( sITVSortable * ) g_object_get_data( G_OBJECT( instance ), ITVSORTABLE_DATA );
 
 	if( !sdata ){
-		sdata = g_new0( sISortable, 1 );
-		g_object_set_data( G_OBJECT( instance ), ISORTABLE_DATA, sdata );
+		sdata = g_new0( sITVSortable, 1 );
+		g_object_set_data( G_OBJECT( instance ), ITVSORTABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
 		sdata->def_column = 0;
@@ -581,12 +581,12 @@ get_isortable_data( ofaISortable *instance )
 }
 
 /*
- * ofaISortable instance finalization
+ * ofaITVSortable instance finalization
  */
 static void
-on_instance_finalized( sISortable *sdata, GObject *finalized_instance )
+on_instance_finalized( sITVSortable *sdata, GObject *finalized_instance )
 {
-	static const gchar *thisfn = "ofa_isortable_on_instance_finalized";
+	static const gchar *thisfn = "ofa_itvsortable_on_instance_finalized";
 
 	g_debug( "%s: sdata=%p, finalized_instance=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_instance );

@@ -71,7 +71,7 @@
    - ofaClassStore: new class.
    - ofaIActionable: new interface.
    - ofaIContext: new interface.
-   - ofaISortable: new interface.
+   - ofaITVSortable: new interface.
    - ofaITVColumnable: new interface.
    - ofaTVBin: new base class.
 
