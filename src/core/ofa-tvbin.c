@@ -41,6 +41,10 @@
 typedef struct {
 	gboolean            dispose_has_run;
 
+	/* properties
+	 */
+	GtkPolicyType       hscrollbar_policy;
+
 	/* setup
 	 */
 	gchar              *settings_key;
@@ -50,6 +54,12 @@ typedef struct {
 	GtkWidget          *treeview;
 }
 	ofaTVBinPrivate;
+
+/* class properties
+ */
+enum {
+	PROP_HPOLICY_ID = 1,
+};
 
 /* signals defined here
  */
@@ -92,7 +102,7 @@ G_DEFINE_TYPE_EXTENDED( ofaTVBin, ofa_tvbin, GTK_TYPE_BIN, 0,
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVCOLUMNABLE, itvcolumnable_iface_init ))
 
 static void
-bin_finalize( GObject *instance )
+tvbin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_tvbin_finalize";
 	ofaTVBinPrivate *priv;
@@ -112,7 +122,7 @@ bin_finalize( GObject *instance )
 }
 
 static void
-bin_dispose( GObject *instance )
+tvbin_dispose( GObject *instance )
 {
 	ofaTVBinPrivate *priv;
 
@@ -133,25 +143,80 @@ bin_dispose( GObject *instance )
 	G_OBJECT_CLASS( ofa_tvbin_parent_class )->dispose( instance );
 }
 
+/*
+ * user asks for a property
+ * we have so to put the corresponding data into the provided GValue
+ */
 static void
-ofa_tvbin_init( ofaTVBin *self )
+tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
 {
-	static const gchar *thisfn = "ofa_tvbin_init";
 	ofaTVBinPrivate *priv;
 
-	g_return_if_fail( OFA_IS_TVBIN( self ));
+	g_return_if_fail( OFA_IS_TVBIN( instance ));
 
-	g_debug( "%s: self=%p (%s)",
-			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( instance ));
 
-	priv = ofa_tvbin_get_instance_private( self );
+	if( !priv->dispose_has_run ){
 
-	priv->dispose_has_run = FALSE;
-	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	/* at this time, self is "only" an ofaTVBin */
-	g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
+		switch( property_id ){
+			case PROP_HPOLICY_ID:
+				g_value_set_int( value, priv->hscrollbar_policy );
+				break;
 
-	init_top_widget( self );
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
+/*
+ * the user asks to set a property and provides it into a GValue
+ * read the content of the provided GValue and set our instance datas
+ */
+static void
+tvbin_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( OFA_IS_TVBIN( instance ));
+
+	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_HPOLICY_ID:
+				priv->hscrollbar_policy = g_value_get_int( value );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
+/*
+ * Called at the end of the instance initialization, after properties
+ * have been set
+ */
+static void
+tvbin_constructed( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_tvbin_constructed";
+
+	g_return_if_fail( instance && OFA_IS_TVBIN( instance ));
+
+	/* first, chain up to the parent class */
+	if( G_OBJECT_CLASS( ofa_tvbin_parent_class )->constructed ){
+		G_OBJECT_CLASS( ofa_tvbin_parent_class )->constructed( instance );
+	}
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	init_top_widget( OFA_TVBIN( instance ));
 }
 
 static void
@@ -169,7 +234,7 @@ init_top_widget( ofaTVBin *self )
 
 	scrolled = gtk_scrolled_window_new( NULL, NULL );
 	gtk_scrolled_window_set_policy(
-			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
+			GTK_SCROLLED_WINDOW( scrolled ), priv->hscrollbar_policy, GTK_POLICY_AUTOMATIC );
 	gtk_container_add( GTK_CONTAINER( frame ), scrolled );
 
 	priv->treeview = gtk_tree_view_new();
@@ -182,7 +247,27 @@ init_top_widget( ofaTVBin *self )
 	g_signal_connect( priv->treeview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
 
 	selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
+	gtk_tree_selection_set_mode( selection, GTK_SELECTION_BROWSE );
 	g_signal_connect( selection, "changed", G_CALLBACK( tview_on_row_selected ), self );
+}
+
+static void
+ofa_tvbin_init( ofaTVBin *self )
+{
+	static const gchar *thisfn = "ofa_tvbin_init";
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( OFA_IS_TVBIN( self ));
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofa_tvbin_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
+	/* at this time, self is "only" an ofaTVBin */
+	g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
 }
 
 static void
@@ -192,8 +277,21 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = bin_dispose;
-	G_OBJECT_CLASS( klass )->finalize = bin_finalize;
+	G_OBJECT_CLASS( klass )->get_property = tvbin_get_property;
+	G_OBJECT_CLASS( klass )->set_property = tvbin_set_property;
+	G_OBJECT_CLASS( klass )->constructed = tvbin_constructed;
+	G_OBJECT_CLASS( klass )->dispose = tvbin_dispose;
+	G_OBJECT_CLASS( klass )->finalize = tvbin_finalize;
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_HPOLICY_ID,
+			g_param_spec_int(
+					"ofa-tvbin-hpolicy",
+					"Horizontal scrollbar policy",
+					"Horizontal scrollbar policy",
+					0, 99, GTK_POLICY_AUTOMATIC,
+					G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
 	/**
 	 * ofaTVBin::ofa-selchanged:

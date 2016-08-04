@@ -67,7 +67,7 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void     init_columns( ofaBatTreeview *self );
+static void     setup_columns( ofaBatTreeview *self );
 static void     on_selection_changed( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     on_selection_activated( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     on_selection_delete( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -129,52 +129,6 @@ ofa_bat_treeview_init( ofaBatTreeview *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->store = NULL;
-
-	/* signals sent by ofaTVBin base class are intercepted to provide
-	 * a #ofoBat object instead of just the raw GtkTreeSelection
-	 */
-	g_signal_connect( self, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
-	g_signal_connect( self, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
-
-	/* the 'ofa-seldelete' signal is sent in response to the Delete key press.
-	 * There may be no current selection.
-	 * in this case, the signal is just ignored (not proxied).
-	 */
-	g_signal_connect( self, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
-
-	ofa_tvbin_set_selection_mode( OFA_TVBIN( self ), GTK_SELECTION_BROWSE );
-
-	init_columns( self );
-}
-
-/*
- * Defines the treeview columns
- */
-static void
-init_columns( ofaBatTreeview *self )
-{
-	static const gchar *thisfn = "ofa_bat_treeview_init_columns";
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_ID,          _( "Id." ),      _( "BAT Id." ));
-	ofa_tvbin_add_column_text_lx( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),      _( "URI" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),   _( "Format" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_BEGIN,       _( "Begin" ),    _( "Begin date" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_END,         _( "End" ),      _( "End date" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_COUNT,       _( "Count" ),    _( "Lines count" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_UNUSED,      _( "Unused" ),   _( "Unused lines" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),      _( "RIB" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_BEGIN_SOLDE, _( "Begin" ),    _( "Begin solde" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),      _( "End solde" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ), _( "Currency" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Account" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),    _( "Notes" ));
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));
-
-	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAT_COL_URI );
 }
 
 static void
@@ -279,9 +233,54 @@ ofa_bat_treeview_new( void )
 {
 	ofaBatTreeview *view;
 
-	view = g_object_new( OFA_TYPE_BAT_TREEVIEW, NULL );
+	view = g_object_new( OFA_TYPE_BAT_TREEVIEW,
+					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER, NULL );
+
+	/* signals sent by ofaTVBin base class are intercepted to provide
+	 * a #ofoBat object instead of just the raw GtkTreeSelection
+	 */
+	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
+	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
+
+	/* the 'ofa-seldelete' signal is sent in response to the Delete key press.
+	 * There may be no current selection.
+	 * in this case, the signal is just ignored (not proxied).
+	 */
+	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
+
+	setup_columns( view );
 
 	return( view );
+}
+
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaBatTreeview *self )
+{
+	static const gchar *thisfn = "ofa_bat_treeview_setup_columns";
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_ID,          _( "Id." ),      _( "BAT Id." ));
+	ofa_tvbin_add_column_text_lx( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),      _( "URI" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),   _( "Format" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_BEGIN,       _( "Begin" ),    _( "Begin date" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_END,         _( "End" ),      _( "End date" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_COUNT,       _( "Count" ),    _( "Lines count" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_UNUSED,      _( "Unused" ),   _( "Unused lines" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),      _( "RIB" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_BEGIN_SOLDE, _( "Begin" ),    _( "Begin solde" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),      _( "End solde" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ), _( "Currency" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Account" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),    _( "Notes" ));
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));
+
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAT_COL_URI );
 }
 
 /**

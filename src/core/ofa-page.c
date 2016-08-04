@@ -207,9 +207,6 @@ page_constructed( GObject *instance )
 			( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			( void * ) priv->getter, G_OBJECT_TYPE_NAME( priv->getter ));
 
-	/* let the #ofaIActionable interface initialize itself */
-	//ofa_iactionable_init( OFA_IACTIONABLE( self ));
-
 	/* let the child class setup its page before showing it */
 	do_setup_page( self );
 	do_init_view( self );
