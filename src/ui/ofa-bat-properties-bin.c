@@ -34,6 +34,8 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -232,6 +234,7 @@ setup_treeview( ofaBatPropertiesBin *self )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	GtkWidget *box;
+	GMenu *menu;
 
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
@@ -240,6 +243,9 @@ setup_treeview( ofaBatPropertiesBin *self )
 
 	priv->tview = ofa_batline_treeview_new();
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( priv->tview ));
+
+	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->tview ));
+	ofa_icontext_set_menu( OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ), menu );
 }
 
 static void

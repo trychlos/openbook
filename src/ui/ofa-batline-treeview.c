@@ -353,7 +353,7 @@ ofa_batline_treeview_set_store( ofaBatlineTreeview *view )
 
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 
-	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), BAL_COL_DEFFECT, GTK_SORT_ASCENDING );
+	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), BAL_COL_DEFFECT, GTK_SORT_DESCENDING );
 }
 
 /**

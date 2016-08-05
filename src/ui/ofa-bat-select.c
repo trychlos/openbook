@@ -34,6 +34,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
@@ -260,6 +262,7 @@ setup_treeview( ofaBatSelect *self )
 	ofaHub *hub;
 	GtkWidget *widget;
 	gchar *key;
+	GMenu *menu;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
@@ -282,6 +285,9 @@ setup_treeview( ofaBatSelect *self )
 
 	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), self );
+
+	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->tview ));
+	ofa_icontext_set_menu( OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ), menu );
 }
 
 static void
