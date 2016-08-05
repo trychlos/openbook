@@ -35,8 +35,8 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-icontext.h"
-#include "api/ofa-itvsortable.h"
 #include "api/ofa-itvcolumnable.h"
+#include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
@@ -151,7 +151,7 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 	 * #ofaBatTreeview proxyes it with this 'ofa-batchanged' signal,
 	 * providing the #ofoBat selected object.
 	 *
-	 * Argument is the current #ofoBat object.
+	 * Argument is the current #ofoBat object, may be %NULL.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaBatTreeview *view,
@@ -266,18 +266,18 @@ setup_columns( ofaBatTreeview *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_ID,          _( "Id." ),      _( "BAT Id." ));
-	ofa_tvbin_add_column_text_lx( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),      _( "URI" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),   _( "Format" ));
+	ofa_tvbin_add_column_text_lx( OFA_TVBIN( self ), BAT_COL_URI,         _( "URI" ),          NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_FORMAT,      _( "Format" ),       NULL );
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_BEGIN,       _( "Begin" ),    _( "Begin date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAT_COL_END,         _( "End" ),      _( "End date" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_COUNT,       _( "Count" ),    _( "Lines count" ));
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAT_COL_UNUSED,      _( "Unused" ),   _( "Unused lines" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),      _( "RIB" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_RIB,         _( "RIB" ),          NULL );
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_BEGIN_SOLDE, _( "Begin" ),    _( "Begin solde" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),      _( "End solde" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ), _( "Currency" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Account" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),    _( "Notes" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ),     NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Openbook account" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),        NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));
@@ -295,7 +295,16 @@ setup_columns( ofaBatTreeview *self )
 void
 ofa_bat_treeview_set_settings_key( ofaBatTreeview *view, const gchar *key )
 {
+	static const gchar *thisfn = "ofa_bat_treeview_set_settings_key";
+	ofaBatTreeviewPrivate *priv;
+
+	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
+
 	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
+
+	priv = ofa_bat_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
 
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
@@ -307,8 +316,8 @@ ofa_bat_treeview_set_settings_key( ofaBatTreeview *view, const gchar *key )
  * @view: this #ofaBatTreeview instance.
  * @hub: the current #ofaHub object.
  *
- * Setup the current hub.
  * Initialize the underlying store.
+ * Read the settings and show the columns accordingly.
  */
 void
 ofa_bat_treeview_set_hub( ofaBatTreeview *view, ofaHub *hub )
@@ -319,10 +328,11 @@ ofa_bat_treeview_set_hub( ofaBatTreeview *view, ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_bat_treeview_get_instance_private( view );
+
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->store = ofa_bat_store_new( hub );
-	ofa_tvbin_set_store( OFA_TVBIN( view ), OFA_ISTORE( priv->store ));
+	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 
 	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), BAT_COL_ID, GTK_SORT_DESCENDING );

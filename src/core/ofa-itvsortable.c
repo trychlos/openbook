@@ -41,7 +41,7 @@ typedef struct {
 
 	/* input
 	 */
-	ofaIStore         *store;
+	GtkTreeModel      *store;
 	GtkTreeView       *tview;
 	gint               def_column;
 	GtkSortType        def_order;
@@ -316,7 +316,7 @@ ofa_itvsortable_set_default_sort( ofaITVSortable *instance, gint column_id, GtkS
 /**
  * ofa_itvsortable_set_store:
  * @instance: this #ofaIStorable instance.
- * @store: the underlying #ofaIStore instance.
+ * @store: the underlying store.
  *
  * Setup the underlying store.
  *
@@ -328,12 +328,12 @@ ofa_itvsortable_set_default_sort( ofaITVSortable *instance, gint column_id, GtkS
  * configuration is set before calling this method.
  */
 void
-ofa_itvsortable_set_store( ofaITVSortable *instance, ofaIStore *store )
+ofa_itvsortable_set_store( ofaITVSortable *instance, GtkTreeModel *store )
 {
 	sITVSortable *sdata;
 
 	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
-	g_return_if_fail( store && OFA_IS_ISTORE( store ));
+	g_return_if_fail( store && GTK_IS_TREE_MODEL( store ));
 
 	sdata = get_itvsortable_data( instance );
 	sdata->store = store;
@@ -368,16 +368,11 @@ setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata )
 	if( sdata->store && sdata->tview ){
 
 		sdata->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( sdata->store ));
-		/* the sortable model maintains its own reference on the store */
-		g_object_unref( sdata->store );
+		gtk_tree_view_set_model( sdata->tview, sdata->sort_model );
+		g_object_unref( sdata->sort_model );
 
 		setup_columns_for_sort( instance, sdata );
 		get_sort_settings( instance, sdata );
-
-		gtk_tree_view_set_model( sdata->tview, sdata->sort_model );
-		/* the treeview maintains its own reference on the sortable model */
-		g_object_unref( sdata->sort_model );
-
 		set_sort_indicator( instance, sdata );
 	}
 }

@@ -45,6 +45,8 @@
 
 #include "api/ofo-bat-def.h"
 
+#include "ui/ofa-batline-treeview.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_BAT_PROPERTIES_BIN                ( ofa_bat_properties_bin_get_type())
@@ -66,12 +68,17 @@ typedef struct {
 }
 	ofaBatPropertiesBinClass;
 
-GType                ofa_bat_properties_bin_get_type( void ) G_GNUC_CONST;
+GType                ofa_bat_properties_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaBatPropertiesBin *ofa_bat_properties_bin_new     ( void );
+ofaBatPropertiesBin *ofa_bat_properties_bin_new                 ( void );
 
-void                 ofa_bat_properties_bin_set_bat ( ofaBatPropertiesBin *bin,
-															ofoBat *bat );
+void                 ofa_bat_properties_bin_set_bat             ( ofaBatPropertiesBin *bin,
+																		ofoBat *bat );
+
+void                 ofa_bat_properties_bin_set_settings_key    ( ofaBatPropertiesBin *bin,
+																		const gchar *key );
+
+ofaBatlineTreeview  *ofa_bat_properties_bin_get_batline_treeview( ofaBatPropertiesBin *bin );
 
 G_END_DECLS
 

@@ -209,12 +209,14 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 
 /*
  * Called at the end of the instance initialization, after properties
- * have been set
+ * have been set.
+ * At this time, the instance is rightly typed
  */
 static void
 tvbin_constructed( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_tvbin_constructed";
+	ofaTVBinPrivate *priv;
 
 	g_return_if_fail( instance && OFA_IS_TVBIN( instance ));
 
@@ -225,6 +227,11 @@ tvbin_constructed( GObject *instance )
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( instance ));
+
+	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
 
 	init_top_widget( OFA_TVBIN( instance ));
 }
@@ -275,9 +282,6 @@ ofa_tvbin_init( ofaTVBin *self )
 	priv = ofa_tvbin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	/* at this time, self is "only" an ofaTVBin */
-	g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
 
 	priv->shadow = GTK_SHADOW_NONE;
 	priv->hscrollbar_policy = GTK_POLICY_AUTOMATIC;
@@ -810,11 +814,10 @@ ofa_tvbin_set_selection_mode( ofaTVBin *bin, GtkSelectionMode mode )
  * @key: [allow-none]: the desired settings key.
  *
  * Setup the desired settings key.
+ * Reset the settings key to its default if %NULL.
  *
- * The settings key defaults to the class name 'ofaBatTreeview'.
- *
- * When called with null or empty @key, this reset the settings key to
- * the default.
+ * The settings key defaults to the class name of the @bin instance
+ * (e.g. 'ofaBatTreeview').
  */
 void
 ofa_tvbin_set_settings_key( ofaTVBin *bin, const gchar *key )
@@ -834,7 +837,7 @@ ofa_tvbin_set_settings_key( ofaTVBin *bin, const gchar *key )
 /*
  * ofa_tvbin_set_store:
  * @bin: this #ofaTVBin instance.
- * @store: the #ofaIStore store model.
+ * @store: the underlying store.
  *
  * Records the store model.
  *
@@ -846,11 +849,12 @@ ofa_tvbin_set_settings_key( ofaTVBin *bin, const gchar *key )
  * may so be released by the caller.
  */
 void
-ofa_tvbin_set_store( ofaTVBin *bin, ofaIStore *store )
+ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 {
 	ofaTVBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+	g_return_if_fail( store && GTK_IS_TREE_MODEL( store ));
 
 	priv = ofa_tvbin_get_instance_private( bin );
 

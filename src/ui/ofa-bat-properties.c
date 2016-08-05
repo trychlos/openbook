@@ -259,6 +259,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->bat_bin = ofa_bat_properties_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
+	ofa_bat_properties_bin_set_settings_key( priv->bat_bin, G_OBJECT_TYPE_NAME( instance ));
+
 	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 
 	/* if not the current exercice, then only have a 'Close' button */

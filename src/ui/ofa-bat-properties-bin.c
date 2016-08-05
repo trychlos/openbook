@@ -45,64 +45,47 @@
 
 #include "core/ofa-iconcil.h"
 
+#include "ui/ofa-batline-treeview.h"
 #include "ui/ofa-bat-properties-bin.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean      dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* UI
 	 */
-	GtkWidget    *bat_id;
-	GtkWidget    *bat_format;
-	GtkWidget    *bat_count;
-	GtkWidget    *bat_unused;
-	GtkWidget    *bat_begin;
-	GtkWidget    *bat_end;
-	GtkWidget    *bat_rib;
-	GtkWidget    *bat_currency;
-	GtkWidget    *bat_solde_begin;
-	GtkWidget    *bat_solde_end;
-	GtkWidget    *bat_account;
+	GtkWidget          *bat_id;
+	GtkWidget          *bat_format;
+	GtkWidget          *bat_count;
+	GtkWidget          *bat_unused;
+	GtkWidget          *bat_begin;
+	GtkWidget          *bat_end;
+	GtkWidget          *bat_rib;
+	GtkWidget          *bat_currency;
+	GtkWidget          *bat_solde_begin;
+	GtkWidget          *bat_solde_end;
+	GtkWidget          *bat_account;
 
-	GtkTreeView  *tview;
+	ofaBatlineTreeview *tview;
 
 	/* just to make the my_utils_init_..._ex macros happy
 	 */
-	ofoBat       *bat;
-	ofaHub       *hub;
-	gboolean      is_new;
+	ofoBat             *bat;
+	ofaHub             *hub;
+	gboolean            is_new;
 
-	/* currency: taken from bat or line
+	/* currency is taken from BAT
 	 */
-	ofoCurrency  *currency;
+	ofoCurrency        *currency;
 }
 	ofaBatPropertiesBinPrivate;
-
-/* columns in the lines treeview
- */
-enum {
-	COL_ID = 0,
-	COL_DOPE,
-	COL_DEFFECT,
-	COL_REF,
-	COL_LABEL,
-	COL_AMOUNT,
-	COL_CURRENCY,
-	COL_ENTRY,
-	COL_USER,
-	COL_STAMP,
-	N_COLUMNS
-};
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-properties-bin.ui";
 
 static void  setup_bin( ofaBatPropertiesBin *self );
 static void  setup_treeview( ofaBatPropertiesBin *self );
 static void  display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat );
-static void  display_bat_lines( ofaBatPropertiesBin *self, ofoBat *bat );
-static void  display_line( ofaBatPropertiesBin *self, GtkTreeModel *tstore, ofoBatLine *line );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatPropertiesBin, ofa_bat_properties_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaBatPropertiesBin ))
@@ -248,107 +231,15 @@ static void
 setup_treeview( ofaBatPropertiesBin *self )
 {
 	ofaBatPropertiesBinPrivate *priv;
-	GtkWidget *tview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
+	GtkWidget *box;
 
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
-	tview = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-treeview" );
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
-	priv->tview = GTK_TREE_VIEW( tview );
+	box = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-boxview" );
+	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
 
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* line_id, dope, deffect */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* ref, label, amount */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* currency, entry, user */
-			G_TYPE_STRING, 								 	/* stamp */
-			G_TYPE_OBJECT ));								/* the ofoBatLine object itself */
-	gtk_tree_view_set_model( priv->tview, tmodel );
-	g_object_unref( tmodel );
-
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_alignment( cell, 1, 0.5 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Line id." ),
-			cell, "text", COL_ID,
-			NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Ope." ),
-			cell, "text", COL_DOPE,
-			NULL );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Effect" ),
-			cell, "text", COL_DEFFECT,
-			NULL );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Ref." ),
-			cell, "text", COL_REF,
-			NULL );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			cell, "text", COL_LABEL,
-			NULL );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_alignment( cell, 1, 0.5 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Amount" ),
-			cell, "text", COL_AMOUNT,
-			NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Cur." ),
-			cell, "text", COL_CURRENCY,
-			NULL );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_alignment( cell, 1, 0.5 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Entry" ),
-			cell, "text", COL_ENTRY,
-			NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "User" ),
-			cell, "text", COL_USER,
-			NULL );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Timestamp" ),
-			cell, "text", COL_STAMP,
-			NULL );
-	gtk_tree_view_append_column( priv->tview, column );
-
-	select = gtk_tree_view_get_selection( priv->tview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
+	priv->tview = ofa_batline_treeview_new();
+	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( priv->tview ));
 }
 
 static void
@@ -433,97 +324,6 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	my_utils_container_updstamp_init( self, bat );
 }
 
-static void
-display_bat_lines( ofaBatPropertiesBin *self, ofoBat *bat )
-{
-	ofaBatPropertiesBinPrivate *priv;
-	GList *dataset, *it;
-	GtkTreeModel *tmodel;
-
-	priv = ofa_bat_properties_bin_get_instance_private( self );
-
-	tmodel = gtk_tree_view_get_model( priv->tview );
-	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
-
-	dataset = ofo_bat_line_get_dataset( priv->hub, ofo_bat_get_id( bat ));
-	for( it=dataset ; it ; it=it->next ){
-		display_line( self, tmodel, OFO_BAT_LINE( it->data ));
-	}
-	ofo_bat_line_free_dataset( dataset );
-}
-
-static void
-display_line( ofaBatPropertiesBin *self, GtkTreeModel *tstore, ofoBatLine *line )
-{
-	ofaBatPropertiesBinPrivate *priv;
-	gchar *sid, *sdope, *sdeffect, *samount;
-	ofxCounter bat_id;
-	GtkTreeIter iter;
-	ofoConcil *concil;
-	const gchar *cuser, *cur_code;
-	gchar *stamp;
-	GString *snumbers;
-	GList *ids, *it;
-	ofsConcilId *scid;
-
-	priv = ofa_bat_properties_bin_get_instance_private( self );
-
-	bat_id = ofo_bat_line_get_line_id( line );
-	sid = g_strdup_printf( "%lu", bat_id );
-	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display());
-	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display());
-
-	if( !priv->currency ){
-		cur_code = ofo_bat_line_get_currency( line );
-		priv->currency = cur_code ? ofo_currency_get_by_code( priv->hub, cur_code ) : NULL;
-		g_return_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ));
-	}
-
-	samount = ofa_amount_to_str( ofo_bat_line_get_amount( line ), priv->currency );
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ));
-	snumbers = g_string_new( "" );
-	if( concil ){
-		cuser = ofo_concil_get_user( concil );
-		stamp = my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
-		ids = ofo_concil_get_ids( concil );
-		for( it=ids ; it ; it=it->next ){
-			scid = ( ofsConcilId * ) it->data;
-			if( !g_utf8_collate( scid->type, CONCIL_TYPE_ENTRY )){
-				if( snumbers->len ){
-					snumbers = g_string_append( snumbers, "," );
-				}
-				g_string_append_printf( snumbers, "%ld", scid->other_id );
-			}
-		}
-	} else {
-		cuser = "";
-		stamp = g_strdup( "" );
-	}
-
-	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( tstore ),
-			&iter,
-			-1,
-			COL_ID,       sid,
-			COL_DOPE,     sdope,
-			COL_DEFFECT,  sdeffect,
-			COL_REF,      ofo_bat_line_get_ref( line ),
-			COL_LABEL,    ofo_bat_line_get_label( line ),
-			COL_AMOUNT,   samount,
-			COL_CURRENCY, priv->currency ? ofo_currency_get_code( priv->currency ) : "",
-			COL_ENTRY,    snumbers->str,
-			COL_USER,     cuser,
-			COL_STAMP,    stamp,
-			-1 );
-
-	g_string_free( snumbers, TRUE );
-	g_free( stamp );
-	g_free( samount );
-	g_free( sdeffect );
-	g_free( sdope );
-	g_free( sid );
-}
-
 /**
  * ofa_bat_properties_bin_set_bat:
  */
@@ -545,6 +345,53 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat )
 	priv->bat = bat;
 	priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
 	priv->currency = NULL;
+
 	display_bat_properties( bin, bat );
-	display_bat_lines( bin, bat );
+	ofa_batline_treeview_set_bat( priv->tview, bat );
+}
+
+/**
+ * ofa_bat_properties_bin_set_settings_key:
+ * @view: this #ofaBatlineTreeview instance.
+ * @key: [allow-none]: the prefix of the settings key.
+ *
+ * Setup the setting key, or reset it to its default if %NULL.
+ */
+void
+ofa_bat_properties_bin_set_settings_key( ofaBatPropertiesBin *bin, const gchar *key )
+{
+	ofaBatPropertiesBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ));
+
+	priv = ofa_bat_properties_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	/* we do not manage any settings here, so directly pass it to
+	 * embedded classes */
+	ofa_batline_treeview_set_settings_key( priv->tview, key );
+}
+
+/**
+ * ofa_bat_properties_bin_get_batline_treeview:
+ * @view: this #ofaBatlineTreeview instance.
+ *
+ * Returns: the #ofaBatlineTreeview embedded widget.
+ *
+ * The returned reference is owned by the @view, and should not be
+ * unreffed by the caller.
+ */
+ofaBatlineTreeview *
+ofa_bat_properties_bin_get_batline_treeview( ofaBatPropertiesBin *bin )
+{
+	ofaBatPropertiesBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ), NULL );
+
+	priv = ofa_bat_properties_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->tview );
 }

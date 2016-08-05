@@ -265,7 +265,7 @@ on_accel_data_finalized( sAccel *accel_data, GClosure *closure )
 {
 	static const gchar *thisfn = "my_accel_group_menubar_on_accel_data_finalized";
 
-	g_debug( "%s:  accel_data=%p, action=%s, closure=%p",
+	g_debug( "%s: accel_data=%p, action=%s, closure=%p",
 			thisfn, ( void * ) accel_data, accel_data->action, ( void * ) closure );
 
 	g_free( accel_data->action );

@@ -398,17 +398,12 @@
               </packing>
             </child>
             <child>
-              <object class="GtkScrolledWindow" id="scrolledwindow3">
+              <object class="GtkBox" id="p3-boxview">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
+                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
                 <child>
-                  <object class="GtkTreeView" id="p3-treeview">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <child internal-child="selection">
-                      <object class="GtkTreeSelection" id="treeview-selection"/>
-                    </child>
-                  </object>
+                  <placeholder/>
                 </child>
               </object>
               <packing>

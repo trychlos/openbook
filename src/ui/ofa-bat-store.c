@@ -168,9 +168,10 @@ ofa_bat_store_class_init( ofaBatStoreClass *klass )
  *
  * Note that the #myICollector associated to the @hub maintains its own
  * reference to the #ofaBatStore object, reference which will be
- * freed on @hub finalization.
+ * released on @hub finalization.
  *
- * Returns: a new reference to the #ofaBatStore object.
+ * Returns: a new reference to the #ofaBatStore object, which should be
+ * #g_object_unref() by the caller after use.
  */
 ofaBatStore *
 ofa_bat_store_new( ofaHub *hub )

@@ -68,6 +68,7 @@
 
    - myStyle: new style management class.
    - ofa.css: remove obsolete styles.
+   - ofaBatlineTreeview: new class.
    - ofaClassStore: new class.
    - ofaIActionable: new interface.
    - ofaIContext: new interface.

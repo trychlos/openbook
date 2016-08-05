@@ -189,7 +189,10 @@ ofa_icontext_get_interface_version( GType type )
  *
  * Append a submenu to the contextual menu.
  *
- * The interface takes its own references on @actionable and @menu.
+ * The interface takes its own reference on @menu.
+ * Do not take here any more reference to @actionable, because it would
+ * prevent the @instance to be finalized if it happened that
+ * @instance=@actionable.
  */
 void
 ofa_icontext_append_submenu( ofaIContext *instance, ofaIActionable *actionable, const gchar *label, GMenu *menu )
@@ -222,7 +225,7 @@ ofa_icontext_append_submenu( ofaIContext *instance, ofaIActionable *actionable, 
 	g_object_unref( submenu );
 	g_object_unref( subitem );
 
-	sdata->actionables = g_list_append( sdata->actionables, g_object_ref( actionable ));
+	sdata->actionables = g_list_append( sdata->actionables, actionable );
 }
 
 /**
@@ -233,7 +236,10 @@ ofa_icontext_append_submenu( ofaIContext *instance, ofaIActionable *actionable, 
  *
  * Setup the model for the contextual menu.
  *
- * The interface takes its own references on @actionable and @menu.
+ * The interface takes its own reference on @menu.
+ * Do not take here any more reference to @actionable, because it would
+ * prevent the @instance to be finalized if it happened that
+ * @instance=@actionable.
  */
 void
 ofa_icontext_set_menu( ofaIContext *instance, ofaIActionable *actionable, GMenu *menu )
@@ -258,7 +264,7 @@ ofa_icontext_set_menu( ofaIContext *instance, ofaIActionable *actionable, GMenu 
 	free_actionables( &sdata->actionables );
 
 	sdata->menu = g_object_ref( menu );
-	sdata->actionables = g_list_append( NULL, g_object_ref( actionable ));
+	sdata->actionables = g_list_append( NULL, actionable );
 }
 
 /*
@@ -417,7 +423,7 @@ on_instance_finalized( sIContext *sdata, GObject *instance )
 static void
 free_actionables( GList **actionables )
 {
-	g_list_free_full( *actionables, ( GDestroyNotify ) g_object_unref );
+	g_list_free( *actionables );
 
 	*actionables = NULL;
 }

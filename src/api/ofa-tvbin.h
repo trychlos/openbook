@@ -65,7 +65,7 @@
  *                      will typically be IN for pages, NONE (default) for dialogs.
  */
 
-#include "api/ofa-istore.h"
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
@@ -165,7 +165,7 @@ void              ofa_tvbin_set_settings_key  ( ofaTVBin *bin,
 													const gchar *key );
 
 void              ofa_tvbin_set_store         ( ofaTVBin *bin,
-													ofaIStore *store );
+													GtkTreeModel *store );
 
 G_END_DECLS
 

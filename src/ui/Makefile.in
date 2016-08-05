@@ -141,12 +141,12 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
 	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
 	ofa-balance-bin.$(OBJEXT) ofa-balance-grid-bin.$(OBJEXT) \
-	ofa-balance-render.$(OBJEXT) ofa-bat-page.$(OBJEXT) \
-	ofa-bat-properties.$(OBJEXT) ofa-bat-properties-bin.$(OBJEXT) \
-	ofa-bat-select.$(OBJEXT) ofa-bat-store.$(OBJEXT) \
-	ofa-bat-treeview.$(OBJEXT) ofa-bat-utils.$(OBJEXT) \
-	ofa-check-balances.$(OBJEXT) ofa-check-balances-bin.$(OBJEXT) \
-	ofa-check-integrity.$(OBJEXT) \
+	ofa-balance-render.$(OBJEXT) ofa-batline-treeview.$(OBJEXT) \
+	ofa-bat-page.$(OBJEXT) ofa-bat-properties.$(OBJEXT) \
+	ofa-bat-properties-bin.$(OBJEXT) ofa-bat-select.$(OBJEXT) \
+	ofa-bat-store.$(OBJEXT) ofa-bat-treeview.$(OBJEXT) \
+	ofa-bat-utils.$(OBJEXT) ofa-check-balances.$(OBJEXT) \
+	ofa-check-balances-bin.$(OBJEXT) ofa-check-integrity.$(OBJEXT) \
 	ofa-check-integrity-bin.$(OBJEXT) ofa-class-page.$(OBJEXT) \
 	ofa-class-properties.$(OBJEXT) ofa-class-store.$(OBJEXT) \
 	ofa-closing-parms-bin.$(OBJEXT) ofa-currency-page.$(OBJEXT) \
@@ -507,6 +507,8 @@ openbook_SOURCES = \
 	ofa-balance-grid-bin.h								\
 	ofa-balance-render.c								\
 	ofa-balance-render.h								\
+	ofa-batline-treeview.c								\
+	ofa-batline-treeview.h								\
 	ofa-bat-page.c										\
 	ofa-bat-page.h										\
 	ofa-bat-properties.c								\
@@ -772,6 +774,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-bat-utils.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-batline-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-balances-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-balances.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-check-integrity-bin.Po@am__quote@

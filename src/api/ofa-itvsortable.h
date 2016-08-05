@@ -35,7 +35,7 @@
  * derived class to make it sortable.
  */
 
-#include "api/ofa-istore.h"
+#include <gtk/gtk.h>
 
 G_BEGIN_DECLS
 
@@ -133,7 +133,7 @@ void  ofa_itvsortable_set_default_sort          ( ofaITVSortable *instance,
 														GtkSortType order );
 
 void  ofa_itvsortable_set_store                 ( ofaITVSortable *instance,
-														ofaIStore *store );
+														GtkTreeModel *store );
 
 void  ofa_itvsortable_set_treeview              ( ofaITVSortable *instance,
 														GtkTreeView *tview );

@@ -1783,8 +1783,9 @@ on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWi
 {
 	static const gchar *thisfn = "ofa_main_window_on_page_removed";
 
-	g_debug( "%s: book=%p, page_w=%p, page_num=%u, main_window=%p",
-			thisfn, ( void * ) book, ( void * ) page_w, page_num, ( void * ) main_window );
+	g_debug( "%s: book=%p, page_w=%p (%s), page_num=%u, main_window=%p",
+			thisfn, ( void * ) book,
+			( void * ) page_w, G_OBJECT_TYPE_NAME( page_w ), page_num, ( void * ) main_window );
 
 	g_signal_emit_by_name( page_w, "page-removed", page_w, page_num );
 }
@@ -1792,12 +1793,14 @@ on_page_removed( GtkNotebook *book, GtkWidget *page_w, guint page_num, ofaMainWi
 static void
 close_all_pages( ofaMainWindow *main_window )
 {
+	static const gchar *thisfn = "ofa_main_window_close_all_pages";
 	GtkNotebook *book;
 	gint count;
 
 	book = notebook_get_book( main_window );
 	if( book ){
 		while(( count = gtk_notebook_get_n_pages( book )) > 0 ){
+			g_debug( "%s: about to remove page index=%d", thisfn, count-1 );
 			gtk_notebook_remove_page( book, count-1 );
 		}
 	}

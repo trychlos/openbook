@@ -259,6 +259,7 @@ setup_treeview( ofaBatSelect *self )
 	ofaBatSelectPrivate *priv;
 	ofaHub *hub;
 	GtkWidget *widget;
+	gchar *key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
@@ -269,7 +270,9 @@ setup_treeview( ofaBatSelect *self )
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 
-	ofa_bat_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( self ));
+	key = g_strdup_printf( "%s.Bat", G_OBJECT_TYPE_NAME( self ));
+	ofa_bat_treeview_set_settings_key( priv->tview, key );
+	g_free( key );
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
@@ -286,6 +289,8 @@ setup_properties( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	GtkWidget *container;
+	gchar *key;
+	ofaBatlineTreeview *line_tview;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
@@ -295,6 +300,13 @@ setup_properties( ofaBatSelect *self )
 	priv->bat_bin = ofa_bat_properties_bin_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->bat_bin ), 0, 0, 2, 0 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
+
+	key = g_strdup_printf( "%s.BatLine", G_OBJECT_TYPE_NAME( self ));
+	ofa_bat_properties_bin_set_settings_key( priv->bat_bin, key );
+	g_free( key );
+
+	line_tview = ofa_bat_properties_bin_get_batline_treeview( priv->bat_bin );
+	ofa_batline_treeview_set_store( line_tview );
 }
 
 static void

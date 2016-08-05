@@ -195,11 +195,10 @@ v_setup_buttons( ofaPage *page )
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
-	/* setup actions and UI */
 	buttons_box = ofa_buttons_box_new();
 	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
-	/* action 'New' is here, but always disabled here */
+	/* action 'New' is present, but always disabled here (see import) */
 	priv->new_action = g_simple_action_new( "new", NULL );
 	g_simple_action_set_enabled( priv->new_action, FALSE );
 	ofa_iactionable_set_menu_item(
