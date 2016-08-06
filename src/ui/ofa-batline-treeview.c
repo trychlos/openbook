@@ -294,7 +294,7 @@ setup_columns( ofaBatlineTreeview *self )
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAL_COL_DEFFECT,  _( "Effect" ),    _( "Effect date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAL_COL_DOPE,     _( "Operation" ), _( "Operation date" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_REF,      _( "Ref." ),      _( "Reference" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_LABEL,    _( "Label" ),         NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), BAL_COL_LABEL,    _( "Label" ),         NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_CURRENCY, _( "Currency" ),      NULL );
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAL_COL_AMOUNT,   _( "Amount" ),        NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_ENTRY,    _( "Entries" ),   _( "Concil. entries" ));

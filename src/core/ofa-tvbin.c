@@ -701,6 +701,78 @@ ofa_tvbin_add_column_text_lx( ofaTVBin *bin, gint column_id, const gchar *header
 	add_column( bin, column, column_id, menu );
 }
 
+/*
+ * ofa_tvbin_add_column_text_rx:
+ * @bin: this #ofaTVBin instance.
+ * @column_id: the source column id,
+ *  is also used as sortable column identifier.
+ * @header: [allow-none]: the header of the column,
+ *  if NULL, then takes default.
+ * @menu: [allow-none]: the label of the popup menu,
+ *  if NULL, then takes the column header.
+ *
+ * Appends a text column to the treeview, defaulting to non visible.
+ * The text ellipsizes on the right (only the left part may be visible).
+ * This column is marked expandable.
+ */
+void
+ofa_tvbin_add_column_text_rx( ofaTVBin *bin, gint column_id, const gchar *header, const gchar *menu )
+{
+	ofaTVBinPrivate *priv;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	cell = gtk_cell_renderer_text_new();
+	g_object_set( G_OBJECT( cell ), "ellipsize-set", TRUE, "ellipsize", PANGO_ELLIPSIZE_END, NULL );
+
+	column = gtk_tree_view_column_new_with_attributes(
+					header ? header : _( "Text" ), cell, "text", column_id, NULL );
+	gtk_tree_view_column_set_expand( column, TRUE );
+
+	add_column( bin, column, column_id, menu );
+}
+
+/*
+ * ofa_tvbin_add_column_text_x:
+ * @bin: this #ofaTVBin instance.
+ * @column_id: the source column id,
+ *  is also used as sortable column identifier.
+ * @header: [allow-none]: the header of the column,
+ *  if NULL, then takes default.
+ * @menu: [allow-none]: the label of the popup menu,
+ *  if NULL, then takes the column header.
+ *
+ * Appends a text column to the treeview, defaulting to non visible.
+ * This column is marked expandable.
+ */
+void
+ofa_tvbin_add_column_text_x( ofaTVBin *bin, gint column_id, const gchar *header, const gchar *menu )
+{
+	ofaTVBinPrivate *priv;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	cell = gtk_cell_renderer_text_new();
+
+	column = gtk_tree_view_column_new_with_attributes(
+					header ? header : _( "Text" ), cell, "text", column_id, NULL );
+	gtk_tree_view_column_set_expand( column, TRUE );
+
+	add_column( bin, column, column_id, menu );
+}
+
 static void
 add_column( ofaTVBin *self, GtkTreeViewColumn *column, gint column_id, const gchar *menu )
 {

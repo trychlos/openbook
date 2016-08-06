@@ -152,6 +152,16 @@ void              ofa_tvbin_add_column_text_lx( ofaTVBin *bin,
 													const gchar *header,
 													const gchar *menu );
 
+void              ofa_tvbin_add_column_text_rx( ofaTVBin *bin,
+													gint column_id,
+													const gchar *header,
+													const gchar *menu );
+
+void              ofa_tvbin_add_column_text_x ( ofaTVBin *bin,
+													gint column_id,
+													const gchar *header,
+													const gchar *menu );
+
 GMenu            *ofa_tvbin_get_menu          ( ofaTVBin *bin );
 
 GtkTreeSelection *ofa_tvbin_get_selection     ( ofaTVBin *bin );
