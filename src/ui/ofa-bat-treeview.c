@@ -407,7 +407,7 @@ ofa_bat_treeview_get_selected( ofaBatTreeview *view )
  * @view: this #ofaBatTreeview instance.
  * @selection:
  *
- * Return: the identifier of the currently selected BAT file, or 0.
+ * Return: the currently selected BAT file, or %NULL.
  */
 static ofoBat *
 get_selected_with_selection( ofaBatTreeview *self, GtkTreeSelection *selection )
@@ -558,7 +558,7 @@ v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *
 			cmp = ofa_itvsortable_sort_str_amount( esoldea, esoldeb );
 			break;
 		case BAT_COL_NOTES:
-			cmp = my_collate( begina, beginb );
+			cmp = my_collate( notesa, notesb );
 			break;
 		case BAT_COL_NOTES_PNG:
 			cmp = ofa_itvsortable_sort_png( pnga, pngb );

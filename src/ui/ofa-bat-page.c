@@ -168,6 +168,7 @@ v_setup_view( ofaPage *page )
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	priv->tview = ofa_bat_treeview_new();
@@ -198,7 +199,7 @@ v_setup_buttons( ofaPage *page )
 	buttons_box = ofa_buttons_box_new();
 	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
-	/* action 'New' is present, but always disabled here (see import) */
+	/* new action is present, but always disabled here (see import) */
 	priv->new_action = g_simple_action_new( "new", NULL );
 	g_simple_action_set_enabled( priv->new_action, FALSE );
 	ofa_iactionable_set_menu_item(
@@ -304,6 +305,7 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 	is_bat = bat && OFO_IS_BAT( bat );
 
 	g_simple_action_set_enabled( priv->update_action, is_bat );
+
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, bat ));
 }
 
@@ -341,9 +343,13 @@ on_delete_key( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 static void
 on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
 {
+	static const gchar *thisfn = "ofa_bat_page_on_update_action_activated";
 	ofaBatPagePrivate *priv;
 	ofoBat *bat;
 	GtkWindow *toplevel;
+
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_bat_page_get_instance_private( self );
 
@@ -352,15 +358,17 @@ on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 		ofa_bat_properties_run( OFA_IGETTER( self ), toplevel, bat );
 	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static void
 on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
 {
+	static const gchar *thisfn = "ofa_bat_page_on_delete_action_activated";
 	ofaBatPagePrivate *priv;
 	ofoBat *bat;
+
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_bat_page_get_instance_private( self );
 
@@ -368,8 +376,6 @@ on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
 	g_return_if_fail( check_for_deletability( self, bat ));
 
 	delete_with_confirm( self, bat );
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 /*
@@ -379,9 +385,13 @@ on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
 static void
 on_import_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
 {
+	static const gchar *thisfn = "ofa_bat_page_on_import_action_activated";
 	ofaBatPagePrivate *priv;
 	ofxCounter bat_id;
 	GtkWindow *toplevel;
+
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_bat_page_get_instance_private( self );
 
@@ -390,23 +400,19 @@ on_import_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
 	if( bat_id > 0 ){
 		ofa_bat_treeview_set_selected( priv->tview, bat_id );
 	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static gboolean
 check_for_deletability( ofaBatPage *self, ofoBat *bat )
 {
 	ofaBatPagePrivate *priv;
-	gboolean is_bat, deletable;
+	gboolean is_bat;
 
 	priv = ofa_bat_page_get_instance_private( self );
 
 	is_bat = bat && OFO_IS_BAT( bat );
 
-	deletable = priv->is_writable && is_bat && ofo_bat_is_deletable( bat );
-
-	return( deletable );
+	return( is_bat && priv->is_writable && ofo_bat_is_deletable( bat ));
 }
 
 static void

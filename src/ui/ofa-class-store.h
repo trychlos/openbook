@@ -72,16 +72,16 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                                      Displayed
+ *                                                                      Displayable
  *                                                             Type     in Class page
  *                                                             -------  -------------
  * @CLASS_COL_ID           : numeric id                        Int            No
  * @CLASS_COL_NUMBER       : string id                         String        Yes
  * @CLASS_COL_LABEL        : label                             String        Yes
- * @CLASS_COL_NOTES        : notes                             String         No
+ * @CLASS_COL_NOTES        : notes                             String        Yes
  * @CLASS_COL_NOTES_PNG    : notes indicator                   GdkPixbuf     Yes
- * @CLASS_COL_UPD_USER     : last update user                  String         No
- * @CLASS_COL_UPD_STAMP    : last update stamp                 String         No
+ * @CLASS_COL_UPD_USER     : last update user                  String        Yes
+ * @CLASS_COL_UPD_STAMP    : last update stamp                 String        Yes
  * @CLASS_COL_OBJECT       : the #ofoClass object              GObject        No
  */
 enum {

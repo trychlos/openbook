@@ -121,6 +121,8 @@ openbook_SOURCES = \
 	ofa-class-properties.h								\
 	ofa-class-store.c									\
 	ofa-class-store.h									\
+	ofa-class-treeview.c								\
+	ofa-class-treeview.h								\
 	ofa-closing-parms-bin.c								\
 	ofa-closing-parms-bin.h								\
 	ofa-currency-page.c									\

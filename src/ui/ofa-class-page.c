@@ -34,7 +34,10 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
@@ -44,6 +47,7 @@
 #include "ui/ofa-class-properties.h"
 #include "ui/ofa-class-page.h"
 #include "ui/ofa-class-store.h"
+#include "ui/ofa-class-treeview.h"
 
 /* private instance data
  */
@@ -51,53 +55,41 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub            *hub;
 	gboolean           is_writable;
 
 	/* UI
 	 */
-	ofaClassStore     *store;
-	GtkTreeView       *tview;				/* the main treeview of the page */
-	GtkWidget         *update_btn;
-	GtkWidget         *delete_btn;
+	ofaClassTreeview  *tview;
 
-	/* sorted model
+	/* actions
 	 */
-	GtkTreeModel      *sort_model;			/* a sort model stacked on top of the store */
-	GtkTreeViewColumn *sort_column;
-	gint               sort_column_id;
-	gint               sort_order;
+	GSimpleAction     *new_action;
+	GSimpleAction     *update_action;
+	GSimpleAction     *delete_action;
 }
 	ofaClassPagePrivate;
 
+static const gchar *st_action_group_name = "class";
+
 static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_tree_view( ofaClassPage *self );
-static void       tview_on_header_clicked( GtkTreeViewColumn *column, ofaClassPage *self );
-static void       tview_set_sort_indicator( ofaClassPage *self );
-static gint       tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self );
-static gint       tview_on_sort_int( const gchar *a, const gchar *b );
-static gint       tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb );
-static gboolean   tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
-static ofoClass  *tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       setup_first_selection( ofaClassPage *self );
-static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_row_selected( GtkTreeSelection *selection, ofaClassPage *self );
-static void       on_new_clicked( GtkButton *button, ofaClassPage *page );
-static void       on_update_clicked( GtkButton *button, ofaClassPage *page );
-static void       on_delete_clicked( GtkButton *button, ofaClassPage *page );
-static void       try_to_delete_current_row( ofaClassPage *self );
-static gboolean   delete_confirmed( ofaClassPage *self, ofoClass *class );
-static void       do_delete( ofaClassPage *page, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void       get_sort_settings( ofaClassPage *self );
-static void       set_sort_settings( ofaClassPage *self );
+static void       on_row_selected( ofaClassTreeview *treeview, ofoClass *class, ofaClassPage *self );
+static void       on_row_activated( ofaClassTreeview *treeview, ofoClass *class, ofaClassPage *self );
+static void       on_insert_key( ofaClassTreeview *tview, ofaClassPage *self );
+static void       on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self );
+static void       on_new_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
+static void       on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
+static void       on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
+static gboolean   check_for_deletability( ofaClassPage *self, ofoClass *class );
+static void       delete_with_confirm( ofaClassPage *self, ofoClass *class );
 
 G_DEFINE_TYPE_EXTENDED( ofaClassPage, ofa_class_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaClassPage ))
 
 static void
-classes_page_finalize( GObject *instance )
+class_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_class_page_finalize";
 
@@ -113,13 +105,20 @@ classes_page_finalize( GObject *instance )
 }
 
 static void
-classes_page_dispose( GObject *instance )
+class_page_dispose( GObject *instance )
 {
+	ofaClassPagePrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_CLASS_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( instance ));
+
+		g_object_unref( priv->new_action );
+		g_object_unref( priv->update_action );
+		g_object_unref( priv->delete_action );
 	}
 
 	/* chain up to the parent class */
@@ -144,11 +143,12 @@ ofa_class_page_class_init( ofaClassPageClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = classes_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = classes_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = class_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = class_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -157,284 +157,31 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_class_page_v_setup_view";
 	ofaClassPagePrivate *priv;
-	GtkWidget *tview;
+	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
-	tview = setup_tree_view( OFA_CLASS_PAGE( page ));
-	setup_first_selection( OFA_CLASS_PAGE( page ));
+	priv->tview = ofa_class_treeview_new();
+	ofa_class_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
+	ofa_class_treeview_set_hub( priv->tview, hub );
 
-	return( tview );
-}
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
-static GtkWidget *
-setup_tree_view( ofaClassPage *self )
-{
-	ofaClassPagePrivate *priv;
-	GtkFrame *frame;
-	GtkScrolledWindow *scroll;
-	GtkTreeView *tview;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
-	gint column_id;
+	/* ofaTVBin signals */
+	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
 
-	priv = ofa_class_page_get_instance_private( self );
+	/* ofaBatTreeview signals */
+	g_signal_connect( priv->tview, "ofa-classchanged", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( priv->tview, "ofa-classactivated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( priv->tview, "ofa-classdelete", G_CALLBACK( on_delete_key ), page );
 
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 0 );
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
-
-	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
-	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
-	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
-
-	tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_tree_view_set_headers_visible( tview, TRUE );
-	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-
-	g_signal_connect( tview, "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect( tview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
-	priv->tview = tview;
-
-	column_id = CLASS_COL_NUMBER;
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_alignment( cell, 1.0, 0.5 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Number" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-
-	column_id = CLASS_COL_LABEL;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-
-	column_id = CLASS_COL_NOTES_PNG;
-	cell = gtk_cell_renderer_pixbuf_new();
-	column = gtk_tree_view_column_new_with_attributes(
-				"", cell, "pixbuf", column_id, NULL );
-	gtk_tree_view_append_column( tview, column );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-
-	select = gtk_tree_view_get_selection( tview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
-
-	priv->store = ofa_class_store_new( priv->hub );
-
-	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
-	/* the sortable model maintains its own reference on the store */
-	g_object_unref( priv->store );
-
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( priv->sort_model ), ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->sort_model ), CLASS_COL_NOTES_PNG, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-
-	gtk_tree_view_set_model( priv->tview, priv->sort_model );
-	/* the treeview maintains its own reference on the sortable model */
-	g_object_unref( priv->sort_model );
-
-	get_sort_settings( self );
-	tview_set_sort_indicator( self );
-
-	return( GTK_WIDGET( frame ));
-}
-
-static void
-tview_on_header_clicked( GtkTreeViewColumn *column, ofaClassPage *self )
-{
-	ofaClassPagePrivate *priv;
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	if( column != priv->sort_column ){
-		gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-		priv->sort_column = column;
-		priv->sort_column_id = gtk_tree_view_column_get_sort_column_id( column );
-		priv->sort_order = GTK_SORT_ASCENDING;
-
-	} else {
-		priv->sort_order = priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
-	}
-
-	set_sort_settings( self );
-	tview_set_sort_indicator( self );
-}
-
-/*
- * It happens that Gtk+ makes use of up arrow '^' (resp. a down arrow 'v')
- * to indicate a descending (resp. ascending) sort order. This is counter-
- * intuitive as we are expecting the arrow pointing to the smallest item.
- *
- * So inverse the sort order of the sort indicator.
- */
-static void
-tview_set_sort_indicator( ofaClassPage *self )
-{
-	ofaClassPagePrivate *priv;
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	if( priv->sort_model ){
-		gtk_tree_sortable_set_sort_column_id(
-				GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, priv->sort_order );
-	}
-
-	if( priv->sort_column ){
-		gtk_tree_view_column_set_sort_indicator(
-				priv->sort_column, TRUE );
-		gtk_tree_view_column_set_sort_order(
-				priv->sort_column,
-				priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING );
-	}
-}
-
-static gint
-tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassPage *self )
-{
-	static const gchar *thisfn = "ofa_class_page_tview_on_sort_model";
-	ofaClassPagePrivate *priv;
-	gchar *numa, *labela;
-	gchar *numb, *labelb;
-	gint ida, idb;
-	GdkPixbuf *pnga, *pngb;
-	gint cmp;
-
-	gtk_tree_model_get( tmodel, a,
-			CLASS_COL_ID,        &ida,
-			CLASS_COL_NUMBER,    &numa,
-			CLASS_COL_LABEL,     &labela,
-			CLASS_COL_NOTES_PNG, &pnga,
-			-1 );
-
-	gtk_tree_model_get( tmodel, b,
-			CLASS_COL_ID,        &idb,
-			CLASS_COL_NUMBER,    &numb,
-			CLASS_COL_LABEL,     &labelb,
-			CLASS_COL_NOTES_PNG, &pngb,
-			-1 );
-
-	cmp = 0;
-	priv = ofa_class_page_get_instance_private( self );
-
-	switch( priv->sort_column_id ){
-		case CLASS_COL_ID:
-			cmp = ( ida < idb ? -1 : ( ida > idb ? 1 : 0 ));
-			break;
-		case CLASS_COL_NUMBER:
-			cmp = tview_on_sort_int( numa, numb );
-			break;
-		case CLASS_COL_LABEL:
-			cmp = my_collate( labela, labelb );
-			break;
-		case CLASS_COL_NOTES_PNG:
-			cmp = tview_on_sort_png( pnga, pngb );
-			break;
-		default:
-			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
-			break;
-	}
-
-	g_free( numa );
-	g_free( labela );
-	g_object_unref( pnga );
-
-	g_free( numb );
-	g_free( labelb );
-	g_object_unref( pngb );
-
-	return( cmp );
-}
-
-static gint
-tview_on_sort_int( const gchar *a, const gchar *b )
-{
-	int inta, intb;
-
-	if( !my_strlen( a )){
-		if( !my_strlen( b )){
-			return( 0 );
-		}
-		return( -1 );
-	}
-	inta = atoi( a );
-
-	if( !my_strlen( b )){
-		return( 1 );
-	}
-	intb = atoi( b );
-
-	return( inta < intb ? -1 : ( inta > intb ? 1 : 0 ));
-}
-
-static gint
-tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb )
-{
-	gsize lena, lenb;
-
-	if( !pnga ){
-		return( -1 );
-	}
-	lena = gdk_pixbuf_get_byte_length( pnga );
-
-	if( !pngb ){
-		return( 1 );
-	}
-	lenb = gdk_pixbuf_get_byte_length( pngb );
-
-	if( lena < lenb ){
-		return( -1 );
-	}
-	if( lena > lenb ){
-		return( 1 );
-	}
-
-	return( memcmp( pnga, pngb, lena ));
-}
-
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaClassPage *self )
-{
-	gboolean stop;
-
-	stop = FALSE;
-
-	if( event->state == 0 ){
-		if( event->keyval == GDK_KEY_Insert ){
-			on_new_clicked( NULL, self );
-
-		} else if( event->keyval == GDK_KEY_Delete ){
-			try_to_delete_current_row( self );
-		}
-	}
-
-	return( stop );
+	return( GTK_WIDGET( priv->tview ));
 }
 
 static GtkWidget *
@@ -442,44 +189,72 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaClassPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
-	GtkWidget *btn;
 
 	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
-	btn = ofa_buttons_box_add_button_with_mnemonic(
-			buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
-	gtk_widget_set_sensitive( btn, priv->is_writable );
+	/* new action */
+	priv->new_action = g_simple_action_new( "new", NULL );
+	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
+	g_signal_connect( priv->new_action, "activate", G_CALLBACK( on_new_action_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE_NEW_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE_NEW_BTN ));
 
-	priv->update_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+	/* update action */
+	priv->update_action = g_simple_action_new( "update", NULL );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( on_update_action_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->update_action ),
+			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
-	priv->delete_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
+	/* delete action */
+	priv->delete_action = g_simple_action_new( "delete", NULL );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( on_delete_action_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE_DELETE_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE_DELETE_BTN ));
 
 	return( GTK_WIDGET( buttons_box ));
 }
 
-static ofoClass *
-tview_get_selected( ofaClassPage *page, GtkTreeModel **tmodel, GtkTreeIter *iter )
+static void
+v_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_class_page_v_init_view";
 	ofaClassPagePrivate *priv;
-	GtkTreeSelection *select;
-	ofoClass *class;
+	GMenu *menu;
 
-	priv = ofa_class_page_get_instance_private( page );
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	class = NULL;
-	select = gtk_tree_view_get_selection( priv->tview );
-	if( gtk_tree_selection_get_selected( select, tmodel, iter )){
-		gtk_tree_model_get( *tmodel, iter, CLASS_COL_OBJECT, &class, -1 );
-		g_object_unref( class );
-	}
-	return( class );
+	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), st_action_group_name );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
+			menu );
+
+	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 static GtkWidget *
@@ -491,73 +266,85 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
 
-	return( GTK_WIDGET( priv->tview ));
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
+/*
+ * Signal sent by ofaClassTreeview on selection change
+ *
+ * Other actions do not depend of the selection:
+ * - new: enabled when dossier is writable.
+ */
 static void
-setup_first_selection( ofaClassPage *self )
+on_row_selected( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self )
 {
 	ofaClassPagePrivate *priv;
-	GtkTreeModel *model;
-	GtkTreeIter iter;
-	GtkTreeSelection *select;
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	model = gtk_tree_view_get_model( priv->tview );
-	if( gtk_tree_model_get_iter_first( model, &iter )){
-		select = gtk_tree_view_get_selection( priv->tview );
-		gtk_tree_selection_select_iter( select, &iter );
-	}
-
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
-}
-
-static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
-{
-	on_update_clicked( NULL, OFA_CLASS_PAGE( page ));
-}
-
-static void
-on_row_selected( GtkTreeSelection *selection, ofaClassPage *self )
-{
-	ofaClassPagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	ofoClass *class;
 	gboolean is_class;
-
-	class = NULL;
-
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, CLASS_COL_OBJECT, &class, -1 );
-		g_object_unref( class );
-	}
 
 	priv = ofa_class_page_get_instance_private( self );
 
 	is_class = class && OFO_IS_CLASS( class );
 
-	if( priv->update_btn ){
-		gtk_widget_set_sensitive( priv->update_btn,
-				is_class );
-	}
+	g_simple_action_set_enabled( priv->update_action, is_class );
 
-	if( priv->delete_btn ){
-		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_writable && is_class && ofo_class_is_deletable( class ));
+	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, class ));
+}
+
+/*
+ * signal sent by ofaClassTreeview on selection activation
+ */
+static void
+on_row_activated( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self )
+{
+	ofaClassPagePrivate *priv;
+
+	priv = ofa_class_page_get_instance_private( self );
+
+	g_action_activate( G_ACTION( priv->update_action ), NULL );
+}
+
+/*
+ * signal sent by ofaTVBin on Insert key
+ *
+ * Note that the key may be pressend even if dossier is not writable.
+ * If this is the case, just silently ignore the key.
+ */
+static void
+on_insert_key( ofaClassTreeview *tview, ofaClassPage *self )
+{
+	ofaClassPagePrivate *priv;
+
+	priv = ofa_class_page_get_instance_private( self );
+
+	if( priv->is_writable ){
+		g_action_activate( G_ACTION( priv->new_action ), NULL );
+	}
+}
+
+/*
+ * signal sent by ofaClassTreeview on Delete key
+ *
+ * Note that the key may be pressed, even if the button
+ * is disabled. So have to check all prerequisite conditions.
+ * If the current row is not deletable, just silently ignore the key.
+ */
+static void
+on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self )
+{
+	if( check_for_deletability( self, class )){
+		delete_with_confirm( self, class );
 	}
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaClassPage *self )
+on_new_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_on_new_clicked";
+	static const gchar *thisfn = "ofa_class_page_on_new_action_activated";
 	ofoClass *class;
 	GtkWindow *toplevel;
 
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	class = ofo_class_new();
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
@@ -565,14 +352,19 @@ on_new_clicked( GtkButton *button, ofaClassPage *self )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaClassPage *self )
+on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	static const gchar *thisfn = "ofa_class_page_on_update_action_activated";
+	ofaClassPagePrivate *priv;
 	ofoClass *class;
 	GtkWindow *toplevel;
 
-	class = tview_get_selected( self, &tmodel, &iter );
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
+
+	priv = ofa_class_page_get_instance_private( self );
+
+	class = ofa_class_treeview_get_selected( priv->tview );
 	if( class ){
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 		ofa_class_properties_run( OFA_IGETTER( self ), toplevel, class );
@@ -580,34 +372,38 @@ on_update_clicked( GtkButton *button, ofaClassPage *self )
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaClassPage *self )
+on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
 {
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	static const gchar *thisfn = "ofa_class_page_on_delete_action_activated";
+	ofaClassPagePrivate *priv;
 	ofoClass *class;
 
-	class = tview_get_selected( self, &tmodel, &iter );
-	if( class ){
-		do_delete( self, class, tmodel, &iter );
-	}
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
-}
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
-static void
-try_to_delete_current_row( ofaClassPage *self )
-{
-	ofoClass *class;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
+	priv = ofa_class_page_get_instance_private( self );
 
-	class = tview_get_selected( self, &tmodel, &iter );
-	if( ofo_class_is_deletable( class )){
-		do_delete( self, class, tmodel, &iter );
-	}
+	class = ofa_class_treeview_get_selected( priv->tview );
+	g_return_if_fail( check_for_deletability( self, class ));
+
+	delete_with_confirm( self, class );
 }
 
 static gboolean
-delete_confirmed( ofaClassPage *self, ofoClass *class )
+check_for_deletability( ofaClassPage *self, ofoClass *class )
+{
+	ofaClassPagePrivate *priv;
+	gboolean is_class;
+
+	priv = ofa_class_page_get_instance_private( self );
+
+	is_class = class && OFO_IS_CLASS( class );
+
+	return( is_class && priv->is_writable && ofo_class_is_deletable( class ));
+}
+
+static void
+delete_with_confirm( ofaClassPage *self, ofoClass *class )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -619,91 +415,7 @@ delete_confirmed( ofaClassPage *self, ofoClass *class )
 
 	g_free( msg );
 
-	return( delete_ok );
-}
-
-static void
-do_delete( ofaClassPage *self, ofoClass *class, GtkTreeModel *tmodel, GtkTreeIter *iter )
-{
-	gboolean deletable;
-
-	deletable = ofo_class_is_deletable( class );
-	g_return_if_fail( deletable );
-
-	if( delete_confirmed( self, class )){
+	if( delete_ok ){
 		ofo_class_delete( class );
 	}
-}
-
-/*
- * sort_settings: sort_column_id;sort_order;
- *
- * Note that we record the actual sort order (gtk_sort_ascending for
- * ascending order); only the sort indicator of the column is reversed.
- */
-static void
-get_sort_settings( ofaClassPage *self )
-{
-	ofaClassPagePrivate *priv;
-	GList *slist, *it, *columns;
-	const gchar *cstr;
-	gchar *sort_key;
-	GtkTreeViewColumn *column;
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	/* default is to sort by ascending class number
-	 */
-	priv->sort_column = NULL;
-	priv->sort_column_id = CLASS_COL_NUMBER;
-	priv->sort_order = GTK_SORT_ASCENDING;
-
-	/* get the settings (if any)
-	 */
-	sort_key = g_strdup_printf( "%s-sort", G_OBJECT_TYPE_NAME( self ));
-	slist = ofa_settings_user_get_string_list( sort_key );
-
-	it = slist ? slist : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_column_id = atoi( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_order = atoi( cstr );
-	}
-
-	ofa_settings_free_string_list( slist );
-	g_free( sort_key );
-
-	/* setup the sort treeview column
-	 */
-	columns = gtk_tree_view_get_columns( priv->tview );
-	for( it=columns ; it ; it=it->next ){
-		column = GTK_TREE_VIEW_COLUMN( it->data );
-		if( gtk_tree_view_column_get_sort_column_id( column ) == priv->sort_column_id ){
-			priv->sort_column = column;
-			break;
-		}
-	}
-	g_list_free( columns );
-}
-
-static void
-set_sort_settings( ofaClassPage *self )
-{
-	ofaClassPagePrivate *priv;
-	gchar *str, *sort_key;
-
-	priv = ofa_class_page_get_instance_private( self );
-
-	sort_key = g_strdup_printf( "%s-sort", G_OBJECT_TYPE_NAME( self ));
-	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_order );
-
-	ofa_settings_user_set_string( sort_key, str );
-
-	g_free( str );
-	g_free( sort_key );
 }

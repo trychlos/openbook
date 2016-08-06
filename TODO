@@ -431,7 +431,7 @@
                 - implement actions in the page
                 - check dialog properties
                 Done for:
-                - ofatBatPage, ofaBatTreeview
+                - ofatBatPage, ofaBatTreeview, ofaBatlineTreeview
 
 -----------------------------------------------------------------------
  DONE
