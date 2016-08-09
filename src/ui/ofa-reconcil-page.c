@@ -144,6 +144,7 @@ typedef struct {
 	ofaHub              *hub;
 	GList               *hub_handlers;
 	GList               *bats;			/* loaded ofoBat objects */
+	gboolean             reading_settings;
 }
 	ofaReconcilPagePrivate;
 
@@ -3664,6 +3665,8 @@ get_settings( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
+	priv->reading_settings = TRUE;
+
 	slist = ofa_settings_user_get_string_list( st_reconciliation );
 	if( slist ){
 		it = slist ? slist : NULL;
@@ -3692,13 +3695,12 @@ get_settings( ofaReconcilPage *self )
 		it = it ? it->next : NULL;
 		cstr = it ? it->data : NULL;
 		pos = cstr ? atoi( cstr ) : 0;
-		if( pos <= 10 ){
-			pos = 150;
-		}
-		gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
+		gtk_paned_set_position( GTK_PANED( priv->top_paned ), MAX( pos, 150 ));
 
 		ofa_settings_free_string_list( slist );
 	}
+
+	priv->reading_settings = FALSE;
 }
 
 static void
@@ -3713,27 +3715,30 @@ set_settings( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
+	if( !priv->reading_settings ){
 
-	smode = g_strdup_printf( "%d", priv->mode );
+		account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
 
-	sdate = gtk_entry_get_text( priv->date_concil );
-	my_date_set_from_str( &date, sdate, ofa_prefs_date_display());
-	if( my_date_is_valid( &date )){
-		date_sql = my_date_to_str( &date, MY_DATE_SQL );
-	} else {
-		date_sql = g_strdup( "" );
+		smode = g_strdup_printf( "%d", priv->mode );
+
+		sdate = gtk_entry_get_text( priv->date_concil );
+		my_date_set_from_str( &date, sdate, ofa_prefs_date_display());
+		if( my_date_is_valid( &date )){
+			date_sql = my_date_to_str( &date, MY_DATE_SQL );
+		} else {
+			date_sql = g_strdup( "" );
+		}
+
+		pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
+
+		str = g_strdup_printf( "%s;%s;%s;%d;", account ? account : "", smode, date_sql, pos );
+
+		ofa_settings_user_set_string( st_reconciliation, str );
+
+		g_free( date_sql );
+		g_free( str );
+		g_free( smode );
 	}
-
-	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
-
-	str = g_strdup_printf( "%s;%s;%s;%d;", account ? account : "", smode, date_sql, pos );
-
-	ofa_settings_user_set_string( st_reconciliation, str );
-
-	g_free( date_sql );
-	g_free( str );
-	g_free( smode );
 }
 
 static void
