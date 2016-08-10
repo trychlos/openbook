@@ -50,9 +50,10 @@ typedef struct {
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ledger_locked, ref, ref_locked */
 		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
-		G_TYPE_STRING, G_TYPE_STRING,					/* is_recurrent_model, used_by_vat */
+		G_TYPE_STRING, G_TYPE_STRING,					/* recurrent_plugin, vat_plugin */
 		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
 };
 
@@ -65,7 +66,7 @@ static void     insert_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpe
 static void     set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
 static void     remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo );
-static void     connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub );
+static void     hub_setup_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
 static void     hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
@@ -153,6 +154,9 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
  *
  * A weak notify reference is put on this same @dossier, so that the
  * unique instance will be unreffed when the @hub is destroyed.
+ *
+ * Returns: a new reference to the store, which should be unreffed by
+ * the caller.
  */
 ofaOpeTemplateStore *
 ofa_ope_template_store_new( ofaHub *hub )
@@ -172,6 +176,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 
 	} else {
 		store = g_object_new( OFA_TYPE_OPE_TEMPLATE_STORE, NULL );
+		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 
 		st_col_types[OPE_TEMPLATE_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		ofa_istore_set_columns_type(
@@ -186,12 +191,10 @@ ofa_ope_template_store_new( ofaHub *hub )
 
 		my_icollector_single_set_object( collector, store );
 
-		connect_to_hub_signaling_system( store, hub );
-
-		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
+		hub_setup_signaling_system( store, hub );
 	}
 
-	return( store );
+	return( g_object_ref( store ));
 }
 
 /*
@@ -269,14 +272,17 @@ set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkT
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			OPE_TEMPLATE_COL_LABEL,     ofo_ope_template_get_label( ope ),
-			OPE_TEMPLATE_COL_LEDGER,    ofo_ope_template_get_ledger( ope ),
-			OPE_TEMPLATE_COL_NOTES,     notes,
-			OPE_TEMPLATE_COL_NOTES_PNG, notes_png,
-			OPE_TEMPLATE_COL_UPD_USER,  ofo_ope_template_get_upd_user( ope ),
-			OPE_TEMPLATE_COL_UPD_STAMP, stamp,
-			OPE_TEMPLATE_COL_RECURRENT, "",
-			OPE_TEMPLATE_COL_VAT,       "",
+			OPE_TEMPLATE_COL_LABEL,         ofo_ope_template_get_label( ope ),
+			OPE_TEMPLATE_COL_LEDGER,        ofo_ope_template_get_ledger( ope ),
+			OPE_TEMPLATE_COL_LEDGER_LOCKED, ofo_ope_template_get_ledger_locked( ope ),
+			OPE_TEMPLATE_COL_REF,           ofo_ope_template_get_ref( ope ),
+			OPE_TEMPLATE_COL_REF_LOCKED,    ofo_ope_template_get_ref_locked( ope ),
+			OPE_TEMPLATE_COL_NOTES,         notes,
+			OPE_TEMPLATE_COL_NOTES_PNG,     notes_png,
+			OPE_TEMPLATE_COL_UPD_USER,      ofo_ope_template_get_upd_user( ope ),
+			OPE_TEMPLATE_COL_UPD_STAMP,     stamp,
+			OPE_TEMPLATE_COL_RECURRENT,     "",
+			OPE_TEMPLATE_COL_VAT,           "",
 			-1 );
 
 	g_object_unref( notes_png );
@@ -356,7 +362,7 @@ remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *number )
  * of this self is equal to those of the dossier
  */
 static void
-connect_to_hub_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub )
+hub_setup_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub )
 {
 	ofaOpeTemplateStorePrivate *priv;
 	gulong handler;

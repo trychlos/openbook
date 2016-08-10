@@ -87,7 +87,7 @@ static void     realign_children( ofaAccountStore *store, ofaHub *hub, const ofo
 static GList   *remove_rows_by_number( ofaAccountStore *store, const gchar *number );
 static GList   *remove_rows_rec( ofaAccountStore *store, GtkTreeIter *iter, GList *list );
 static gint     cmp_account_by_number( const ofoAccount *a, const ofoAccount *b );
-static void     setup_signaling_connect( ofaAccountStore *store, ofaHub *hub );
+static void     hub_setup_signaling_system( ofaAccountStore *store, ofaHub *hub );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
 static void     hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *store );
@@ -181,6 +181,7 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
 ofaAccountStore *
 ofa_account_store_new( ofaHub *hub )
 {
+	static const gchar *thisfn = "ofa_account_store_new";
 	ofaAccountStore *store;
 	myICollector *collector;
 
@@ -191,9 +192,11 @@ ofa_account_store_new( ofaHub *hub )
 
 	if( store ){
 		g_return_val_if_fail( OFA_IS_ACCOUNT_STORE( store ), NULL );
+		g_debug( "%s: returning existing store=%p", thisfn, ( void * ) store );
 
 	} else {
 		store = g_object_new( OFA_TYPE_ACCOUNT_STORE, NULL );
+		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 
 		st_col_types[ACCOUNT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_tree_store_set_column_types(
@@ -207,7 +210,7 @@ ofa_account_store_new( ofaHub *hub )
 
 		my_icollector_single_set_object( collector, store );
 
-		setup_signaling_connect( store, hub );
+		hub_setup_signaling_system( store, hub );
 	}
 
 	return( g_object_ref( store ));
@@ -688,7 +691,7 @@ cmp_account_by_number( const ofoAccount *a, const ofoAccount *b )
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaAccountStore *store, ofaHub *hub )
+hub_setup_signaling_system( ofaAccountStore *store, ofaHub *hub )
 {
 	ofaAccountStorePrivate *priv;
 	gulong handler;

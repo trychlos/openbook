@@ -75,11 +75,30 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
+ *                                                                              Displayable
+ *                                                                     Type     in treeview
+ *                                                                     -------  -----------
+ * @OPE_TEMPLATE_COL_MNEMO         : mnemonic                          String       Yes
+ * @OPE_TEMPLATE_COL_LABEL         : label                             String       Yes
+ * @OPE_TEMPLATE_COL_LEDGER        : ledger identifier                 String       Yes
+ * @OPE_TEMPLATE_COL_LEDGER_LOCKED : is ledger locked                  Bool          No
+ * @OPE_TEMPLATE_COL_REF           : piece reference                   String       Yes
+ * @OPE_TEMPLATE_COL_REF_LOCKED    : is reference locked               Bool          No
+ * @OPE_TEMPLATE_COL_NOTES         : notes                             String       Yes
+ * @OPE_TEMPLATE_COL_NOTES_PNG     : notes indicator                   Pixbuf       Yes
+ * @OPE_TEMPLATE_COL_UPD_USER      : last update user                  String       Yes
+ * @OPE_TEMPLATE_COL_UPD_STAMP     : last update timestamp             String       Yes
+ * @OPE_TEMPLATE_COL_RECURRENT     : for Recurrent plugin              String       Yes
+ * @OPE_TEMPLATE_COL_VAT           : for VAT plugin                    String       Yes
+ * @OPE_TEMPLATE_COL_OBJECT        : #ofoOpeTemplate object            GObject       No
  */
 enum {
 	OPE_TEMPLATE_COL_MNEMO = 0,
 	OPE_TEMPLATE_COL_LABEL,
 	OPE_TEMPLATE_COL_LEDGER,
+	OPE_TEMPLATE_COL_LEDGER_LOCKED,
+	OPE_TEMPLATE_COL_REF,
+	OPE_TEMPLATE_COL_REF_LOCKED,
 	OPE_TEMPLATE_COL_NOTES,
 	OPE_TEMPLATE_COL_NOTES_PNG,
 	OPE_TEMPLATE_COL_UPD_USER,
