@@ -33,9 +33,9 @@
  * This is a convenience class which manages both the accounts notebook
  * and the actions box on the right if needed.
  *
- * The class also acts as a proxy for "changed" and "activated" messages
- * sent by the underlying ofaAccountStore class. It relays these
- * messages as:
+ * The class also acts as a proxy for "ofa-accchanged" and
+ * "ofa-accactivated" messages sent by the ofaAccountTreeview's views.
+ * It relays these messages as:
  * - 'ofa-changed' when the selection changes
  * - 'ofa-activated' when the selection is activated.
  *

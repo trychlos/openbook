@@ -44,7 +44,6 @@
 #include "core/ofa-guided-input.h"
 #include "core/ofa-ope-template-frame-bin.h"
 #include "core/ofa-ope-template-properties.h"
-#include "core/ofa-ope-template-treeview.h"
 
 /* private instance data
  */
@@ -69,19 +68,22 @@ typedef struct {
 	GtkWidget           *grid;
 	GtkWidget           *notebook;
 	ofaButtonsBox       *buttonsbox;
-
-	/* actions
-	 */
-	GSimpleAction       *new_action;
-	GSimpleAction       *update_action;
-	GSimpleAction       *delete_action;
-	GSimpleAction       *duplicate_action;
-	GSimpleAction       *guided_input_action;
+	GList               *buttons;
 }
-	ofaOpeTemplateFrameBinPrivate;
+	ofaOpeTemplateTreeviewPrivate;
+
+/* a structure to descriibe each displayed button
+ * @sensitive: if FALSE, the button is never sensitive, whatever be the
+ *  current conditions.
+ */
+typedef struct {
+	ofeOpeTemplateFrameBtn id;
+	GtkWidget             *btn;
+	gboolean               sensitive;
+}
+	sButton;
 
 /* this piece of data is attached to each page of the notebook
- * (which happens to be an #ofaOpeTemplateTreeview instance)
  */
 typedef struct {
 	ofaHub *hub;
@@ -106,84 +108,84 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void       setup_bin( ofaOpeTemplateFrameBin *self );
-static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboolean bcreate );
-static GtkWidget *book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger );
-static void       book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateFrameBin *self );
+static void       setup_bin( ofaOpeTemplateTreeview *self );
+static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateTreeview *self, const gchar *ledger, gboolean bcreate );
+static GtkWidget *book_create_page( ofaOpeTemplateTreeview *self, const gchar *ledger );
+static void       book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateTreeview *self );
 static void       book_on_finalized_page( sPageData *sdata, gpointer finalized_page );
-static GtkWidget *page_add_treeview( ofaOpeTemplateFrameBin *self, GtkWidget *page );
-static void       page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview );
-static GtkWidget *page_get_treeview( ofaOpeTemplateFrameBin *self );
-static void       page_set_ledger_mnemo( const ofaOpeTemplateFrameBin *self, GtkWidget *page, const gchar *mnemo );
-static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self );
+static GtkWidget *page_add_treeview( ofaOpeTemplateTreeview *self, GtkWidget *page );
+static void       page_add_columns( ofaOpeTemplateTreeview *self, GtkTreeView *tview );
+static GtkWidget *page_get_treeview( ofaOpeTemplateTreeview *self );
+static void       page_set_ledger_mnemo( const ofaOpeTemplateTreeview *self, GtkWidget *page, const gchar *mnemo );
+static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateTreeview *self );
 static gboolean   tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page );
-static void       tview_on_row_selected( GtkTreeSelection *selection, ofaOpeTemplateFrameBin *self );
-static void       tview_on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateFrameBin *self );
-static gboolean   tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateFrameBin *self );
-static void       tview_on_key_insert( ofaOpeTemplateFrameBin *self );
-static void       tview_on_key_delete( ofaOpeTemplateFrameBin *self );
-static void       tview_select_row_by_mnemo( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
-static void       tview_select_row_by_iter( ofaOpeTemplateFrameBin *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
-static GtkWidget *button_add( ofaOpeTemplateFrameBin *self, ofeOpeTemplateFrameBtn id, const gchar *label, gboolean sensitive, GCallback cb );
+static void       tview_on_row_selected( GtkTreeSelection *selection, ofaOpeTemplateTreeview *self );
+static void       tview_on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateTreeview *self );
+static gboolean   tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateTreeview *self );
+static void       tview_on_key_insert( ofaOpeTemplateTreeview *self );
+static void       tview_on_key_delete( ofaOpeTemplateTreeview *self );
+static void       tview_select_row_by_mnemo( ofaOpeTemplateTreeview *self, const gchar *mnemo );
+static void       tview_select_row_by_iter( ofaOpeTemplateTreeview *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter );
+static GtkWidget *button_add( ofaOpeTemplateTreeview *self, ofeOpeTemplateFrameBtn id, const gchar *label, gboolean sensitive, GCallback cb );
 static sButton   *button_find_by_id( GList **list, ofeOpeTemplateFrameBtn id, gboolean create );
-static void       button_update_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
-static void       button_on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
-static void       button_on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
-static void       button_on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
-static void       button_on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
-static void       button_on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self );
-static gboolean   is_new_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn );
-static gboolean   is_delete_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn, ofoOpeTemplate *selected );
-static void       do_insert_ope_template( ofaOpeTemplateFrameBin *self );
-static void       do_update_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
-static void       do_delete_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
-static gboolean   delete_confirmed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *ope );
-static void       do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
-static void       do_guided_input( ofaOpeTemplateFrameBin *self, const gchar *mnemo );
-static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self );
-static void       hub_connect_to_signaling_system( ofaOpeTemplateFrameBin *self );
-static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
-static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self );
-static void       hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger );
-static void       hub_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
-static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
-static void       hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger );
-static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateFrameBin *self );
-static void       write_settings( ofaOpeTemplateFrameBin *self );
+static void       button_update_sensitivity( ofaOpeTemplateTreeview *self, const gchar *mnemo );
+static void       button_on_new_clicked( GtkButton *button, ofaOpeTemplateTreeview *self );
+static void       button_on_properties_clicked( GtkButton *button, ofaOpeTemplateTreeview *self );
+static void       button_on_delete_clicked( GtkButton *button, ofaOpeTemplateTreeview *self );
+static void       button_on_duplicate_clicked( GtkButton *button, ofaOpeTemplateTreeview *self );
+static void       button_on_guided_input_clicked( GtkButton *button, ofaOpeTemplateTreeview *self );
+static gboolean   is_new_allowed( ofaOpeTemplateTreeview *self, sButton *sbtn );
+static gboolean   is_delete_allowed( ofaOpeTemplateTreeview *self, sButton *sbtn, ofoOpeTemplate *selected );
+static void       do_insert_ope_template( ofaOpeTemplateTreeview *self );
+static void       do_update_ope_template( ofaOpeTemplateTreeview *self, const gchar *mnemo );
+static void       do_delete_ope_template( ofaOpeTemplateTreeview *self, const gchar *mnemo );
+static gboolean   delete_confirmed( ofaOpeTemplateTreeview *self, ofoOpeTemplate *ope );
+static void       do_duplicate_ope_template( ofaOpeTemplateTreeview *self, const gchar *mnemo );
+static void       do_guided_input( ofaOpeTemplateTreeview *self, const gchar *mnemo );
+static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateTreeview *self );
+static void       hub_connect_to_signaling_system( ofaOpeTemplateTreeview *self );
+static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateTreeview *self );
+static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateTreeview *self );
+static void       hub_on_updated_ledger( ofaOpeTemplateTreeview *self, const gchar *prev_id, ofoLedger *ledger );
+static void       hub_on_updated_ope_template( ofaOpeTemplateTreeview *self, ofoOpeTemplate *template );
+static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateTreeview *self );
+static void       hub_on_deleted_ledger_object( ofaOpeTemplateTreeview *self, ofoLedger *ledger );
+static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateTreeview *self );
+static void       write_settings( ofaOpeTemplateTreeview *self );
 static void       free_button( sButton *sbtn );
 
-G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateFrameBin, ofa_ope_template_frame_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaOpeTemplateFrameBin ))
+G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateTreeview, ofa_ope_template_treeview, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaOpeTemplateTreeview ))
 
 static void
-ope_template_frame_bin_finalize( GObject *instance )
+ope_template_treeview_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_finalize";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_finalize";
+	ofaOpeTemplateTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_FRAME_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_TREEVIEW( instance ));
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( OFA_OPE_TEMPLATE_FRAME_BIN( instance ));
+	priv = ofa_ope_template_treeview_get_instance_private( OFA_OPE_TEMPLATE_TREEVIEW( instance ));
 
 	/* free data members here */
 	g_list_free_full( priv->buttons, ( GDestroyNotify ) free_button );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_template_frame_bin_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ope_template_treeview_parent_class )->finalize( instance );
 }
 
 static void
-ope_template_frame_bin_dispose( GObject *instance )
+ope_template_treeview_dispose( GObject *instance )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GList *it;
 
-	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_FRAME_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_TREEVIEW( instance ));
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( OFA_OPE_TEMPLATE_FRAME_BIN( instance ));
+	priv = ofa_ope_template_treeview_get_instance_private( OFA_OPE_TEMPLATE_TREEVIEW( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -208,50 +210,50 @@ ope_template_frame_bin_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ope_template_frame_bin_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ope_template_treeview_parent_class )->dispose( instance );
 }
 
 static void
-ofa_ope_template_frame_bin_init( ofaOpeTemplateFrameBin *self )
+ofa_ope_template_treeview_init( ofaOpeTemplateTreeview *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_init";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_init";
+	ofaOpeTemplateTreeviewPrivate *priv;
 
-	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_FRAME_BIN( self ));
+	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_TREEVIEW( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
+ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_class_init";
+	static const gchar *thisfn = "ofa_ope_template_treeview_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ope_template_frame_bin_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ope_template_frame_bin_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ope_template_treeview_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ope_template_treeview_finalize;
 
 	/**
-	 * ofaOpeTemplateFrameBin::changed:
+	 * ofaOpeTemplateTreeview::changed:
 	 *
 	 * This signal is sent when the selection is changed.
 	 *
 	 * Argument is the selected operation template mnemo.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaOpeTemplateFrameBin *frame,
+	 * void ( *handler )( ofaOpeTemplateTreeview *frame,
 	 * 						const gchar        *mnemo,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_OPE_TEMPLATE_FRAME_BIN,
+				OFA_TYPE_OPE_TEMPLATE_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -262,20 +264,20 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 				G_TYPE_STRING );
 
 	/**
-	 * ofaOpeTemplateFrameBin::activated:
+	 * ofaOpeTemplateTreeview::activated:
 	 *
 	 * This signal is sent when the selection is activated.
 	 *
 	 * Argument is the selected account mnemo.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaOpeTemplateFrameBin *frame,
+	 * void ( *handler )( ofaOpeTemplateTreeview *frame,
 	 * 						const gchar        *mnemo,
 	 * 						gpointer            user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
 				"ofa-activated",
-				OFA_TYPE_OPE_TEMPLATE_FRAME_BIN,
+				OFA_TYPE_OPE_TEMPLATE_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -287,7 +289,7 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
 }
 
 /**
- * ofa_ope_template_frame_bin_new:
+ * ofa_ope_template_treeview_new:
  * @getter: a #ofaIGetter instance.
  *
  * Creates the structured content, i.e. The accounts notebook on the
@@ -302,23 +304,23 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
  * | | +---------------------------------------------+-----------------+ + |
  * | | | creates a notebook where each page contains | creates         | | |
  * | | |   the account of the corresponding class    |   a buttons box | | |
- * | | |   (cf. ofaOpeTemplateFrameBin class)        |                 | | |
+ * | | |   (cf. ofaOpeTemplateTreeview class)        |                 | | |
  * | | |                                             |                 | | |
  * | | +---------------------------------------------+-----------------+ | |
  * | +-------------------------------------------------------------------+ |
  * +-----------------------------------------------------------------------+
  */
-ofaOpeTemplateFrameBin *
-ofa_ope_template_frame_bin_new( ofaIGetter *getter  )
+ofaOpeTemplateTreeview *
+ofa_ope_template_treeview_new( ofaIGetter *getter  )
 {
-	ofaOpeTemplateFrameBin *self;
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeview *self;
+	ofaOpeTemplateTreeviewPrivate *priv;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
+	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_TREEVIEW, NULL );
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	priv->getter = getter;
 
@@ -328,14 +330,14 @@ ofa_ope_template_frame_bin_new( ofaIGetter *getter  )
 }
 
 static void
-setup_bin( ofaOpeTemplateFrameBin *self )
+setup_bin( ofaOpeTemplateTreeview *self )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gulong handler;
 	GList *strlist, *it;
 	const ofaIDBConnect *connect;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	/* UI grid */
 	priv->grid = gtk_grid_new();
@@ -392,15 +394,15 @@ setup_bin( ofaOpeTemplateFrameBin *self )
  * If the page doesn't exist, and @bcreate is %TRUE, then it is created.
  */
 static GtkWidget *
-book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboolean bcreate )
+book_get_page_by_ledger( ofaOpeTemplateTreeview *self, const gchar *ledger, gboolean bcreate )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_get_page_by_ledger";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_get_page_by_ledger";
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gint count, i;
 	GtkWidget *found, *page_widget;
 	sPageData *sdata;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	found = NULL;
 	count = gtk_notebook_get_n_pages( GTK_NOTEBOOK( priv->notebook ));
@@ -433,10 +435,10 @@ book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboo
  * creates the page widget for the given ledger
  */
 static GtkWidget *
-book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
+book_create_page( ofaOpeTemplateTreeview *self, const gchar *ledger )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_book_create_page";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_book_create_page";
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkWidget *frame, *scrolled, *tview, *label;
 	ofoLedger *ledger_obj;
 	const gchar *ledger_label;
@@ -445,7 +447,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 
 	g_debug( "%s: self=%p, ledger=%s", thisfn, ( void * ) self, ledger );
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	/* get ledger label */
 	if( !my_collate( ledger, UNKNOWN_LEDGER_MNEMO )){
@@ -505,7 +507,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
  * just setup the selection
  */
 static void
-book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateFrameBin *self )
+book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateTreeview *self )
 {
 	GtkWidget *tview;
 	GtkTreeSelection *select;
@@ -522,7 +524,7 @@ book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeT
 static void
 book_on_finalized_page( sPageData *sdata, gpointer finalized_page )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_book_on_finalized_page";
+	static const gchar *thisfn = "ofa_ope_template_treeview_book_on_finalized_page";
 
 	g_debug( "%s: sdata=%p, finalized_page=%p", thisfn, ( void * ) sdata, ( void * ) finalized_page );
 
@@ -535,15 +537,15 @@ book_on_finalized_page( sPageData *sdata, gpointer finalized_page )
  * attach some piece of data to it
  */
 static GtkWidget *
-page_add_treeview( ofaOpeTemplateFrameBin *self, GtkWidget *page )
+page_add_treeview( ofaOpeTemplateTreeview *self, GtkWidget *page )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_create_treeview";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_create_treeview";
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkWidget *tview;
 	GtkTreeModel *tfilter;
 	GtkTreeSelection *select;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	tview = gtk_tree_view_new();
 	gtk_widget_set_hexpand( tview, TRUE );
@@ -573,13 +575,13 @@ page_add_treeview( ofaOpeTemplateFrameBin *self, GtkWidget *page )
  * creates the columns in the GtkTreeView
  */
 static void
-page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
+page_add_columns( ofaOpeTemplateTreeview *self, GtkTreeView *tview )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkCellRenderer *cell;
 	GtkTreeViewColumn *column;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	cell = gtk_cell_renderer_text_new();
 	column = gtk_tree_view_column_new_with_attributes(
@@ -611,14 +613,14 @@ page_add_columns( ofaOpeTemplateFrameBin *self, GtkTreeView *tview )
 }
 
 static GtkWidget *
-page_get_treeview( ofaOpeTemplateFrameBin *self )
+page_get_treeview( ofaOpeTemplateTreeview *self )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gint page_n;
 	GtkWidget *page_w;
 	GtkWidget *tview;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	tview = NULL;
 	page_n = gtk_notebook_get_current_page( GTK_NOTEBOOK( priv->notebook ));
@@ -635,7 +637,7 @@ page_get_treeview( ofaOpeTemplateFrameBin *self )
 }
 
 static void
-page_set_ledger_mnemo( const ofaOpeTemplateFrameBin *self, GtkWidget *page, const gchar *mnemo )
+page_set_ledger_mnemo( const ofaOpeTemplateTreeview *self, GtkWidget *page, const gchar *mnemo )
 {
 	sPageData *sdata;
 
@@ -645,23 +647,23 @@ page_set_ledger_mnemo( const ofaOpeTemplateFrameBin *self, GtkWidget *page, cons
 }
 
 /**
- * ofa_ope_template_frame_bin_get_current_page:
+ * ofa_ope_template_treeview_get_current_treeview:
  * @bin:
  *
  * Returns the treeview associated to the current page.
  */
 GtkWidget *
-ofa_ope_template_frame_bin_get_current_page( ofaOpeTemplateFrameBin *bin )
+ofa_ope_template_treeview_get_current_treeview( ofaOpeTemplateTreeview *bin )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_get_current_page";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_get_current_treeview";
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkWidget *tview;
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_TREEVIEW( bin ), NULL );
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+	priv = ofa_ope_template_treeview_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -671,17 +673,17 @@ ofa_ope_template_frame_bin_get_current_page( ofaOpeTemplateFrameBin *bin )
 }
 
 /**
- * ofa_ope_template_frame_bin_get_selected:
+ * ofa_ope_template_treeview_get_selected:
  * @bin:
  *
  * Returns: the currently selected operation template, as a newly
  * allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_ope_template_frame_bin_get_selected( ofaOpeTemplateFrameBin *bin )
+ofa_ope_template_treeview_get_selected( ofaOpeTemplateTreeview *bin )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_get_selected";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_get_selected";
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gchar *mnemo;
 	GtkTreeView *tview;
 	GtkTreeSelection *select;
@@ -690,9 +692,9 @@ ofa_ope_template_frame_bin_get_selected( ofaOpeTemplateFrameBin *bin )
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_TREEVIEW( bin ), NULL );
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+	priv = ofa_ope_template_treeview_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -710,24 +712,24 @@ ofa_ope_template_frame_bin_get_selected( ofaOpeTemplateFrameBin *bin )
 }
 
 /**
- * ofa_ope_template_frame_bin_set_selected:
- * @bin: this #ofaOpeTemplateFrameBin instance
+ * ofa_ope_template_treeview_set_selected:
+ * @bin: this #ofaOpeTemplateTreeview instance
  * @mnemo: the operation template mnemonic to be selected.
  *
  * Let the user reset the selection after the end of setup and
  * initialization phases
  */
 void
-ofa_ope_template_frame_bin_set_selected( ofaOpeTemplateFrameBin *bin, const gchar *mnemo )
+ofa_ope_template_treeview_set_selected( ofaOpeTemplateTreeview *bin, const gchar *mnemo )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_set_selected";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_set_selected";
+	ofaOpeTemplateTreeviewPrivate *priv;
 
 	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
-	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
+	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_TREEVIEW( bin ));
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+	priv = ofa_ope_template_treeview_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -740,7 +742,7 @@ ofa_ope_template_frame_bin_set_selected( ofaOpeTemplateFrameBin *bin, const gcha
 static void
 tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
 						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
-						ofaOpeTemplateFrameBin *self )
+						ofaOpeTemplateTreeview *self )
 {
 	g_return_if_fail( GTK_IS_CELL_RENDERER( cell ));
 }
@@ -786,7 +788,7 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, GtkWidget *page )
 }
 
 static void
-tview_on_row_selected( GtkTreeSelection *selection, ofaOpeTemplateFrameBin *self )
+tview_on_row_selected( GtkTreeSelection *selection, ofaOpeTemplateTreeview *self )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -806,7 +808,7 @@ tview_on_row_selected( GtkTreeSelection *selection, ofaOpeTemplateFrameBin *self
 }
 
 static void
-tview_on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateFrameBin *self )
+tview_on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaOpeTemplateTreeview *self )
 {
 	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
@@ -829,7 +831,7 @@ tview_on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn
  * FALSE to propagate the event further.
  */
 static gboolean
-tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateFrameBin *self )
+tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateTreeview *self )
 {
 	gboolean stop;
 
@@ -848,12 +850,12 @@ tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaOpeTemplateFrame
 }
 
 static void
-tview_on_key_insert( ofaOpeTemplateFrameBin *self )
+tview_on_key_insert( ofaOpeTemplateTreeview *self )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	sButton *sbtn;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	sbtn = button_find_by_id( &priv->buttons, TEMPLATE_ACTION_NEW, FALSE );
 	if( is_new_allowed( self, sbtn )){
@@ -862,16 +864,16 @@ tview_on_key_insert( ofaOpeTemplateFrameBin *self )
 }
 
 static void
-tview_on_key_delete( ofaOpeTemplateFrameBin *self )
+tview_on_key_delete( ofaOpeTemplateTreeview *self )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	sButton *sbtn;
 	gchar *mnemo;
 	ofoOpeTemplate *ope;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
-	mnemo = ofa_ope_template_frame_bin_get_selected( self );
+	mnemo = ofa_ope_template_treeview_get_selected( self );
 	if( my_strlen( mnemo )){
 		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -889,9 +891,9 @@ tview_on_key_delete( ofaOpeTemplateFrameBin *self )
  * doesn't create the page class if it doesn't yet exist
  */
 static void
-tview_select_row_by_mnemo( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
+tview_select_row_by_mnemo( ofaOpeTemplateTreeview *self, const gchar *mnemo )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	ofoOpeTemplate *ope;
 	const gchar *ledger;
 	GtkWidget *page_w;
@@ -901,7 +903,7 @@ tview_select_row_by_mnemo( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 	GtkTreeIter store_iter, filter_iter;
 	GtkTreePath *path;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	if( my_strlen( mnemo )){
 		ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
@@ -935,7 +937,7 @@ tview_select_row_by_mnemo( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 }
 
 static void
-tview_select_row_by_iter( ofaOpeTemplateFrameBin *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter )
+tview_select_row_by_iter( ofaOpeTemplateTreeview *self, GtkTreeView *tview, GtkTreeModel *tfilter, GtkTreeIter *iter )
 {
 	GtkTreePath *path;
 
@@ -946,8 +948,8 @@ tview_select_row_by_iter( ofaOpeTemplateFrameBin *self, GtkTreeView *tview, GtkT
 }
 
 /**
- * ofa_ope_template_frame_bin_add_action:
- * @bin: this #ofaOpeTemplateFrameBin instance.
+ * ofa_ope_template_treeview_add_button:
+ * @bin: this #ofaOpeTemplateTreeview instance.
  * @id: the button identifier.
  * @sensitive: whether the button is sensitive relative to current
  *  conditions; when %FALSE, the button is never sensitive, whatever
@@ -958,14 +960,14 @@ tview_select_row_by_iter( ofaOpeTemplateFrameBin *self, GtkTreeView *tview, GtkT
  * Returns: the newly created button.
  */
 GtkWidget *
-ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTemplateFrameBtn id, gboolean sensitive )
+ofa_ope_template_treeview_add_button( ofaOpeTemplateTreeview *bin, ofeOpeTemplateFrameBtn id, gboolean sensitive )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkWidget *button;
 
-	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_TREEVIEW( bin ), NULL );
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+	priv = ofa_ope_template_treeview_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -1003,12 +1005,12 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 }
 
 static GtkWidget *
-button_add( ofaOpeTemplateFrameBin *self, ofeOpeTemplateFrameBtn id, const gchar *label, gboolean sensitive, GCallback cb )
+button_add( ofaOpeTemplateTreeview *self, ofeOpeTemplateFrameBtn id, const gchar *label, gboolean sensitive, GCallback cb )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	sButton *sbtn;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	sbtn = button_find_by_id( &priv->buttons, id, TRUE );
 	sbtn->sensitive = sensitive;
@@ -1042,14 +1044,14 @@ button_find_by_id( GList **list, ofeOpeTemplateFrameBtn id, gboolean create )
 }
 
 static void
-button_update_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
+button_update_sensitivity( ofaOpeTemplateTreeview *self, const gchar *mnemo )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	ofoOpeTemplate *template;
 	gboolean has_template;
 	sButton *sbtn;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	has_template = FALSE;
 	template = NULL;
@@ -1087,17 +1089,17 @@ button_update_sensitivity( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 }
 
 static void
-button_on_new_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
+button_on_new_clicked( GtkButton *button, ofaOpeTemplateTreeview *self )
 {
 	do_insert_ope_template( self );
 }
 
 static void
-button_on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
+button_on_properties_clicked( GtkButton *button, ofaOpeTemplateTreeview *self )
 {
 	gchar *mnemo;
 
-	mnemo = ofa_ope_template_frame_bin_get_selected( self );
+	mnemo = ofa_ope_template_treeview_get_selected( self );
 	if( my_strlen( mnemo )){
 		do_update_ope_template( self, mnemo );
 	}
@@ -1105,11 +1107,11 @@ button_on_properties_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 }
 
 static void
-button_on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
+button_on_delete_clicked( GtkButton *button, ofaOpeTemplateTreeview *self )
 {
 	gchar *mnemo;
 
-	mnemo = ofa_ope_template_frame_bin_get_selected( self );
+	mnemo = ofa_ope_template_treeview_get_selected( self );
 	if( my_strlen( mnemo )){
 		do_delete_ope_template( self, mnemo );
 	}
@@ -1117,11 +1119,11 @@ button_on_delete_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 }
 
 static void
-button_on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
+button_on_duplicate_clicked( GtkButton *button, ofaOpeTemplateTreeview *self )
 {
 	gchar *mnemo;
 
-	mnemo = ofa_ope_template_frame_bin_get_selected( self );
+	mnemo = ofa_ope_template_treeview_get_selected( self );
 	if( my_strlen( mnemo )){
 		do_duplicate_ope_template( self, mnemo );
 	}
@@ -1129,11 +1131,11 @@ button_on_duplicate_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
 }
 
 static void
-button_on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self )
+button_on_guided_input_clicked( GtkButton *button, ofaOpeTemplateTreeview *self )
 {
 	gchar *mnemo;
 
-	mnemo = ofa_ope_template_frame_bin_get_selected( self );
+	mnemo = ofa_ope_template_treeview_get_selected( self );
 	if( my_strlen( mnemo )){
 		do_guided_input( self, mnemo );
 	}
@@ -1141,12 +1143,12 @@ button_on_guided_input_clicked( GtkButton *button, ofaOpeTemplateFrameBin *self 
 }
 
 static gboolean
-is_new_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn )
+is_new_allowed( ofaOpeTemplateTreeview *self, sButton *sbtn )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gboolean ok;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_writable;
 
@@ -1154,12 +1156,12 @@ is_new_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn )
 }
 
 static gboolean
-is_delete_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn, ofoOpeTemplate *selected )
+is_delete_allowed( ofaOpeTemplateTreeview *self, sButton *sbtn, ofoOpeTemplate *selected )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gboolean ok;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ok = sbtn && sbtn->btn && sbtn->sensitive && priv->is_writable && selected && ofo_ope_template_is_deletable( selected );
 
@@ -1167,9 +1169,9 @@ is_delete_allowed( ofaOpeTemplateFrameBin *self, sButton *sbtn, ofoOpeTemplate *
 }
 
 static void
-do_insert_ope_template( ofaOpeTemplateFrameBin *self )
+do_insert_ope_template( ofaOpeTemplateTreeview *self )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	ofoOpeTemplate *ope;
 	gint page_n;
 	GtkWidget *page_w;
@@ -1177,7 +1179,7 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 	const gchar *ledger;
 	sPageData *sdata;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ledger = NULL;
 
@@ -1196,13 +1198,13 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 }
 
 static void
-do_update_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
+do_update_ope_template( ofaOpeTemplateTreeview *self, const gchar *mnemo )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	ofoOpeTemplate *ope;
 	GtkWindow *toplevel;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -1212,12 +1214,12 @@ do_update_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 }
 
 static void
-do_delete_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
+do_delete_ope_template( ofaOpeTemplateTreeview *self, const gchar *mnemo )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	ofoOpeTemplate *ope;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ) && ofo_ope_template_is_deletable( ope ));
@@ -1232,7 +1234,7 @@ do_delete_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 		 * almost sure that we are going to select the most close
 		 * row */
 		tview_on_row_selected( NULL, self );
-		ofa_ope_template_frame_bin_set_selected( self, mnemo );
+		ofa_ope_template_treeview_set_selected( self, mnemo );
 	}
 }
 
@@ -1243,7 +1245,7 @@ do_delete_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
  * - this is a detail account
  */
 static gboolean
-delete_confirmed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *ope )
+delete_confirmed( ofaOpeTemplateTreeview *self, ofoOpeTemplate *ope )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -1260,10 +1262,10 @@ delete_confirmed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *ope )
 }
 
 static void
-do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
+do_duplicate_ope_template( ofaOpeTemplateTreeview *self, const gchar *mnemo )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_do_duplicate_ope_template";
-	ofaOpeTemplateFrameBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ope_template_treeview_do_duplicate_ope_template";
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gchar *new_mnemo;
 	ofoOpeTemplate *ope;
 	ofoOpeTemplate *duplicate;
@@ -1271,7 +1273,7 @@ do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 
 	g_debug( "%s: self=%p, mnemo=%s", thisfn, ( void * ) self, mnemo );
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -1294,13 +1296,13 @@ do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
 }
 
 static void
-do_guided_input( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
+do_guided_input( ofaOpeTemplateTreeview *self, const gchar *mnemo )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	ofoOpeTemplate *ope;
 	GtkWindow *toplevel;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ope = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
@@ -1313,7 +1315,7 @@ do_guided_input( ofaOpeTemplateFrameBin *self, const gchar *mnemo )
  * is triggered by the store when a row is inserted
  */
 static void
-store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self )
+store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateTreeview *self )
 {
 	ofoOpeTemplate *ope;
 	const gchar *ledger;
@@ -1329,20 +1331,20 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
 }
 
 /**
- * ofa_ope_template_frame_bin_get_ope_template_store:
+ * ofa_ope_template_treeview_get_ope_template_store:
  * @bin:
  *
  * Returns: a new reference to the underlying #ofaOpeTemplateStore,
  * which should be #g_object_unref() after use by the caller.
  */
 ofaOpeTemplateStore *
-ofa_ope_template_frame_bin_get_ope_template_store( ofaOpeTemplateFrameBin *bin )
+ofa_ope_template_treeview_get_ope_template_store( ofaOpeTemplateTreeview *bin )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 
-	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_TREEVIEW( bin ), NULL );
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+	priv = ofa_ope_template_treeview_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -1350,12 +1352,12 @@ ofa_ope_template_frame_bin_get_ope_template_store( ofaOpeTemplateFrameBin *bin )
 }
 
 static void
-hub_connect_to_signaling_system( ofaOpeTemplateFrameBin *self )
+hub_connect_to_signaling_system( ofaOpeTemplateTreeview *self )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	gulong handler;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
@@ -1374,9 +1376,9 @@ hub_connect_to_signaling_system( ofaOpeTemplateFrameBin *self )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateTreeview *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_new_object";
+	static const gchar *thisfn = "ofa_ope_template_treeview_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn, ( void * ) hub,
@@ -1387,9 +1389,9 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateTreeview *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_updated_object";
+	static const gchar *thisfn = "ofa_ope_template_treeview_hub_on_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn, ( void * ) hub,
@@ -1408,13 +1410,13 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOp
  * corresponding tab
  */
 static void
-hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLedger *ledger )
+hub_on_updated_ledger( ofaOpeTemplateTreeview *self, const gchar *prev_id, ofoLedger *ledger )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkWidget *page_w;
 	const gchar *mnemo, *new_id;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	new_id = ofo_ledger_get_mnemo( ledger );
 	mnemo = prev_id ? prev_id : new_id;
@@ -1434,14 +1436,14 @@ hub_on_updated_ledger( ofaOpeTemplateFrameBin *self, const gchar *prev_id, ofoLe
  *  shown
  */
 static void
-hub_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
+hub_on_updated_ope_template( ofaOpeTemplateTreeview *self, ofoOpeTemplate *template )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkWidget *page_w;
 	const gchar *ledger;
 	gint page_n;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	ledger = ofo_ope_template_get_ledger( template );
 	page_w = book_get_page_by_ledger( self, ledger, TRUE );
@@ -1456,9 +1458,9 @@ hub_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *templ
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateTreeview *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_ope_template_treeview_hub_on_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn, ( void * ) hub,
@@ -1470,14 +1472,14 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *sel
 }
 
 static void
-hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger )
+hub_on_deleted_ledger_object( ofaOpeTemplateTreeview *self, ofoLedger *ledger )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GtkWidget *page_w;
 	gint page_n;
 	const gchar *mnemo;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	mnemo = ofo_ledger_get_mnemo( ledger );
 	page_w = book_get_page_by_ledger( self, mnemo, FALSE );
@@ -1493,28 +1495,28 @@ hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateFrameBin *self )
+hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateTreeview *self )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_hub_on_reload_dataset";
+	static const gchar *thisfn = "ofa_ope_template_treeview_hub_on_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, self=%p",
 			thisfn, ( void * ) hub, type, ( void * ) self );
 }
 
 /**
- * ofa_ope_template_frame_bin_add_action:
- * @bin: this #ofaOpeTemplateFrameBin instance.
+ * ofa_ope_template_treeview_add_button:
+ * @bin: this #ofaOpeTemplateTreeview instance.
  *
  * Write the settings before the container be destroyed.
  */
 void
-ofa_ope_template_frame_bin_write_settings( ofaOpeTemplateFrameBin *bin )
+ofa_ope_template_treeview_write_settings( ofaOpeTemplateTreeview *bin )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
+	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_TREEVIEW( bin ));
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+	priv = ofa_ope_template_treeview_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -1522,15 +1524,15 @@ ofa_ope_template_frame_bin_write_settings( ofaOpeTemplateFrameBin *bin )
 }
 
 static void
-write_settings( ofaOpeTemplateFrameBin *self )
+write_settings( ofaOpeTemplateTreeview *self )
 {
-	ofaOpeTemplateFrameBinPrivate *priv;
+	ofaOpeTemplateTreeviewPrivate *priv;
 	GList *strlist;
 	gint i, count;
 	GtkWidget *page;
 	sPageData *sdata;
 
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+	priv = ofa_ope_template_treeview_get_instance_private( self );
 
 	strlist = NULL;
 

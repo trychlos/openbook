@@ -141,6 +141,8 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-select.c							\
 	ofa-ope-template-select.h							\
 	ofa-ope-template-store.c							\
+	ofa-ope-template-treeview.c							\
+	ofa-ope-template-treeview.h							\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
 	ofa-page.c											\

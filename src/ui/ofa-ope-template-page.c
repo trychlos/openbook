@@ -131,12 +131,12 @@ v_setup_page( ofaPage *page )
 	my_utils_widget_set_margins( GTK_WIDGET( priv->ope_frame ), 4, 4, 4, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->ope_frame ), 0, 0, 1, 1 );
 
-	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_NEW, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_PROPERTIES, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_DUPLICATE, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_DELETE, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_SPACER, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_frame, TEMPLATE_BTN_GUIDED_INPUT, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_NEW, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_PROPERTIES, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_DUPLICATE, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_DELETE, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_SPACER, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_GUIDED_INPUT, TRUE );
 
 	g_signal_connect( priv->ope_frame, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
@@ -153,7 +153,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	top_widget = ofa_ope_template_frame_bin_get_current_treeview( priv->ope_frame );
+	top_widget = ofa_ope_template_frame_bin_get_current_page( priv->ope_frame );
 
 	return( top_widget );
 }

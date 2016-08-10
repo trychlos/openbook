@@ -274,10 +274,10 @@ idialog_init( myIDialog *instance )
 	g_signal_connect( priv->ope_templates_frame, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
 	g_signal_connect( priv->ope_templates_frame, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );
 
-	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_NEW, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_PROPERTIES, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_DUPLICATE, TRUE );
-	ofa_ope_template_frame_bin_add_button( priv->ope_templates_frame, TEMPLATE_BTN_DELETE, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_NEW, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_PROPERTIES, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_DUPLICATE, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_DELETE, TRUE );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }

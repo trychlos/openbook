@@ -33,8 +33,11 @@
  * This is a convenience class which manages both the operation templates
  * notebook and the buttons box on the right.
  *
- * The class also acts as a proxy for "changed" and "activated" messages
- * sent by the underlying ofaOpeTemplateStore class.
+ * The class also acts as a proxy for "ofa-opechanged" and
+ * "ofa-opeactivated" messages sent by the ofaOpeTemplateTreeview's views.
+ * It relays these messages as:
+ * - 'ofa-changed' when the selection changes
+ * - 'ofa-activated' when the selection is activated.
  *
  * See api/ofo-ope-template.h for a full description of the model language.
  */
@@ -68,34 +71,41 @@ typedef struct {
 /**
  * ofeOpeTemplateFrameBtn:
  *
- * These are the buttons that the frame is able to manage.
- * It is up to the caller to set the desired buttons.
+ * These are the actions that the frame is able to manage.
+ * It is up to the caller to set the desired actions.
  * Default is none.
  */
 typedef enum {
-	TEMPLATE_BTN_SPACER = 1,
-	TEMPLATE_BTN_NEW,
-	TEMPLATE_BTN_PROPERTIES,
-	TEMPLATE_BTN_DELETE,
-	TEMPLATE_BTN_DUPLICATE,
-	TEMPLATE_BTN_GUIDED_INPUT
+	TEMPLATE_ACTION_SPACER = 1,
+	TEMPLATE_ACTION_NEW,
+	TEMPLATE_ACTION_PROPERTIES,
+	TEMPLATE_ACTION_DELETE,
+	TEMPLATE_ACTION_DUPLICATE,
+	TEMPLATE_ACTION_GUIDED_INPUT
 }
-	ofeOpeTemplateFrameBtn;
+	ofeOpeTemplateAction;
 
 GType                   ofa_ope_template_frame_bin_get_type              ( void ) G_GNUC_CONST;
 
 ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                   ( ofaIGetter *getter );
 
-GtkWidget              *ofa_ope_template_frame_bin_add_button            ( ofaOpeTemplateFrameBin *bin,
-																				ofeOpeTemplateFrameBtn id,
-																				gboolean sensitive );
+void                    ofa_ope_template_frame_bin_add_action            ( ofaOpeTemplateFrameBin *bin,
+																				ofeOpeTemplateAction id );
 
-GtkWidget              *ofa_ope_template_frame_bin_get_current_treeview  ( ofaOpeTemplateFrameBin *bin );
+GtkWidget              *ofa_ope_template_frame_bin_get_current_page      ( ofaOpeTemplateFrameBin *bin );
 
 gchar                  *ofa_ope_template_frame_bin_get_selected          ( ofaOpeTemplateFrameBin *bin );
 
 void                    ofa_ope_template_frame_bin_set_selected          ( ofaOpeTemplateFrameBin *bin,
 																				const gchar *mnemo );
+
+void                    ofa_ope_template_frame_bin_set_settings_key      ( ofaOpeTemplateFrameBin *bin,
+																				const gchar *key );
+
+void                    ofa_ope_template_frame_bin_set_getter            ( ofaOpeTemplateFrameBin *bin,
+																				ofaIGetter *getter );
+
+/* ... */
 
 void                    ofa_ope_template_frame_bin_write_settings        ( ofaOpeTemplateFrameBin *bin );
 
