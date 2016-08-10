@@ -69,6 +69,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-accou
 
 static ofaAccountSelect *account_select_new( ofaIGetter *getter, GtkWindow *parent );
 static void              iwindow_iface_init( myIWindowInterface *iface );
+static gboolean          iwindow_is_destroy_allowed( const myIWindow *instance );
 static void              idialog_iface_init( myIDialogInterface *iface );
 static void              idialog_init( myIDialog *instance );
 static void              on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
@@ -227,7 +228,6 @@ ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *aske
 
 	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
 		selected_id = g_strdup( priv->account_number );
-		gtk_widget_hide( GTK_WIDGET( dialog ));
 	}
 
 	return( selected_id );
@@ -242,6 +242,17 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_account_select_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->is_destroy_allowed = iwindow_is_destroy_allowed;
+}
+
+/*
+ * ofaAccountSelect is not destroyed at end, but only hidden.
+ */
+static gboolean
+iwindow_is_destroy_allowed( const myIWindow *instance )
+{
+	return( FALSE );
 }
 
 /*

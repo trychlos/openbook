@@ -606,6 +606,9 @@ do_close( myIWindow *instance )
 	if( is_destroy_allowed( instance )){
 		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_destroy( GTK_WIDGET( instance ));
+
+	} else {
+		gtk_widget_hide( GTK_WIDGET( instance ));
 	}
 }
 

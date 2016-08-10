@@ -268,12 +268,12 @@ register_actionable_cb( ofaIActionable *actionable, const gchar *name, GActionGr
 
 		if( type && g_variant_type_equal( type, G_VARIANT_TYPE_BOOLEAN )){
 			user_data->cb = ( IActionerFn * ) g_action_change_state;
-			g_debug( "user_data->cb=%p", ( void * ) user_data->cb );
+			/* g_debug( "user_data->cb=%p", ( void * ) user_data->cb ); */
 			g_signal_connect( action, "change-state", G_CALLBACK( on_action_signaled ), user_data );
 
 		} else {
 			user_data->cb = ( IActionerFn * ) g_action_activate;
-			g_debug( "user_data->cb=%p", ( void * ) user_data->cb );
+			/* g_debug( "user_data->cb=%p", ( void * ) user_data->cb ); */
 			g_signal_connect( action, "activate", G_CALLBACK( on_action_signaled ), user_data );
 		}
 
@@ -343,9 +343,11 @@ action_signaled_cb( ofaIActionable *actionable, const gchar *name, GActionGroup 
 		if( !my_collate( cname, *it )){
 			action = g_action_map_lookup_action( G_ACTION_MAP( group ), cname );
 			g_return_if_fail( action && G_IS_ACTION( action ));
+			/*
 			g_debug( "sarg->cb=%p, action=%p (%s), sarg->parameter=%p",
 					( void * ) sarg->cb, ( void * ) action, G_OBJECT_TYPE_NAME( action ),
 					( void * ) sarg->parameter );
+					*/
 			( *sarg->cb )( action, sarg->parameter );
 		}
 		it++;
