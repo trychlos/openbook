@@ -83,6 +83,7 @@ static void        on_selection_activated( ofaAccountTreeview *self, GtkTreeSele
 static void        on_selection_delete( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        get_and_send( ofaAccountTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoAccount *get_selected_with_selection( ofaAccountTreeview *self, GtkTreeSelection *selection );
+static gboolean    select_by_account_id_rec( ofaAccountTreeview *view, const gchar *account_id, GtkTreeModel *model, GtkTreeIter *iter, GtkTreeIter *prev_iter );
 static void        cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint level, gboolean is_error );
 static gboolean    tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountTreeview *self );
 static void        tview_collapse_node( ofaAccountTreeview *self, GtkWidget *widget );
@@ -594,8 +595,6 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 	GtkWidget *treeview;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter, prev_iter;
-	gchar *row_id;
-	gint cmp;
 
 	g_debug( "%s: view=%p, account_id=%s", thisfn, ( void * ) view, account_id );
 
@@ -610,14 +609,11 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 			while( TRUE ){
-				gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &row_id, -1 );
-				cmp = my_collate( row_id, account_id );
-				g_free( row_id );
-				if( cmp >= 0 ){
-					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
+				prev_iter = iter;
+				if( !select_by_account_id_rec( view, account_id, tmodel, &iter, &prev_iter )){
 					break;
 				}
-				prev_iter = iter;
+				iter = prev_iter;
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){
 					ofa_tvbin_set_selected( OFA_TVBIN( view ), &prev_iter );
 					break;
@@ -625,6 +621,40 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 			}
 		}
 	}
+}
+
+/*
+ * returns whether to continue the iteration
+ */
+static gboolean
+select_by_account_id_rec( ofaAccountTreeview *view, const gchar *account_id, GtkTreeModel *model, GtkTreeIter *iter, GtkTreeIter *prev_iter )
+{
+	gchar *row_id;
+	gint cmp;
+	GtkTreeIter child_iter;
+
+	while( TRUE ){
+		gtk_tree_model_get( model, iter, ACCOUNT_COL_NUMBER, &row_id, -1 );
+		cmp = my_collate( row_id, account_id );
+		//g_debug( "row_id=%s, account_id=%s, cmp=%d", row_id, account_id, cmp );
+		g_free( row_id );
+		if( cmp >= 0 ){
+			ofa_tvbin_set_selected( OFA_TVBIN( view ), iter );
+			return( FALSE );
+		}
+		*prev_iter = *iter;
+		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( model ), &child_iter, iter )){
+			if( !select_by_account_id_rec( view, account_id, model, &child_iter, iter )){
+				return( FALSE );
+			}
+		}
+		*iter = *prev_iter;
+		if( !gtk_tree_model_iter_next( model, iter )){
+			break;
+		}
+	}
+
+	return( TRUE );
 }
 
 /**
