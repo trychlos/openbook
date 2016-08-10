@@ -443,8 +443,6 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 	GtkTreeIter iter;
 	gchar *sid;
 	ofxCounter row_id;
-	GtkTreeSelection *selection;
-	GtkTreePath *path;
 
 	g_debug( "%s: view=%p, id=%ld", thisfn, ( void * ) view, id );
 
@@ -462,14 +460,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 				row_id = atol( sid );
 				g_free( sid );
 				if( row_id == id ){
-					//ofa_tvbin_set_selected( OFA_TVBIN( view ), tmodel, &iter );
-					selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( treeview ));
-					gtk_tree_selection_select_iter( selection, &iter );
-					/* move the cursor so that it is visible */
-					path = gtk_tree_model_get_path( tmodel, &iter );
-					gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( treeview ), path, NULL, FALSE, 0, 0 );
-					gtk_tree_view_set_cursor( GTK_TREE_VIEW( treeview ), path, NULL, FALSE );
-					gtk_tree_path_free( path );
+					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){

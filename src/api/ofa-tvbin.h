@@ -51,6 +51,10 @@
  *    | ofa-seldelete    | on Delete key.          |      Yes     |         No         |
  *    +------------------+-------------------------+--------------+--------------------+
  *
+ * ofaITVFilterable interface.
+ * The treeview-derived class is filtered if and only if it
+ * implements the 'ofaTVBin::filter()' virtual method.
+ *
  * ofaITVSortable interface.
  * The treeview-derived class is sortable by column if and only if it
  * implements the 'ofaTVBin::sort()' virtual method.
@@ -59,10 +63,20 @@
  * Columns may be dynamically made visible/invisible.
  *
  * Properties:
- * - ofa-tvbin-hpolicy: horizontal scrollbar policy
+ * - ofa-tvbin-hpolicy: horizontal scrollbar policy;
  *                      will typically be NEVER for pages, AUTOMATIC (default) for dialogs.
- * - ofa-tvbin-shadow: shadow type of the surrounding frame
+ * - ofa-tvbin-shadow: shadow type of the surrounding frame;
  *                      will typically be IN for pages, NONE (default) for dialogs.
+ * - ofa-tvbin-settings: the prefix of the settings key to be used by interfaces;
+ *                       defaults to the class name.
+ * - ofa-tvbin-groupname: the name of the action group;
+ *                        must be set before defining any column;
+ *                        defaults to 'tvbin'.
+ * - ofa-tvbin-colsettings: whether this class should write its column settings;
+ *                          will typically be %TRUE (default), unless we manage
+ *                          several views of the same class (e.g. ofaAccountTreeview)
+ *                          in which case the derived class must choose itself the
+ *                          view to be used to write its settings.
  */
 
 #include <gtk/gtk.h>
@@ -92,6 +106,21 @@ typedef struct {
 
 	/*< protected virtual functions >*/
 	/**
+	 * filter:
+	 * @bin: this #ofaTVBin instance.
+	 * @model: the #GtkTreeModel model.
+	 * @iter: the #GtkTreeIter.
+	 *
+	 * This virtual function is called when filtering the treeview.
+	 *
+	 * If this virtual is not implemented by the derived class,
+	 * then the ITVFilterable interface will be disabled.
+	 */
+	gboolean ( *filter )( const ofaTVBin *bin,
+								GtkTreeModel *model,
+								GtkTreeIter *iter );
+
+	/**
 	 * sort:
 	 * @bin: this #ofaTVBin instance.
 	 * @model: the #GtkTreeModel model.
@@ -107,75 +136,83 @@ typedef struct {
 	 * rely on the sort order of the underlying #ofaListStore (resp.
 	 * #ofaTreeStore).
 	 */
-	gint ( *sort )( const ofaTVBin *bin,
-						GtkTreeModel *model,
-						GtkTreeIter *a,
-						GtkTreeIter *b,
-						gint column_id );
+	gint     ( *sort )  ( const ofaTVBin *bin,
+								GtkTreeModel *model,
+								GtkTreeIter *a,
+								GtkTreeIter *b,
+								gint column_id );
 }
 	ofaTVBinClass;
 
-GType             ofa_tvbin_get_type          ( void ) G_GNUC_CONST;
+GType             ofa_tvbin_get_type              ( void ) G_GNUC_CONST;
 
-void              ofa_tvbin_add_column_amount ( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_amount     ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_date   ( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_date       ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_int    ( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_int        ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_pixbuf ( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_pixbuf     ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_stamp  ( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_stamp      ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_text   ( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_text       ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_text_lx( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_text_lx    ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_text_rx( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_text_rx    ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-void              ofa_tvbin_add_column_text_x ( ofaTVBin *bin,
-													gint column_id,
-													const gchar *header,
-													const gchar *menu );
+void              ofa_tvbin_add_column_text_x     ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
 
-GMenu            *ofa_tvbin_get_menu          ( ofaTVBin *bin );
+GMenu            *ofa_tvbin_get_menu              ( ofaTVBin *bin );
 
-GtkTreeSelection *ofa_tvbin_get_selection     ( ofaTVBin *bin );
+GtkTreeSelection *ofa_tvbin_get_selection         ( ofaTVBin *bin );
 
-GtkWidget        *ofa_tvbin_get_treeview      ( ofaTVBin *bin );
+GtkWidget        *ofa_tvbin_get_treeview          ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_selection_mode( ofaTVBin *bin,
-													GtkSelectionMode mode );
+void              ofa_tvbin_set_selection_mode    ( ofaTVBin *bin,
+														GtkSelectionMode mode );
 
-void              ofa_tvbin_set_settings_key  ( ofaTVBin *bin,
-													const gchar *key );
+void              ofa_tvbin_set_settings_key      ( ofaTVBin *bin,
+														const gchar *key );
 
-void              ofa_tvbin_set_store         ( ofaTVBin *bin,
-													GtkTreeModel *store );
+void              ofa_tvbin_set_store             ( ofaTVBin *bin,
+														GtkTreeModel *store );
+
+void              ofa_tvbin_set_selected          ( ofaTVBin *bin,
+														GtkTreeIter *treeview_iter );
+
+void              ofa_tvbin_set_columns_settings  ( ofaTVBin *bin,
+														gboolean write );
+
+void              ofa_tvbin_write_columns_settings( ofaTVBin *bin );
 
 G_END_DECLS
 

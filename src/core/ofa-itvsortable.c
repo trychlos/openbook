@@ -41,8 +41,7 @@ typedef struct {
 
 	/* input
 	 */
-	GtkTreeModel      *store;
-	GtkTreeView       *tview;
+	GtkTreeView       *treeview;
 	gint               def_column;
 	GtkSortType        def_order;
 
@@ -60,19 +59,20 @@ typedef struct {
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType       register_type( void );
-static void        interface_base_init( ofaITVSortableInterface *klass );
-static void        interface_base_finalize( ofaITVSortableInterface *klass );
-static void        setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata );
-static void        setup_columns_for_sort( ofaITVSortable *instance, sITVSortable *sdata );
-static void        on_header_clicked( GtkTreeViewColumn *column, ofaITVSortable *instance );
-static void        set_sort_indicator( ofaITVSortable *instance, sITVSortable *sdata );
-static gint        on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSortable *instance );
-static gchar      *get_settings_key( const ofaITVSortable *instance );
-static void        get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
-static void        set_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
+static GType         register_type( void );
+static void          interface_base_init( ofaITVSortableInterface *klass );
+static void          interface_base_finalize( ofaITVSortableInterface *klass );
+static void          setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata );
+static void          setup_columns_for_sort( ofaITVSortable *instance, sITVSortable *sdata );
+static gint          get_column_id( ofaITVSortable *instance, GtkTreeViewColumn *column );
+static void          on_header_clicked( GtkTreeViewColumn *column, ofaITVSortable *instance );
+static void          set_sort_indicator( ofaITVSortable *instance, sITVSortable *sdata );
+static gint          on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSortable *instance );
+static gchar        *get_settings_key( const ofaITVSortable *instance );
+static void          get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
+static void          set_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
 static sITVSortable *get_itvsortable_data( ofaITVSortable *instance );
-static void        on_instance_finalized( sITVSortable *sdata, GObject *finalized_instance );
+static void          on_instance_finalized( sITVSortable *sdata, GObject *finalized_instance );
 
 /**
  * ofa_itvsortable_get_type:
@@ -314,31 +314,41 @@ ofa_itvsortable_set_default_sort( ofaITVSortable *instance, gint column_id, GtkS
 }
 
 /**
- * ofa_itvsortable_set_store:
+ * ofa_itvsortable_set_child_model:
  * @instance: this #ofaIStorable instance.
- * @store: the underlying store.
+ * @model: the underlying model.
  *
- * Setup the underlying store.
+ * Setup the underlying model.
  *
- * If both treeview and store are set, then they are associated through
+ * If both treeview and model are set, then they are associated through
  * a sortable model, sort settings are read and a default sort function
  * is set.
  *
  * At that time, the model starts to sort itself. So it is better if all
  * configuration is set before calling this method.
+ *
+ * #ofaITVSortable @instance takes its own reference on the child @model,
+ * which will be release on @instance finalization.
+ *
+ * Returns: the sort model.
+ *
+ * The returned reference is owned by the #ofaITVSortable @instance, and
+ * should not be released by the caller.
  */
-void
-ofa_itvsortable_set_store( ofaITVSortable *instance, GtkTreeModel *store )
+GtkTreeModel *
+ofa_itvsortable_set_child_model( ofaITVSortable *instance, GtkTreeModel *model )
 {
 	sITVSortable *sdata;
 
-	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
-	g_return_if_fail( store && GTK_IS_TREE_MODEL( store ));
+	g_return_val_if_fail( instance && OFA_IS_ITVSORTABLE( instance ), NULL );
+	g_return_val_if_fail( model && GTK_IS_TREE_MODEL( model ), NULL );
 
 	sdata = get_itvsortable_data( instance );
-	sdata->store = store;
+	sdata->sort_model = gtk_tree_model_sort_new_with_model( model );
 
 	setup_sort_model( instance, sdata );
+
+	return( sdata->sort_model );
 }
 
 /**
@@ -349,15 +359,15 @@ ofa_itvsortable_set_store( ofaITVSortable *instance, GtkTreeModel *store )
  * Setup the treeview widget.
  */
 void
-ofa_itvsortable_set_treeview( ofaITVSortable *instance, GtkTreeView *tview )
+ofa_itvsortable_set_treeview( ofaITVSortable *instance, GtkTreeView *treeview )
 {
 	sITVSortable *sdata;
 
 	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
-	g_return_if_fail( tview && GTK_IS_TREE_VIEW( tview ));
+	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
 
 	sdata = get_itvsortable_data( instance );
-	sdata->tview = tview;
+	sdata->treeview = treeview;
 
 	setup_sort_model( instance, sdata );
 }
@@ -365,12 +375,7 @@ ofa_itvsortable_set_treeview( ofaITVSortable *instance, GtkTreeView *tview )
 static void
 setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata )
 {
-	if( sdata->store && sdata->tview ){
-
-		sdata->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( sdata->store ));
-		gtk_tree_view_set_model( sdata->tview, sdata->sort_model );
-		g_object_unref( sdata->sort_model );
-
+	if( sdata->sort_model && sdata->treeview && ofa_itvsortable_get_is_sortable( instance )){
 		setup_columns_for_sort( instance, sdata );
 		get_sort_settings( instance, sdata );
 		set_sort_indicator( instance, sdata );
@@ -384,25 +389,43 @@ setup_columns_for_sort( ofaITVSortable *instance, sITVSortable *sdata )
 	GtkTreeViewColumn *column;
 	gint column_id;
 
-	columns = gtk_tree_view_get_columns( sdata->tview );
+	columns = gtk_tree_view_get_columns( sdata->treeview );
 
 	for( it=columns ; it ; it=it->next ){
 		column = GTK_TREE_VIEW_COLUMN( it->data );
+		column_id = get_column_id( instance, column );
 
-		g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), instance );
+		if( column_id > -1 ){
+			gtk_tree_view_column_set_sort_column_id( column, column_id );
 
-		column_id = gtk_tree_view_column_get_sort_column_id( column );
+			gtk_tree_sortable_set_sort_func(
+					GTK_TREE_SORTABLE( sdata->sort_model ), column_id,
+					( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
 
-		gtk_tree_sortable_set_sort_func(
-				GTK_TREE_SORTABLE( sdata->sort_model ), column_id,
-				( GtkTreeIterCompareFunc ) on_sort_model, instance, NULL );
+			g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), instance );
+		}
 	}
 
 	g_list_free( columns );
 }
 
+static gint
+get_column_id( ofaITVSortable *instance, GtkTreeViewColumn *column )
+{
+	static const gchar *thisfn = "ofa_itvsortable_get_column_id";
+
+	if( OFA_ITVSORTABLE_GET_INTERFACE( instance )->get_column_id ){
+		return( OFA_ITVSORTABLE_GET_INTERFACE( instance )->get_column_id( instance, column ));
+	}
+
+	g_info( "%s: ofaITVSortable's %s implementation does not provide 'get_column_id()' method",
+			thisfn, G_OBJECT_TYPE_NAME( instance ));
+
+	return( -1 );
+}
+
 /*
- * Gtk+ efault behavior:
+ * Gtk+ default behavior:
  *	initial display: order of insertion in the store
  *	click 1: ascending order, indicator v
  *	click 2: descending order, indicator ^
@@ -457,7 +480,6 @@ set_sort_indicator( ofaITVSortable *instance, sITVSortable *sdata )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSortable *instance )
 {
-	static const gchar *thisfn = "ofa_itvsortable_on_sort_model";
 	sITVSortable *sdata;
 
 	if( OFA_ITVSORTABLE_GET_INTERFACE( instance )->sort_model ){
@@ -465,9 +487,55 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSorta
 		return( OFA_ITVSORTABLE_GET_INTERFACE( instance )->sort_model( instance, tmodel, a, b, sdata->sort_column_id ));
 	}
 
-	g_info( "%s: ofaITVSortable's %s implementation does not provide 'sort_model()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+	/* do not display any message if the implementation does not provide
+	 * any method; on non-sortable models, this would display too much
+	 * messages */
+
 	return( 0 );
+}
+
+/**
+ * ofa_itvsortable_show_sort_indicator:
+ * @instance: this #ofaITVSortable instance.
+ *
+ * Show the sort indicator.
+ */
+void
+ofa_itvsortable_show_sort_indicator( ofaITVSortable *instance )
+{
+	static const gchar *thisfn = "ofa_itvsortable_show_sort_indicator";
+	sITVSortable *sdata;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
+
+	sdata = get_itvsortable_data( instance );
+	set_sort_indicator( instance, sdata );
+}
+
+/**
+ * ofa_itvsortable_get_is_sortable:
+ * @instance: this #ofaITVSortable instance.
+ *
+ * Returns: %TRUE if this model is sortable.
+ *
+ * The model is said sortable if and only if the implementation provides
+ * a sort function.
+ *
+ * If this is not the case, then no sort indicator will be showed, and
+ * the headers will not be clickable.
+ */
+gboolean
+ofa_itvsortable_get_is_sortable( ofaITVSortable *instance )
+{
+	g_return_val_if_fail( instance && OFA_IS_ITVSORTABLE( instance ), FALSE );
+
+	if( OFA_ITVSORTABLE_GET_INTERFACE( instance )->has_sort_model ){
+		return( OFA_ITVSORTABLE_GET_INTERFACE( instance )->has_sort_model( instance ));
+	}
+
+	return( FALSE );
 }
 
 static gchar *
@@ -490,6 +558,9 @@ get_settings_key( const ofaITVSortable *instance )
  * Note that we record the actual sort order (gtk_sort_ascending for
  * ascending order); only the *display* of the sort indicator of the
  * column is reversed.
+ *
+ * 0: GTK_SORT_ASCENDING
+ * 1: GTK_SORT_DESCENDING
  */
 static void
 get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
@@ -529,7 +600,7 @@ get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
 
 	/* setup the initial sort column
 	 */
-	columns = gtk_tree_view_get_columns( sdata->tview );
+	columns = gtk_tree_view_get_columns( sdata->treeview );
 	for( it=columns ; it ; it=it->next ){
 		column = GTK_TREE_VIEW_COLUMN( it->data );
 		if( gtk_tree_view_column_get_sort_column_id( column ) == sdata->sort_column_id ){
@@ -585,6 +656,8 @@ on_instance_finalized( sITVSortable *sdata, GObject *finalized_instance )
 
 	g_debug( "%s: sdata=%p, finalized_instance=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_instance );
+
+	g_clear_object( &sdata->sort_model );
 
 	g_free( sdata );
 }

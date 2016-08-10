@@ -40,6 +40,7 @@ api_include_HEADERS = \
 	ofa-hub-def.h										\
 	ofa-iabout.h										\
 	ofa-iactionable.h									\
+	ofa-iactioner.h										\
 	ofa-icontext.h										\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
@@ -65,6 +66,7 @@ api_include_HEADERS = \
 	ofa-itheme-manager.h								\
 	ofa-itheme-manager-def.h							\
 	ofa-itvcolumnable.h									\
+	ofa-itvfilterable.h									\
 	ofa-itvsortable.h									\
 	ofa-itree-adder.h									\
 	ofa-list-store.h									\

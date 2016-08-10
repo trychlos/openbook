@@ -50,8 +50,7 @@ typedef struct _ofaITVFilterable                    ofaITVFilterable;
  * ofaITVFilterableInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
- * @get_settings_key: [should] returns the prefix of the settings key.
- * @sort_model: [should] sort the model.
+ * @filter_model: [should] filter the model.
  *
  * This defines the interface that an #ofaITVFilterable may/should/must
  * implement.
@@ -94,23 +93,20 @@ typedef struct {
 /*
  * Interface-wide
  */
-GType ofa_itvfilterable_get_type                  ( void );
+GType         ofa_itvfilterable_get_type                  ( void );
 
-guint ofa_itvfilterable_get_interface_last_version( void );
+guint         ofa_itvfilterable_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint ofa_itvfilterable_get_interface_version     ( GType type );
+guint         ofa_itvfilterable_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void  ofa_itvfilterable_set_store                 ( ofaITVFilterable *instance,
-														GtkTreeModel *store );
-
-void  ofa_itvfilterable_set_treeview              ( ofaITVFilterable *instance,
-														GtkTreeView *treeview );
+GtkTreeModel *ofa_itvfilterable_set_child_model            ( ofaITVFilterable *instance,
+																	GtkTreeModel *model );
 
 G_END_DECLS
 

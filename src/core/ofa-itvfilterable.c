@@ -31,8 +31,7 @@
 /* data structure associated to the instance
  */
 typedef struct {
-	GtkTreeModel *store;
-	GtkTreeView  *treeview;
+	GtkTreeModel *filter_model;
 }
 	sITVFilterable;
 
@@ -44,7 +43,7 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType           register_type( void );
 static void            interface_base_init( ofaITVFilterableInterface *klass );
 static void            interface_base_finalize( ofaITVFilterableInterface *klass );
-static void            setup_filter_model( ofaITVFilterable *instance, sITVFilterable *sdata );
+static gboolean        on_filter_model( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaITVFilterable *instance );
 static sITVFilterable *get_itvfilterable_data( ofaITVFilterable *instance );
 static void            on_instance_finalized( sITVFilterable *sdata, GObject *finalized_instance );
 
@@ -173,76 +172,51 @@ ofa_itvfilterable_get_interface_version( GType type )
 }
 
 /**
- * ofa_itvfilterable_set_store:
+ * ofa_itvfilterable_set_child_model:
  * @instance: this #ofaIStorable instance.
- * @store: the underlying store.
+ * @model: the child model.
  *
- * Setup the underlying store.
+ * Setup the underlying child model.
  *
- * If both treeview and store are set, then they are associated through
- * a sortable model, sort settings are read and a default sort function
- * is set.
+ * #ofaITVFilterable @instance takes its own reference on the child @model,
+ * which will be release on @instance finalization.
  *
- * At that time, the model starts to sort itself. So it is better if all
- * configuration is set before calling this method.
+ * Returns: the filter model.
+ *
+ * The returned reference is owned by the #ofaITVFilterable @instance, and
+ * should not be released by the caller.
  */
-void
-ofa_itvfilterable_set_store( ofaITVFilterable *instance, GtkTreeModel *store )
+GtkTreeModel *
+ofa_itvfilterable_set_child_model( ofaITVFilterable *instance, GtkTreeModel *model )
 {
 	sITVFilterable *sdata;
 
-	g_return_if_fail( instance && OFA_IS_ITVFILTERABLE( instance ));
-	g_return_if_fail( store && GTK_IS_TREE_MODEL( store ));
+	g_return_val_if_fail( instance && OFA_IS_ITVFILTERABLE( instance ), NULL );
+	g_return_val_if_fail( model && GTK_IS_TREE_MODEL( model ), NULL );
 
 	sdata = get_itvfilterable_data( instance );
-	sdata->store = store;
+	sdata->filter_model = gtk_tree_model_filter_new( model, NULL );
 
-	setup_filter_model( instance, sdata );
+	gtk_tree_model_filter_set_visible_func(
+			GTK_TREE_MODEL_FILTER( sdata->filter_model ),
+			( GtkTreeModelFilterVisibleFunc ) on_filter_model, instance, NULL );
+
+	return( sdata->filter_model );
 }
 
-/**
- * ofa_itvfilterable_set_treeview:
- * @instance: this #ofaIStorable instance.
- * @treeview: the #GtkTreeView widget.
- *
- * Setup the treeview widget.
- */
-void
-ofa_itvfilterable_set_treeview( ofaITVFilterable *instance, GtkTreeView *treeview )
-{
-	sITVFilterable *sdata;
-
-	g_return_if_fail( instance && OFA_IS_ITVFILTERABLE( instance ));
-	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
-
-	sdata = get_itvfilterable_data( instance );
-	sdata->treeview = treeview;
-
-	setup_filter_model( instance, sdata );
-}
-
-static void
-setup_filter_model( ofaITVFilterable *instance, sITVFilterable *sdata )
-{
-}
-
-/*
 static gboolean
-on_filter_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVFilterable *instance )
+on_filter_model( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaITVFilterable *instance )
 {
-	static const gchar *thisfn = "ofa_itvfilterable_on_sort_model";
-	sITVFilterable *sdata;
-
 	if( OFA_ITVFILTERABLE_GET_INTERFACE( instance )->filter_model ){
-		sdata = get_itvfilterable_data( instance );
-		return( OFA_ITVFILTERABLE_GET_INTERFACE( instance )->filter_model( instance, tmodel, a, b, sdata->sort_column_id ));
+		return( OFA_ITVFILTERABLE_GET_INTERFACE( instance )->filter_model( instance, tmodel, iter ));
 	}
 
-	g_info( "%s: ofaITVFilterable's %s implementation does not provide 'sort_model()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( 0 );
+	/* do not display any message if the implementation does not provide
+	 * any method; on non-filterable models, this would display too much
+	 * messages */
+
+	return( TRUE );
 }
-*/
 
 static sITVFilterable *
 get_itvfilterable_data( ofaITVFilterable *instance )
@@ -270,6 +244,8 @@ on_instance_finalized( sITVFilterable *sdata, GObject *finalized_instance )
 
 	g_debug( "%s: sdata=%p, finalized_instance=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_instance );
+
+	g_clear_object( &sdata->filter_model );
 
 	g_free( sdata );
 }

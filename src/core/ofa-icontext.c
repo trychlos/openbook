@@ -238,7 +238,7 @@ ofa_icontext_append_submenu( ofaIContext *instance, ofaIActionable *actionable, 
  *
  * The interface takes its own reference on @menu.
  * Do not take here any more reference to @actionable, because it would
- * prevent the @instance to be finalized if it happened that
+ * prevent the @instance to be finalized if it happend that
  * @instance=@actionable.
  */
 void

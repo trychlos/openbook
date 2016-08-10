@@ -36,8 +36,9 @@
 #include "api/ofa-page-prot.h"
 #include "api/ofo-account.h"
 
-#include "core/ofa-account-properties.h"
 #include "core/ofa-account-frame-bin.h"
+#include "core/ofa-account-properties.h"
+#include "core/ofa-account-treeview.h"
 
 #include "ui/ofa-account-page.h"
 
@@ -123,34 +124,41 @@ v_setup_page( ofaPage *page )
 
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
-	priv->account_bin = ofa_account_frame_bin_new( OFA_IGETTER( page ));
-	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 0 );
+	priv->account_bin = ofa_account_frame_bin_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
 
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_NEW, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_PROPERTIES, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_DELETE, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_SPACER, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_VIEW_ENTRIES, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_SETTLEMENT, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_RECONCILIATION, TRUE );
+	ofa_account_frame_bin_set_settings_key( priv->account_bin, G_OBJECT_TYPE_NAME( page ));
+
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_NEW );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_UPDATE );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_DELETE );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_SPACER );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_VIEW_ENTRIES );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_SETTLEMENT );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_RECONCILIATION );
 
 	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
+
+	ofa_account_frame_bin_set_getter( priv->account_bin, OFA_IGETTER( page ));
 }
 
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaAccountPagePrivate *priv;
-	GtkWidget *widget;
+	GtkWidget *widget, *treeview;
 
 	g_return_val_if_fail( page && OFA_IS_ACCOUNT_PAGE( page ), NULL );
 
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
-	widget = ofa_account_frame_bin_get_current_treeview( priv->account_bin );
+	widget = ofa_account_frame_bin_get_current_page( priv->account_bin );
+	g_return_val_if_fail( widget && OFA_IS_ACCOUNT_TREEVIEW( widget ), NULL );
 
-	return( widget );
+	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( widget ));
+
+	return( treeview );
 }
 
 static void

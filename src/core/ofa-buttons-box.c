@@ -45,7 +45,7 @@ typedef struct {
 
 /* some styles layout
  */
-#define STYLE_BOX_PADDING               6
+#define STYLE_BOX_PADDING               2
 #define STYLE_ROW_MARGIN                4
 #define STYLE_SPACER                    28
 

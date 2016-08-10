@@ -33,26 +33,26 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-itvcolumnable.h"
+#include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-tvbin.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean            dispose_has_run;
+	gboolean      dispose_has_run;
 
 	/* properties
 	 */
-	GtkShadowType       shadow;
-	GtkPolicyType       hscrollbar_policy;
-
-	/* setup
-	 */
-	gchar              *settings_key;
+	GtkShadowType shadow;
+	GtkPolicyType hscrollbar_policy;
+	gchar        *settings_key;
+	gchar        *group_name;
+	gboolean      columns_settings;
 
 	/* UI
 	 */
-	GtkWidget          *treeview;
+	GtkWidget    *treeview;
 }
 	ofaTVBinPrivate;
 
@@ -61,6 +61,9 @@ typedef struct {
 enum {
 	PROP_HPOLICY_ID = 1,
 	PROP_SHADOW_ID,
+	PROP_SETTINGS_ID,
+	PROP_GROUP_ID,
+	PROP_COLSETTINGS_ID,
 };
 
 /* signals defined here
@@ -74,8 +77,6 @@ enum {
 };
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
-
-static const gchar *st_action_group_name    = "tvbin";
 
 static void         init_top_widget( ofaTVBin *self );
 static void         tview_on_row_selected( GtkTreeSelection *selection, ofaTVBin *self );
@@ -91,16 +92,22 @@ static GtkWidget   *icontext_get_focused_widget( ofaIContext *instance );
 static void         itvcolumnable_iface_init( ofaITVColumnableInterface *iface );
 static guint        itvcolumnable_get_interface_version( void );
 static const gchar *itvcolumnable_get_settings_key( const ofaITVColumnable *instance );
+static void         itvfilterable_iface_init( ofaITVFilterableInterface *iface );
+static guint        itvfilterable_get_interface_version( void );
+static gboolean     itvfilterable_filter_model( const ofaITVFilterable *instance, GtkTreeModel *model, GtkTreeIter *iter );
 static void         itvsortable_iface_init( ofaITVSortableInterface *iface );
 static guint        itvsortable_get_interface_version( void );
-static gint         itvsortable_sort_model( const ofaITVSortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint         itvsortable_get_column_id( ofaITVSortable *instance, GtkTreeViewColumn *column );
 static const gchar *itvsortable_get_settings_key( const ofaITVSortable *instance );
+static gboolean     itvsortable_has_sort_model( const ofaITVSortable *instance );
+static gint         itvsortable_sort_model( const ofaITVSortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVBin, ofa_tvbin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaTVBin )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ICONTEXT, icontext_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVCOLUMNABLE, itvcolumnable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVFILTERABLE, itvfilterable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITVSORTABLE, itvsortable_iface_init ))
 
 static void
@@ -118,6 +125,7 @@ tvbin_finalize( GObject *instance )
 	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( instance ));
 
 	g_free( priv->settings_key );
+	g_free( priv->group_name );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_tvbin_parent_class )->finalize( instance );
@@ -136,7 +144,9 @@ tvbin_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		ofa_itvcolumnable_record_settings( OFA_ITVCOLUMNABLE( instance ));
+		if( priv->columns_settings ){
+			ofa_itvcolumnable_record_settings( OFA_ITVCOLUMNABLE( instance ));
+		}
 
 		/* unref object members here */
 	}
@@ -167,6 +177,18 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 
 			case PROP_SHADOW_ID:
 				g_value_set_int( value, priv->shadow );
+				break;
+
+			case PROP_SETTINGS_ID:
+				g_value_set_string( value, priv->settings_key );
+				break;
+
+			case PROP_GROUP_ID:
+				g_value_set_string( value, priv->group_name );
+				break;
+
+			case PROP_COLSETTINGS_ID:
+				g_value_set_boolean( value, priv->columns_settings );
 				break;
 
 			default:
@@ -200,6 +222,20 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 				priv->shadow = g_value_get_int( value );
 				break;
 
+			case PROP_SETTINGS_ID:
+				g_free( priv->settings_key );
+				priv->settings_key = g_strdup( g_value_get_string( value ));
+				break;
+
+			case PROP_GROUP_ID:
+				g_free( priv->group_name );
+				priv->group_name = g_strdup( g_value_get_string( value ));
+				break;
+
+			case PROP_COLSETTINGS_ID:
+				priv->columns_settings = g_value_get_boolean( value );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -230,8 +266,10 @@ tvbin_constructed( GObject *instance )
 
 	priv = ofa_tvbin_get_instance_private( OFA_TVBIN( instance ));
 
-	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( instance ));
-	g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
+	if( !my_strlen( priv->settings_key )){
+		priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( instance ));
+		g_debug( "%s: settings defaut settings key to '%s'", thisfn, priv->settings_key );
+	}
 
 	init_top_widget( OFA_TVBIN( instance ));
 }
@@ -282,9 +320,6 @@ ofa_tvbin_init( ofaTVBin *self )
 	priv = ofa_tvbin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
-	priv->shadow = GTK_SHADOW_NONE;
-	priv->hscrollbar_policy = GTK_POLICY_AUTOMATIC;
 }
 
 static void
@@ -319,6 +354,36 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 					"Shadow type of surrounding frame",
 					0, 99, GTK_SHADOW_NONE,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_SETTINGS_ID,
+			g_param_spec_string(
+					"ofa-tvbin-settings",
+					"Settings key",
+					"Settings key prefix for the interfaces",
+					NULL,
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_GROUP_ID,
+			g_param_spec_string(
+					"ofa-tvbin-groupname",
+					"Action group name",
+					"Action group name",
+					"tvbin",
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_COLSETTINGS_ID,
+			g_param_spec_boolean(
+					"ofa-tvbin-colsettings",
+					"Column settings",
+					"Whether to write the columns settings for this view",
+					TRUE,
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
 	/**
 	 * ofaTVBin::ofa-selchanged:
@@ -781,14 +846,13 @@ add_column( ofaTVBin *self, GtkTreeViewColumn *column, gint column_id, const gch
 	priv = ofa_tvbin_get_instance_private( self );
 
 	gtk_tree_view_column_set_visible( column, FALSE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
 	gtk_tree_view_column_set_reorderable( column, TRUE );
 	gtk_tree_view_column_set_resizable( column, TRUE );
 	gtk_tree_view_column_set_sizing( column, GTK_TREE_VIEW_COLUMN_GROW_ONLY );
 
 	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->treeview ), column );
 
-	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( self ), column, st_action_group_name, menu );
+	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( self ), column, column_id, priv->group_name, menu );
 }
 
 /*
@@ -808,7 +872,7 @@ ofa_tvbin_get_menu( ofaTVBin *bin )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( ofa_iactionable_get_menu( OFA_IACTIONABLE( bin ), st_action_group_name ));
+	return( ofa_iactionable_get_menu( OFA_IACTIONABLE( bin ), priv->group_name ));
 }
 
 /*
@@ -919,11 +983,18 @@ ofa_tvbin_set_settings_key( ofaTVBin *bin, const gchar *key )
  *
  * The @bin instance takes its own reference on the @store. This later
  * may so be released by the caller.
+ *
+ * Note that Gtk+ silently expects that the GtkTreeSortable model be
+ * those associated with the GtkTreeView. In other words, we *must* have:
+ *   GtkTreeView -> GtkTreeModelSort -> GtkTreeModelFilter -> store
+ * (cf. https://github.com/GNOME/gtk/blob/master/gtk/gtktreeviewcolumn.c::
+ *      gtk_tree_view_column_sort() method).
  */
 void
 ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 {
 	ofaTVBinPrivate *priv;
+	GtkTreeModel *sort_model, *filter_model;
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 	g_return_if_fail( store && GTK_IS_TREE_MODEL( store ));
@@ -932,10 +1003,93 @@ ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	filter_model = ofa_itvfilterable_set_child_model( OFA_ITVFILTERABLE( bin ), store );
+
+	sort_model = ofa_itvsortable_set_child_model( OFA_ITVSORTABLE( bin ), filter_model );
 	ofa_itvsortable_set_treeview( OFA_ITVSORTABLE( bin ), GTK_TREE_VIEW( priv->treeview ));
-	ofa_itvsortable_set_store( OFA_ITVSORTABLE( bin ), store );
+
+	gtk_tree_view_set_model( GTK_TREE_VIEW( priv->treeview ), sort_model );
 
 	ofa_itvcolumnable_show_columns( OFA_ITVCOLUMNABLE( bin ), GTK_TREE_VIEW( priv->treeview ));
+	ofa_itvsortable_show_sort_indicator( OFA_ITVSORTABLE( bin ));
+}
+
+/*
+ * ofa_tvbin_set_selected:
+ * @bin: this #ofaTVBin instance.
+ * @treeview_iter: a #GtkTreeIter on the #GtkTreeView's model.
+ *
+ * Select the specified row.
+ */
+void
+ofa_tvbin_set_selected( ofaTVBin *bin, GtkTreeIter *treeview_iter )
+{
+	ofaTVBinPrivate *priv;
+	GtkTreeSelection *selection;
+	GtkTreeModel *model;
+	GtkTreePath *path;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	/* select the specified row */
+	selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
+	gtk_tree_selection_select_iter( selection, treeview_iter );
+
+	/* move the cursor so that it is visible */
+	model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+	path = gtk_tree_model_get_path( model, treeview_iter );
+	gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE, 0, 0 );
+	gtk_tree_view_set_cursor( GTK_TREE_VIEW( priv->treeview ), path, NULL, FALSE );
+	gtk_tree_path_free( path );
+}
+
+/*
+ * ofa_tvbin_set_columns_settings:
+ * @bin: this #ofaTVBin instance.
+ * @write: whether to write the column settings.
+ *
+ * Set the @write indicator.
+ *
+ * When the @write indicator is set, the view will write the columns
+ * settings (size and position) at dispose() time.
+ */
+void
+ofa_tvbin_set_columns_settings( ofaTVBin *bin, gboolean write )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->columns_settings = write;
+}
+
+/*
+ * ofa_tvbin_write_columns_settings:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Write the columns settings (size and position) now, whatever be the
+ * value of the internal indicator.
+ */
+void
+ofa_tvbin_write_columns_settings( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	ofa_itvcolumnable_record_settings( OFA_ITVCOLUMNABLE( bin ));
 }
 
 static const gchar *
@@ -1024,6 +1178,38 @@ itvcolumnable_get_settings_key( const ofaITVColumnable *instance )
 }
 
 /*
+ * ofaITVFilterable interface management
+ */
+static void
+itvfilterable_iface_init( ofaITVFilterableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tvbin_itvfilterable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = itvfilterable_get_interface_version;
+	iface->filter_model = itvfilterable_filter_model;
+}
+
+static guint
+itvfilterable_get_interface_version( void )
+{
+	return( 1 );
+}
+
+static gboolean
+itvfilterable_filter_model( const ofaITVFilterable *instance, GtkTreeModel *model, GtkTreeIter *iter )
+{
+	gboolean visible = TRUE;
+
+	if( OFA_TVBIN_GET_CLASS( OFA_TVBIN( instance ))->filter ){
+		visible = OFA_TVBIN_GET_CLASS( OFA_TVBIN( instance ))->filter( OFA_TVBIN( instance ), model, iter );
+	}
+
+	return( visible );
+}
+
+/*
  * ofaITVSortable interface management
  */
 static void
@@ -1034,7 +1220,9 @@ itvsortable_iface_init( ofaITVSortableInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = itvsortable_get_interface_version;
+	iface->get_column_id = itvsortable_get_column_id;
 	iface->get_settings_key = itvsortable_get_settings_key;
+	iface->has_sort_model = itvsortable_has_sort_model;
 	iface->sort_model = itvsortable_sort_model;
 }
 
@@ -1044,23 +1232,31 @@ itvsortable_get_interface_version( void )
 	return( 1 );
 }
 
+static gint
+itvsortable_get_column_id( ofaITVSortable *instance, GtkTreeViewColumn *column )
+{
+	return( ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( instance ), column ));
+}
+
 static const gchar *
 itvsortable_get_settings_key( const ofaITVSortable *instance )
 {
 	return( get_settings_key( OFA_TVBIN( instance )));
 }
 
+static gboolean
+itvsortable_has_sort_model( const ofaITVSortable *instance )
+{
+	return( OFA_TVBIN_GET_CLASS( OFA_TVBIN( instance ))->sort != NULL );
+}
+
 static gint
 itvsortable_sort_model( const ofaITVSortable *instance, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
-	gint cmp;
-
-	g_return_val_if_fail( OFA_IS_TVBIN( instance ), 0 );
-
-	cmp = 0;
+	gint cmp = 0;
 
 	if( OFA_TVBIN_GET_CLASS( OFA_TVBIN( instance ))->sort ){
-	cmp = OFA_TVBIN_GET_CLASS( OFA_TVBIN( instance ))->sort( OFA_TVBIN( instance ), tmodel, a, b, column_id );
+		cmp = OFA_TVBIN_GET_CLASS( OFA_TVBIN( instance ))->sort( OFA_TVBIN( instance ), tmodel, a, b, column_id );
 	}
 
 	return( cmp );

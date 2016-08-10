@@ -50,7 +50,9 @@ typedef struct _ofaITVSortable                    ofaITVSortable;
  * ofaITVSortableInterface:
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
+ * @get_column_id: [must] returns the identifier of a column.
  * @get_settings_key: [should] returns the prefix of the settings key.
+ * @has_sort_model: [should] returns whether the model is sortable.
  * @sort_model: [should] sort the model.
  *
  * This defines the interface that an #ofaITVSortable may/should/must
@@ -76,6 +78,20 @@ typedef struct {
 
 	/*** instance-wide ***/
 	/**
+	 * get_column_id:
+	 * @instance: this #ofaITVSortable instance.
+	 * @column: a #GtkTreeViewColumn column.
+	 *
+	 * Returns: the identifier of the @column.
+	 *
+	 * Defaults to -1.
+	 *
+	 * Since: version 1.
+	 */
+	gint          ( *get_column_id )        ( ofaITVSortable *instance,
+													GtkTreeViewColumn *column );
+
+	/**
 	 * get_settings_key:
 	 * @instance: this #ofaITVSortable instance.
 	 *
@@ -86,6 +102,26 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	const gchar * ( *get_settings_key )     ( const ofaITVSortable *instance );
+
+	/**
+	 * has_sort_model:
+	 * @instance: this #ofaITVSortable instance.
+	 *
+	 * Returns: %TRUE if the implementation (or one of its derived
+	 * class) is able to provide a sort() method.
+	 *
+	 * Default to %FALSE (model is not sortable).
+	 *
+	 * This method is needed because the #ofaTVBin which implements this
+	 * interface always provides a #sort_model() method in order to
+	 * transform the interface method into a virtual method for its
+	 * derived classes.
+	 * So only the #ofaTVBin class knows if a derived class provides
+	 * such a virtual method.
+	 *
+	 * Since: version 1.
+	 */
+	gboolean      ( *has_sort_model )       ( const ofaITVSortable *instance );
 
 	/**
 	 * sort_model:
@@ -110,33 +146,37 @@ typedef struct {
 /*
  * Interface-wide
  */
-GType ofa_itvsortable_get_type                  ( void );
+GType         ofa_itvsortable_get_type                  ( void );
 
-guint ofa_itvsortable_get_interface_last_version( void );
+guint         ofa_itvsortable_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint ofa_itvsortable_get_interface_version     ( GType type );
+guint         ofa_itvsortable_get_interface_version     ( GType type );
 
-gint  ofa_itvsortable_sort_png                  ( const GdkPixbuf *a, const GdkPixbuf *b );
+gint          ofa_itvsortable_sort_png                  ( const GdkPixbuf *a, const GdkPixbuf *b );
 
-gint  ofa_itvsortable_sort_str_amount           ( const gchar *a, const gchar *b );
+gint          ofa_itvsortable_sort_str_amount           ( const gchar *a, const gchar *b );
 
-gint  ofa_itvsortable_sort_str_int              ( const gchar *a, const gchar *b );
+gint          ofa_itvsortable_sort_str_int              ( const gchar *a, const gchar *b );
 
 /*
  * Instance-wide
  */
-void  ofa_itvsortable_set_default_sort          ( ofaITVSortable *instance,
-														gint column_id,
-														GtkSortType order );
+void          ofa_itvsortable_set_default_sort          ( ofaITVSortable *instance,
+																gint column_id,
+																GtkSortType order );
 
-void  ofa_itvsortable_set_store                 ( ofaITVSortable *instance,
-														GtkTreeModel *store );
+GtkTreeModel *ofa_itvsortable_set_child_model           ( ofaITVSortable *instance,
+																GtkTreeModel *model );
 
-void  ofa_itvsortable_set_treeview              ( ofaITVSortable *instance,
-														GtkTreeView *tview );
+void          ofa_itvsortable_set_treeview              ( ofaITVSortable *instance,
+																GtkTreeView *treeview );
+
+gboolean      ofa_itvsortable_get_is_sortable           ( ofaITVSortable *instance );
+
+void          ofa_itvsortable_show_sort_indicator       ( ofaITVSortable *instance );
 
 G_END_DECLS
 

@@ -68,12 +68,15 @@
 
    - myStyle: new style management class.
    - ofa.css: remove obsolete styles.
+   - ofaAccountTreeview: new class.
    - ofaBatlineTreeview: new class.
    - ofaClassStore: new class.
    - ofaIActionable: new interface.
+   - ofaIActioner: new interface.
    - ofaIContext: new interface.
-   - ofaITVSortable: new interface.
    - ofaITVColumnable: new interface.
+   - ofaITVFilterable: new interface.
+   - ofaITVSortable: new interface.
    - ofaTVBin: new base class.
 
 -----------------------------------------------------------------------

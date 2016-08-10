@@ -79,9 +79,9 @@ static void       on_row_selected( ofaClassTreeview *treeview, ofoClass *class, 
 static void       on_row_activated( ofaClassTreeview *treeview, ofoClass *class, ofaClassPage *self );
 static void       on_insert_key( ofaClassTreeview *tview, ofaClassPage *self );
 static void       on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self );
-static void       on_new_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
-static void       on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
-static void       on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
+static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
 static gboolean   check_for_deletability( ofaClassPage *self, ofoClass *class );
 static void       delete_with_confirm( ofaClassPage *self, ofoClass *class );
 
@@ -198,7 +198,7 @@ v_setup_buttons( ofaPage *page )
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
 	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
-	g_signal_connect( priv->new_action, "activate", G_CALLBACK( on_new_action_activated ), page );
+	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->new_action ),
 			OFA_IACTIONABLE_NEW_ITEM );
@@ -210,7 +210,7 @@ v_setup_buttons( ofaPage *page )
 
 	/* update action */
 	priv->update_action = g_simple_action_new( "update", NULL );
-	g_signal_connect( priv->update_action, "activate", G_CALLBACK( on_update_action_activated ), page );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->update_action ),
 			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
@@ -222,7 +222,7 @@ v_setup_buttons( ofaPage *page )
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
-	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( on_delete_action_activated ), page );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->delete_action ),
 			OFA_IACTIONABLE_DELETE_ITEM );
@@ -337,9 +337,9 @@ on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self )
 }
 
 static void
-on_new_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_on_new_action_activated";
+	static const gchar *thisfn = "ofa_class_page_action_on_new_activated";
 	ofoClass *class;
 	GtkWindow *toplevel;
 
@@ -352,9 +352,9 @@ on_new_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *s
 }
 
 static void
-on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_on_update_action_activated";
+	static const gchar *thisfn = "ofa_class_page_action_on_update_activated";
 	ofaClassPagePrivate *priv;
 	ofoClass *class;
 	GtkWindow *toplevel;
@@ -372,9 +372,9 @@ on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage
 }
 
 static void
-on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self )
 {
-	static const gchar *thisfn = "ofa_class_page_on_delete_action_activated";
+	static const gchar *thisfn = "ofa_class_page_action_on_delete_activated";
 	ofaClassPagePrivate *priv;
 	ofoClass *class;
 

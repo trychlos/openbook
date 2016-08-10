@@ -82,9 +82,9 @@ static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
 static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
 static void       on_delete_key( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
-static void       on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self );
-static void       on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self );
-static void       on_import_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self );
+static void       action_on_import_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self );
 static gboolean   check_for_deletability( ofaBatPage *self, ofoBat *bat );
 static void       delete_with_confirm( ofaBatPage *self, ofoBat *bat );
 
@@ -213,7 +213,7 @@ v_setup_buttons( ofaPage *page )
 
 	/* update action */
 	priv->update_action = g_simple_action_new( "update", NULL );
-	g_signal_connect( priv->update_action, "activate", G_CALLBACK( on_update_action_activated ), page );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->update_action ),
 			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
@@ -225,7 +225,7 @@ v_setup_buttons( ofaPage *page )
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
-	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( on_delete_action_activated ), page );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->delete_action ),
 			OFA_IACTIONABLE_DELETE_ITEM );
@@ -240,7 +240,7 @@ v_setup_buttons( ofaPage *page )
 	/* import action */
 	priv->import_action = g_simple_action_new( "import", NULL );
 	g_simple_action_set_enabled( priv->import_action, priv->is_writable );
-	g_signal_connect( priv->import_action, "activate", G_CALLBACK( on_import_action_activated ), page );
+	g_signal_connect( priv->import_action, "activate", G_CALLBACK( action_on_import_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), st_action_group_name, G_ACTION( priv->import_action ),
 			OFA_IACTIONABLE_IMPORT_ITEM );
@@ -341,9 +341,9 @@ on_delete_key( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
  * only notes can be updated if the dossier is writable
  */
 static void
-on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
 {
-	static const gchar *thisfn = "ofa_bat_page_on_update_action_activated";
+	static const gchar *thisfn = "ofa_bat_page_action_on_update_activated";
 	ofaBatPagePrivate *priv;
 	ofoBat *bat;
 	GtkWindow *toplevel;
@@ -361,9 +361,9 @@ on_update_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
 }
 
 static void
-on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
 {
-	static const gchar *thisfn = "ofa_bat_page_on_delete_action_activated";
+	static const gchar *thisfn = "ofa_bat_page_action_on_delete_activated";
 	ofaBatPagePrivate *priv;
 	ofoBat *bat;
 
@@ -383,9 +383,9 @@ on_delete_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *
  * imported and import it
  */
 static void
-on_import_action_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
+action_on_import_activated( GSimpleAction *action, GVariant *empty, ofaBatPage *self )
 {
-	static const gchar *thisfn = "ofa_bat_page_on_import_action_activated";
+	static const gchar *thisfn = "ofa_bat_page_action_on_import_activated";
 	ofaBatPagePrivate *priv;
 	ofxCounter bat_id;
 	GtkWindow *toplevel;

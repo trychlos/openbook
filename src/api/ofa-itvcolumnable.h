@@ -105,8 +105,12 @@ guint ofa_itvcolumnable_get_interface_version     ( GType type );
  */
 void  ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
 															GtkTreeViewColumn *column,
+															gint column_id,
 															const gchar *group_name,
 															const gchar *menu_label );
+
+gint  ofa_itvcolumnable_get_column_id             ( ofaITVColumnable *instance,
+															GtkTreeViewColumn *column );
 
 void  ofa_itvcolumnable_record_settings           ( ofaITVColumnable *instance );
 

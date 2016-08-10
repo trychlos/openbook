@@ -1060,7 +1060,7 @@ ofo_account_is_child_of( const ofoAccount *account, const gchar *candidate )
 gboolean
 ofo_account_is_allowed( const ofoAccount *account, gint allowables )
 {
-	gboolean ok;
+	gboolean ok = FALSE;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );

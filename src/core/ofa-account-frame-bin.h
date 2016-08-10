@@ -31,7 +31,7 @@
  * @include: ui/ofa-account-frame-bin.h
  *
  * This is a convenience class which manages both the accounts notebook
- * and the buttons box on the right if needed.
+ * and the actions box on the right if needed.
  *
  * The class also acts as a proxy for "changed" and "activated" messages
  * sent by the underlying ofaAccountStore class. It relays these
@@ -47,8 +47,6 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-igetter-def.h"
-
-#include "core/ofa-account-store.h"
 
 G_BEGIN_DECLS
 
@@ -72,49 +70,46 @@ typedef struct {
 	ofaAccountFrameBinClass;
 
 /**
- * ofeAccountFrameBtn:
+ * ofeAccountAction:
  *
- * These are the buttons that the frame is able to manage.
- * It is up to the caller to set the desired buttons.
+ * These are the actions that the frame is able to manage.
+ * It is up to the caller to set the desired actions.
  * Default is none.
  */
 typedef enum {
-	ACCOUNT_BTN_SPACER = 1,
-	ACCOUNT_BTN_NEW,
-	ACCOUNT_BTN_PROPERTIES,
-	ACCOUNT_BTN_DELETE,
-	ACCOUNT_BTN_VIEW_ENTRIES,
-	ACCOUNT_BTN_SETTLEMENT,
-	ACCOUNT_BTN_RECONCILIATION,
+	ACCOUNT_ACTION_SPACER = 1,
+	ACCOUNT_ACTION_NEW,
+	ACCOUNT_ACTION_UPDATE,
+	ACCOUNT_ACTION_DELETE,
+	ACCOUNT_ACTION_VIEW_ENTRIES,
+	ACCOUNT_ACTION_SETTLEMENT,
+	ACCOUNT_ACTION_RECONCILIATION,
 }
-	ofeAccountFrameBtn;
+	ofeAccountAction;
 
-GType               ofa_account_frame_bin_get_type            ( void ) G_GNUC_CONST;
+GType               ofa_account_frame_bin_get_type          ( void ) G_GNUC_CONST;
 
-ofaAccountFrameBin *ofa_account_frame_bin_new                 ( ofaIGetter *getter );
+ofaAccountFrameBin *ofa_account_frame_bin_new               ( void );
 
-GtkWidget          *ofa_account_frame_bin_add_button          ( ofaAccountFrameBin *bin,
-																	ofeAccountFrameBtn id,
-																	gboolean sensitive );
+void                ofa_account_frame_bin_add_action        ( ofaAccountFrameBin *bin,
+																	ofeAccountAction id );
 
-GtkWidget          *ofa_account_frame_bin_get_current_treeview( ofaAccountFrameBin *bin );
+GtkWidget          *ofa_account_frame_bin_get_current_page  ( ofaAccountFrameBin *bin );
 
-gchar              *ofa_account_frame_bin_get_selected        ( ofaAccountFrameBin *bin );
+ofoAccount         *ofa_account_frame_bin_get_selected      ( ofaAccountFrameBin *bin );
 
-void                ofa_account_frame_bin_set_selected        ( ofaAccountFrameBin *bin,
-																	const gchar *account_identifier );
+void                ofa_account_frame_bin_set_selected      ( ofaAccountFrameBin *bin,
+																	const gchar *account_id );
 
-void                ofa_account_frame_bin_set_cell_data_func  ( ofaAccountFrameBin *bin,
+void                ofa_account_frame_bin_set_cell_data_func( ofaAccountFrameBin *bin,
 																	GtkTreeCellDataFunc fn_cell,
-																	void *user_data );
+																	void *fn_data );
 
-void                ofa_account_frame_bin_cell_data_render    ( ofaAccountFrameBin *bin,
-																	GtkTreeViewColumn *tcolumn,
-																	GtkCellRenderer *cell,
-																	GtkTreeModel *tmodel,
-																	GtkTreeIter *iter );
+void                ofa_account_frame_bin_set_settings_key  ( ofaAccountFrameBin *bin,
+																	const gchar *key );
 
-ofaAccountStore    *ofa_account_frame_bin_get_account_store   ( ofaAccountFrameBin *bin );
+void                ofa_account_frame_bin_set_getter        ( ofaAccountFrameBin *bin,
+																	ofaIGetter *getter );
 
 G_END_DECLS
 

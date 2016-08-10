@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_account_treeview
  * @short_description: #ofaAccountTreeview class definition.
- * @include: ui/ofa-bat-treeview.h
+ * @include: ui/ofa-account-treeview.h
  *
  * Manage a treeview with a filtered list of accounts.
  *
@@ -42,6 +42,9 @@
  *    | ofa-accactivated |      No     |
  *    | ofa-accdelete    |      No     |
  *    +------------------+-------------+
+ *
+ * Properties:
+ * - ofa-account-treeview-class-number: class number attached to this page.
  */
 
 #include "api/ofa-tvbin.h"
@@ -69,20 +72,29 @@ typedef struct {
 }
 	ofaAccountTreeviewClass;
 
-GType               ofa_account_treeview_get_type        ( void ) G_GNUC_CONST;
+GType               ofa_account_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaAccountTreeview *ofa_account_treeview_new             ( void );
+ofaAccountTreeview *ofa_account_treeview_new               ( gint class_num );
 
-void                ofa_account_treeview_set_settings_key( ofaAccountTreeview *view,
-																const gchar *key );
+gint                ofa_account_treeview_get_filter_class  ( ofaAccountTreeview *view );
 
-void                ofa_account_treeview_set_hub         ( ofaAccountTreeview *view,
-																ofaHub *hub );
+void                ofa_account_treeview_set_cell_data_func( ofaAccountTreeview *view,
+																	GtkTreeCellDataFunc fn_cell,
+																	void *fn_data );
 
-ofoAccount         *ofa_account_treeview_get_selected    ( ofaAccountTreeview *view );
+void                ofa_account_treeview_set_settings_key  ( ofaAccountTreeview *view,
+																	const gchar *key );
 
-void                ofa_account_treeview_set_selected    ( ofaAccountTreeview *view,
-																const gchar *account_id );
+ofoAccount         *ofa_account_treeview_get_selected      ( ofaAccountTreeview *view );
+
+void                ofa_account_treeview_set_selected      ( ofaAccountTreeview *view,
+																	const gchar *account_id );
+
+void                ofa_account_treeview_cell_data_render  ( ofaAccountTreeview *view,
+																	GtkTreeViewColumn *column,
+																	GtkCellRenderer *renderer,
+																	GtkTreeModel *model,
+																	GtkTreeIter *iter );
 
 G_END_DECLS
 

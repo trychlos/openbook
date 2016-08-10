@@ -70,6 +70,8 @@ libofa_core_la_SOURCES = \
 	ofa-account-select.h								\
 	ofa-account-store.c									\
 	ofa-account-store.h									\
+	ofa-account-treeview.c								\
+	ofa-account-treeview.h								\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
 	ofa-amount.c										\
@@ -97,6 +99,7 @@ libofa_core_la_SOURCES = \
 	ofa-hub.c											\
 	ofa-iabout.c										\
 	ofa-iactionable.c									\
+	ofa-iactioner.c										\
 	ofa-icontext.c										\
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
@@ -121,6 +124,7 @@ libofa_core_la_SOURCES = \
 	ofa-itheme-manager.c								\
 	ofa-itree-adder.c									\
 	ofa-itvcolumnable.c									\
+	ofa-itvfilterable.c									\
 	ofa-itvsortable.c									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\

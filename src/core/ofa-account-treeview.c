@@ -41,6 +41,8 @@
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
+#include "api/ofo-base.h"
+#include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-account-store.h"
@@ -49,13 +51,19 @@
 /* private instance data
  */
 typedef struct {
-	gboolean         dispose_has_run;
+	gboolean dispose_has_run;
 
-	/* UI
+	/* initialization
 	 */
-	ofaAccountStore *store;
+	gint     class_num;
 }
 	ofaAccountTreeviewPrivate;
+
+/* class properties
+ */
+enum {
+	PROP_CLASSNUM_ID = 1,
+};
 
 /* signals defined here
  */
@@ -69,11 +77,17 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void        setup_columns( ofaAccountTreeview *self );
+static void        setup_key_pressed_event( ofaAccountTreeview *self );
 static void        on_selection_changed( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        on_selection_activated( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        on_selection_delete( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        get_and_send( ofaAccountTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoAccount *get_selected_with_selection( ofaAccountTreeview *self, GtkTreeSelection *selection );
+static void        cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint level, gboolean is_error );
+static gboolean    tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountTreeview *self );
+static void        tview_collapse_node( ofaAccountTreeview *self, GtkWidget *widget );
+static void        tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget );
+static gboolean    v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountTreeview, ofa_account_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaAccountTreeview ))
@@ -114,6 +128,60 @@ account_treeview_dispose( GObject *instance )
 	G_OBJECT_CLASS( ofa_account_treeview_parent_class )->dispose( instance );
 }
 
+/*
+ * user asks for a property
+ * we have so to put the corresponding data into the provided GValue
+ */
+static void
+account_treeview_get_property( GObject *instance, guint property_id, GValue *value, GParamSpec *spec )
+{
+	ofaAccountTreeviewPrivate *priv;
+
+	g_return_if_fail( OFA_IS_ACCOUNT_TREEVIEW( instance ));
+
+	priv = ofa_account_treeview_get_instance_private( OFA_ACCOUNT_TREEVIEW( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_CLASSNUM_ID:
+				g_value_set_int( value, priv->class_num );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
+/*
+ * the user asks to set a property and provides it into a GValue
+ * read the content of the provided GValue and set our instance datas
+ */
+static void
+account_treeview_set_property( GObject *instance, guint property_id, const GValue *value, GParamSpec *spec )
+{
+	ofaAccountTreeviewPrivate *priv;
+
+	g_return_if_fail( OFA_IS_ACCOUNT_TREEVIEW( instance ));
+
+	priv = ofa_account_treeview_get_instance_private( OFA_ACCOUNT_TREEVIEW( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		switch( property_id ){
+			case PROP_CLASSNUM_ID:
+				priv->class_num = g_value_get_int( value );
+				break;
+
+			default:
+				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
+				break;
+		}
+	}
+}
+
 static void
 ofa_account_treeview_init( ofaAccountTreeview *self )
 {
@@ -128,7 +196,7 @@ ofa_account_treeview_init( ofaAccountTreeview *self )
 	priv = ofa_account_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->store = NULL;
+	priv->class_num = -1;
 }
 
 static void
@@ -138,10 +206,22 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
+	G_OBJECT_CLASS( klass )->get_property = account_treeview_get_property;
+	G_OBJECT_CLASS( klass )->set_property = account_treeview_set_property;
 	G_OBJECT_CLASS( klass )->dispose = account_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_treeview_finalize;
 
-	//OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->filter = v_filter;
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_CLASSNUM_ID,
+			g_param_spec_int(
+					"ofa-account-treeview-class-number",
+					"Class number",
+					"Filtered class number",
+					-1, 9, GTK_POLICY_AUTOMATIC,
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
 	/**
 	 * ofaAccountTreeview::ofa-accchanged:
@@ -227,19 +307,33 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
 
 /**
  * ofa_account_treeview_new:
+ * @class_number: the filtered class number.
+ *  It must be set at instanciation time as it is also used as a
+ *  qualifier for the actions group name.
+ *
+ * Returns: a new instance.
  */
 ofaAccountTreeview *
-ofa_account_treeview_new( void )
+ofa_account_treeview_new( gint class_number )
 {
 	ofaAccountTreeview *view;
+	ofaAccountTreeviewPrivate *priv;
+	gchar *name;
+
+	name = g_strdup_printf( "class%d", class_number );
 
 	view = g_object_new( OFA_TYPE_ACCOUNT_TREEVIEW,
-					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER,
-					"ofa-tvbin-shadow", GTK_SHADOW_IN,
-					NULL );
+				"ofa-tvbin-groupname", name,
+				NULL );
+
+	g_free( name );
+
+	priv = ofa_account_treeview_get_instance_private( view );
+
+	priv->class_num = class_number;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
-	 * a #ofoBat object instead of just the raw GtkTreeSelection
+	 * a #ofoAccount object instead of just the raw GtkTreeSelection
 	 */
 	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
 	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
@@ -251,6 +345,13 @@ ofa_account_treeview_new( void )
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	setup_columns( view );
+	setup_key_pressed_event( view );
+
+	/* because the ofaAccountTreeview is built to live inside of a
+	 * GtkNotebook, not each view will save its settings, but only
+	 * the last being saw by the user (see ofaAccountFrameBin::dispose)
+	 */
+	ofa_tvbin_set_columns_settings( OFA_TVBIN( view ), FALSE );
 
 	return( view );
 }
@@ -284,9 +385,83 @@ setup_columns( ofaAccountTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CLOSED,        _( "C" ),        _( "Closed" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_DEBIT,     _( "Debit" ),    _( "Exercice debit" ));
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_CREDIT,    _( "Credit" ),   _( "Exercice credit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_CREDIT,    _( "Solde" ),    _( "Exercice solde" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_SOLDE,     _( "Solde" ),    _( "Exercice solde" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ACCOUNT_COL_LABEL );
+}
+
+/*
+ * Have to intercept the key-pressed event from the treeview
+ * in order to manage tre hierarchy.
+ */
+static void
+setup_key_pressed_event( ofaAccountTreeview *self )
+{
+	GtkWidget *treeview;
+
+	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( self ));
+	g_signal_connect( treeview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
+}
+
+/**
+ * ofa_account_treeview_get_filter_class:
+ * @view: this #ofaAccountTreeview instance.
+ *
+ * Returns: the filtered class number.
+ */
+gint
+ofa_account_treeview_get_filter_class( ofaAccountTreeview *view )
+{
+	ofaAccountTreeviewPrivate *priv;
+
+	g_return_val_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ), -1 );
+
+	priv = ofa_account_treeview_get_instance_private( view );
+
+	g_return_val_if_fail( !priv->dispose_has_run, -1 );
+
+	return( priv->class_num );
+}
+
+/**
+ * ofa_account_treeview_set_cell_data_func:
+ * @view: this #ofaAccountTreeview instance.
+ * @fn_cell: the function.
+ * @fn_data: user data.
+ *
+ * Setup the fonction to be used to draw the GtkCellRenderer's.
+ * This method expects that all columns have been defined.
+ */
+void
+ofa_account_treeview_set_cell_data_func( ofaAccountTreeview *view, GtkTreeCellDataFunc fn_cell, void *fn_data )
+{
+	static const gchar *thisfn = "ofa_account_treeview_set_cell_data_func";
+	ofaAccountTreeviewPrivate *priv;
+	GtkWidget *treeview;
+	GList *columns, *itco, *cells, *itce;
+
+	g_debug( "%s: view=%p, fn_cell=%p, fn_data=%p",
+			thisfn, ( void * ) view, ( void * ) fn_cell, ( void * ) fn_data );
+
+	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
+
+	priv = ofa_account_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
+	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
+
+	columns = gtk_tree_view_get_columns( GTK_TREE_VIEW( treeview ));
+	for( itco=columns ; itco ; itco=itco->next ){
+		cells = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( itco->data ));
+		for( itce=cells ; itce ; itce=itce->next ){
+			gtk_tree_view_column_set_cell_data_func(
+					GTK_TREE_VIEW_COLUMN( itco->data ), GTK_CELL_RENDERER( itce->data ), fn_cell, fn_data, NULL );
+		}
+		g_list_free( cells );
+	}
+	g_list_free( columns );
 }
 
 /**
@@ -313,31 +488,6 @@ ofa_account_treeview_set_settings_key( ofaAccountTreeview *view, const gchar *ke
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
 	ofa_tvbin_set_settings_key( OFA_TVBIN( view ), key );
-}
-
-/**
- * ofa_account_treeview_set_hub:
- * @view: this #ofaAccountTreeview instance.
- * @hub: the current #ofaHub object.
- *
- * Initialize the underlying store.
- * Read the settings and show the columns accordingly.
- */
-void
-ofa_account_treeview_set_hub( ofaAccountTreeview *view, ofaHub *hub )
-{
-	ofaAccountTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_account_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->store = ofa_account_store_new( hub );
-	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
-	g_object_unref( priv->store );
 }
 
 static void
@@ -407,9 +557,9 @@ ofa_account_treeview_get_selected( ofaAccountTreeview *view )
 /*
  * get_selected_with_selection:
  * @view: this #ofaAccountTreeview instance.
- * @selection:
+ * @selection: the current #GtkTreeSelection.
  *
- * Return: the currently selected BAT file, or %NULL.
+ * Return: the currently selected #ofoAccount, or %NULL.
  */
 static ofoAccount *
 get_selected_with_selection( ofaAccountTreeview *self, GtkTreeSelection *selection )
@@ -433,28 +583,26 @@ get_selected_with_selection( ofaAccountTreeview *self, GtkTreeSelection *selecti
  * @view: this #ofaAccountTreeview instance.
  * @account_id: the account identifier to be selected.
  *
- * Selects the account identified by @account_id.
- * Does not do anything if the @account_id is not visible in this @view.
+ * Selects the account identified by @account_id, or the closest row if
+ * the identifier is not visible in this @view.
  */
 void
 ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *account_id )
 {
-#if 0
 	static const gchar *thisfn = "ofa_account_treeview_set_selected";
 	ofaAccountTreeviewPrivate *priv;
 	GtkWidget *treeview;
 	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *sid;
-	ofxCounter row_id;
-	GtkTreeSelection *selection;
-	GtkTreePath *path;
+	GtkTreeIter iter, prev_iter;
+	gchar *row_id;
+	gint cmp;
 
-	g_debug( "%s: view=%p, id=%ld", thisfn, ( void * ) view, id );
+	g_debug( "%s: view=%p, account_id=%s", thisfn, ( void * ) view, account_id );
 
 	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
 
 	priv = ofa_account_treeview_get_instance_private( view );
+
 	g_return_if_fail( !priv->dispose_has_run );
 
 	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
@@ -462,25 +610,223 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 			while( TRUE ){
-				gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &sid, -1 );
-				row_id = atol( sid );
-				g_free( sid );
-				if( row_id == id ){
-					//ofa_tvbin_set_selected( OFA_TVBIN( view ), tmodel, &iter );
-					selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( treeview ));
-					gtk_tree_selection_select_iter( selection, &iter );
-					/* move the cursor so that it is visible */
-					path = gtk_tree_model_get_path( tmodel, &iter );
-					gtk_tree_view_scroll_to_cell( GTK_TREE_VIEW( treeview ), path, NULL, FALSE, 0, 0 );
-					gtk_tree_view_set_cursor( GTK_TREE_VIEW( treeview ), path, NULL, FALSE );
-					gtk_tree_path_free( path );
+				gtk_tree_model_get( tmodel, &iter, ACCOUNT_COL_NUMBER, &row_id, -1 );
+				cmp = my_collate( row_id, account_id );
+				g_free( row_id );
+				if( cmp >= 0 ){
+					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
 					break;
 				}
+				prev_iter = iter;
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){
+					ofa_tvbin_set_selected( OFA_TVBIN( view ), &prev_iter );
 					break;
 				}
 			}
 		}
 	}
-#endif
+}
+
+/**
+ * ofa_account_treeview_cell_data_render:
+ * @view: this #ofaAccountTreeview instance.
+ * @column: the #GtkTreeViewColumn treeview colum.
+ * @renderer: a #GtkCellRenderer attached to the column.
+ * @model: the #GtkTreeModel of the treeview.
+ * @iter: the #GtkTreeIter which addresses the row.
+ *
+ * Paints the row.
+ *
+ * level 1: not displayed (should not appear)
+ * level 2 and root: bold, colored background
+ * level 3 and root: colored background
+ * other root: italic
+ *
+ * Detail accounts who have no currency are red written.
+ */
+void
+ofa_account_treeview_cell_data_render( ofaAccountTreeview *view,
+				GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter )
+{
+	gchar *account_num;
+	ofoAccount *account_obj;
+	GString *number;
+	gint level;
+	gint column_id;
+	ofoCurrency *currency;
+	gboolean is_root, is_error;
+	ofaHub *hub;
+
+	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
+	g_return_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ));
+	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER( renderer ));
+	g_return_if_fail( model && GTK_IS_TREE_MODEL( model ));
+
+	gtk_tree_model_get( model, iter,
+			ACCOUNT_COL_NUMBER, &account_num, ACCOUNT_COL_OBJECT, &account_obj, -1 );
+	g_return_if_fail( account_obj && OFO_IS_ACCOUNT( account_obj ));
+	g_object_unref( account_obj );
+
+	hub = ofo_base_get_hub( OFO_BASE( account_obj ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	level = ofo_account_get_level_from_number( ofo_account_get_number( account_obj ));
+	g_return_if_fail( level >= 2 );
+
+	is_root = ofo_account_is_root( account_obj );
+
+	is_error = FALSE;
+	if( !is_root ){
+		currency = ofo_currency_get_by_code( hub, ofo_account_get_currency( account_obj ));
+		is_error |= !currency;
+	}
+
+	column_id = ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( view ), column );
+	if( column_id == ACCOUNT_COL_NUMBER ){
+		number = g_string_new( " " );
+		g_string_append_printf( number, "%s", account_num );
+		g_object_set( G_OBJECT( renderer ), "text", number->str, NULL );
+		g_string_free( number, TRUE );
+	}
+
+	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
+		cell_data_render_text( GTK_CELL_RENDERER_TEXT( renderer ), is_root, level, is_error );
+
+	} else if( GTK_IS_CELL_RENDERER_PIXBUF( renderer )){
+
+		/*if( ofo_account_is_root( account_obj ) && level == 2 ){
+			path = gtk_tree_model_get_path( tmodel, iter );
+			tview = gtk_tree_view_column_get_tree_view( tcolumn );
+			gtk_tree_view_get_cell_area( tview, path, tcolumn, &rc );
+			gtk_tree_path_free( path );
+		}*/
+	}
+}
+
+static void
+cell_data_render_text( GtkCellRendererText *renderer, gboolean is_root, gint level, gboolean is_error )
+{
+	GdkRGBA color;
+
+	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( renderer ));
+
+	g_object_set( G_OBJECT( renderer ),
+						"style-set",      FALSE,
+						"weight-set",     FALSE,
+						"background-set", FALSE,
+						"foreground-set", FALSE,
+						NULL );
+
+	if( is_root ){
+		if( level == 2 ){
+			gdk_rgba_parse( &color, "#c0ffff" );
+			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
+			g_object_set( G_OBJECT( renderer ), "weight", PANGO_WEIGHT_BOLD, NULL );
+
+		} else if( level == 3 ){
+			gdk_rgba_parse( &color, "#0000ff" );
+			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( renderer ), "weight", PANGO_WEIGHT_BOLD, NULL );
+
+		} else {
+			gdk_rgba_parse( &color, "#0000ff" );
+			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
+
+	} else if( is_error ){
+		gdk_rgba_parse( &color, "#800000" );
+		g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+	}
+}
+
+/*
+ * Returns :
+ * TRUE to stop other hub_handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ */
+static gboolean
+tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountTreeview *self )
+{
+	gboolean stop;
+
+	stop = FALSE;
+
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Left ){
+			tview_collapse_node( self, widget );
+
+		} else if( event->keyval == GDK_KEY_Right ){
+			tview_expand_node( self, widget );
+		}
+	}
+
+	return( stop );
+}
+
+static void
+tview_collapse_node( ofaAccountTreeview *self, GtkWidget *widget )
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter, parent;
+	GtkTreePath *path;
+
+	if( GTK_IS_TREE_VIEW( widget )){
+		selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
+		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+
+			if( gtk_tree_model_iter_has_child( tmodel, &iter )){
+				path = gtk_tree_model_get_path( tmodel, &iter );
+				gtk_tree_view_collapse_row( GTK_TREE_VIEW( widget ), path );
+				gtk_tree_path_free( path );
+
+			} else if( gtk_tree_model_iter_parent( tmodel, &parent, &iter )){
+				path = gtk_tree_model_get_path( tmodel, &parent );
+				gtk_tree_view_collapse_row( GTK_TREE_VIEW( widget ), path );
+				gtk_tree_path_free( path );
+			}
+		}
+	}
+}
+
+static void
+tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget )
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkTreePath *path;
+
+	if( GTK_IS_TREE_VIEW( widget )){
+		selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
+		if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+			if( gtk_tree_model_iter_has_child( tmodel, &iter )){
+				path = gtk_tree_model_get_path( tmodel, &iter );
+				gtk_tree_view_expand_row( GTK_TREE_VIEW( widget ), path, FALSE );
+				gtk_tree_path_free( path );
+			}
+		}
+	}
+}
+
+/*
+ * We are here filtering the child model of the GtkTreeModelFilter,
+ * which happens to be the sort model, itself being built on top of
+ * the ofaTreeStore
+ */
+static gboolean
+v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
+{
+	ofaAccountTreeviewPrivate *priv;
+	gchar *number;
+	gint class_num;
+
+	priv = ofa_account_treeview_get_instance_private( OFA_ACCOUNT_TREEVIEW( tvbin ));
+
+	gtk_tree_model_get( model, iter, ACCOUNT_COL_NUMBER, &number, -1 );
+	class_num = ofo_account_get_class_from_number( number );
+	g_free( number );
+
+	return( priv->class_num == class_num );
 }

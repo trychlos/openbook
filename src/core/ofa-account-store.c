@@ -66,7 +66,7 @@ static GType st_col_types[ACCOUNT_N_COLUMNS] = {
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* upd_stamp, val_debit, val_credit */
 	G_TYPE_STRING,  G_TYPE_STRING,					/* rough_debit, rough_credit */
 	G_TYPE_STRING,  G_TYPE_STRING,					/* fut_debit, fut_credit */
-	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forward */
+	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING,	/* settleable, reconciliable, forwardable */
 	G_TYPE_STRING,  G_TYPE_STRING, G_TYPE_STRING, 	/* closed, exe_debit, exe_credit */
 	G_TYPE_STRING,  								/* exe_solde */
 	G_TYPE_OBJECT									/* the #ofoAccount itself */
@@ -174,6 +174,9 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
  * Instanciates a new #ofaAccountStore and attached it to the @dossier
  * if not already done. Else get the already allocated #ofaAccountStore
  * from the @dossier.
+ *
+ * Returns: a new reference to the store, which should be unreffed by
+ * the caller.
  */
 ofaAccountStore *
 ofa_account_store_new( ofaHub *hub )
@@ -207,7 +210,7 @@ ofa_account_store_new( ofaHub *hub )
 		setup_signaling_connect( store, hub );
 	}
 
-	return( store );
+	return( g_object_ref( store ));
 }
 
 /*
@@ -357,7 +360,7 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 			ACCOUNT_COL_FUT_CREDIT,    sfcre,
 			ACCOUNT_COL_SETTLEABLE,    ofo_account_is_settleable( account ) ? ACCOUNT_SETTLEABLE_STR : "",
 			ACCOUNT_COL_RECONCILIABLE, ofo_account_is_reconciliable( account ) ? ACCOUNT_RECONCILIABLE_STR : "",
-			ACCOUNT_COL_FORWARD,       ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE_STR : "",
+			ACCOUNT_COL_FORWARDABLE,       ofo_account_is_forwardable( account ) ? ACCOUNT_FORWARDABLE_STR : "",
 			ACCOUNT_COL_CLOSED,        ofo_account_is_closed( account ) ? ACCOUNT_CLOSED_STR : "",
 			ACCOUNT_COL_EXE_DEBIT,     sedeb,
 			ACCOUNT_COL_EXE_CREDIT,    secre,
@@ -873,37 +876,4 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
 		gtk_tree_store_clear( GTK_TREE_STORE( store ));
 		tree_store_load_dataset( OFA_TREE_STORE( store ), hub );
 	}
-}
-
-/**
- * ofa_account_store_get_by_number:
- * @instance: this #ofaAccountStore instance.
- * @number: the searched for account identifier.
- * @iter: [out]:
- *
- * Set the iter to the specified row, of the nearest if possible, while
- * staying in the same account class.
- *
- * Returns: %TRUE if returned iter is valid, %FALSE else.
- */
-gboolean
-ofa_account_store_get_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter )
-{
-	ofaAccountStorePrivate *priv;
-	gboolean valid;
-
-	g_return_val_if_fail( store && OFA_IS_ACCOUNT_STORE( store ), FALSE );
-	g_return_val_if_fail( iter, FALSE );
-
-	if( !my_strlen( number )){
-		return( FALSE );
-	}
-
-	priv = ofa_account_store_get_instance_private( store );
-
-	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
-
-	find_row_by_number( store, number, iter, &valid );
-
-	return( valid );
 }

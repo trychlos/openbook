@@ -39,9 +39,10 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
+#include "core/ofa-account-frame-bin.h"
 #include "core/ofa-account-select.h"
 #include "core/ofa-account-store.h"
-#include "core/ofa-account-frame-bin.h"
+#include "core/ofa-account-treeview.h"
 
 /* private instance data
  */
@@ -56,7 +57,6 @@ typedef struct {
 	/* UI
 	 */
 	ofaAccountFrameBin  *account_bin;
-	ofaAccountStore     *account_store;
 	GtkWidget           *ok_btn;
 
 	/* returned value
@@ -67,14 +67,16 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-account-select.ui";
 
-static ofaAccountSelect *ofa_account_select_new( ofaIGetter *getter, GtkWindow *parent );
+static ofaAccountSelect *account_select_new( ofaIGetter *getter, GtkWindow *parent );
 static void              iwindow_iface_init( myIWindowInterface *iface );
 static void              idialog_iface_init( myIDialogInterface *iface );
 static void              idialog_init( myIDialog *instance );
-static void              on_book_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
-static void              on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self );
+static void              on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
+static void              on_selection_changed( ofaAccountFrameBin *bin, ofoAccount *account, ofaAccountSelect *self );
+static void              on_selection_activated( ofaAccountFrameBin *bin, ofoAccount *account, ofaAccountSelect *self );
 static void              check_for_enable_dlg( ofaAccountSelect *self );
-static gboolean          is_selection_valid( ofaAccountSelect *self, const gchar *number );
+static void              check_for_enable_dlg_with_account( ofaAccountSelect *self, ofoAccount *account );
+static gboolean          is_selection_valid( ofaAccountSelect *self, ofoAccount *account );
 static gboolean          idialog_quit_on_ok( myIDialog *instance );
 static gboolean          do_select( ofaAccountSelect *self );
 
@@ -117,7 +119,6 @@ account_select_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_object_unref( priv->account_store );
 	}
 
 	/* chain up to the parent class */
@@ -159,7 +160,7 @@ ofa_account_select_class_init( ofaAccountSelectClass *klass )
  * Returns: the unique #ofaAccountSelect instance.
  */
 static ofaAccountSelect *
-ofa_account_select_new( ofaIGetter *getter, GtkWindow *parent )
+account_select_new( ofaIGetter *getter, GtkWindow *parent )
 {
 	ofaAccountSelect *dialog;
 	ofaAccountSelectPrivate *priv;
@@ -212,7 +213,7 @@ ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *aske
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), NULL );
 
-	dialog = ofa_account_select_new( getter, parent );
+	dialog = account_select_new( getter, parent );
 	priv = ofa_account_select_get_instance_private( dialog );
 
 	ofa_account_frame_bin_set_selected( priv->account_bin, asked_number );
@@ -274,20 +275,22 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "piece-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->account_bin = ofa_account_frame_bin_new( priv->getter );
-	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 4, 4, 4, 0 );
+	priv->account_bin = ofa_account_frame_bin_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 0, 4, 0, 0 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
+	ofa_account_frame_bin_set_settings_key(
+			priv->account_bin, G_OBJECT_TYPE_NAME( instance ));
 	ofa_account_frame_bin_set_cell_data_func(
-			priv->account_bin, ( GtkTreeCellDataFunc ) on_book_cell_data_func, instance );
+			priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, instance );
 
-	/* get our own reference on the underlying store */
-	priv->account_store = ofa_account_frame_bin_get_account_store( priv->account_bin );
+	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_selection_changed ), instance );
+	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_selection_activated ), instance );
 
-	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_account_activated ), instance );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_NEW );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_UPDATE );
+	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_DELETE );
 
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_NEW, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_PROPERTIES, TRUE );
-	ofa_account_frame_bin_add_button( priv->account_bin, ACCOUNT_BTN_DELETE, TRUE );
+	ofa_account_frame_bin_set_getter( priv->account_bin, priv->getter );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
@@ -296,17 +299,21 @@ idialog_init( myIDialog *instance )
  * display in grey italic the non-selectable accounts
  */
 static void
-on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
+on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn,
 							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
 							ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
 	ofoAccount *account;
 	GdkRGBA color;
+	GtkWidget *treeview;
 
 	priv = ofa_account_select_get_instance_private( self );
 
-	ofa_account_frame_bin_cell_data_render( priv->account_bin, tcolumn, cell, tmodel, iter );
+	treeview = ofa_account_frame_bin_get_current_page( priv->account_bin );
+	g_return_if_fail( treeview && OFA_IS_ACCOUNT_TREEVIEW( treeview ));
+
+	ofa_account_treeview_cell_data_render( OFA_ACCOUNT_TREEVIEW( treeview ), tcolumn, cell, tmodel, iter );
 
 	gtk_tree_model_get( tmodel, iter, ACCOUNT_COL_OBJECT, &account, -1 );
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
@@ -320,7 +327,13 @@ on_book_cell_data_func( GtkTreeViewColumn *tcolumn,
 }
 
 static void
-on_account_activated( ofaAccountFrameBin *piece, const gchar *number, ofaAccountSelect *self )
+on_selection_changed( ofaAccountFrameBin *bin, ofoAccount *account, ofaAccountSelect *self )
+{
+	check_for_enable_dlg_with_account( self, account );
+}
+
+static void
+on_selection_activated( ofaAccountFrameBin *bin, ofoAccount *account, ofaAccountSelect *self )
 {
 	gtk_dialog_response( GTK_DIALOG( self ), GTK_RESPONSE_OK );
 }
@@ -329,37 +342,37 @@ static void
 check_for_enable_dlg( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
-	gchar *account;
-	gboolean ok;
+	ofoAccount *account;
 
 	priv = ofa_account_select_get_instance_private( self );
 
 	account = ofa_account_frame_bin_get_selected( priv->account_bin );
+	check_for_enable_dlg_with_account( self, account );
+}
+
+static void
+check_for_enable_dlg_with_account( ofaAccountSelect *self, ofoAccount *account )
+{
+	ofaAccountSelectPrivate *priv;
+	gboolean ok;
+
+	priv = ofa_account_select_get_instance_private( self );
+
 	ok = is_selection_valid( self, account );
-	g_free( account );
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
 
 static gboolean
-is_selection_valid( ofaAccountSelect *self, const gchar *number )
+is_selection_valid( ofaAccountSelect *self, ofoAccount *account )
 {
 	ofaAccountSelectPrivate *priv;
 	gboolean ok;
-	ofoAccount *account;
-	ofaHub *hub;
 
 	priv = ofa_account_select_get_instance_private( self );
 
-	ok = FALSE;
-
-	if( my_strlen( number )){
-		hub = ofa_igetter_get_hub( priv->getter );
-		account = ofo_account_get_by_number( hub, number );
-		g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
-
-		ok = ofo_account_is_allowed( account, priv->allowed );
-	}
+	/* account may be %NULL */
+	ok = account ? ofo_account_is_allowed( account, priv->allowed ) : FALSE;
 
 	return( ok );
 }
@@ -374,7 +387,7 @@ static gboolean
 do_select( ofaAccountSelect *self )
 {
 	ofaAccountSelectPrivate *priv;
-	gchar *account;
+	ofoAccount *account;
 	gboolean ok;
 
 	priv = ofa_account_select_get_instance_private( self );
@@ -382,9 +395,8 @@ do_select( ofaAccountSelect *self )
 	account = ofa_account_frame_bin_get_selected( priv->account_bin );
 	ok = is_selection_valid( self, account );
 	if( ok ){
-		priv->account_number = g_strdup( account );
+		priv->account_number = g_strdup( ofo_account_get_number( account ));
 	}
-	g_free( account );
 
 	return( ok );
 }

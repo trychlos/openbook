@@ -165,36 +165,37 @@ libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-account-frame-bin.lo ofa-account-properties.lo \
 	ofa-account-select.lo ofa-account-store.lo \
-	ofa-admin-credentials-bin.lo ofa-amount.lo ofa-box.lo \
-	ofa-buttons-box.lo ofa-core.lo ofa-counter.lo \
-	ofa-currency-combo.lo ofa-currency-store.lo \
+	ofa-account-treeview.lo ofa-admin-credentials-bin.lo \
+	ofa-amount.lo ofa-box.lo ofa-buttons-box.lo ofa-core.lo \
+	ofa-counter.lo ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
 	ofa-dossier-delete-prefs-bin.lo ofa-dossier-prefs.lo \
 	ofa-extender-collection.lo ofa-extender-module.lo \
 	ofa-formula-engine.lo ofa-guided-input.lo \
 	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
-	ofa-iactionable.lo ofa-icontext.lo ofa-iconcil.lo \
-	ofa-idate-filter.lo ofa-idbconnect.lo ofa-idbeditor.lo \
-	ofa-idbmeta.lo ofa-idbmodel.lo ofa-idbperiod.lo \
-	ofa-idbprovider.lo ofa-iexe-close.lo ofa-iexportable.lo \
-	ofa-igetter.lo ofa-iimporter.lo ofa-iimportable.lo \
-	ofa-import-duplicate.lo ofa-iprintable.lo ofa-iproperties.lo \
-	ofa-irenderable.lo ofa-isignal-hub.lo ofa-istore.lo \
-	ofa-itheme-manager.lo ofa-itree-adder.lo ofa-itvcolumnable.lo \
-	ofa-itvsortable.lo ofa-ledger-combo.lo ofa-ledger-store.lo \
-	ofa-list-store.lo ofa-ope-template-editable.lo \
-	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
-	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
-	ofa-ope-template-store.lo ofa-open-prefs-bin.lo ofa-page.lo \
-	ofa-periodicity.lo ofa-periodicity-bin.lo \
-	ofa-portfolio-collection.lo ofa-preferences.lo \
-	ofa-render-page.lo ofa-settings.lo ofa-stream-format.lo \
-	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
-	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo ofo-base.lo \
-	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
-	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
-	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
+	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
+	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
+	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbmodel.lo \
+	ofa-idbperiod.lo ofa-idbprovider.lo ofa-iexe-close.lo \
+	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-import-duplicate.lo ofa-iprintable.lo \
+	ofa-iproperties.lo ofa-irenderable.lo ofa-isignal-hub.lo \
+	ofa-istore.lo ofa-itheme-manager.lo ofa-itree-adder.lo \
+	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
+	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
+	ofa-ope-template-select.lo ofa-ope-template-store.lo \
+	ofa-open-prefs-bin.lo ofa-page.lo ofa-periodicity.lo \
+	ofa-periodicity-bin.lo ofa-portfolio-collection.lo \
+	ofa-preferences.lo ofa-render-page.lo ofa-settings.lo \
+	ofa-stream-format.lo ofa-stream-format-bin.lo \
+	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
+	ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -482,6 +483,8 @@ libofa_core_la_SOURCES = \
 	ofa-account-select.h								\
 	ofa-account-store.c									\
 	ofa-account-store.h									\
+	ofa-account-treeview.c								\
+	ofa-account-treeview.h								\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
 	ofa-amount.c										\
@@ -509,6 +512,7 @@ libofa_core_la_SOURCES = \
 	ofa-hub.c											\
 	ofa-iabout.c										\
 	ofa-iactionable.c									\
+	ofa-iactioner.c										\
 	ofa-icontext.c										\
 	ofa-iconcil.c										\
 	ofa-iconcil.h										\
@@ -533,6 +537,7 @@ libofa_core_la_SOURCES = \
 	ofa-itheme-manager.c								\
 	ofa-itree-adder.c									\
 	ofa-itvcolumnable.c									\
+	ofa-itvfilterable.c									\
 	ofa-itvsortable.c									\
 	ofa-ledger-combo.c									\
 	ofa-ledger-combo.h									\
@@ -688,6 +693,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-store.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-amount.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
@@ -708,6 +714,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-hub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iabout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iactionable.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iactioner.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iconcil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icontext.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idate-filter.Plo@am__quote@
@@ -731,6 +738,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itheme-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itree-adder.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itvcolumnable.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itvfilterable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itvsortable.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-combo.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-store.Plo@am__quote@
