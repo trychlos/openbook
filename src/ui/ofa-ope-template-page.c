@@ -50,14 +50,13 @@ typedef struct {
 
 	/* UI
 	 */
-	ofaOpeTemplateFrameBin *ope_frame;
+	ofaOpeTemplateFrameBin *template_bin;
 }
 	ofaOpeTemplatePagePrivate;
 
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTemplatePage *self );
-static void       on_page_removed( ofaOpeTemplatePage *self, GtkWidget *page_w, guint page_n, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplatePage, ofa_ope_template_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaOpeTemplatePage ))
@@ -127,20 +126,22 @@ v_setup_page( ofaPage *page )
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	priv->ope_frame = ofa_ope_template_frame_bin_new( OFA_IGETTER( page ));
-	my_utils_widget_set_margins( GTK_WIDGET( priv->ope_frame ), 4, 4, 4, 0 );
-	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->ope_frame ), 0, 0, 1, 1 );
+	priv->template_bin = ofa_ope_template_frame_bin_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->template_bin ), 2, 2, 2, 0 );
+	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->template_bin ), 0, 0, 1, 1 );
 
-	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_NEW, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_PROPERTIES, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_DUPLICATE, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_DELETE, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_SPACER, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_frame, TEMPLATE_ACTION_GUIDED_INPUT, TRUE );
+	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, G_OBJECT_TYPE_NAME( page ));
 
-	g_signal_connect( priv->ope_frame, "ofa-activated", G_CALLBACK( on_row_activated ), page );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_NEW );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_PROPERTIES );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DUPLICATE );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DELETE );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_SPACER );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_GUIDED_INPUT );
 
-	g_signal_connect( page, "page-removed", G_CALLBACK( on_page_removed ), NULL );
+	g_signal_connect( priv->template_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
+
+	ofa_ope_template_frame_bin_set_getter( priv->template_bin, OFA_IGETTER( page ));
 }
 
 static GtkWidget *
@@ -153,7 +154,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	top_widget = ofa_ope_template_frame_bin_get_current_page( priv->ope_frame );
+	top_widget = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
 
 	return( top_widget );
 }
@@ -180,17 +181,4 @@ on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTempl
 
 		ofa_ope_template_properties_run( OFA_IGETTER( self ), toplevel, ope, NULL );
 	}
-}
-static void
-on_page_removed( ofaOpeTemplatePage *self, GtkWidget *page_w, guint page_n, void *empty )
-{
-	static const gchar *thisfn = "ofa_ope_template_page_on_page_removed";
-	ofaOpeTemplatePagePrivate *priv;
-
-	g_debug( "%s: self=%p, page_w=%p, page_n=%d, empty=%p",
-			thisfn, ( void * ) self, ( void * ) page_w, page_n, ( void * ) empty );
-
-	priv = ofa_ope_template_page_get_instance_private( self );
-
-	ofa_ope_template_frame_bin_write_settings( priv->ope_frame );
 }

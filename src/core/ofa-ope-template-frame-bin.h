@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_ope_template_frame_bin
  * @short_description: #ofaOpeTemplateFrameBin class definition.
- * @include: ui/ofa-ope-template-frame-bin.h
+ * @include: core/ofa-ope-template-frame-bin.h
  *
  * This is a convenience class which manages both the operation templates
  * notebook and the buttons box on the right.
@@ -46,6 +46,7 @@
 
 #include "api/ofa-igetter-def.h"
 #include "api/ofa-ope-template-store.h"
+#include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
 
@@ -87,14 +88,14 @@ typedef enum {
 
 GType                   ofa_ope_template_frame_bin_get_type              ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                   ( ofaIGetter *getter );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                   ( void );
 
 void                    ofa_ope_template_frame_bin_add_action            ( ofaOpeTemplateFrameBin *bin,
 																				ofeOpeTemplateAction id );
 
 GtkWidget              *ofa_ope_template_frame_bin_get_current_page      ( ofaOpeTemplateFrameBin *bin );
 
-gchar                  *ofa_ope_template_frame_bin_get_selected          ( ofaOpeTemplateFrameBin *bin );
+ofoOpeTemplate         *ofa_ope_template_frame_bin_get_selected          ( ofaOpeTemplateFrameBin *bin );
 
 void                    ofa_ope_template_frame_bin_set_selected          ( ofaOpeTemplateFrameBin *bin,
 																				const gchar *mnemo );
@@ -104,12 +105,6 @@ void                    ofa_ope_template_frame_bin_set_settings_key      ( ofaOp
 
 void                    ofa_ope_template_frame_bin_set_getter            ( ofaOpeTemplateFrameBin *bin,
 																				ofaIGetter *getter );
-
-/* ... */
-
-void                    ofa_ope_template_frame_bin_write_settings        ( ofaOpeTemplateFrameBin *bin );
-
-ofaOpeTemplateStore    *ofa_ope_template_frame_bin_get_ope_template_store( ofaOpeTemplateFrameBin *bin );
 
 G_END_DECLS
 

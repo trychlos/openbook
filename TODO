@@ -431,9 +431,12 @@
                 - implement actions in the page
                 - check dialog properties
                 Done for:
-                - ofaAccount: Page, Select, FrameBin, Treeview
-                - ofatBat: Page, Treeview, lineTreeview, Select
-                - ofaClass: Page, Treeview
+                - ofaAccount: Treeview, FrameBin, Page, Select 
+                - ofatBat: Treeview, lineTreeview, Page, Select
+                - ofaClass: Treeview, Page
+                - ofaOpeTemplate:Treeview, FrameBin, Page, Select
+
+1183
 
 -----------------------------------------------------------------------
  DONE

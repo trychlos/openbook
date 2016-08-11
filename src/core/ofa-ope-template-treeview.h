@@ -28,21 +28,31 @@
 /**
  * SECTION: ofa_ope_template_treeview
  * @short_description: #ofaOpeTemplateTreeview class definition.
- * @include: ui/ofa-ope-template-frame-bin.h
+ * @include: core/ofa-ope-template-treeview.h
  *
- * This is a convenience class which manages both the operation templates
- * notebook and the buttons box on the right.
+ * Manage a treeview with a filtered list of ope templates.
  *
- * The class also acts as a proxy for "changed" and "activated" messages
- * sent by the underlying ofaOpeTemplateStore class.
+ * The class provides the following signals, which are proxyed from
+ * #ofaTVBin base class.
+ *    +------------------+-----------------+
+ *    | Signal           | OpeTemplate may |
+ *    |                  | be %NULL        |
+ *    +------------------+-----------------+
+ *    | ofa-opechanged   |       Yes       |
+ *    | ofa-opeactivated |        No       |
+ *    | ofa-opedelete    |        No       |
+ *    +------------------+-----------------+
+ *
+ * Properties:
+ * - ofa-ope-template-treeview-ledger: ledger identifier attached to this page.
  *
  * See api/ofo-ope-template.h for a full description of the model language.
  */
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-igetter-def.h"
-#include "api/ofa-ope-template-store.h"
+#include "api/ofa-tvbin.h"
+#include "api/ofo-ope-template-def.h"
 
 G_BEGIN_DECLS
 
@@ -55,51 +65,29 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	GtkBin      parent;
+	ofaTVBin      parent;
 }
 	ofaOpeTemplateTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass parent;
+	ofaTVBinClass parent;
 }
 	ofaOpeTemplateTreeviewClass;
 
-/**
- * ofeOpeTemplateFrameBtn:
- *
- * These are the buttons that the frame is able to manage.
- * It is up to the caller to set the desired buttons.
- * Default is none.
- */
-typedef enum {
-	TEMPLATE_ACTION_SPACER = 1,
-	TEMPLATE_ACTION_NEW,
-	TEMPLATE_ACTION_PROPERTIES,
-	TEMPLATE_ACTION_DELETE,
-	TEMPLATE_ACTION_DUPLICATE,
-	TEMPLATE_ACTION_GUIDED_INPUT
-}
-	ofeOpeTemplateFrameBtn;
+GType                   ofa_ope_template_treeview_get_type         ( void ) G_GNUC_CONST;
 
-GType                   ofa_ope_template_treeview_get_type              ( void ) G_GNUC_CONST;
+ofaOpeTemplateTreeview *ofa_ope_template_treeview_new              ( const gchar *ledger );
 
-ofaOpeTemplateTreeview *ofa_ope_template_treeview_new                   ( ofaIGetter *getter );
+const gchar            *ofa_ope_template_treeview_get_filter_ledger( ofaOpeTemplateTreeview *view );
 
-GtkWidget              *ofa_ope_template_treeview_add_button            ( ofaOpeTemplateTreeview *bin,
-																				ofeOpeTemplateFrameBtn id,
-																				gboolean sensitive );
+ofoOpeTemplate         *ofa_ope_template_treeview_get_selected     ( ofaOpeTemplateTreeview *view );
 
-GtkWidget              *ofa_ope_template_treeview_get_current_treeview  ( ofaOpeTemplateTreeview *bin );
+void                    ofa_ope_template_treeview_set_selected     ( ofaOpeTemplateTreeview *view,
+																			const gchar *mnemo );
 
-gchar                  *ofa_ope_template_treeview_get_selected          ( ofaOpeTemplateTreeview *bin );
-
-void                    ofa_ope_template_treeview_set_selected          ( ofaOpeTemplateTreeview *bin,
-																				const gchar *mnemo );
-
-void                    ofa_ope_template_treeview_write_settings        ( ofaOpeTemplateTreeview *bin );
-
-ofaOpeTemplateStore    *ofa_ope_template_treeview_get_ope_template_store( ofaOpeTemplateTreeview *bin );
+void                    ofa_ope_template_treeview_set_settings_key ( ofaOpeTemplateTreeview *view,
+																			const gchar *key );
 
 G_END_DECLS
 

@@ -48,7 +48,6 @@
  */
 
 #include "api/ofa-tvbin.h"
-#include "api/ofa-hub-def.h"
 #include "api/ofo-account-def.h"
 
 G_BEGIN_DECLS

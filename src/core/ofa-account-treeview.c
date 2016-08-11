@@ -352,7 +352,7 @@ ofa_account_treeview_new( gint class_number )
 	 * GtkNotebook, not each view will save its settings, but only
 	 * the last being saw by the user (see ofaAccountFrameBin::dispose)
 	 */
-	ofa_tvbin_set_columns_settings( OFA_TVBIN( view ), FALSE );
+	ofa_tvbin_set_write_settings( OFA_TVBIN( view ), FALSE );
 
 	return( view );
 }
@@ -514,7 +514,7 @@ on_selection_delete( ofaAccountTreeview *self, GtkTreeSelection *selection, void
 }
 
 /*
- * BAT may be %NULL when selection is empty (on 'ofa-batchanged' signal)
+ * Account may be %NULL when selection is empty (on 'ofa-accchanged' signal)
  */
 static void
 get_and_send( ofaAccountTreeview *self, GtkTreeSelection *selection, const gchar *signal )

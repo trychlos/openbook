@@ -209,7 +209,7 @@ void              ofa_tvbin_set_store             ( ofaTVBin *bin,
 void              ofa_tvbin_set_selected          ( ofaTVBin *bin,
 														GtkTreeIter *treeview_iter );
 
-void              ofa_tvbin_set_columns_settings  ( ofaTVBin *bin,
+void              ofa_tvbin_set_write_settings    ( ofaTVBin *bin,
 														gboolean write );
 
 void              ofa_tvbin_write_columns_settings( ofaTVBin *bin );

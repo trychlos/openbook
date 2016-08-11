@@ -1048,7 +1048,7 @@ ofa_tvbin_set_selected( ofaTVBin *bin, GtkTreeIter *treeview_iter )
 }
 
 /*
- * ofa_tvbin_set_columns_settings:
+ * ofa_tvbin_set_write_settings:
  * @bin: this #ofaTVBin instance.
  * @write: whether to write the column settings.
  *
@@ -1058,7 +1058,7 @@ ofa_tvbin_set_selected( ofaTVBin *bin, GtkTreeIter *treeview_iter )
  * settings (size and position) at dispose() time.
  */
 void
-ofa_tvbin_set_columns_settings( ofaTVBin *bin, gboolean write )
+ofa_tvbin_set_write_settings( ofaTVBin *bin, gboolean write )
 {
 	ofaTVBinPrivate *priv;
 

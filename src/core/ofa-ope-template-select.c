@@ -35,6 +35,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-ope-template.h"
 
 #include "core/ofa-ope-template-select.h"
 #include "core/ofa-ope-template-frame-bin.h"
@@ -50,8 +51,7 @@ typedef struct {
 
 	/* UI
 	 */
-	ofaOpeTemplateFrameBin *ope_templates_frame;
-	ofaOpeTemplateStore    *ope_template_store;
+	ofaOpeTemplateFrameBin *template_bin;
 	GtkWidget              *ok_btn;
 
 	/* returned value
@@ -62,7 +62,7 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-template-select.ui";
 
-static ofaOpeTemplateSelect *ofa_ope_template_select_new( ofaIGetter *getter, GtkWindow *parent );
+static ofaOpeTemplateSelect *ope_template_select_new( ofaIGetter *getter, GtkWindow *parent );
 static void                  iwindow_iface_init( myIWindowInterface *iface );
 static void                  idialog_iface_init( myIDialogInterface *iface );
 static void                  idialog_init( myIDialog *instance );
@@ -111,7 +111,6 @@ ope_template_select_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_object_unref( priv->ope_template_store );
 	}
 
 	/* chain up to the parent class */
@@ -153,7 +152,7 @@ ofa_ope_template_select_class_init( ofaOpeTemplateSelectClass *klass )
  * Returns: the unique #ofaOpeTemplateSelect instance.
  */
 static ofaOpeTemplateSelect *
-ofa_ope_template_select_new( ofaIGetter *getter, GtkWindow *parent )
+ope_template_select_new( ofaIGetter *getter, GtkWindow *parent )
 {
 	ofaOpeTemplateSelect *dialog;
 	ofaOpeTemplateSelectPrivate *priv;
@@ -205,14 +204,14 @@ ofa_ope_template_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), NULL );
 
-	dialog = ofa_ope_template_select_new( getter, parent );
+	dialog = ope_template_select_new( getter, parent );
 	priv = ofa_ope_template_select_get_instance_private( dialog );
 
 	g_free( priv->ope_mnemo );
 	priv->ope_mnemo = NULL;
 
 	selected_mnemo = NULL;
-	ofa_ope_template_frame_bin_set_selected( priv->ope_templates_frame, asked_mnemo );
+	ofa_ope_template_frame_bin_set_selected( priv->template_bin, asked_mnemo );
 	check_for_enable_dlg( dialog );
 
 	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
@@ -265,19 +264,18 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "ope-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->ope_templates_frame = ofa_ope_template_frame_bin_new( priv->getter );
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->ope_templates_frame ));
+	priv->template_bin = ofa_ope_template_frame_bin_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->template_bin ));
 
-	/* get our own reference on the underlying store */
-	priv->ope_template_store = ofa_ope_template_frame_bin_get_ope_template_store( priv->ope_templates_frame );
+	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, G_OBJECT_TYPE_NAME( instance ));
 
-	g_signal_connect( priv->ope_templates_frame, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
-	g_signal_connect( priv->ope_templates_frame, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );
+	g_signal_connect( priv->template_bin, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
+	g_signal_connect( priv->template_bin, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );
 
-	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_NEW, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_PROPERTIES, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_DUPLICATE, TRUE );
-	ofa_ope_template_frame_bin_add_action( priv->ope_templates_frame, TEMPLATE_ACTION_DELETE, TRUE );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_NEW );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_PROPERTIES );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DUPLICATE );
+	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DELETE );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
@@ -298,14 +296,13 @@ static void
 check_for_enable_dlg( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
-	gchar *mnemo;
+	ofoOpeTemplate *template;
 	gboolean ok;
 
 	priv = ofa_ope_template_select_get_instance_private( self );
 
-	mnemo = ofa_ope_template_frame_bin_get_selected( priv->ope_templates_frame );
-	ok = my_strlen( mnemo );
-	g_free( mnemo );
+	template = ofa_ope_template_frame_bin_get_selected( priv->template_bin );
+	ok = template && OFO_IS_OPE_TEMPLATE( template );
 
 	gtk_widget_set_sensitive( priv->ok_btn, ok );
 }
@@ -320,16 +317,15 @@ static gboolean
 do_select( ofaOpeTemplateSelect *self )
 {
 	ofaOpeTemplateSelectPrivate *priv;
-	gchar *mnemo;
+	ofoOpeTemplate *template;
 
 	priv = ofa_ope_template_select_get_instance_private( self );
 
-	mnemo = ofa_ope_template_frame_bin_get_selected( priv->ope_templates_frame );
-	if( my_strlen( mnemo )){
+	template = ofa_ope_template_frame_bin_get_selected( priv->template_bin );
+	if( template ){
 		g_free( priv->ope_mnemo );
-		priv->ope_mnemo = g_strdup( mnemo );
+		priv->ope_mnemo = g_strdup( ofo_ope_template_get_mnemo( template ));
 	}
-	g_free( mnemo );
 
 	return( TRUE );
 }

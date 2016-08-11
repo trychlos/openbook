@@ -150,7 +150,10 @@ static void       hub_connect_to_signaling_system( ofaAccountFrameBin *self );
 static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self );
 static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *self );
 static void       hub_on_updated_class_label( ofaAccountFrameBin *self, ofoClass *class );
-static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self );
+static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self );static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
+
 static void       hub_on_deleted_class_label( ofaAccountFrameBin *self, ofoClass *class );
 static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountFrameBin *self );
 static void       iactionable_iface_init( ofaIActionableInterface *iface );
@@ -345,6 +348,8 @@ ofa_account_frame_bin_new( void  )
  *
  * Note that each page of the notebook is created on the fly, when an
  * account for this page is inserted in the store.
+ *
+ * Each page of the notebook presents the accounts of a given class.
  */
 static void
 setup_bin( ofaAccountFrameBin *self )
@@ -373,7 +378,7 @@ setup_bin( ofaAccountFrameBin *self )
 }
 
 /*
- * Defined the actions managed here
+ * Defined the actions managed here.
  * All possible actions are defined, and default to be be disabled.
  * Only actions which are explicitely setup by the caller will be
  * activatable and have a button and a menu item.
@@ -468,7 +473,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 {
 	static const gchar *thisfn = "ofa_account_frame_bin_create_page";
 	ofaAccountFrameBinPrivate *priv;
-	ofaAccountTreeview *treeview;
+	ofaAccountTreeview *view;
 	GtkWidget *label;
 	ofoClass *class_obj;
 	const gchar *class_label;
@@ -480,16 +485,16 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	treeview = ofa_account_treeview_new( class_num );
+	view = ofa_account_treeview_new( class_num );
 
-	ofa_account_treeview_set_settings_key( treeview, priv->settings_key );
-	ofa_account_treeview_set_cell_data_func( treeview, priv->cell_fn, priv->cell_data );
-	ofa_tvbin_set_store( OFA_TVBIN( treeview ), GTK_TREE_MODEL( priv->store ));
+	ofa_account_treeview_set_settings_key( view, priv->settings_key );
+	ofa_account_treeview_set_cell_data_func( view, priv->cell_fn, priv->cell_data );
+	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 
-	g_signal_connect( treeview, "ofa-accchanged", G_CALLBACK( tview_on_selection_changed ), self );
-	g_signal_connect( treeview, "ofa-accactivated", G_CALLBACK( tview_on_selection_activated ), self );
-	g_signal_connect( treeview, "ofa-accdelete", G_CALLBACK( tview_on_key_delete ), self );
-	g_signal_connect( treeview, "ofa-insert", G_CALLBACK( tview_on_key_insert ), self );
+	g_signal_connect( view, "ofa-accchanged", G_CALLBACK( tview_on_selection_changed ), self );
+	g_signal_connect( view, "ofa-accactivated", G_CALLBACK( tview_on_selection_activated ), self );
+	g_signal_connect( view, "ofa-accdelete", G_CALLBACK( tview_on_key_delete ), self );
+	g_signal_connect( view, "ofa-insert", G_CALLBACK( tview_on_key_insert ), self );
 
 	/* add the page to the notebook */
 	class_obj = ofo_class_get_by_number( priv->hub, class_num );
@@ -504,31 +509,32 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 	gtk_widget_set_tooltip_text( label, str );
 	g_free( str );
 
-	page_num = gtk_notebook_append_page( GTK_NOTEBOOK( priv->notebook ), GTK_WIDGET( treeview ), label );
+	page_num = gtk_notebook_append_page( GTK_NOTEBOOK( priv->notebook ), GTK_WIDGET( view ), label );
 	if( page_num == -1 ){
 		g_warning( "%s: unable to add a page to the notebook for class=%d", thisfn, class_num );
+		g_object_unref( view );
 		return( NULL );
 	}
-	gtk_notebook_set_tab_reorderable( GTK_NOTEBOOK( priv->notebook ), GTK_WIDGET( treeview ), TRUE );
+	gtk_notebook_set_tab_reorderable( GTK_NOTEBOOK( priv->notebook ), GTK_WIDGET( view ), TRUE );
 
 	/* create a new context menu for each page of the notebook */
 	menu = g_menu_new();
 	g_menu_append_section( menu, NULL,
 			G_MENU_MODEL( ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), st_action_group_name )));
 	ofa_icontext_set_menu(
-			OFA_ICONTEXT( treeview ), OFA_IACTIONABLE( self ),
+			OFA_ICONTEXT( view ), OFA_IACTIONABLE( self ),
 			menu );
 	g_object_unref( menu );
 
-	menu = ofa_tvbin_get_menu( OFA_TVBIN( treeview ));
+	menu = ofa_tvbin_get_menu( OFA_TVBIN( view ));
 	ofa_icontext_append_submenu(
-			OFA_ICONTEXT( treeview ), OFA_IACTIONABLE( treeview ),
+			OFA_ICONTEXT( view ), OFA_IACTIONABLE( view ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 
 	/* proxy and sync of action messages */
-	ofa_iactioner_register_actionable( OFA_IACTIONER( self ), OFA_IACTIONABLE( treeview ));
+	ofa_iactioner_register_actionable( OFA_IACTIONER( self ), OFA_IACTIONABLE( view ));
 
-	return( GTK_WIDGET( treeview ));
+	return( GTK_WIDGET( view ));
 }
 
 static void
@@ -648,7 +654,7 @@ book_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountFrameBin *
 
 /**
  * ofa_account_frame_bin_get_current_page:
- * @bin:
+ * @bin: this #ofaAccountFrameBin instance.
  *
  * Returns the #ofaAccountTreeview associated to the current page.
  */
@@ -788,7 +794,7 @@ tview_on_selection_activated( ofaAccountTreeview *treeview, ofoAccount *account,
 static void
 tview_on_key_delete( ofaAccountTreeview *treeview, ofoAccount *account, ofaAccountFrameBin *self )
 {
-	g_return_if_fail( account || OFO_IS_ACCOUNT( account ));
+	g_return_if_fail( !account || OFO_IS_ACCOUNT( account ));
 
 	if( account && is_delete_allowed( self, account )){
 		do_delete_account( self, account );
@@ -806,7 +812,7 @@ tview_on_key_insert( ofaAccountTreeview *treeview, ofaAccountFrameBin *self )
 /**
  * ofa_account_frame_bin_add_action:
  * @bin: this #ofaAccountFrameBin instance.
- * @id: the button identifier.
+ * @id: the action identifier.
  *
  * Create a new button in the #ofaButtonsBox, and define a menu item
  * for the contextual menu.
@@ -1155,16 +1161,6 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
 		book_get_page_by_class( self, class_num, TRUE );
 		priv->prev_class = class_num;
 	}
-
-#if 0
-	/* unable to get the newly insert view expanded after child insertion */
-	tview = book_get_current_account_treeview( self );
-	//g_debug( "store_on_row_inserted: tview=%p", ( void * ) tview );
-	if( tview ){
-		//gtk_tree_view_expand_row( GTK_TREE_VIEW( tview ), path, TRUE );
-		gtk_tree_view_expand_to_path( GTK_TREE_VIEW( tview ), path );
-	}
-#endif
 }
 
 /**
