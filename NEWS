@@ -71,6 +71,7 @@
    - ofaAccountTreeview: new class.
    - ofaBatlineTreeview: new class.
    - ofaClassStore: new class.
+   - ofaCurrencyTreeview: new class.
    - ofaIActionable: new interface.
    - ofaIActioner: new interface.
    - ofaIContext: new interface.
