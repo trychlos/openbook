@@ -434,6 +434,7 @@
                 - ofaAccount: Treeview, FrameBin, Page, Select 
                 - ofatBat: Treeview, lineTreeview, Page, Select
                 - ofaClass: Treeview, Page
+                - ofaCurrency: Treeview, Page
                 - ofaOpeTemplate:Treeview, FrameBin, Page, Select
 
 1183

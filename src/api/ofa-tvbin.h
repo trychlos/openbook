@@ -176,6 +176,11 @@ void              ofa_tvbin_add_column_text       ( ofaTVBin *bin,
 														const gchar *header,
 														const gchar *menu );
 
+void              ofa_tvbin_add_column_text_c     ( ofaTVBin *bin,
+														gint column_id,
+														const gchar *header,
+														const gchar *menu );
+
 void              ofa_tvbin_add_column_text_lx    ( ofaTVBin *bin,
 														gint column_id,
 														const gchar *header,

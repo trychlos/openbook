@@ -730,6 +730,40 @@ ofa_tvbin_add_column_text( ofaTVBin *bin, gint column_id, const gchar *header, c
 }
 
 /*
+ * ofa_tvbin_add_column_text_c:
+ * @bin: this #ofaTVBin instance.
+ * @column_id: the source column id,
+ *  is also used as sortable column identifier.
+ * @header: [allow-none]: the header of the column,
+ *  if NULL, then takes default.
+ * @menu: [allow-none]: the label of the popup menu,
+ *  if NULL, then takes the column header.
+ *
+ * Appends a text column to the treeview, defaulting to non visible.
+ * The text is centered in the column.
+ */
+void
+ofa_tvbin_add_column_text_c( ofaTVBin *bin, gint column_id, const gchar *header, const gchar *menu )
+{
+	ofaTVBinPrivate *priv;
+	GtkCellRenderer *cell;
+	GtkTreeViewColumn *column;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_renderer_set_alignment( cell, 0.5, 0.5 );
+	column = gtk_tree_view_column_new_with_attributes(
+					header ? header : _( "Text" ), cell, "text", column_id, NULL );
+
+	add_column( bin, column, column_id, menu );
+}
+
+/*
  * ofa_tvbin_add_column_text_lx:
  * @bin: this #ofaTVBin instance.
  * @column_id: the source column id,

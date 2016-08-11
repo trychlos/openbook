@@ -77,8 +77,8 @@ static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_selected( ofaClassTreeview *treeview, ofoClass *class, ofaClassPage *self );
 static void       on_row_activated( ofaClassTreeview *treeview, ofoClass *class, ofaClassPage *self );
-static void       on_insert_key( ofaClassTreeview *tview, ofaClassPage *self );
 static void       on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self );
+static void       on_insert_key( ofaClassTreeview *tview, ofaClassPage *self );
 static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
 static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaClassPage *self );
@@ -304,6 +304,21 @@ on_row_activated( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self )
 }
 
 /*
+ * signal sent by ofaClassTreeview on Delete key
+ *
+ * Note that the key may be pressed, even if the button
+ * is disabled. So have to check all prerequisite conditions.
+ * If the current row is not deletable, just silently ignore the key.
+ */
+static void
+on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self )
+{
+	if( check_for_deletability( self, class )){
+		delete_with_confirm( self, class );
+	}
+}
+
+/*
  * signal sent by ofaTVBin on Insert key
  *
  * Note that the key may be pressend even if dossier is not writable.
@@ -318,21 +333,6 @@ on_insert_key( ofaClassTreeview *tview, ofaClassPage *self )
 
 	if( priv->is_writable ){
 		g_action_activate( G_ACTION( priv->new_action ), NULL );
-	}
-}
-
-/*
- * signal sent by ofaClassTreeview on Delete key
- *
- * Note that the key may be pressed, even if the button
- * is disabled. So have to check all prerequisite conditions.
- * If the current row is not deletable, just silently ignore the key.
- */
-static void
-on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self )
-{
-	if( check_for_deletability( self, class )){
-		delete_with_confirm( self, class );
 	}
 }
 

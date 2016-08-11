@@ -27,19 +27,13 @@
 #endif
 
 #include <glib/gi18n.h>
-#include <stdlib.h>
 
-#include "my/my-date.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-icontext.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-currency.h"
-#include "api/ofo-dossier.h"
 
 #include "core/ofa-currency-store.h"
 
@@ -234,7 +228,6 @@ ofa_currency_treeview_new( void )
 	ofaCurrencyTreeview *view;
 
 	view = g_object_new( OFA_TYPE_CURRENCY_TREEVIEW,
-					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
@@ -265,10 +258,10 @@ setup_columns( ofaCurrencyTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CURRENCY_COL_CODE,      _( "Code" ),   _( "ISO 3A code" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_CODE,      _( "Code" ),   _( "ISO 3A code" ));
 	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CURRENCY_COL_LABEL,     _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_SYMBOL,    _( "Symbol" ),     NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_DIGITS,    _( "Digits" ), _( "Digits count" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), CURRENCY_COL_SYMBOL,    _( "Symbol" ),     NULL );
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CURRENCY_COL_DIGITS,    _( "Digits" ), _( "Digits count" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_NOTES,     _( "Notes" ),      NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CURRENCY_COL_NOTES_PNG,    "",         _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CURRENCY_COL_UPD_USER,  _( "User" ),   _( "Last update user" ));
