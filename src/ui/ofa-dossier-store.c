@@ -51,6 +51,7 @@ static GType st_col_types[DOSSIER_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* end date (user display) */
 		G_TYPE_STRING, 					/* begin date (user display) */
 		G_TYPE_STRING, 					/* localized status */
+		G_TYPE_BOOLEAN, 				/* is_current */
 		G_TYPE_OBJECT,					/* ofaIDBMeta */
 		G_TYPE_OBJECT					/* ofaIDBPeriod */
 };
@@ -315,6 +316,7 @@ set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *per
 			DOSSIER_COL_BEGIN,    begin,
 			DOSSIER_COL_END,      end,
 			DOSSIER_COL_STATUS,   status,
+			DOSSIER_COL_CURRENT,  ofa_idbperiod_get_current( period ),
 			DOSSIER_COL_META,     meta,
 			DOSSIER_COL_PERIOD,   period,
 			-1 );

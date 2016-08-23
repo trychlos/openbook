@@ -346,7 +346,7 @@ on_selection_delete( ofaCurrencyTreeview *self, GtkTreeSelection *selection, voi
 }
 
 /*
- * BAT may be %NULL when selection is empty (on 'ofa-batchanged' signal)
+ * Currency may be %NULL when selection is empty (on 'ofa-curchanged' signal)
  */
 static void
 get_and_send( ofaCurrencyTreeview *self, GtkTreeSelection *selection, const gchar *signal )

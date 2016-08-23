@@ -33,7 +33,10 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-igetter.h"
@@ -60,30 +63,40 @@ typedef struct {
 
 	/* UI
 	 */
-	ofaDossierTreeview *tview;
-	GtkWidget          *open_btn;
-	GtkWidget          *delete_btn;
+	ofaDossierTreeview *dossier_tview;
+
+	/* actions
+	 */
+	GSimpleAction      *new_action;
+	GSimpleAction      *open_action;
+	GSimpleAction      *delete_action;
 }
 	ofaDossierManagerPrivate;
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-manager.ui";
+static const gchar *st_action_group_name = "ofaDossierManager";
+static const gchar *st_resource_ui       = "/org/trychlos/openbook/ui/ofa-dossier-manager.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
 static void      setup_treeview( ofaDossierManager *self );
+static void      idialog_init_actions( ofaDossierManager *self );
+static void      idialog_init_menu( ofaDossierManager *self );
 static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
 static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
-static void      on_new_clicked( GtkButton *button, ofaDossierManager *self );
-static void      on_open_clicked( GtkButton *button, ofaDossierManager *self );
+static void      action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
+static void      action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static void      do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period );
-static void      on_delete_clicked( GtkButton *button, ofaDossierManager *self );
+static void      action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static gboolean  confirm_delete( ofaDossierManager *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
+static void      iactionable_iface_init( ofaIActionableInterface *iface );
+static guint     iactionable_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierManager, ofa_dossier_manager, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierManager )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
-		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init ))
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init ))
 
 static void
 dossier_manager_finalize( GObject *instance )
@@ -115,6 +128,9 @@ dossier_manager_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->new_action );
+		g_clear_object( &priv->open_action );
+		g_clear_object( &priv->delete_action );
 	}
 
 	/* chain up to the parent class */
@@ -211,28 +227,14 @@ static void
 idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_manager_idialog_init";
-	ofaDossierManagerPrivate *priv;
-	GtkWidget *button;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv = ofa_dossier_manager_get_instance_private( OFA_DOSSIER_MANAGER( instance ));
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "new-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_new_clicked ), instance );
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "open-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_open_clicked ), instance );
-	priv->open_btn = button;
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "delete-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_delete_clicked ), instance );
-	priv->delete_btn = button;
-
 	setup_treeview( OFA_DOSSIER_MANAGER( instance ));
+	idialog_init_actions( OFA_DOSSIER_MANAGER( instance ));
+	idialog_init_menu( OFA_DOSSIER_MANAGER( instance ));
+
+	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
 
 static void
@@ -240,42 +242,113 @@ setup_treeview( ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
 	GtkWidget *parent;
-	static ofaDossierDispColumn st_columns[] = {
-			DOSSIER_DISP_DOSNAME,
-			DOSSIER_DISP_BEGIN,
-			DOSSIER_DISP_END,
-			DOSSIER_DISP_STATUS,
-			DOSSIER_DISP_PERNAME,
-			DOSSIER_DISP_PROVNAME,
-			0 };
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->tview = ofa_dossier_treeview_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
-	ofa_dossier_treeview_set_columns( priv->tview, st_columns );
-	ofa_dossier_treeview_set_headers( priv->tview, TRUE );
-	ofa_dossier_treeview_set_show( priv->tview, DOSSIER_SHOW_ALL );
+	priv->dossier_tview = ofa_dossier_treeview_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dossier_tview ));
+	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, G_OBJECT_TYPE_NAME( self ));
+	ofa_dossier_treeview_set_filter_show( priv->dossier_tview, TRUE );
 
-	g_signal_connect( priv->tview, "changed", G_CALLBACK( on_tview_changed ), self );
-	g_signal_connect( priv->tview, "activated", G_CALLBACK( on_tview_activated ), self );
+	g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( on_tview_changed ), self );
+	g_signal_connect( priv->dossier_tview, "ofa-dosactivated", G_CALLBACK( on_tview_activated ), self );
+
+	ofa_dossier_treeview_setup_store( priv->dossier_tview );
+}
+
+static void
+idialog_init_actions( ofaDossierManager *self )
+{
+	ofaDossierManagerPrivate *priv;
+	GtkWidget *container;
+	ofaButtonsBox *buttons_box;
+
+	priv = ofa_dossier_manager_get_instance_private( self );
+
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "buttons-box" );
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	buttons_box = ofa_buttons_box_new();
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( buttons_box ));
+
+	/* new action */
+	priv->new_action = g_simple_action_new( "new", NULL );
+	g_simple_action_set_enabled( priv->new_action, TRUE );
+	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE_NEW_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE_NEW_BTN ));
+
+	/* open action */
+	priv->open_action = g_simple_action_new( "open", NULL );
+	g_simple_action_set_enabled( priv->new_action, TRUE );
+	g_signal_connect( priv->open_action, "activate", G_CALLBACK( action_on_open_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->open_action ),
+			_( "Open" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->open_action ),
+					_( "_Open..." )));
+
+	/* delete action */
+	priv->delete_action = g_simple_action_new( "delete", NULL );
+	g_simple_action_set_enabled( priv->delete_action, TRUE );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE_DELETE_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE_DELETE_BTN ));
+}
+
+static void
+idialog_init_menu( ofaDossierManager *self )
+{
+	ofaDossierManagerPrivate *priv;
+	GMenu *menu;
+
+	priv = ofa_dossier_manager_get_instance_private( self );
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), st_action_group_name );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->dossier_tview ), OFA_IACTIONABLE( self ),
+			menu );
+
+	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->dossier_tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->dossier_tview ), OFA_IACTIONABLE( priv->dossier_tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 static void
 on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
-	gboolean ok;
+	gboolean ok, is_opened;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	ok = ( meta && period );
+	is_opened = FALSE;
+	ok = ( meta && period && !is_opened );
 
-	gtk_widget_set_sensitive( priv->open_btn, ok );
-	gtk_widget_set_sensitive( priv->delete_btn, ok );
+	if( priv->open_action ){
+		g_simple_action_set_enabled( priv->open_action, ok );
+	}
+	if( priv->delete_action ){
+		g_simple_action_set_enabled( priv->delete_action, ok );
+	}
 }
 
 static void
@@ -287,10 +360,14 @@ on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *p
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaDossierManager *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self )
 {
+	static const gchar *thisfn = "ofa_dossier_manager_action_on_new_activated";
 	ofaDossierManagerPrivate *priv;
 	GtkWindow *toplevel;
+
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
@@ -300,25 +377,28 @@ on_new_clicked( GtkButton *button, ofaDossierManager *self )
 }
 
 static void
-on_open_clicked( GtkButton *button, ofaDossierManager *self )
+action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self )
 {
+	static const gchar *thisfn = "ofa_dossier_manager_action_on_open_activated";
 	ofaDossierManagerPrivate *priv;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
+
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
 	meta = NULL;
 	period = NULL;
 
-	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period )){
-		//ofa_idbmeta_dump( meta );
-		//ofa_idbperiod_dump( period );
+	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period )){
+		if( 0 ){
+			ofa_idbmeta_dump( meta );
+			ofa_idbperiod_dump( period );
+		}
 		do_open( self, meta, period );
 	}
-
-	g_clear_object( &meta );
-	g_clear_object( &period );
 }
 
 static void
@@ -336,9 +416,9 @@ do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaDossierManager *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self )
 {
-	static const gchar *thisfn = "ofa_dossier_manager_on_delete_clicked";
+	static const gchar *thisfn = "ofa_dossier_manager_action_on_delete_activated";
 	ofaDossierManagerPrivate *priv;
 	ofaHub *hub;
 	const ofaIDBConnect *dossier_connect;
@@ -347,11 +427,12 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 	ofoDossier *dossier;
 	gint cmp;
 
-	g_debug( "%s: button=%p, self=%p", thisfn, ( void * ) button, ( void * ) self );
+	g_debug( "%s: action=%p, empty=%p, self=%p",
+			thisfn, ( void * ) action, ( void * ) empty, ( void * ) self );
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	if( ofa_dossier_treeview_get_selected( priv->tview, &meta, &period ) &&
+	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period ) &&
 		confirm_delete( self, meta, period )){
 
 		/* close the currently opened dossier/exercice if we are about
@@ -379,9 +460,6 @@ on_delete_clicked( GtkButton *button, ofaDossierManager *self )
 		}
 		ofa_idbmeta_remove_period( meta, period );
 	}
-
-	g_clear_object( &meta );
-	g_clear_object( &period );
 }
 
 static gboolean
@@ -406,4 +484,23 @@ confirm_delete( ofaDossierManager *self, const ofaIDBMeta *meta, const ofaIDBPer
 	g_free( dossier_name );
 
 	return( ok );
+}
+
+/*
+ * ofaIActionable interface management
+ */
+static void
+iactionable_iface_init( ofaIActionableInterface *iface )
+{
+	static const gchar *thisfn = "ofa_dossier_manager_iactionable_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_interface_version = iactionable_get_interface_version;
+}
+
+static guint
+iactionable_get_interface_version( void )
+{
+	return( 1 );
 }

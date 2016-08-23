@@ -33,13 +33,21 @@
  * Manage a treeview with the list of the dossiers which are defined
  * in the settings.
  *
- * The #ofaDossierTreeview class defines two messages "changed" and
- * "activated". These signals hold the currently selected dossier and
- * database names.
+ * The class provides the following signals, which are proxyed from
+ * #ofaTVBin base class:
+ *    +------------------+--------------+
+ *    | Signal           | Argument may |
+ *    |                  | be %NULL     |
+ *    +------------------+--------------+
+ *    | ofa-doschanged   |      Yes     |
+ *    | ofa-dosactivated |       No     |
+ *    | ofa-dosdelete    |       No     |
+ *    +------------------+--------------+
  */
 
 #include "api/ofa-idbmeta-def.h"
 #include "api/ofa-idbperiod.h"
+#include "api/ofa-tvbin.h"
 
 #include "ui/ofa-dossier-store.h"
 
@@ -54,48 +62,34 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	GtkBin      parent;
+	ofaTVBin      parent;
 }
 	ofaDossierTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass parent;
+	ofaTVBinClass parent;
 }
 	ofaDossierTreeviewClass;
 
-/**
- *
- */
-typedef enum {
-	DOSSIER_SHOW_ALL = 1,
-	DOSSIER_SHOW_UNIQUE
-}
-	ofaDossierShow;
+GType               ofa_dossier_treeview_get_type        ( void ) G_GNUC_CONST;
 
-GType               ofa_dossier_treeview_get_type    ( void ) G_GNUC_CONST;
+ofaDossierTreeview *ofa_dossier_treeview_new             ( void );
 
-ofaDossierTreeview *ofa_dossier_treeview_new         ( void );
+void                ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view,
+																const gchar *key );
 
-void                ofa_dossier_treeview_set_columns ( ofaDossierTreeview *view,
-															ofaDossierDispColumn *columns );
+gboolean            ofa_dossier_treeview_get_selected    ( ofaDossierTreeview *view,
+																ofaIDBMeta **meta,
+																ofaIDBPeriod **period );
 
-void                ofa_dossier_treeview_set_headers ( ofaDossierTreeview *view,
-															gboolean visible );
+void                ofa_dossier_treeview_set_selected    ( ofaDossierTreeview *view,
+																const gchar *dname );
 
-void                ofa_dossier_treeview_set_show    ( ofaDossierTreeview *view,
-															ofaDossierShow show );
+void                ofa_dossier_treeview_set_filter_show ( ofaDossierTreeview *view,
+																gboolean show_all );
 
-GtkWidget          *ofa_dossier_treeview_get_treeview( ofaDossierTreeview *view );
-
-ofaDossierStore    *ofa_dossier_treeview_get_store   ( ofaDossierTreeview *view );
-
-gboolean            ofa_dossier_treeview_get_selected( ofaDossierTreeview *view,
-															ofaIDBMeta **meta,
-															ofaIDBPeriod **period );
-
-void                ofa_dossier_treeview_set_selected( ofaDossierTreeview *view,
-															const gchar *dname );
+void                ofa_dossier_treeview_setup_store     ( ofaDossierTreeview *view );
 
 G_END_DECLS
 

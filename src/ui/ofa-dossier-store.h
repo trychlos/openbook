@@ -47,6 +47,13 @@
  * new reference on this same instance.
  * The #ofaApplication take ownership on this singleton so that it is
  * always available during the run.
+ *
+ * The class provides the following signals:
+ *    +-----------+-------------------------+
+ *    | Signal    | when                    |
+ *    +-----------+-------------------------+
+ *    | changed   | the content has changed |
+ *    +-----------+-------------------------+
  */
 
 #include "api/ofa-portfolio-collection.h"
@@ -76,56 +83,36 @@ typedef struct {
 	ofaDossierStoreClass;
 
 /**
- * ofaDossierStoreColumn:
- * @DOSSIER_COL_DOSNAME:  dossier name
- * @DOSSIER_COL_PROVNAME: dbms provider name
- * @DOSSIER_COL_DBNAME: database name
- * @DOSSIER_COL_END:      end of exercice
- * @DOSSIER_COL_BEGIN:    begin of exercice
- * @DOSSIER_COL_STATUS:   localized status of the exercice
- * @DOSSIER_COL_CODE:   status code (from api/ofo-dossier.h) of the exercice
- * @DOSSIER_COL_META:     ofaIDBMeta object
- * @DOSSIER_COL_PERIOD:   ofaIDBPeriod object
- *
  * The columns stored in the subjacent #GtkListStore.
+ *                                                                      Displayable
+ *                                                             Type     in Treeviews
+ *                                                             -------  ------------
+ * @DOSSIER_COL_DOSNAME : dossier name                         String        Yes
+ * @DOSSIER_COL_PROVNAME: dbms provider name                   String        Yes
+ * @DOSSIER_COL_PERNAME : localized period label               String        Yes
+ * @DOSSIER_COL_END     : end of exercice                      String        Yes
+ * @DOSSIER_COL_BEGIN   : begin of exercice                    String        Yes
+ * @DOSSIER_COL_STATUS  : localized status of the exercice     String        Yes
+ * @DOSSIER_COL_CURRENT : whether the period is current        Bool           No
+ * @DOSSIER_COL_META    : the #ofaIDBMeta object               GObject        No
+ * @DOSSIER_COL_PERIOD  : the #ofaIDBPeriod object             GObject        No
  */
-typedef enum {
+enum {
 	DOSSIER_COL_DOSNAME = 0,
 	DOSSIER_COL_PROVNAME,
 	DOSSIER_COL_PERNAME,
 	DOSSIER_COL_END,
 	DOSSIER_COL_BEGIN,
-	DOSSIER_COL_STATUS,					/* the displayable status */
+	DOSSIER_COL_STATUS,
+	DOSSIER_COL_CURRENT,
 	DOSSIER_COL_META,
 	DOSSIER_COL_PERIOD,
 	DOSSIER_N_COLUMNS
-}
-	ofaDossierStoreColumn;
+};
 
-/**
- * ofaDossierDispColumn:
- * @DOSSIER_DISP_DOSNAME:  dossier name
- * @DOSSIER_DISP_PROVNAME: dbms provider name
- * @DOSSIER_DISP_PERNAME:  period name
- * @DOSSIER_DISP_END:      end of exercice
- * @DOSSIER_DISP_BEGIN:    begin of exercice
- * @DOSSIER_DISP_STATUS:   localized status of the exercice
- *
- * The columns displayed in the views.
- */
-typedef enum {
-	DOSSIER_DISP_DOSNAME = 1,
-	DOSSIER_DISP_PROVNAME,
-	DOSSIER_DISP_PERNAME,
-	DOSSIER_DISP_END,
-	DOSSIER_DISP_BEGIN,
-	DOSSIER_DISP_STATUS
-}
-	ofaDossierDispColumn;
+GType            ofa_dossier_store_get_type( void );
 
-GType            ofa_dossier_store_get_type       ( void );
-
-ofaDossierStore *ofa_dossier_store_new            ( ofaPortfolioCollection *dir );
+ofaDossierStore *ofa_dossier_store_new     ( ofaPortfolioCollection *dir );
 
 G_END_DECLS
 

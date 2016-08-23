@@ -49,6 +49,7 @@ typedef struct {
 	gchar        *settings_key;
 	gchar        *group_name;
 	gboolean      columns_settings;
+	gboolean      headers_visible;
 
 	/* UI
 	 */
@@ -64,6 +65,7 @@ enum {
 	PROP_SETTINGS_ID,
 	PROP_GROUP_ID,
 	PROP_COLSETTINGS_ID,
+	PROP_HEADERS_ID,
 };
 
 /* signals defined here
@@ -191,6 +193,10 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 				g_value_set_boolean( value, priv->columns_settings );
 				break;
 
+			case PROP_HEADERS_ID:
+				g_value_set_boolean( value, priv->headers_visible );
+				break;
+
 			default:
 				G_OBJECT_WARN_INVALID_PROPERTY_ID( instance, property_id, spec );
 				break;
@@ -234,6 +240,10 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 
 			case PROP_COLSETTINGS_ID:
 				priv->columns_settings = g_value_get_boolean( value );
+				break;
+
+			case PROP_HEADERS_ID:
+				priv->headers_visible = g_value_get_boolean( value );
 				break;
 
 			default:
@@ -295,7 +305,7 @@ init_top_widget( ofaTVBin *self )
 	priv->treeview = gtk_tree_view_new();
 	gtk_widget_set_hexpand( priv->treeview, TRUE );
 	gtk_widget_set_vexpand( priv->treeview, TRUE );
-	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( priv->treeview ), TRUE );
+	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( priv->treeview ), priv->headers_visible );
 	gtk_container_add( GTK_CONTAINER( scrolled ), priv->treeview );
 
 	g_signal_connect( priv->treeview, "row-activated", G_CALLBACK( tview_on_row_activated ), self );
@@ -382,6 +392,16 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 					"ofa-tvbin-colsettings",
 					"Column settings",
 					"Whether to write the columns settings for this view",
+					TRUE,
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_HEADERS_ID,
+			g_param_spec_boolean(
+					"ofa-tvbin-headers",
+					"Headers visible",
+					"Whether the columns headers are visible",
 					TRUE,
 					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
@@ -951,6 +971,33 @@ ofa_tvbin_get_treeview( ofaTVBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->treeview );
+}
+
+/**
+ * ofa_tvbin_set_headers:
+ * @bin: this #ofaTVBin instance.
+ * @visible: whether the headers of the #GtkTreeView should be visible.
+ *
+ * Setup the visibility of the header.
+ *
+ * Columns headers default to be visible.
+ */
+void
+ofa_tvbin_set_headers( ofaTVBin *bin, gboolean visible )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->headers_visible = visible;
+
+	if( priv->treeview ){
+		gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( priv->treeview ), visible );
+	}
 }
 
 /**

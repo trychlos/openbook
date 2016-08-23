@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.19.0 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <template class="ofaRestoreAssistant" parent="GtkAssistant">
@@ -134,13 +134,13 @@ Press Continue.</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="p2-new-dossier">
-                    <property name="label" translatable="yes">New _dossier...</property>
+                  <object class="GtkBox" id="p2-buttons-box">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="valign">start</property>
-                    <property name="use_underline">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="orientation">vertical</property>
+                    <child>
+                      <placeholder/>
+                    </child>
                   </object>
                   <packing>
                     <property name="left_attach">1</property>

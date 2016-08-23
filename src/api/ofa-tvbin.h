@@ -77,6 +77,8 @@
  *                          several views of the same class (e.g. ofaAccountTreeview)
  *                          in which case the derived class must choose itself the
  *                          view to be used to write its settings.
+ * - ofa-tvbin-headers: whether the columns headers are visible;
+ *                      defaults to be visible.
  */
 
 #include <gtk/gtk.h>
@@ -201,6 +203,9 @@ GMenu            *ofa_tvbin_get_menu              ( ofaTVBin *bin );
 GtkTreeSelection *ofa_tvbin_get_selection         ( ofaTVBin *bin );
 
 GtkWidget        *ofa_tvbin_get_treeview          ( ofaTVBin *bin );
+
+void              ofa_tvbin_set_headers           ( ofaTVBin *bin,
+														gboolean visible );
 
 void              ofa_tvbin_set_selection_mode    ( ofaTVBin *bin,
 														GtkSelectionMode mode );

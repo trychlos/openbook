@@ -432,12 +432,21 @@
                 - check dialog properties
                 Done for:
                 - ofaAccount: Treeview, FrameBin, Page, Select 
-                - ofatBat: Treeview, lineTreeview, Page, Select
+                - ofaBat: Treeview, lineTreeview, Page, Select
                 - ofaClass: Treeview, Page
                 - ofaCurrency: Treeview, Page
+                - ofaDossier: Treeview, Manager, Open, RestoreAssistant
                 - ofaOpeTemplate:Treeview, FrameBin, Page, Select
 
-1183
+1183 2016- 8-23 DossierManager: disable Open action when the dossier is
+                already opened.
+
+1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
+
+1185 2016- 8-23 DossierTreeview: some columns have no sense depending of
+                the filter
+
+1186
 
 -----------------------------------------------------------------------
  DONE

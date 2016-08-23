@@ -31,6 +31,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbmeta.h"
+#include "api/ofa-itvcolumnable.h"
+#include "api/ofa-itvfilterable.h"
+#include "api/ofa-itvsortable.h"
+#include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-treeview.h"
@@ -42,14 +46,9 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkTreeView     *tview;
 	ofaDossierStore *store;
 
-	/* runtime data
-	 */
-	gboolean         show_headers;
-	ofaDossierShow   show_mode;
-	GtkTreeModel    *tfilter;
+	gboolean         show_all;
 }
 	ofaDossierTreeviewPrivate;
 
@@ -58,20 +57,22 @@ typedef struct {
 enum {
 	CHANGED = 0,
 	ACTIVATED,
+	DELETE,
 	N_SIGNALS
 };
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void     attach_top_widget( ofaDossierTreeview *self );
-static void     create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns );
-static void     create_treeview_store( ofaDossierTreeview *view );
-static gboolean is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaDossierTreeview *tview );
-static void     on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self );
-static void     on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self );
+static void     setup_columns( ofaDossierTreeview *view );
+static void     on_selection_changed( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty );
+static void     on_selection_activated( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty );
+static void     on_selection_delete( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static gboolean get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selection, ofaIDBMeta **meta, ofaIDBPeriod **period );
+static gboolean v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint     v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
-G_DEFINE_TYPE_EXTENDED( ofaDossierTreeview, ofa_dossier_treeview, GTK_TYPE_BIN, 0,
+G_DEFINE_TYPE_EXTENDED( ofaDossierTreeview, ofa_dossier_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaDossierTreeview ))
 
 static void
@@ -104,6 +105,7 @@ dossier_treeview_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+		g_clear_object( &priv->store );
 	}
 
 	/* chain up to the parent class */
@@ -124,6 +126,7 @@ ofa_dossier_treeview_init( ofaDossierTreeview *self )
 	priv = ofa_dossier_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->store = NULL;
 }
 
 static void
@@ -136,13 +139,17 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_treeview_finalize;
 
+	OFA_TVBIN_CLASS( klass )->filter = v_filter;
+	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+
 	/**
-	 * ofaDossierTreeview::changed:
+	 * ofaDossierTreeview::ofa-doschanged:
 	 *
 	 * This signal is sent on the #ofaDossierTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments are the selected ofaIDBMeta and ofaIDBPeriod objects.
+	 * Arguments are the selected ofaIDBMeta and ofaIDBPeriod objects;
+	 * they may be %NULL
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview *view,
@@ -151,7 +158,7 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"changed",
+				"ofa-doschanged",
 				OFA_TYPE_DOSSIER_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -163,7 +170,7 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 				G_TYPE_OBJECT, G_TYPE_OBJECT );
 
 	/**
-	 * ofaDossierTreeview::activated:
+	 * ofaDossierTreeview::ofa-dosactivated:
 	 *
 	 * This signal is sent on the #ofaDossierTreeview when the selection is
 	 * activated.
@@ -177,7 +184,35 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
-				"activated",
+				"ofa-dosactivated",
+				OFA_TYPE_DOSSIER_TREEVIEW,
+				G_SIGNAL_RUN_LAST,
+				NULL,
+				NULL,								/* accumulator */
+				NULL,								/* accumulator data */
+				NULL,
+				G_TYPE_NONE,
+				2,
+				G_TYPE_OBJECT, G_TYPE_OBJECT );
+
+	/**
+	 * ofaDossierTreeview::ofa-dosdelete:
+	 *
+	 * #ofaTVBin sends a 'ofa-seldelete' signal, with the current
+	 * #GtkTreeSelection as an argument.
+	 * #ofaDossierTreeview proxyes it with this 'ofa-dosdelete' signal,
+	 * providing the #ofoIDBMeta/#ofaIDBPeriod selected objects.
+	 *
+	 * Arguments are the selected ofaIDBMeta and ofaIDBPeriod objects.
+	 *
+	 * Handler is of type:
+	 * void ( *handler )( ofaDossierTreeview *view,
+	 * 						ofaIDBMeta       *meta,
+	 * 						ofaIDBPeriod     *period,
+	 * 						gpointer          user_data );
+	 */
+	st_signals[ DELETE ] = g_signal_new_class_handler(
+				"ofa-dosdelete",
 				OFA_TYPE_DOSSIER_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -197,14 +232,114 @@ ofa_dossier_treeview_new( void )
 {
 	ofaDossierTreeview *view;
 
-	view = g_object_new( OFA_TYPE_DOSSIER_TREEVIEW, NULL );
+	view = g_object_new( OFA_TYPE_DOSSIER_TREEVIEW,
+					"ofa-tvbin-shadow", GTK_SHADOW_IN,
+					NULL );
 
-	attach_top_widget( view );
-	create_treeview_store( view );
+	/* signals sent by ofaTVBin base class are intercepted to provide
+	 * #ofoIDBMEta/#ofaIDBPeriod objects instead of just the raw
+	 * GtkTreeSelection
+	 */
+	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
+	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
+
+	/* the 'ofa-seldelete' signal is sent in response to the Delete key press.
+	 * There may be no current selection.
+	 * in this case, the signal is just ignored (not proxied).
+	 */
+	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
+
+	setup_columns( view );
 
 	return( view );
 }
 
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaDossierTreeview *self )
+{
+	static const gchar *thisfn = "ofa_dossier_treeview_setup_columns";
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), DOSSIER_COL_DOSNAME,  _( "Dossier" ),  _( "Dossier name" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_PROVNAME, _( "Provider" ), _( "Provider name" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_PERNAME,  _( "Period" ),       NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), DOSSIER_COL_END,      _( "End" ),      _( "Exercice end" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), DOSSIER_COL_BEGIN,    _( "Begin" ),    _( "Exercice begin" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_STATUS,   _( "Status" ),       NULL );
+
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), DOSSIER_COL_DOSNAME );
+}
+
+/**
+ * ofa_dossier_treeview_set_settings_key:
+ * @view: this #ofaDossierTreeview instance.
+ * @key: [allow-none]: the prefix of the settings key.
+ *
+ * Setup the setting key, or reset it to its default if %NULL.
+ */
+void
+ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view, const gchar *key )
+{
+	static const gchar *thisfn = "ofa_dossier_treeview_set_settings_key";
+	ofaDossierTreeviewPrivate *priv;
+
+	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = ofa_dossier_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	/* we do not manage any settings here, so directly pass it to the
+	 * base class */
+	ofa_tvbin_set_settings_key( OFA_TVBIN( view ), key );
+}
+
+static void
+on_selection_changed( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty )
+{
+	get_and_send( self, selection, "ofa-doschanged" );
+}
+
+static void
+on_selection_activated( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty )
+{
+	get_and_send( self, selection, "ofa-dosactivated" );
+}
+
+/*
+ * Delete key pressed
+ * ofaTVBin base class makes sure the selection is not empty.
+ */
+static void
+on_selection_delete( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty )
+{
+	get_and_send( self, selection, "ofa-dosdelete" );
+}
+
+/*
+ * ofaIDBMeta/ofaIDBPeriod may be %NULL when selection is empty
+ * (on 'ofa-doschanged' signal)
+ */
+static void
+get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal )
+{
+	gboolean ok;
+	ofaIDBMeta *meta;
+	ofaIDBPeriod *period;
+
+	ok = get_selected_with_selection( self, selection, &meta, &period );
+	g_return_if_fail( !ok || ( OFA_IS_IDBMETA( meta ) && OFA_IS_IDBPERIOD( period )));
+
+	g_signal_emit_by_name( self, signal, meta, period );
+}
+
+#if 0
 /*
  * call right after the object instanciation
  * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
@@ -280,26 +415,6 @@ ofa_dossier_treeview_set_headers( ofaDossierTreeview *view, gboolean visible )
 	gtk_tree_view_set_headers_visible( priv->tview, visible );
 }
 
-/**
- * ofa_dossier_treeview_set_show:
- */
-void
-ofa_dossier_treeview_set_show( ofaDossierTreeview *view, ofaDossierShow show )
-{
-	ofaDossierTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->show_mode = show;
-	if( priv->tfilter ){
-		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-	}
-}
-
 static void
 create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns )
 {
@@ -357,113 +472,6 @@ create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns
 	gtk_widget_show_all( GTK_WIDGET( view ));
 }
 
-/*
- * create the store which automatically loads the dataset
- */
-static void
-create_treeview_store( ofaDossierTreeview *view )
-{
-	ofaDossierTreeviewPrivate *priv;
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	if( !priv->store ){
-
-		g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
-
-		priv->store = ofa_dossier_store_new( NULL );
-		priv->tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( priv->store ), NULL );
-		/* unref the store so that it will be automatically unreffed
-		 * at the same time the treeview will be. */
-		g_object_unref( priv->store );
-
-		gtk_tree_model_filter_set_visible_func(
-				GTK_TREE_MODEL_FILTER( priv->tfilter ),
-				( GtkTreeModelFilterVisibleFunc ) is_visible_row, view, NULL );
-
-		gtk_tree_view_set_model( priv->tview, priv->tfilter );
-		g_object_unref( priv->tfilter );
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( view ));
-}
-
-static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaDossierTreeview *tview )
-{
-	ofaDossierTreeviewPrivate *priv;
-	gboolean visible;
-	ofaIDBMeta *meta;
-	ofaIDBPeriod *period;
-	GList *periods;
-
-	priv = ofa_dossier_treeview_get_instance_private( tview );
-
-	visible = TRUE;
-	gtk_tree_model_get( tmodel, iter, DOSSIER_COL_META, &meta, DOSSIER_COL_PERIOD, &period, -1 );
-
-	/* note: a new row is first inserted, before the columns be set
-	 * (cf. ofaDossierStore::insert_row())
-	 * so just ignore the row if columns are still empty */
-	if( !meta || !period ){
-		return( FALSE );
-	}
-
-	switch( priv->show_mode ){
-		case DOSSIER_SHOW_ALL:
-			visible = TRUE;
-			break;
-		case DOSSIER_SHOW_UNIQUE:
-			periods = ofa_idbmeta_get_periods( meta );
-			if( g_list_length( periods ) == 1 ){
-				visible = TRUE;
-			} else {
-				visible = ofa_idbperiod_get_current( period );
-			}
-			ofa_idbmeta_free_periods( periods );
-			break;
-	}
-
-	g_object_unref( period );
-	g_object_unref( meta );
-
-	return( visible );
-}
-
-static void
-on_row_selected( GtkTreeSelection *selection, ofaDossierTreeview *self )
-{
-	get_and_send( self, selection, "changed" );
-}
-
-static void
-on_row_activated( GtkTreeView *tview, GtkTreePath *path, GtkTreeViewColumn *column, ofaDossierTreeview *self )
-{
-	GtkTreeSelection *select;
-
-	select = gtk_tree_view_get_selection( tview );
-	get_and_send( self, select, "activated" );
-}
-
-static void
-get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal )
-{
-	GtkTreeIter iter;
-	GtkTreeModel *model;
-	ofaIDBMeta *meta;
-	ofaIDBPeriod *period;
-
-	if( gtk_tree_selection_get_selected( selection, &model, &iter )){
-		gtk_tree_model_get( model, &iter,
-				DOSSIER_COL_META,   &meta,
-				DOSSIER_COL_PERIOD, &period,
-				-1 );
-		g_signal_emit_by_name( self, signal, meta, period );
-		g_object_unref( meta );
-		g_object_unref( period );
-	}
-}
-
 /**
  * ofa_dossier_treeview_get_treeview:
  * @view: this #ofaDossierTreeview instance.
@@ -509,16 +517,17 @@ ofa_dossier_treeview_get_store( ofaDossierTreeview *view )
 
 	return( store );
 }
+#endif
 
 /**
  * ofa_dossier_treeview_get_selected:
  * @view: this #ofaDossierTreeview instance.
- * @meta: [allow-none][out]: a new reference on the currently selected
- *  #ofaIDBMeta row, which should be g_object_unref() by the caller
- *  when non %NULL.
- * @period: [allow-none][out]: a new reference on the currently selected
- *  #ofaIDBPeriod row, which should be g_object_unref() by the caller
- *  when non %NULL.
+ * @meta: [allow-none][out]: the currently selected #ofaIDBMeta row;
+ *  this reference is owned by the underlying #GtkTreeModel and should
+ *  not be unreffed by the caller.
+ * @period: [allow-none][out]: the currently selected #ofaIDBPeriod row;
+ *  this reference is owned by the underlying #GtkTreeModel and should
+ *  not be unreffed by the caller.
  *
  * Returns: %TRUE if a selection exists, %FALSE else.
  */
@@ -527,11 +536,7 @@ ofa_dossier_treeview_get_selected( ofaDossierTreeview *view, ofaIDBMeta **meta, 
 {
 	ofaDossierTreeviewPrivate *priv;
 	gboolean ok;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GtkTreeSelection *select;
-	ofaIDBMeta *row_meta;
-	ofaIDBPeriod *row_period;
+	GtkTreeSelection *selection;
 
 	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), FALSE );
 
@@ -539,49 +544,69 @@ ofa_dossier_treeview_get_selected( ofaDossierTreeview *view, ofaIDBMeta **meta, 
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
+	ok = get_selected_with_selection( view, selection, meta, period );
+
+	return( ok );
+}
+
+/*
+ * get_selected_with_selection:
+ * @view: this #ofaDossierTreeview instance.
+ * @selection: the current #GtkTreeSelection.
+ * @meta: [out][allow-none]:
+ * @period: [out][allow-none]:
+ *
+ * Return: the currently selected class, or %NULL.
+ */
+static gboolean
+get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selection, ofaIDBMeta **meta, ofaIDBPeriod **period )
+{
+	gboolean ok;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofaIDBMeta *row_meta = NULL;
+	ofaIDBPeriod *row_period = NULL;
+
 	ok = FALSE;
-	if( meta ){
-		*meta = NULL;
-	}
-	if( period ){
-		*period = NULL;
-	}
-	select = gtk_tree_view_get_selection( priv->tview );
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		ok = TRUE;
 		gtk_tree_model_get( tmodel, &iter,
 				DOSSIER_COL_META,   &row_meta,
 				DOSSIER_COL_PERIOD, &row_period,
 				-1 );
-		if( meta ){
-			*meta = row_meta;
-		} else {
-			g_object_unref( row_meta );
-		}
-		if( period ){
-			*period = row_period;
-		} else {
-			g_object_unref( row_period );
-		}
+		g_object_unref( row_meta );
+		g_object_unref( row_period );
 	}
+
+	if( meta ){
+		*meta = row_meta;
+	}
+	if( period ){
+		*period = row_period;
+	}
+
 	return( ok );
 }
 
 /**
  * ofa_dossier_treeview_set_selected:
+ * @view: this #ofaDossierTreeview instance.
+ * @dname: [allow-none]: the name of the dossier to be selected.
  *
- * Only a visible row may be selected, so iterate on the filter store.
+ * Select the specified @dname.
  */
 void
 ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname )
 {
 	static const gchar *thisfn = "ofa_dossier_treeview_set_selected";
 	ofaDossierTreeviewPrivate *priv;
+	GtkWidget *treeview;
+	GtkTreeModel *model;
 	GtkTreeIter iter;
 	gchar *str;
 	gint cmp;
-	GtkTreeSelection *select;
-	GtkTreePath *path;
 
 	g_debug( "%s: view=%p, dname=%s", thisfn, ( void * ) view, dname );
 
@@ -591,24 +616,188 @@ ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname 
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->tfilter ), &iter )){
-		while( TRUE ){
-			gtk_tree_model_get(
-					GTK_TREE_MODEL( priv->tfilter ), &iter, DOSSIER_COL_DOSNAME, &str, -1 );
-			cmp = g_utf8_collate( str, dname );
-			g_free( str );
-			if( cmp == 0 ){
-				select = gtk_tree_view_get_selection( priv->tview );
-				path = gtk_tree_model_get_path( GTK_TREE_MODEL( priv->tfilter ), &iter );
-				gtk_tree_selection_select_path( select, path );
-				/* move the cursor so that it is visible */
-				gtk_tree_view_scroll_to_cell( priv->tview, path, NULL, FALSE, 0, 0 );
-				gtk_tree_path_free( path );
-				break;
-			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->tfilter ), &iter )){
-				break;
+	if( my_strlen( dname )){
+		treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
+		g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
+		model = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
+		if( gtk_tree_model_get_iter_first( model, &iter )){
+			while( TRUE ){
+				gtk_tree_model_get( model, &iter, DOSSIER_COL_DOSNAME, &str, -1 );
+				cmp = g_utf8_collate( str, dname );
+				g_free( str );
+				if( cmp == 0 ){
+					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
+					break;
+				}
+				if( !gtk_tree_model_iter_next( model, &iter )){
+					break;
+				}
 			}
 		}
 	}
+}
+
+/**
+ * ofa_dossier_treeview_set_filter_show:
+ * @view: this #ofaDossierTreeview instance.
+ * @show_all: whether show all periods of each dossier.
+ *
+ * Whether to show all periods of each dossier (if %TRUE), or only one
+ * row per dossier (if %FALSE).
+ *
+ * Defaults to %FALSE (one row per dossier).
+ *
+ * Note that not all columns are relevant when only one row is
+ * displayed per dossier, as there is no sense of exercice in this
+ * case.
+ */
+void
+ofa_dossier_treeview_set_filter_show( ofaDossierTreeview *view, gboolean show_all )
+{
+	ofaDossierTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = ofa_dossier_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->show_all = show_all;
+}
+
+/**
+ * ofa_dossier_treeview_setup_store:
+ * @view: this #ofaDossierTreeview instance.
+ *
+ * Create the store which automatically loads the dataset.
+ */
+void
+ofa_dossier_treeview_setup_store( ofaDossierTreeview *view )
+{
+	static const gchar *thisfn = "ofa_dossier_treeview_setup_store";
+	ofaDossierTreeviewPrivate *priv;
+
+	g_debug( "%s: view=%p", thisfn, ( void * ) view );
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = ofa_dossier_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( !priv->store ){
+		priv->store = ofa_dossier_store_new( NULL );
+		ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
+	}
+
+	gtk_widget_show_all( GTK_WIDGET( view ));
+}
+
+static gboolean
+v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
+{
+	ofaDossierTreeviewPrivate *priv;
+	gboolean visible;
+	ofaIDBMeta *meta;
+	ofaIDBPeriod *period;
+	GList *periods;
+
+	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( tvbin ));
+
+	visible = TRUE;
+	gtk_tree_model_get( model, iter, DOSSIER_COL_META, &meta, DOSSIER_COL_PERIOD, &period, -1 );
+
+	/* note: a new row is first inserted, before the columns be set
+	 * (cf. ofaDossierStore::insert_row())
+	 * so just ignore the row if columns are still empty */
+	if( !meta || !period ){
+		return( FALSE );
+	}
+
+	if( priv->show_all ){
+		visible = TRUE;
+
+	} else {
+		periods = ofa_idbmeta_get_periods( meta );
+		if( g_list_length( periods ) == 1 ){
+			visible = TRUE;
+		} else {
+			visible = ofa_idbperiod_get_current( period );
+		}
+		ofa_idbmeta_free_periods( periods );
+	}
+
+	g_object_unref( period );
+	g_object_unref( meta );
+
+	return( visible );
+}
+
+static gint
+v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+{
+	static const gchar *thisfn = "ofa_currency_treeview_v_sort";
+	gint cmp;
+	gchar *dosa, *prova, *pera, *enda, *begina, *stata;
+	gchar *dosb, *provb, *perb, *endb, *beginb, *statb;
+
+	gtk_tree_model_get( tmodel, a,
+			DOSSIER_COL_DOSNAME,  &dosa,
+			DOSSIER_COL_PROVNAME, &prova,
+			DOSSIER_COL_PERNAME,  &pera,
+			DOSSIER_COL_END,      &enda,
+			DOSSIER_COL_BEGIN,    &begina,
+			DOSSIER_COL_STATUS,   &stata,
+			-1 );
+
+	gtk_tree_model_get( tmodel, b,
+			DOSSIER_COL_DOSNAME,  &dosb,
+			DOSSIER_COL_PROVNAME, &provb,
+			DOSSIER_COL_PERNAME,  &perb,
+			DOSSIER_COL_END,      &endb,
+			DOSSIER_COL_BEGIN,    &beginb,
+			DOSSIER_COL_STATUS,   &statb,
+			-1 );
+
+	cmp = 0;
+
+	switch( column_id ){
+		case DOSSIER_COL_DOSNAME:
+			cmp = my_collate( dosa, dosb );
+			break;
+		case DOSSIER_COL_PROVNAME:
+			cmp = my_collate( prova, provb );
+			break;
+		case DOSSIER_COL_PERNAME:
+			cmp = my_collate( pera, perb );
+			break;
+		case DOSSIER_COL_END:
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
+			break;
+		case DOSSIER_COL_BEGIN:
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
+			break;
+		case DOSSIER_COL_STATUS:
+			cmp = my_collate( stata, statb );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, column_id );
+			break;
+	}
+
+	g_free( dosa );
+	g_free( prova );
+	g_free( pera );
+	g_free( enda );
+	g_free( begina );
+	g_free( stata );
+
+	g_free( dosb );
+	g_free( provb );
+	g_free( perb );
+	g_free( endb );
+	g_free( beginb );
+	g_free( statb );
+
+	return( cmp );
 }

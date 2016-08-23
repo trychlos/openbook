@@ -34,6 +34,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
@@ -50,29 +52,30 @@
 /* private instance data
  */
 typedef struct {
-	gboolean            dispose_has_run;
+	gboolean               dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter         *getter;
+	ofaIGetter            *getter;
 
 	/* data
 	 */
-	ofaIDBMeta         *meta;			/* the selected dossier */
-	ofaIDBPeriod       *period;			/* the selected exercice */
-	gchar              *account;		/* user credentials */
-	gchar              *password;
-	ofaIDBConnect      *connect;		/* the DB connection */
-	gboolean            opened;
-	gboolean            read_only;
+	ofaIDBMeta            *meta;			/* the selected dossier */
+	ofaIDBPeriod          *period;			/* the selected exercice */
+	gchar                 *account;			/* user credentials */
+	gchar                 *password;
+	ofaIDBConnect         *connect;			/* the DB connection */
+	gboolean               opened;
+	gboolean               read_only;
 
 	/* UI
 	 */
-	ofaDossierTreeview *dossier_tview;
-	ofaExerciceCombo   *exercice_combo;
-	GtkWidget          *readonly_btn;
-	GtkWidget          *message_label;
-	GtkWidget          *ok_btn;
+	ofaDossierTreeview    *dossier_tview;
+	ofaExerciceCombo      *exercice_combo;
+	ofaUserCredentialsBin *user_credentials;
+	GtkWidget             *readonly_btn;
+	GtkWidget             *message_label;
+	GtkWidget             *ok_btn;
 }
 	ofaDossierOpenPrivate;
 
@@ -81,6 +84,10 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
+static void      idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group );
+static void      idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group );
+static void      idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group );
+static void      idialog_init_menu( ofaDossierOpen *self );
 static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierOpen *self );
 static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIDBPeriod *period, ofaDossierOpen *self );
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
@@ -271,56 +278,28 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_open_idialog_init";
 	ofaDossierOpenPrivate *priv;
-	GtkWidget *container, *button, *focus, *label;
-	ofaUserCredentialsBin *user_credentials;
+	GtkWidget *button, *focus;
 	GtkSizeGroup *group;
 	gchar *dossier_name;
 	ofaIDBPeriod *init_period;
-	static ofaDossierDispColumn st_columns[] = {
-			DOSSIER_DISP_DOSNAME,
-			0 };
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
-
-	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 
 	/* do this first to be available as soon as the first signal
 	 * triggers */
 	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-open" );
 	priv->ok_btn = button;
 
-	/* setup exercice combobox (before dossier) */
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-exercice-parent" );
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-	priv->exercice_combo = ofa_exercice_combo_new();
-	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->exercice_combo ));
-	g_signal_connect(
-			G_OBJECT( priv->exercice_combo ), "ofa-changed", G_CALLBACK( on_exercice_changed ), instance );
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	idialog_init_exercice( OFA_DOSSIER_OPEN( instance ), group );
+	idialog_init_dossier( OFA_DOSSIER_OPEN( instance ), group );
+	idialog_init_credentials( OFA_DOSSIER_OPEN( instance ), group );
+	g_object_unref( group );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-exercice-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->exercice_combo ));
-	gtk_size_group_add_widget( group, label );
-
-	/* setup dossier treeview */
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-dossier-parent" );
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-
-	priv->dossier_tview = ofa_dossier_treeview_new();
-	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
-	ofa_dossier_treeview_set_columns( priv->dossier_tview, st_columns );
-	ofa_dossier_treeview_set_show( priv->dossier_tview, DOSSIER_SHOW_UNIQUE );
-	g_signal_connect(
-			G_OBJECT( priv->dossier_tview ), "changed", G_CALLBACK( on_dossier_changed ), instance );
+	/* setup the focus depending of the provided data */
 	focus = GTK_WIDGET( priv->dossier_tview );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-dossier-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget(
-			GTK_LABEL( label ), ofa_dossier_treeview_get_treeview( priv->dossier_tview ));
-	gtk_size_group_add_widget( group, label );
 
 	if( priv->meta ){
 		/* because initial priv->period will be reset when selecting the
@@ -340,24 +319,12 @@ idialog_init( myIDialog *instance )
 		g_clear_object( &init_period );
 	}
 
-	/* setup account and password */
-	container = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "do-user-parent" );
-	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-	user_credentials = ofa_user_credentials_bin_new();
-	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( user_credentials ));
-	g_signal_connect( user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), instance );
-	my_utils_size_group_add_size_group(
-			group, ofa_user_credentials_bin_get_size_group( user_credentials, 0 ));
 	if( priv->account ){
-		ofa_user_credentials_bin_set_account( user_credentials, priv->account );
+		ofa_user_credentials_bin_set_account( priv->user_credentials, priv->account );
 	}
 	if( priv->password ){
-		ofa_user_credentials_bin_set_password( user_credentials, priv->password );
+		ofa_user_credentials_bin_set_password( priv->user_credentials, priv->password );
 	}
-
-	/* get read-only mode */
-	priv->readonly_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "read-only-btn" );
-	g_return_if_fail( priv->readonly_btn && GTK_IS_CHECK_BUTTON( priv->readonly_btn ));
 
 	/* focus defauls to be set on the dossier treeview
 	 * if the dossier is already set, then set the focus on the exercice combo
@@ -366,14 +333,105 @@ idialog_init( myIDialog *instance )
 	if( focus ){
 		gtk_widget_grab_focus( focus );
 	} else {
-		ofa_user_credentials_bin_grab_focus( user_credentials );
+		ofa_user_credentials_bin_grab_focus( priv->user_credentials );
 	}
 
-	g_object_unref( group );
+	/* get read-only mode */
+	priv->readonly_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "read-only-btn" );
+	g_return_if_fail( priv->readonly_btn && GTK_IS_CHECK_BUTTON( priv->readonly_btn ));
+
+	idialog_init_menu( OFA_DOSSIER_OPEN( instance ));
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
 	check_for_enable_dlg( OFA_DOSSIER_OPEN( instance ));
+}
+
+static void
+idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group )
+{
+	ofaDossierOpenPrivate *priv;
+	GtkWidget *container, *label;
+
+	priv = ofa_dossier_open_get_instance_private( self );
+
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-exercice-parent" );
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+	priv->exercice_combo = ofa_exercice_combo_new();
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->exercice_combo ));
+	g_signal_connect( priv->exercice_combo, "ofa-changed", G_CALLBACK( on_exercice_changed ), self );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-exercice-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->exercice_combo ));
+	gtk_size_group_add_widget( group, label );
+}
+
+static void
+idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
+{
+	ofaDossierOpenPrivate *priv;
+	GtkWidget *container, *label;
+
+	priv = ofa_dossier_open_get_instance_private( self );
+
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-dossier-parent" );
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+
+	priv->dossier_tview = ofa_dossier_treeview_new();
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
+	ofa_tvbin_set_headers( OFA_TVBIN( priv->dossier_tview ), FALSE );
+	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, G_OBJECT_TYPE_NAME( self ));
+	ofa_dossier_treeview_set_filter_show( priv->dossier_tview, FALSE );
+
+	g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( on_dossier_changed ), self );
+
+	ofa_dossier_treeview_setup_store( priv->dossier_tview );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-dossier-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	gtk_label_set_mnemonic_widget(
+			GTK_LABEL( label ), ofa_tvbin_get_treeview( OFA_TVBIN( priv->dossier_tview )));
+	gtk_size_group_add_widget( group, label );
+}
+
+static void
+idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group )
+{
+	ofaDossierOpenPrivate *priv;
+	GtkWidget *container;
+
+	priv = ofa_dossier_open_get_instance_private( self );
+
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-user-parent" );
+	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
+
+	priv->user_credentials = ofa_user_credentials_bin_new();
+	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->user_credentials ));
+
+	g_signal_connect( priv->user_credentials, "ofa-changed", G_CALLBACK( on_user_credentials_changed ), self );
+
+	my_utils_size_group_add_size_group(
+			group, ofa_user_credentials_bin_get_size_group( priv->user_credentials, 0 ));
+}
+
+static void
+idialog_init_menu( ofaDossierOpen *self )
+{
+	ofaDossierOpenPrivate *priv;
+	GMenu *menu;
+
+	priv = ofa_dossier_open_get_instance_private( self );
+
+	menu = g_menu_new();
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->dossier_tview ), OFA_IACTIONABLE( priv->dossier_tview ), menu );
+	g_object_unref( menu );
+
+	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->dossier_tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->dossier_tview ), OFA_IACTIONABLE( priv->dossier_tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 static void
@@ -384,10 +442,11 @@ on_dossier_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *p
 	priv = ofa_dossier_open_get_instance_private( self );
 
 	g_clear_object( &priv->meta );
+
 	if( meta ){
 		priv->meta = g_object_ref( meta );
+		ofa_exercice_combo_set_dossier( priv->exercice_combo, meta );
 	}
-	ofa_exercice_combo_set_dossier( priv->exercice_combo, meta );
 
 	check_for_enable_dlg( self );
 }
@@ -440,14 +499,18 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	msg = NULL;
 
 	ok_enable = are_data_set( self, &msg );
-
 	ro_enable = priv->meta && priv->period && ofa_idbperiod_get_current( priv->period );
-	gtk_widget_set_sensitive( priv->readonly_btn, ro_enable );
+
+	if( priv->readonly_btn ){
+		gtk_widget_set_sensitive( priv->readonly_btn, ro_enable );
+	}
 
 	set_message( self, msg );
 	g_free( msg );
 
-	gtk_widget_set_sensitive( priv->ok_btn, ok_enable );
+	if( priv->ok_btn ){
+		gtk_widget_set_sensitive( priv->ok_btn, ok_enable );
+	}
 }
 
 static gboolean
