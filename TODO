@@ -444,7 +444,7 @@
 1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
 
 1185 2016- 8-23 DossierTreeview: some columns have no sense depending of
-                the filter
+                the filter (do not allow to display them)
 
 1186
 
