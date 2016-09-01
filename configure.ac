@@ -132,7 +132,6 @@ AC_CONFIG_FILES([
 	src/api/Makefile
 	src/cmdline/Makefile
 	src/core/Makefile
-	src/css/Makefile
 	src/importers/Makefile
 	src/my-1/Makefile
 	src/my-1/my/Makefile
