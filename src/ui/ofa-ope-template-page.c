@@ -56,7 +56,7 @@ typedef struct {
 
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTemplatePage *self );
+static void       on_row_activated( ofaOpeTemplateFrameBin *frame, ofoOpeTemplate *template, ofaOpeTemplatePage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplatePage, ofa_ope_template_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaOpeTemplatePage ))
@@ -163,22 +163,13 @@ v_get_top_focusable_widget( const ofaPage *page )
  * double click on a row opens the ope_template properties
  */
 static void
-on_row_activated( ofaOpeTemplateFrameBin *frame, const gchar *mnemo, ofaOpeTemplatePage *self )
+on_row_activated( ofaOpeTemplateFrameBin *frame, ofoOpeTemplate *template, ofaOpeTemplatePage *self )
 {
-	ofoOpeTemplate *ope;
-	ofaHub *hub;
 	GtkWindow *toplevel;
 
-	if( my_strlen( mnemo )){
+	g_return_if_fail( template && OFO_IS_OPE_TEMPLATE( template ));
 
-		hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-		g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
-		ope = ofo_ope_template_get_by_mnemo( hub, mnemo );
-		g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
-
-		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-
-		ofa_ope_template_properties_run( OFA_IGETTER( self ), toplevel, ope, NULL );
-	}
+	ofa_ope_template_properties_run( OFA_IGETTER( self ), toplevel, template, NULL );
 }
