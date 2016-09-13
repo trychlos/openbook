@@ -50,7 +50,7 @@ typedef struct {
 
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ledger_locked, ref, ref_locked */
+		G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* ledger_locked, ref, ref_locked */
 		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_STRING, G_TYPE_STRING,					/* recurrent_plugin, vat_plugin */

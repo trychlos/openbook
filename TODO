@@ -446,7 +446,17 @@
 1185 2016- 8-23 DossierTreeview: some columns have no sense depending of
                 the filter (do not allow to display them)
 
-1186
+1186 2016- 8-31 ofaListStore: should it be obsoleted because useless ?
+                Rationale is that list stores are only a particular case
+                of tree stores...
+
+1187 2016- 9-13 BUG: selecting an account no more accets double click
+                (nor click on Select button anyway)
+
+1188 2016- 9-13 BUG: when cancelling a printing, the "successfully printed"
+                message is anyway displayed
+
+1190
 
 -----------------------------------------------------------------------
  DONE
@@ -1597,6 +1607,10 @@
 
 1178 2016- 8- 2 rename ofaISortable to ofaITVSortable
      2016- 8- 4 done
+
+1189 2016- 9-13 BUG: when opening the operation template view
+                cf. todo_1189
+     2016- 9-13 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
