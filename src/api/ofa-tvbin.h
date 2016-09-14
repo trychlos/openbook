@@ -222,6 +222,10 @@ void              ofa_tvbin_set_selected          ( ofaTVBin *bin,
 void              ofa_tvbin_set_write_settings    ( ofaTVBin *bin,
 														gboolean write );
 
+void              ofa_tvbin_set_cell_data_func    ( ofaTVBin *bin,
+														GtkTreeCellDataFunc fn_cell,
+														void *fn_data );
+
 void              ofa_tvbin_write_columns_settings( ofaTVBin *bin );
 
 G_END_DECLS

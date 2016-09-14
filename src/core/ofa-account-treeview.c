@@ -393,7 +393,7 @@ setup_columns( ofaAccountTreeview *self )
 
 /*
  * Have to intercept the key-pressed event from the treeview
- * in order to manage tre hierarchy.
+ * in order to manage the hierarchy.
  */
 static void
 setup_key_pressed_event( ofaAccountTreeview *self )
@@ -531,7 +531,7 @@ get_and_send( ofaAccountTreeview *self, GtkTreeSelection *selection, const gchar
  * ofa_account_treeview_get_selected:
  * @view: this #ofaAccountTreeview instance.
  *
- * Return: the currently selected BAT file, or %NULL.
+ * Return: the currently selected #ofoAccount, or %NULL.
  */
 ofoAccount *
 ofa_account_treeview_get_selected( ofaAccountTreeview *view )

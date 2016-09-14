@@ -1152,6 +1152,44 @@ ofa_tvbin_set_write_settings( ofaTVBin *bin, gboolean write )
 	priv->columns_settings = write;
 }
 
+/**
+ * ofa_tvbin_set_cell_data_func:
+ * @bin: this #ofaTVBin instance.
+ * @fn_cell: the function.
+ * @fn_data: user data.
+ *
+ * Setup the fonction to be used to draw the GtkCellRenderer's.
+ * This method expects that all columns have been defined.
+ */
+void
+ofa_tvbin_set_cell_data_func( ofaTVBin *bin, GtkTreeCellDataFunc fn_cell, void *fn_data )
+{
+	static const gchar *thisfn = "ofa_tvbin_set_cell_data_func";
+	ofaTVBinPrivate *priv;
+	GList *columns, *itco, *cells, *itce;
+
+	g_debug( "%s: bin=%p, fn_cell=%p, fn_data=%p",
+			thisfn, ( void * ) bin, ( void * ) fn_cell, ( void * ) fn_data );
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+	g_return_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ));
+
+	columns = gtk_tree_view_get_columns( GTK_TREE_VIEW( priv->treeview ));
+	for( itco=columns ; itco ; itco=itco->next ){
+		cells = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( itco->data ));
+		for( itce=cells ; itce ; itce=itce->next ){
+			gtk_tree_view_column_set_cell_data_func(
+					GTK_TREE_VIEW_COLUMN( itco->data ), GTK_CELL_RENDERER( itce->data ), fn_cell, fn_data, NULL );
+		}
+		g_list_free( cells );
+	}
+	g_list_free( columns );
+}
+
 /*
  * ofa_tvbin_write_columns_settings:
  * @bin: this #ofaTVBin instance.
