@@ -27,7 +27,6 @@
 #endif
 
 #include <glib/gi18n.h>
-#include <stdlib.h>
 
 #include "my/my-date.h"
 #include "my/my-utils.h"
@@ -197,18 +196,11 @@ ofa_entry_store_new( ofaHub *hub )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *store )
 {
-	gchar *anumber, *bnumber;
 	ofxCounter numa, numb;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, ENTRY_COL_ENT_NUMBER, &anumber, -1 );
-	numa = my_strlen( anumber ) ? atol( anumber ) : 0;
-
-	gtk_tree_model_get( tmodel, b, ENTRY_COL_ENT_NUMBER, &bnumber, -1 );
-	numb = my_strlen( bnumber ) ? atol( bnumber ) : 0;
-
-	g_free( anumber );
-	g_free( bnumber );
+	gtk_tree_model_get( tmodel, a, ENTRY_COL_ENT_NUMBER_I, &numa, -1 );
+	gtk_tree_model_get( tmodel, b, ENTRY_COL_ENT_NUMBER_I, &numb, -1 );
 
 	cmp = numa < numb ? -1 : ( numa > numb ? 1 : 0 );
 
@@ -406,15 +398,16 @@ set_row_concil( ofaEntryStore *store, ofoConcil *concil, GtkTreeIter *iter )
 static gboolean
 find_row_by_number( ofaEntryStore *store, ofxCounter number, GtkTreeIter *iter )
 {
-	gchar *str;
 	ofxCounter row_number;
 
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, ENTRY_COL_ENT_NUMBER, &str, -1 );
-			row_number = atol( str );
+			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, ENTRY_COL_ENT_NUMBER_I, &row_number, -1 );
 			if( row_number == number ){
 				return( TRUE );
+			}
+			if( row_number > number ){
+				break;
 			}
 			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
 				break;

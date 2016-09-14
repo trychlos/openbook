@@ -170,33 +170,33 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-counter.lo ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
 	ofa-dossier-delete-prefs-bin.lo ofa-dossier-prefs.lo \
-	ofa-entry-store.lo ofa-extender-collection.lo \
-	ofa-extender-module.lo ofa-formula-engine.lo \
-	ofa-guided-input.lo ofa-guided-input-bin.lo ofa-hub.lo \
-	ofa-iabout.lo ofa-iactionable.lo ofa-iactioner.lo \
-	ofa-icontext.lo ofa-iconcil.lo ofa-idate-filter.lo \
-	ofa-idbconnect.lo ofa-idbeditor.lo ofa-idbmeta.lo \
-	ofa-idbmodel.lo ofa-idbperiod.lo ofa-idbprovider.lo \
-	ofa-iexe-close.lo ofa-iexportable.lo ofa-igetter.lo \
-	ofa-iimporter.lo ofa-iimportable.lo ofa-import-duplicate.lo \
-	ofa-iprintable.lo ofa-iproperties.lo ofa-irenderable.lo \
-	ofa-isignal-hub.lo ofa-istore.lo ofa-itheme-manager.lo \
-	ofa-itree-adder.lo ofa-itvcolumnable.lo ofa-itvfilterable.lo \
-	ofa-itvsortable.lo ofa-ledger-combo.lo ofa-ledger-store.lo \
-	ofa-list-store.lo ofa-ope-template-editable.lo \
-	ofa-ope-template-frame-bin.lo ofa-ope-template-help.lo \
-	ofa-ope-template-properties.lo ofa-ope-template-select.lo \
-	ofa-ope-template-store.lo ofa-ope-template-treeview.lo \
-	ofa-open-prefs-bin.lo ofa-page.lo ofa-periodicity.lo \
-	ofa-periodicity-bin.lo ofa-portfolio-collection.lo \
-	ofa-preferences.lo ofa-render-page.lo ofa-settings.lo \
-	ofa-stream-format.lo ofa-stream-format-bin.lo \
-	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
-	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
-	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
-	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
-	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
-	ofs-ope.lo
+	ofa-entry-listview.lo ofa-entry-store.lo \
+	ofa-extender-collection.lo ofa-extender-module.lo \
+	ofa-formula-engine.lo ofa-guided-input.lo \
+	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
+	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
+	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
+	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbmodel.lo \
+	ofa-idbperiod.lo ofa-idbprovider.lo ofa-iexe-close.lo \
+	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
+	ofa-iimportable.lo ofa-import-duplicate.lo ofa-iprintable.lo \
+	ofa-iproperties.lo ofa-irenderable.lo ofa-isignal-hub.lo \
+	ofa-istore.lo ofa-itheme-manager.lo ofa-itree-adder.lo \
+	ofa-itvcolumnable.lo ofa-itvfilterable.lo ofa-itvsortable.lo \
+	ofa-ledger-combo.lo ofa-ledger-store.lo ofa-list-store.lo \
+	ofa-ope-template-editable.lo ofa-ope-template-frame-bin.lo \
+	ofa-ope-template-help.lo ofa-ope-template-properties.lo \
+	ofa-ope-template-select.lo ofa-ope-template-store.lo \
+	ofa-ope-template-treeview.lo ofa-open-prefs-bin.lo ofa-page.lo \
+	ofa-periodicity.lo ofa-periodicity-bin.lo \
+	ofa-portfolio-collection.lo ofa-preferences.lo \
+	ofa-render-page.lo ofa-settings.lo ofa-stream-format.lo \
+	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
+	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo ofo-base.lo \
+	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
+	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
+	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
+	ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -503,6 +503,8 @@ libofa_core_la_SOURCES = \
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-prefs.c									\
+	ofa-entry-listview.c								\
+	ofa-entry-listview.h								\
 	ofa-entry-store.c									\
 	ofa-entry-store.h									\
 	ofa-extender-collection.c							\
@@ -711,6 +713,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dbms-root-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-delete-prefs-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-dossier-prefs.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-listview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-entry-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extender-module.Plo@am__quote@

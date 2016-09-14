@@ -51,7 +51,7 @@
  Other changes:
 
    - AccountSelect, OpeTemplateSelect: homogeneize UIs.
-   - EntryStore: new class.
+   - EntryListview, EntryStore: new classes.
 
 -----------------------------------------------------------------------
  Version 0.59
