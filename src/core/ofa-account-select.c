@@ -228,6 +228,7 @@ ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *aske
 
 	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
 		selected_id = g_strdup( priv->account_number );
+		my_iwindow_close( MY_IWINDOW( dialog ));
 	}
 
 	return( selected_id );
