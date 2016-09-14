@@ -450,9 +450,6 @@
                 Rationale is that list stores are only a particular case
                 of tree stores...
 
-1187 2016- 9-13 BUG: selecting an account with double click no more close
-                the window
-
 1188 2016- 9-13 BUG: when cancelling a printing, the "successfully printed"
                 message is anyway displayed
 
@@ -1626,6 +1623,10 @@
 
 1178 2016- 8- 2 rename ofaISortable to ofaITVSortable
      2016- 8- 4 done
+
+1187 2016- 9-13 BUG: selecting an account with double click no more close
+                the window
+     2016- 9-14 fixed
 
 1189 2016- 9-13 BUG: when opening the operation template view
                 cf. todo_1189
