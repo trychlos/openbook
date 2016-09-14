@@ -46,8 +46,8 @@ typedef struct {
 /* some styles layout
  */
 #define STYLE_BOX_PADDING               2
-#define STYLE_ROW_MARGIN                4
-#define STYLE_SPACER                    28
+#define STYLE_ROW_MARGIN                2
+#define STYLE_SPACER                   30
 
 static void setup_top_grid( ofaButtonsBox *box );
 
