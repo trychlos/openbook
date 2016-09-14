@@ -55,6 +55,7 @@ typedef struct {
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
+static void       on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaAccountPage ))
@@ -127,8 +128,10 @@ v_setup_page( ofaPage *page )
 	priv->account_bin = ofa_account_frame_bin_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
-
-	ofa_account_frame_bin_set_settings_key( priv->account_bin, G_OBJECT_TYPE_NAME( page ));
+	ofa_account_frame_bin_set_settings_key(
+			priv->account_bin, G_OBJECT_TYPE_NAME( page ));
+	ofa_account_frame_bin_set_cell_data_func(
+			priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, page );
 
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_NEW );
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_UPDATE );
@@ -176,4 +179,20 @@ on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 		ofa_account_properties_run( OFA_IGETTER( self ), toplevel, account );
 	}
+}
+
+static void
+on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn,
+							GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+							ofaAccountPage *self )
+{
+	ofaAccountPagePrivate *priv;
+	GtkWidget *treeview;
+
+	priv = ofa_account_page_get_instance_private( self );
+
+	treeview = ofa_account_frame_bin_get_current_page( priv->account_bin );
+	g_return_if_fail( treeview && OFA_IS_ACCOUNT_TREEVIEW( treeview ));
+
+	ofa_account_treeview_cell_data_render( OFA_ACCOUNT_TREEVIEW( treeview ), tcolumn, cell, tmodel, iter );
 }
