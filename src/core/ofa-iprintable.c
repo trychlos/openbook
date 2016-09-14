@@ -324,15 +324,20 @@ do_print( ofaIPrintable *instance, sIPrintable *sdata )
 		type = GTK_MESSAGE_WARNING;
 		g_error_free( error );
 
-	} else {
+	} else if( res != GTK_PRINT_OPERATION_RESULT_CANCEL ){
 		printed = TRUE;
 		str = g_strdup( _( "The document has been successfully printed" ));
 		type = GTK_MESSAGE_INFO;
 		save_settings( instance, sdata );
+
+	} else {
+		str = NULL;
 	}
 
-	my_utils_msg_dialog( NULL, type, str );
-	g_free( str );
+	if( str ){
+		my_utils_msg_dialog( NULL, type, str );
+		g_free( str );
+	}
 
 	g_debug( "%s: printed=%s", thisfn, printed ? "True":"False" );
 
