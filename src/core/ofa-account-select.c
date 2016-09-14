@@ -284,7 +284,7 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "piece-parent" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	priv->account_bin = ofa_account_frame_bin_new();

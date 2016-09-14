@@ -467,7 +467,8 @@
 1195 2016- 9-14 ReconciliationPrint: add sum of debit and credit
                 + change color of bank line at end
 
-1196 2016- 9-14 all printings: let a plugin draw a dossier-specific background
+1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
+                background
 
 1197
 
