@@ -120,6 +120,10 @@ GList          *ofo_entry_get_dataset_for_print_reconcil
 GList          *ofo_entry_get_dataset_for_exercice_by_status
                                                      ( ofaHub *hub, ofaEntryStatus status );
 
+GList          *ofo_entry_get_dataset_for_store      ( ofaHub *hub,
+															const gchar *account,
+															const gchar *ledger );
+
 #define         ofo_entry_free_dataset( L )          g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
 gboolean        ofo_entry_use_account                ( ofaHub *hub, const gchar *account );
@@ -141,7 +145,10 @@ const gchar    *ofo_entry_get_abr_status             ( const ofoEntry *entry );
 ofaEntryStatus  ofo_entry_get_status_from_abr        ( const gchar *abr_status );
 ofxCounter      ofo_entry_get_ope_number             ( const ofoEntry *entry );
 ofxCounter      ofo_entry_get_settlement_number      ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_settlement_user        ( const ofoEntry *entry );
 const GTimeVal *ofo_entry_get_settlement_stamp       ( const ofoEntry *entry );
+const gchar    *ofo_entry_get_upd_user               ( const ofoEntry *entry );
+const GTimeVal *ofo_entry_get_upd_stamp              ( const ofoEntry *entry );
 
 gint            ofo_entry_get_exe_changed_count      ( ofaHub *hub,
 															const GDate *prev_begin, const GDate *prev_end,

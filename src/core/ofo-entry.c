@@ -796,6 +796,45 @@ effect_in_exercice( ofaHub *hub )
 	return( g_string_free( where, FALSE ));
 }
 
+/**
+ * ofo_entry_get_dataset_for_store:
+ * @hub: the current #ofaHub object.
+ * @account: [allow-none]: the searched account.
+ * @ledger: [allow-none]: the searched ledger.
+ *
+ * Returns all entries for the specified @account or @ledger.?
+ */
+GList *
+ofo_entry_get_dataset_for_store( ofaHub *hub, const gchar *account, const gchar *ledger )
+{
+	static const gchar *thisfn = "ofo_entry_get_dataset_for_store";
+	GString *where;
+	GList *dataset;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	where = g_string_new( "" );
+
+	if( my_strlen( account )){
+		g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
+	}
+	if( my_strlen( ledger )){
+		if( where->len ){
+			where = g_string_append( where, "AND " );
+		}
+		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
+	}
+
+	dataset = entry_load_dataset( hub, where->str,
+			"ORDER BY ENT_ACCOUNT ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC");
+
+	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
+
+	g_string_free( where, TRUE );
+
+	return( dataset );
+}
+
 /*
  * returns a GList * of ofoEntries
  */
@@ -1065,12 +1104,39 @@ ofo_entry_get_settlement_number( const ofoEntry *entry )
 }
 
 /**
+ * ofo_entry_get_settlement_user:
+ */
+const gchar *
+ofo_entry_get_settlement_user( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, string, NULL, ENT_STLMT_USER );
+}
+
+/**
  * ofo_entry_get_settlement_stamp:
  */
 const GTimeVal *
 ofo_entry_get_settlement_stamp( const ofoEntry *entry )
 {
 	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_STLMT_STAMP );
+}
+
+/**
+ * ofo_entry_get_settlement_user:
+ */
+const gchar *
+ofo_entry_get_upd_user( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, string, NULL, ENT_UPD_USER );
+}
+
+/**
+ * ofo_entry_get_settlement_stamp:
+ */
+const GTimeVal *
+ofo_entry_get_upd_stamp( const ofoEntry *entry )
+{
+	ofo_base_getter( ENTRY, entry, timestamp, NULL, ENT_UPD_STAMP );
 }
 
 /**
