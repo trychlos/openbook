@@ -425,47 +425,6 @@ ofa_account_treeview_get_filter_class( ofaAccountTreeview *view )
 }
 
 /**
- * ofa_account_treeview_set_cell_data_func:
- * @view: this #ofaAccountTreeview instance.
- * @fn_cell: the function.
- * @fn_data: user data.
- *
- * Setup the fonction to be used to draw the GtkCellRenderer's.
- * This method expects that all columns have been defined.
- */
-void
-ofa_account_treeview_set_cell_data_func( ofaAccountTreeview *view, GtkTreeCellDataFunc fn_cell, void *fn_data )
-{
-	static const gchar *thisfn = "ofa_account_treeview_set_cell_data_func";
-	ofaAccountTreeviewPrivate *priv;
-	GtkWidget *treeview;
-	GList *columns, *itco, *cells, *itce;
-
-	g_debug( "%s: view=%p, fn_cell=%p, fn_data=%p",
-			thisfn, ( void * ) view, ( void * ) fn_cell, ( void * ) fn_data );
-
-	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
-
-	priv = ofa_account_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
-	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
-
-	columns = gtk_tree_view_get_columns( GTK_TREE_VIEW( treeview ));
-	for( itco=columns ; itco ; itco=itco->next ){
-		cells = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( itco->data ));
-		for( itce=cells ; itce ; itce=itce->next ){
-			gtk_tree_view_column_set_cell_data_func(
-					GTK_TREE_VIEW_COLUMN( itco->data ), GTK_CELL_RENDERER( itce->data ), fn_cell, fn_data, NULL );
-		}
-		g_list_free( cells );
-	}
-	g_list_free( columns );
-}
-
-/**
  * ofa_account_treeview_set_settings_key:
  * @view: this #ofaAccountTreeview instance.
  * @key: [allow-none]: the prefix of the settings key.

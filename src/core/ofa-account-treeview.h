@@ -77,10 +77,6 @@ ofaAccountTreeview *ofa_account_treeview_new               ( gint class_num );
 
 gint                ofa_account_treeview_get_filter_class  ( ofaAccountTreeview *view );
 
-void                ofa_account_treeview_set_cell_data_func( ofaAccountTreeview *view,
-																	GtkTreeCellDataFunc fn_cell,
-																	void *fn_data );
-
 void                ofa_account_treeview_set_settings_key  ( ofaAccountTreeview *view,
 																	const gchar *key );
 
