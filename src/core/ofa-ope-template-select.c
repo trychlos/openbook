@@ -64,6 +64,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-t
 
 static ofaOpeTemplateSelect *ope_template_select_new( ofaIGetter *getter, GtkWindow *parent );
 static void                  iwindow_iface_init( myIWindowInterface *iface );
+static gboolean              iwindow_is_destroy_allowed( const myIWindow *instance );
 static void                  idialog_iface_init( myIDialogInterface *iface );
 static void                  idialog_init( myIDialog *instance );
 static void                  on_ope_template_changed( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
@@ -216,7 +217,7 @@ ofa_ope_template_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar 
 
 	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
 		selected_mnemo = g_strdup( priv->ope_mnemo );
-		gtk_widget_hide( GTK_WIDGET( dialog ));
+		my_iwindow_close( MY_IWINDOW( dialog ));
 	}
 
 	return( selected_mnemo );
@@ -231,6 +232,17 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_ope_template_select_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->is_destroy_allowed = iwindow_is_destroy_allowed;
+}
+
+/*
+ * ofaOpeTemplateSelect is not destroyed at end, but only hidden.
+ */
+static gboolean
+iwindow_is_destroy_allowed( const myIWindow *instance )
+{
+	return( FALSE );
 }
 
 /*
@@ -266,8 +278,8 @@ idialog_init( myIDialog *instance )
 
 	priv->template_bin = ofa_ope_template_frame_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->template_bin ));
-
-	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, G_OBJECT_TYPE_NAME( instance ));
+	ofa_ope_template_frame_bin_set_settings_key(
+			priv->template_bin, G_OBJECT_TYPE_NAME( instance ));
 
 	g_signal_connect( priv->template_bin, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
 	g_signal_connect( priv->template_bin, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );
@@ -276,6 +288,8 @@ idialog_init( myIDialog *instance )
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_PROPERTIES );
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DUPLICATE );
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DELETE );
+
+	ofa_ope_template_frame_bin_set_getter( priv->template_bin, priv->getter );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
