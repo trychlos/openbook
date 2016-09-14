@@ -459,7 +459,23 @@
 1190 2016- 9-13 OpeTemplatePage: recurrent operation indicator no more
                 display (and TVA ?)
 
-1191
+1191 2016- 9-14 BalancePrint: make smaller the italic text between the
+                titles and the column headers (same font that Reconciliation
+                footer)
+
+1192 2016- 9-14 FEAT: export the balance for a period
+
+1193 2016- 9-14 BalancePrint: "Solde balance" header becomes "Period solde"
+
+1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
+                vertically (+ review left and right margins)
+
+1195 2016- 9-14 ReconciliationPrint: add sum of debit and credit
+                + change color of bank line at end
+
+1196 2016- 9-14 all printings: let a plugin draw a dossier-specific background
+
+1197
 
 -----------------------------------------------------------------------
  DONE
