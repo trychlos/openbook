@@ -42,16 +42,18 @@ typedef struct {
 }
 	myAccelGroupPrivate;
 
-/* A data structure attached to each accelerator
+/* A data structure passed to the accelerator closure
  */
 typedef struct {
-	myIActionMap *map;
-	gchar         *action;
+	GActionMap *map;
+	gchar      *target;
+	gchar      *action;
 }
 	sAccel;
 
-static void     setup_accels_rec( myAccelGroup *self, myIActionMap *map, GMenuModel *model );
-static void     install_accel( myAccelGroup *self, myIActionMap *map, GVariant *action, GVariant *accel );
+static void     setup_accels_rec( myAccelGroup *self, GActionMap *map, GMenuModel *model );
+static void     install_accel( myAccelGroup *self, GActionMap *map, GVariant *action, GVariant *accel );
+static void     split_detailed_action_name( const gchar *detailed_name, gchar **target, gchar **action );
 static gboolean on_accel_activated( myAccelGroup *group, GObject *acceleratable, guint keyval, GdkModifierType modifier, sAccel *accel_data );
 static void     on_accel_data_finalized( sAccel *accel_data, GClosure *closure );
 
@@ -138,28 +140,32 @@ my_accel_group_new( void )
 }
 
 /**
- * my_accel_group_setup_accels:
+ * my_accel_group_setup_accels_from_menu:
  * @group: this #myAccelGroup instance.
- * @map: the myIActionMap which holds the actions.
+ * @map: the #GActionMap which holds the menu.
+ * @menu: the #GMenuModel to be parsed.
  *
- * Setup the defined accelerators in the @group accelerator group.
+ * Parse the @menu, extracting actions which expose an accelerator,
+ * and define these accelerators for the @map group.
  */
 void
-my_accel_group_setup_accels( myAccelGroup *group, myIActionMap *map )
+my_accel_group_setup_accels_from_menu( myAccelGroup *group, GActionMap *map, GMenuModel *menu )
 {
-	GMenuModel *model;
+	myAccelGroupPrivate *priv;
 
 	g_return_if_fail( group && MY_IS_ACCEL_GROUP( group ));
-	g_return_if_fail( map && MY_IS_IACTION_MAP( map ));
+	g_return_if_fail( map && G_IS_ACTION_MAP( map ));
+	g_return_if_fail( menu && G_IS_MENU_MODEL( menu ));
 
-	model = my_iaction_map_get_menu_model( map );
-	g_return_if_fail( model && G_IS_MENU_MODEL( model ));
+	priv = my_accel_group_get_instance_private( group );
 
-	setup_accels_rec( group, map, model );
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_accels_rec( group, map, menu );
 }
 
 static void
-setup_accels_rec( myAccelGroup *self, myIActionMap *map, GMenuModel *model )
+setup_accels_rec( myAccelGroup *self, GActionMap *map, GMenuModel *model )
 {
 	static const gchar *thisfn = "my_accel_group_setup_accels_rec";
 	GMenuLinkIter *lter;
@@ -200,7 +206,7 @@ setup_accels_rec( myAccelGroup *self, myIActionMap *map, GMenuModel *model )
 }
 
 static void
-install_accel( myAccelGroup *self, myIActionMap *map, GVariant *action, GVariant *accel )
+install_accel( myAccelGroup *self, GActionMap *map, GVariant *action, GVariant *accel )
 {
 	static const gchar *thisfn = "my_accel_group_install_accel";
 	guint accel_key;
@@ -209,26 +215,58 @@ install_accel( myAccelGroup *self, myIActionMap *map, GVariant *action, GVariant
 	GClosure *closure;
 	sAccel *accel_data;
 
+	/* get the detailed name */
 	action_name = g_variant_get_string( action, NULL );
 	g_return_if_fail( my_strlen( action_name ));
 
 	accel_data = g_new0( sAccel, 1 );
 	accel_data->map = map;
-	accel_data->action = g_strdup( action_name );
+	split_detailed_action_name( action_name, &accel_data->target, &accel_data->action );
 
 	accel_str = g_variant_get_string( accel, NULL );
 	g_return_if_fail( my_strlen( accel_str ));
 
+	gtk_accelerator_parse( accel_str, &accel_key, &accel_mods );
+
 	g_debug( "%s: map=%p, installing accel '%s' for '%s' action",
 			thisfn, ( void * ) map, accel_str, action_name );
-
-	gtk_accelerator_parse( accel_str, &accel_key, &accel_mods );
 
 	closure = g_cclosure_new(
 			G_CALLBACK( on_accel_activated ),
 			accel_data, ( GClosureNotify ) on_accel_data_finalized );
-	gtk_accel_group_connect( GTK_ACCEL_GROUP( self ), accel_key, accel_mods, GTK_ACCEL_VISIBLE, closure);
+
+	gtk_accel_group_connect( GTK_ACCEL_GROUP( self ), accel_key, accel_mods, GTK_ACCEL_VISIBLE, closure );
+
 	g_closure_unref( closure );
+}
+
+static void
+split_detailed_action_name( const gchar *detailed_name, gchar **target, gchar **action )
+{
+	gchar **tokens, **it;
+
+	if( target ){
+		*target = NULL;
+	}
+	if( action ){
+		*action = NULL;
+	}
+	if( my_strlen( detailed_name )){
+		tokens = g_strsplit( detailed_name, ".", -1 );
+		it = tokens;
+		if( *it ){
+			if( target ){
+				*target = g_strdup( *it );
+			}
+			it++;
+			if( *it ){
+				if( action ){
+					*action = g_strdup( *it );
+				}
+			}
+		}
+		g_strfreev( tokens );
+	}
 }
 
 static gboolean
@@ -241,7 +279,7 @@ on_accel_activated( myAccelGroup *group, GObject *acceleratable, guint keyval, G
 	g_debug( "%s:  group=%p, acceleratable=%p, keyval=%u, modified=%d, accel_data=%p, action=%s",
 			thisfn, ( void * ) group, ( void * ) acceleratable, keyval, modifier, ( void * ) accel_data, accel_data->action );
 
-	action = my_iaction_map_lookup_action( accel_data->map, accel_data->action );
+	action = g_action_map_lookup_action( accel_data->map, accel_data->action );
 	if( !action ){
 		return( FALSE );
 	}
@@ -263,11 +301,12 @@ on_accel_activated( myAccelGroup *group, GObject *acceleratable, guint keyval, G
 static void
 on_accel_data_finalized( sAccel *accel_data, GClosure *closure )
 {
-	static const gchar *thisfn = "my_accel_group_menubar_on_accel_data_finalized";
+	static const gchar *thisfn = "my_accel_group_on_accel_data_finalized";
 
-	g_debug( "%s: accel_data=%p, action=%s, closure=%p",
-			thisfn, ( void * ) accel_data, accel_data->action, ( void * ) closure );
+	g_debug( "%s: accel_data=%p, target=%s, action=%s, closure=%p",
+			thisfn, ( void * ) accel_data, accel_data->target, accel_data->action, ( void * ) closure );
 
+	g_free( accel_data->target );
 	g_free( accel_data->action );
 	g_free( accel_data );
 }

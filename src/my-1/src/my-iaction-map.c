@@ -31,16 +31,11 @@
 
 #define IACTION_MAP_LAST_VERSION          1
 
-static GList *st_registered             = NULL;
-
 static guint  st_initializations        = 0;	/* interface initialization count */
 
 static GType         register_type( void );
 static void          interface_base_init( myIActionMapInterface *klass );
 static void          interface_base_finalize( myIActionMapInterface *klass );
-static myIActionMap *find_by_target( const gchar *target );
-static const gchar  *iaction_map_get_action_target( const myIActionMap *instance );
-static void          on_instance_finalized( GList **list, GObject *finalized_instance );
 
 /**
  * my_iaction_map_get_type:
@@ -124,7 +119,7 @@ interface_base_finalize( myIActionMapInterface *klass )
  * Returns: the last version number of this interface.
  */
 guint
-my_iaction_map_get_interface_last_version( const myIActionMap *instance )
+my_iaction_map_get_interface_last_version( void )
 {
 	return( IACTION_MAP_LAST_VERSION );
 }
@@ -168,28 +163,6 @@ my_iaction_map_get_interface_version( GType type )
 }
 
 /**
- * my_iaction_map_register:
- * @instance: this #myIActionMap instance.
- *
- * Let the instance be registered as a #myIActionMap implementation.
- * This is needed in order to be able to request all #myIActionMap when
- * searching for an action handler.
- */
-void
-my_iaction_map_register( const myIActionMap *instance )
-{
-	static const gchar *thisfn = "my_iaction_map_register";
-
-	g_debug( "%s: instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	g_return_if_fail( instance && MY_IS_IACTION_MAP( instance ));
-
-	st_registered = g_list_prepend( st_registered, ( gpointer ) instance );
-
-	g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, &st_registered);
-}
-
-/**
  * my_iaction_map_get_menu_model:
  * @instance: this #myIActionMap instance.
  *
@@ -200,6 +173,8 @@ my_iaction_map_get_menu_model( const myIActionMap *instance )
 {
 	static const gchar *thisfn = "my_iaction_map_get_menu_model";
 
+	g_return_val_if_fail( instance && MY_IS_IACTION_MAP( instance ), NULL );
+
 	if( MY_IACTION_MAP_GET_INTERFACE( instance )->get_menu_model ){
 		return( MY_IACTION_MAP_GET_INTERFACE( instance )->get_menu_model( instance ));
 	}
@@ -207,110 +182,4 @@ my_iaction_map_get_menu_model( const myIActionMap *instance )
 	g_info( "%s: myIActionMap's %s implementation does not provide 'get_menu_model()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
-}
-
-/**
- * my_iaction_map_lookup_action:
- * @instance: this #myIActionMap instance.
- * @detailed_name: the detailed name of the action.
- *
- * Returns: the corresponding #GAction, or %NULL.
- *
- * The provided @instance is those which has registered the accelerator, but
- * maybe not those which handles it.
- */
-GAction *
-my_iaction_map_lookup_action( myIActionMap *instance, const gchar *detailed_name )
-{
-	static const gchar *thisfn = "my_iaction_map_lookup_action";
-	GAction *action;
-	gchar *act_target, *act_name;
-	gchar **tokens, **it;
-	myIActionMap *map;
-
-	g_return_val_if_fail( instance && MY_IS_IACTION_MAP( instance ), NULL );
-	g_return_val_if_fail( my_strlen( detailed_name ), NULL );
-
-	action = NULL;
-
-	/* split target and action */
-	act_target = NULL;
-	act_name = NULL;
-	tokens = g_strsplit( detailed_name, ".", -1 );
-	it = tokens;
-	if( *it ){
-		act_target = g_strdup( *it );
-		it++;
-		if( *it ){
-			act_name = g_strdup( *it );
-		}
-	}
-	g_strfreev( tokens );
-
-	map = NULL;
-	/* get the action map for this target */
-	if( my_strlen( act_target ) && my_strlen( act_name )){
-		map = find_by_target( act_target );
-		g_debug( "%s: act_target=%s, map=%p (%s)", thisfn, act_target, ( void * ) map, G_OBJECT_TYPE_NAME( map ));
-	}
-
-	/* and get the action */
-	if( map ){
-		action = g_action_map_lookup_action( G_ACTION_MAP( map ), act_name );
-		g_debug( "%s: act_name=%s, action=%p", thisfn, act_name, ( void * ) action );
-	}
-
-	g_free( act_name );
-	g_free( act_target );
-
-	return( action );
-}
-
-static myIActionMap *
-find_by_target( const gchar *target )
-{
-	GList *it;
-	myIActionMap *map;
-	const gchar *map_target;
-
-	for( it=st_registered ; it ; it=it->next ){
-		map = MY_IACTION_MAP( it->data );
-		map_target = iaction_map_get_action_target( map );
-		if( !my_collate( map_target, target )){
-			return( map );
-		}
-	}
-
-	return( NULL );
-}
-
-/*
- * my_iaction_map_get_action_target:
- * @instance: this #myIActionMap instance.
- *
- * Returns: the action target of the @instance.
- */
-static const gchar *
-iaction_map_get_action_target( const myIActionMap *instance )
-{
-	static const gchar *thisfn = "my_iaction_map_get_action_target";
-
-	if( MY_IACTION_MAP_GET_INTERFACE( instance )->get_action_target ){
-		return( MY_IACTION_MAP_GET_INTERFACE( instance )->get_action_target( instance ));
-	}
-
-	g_info( "%s: myIActionMap's %s implementation does not provide 'get_action_target()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
-	return( NULL );
-}
-
-static void
-on_instance_finalized( GList **list, GObject *finalized_instance )
-{
-	static const gchar *thisfn = "my_iaction_map_on_instance_finalized";
-
-	g_debug( "%s: list=%p, finalized_instance=%p (%s)",
-			thisfn, ( void * ) list, ( void * ) finalized_instance, G_OBJECT_TYPE_NAME( finalized_instance ));
-
-	*list = g_list_remove( *list, finalized_instance );
 }

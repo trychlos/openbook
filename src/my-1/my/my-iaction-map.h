@@ -31,7 +31,15 @@
  * @short_description: The IActionMap Interface
  * @include: my/my-iaction-map.h
  *
- * The #myIActionMap interface let complete the GActionMap action interface.
+ * The #myIActionMap interface let complete the #GActionMap interface
+ * in order to associate the current #GMenuModel to the map.
+ *
+ * This association is mainly used by the #myAccelGroup class when
+ * defining the accelerators exposed by a menu.
+ *
+ * As this interface is used by the #myAccelGroup class, implementing
+ * it has only sense when the implementation has accelerators, and has
+ * chosen to manage them with the #myAccelGroup class.
  */
 
 #include <gio/gio.h>
@@ -47,6 +55,9 @@ typedef struct _myIActionMap                     myIActionMap;
 
 /**
  * myIActionMapInterface:
+ * @get_interface_version: [should] get the version of this interface
+ *                                  that the plugin implements.
+ * @get_menu_model: [should]: get the current menu model.
  *
  * This defines the interface that an #myIActionMap should implement.
  */
@@ -72,21 +83,11 @@ typedef struct {
 	 * get_menu_model:
 	 * @instance: the #myIActionMap instance.
 	 *
-	 * Returns: the #GMenuModel of the @instance.
+	 * Returns: the current #GMenuModel of the @instance.
 	 *
 	 * Since: version 1.
 	 */
 	GMenuModel *         ( *get_menu_model )       ( const myIActionMap *instance );
-
-	/**
-	 * get_action_target:
-	 * @instance: the #myIActionMap instance.
-	 *
-	 * Returns: the action target of the @instance.
-	 *
-	 * Since: version 1.
-	 */
-	const gchar *        ( *get_action_target )    ( const myIActionMap *instance );
 }
 	myIActionMapInterface;
 
@@ -95,7 +96,7 @@ typedef struct {
  */
 GType               my_iaction_map_get_type                  ( void );
 
-guint               my_iaction_map_get_interface_last_version( const myIActionMap *instance );
+guint               my_iaction_map_get_interface_last_version( void );
 
 /*
  * Implementation-wide
@@ -105,12 +106,7 @@ guint               my_iaction_map_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-void                my_iaction_map_register                  ( const myIActionMap *instance );
-
 GMenuModel         *my_iaction_map_get_menu_model            ( const myIActionMap *instance );
-
-GAction            *my_iaction_map_lookup_action             ( myIActionMap *instance,
-																	const gchar *detailed_name );
 
 G_END_DECLS
 

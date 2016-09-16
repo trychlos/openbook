@@ -166,7 +166,6 @@ static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instan
 
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
 static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
-static const gchar          *iaction_map_get_action_target( const myIActionMap *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaApplication, ofa_application, GTK_TYPE_APPLICATION, 0,
 		G_ADD_PRIVATE( ofaApplication )
@@ -329,8 +328,6 @@ ofa_application_init( ofaApplication *self )
 	priv = ofa_application_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
-	my_iaction_map_register( MY_IACTION_MAP( self ));
 }
 
 static void
@@ -1254,7 +1251,6 @@ iaction_map_iface_init( myIActionMapInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_menu_model = iaction_map_get_menu_model;
-	iface->get_action_target = iaction_map_get_action_target;
 }
 
 static GMenuModel *
@@ -1265,10 +1261,4 @@ iaction_map_get_menu_model( const myIActionMap *instance )
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
 
 	return( priv->menu );
-}
-
-static const gchar *
-iaction_map_get_action_target( const myIActionMap *instance )
-{
-	return( "app" );
 }

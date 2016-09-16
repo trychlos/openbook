@@ -35,8 +35,6 @@
 
 #include <gtk/gtk.h>
 
-#include "my/my-iaction-map.h"
-
 G_BEGIN_DECLS
 
 #define MY_TYPE_ACCEL_GROUP                ( my_accel_group_get_type())
@@ -58,12 +56,13 @@ typedef struct {
 }
 	myAccelGroupClass;
 
-GType         my_accel_group_get_type    ( void ) G_GNUC_CONST;
+GType         my_accel_group_get_type              ( void ) G_GNUC_CONST;
 
-myAccelGroup *my_accel_group_new         ( void );
+myAccelGroup *my_accel_group_new                   ( void );
 
-void          my_accel_group_setup_accels( myAccelGroup *group,
-												myIActionMap *map );
+void          my_accel_group_setup_accels_from_menu( myAccelGroup *group,
+															GActionMap *map,
+															GMenuModel *menu );
 
 G_END_DECLS
 
