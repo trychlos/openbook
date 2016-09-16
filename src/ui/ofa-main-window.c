@@ -317,7 +317,6 @@ static sThemeDef            *theme_get_by_type( GList **list, GType type );
 static void                  theme_free( sThemeDef *def );
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
 static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
-static const gchar          *iaction_map_get_action_target( const myIActionMap *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WINDOW, 0,
 		G_ADD_PRIVATE( ofaMainWindow )
@@ -531,8 +530,6 @@ ofa_main_window_init( ofaMainWindow *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->last_theme = THM_LAST_THEME;
-
-	my_iaction_map_register( MY_IACTION_MAP( self ));
 }
 
 static void
@@ -826,6 +823,11 @@ ofa_main_window_is_willing_to_quit( const ofaMainWindow *main_window )
 			_( "Are you sure you want to quit the application ?" ), _( "_Quit" )));
 }
 
+/*
+ * @map is:
+ * - the GtkApplication at main window creation and on dossier close
+ * - the GtkApplicationWindow on dossier open
+ */
 static void
 menubar_setup( ofaMainWindow *window, myIActionMap *map )
 {
@@ -847,20 +849,23 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 		priv->accel_group = NULL;
 	}
 
-	priv->accel_group = my_accel_group_new();
-	my_accel_group_setup_accels( priv->accel_group, map );
-	gtk_window_add_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
-
 	model = my_iaction_map_get_menu_model( map );
-	menubar = gtk_menu_bar_new_from_model( model );
+	if( model ){
+		priv->accel_group = my_accel_group_new();
+		my_accel_group_setup_accels_from_menu( priv->accel_group, G_ACTION_MAP( map ), model );
+		gtk_window_add_accel_group( GTK_WINDOW( window ), GTK_ACCEL_GROUP( priv->accel_group ));
 
-	g_debug( "%s: model=%p (%s), menubar=%p, grid=%p (%s)",
-			thisfn,
-			( void * ) model, G_OBJECT_TYPE_NAME( model ), ( void * ) menubar,
-			( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
+		menubar = gtk_menu_bar_new_from_model( model );
 
-	gtk_grid_attach( priv->grid, menubar, 0, 0, 1, 1 );
-	priv->menubar = GTK_MENU_BAR( menubar );
+		g_debug( "%s: model=%p (%s), menubar=%p, grid=%p (%s)",
+				thisfn,
+				( void * ) model, G_OBJECT_TYPE_NAME( model ), ( void * ) menubar,
+				( void * ) priv->grid, G_OBJECT_TYPE_NAME( priv->grid ));
+
+		gtk_grid_attach( priv->grid, menubar, 0, 0, 1, 1 );
+		priv->menubar = GTK_MENU_BAR( menubar );
+	}
+
 	gtk_widget_show_all( GTK_WIDGET( window ));
 }
 
@@ -1972,7 +1977,6 @@ iaction_map_iface_init( myIActionMapInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_menu_model = iaction_map_get_menu_model;
-	iface->get_action_target = iaction_map_get_action_target;
 }
 
 static GMenuModel *
@@ -1983,10 +1987,4 @@ iaction_map_get_menu_model( const myIActionMap *instance )
 	priv = ofa_main_window_get_instance_private( OFA_MAIN_WINDOW( instance ));
 
 	return( priv->menu );
-}
-
-static const gchar *
-iaction_map_get_action_target( const myIActionMap *instance )
-{
-	return( "win" );
 }
