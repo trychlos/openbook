@@ -38,6 +38,7 @@
   
  New features and improvements:
 
+   - Accelerators: define new keys in Dossier menu (todo #1204).
    - BalanceRender: improve appearance of header notes (todo #1191).
 
  Bug fixes:
