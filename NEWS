@@ -47,6 +47,7 @@
    - OpeTemplatePage: fix row activation.
    - OpeTemplateSelect: fix missing getter.
    - OpeTemplateStore: fix row insertion (todo #1189).
+   - PeriodClose: fix the 'archive accounts' user preference (todo #1205).
    - TVBin: Fix sort on incomplete rows (todo #1199).
 
  Other changes:

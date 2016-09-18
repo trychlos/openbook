@@ -482,9 +482,6 @@
 1204 2016- 9-18 change accels: Ctrl+R=restore, Ctrl+B=backup Ctrl+I=properties
                 Ctrl+U=user prefs
 
-1205 2016- 9-18 PeriodClosing: archive account balances indicator should
-                be recorder as a user pref
-
 1206
 
 -----------------------------------------------------------------------
@@ -1667,6 +1664,10 @@
 
 1199 2016- 9-16 critical when importing BAT Boursorama du 29/09
                 cf. todo_1199
+     2016- 9-18 fixed
+
+1205 2016- 9-18 PeriodClosing: archive account balances indicator should
+                be recorder as a user pref
      2016- 9-18 fixed
 
 -----------------------------------------------------------------------

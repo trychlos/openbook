@@ -317,10 +317,6 @@ check_for_enable_dlg( ofaPeriodClose *self )
 	ok = is_dialog_validable( self );
 
 	gtk_widget_set_sensitive( priv->do_close_btn, ok );
-
-	if( ok ){
-		set_settings( self );
-	}
 }
 
 /*
@@ -403,7 +399,7 @@ on_ok_clicked( GtkButton *button, ofaPeriodClose *self )
 
 	} else if( do_close( self )){
 		gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-
+		set_settings( self );
 		close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( self ), GTK_RESPONSE_CANCEL );
 		g_return_if_fail( close_btn && GTK_IS_BUTTON( close_btn ));
 		gtk_button_set_label( GTK_BUTTON( close_btn ), _( "_Close" ));
@@ -479,11 +475,12 @@ set_settings( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
 	gchar *str;
+	gboolean active;
 
 	priv = ofa_period_close_get_instance_private( self );
 
-	str = g_strdup_printf( "%s;",
-			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn )) ? "True":"False" );
+	active = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn ));
+	str = g_strdup_printf( "%s;", active ? "True":"False" );
 
 	ofa_settings_user_set_string( st_settings, str );
 
