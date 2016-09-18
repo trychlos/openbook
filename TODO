@@ -469,7 +469,23 @@
 1198 2016- 9-15 ofaIStore, ofaListStore, ofaTtreeStore: review respective
                 rules and features of the interface and of the base classes
 
-1199
+1200 2016- 9-18 have a Notes indicator in DossierStore
+
+1201 2016- 9-18 make OpeTemplateTreeview sortable
+
+1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
+                bow which requests a confirmation for <n> operations
+
+1203 2016- 9-18 modifying an operation template mnemo is not reverberated
+                in recurrent operation
+
+1204 2016- 9-18 change accels: Ctrl+R=restore, Ctrl+B=backup Ctrl+I=properties
+                Ctrl+U=user prefs
+
+1205 2016- 9-18 PeriodClosing: archive account balances indicator should
+                be recorder as a user pref
+
+1206
 
 -----------------------------------------------------------------------
  DONE
@@ -1648,6 +1664,10 @@
      2016- 9-15 these already were the same fonts, probably appearing smaller
                 because reconsiliation draws on a landscape orientation
                 => use Sans Italic 5
+
+1199 2016- 9-16 critical when importing BAT Boursorama du 29/09
+                cf. todo_1199
+     2016- 9-18 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
