@@ -19,10 +19,12 @@
         <item>
           <attribute name="label" translatable="yes">_Manage...</attribute>
           <attribute name="action">app.manage</attribute>
+          <attribute name="accel">&lt;Control&gt;m</attribute>
         </item>
         <item>
           <attribute name="label" translatable="yes">_Restore...</attribute>
           <attribute name="action">app.restore</attribute>
+          <attribute name="accel">&lt;Control&gt;r</attribute>
         </item>
       </section>
       <item>
@@ -32,6 +34,7 @@
         <item>
           <attribute name="label" translatable="yes">_User preferences...</attribute>
           <attribute name="action">app.user_prefs</attribute>
+          <attribute name="accel">&lt;Control&gt;u</attribute>
         </item>
       </section>
       <section>
