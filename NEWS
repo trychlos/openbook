@@ -44,6 +44,7 @@
 
    - AccountSelect: close the window on account selection (todo #1187).
    - IPrintable: does not say "succesfully printed" when cancelled (todo #1188).
+   - LedgerClose: fix typo.
    - OpeTemplatePage: fix row activation.
    - OpeTemplateSelect: fix missing getter.
    - OpeTemplateStore: fix row insertion (todo #1189).

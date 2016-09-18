@@ -645,7 +645,7 @@ do_close_ledgers( sClose *close_data )
 	close_data->hub_handlers = g_list_prepend( close_data->hub_handlers, ( gpointer ) handler );
 
 	dialog = gtk_dialog_new_with_buttons(
-					_( "Closing ledger" ),
+					_( "Closing ledgers" ),
 					close_data->parent,
 					GTK_DIALOG_MODAL,
 					_( "_Close" ), GTK_RESPONSE_OK,
