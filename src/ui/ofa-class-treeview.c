@@ -478,14 +478,14 @@ v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *
 	g_free( notesa );
 	g_free( updusera );
 	g_free( updstampa );
-	g_object_unref( pnga );
+	g_clear_object( &pnga );
 
 	g_free( numb );
 	g_free( labelb );
 	g_free( notesb );
 	g_free( upduserb );
 	g_free( updstampb );
-	g_object_unref( pngb );
+	g_clear_object( &pngb );
 
 	return( cmp );
 }
