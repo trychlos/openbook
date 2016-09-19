@@ -475,6 +475,7 @@
 
 1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
                 box which requests a confirmation for <n> operations
+                + progress bar
 
 1206 2016- 9-19 duplicate recurrent model
 
