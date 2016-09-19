@@ -294,7 +294,7 @@ init_top_widget( ofaTVBin *self )
 	priv = ofa_tvbin_get_instance_private( self );
 
 	priv->frame = gtk_frame_new( NULL );
-	ofa_tvbin_set_shadow( self, priv->frame );
+	ofa_tvbin_set_shadow( self, priv->shadow );
 	gtk_container_add( GTK_CONTAINER( self ), priv->frame );
 
 	priv->scrolled = gtk_scrolled_window_new( NULL, NULL );
@@ -560,7 +560,7 @@ tview_on_key_pressed( GtkWidget *treeview, GdkEventKey *event, ofaTVBin *self )
  * Returns: the visibility of the treeview headers.
  */
 gboolean
-ofa_tvbin_get_headers( const ofaTVBin *bin )
+ofa_tvbin_get_headers( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
 
@@ -607,7 +607,7 @@ ofa_tvbin_set_headers( ofaTVBin *bin, gboolean visible )
  * Returns: the horizontal scrollbar policy for the #GtkScrolledWindow.
  */
 GtkPolicyType
-ofa_tvbin_get_hpolicy( const ofaTVBin *bin )
+ofa_tvbin_get_hpolicy( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
 
@@ -655,7 +655,7 @@ ofa_tvbin_set_hpolicy( ofaTVBin *bin, GtkPolicyType policy )
  * Returns: the identifier name.
  */
 const gchar *
-ofa_tvbin_get_name( const ofaTVBin *bin )
+ofa_tvbin_get_name( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
 
@@ -708,7 +708,7 @@ ofa_tvbin_set_name( ofaTVBin *bin, const gchar *name )
  * Returns: the selection mode.
  */
 GtkSelectionMode
-ofa_tvbin_get_selection_mode( const ofaTVBin *bin )
+ofa_tvbin_get_selection_mode( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
 
@@ -757,7 +757,7 @@ ofa_tvbin_set_selection_mode( ofaTVBin *bin, GtkSelectionMode mode )
  * Returns: the shadow type of the #GtkFrame.
  */
 GtkShadowType
-ofa_tvbin_set_shadow( const ofaTVBin *bin )
+ofa_tvbin_get_shadow( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
 
@@ -804,7 +804,7 @@ ofa_tvbin_set_shadow( ofaTVBin *bin, GtkShadowType shadow )
  * Returns: the @write indicator.
  */
 gboolean
-ofa_tvbin_get_write_settings( const ofaTVBin *bin )
+ofa_tvbin_get_write_settings( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
 

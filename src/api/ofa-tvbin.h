@@ -167,32 +167,32 @@ typedef struct {
 
 GType             ofa_tvbin_get_type              ( void ) G_GNUC_CONST;
 
-gboolean          ofa_tvbin_get_headers           ( const ofaTVBin *bin );
+gboolean          ofa_tvbin_get_headers           ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_headers           ( ofaTVBin *bin,
 														gboolean visible );
 
-GtkPolicyType     ofa_tvbin_get_hpolicy           ( const ofaTVBin *bin );
+GtkPolicyType     ofa_tvbin_get_hpolicy           ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_hpolicy           ( ofaTVBin *bin,
 														GtkPolicyType policy );
 
-const gchar      *ofa_tvbin_get_name              ( const ofaTVBin *bin );
+const gchar      *ofa_tvbin_get_name              ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_name              ( ofaTVBin *bin,
 														const gchar *name );
 
-GtkSelectionMode  ofa_tvbin_get_selection_mode    ( const ofaTVBin *bin );
+GtkSelectionMode  ofa_tvbin_get_selection_mode    ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_selection_mode    ( ofaTVBin *bin,
 														GtkSelectionMode mode );
 
-GtkShadowType     ofa_tvbin_get_shadow            ( const ofaTVBin *bin );
+GtkShadowType     ofa_tvbin_get_shadow            ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_shadow            ( ofaTVBin *bin,
 														GtkShadowType type );
 
-gboolean          ofa_tvbin_get_write_settings    ( const ofaTVBin *bin );
+gboolean          ofa_tvbin_get_write_settings    ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_write_settings    ( ofaTVBin *bin,
 														gboolean write );
