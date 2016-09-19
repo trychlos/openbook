@@ -333,7 +333,7 @@ ofa_entry_listview_set_settings_key( ofaEntryListview *view, const gchar *key )
 
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
-	ofa_tvbin_set_settings_key( OFA_TVBIN( view ), key );
+	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
 }
 
 static void
