@@ -37,6 +37,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
@@ -286,7 +287,7 @@ setup_treeview( ofaBatSelect *self )
 	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), self );
 
-	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->tview ));
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
 	ofa_icontext_set_menu( OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ), menu );
 }
 
