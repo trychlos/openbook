@@ -383,37 +383,30 @@ form_find_by_mnemo( GList *set, const gchar *mnemo )
 
 /**
  * ofo_tva_form_use_ope_template:
- * @hub:
- * @mnemo:
+ * @hub: the #ofaHub of the application.
+ * @ope_template: the #ofoOpeTemplate mnemonic.
  *
- * Returns: %TRUE if any #ofoTVAForm use this @mnemo operation
+ * Returns: %TRUE if any #ofoTVAForm use this @ope_template operation
  * template.
  */
 gboolean
-ofo_tva_form_use_ope_template( ofaHub *hub, const gchar *mnemo )
+ofo_tva_form_use_ope_template( ofaHub *hub, const gchar *ope_template )
 {
-	GList *dataset, *it;
-	ofoTVAForm *form;
-	const gchar *det_template;
-	guint i, count;
+	gchar *query;
+	gint count;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( my_strlen( mnemo ), FALSE );
+	g_return_val_if_fail( my_strlen( ope_template ), FALSE );
 
-	dataset = ofo_tva_form_get_dataset( hub );
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM TVA_T_FORMS_DET WHERE TFO_DET_TEMPLATE='%s'",
+			ope_template );
 
-	for( it=dataset ; it ; it=it->next ){
-		form = OFO_TVA_FORM( it->data );
-		count = ofo_tva_form_detail_get_count( form );
-		for( i=0 ; i<count ; ++i ){
-			det_template = ofo_tva_form_detail_get_template( form, i );
-			if( !my_collate( det_template, mnemo )){
-				return( TRUE );
-			}
-		}
-	}
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
-	return( FALSE );
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /**
@@ -2253,18 +2246,7 @@ hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 static gboolean
 hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
 {
-	gchar *query;
-	gint count;
-
-	query = g_strdup_printf(
-			"SELECT COUNT(*) FROM TVA_T_FORMS_DET WHERE TFO_DET_TEMPLATE='%s'",
-			ofo_ope_template_get_mnemo( template ));
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count == 0 );
+	return( !ofo_tva_form_use_ope_template( hub, ofo_ope_template_get_mnemo( template )));
 }
 
 /*

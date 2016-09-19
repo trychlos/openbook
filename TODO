@@ -474,13 +474,9 @@
 1201 2016- 9-18 make OpeTemplateTreeview sortable
 
 1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
-                bow which requests a confirmation for <n> operations
+                box which requests a confirmation for <n> operations
 
 1206 2016- 9-19 duplicate recurrent model
-
-1207 2016- 9-19 check xxx_use_yyyy() vs. yyy_is_deletable()
-                e.g. ofo_recurrent_model_use_ope_template() vs.
-                ofo_recurrent_model_hub_on_deletable_object()
 
 1209
 
@@ -1679,6 +1675,11 @@
 1205 2016- 9-18 PeriodClosing: archive account balances indicator should
                 be recorder as a user pref
      2016- 9-18 fixed
+
+1207 2016- 9-19 check xxx_use_yyyy() vs. yyy_is_deletable()
+                e.g. ofo_recurrent_model_use_ope_template() vs.
+                ofo_recurrent_model_hub_on_deletable_object()
+     2016- 9-19 done
 
 1208 2016- 9-19 check which collections have a real need to be be sorted
      2016- 9-19 a priori, none -> done

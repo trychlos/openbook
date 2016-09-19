@@ -270,33 +270,30 @@ model_find_by_mnemo( GList *set, const gchar *mnemo )
 
 /**
  * ofo_recurrent_model_use_ope_template:
- * @hub:
- * @mnemo:
+ * @hub: the #ofaHub of the application.
+ * @ope_template: the #ofoOpeTemplate mnemonic.
  *
- * Returns: %TRUE if any #ofoRecurrentModel use this @mnemo operation
- * template.
+ * Returns: %TRUE if any #ofoRecurrentModel use this @ope_template
+ *  operation template.
  */
 gboolean
-ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *mnemo )
+ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *ope_template )
 {
-	GList *dataset, *it;
-	ofoRecurrentModel *model;
-	const gchar *model_template;
+	gchar *query;
+	gint count;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( my_strlen( mnemo ), FALSE );
+	g_return_val_if_fail( my_strlen( ope_template ), FALSE );
 
-	dataset = ofo_recurrent_model_get_dataset( hub );
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM REC_T_MODELS WHERE REC_OPE_TEMPLATE='%s'",
+			ope_template );
 
-	for( it=dataset ; it ; it=it->next ){
-		model = OFO_RECURRENT_MODEL( it->data );
-		model_template = ofo_recurrent_model_get_ope_template( model );
-		if( !my_collate( model_template, mnemo )){
-			return( TRUE );
-		}
-	}
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
 
-	return( FALSE );
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /**
@@ -1379,18 +1376,7 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 static gboolean
 hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
 {
-	gchar *query;
-	gint count;
-
-	query = g_strdup_printf(
-			"SELECT COUNT(*) FROM REC_T_MODELS WHERE REC_OPE_TEMPLATE='%s'",
-			ofo_ope_template_get_mnemo( template ));
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count == 0 );
+	return( !ofo_recurrent_model_use_ope_template( hub, ofo_ope_template_get_mnemo( template )));
 }
 
 /*
