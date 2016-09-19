@@ -405,13 +405,13 @@ setup_key_pressed_event( ofaAccountTreeview *self )
 }
 
 /**
- * ofa_account_treeview_get_filter_class:
+ * ofa_account_treeview_get_class:
  * @view: this #ofaAccountTreeview instance.
  *
- * Returns: the filtered class number.
+ * Returns: the class number associated to this @view.
  */
 gint
-ofa_account_treeview_get_filter_class( ofaAccountTreeview *view )
+ofa_account_treeview_get_class( ofaAccountTreeview *view )
 {
 	ofaAccountTreeviewPrivate *priv;
 

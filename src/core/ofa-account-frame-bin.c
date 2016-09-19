@@ -446,7 +446,7 @@ book_get_page_by_class( ofaAccountFrameBin *self, gint class_num, gboolean bcrea
 	for( i=0 ; i<count ; ++i ){
 		page_widget = gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), i );
 		g_return_val_if_fail( page_widget && OFA_IS_ACCOUNT_TREEVIEW( page_widget ), NULL );
-		page_class = ofa_account_treeview_get_filter_class( OFA_ACCOUNT_TREEVIEW( page_widget ));
+		page_class = ofa_account_treeview_get_class( OFA_ACCOUNT_TREEVIEW( page_widget ));
 		if( page_class == class_num ){
 			found = page_widget;
 			break;

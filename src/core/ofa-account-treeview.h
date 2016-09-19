@@ -71,21 +71,21 @@ typedef struct {
 }
 	ofaAccountTreeviewClass;
 
-GType               ofa_account_treeview_get_type          ( void ) G_GNUC_CONST;
+GType               ofa_account_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaAccountTreeview *ofa_account_treeview_new               ( gint class_num );
+ofaAccountTreeview *ofa_account_treeview_new             ( gint class_num );
 
-gint                ofa_account_treeview_get_filter_class  ( ofaAccountTreeview *view );
+gint                ofa_account_treeview_get_class       ( ofaAccountTreeview *view );
 
-void                ofa_account_treeview_set_settings_key  ( ofaAccountTreeview *view,
+void                ofa_account_treeview_set_settings_key( ofaAccountTreeview *view,
 																	const gchar *key );
 
-ofoAccount         *ofa_account_treeview_get_selected      ( ofaAccountTreeview *view );
+ofoAccount         *ofa_account_treeview_get_selected    ( ofaAccountTreeview *view );
 
-void                ofa_account_treeview_set_selected      ( ofaAccountTreeview *view,
+void                ofa_account_treeview_set_selected    ( ofaAccountTreeview *view,
 																	const gchar *account_id );
 
-void                ofa_account_treeview_cell_data_render  ( ofaAccountTreeview *view,
+void                ofa_account_treeview_cell_data_render( ofaAccountTreeview *view,
 																	GtkTreeViewColumn *column,
 																	GtkCellRenderer *renderer,
 																	GtkTreeModel *model,
