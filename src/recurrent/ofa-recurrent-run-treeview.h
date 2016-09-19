@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_recurrent_run_treeview
  * @short_description: #ofaRecurrentRunTreeview class definition.
- * @include: recurrent/ofa-recurrent_run-treeview.h
+ * @include: recurrent/ofa-recurrent-run-treeview.h
  *
  * A convenience class to display ofoRecurrentRun objects in a
  * liststore-based treeview.
