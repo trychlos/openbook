@@ -75,18 +75,18 @@ typedef struct {
 }
 	ofaOpeTemplateTreeviewClass;
 
-GType                   ofa_ope_template_treeview_get_type         ( void ) G_GNUC_CONST;
+GType                   ofa_ope_template_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateTreeview *ofa_ope_template_treeview_new              ( const gchar *ledger );
+ofaOpeTemplateTreeview *ofa_ope_template_treeview_new             ( const gchar *ledger );
 
-const gchar            *ofa_ope_template_treeview_get_filter_ledger( ofaOpeTemplateTreeview *view );
+const gchar            *ofa_ope_template_treeview_get_ledger      ( ofaOpeTemplateTreeview *view );
 
-ofoOpeTemplate         *ofa_ope_template_treeview_get_selected     ( ofaOpeTemplateTreeview *view );
+ofoOpeTemplate         *ofa_ope_template_treeview_get_selected    ( ofaOpeTemplateTreeview *view );
 
-void                    ofa_ope_template_treeview_set_selected     ( ofaOpeTemplateTreeview *view,
+void                    ofa_ope_template_treeview_set_selected    ( ofaOpeTemplateTreeview *view,
 																			const gchar *mnemo );
 
-void                    ofa_ope_template_treeview_set_settings_key ( ofaOpeTemplateTreeview *view,
+void                    ofa_ope_template_treeview_set_settings_key( ofaOpeTemplateTreeview *view,
 																			const gchar *key );
 
 G_END_DECLS

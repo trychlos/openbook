@@ -413,7 +413,7 @@ book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboo
 	for( i=0 ; i<count ; ++i ){
 		page_widget = gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), i );
 		g_return_val_if_fail( page_widget && OFA_IS_OPE_TEMPLATE_TREEVIEW( page_widget ), NULL );
-		page_ledger = ofa_ope_template_treeview_get_filter_ledger( OFA_OPE_TEMPLATE_TREEVIEW( page_widget ));
+		page_ledger = ofa_ope_template_treeview_get_ledger( OFA_OPE_TEMPLATE_TREEVIEW( page_widget ));
 		if( !my_collate( page_ledger, ledger )){
 			found = page_widget;
 			break;
@@ -864,7 +864,7 @@ do_insert_ope_template( ofaOpeTemplateFrameBin *self )
 	if( page_n >= 0 ){
 		page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), page_n );
 		g_return_if_fail( page_w && OFA_IS_OPE_TEMPLATE_TREEVIEW( page_w ));
-		page_ledger = ofa_ope_template_treeview_get_filter_ledger( OFA_OPE_TEMPLATE_TREEVIEW( page_w ));
+		page_ledger = ofa_ope_template_treeview_get_ledger( OFA_OPE_TEMPLATE_TREEVIEW( page_w ));
 	}
 
 	ope = ofo_ope_template_new();
@@ -1248,7 +1248,7 @@ do_write_settings( ofaOpeTemplateFrameBin *self )
 	for( i=0 ; i<count ; ++i ){
 		page_w = gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), i );
 		g_return_if_fail( page_w && OFA_IS_OPE_TEMPLATE_TREEVIEW( page_w ));
-		page_ledger = ofa_ope_template_treeview_get_filter_ledger( OFA_OPE_TEMPLATE_TREEVIEW( page_w ));
+		page_ledger = ofa_ope_template_treeview_get_ledger( OFA_OPE_TEMPLATE_TREEVIEW( page_w ));
 		if( my_collate( page_ledger, UNKNOWN_LEDGER_MNEMO )){
 			strlist = g_list_append( strlist, ( gpointer ) page_ledger );
 		}
