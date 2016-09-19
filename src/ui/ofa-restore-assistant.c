@@ -45,6 +45,7 @@
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-portfolio-collection.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -671,7 +672,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			OFA_ICONTEXT( priv->p2_dossier_tview ), OFA_IACTIONABLE( self ),
 			menu );
 
-	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->p2_dossier_tview ));
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->p2_dossier_tview ));
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( priv->p2_dossier_tview ), OFA_IACTIONABLE( priv->p2_dossier_tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
