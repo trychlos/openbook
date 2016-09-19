@@ -664,7 +664,7 @@ action_name_to_column_id( const gchar *name )
 static gint
 read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
-	gchar *prefix_key, *settings_key;
+	gchar *settings_key;
 	GList *slist, *it;
 	const gchar *cstr;
 	gint count, col_id, col_width;
@@ -672,8 +672,7 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	GtkTreeViewColumn *prev;
 	GActionGroup *action_group;
 
-	prefix_key = read_settings_key( instance );
-	settings_key = g_strdup_printf( "%s-columns", prefix_key );
+	settings_key = g_strdup_printf( "%s-columns", sdata->name );
 	slist = ofa_settings_user_get_string_list( settings_key );
 
 	count = 0;
@@ -703,7 +702,6 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 
 	ofa_settings_free_string_list( slist );
 	g_free( settings_key );
-	g_free( prefix_key );
 
 	return( count );
 }
@@ -711,7 +709,7 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 static void
 write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
-	gchar *prefix_key, *settings_key;
+	gchar *settings_key;
 	guint i, count;
 	GString *str;
 	gint col_id, col_width;
@@ -720,8 +718,7 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	if( sdata->treeview ){
 
 		str = g_string_new( "" );
-		prefix_key = read_settings_key( instance );
-		settings_key = g_strdup_printf( "%s-columns", prefix_key );
+		settings_key = g_strdup_printf( "%s-columns", sdata->name );
 		count = gtk_tree_view_get_n_columns( sdata->treeview );
 
 		for( i=0 ; i<count ; ++i ){
@@ -736,7 +733,6 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 		ofa_settings_user_set_string( settings_key, str->str );
 
 		g_free( settings_key );
-		g_free( prefix_key );
 		g_string_free( str, TRUE );
 	}
 }
