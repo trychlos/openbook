@@ -132,7 +132,6 @@ static gboolean           model_do_update( ofoRecurrentModel *model, const ofaID
 static gboolean           model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean           model_do_delete( ofoRecurrentModel *model, const ofaIDBConnect *connect );
 static gint               model_cmp_by_mnemo( const ofoRecurrentModel *a, const gchar *mnemo );
-static gint               recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a, const ofoRecurrentModel *b );
 static void               icollectionable_iface_init( myICollectionableInterface *iface );
 static guint              icollectionable_get_interface_version( void );
 static GList             *icollectionable_load_collection( void *user_data );
@@ -615,8 +614,7 @@ ofo_recurrent_model_insert( ofoRecurrentModel *recurrent_model, ofaHub *hub )
 	if( model_do_insert( recurrent_model, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( recurrent_model ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( recurrent_model ), ( GCompareFunc ) recurrent_model_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( recurrent_model ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_model );
 		ok = TRUE;
 	}
@@ -750,8 +748,7 @@ ofo_recurrent_model_update( ofoRecurrentModel *recurrent_model, const gchar *pre
 
 	if( model_do_update( recurrent_model, ofa_hub_get_connect( hub ), prev_mnemo )){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_RECURRENT_MODEL, ( GCompareFunc ) recurrent_model_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_model, prev_mnemo );
 		ok = TRUE;
 	}
@@ -914,13 +911,7 @@ model_do_delete( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 static gint
 model_cmp_by_mnemo( const ofoRecurrentModel *a, const gchar *mnemo )
 {
-	return( g_utf8_collate( ofo_recurrent_model_get_mnemo( a ), mnemo ));
-}
-
-static gint
-recurrent_model_cmp_by_ptr( const ofoRecurrentModel *a, const ofoRecurrentModel *b )
-{
-	return( model_cmp_by_mnemo( a, ofo_recurrent_model_get_mnemo( b )));
+	return( my_collate( ofo_recurrent_model_get_mnemo( a ), mnemo ));
 }
 
 /*
@@ -952,7 +943,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"REC_T_MODELS ORDER BY REC_MNEMO ASC",
+					"REC_T_MODELS",
 					OFO_TYPE_RECURRENT_MODEL,
 					OFA_HUB( user_data ));
 

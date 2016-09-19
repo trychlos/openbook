@@ -151,7 +151,6 @@ static gboolean  rate_do_update( ofoRate *rate, const gchar *prev_mnemo, const o
 static gboolean  rate_update_main( ofoRate *rate, const gchar *prev_mnemo, const ofaIDBConnect *connect );
 static gboolean  rate_do_delete( ofoRate *rate, const ofaIDBConnect *connect );
 static gint      rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo );
-static gint      rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b );
 static gint      rate_cmp_by_validity( const ofsRateValidity *a, const ofsRateValidity *b, gboolean *consistent );
 static void      icollectionable_iface_init( myICollectionableInterface *iface );
 static guint     icollectionable_get_interface_version( void );
@@ -764,8 +763,7 @@ ofo_rate_insert( ofoRate *rate, ofaHub *hub )
 	if( rate_do_insert( rate, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( rate ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( rate ), ( GCompareFunc ) rate_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( rate ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, rate );
 		ok = TRUE;
 	}
@@ -943,8 +941,7 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 
 	if( rate_do_update( rate, prev_mnemo, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_RATE, ( GCompareFunc ) rate_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_RATE, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, rate, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1068,13 +1065,7 @@ rate_do_delete( ofoRate *rate, const ofaIDBConnect *connect )
 static gint
 rate_cmp_by_mnemo( const ofoRate *a, const gchar *mnemo )
 {
-	return( g_utf8_collate( ofo_rate_get_mnemo( a ), mnemo ));
-}
-
-static gint
-rate_cmp_by_ptr( const ofoRate *a, const ofoRate *b )
-{
-	return( rate_cmp_by_mnemo( a, ofo_rate_get_mnemo( b )));
+	return( my_collate( ofo_rate_get_mnemo( a ), mnemo ));
 }
 
 /*
@@ -1203,7 +1194,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"OFA_T_RATES ORDER BY RAT_MNEMO ASC",
+					"OFA_T_RATES",
 					OFO_TYPE_RATE,
 					OFA_HUB( user_data ));
 
@@ -1211,7 +1202,7 @@ icollectionable_load_collection( void *user_data )
 		rate = OFO_RATE( it->data );
 		priv = ofo_rate_get_instance_private( rate );
 		from = g_strdup_printf(
-				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s' ORDER BY RAT_VAL_ROW ASC",
+				"OFA_T_RATES_VAL WHERE RAT_MNEMO='%s'",
 				ofo_rate_get_mnemo( rate ));
 		priv->validities =
 				ofo_base_load_rows( st_validity_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );

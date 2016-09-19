@@ -54,7 +54,7 @@ typedef struct {
 
 static void       v_setup_page( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self );
+static void       on_row_activated( ofaAccountFrameBin *frame, ofoAccount *account, ofaAccountPage *self );
 static void       on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountPage, ofa_account_page, OFA_TYPE_PAGE, 0,
@@ -165,20 +165,14 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static void
-on_row_activated( ofaAccountFrameBin *frame, const gchar *number, ofaAccountPage *self )
+on_row_activated( ofaAccountFrameBin *frame, ofoAccount *account, ofaAccountPage *self )
 {
-	ofoAccount *account;
-	ofaHub *hub;
 	GtkWindow *toplevel;
 
-	if( my_strlen( number )){
-		hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-		account = ofo_account_get_by_number( hub, number );
-		g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
+	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 
-		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_account_properties_run( OFA_IGETTER( self ), toplevel, account );
-	}
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_account_properties_run( OFA_IGETTER( self ), toplevel, account );
 }
 
 static void

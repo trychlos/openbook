@@ -522,8 +522,7 @@ ofo_concil_insert( ofoConcil *concil, ofaHub *hub )
 	if( concil_do_insert( concil, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( concil ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( concil ), ( GCompareFunc ) concil_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( concil ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, concil );
 		ok = TRUE;
 	}
@@ -696,19 +695,3 @@ icollectionable_get_interface_version( void )
 {
 	return( 1 );
 }
-
-#if 0
-static GList *
-icollectionable_load_collection( const myICollectionable *instance, ofaHub *hub )
-{
-	GList *list;
-
-	list = ofo_base_load_dataset(
-					st_boxed_defs,
-					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
-					OFO_TYPE_CONCIL,
-					hub );
-
-	return( list );
-}
-#endif

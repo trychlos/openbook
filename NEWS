@@ -58,6 +58,7 @@
    - AccountSelect, OpeTemplateSelect: homogeneize UIs.
    - EntryListview, EntryStore: new classes.
    - myIActionMap, myAccelGroup: simplify code and review interface.
+   - All collections: are no more sorted (todo #1208).
 
 -----------------------------------------------------------------------
  Version 0.59

@@ -232,7 +232,6 @@ static gboolean     account_do_update_arc( ofoAccount *account, const ofaIDBConn
 static gboolean     account_do_update_amounts( ofoAccount *account, ofaHub *hub );
 static gboolean     account_do_delete( ofoAccount *account, const ofaIDBConnect *connect );
 static gint         account_cmp_by_number( const ofoAccount *a, const gchar *number );
-static gint         account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b );
 static void         icollectionable_iface_init( myICollectionableInterface *iface );
 static guint        icollectionable_get_interface_version( void );
 static GList       *icollectionable_load_collection( void *user_data );
@@ -1546,8 +1545,7 @@ ofo_account_insert( ofoAccount *account, ofaHub *hub )
 	if( account_do_insert( account, connect )){
 		ofo_base_set_hub( OFO_BASE( account ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( account ), ( GCompareFunc ) account_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( account ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, account );
 		ok = TRUE;
 	}
@@ -1647,8 +1645,7 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number ) &&
 			account_do_update_arc( account, ofa_hub_get_connect( hub ), prev_number )){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_ACCOUNT, ( GCompareFunc ) account_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, account, prev_number );
 		ok = TRUE;
 	}
@@ -1931,13 +1928,7 @@ account_do_delete( ofoAccount *account, const ofaIDBConnect *connect )
 static gint
 account_cmp_by_number( const ofoAccount *a, const gchar *number )
 {
-	return( g_utf8_collate( ofo_account_get_number( a ), number ));
-}
-
-static gint
-account_cmp_by_ptr( const ofoAccount *a, const ofoAccount *b )
-{
-	return( account_cmp_by_number( a, ofo_account_get_number( b )));
+	return( my_collate( ofo_account_get_number( a ), number ));
 }
 
 /*
@@ -1972,7 +1963,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"OFA_T_ACCOUNTS ORDER BY ACC_NUMBER ASC",
+					"OFA_T_ACCOUNTS",
 					OFO_TYPE_ACCOUNT,
 					OFA_HUB( user_data ));
 
@@ -1980,7 +1971,7 @@ icollectionable_load_collection( void *user_data )
 		account = OFO_ACCOUNT( it->data );
 		priv = ofo_account_get_instance_private( account );
 		from = g_strdup_printf(
-				"OFA_T_ACCOUNTS_ARC WHERE ACC_NUMBER='%s' ORDER BY ACC_ARC_DATE DESC",
+				"OFA_T_ACCOUNTS_ARC WHERE ACC_NUMBER='%s'",
 				ofo_account_get_number( account ));
 		priv->archives =
 				ofo_base_load_rows( st_archive_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );

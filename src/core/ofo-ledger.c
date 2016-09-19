@@ -183,7 +183,6 @@ static gboolean   ledger_do_update( ofoLedger *ledger, const gchar *prev_mnemo, 
 static gboolean   ledger_do_update_balance( ofoLedger *ledger, GList *balance, ofaHub *hub );
 static gboolean   ledger_do_delete( ofoLedger *ledger, const ofaIDBConnect *connect );
 static gint       ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo );
-static gint       ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
 static GList     *icollectionable_load_collection( void *user_data );
@@ -1132,8 +1131,7 @@ ofo_ledger_insert( ofoLedger *ledger, ofaHub *hub )
 	if( ledger_do_insert( ledger, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( ledger ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( ledger ), ( GCompareFunc ) ledger_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( ledger ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ledger );
 		ok = TRUE;
 	}
@@ -1221,8 +1219,7 @@ ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
 
 	if( ledger_do_update( ledger, prev_mnemo, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_LEDGER, ( GCompareFunc ) ledger_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ledger, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1448,13 +1445,7 @@ ledger_do_delete( ofoLedger *ledger, const ofaIDBConnect *connect )
 static gint
 ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo )
 {
-	return( g_utf8_collate( ofo_ledger_get_mnemo( a ), mnemo ));
-}
-
-static gint
-ledger_cmp_by_ptr( const ofoLedger *a, const ofoLedger *b )
-{
-	return( ledger_cmp_by_mnemo( a, ofo_ledger_get_mnemo( b )));
+	return( my_collate( ofo_ledger_get_mnemo( a ), mnemo ));
 }
 
 /*
@@ -1489,7 +1480,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"OFA_T_LEDGERS ORDER BY LED_MNEMO ASC",
+					"OFA_T_LEDGERS",
 					OFO_TYPE_LEDGER,
 					OFA_HUB( user_data ));
 

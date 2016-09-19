@@ -118,7 +118,6 @@ static gboolean     currency_insert_main( ofoCurrency *currency, const ofaIDBCon
 static gboolean     currency_do_update( ofoCurrency *currency, const gchar *prev_code, const ofaIDBConnect *connect );
 static gboolean     currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *connect );
 static gint         currency_cmp_by_code( const ofoCurrency *a, const gchar *code );
-static gint         currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b );
 static void         icollectionable_iface_init( myICollectionableInterface *iface );
 static guint        icollectionable_get_interface_version( void );
 static GList       *icollectionable_load_collection( void *user_data );
@@ -492,8 +491,7 @@ ofo_currency_insert( ofoCurrency *currency, ofaHub *hub )
 	if( currency_do_insert( currency, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( currency ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( currency ), ( GCompareFunc ) currency_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( currency ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, currency );
 		ok = TRUE;
 	}
@@ -581,8 +579,7 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 
 	if( currency_do_update( currency, prev_code, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_CURRENCY, ( GCompareFunc ) currency_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_CURRENCY, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, currency, prev_code );
 		ok = TRUE;
 	}
@@ -690,13 +687,7 @@ currency_do_delete( ofoCurrency *currency, const ofaIDBConnect *connect )
 static gint
 currency_cmp_by_code( const ofoCurrency *a, const gchar *code )
 {
-	return( g_utf8_collate( ofo_currency_get_code( a ), code ));
-}
-
-static gint
-currency_cmp_by_ptr( const ofoCurrency *a, const ofoCurrency *b )
-{
-	return( currency_cmp_by_code( a, ofo_currency_get_code( b )));
+	return( my_collate( ofo_currency_get_code( a ), code ));
 }
 
 /*
@@ -728,7 +719,7 @@ icollectionable_load_collection( void *user_data )
 
 	list = ofo_base_load_dataset(
 					st_boxed_defs,
-					"OFA_T_CURRENCIES ORDER BY CUR_CODE ASC",
+					"OFA_T_CURRENCIES",
 					OFO_TYPE_CURRENCY,
 					OFA_HUB( user_data ));
 

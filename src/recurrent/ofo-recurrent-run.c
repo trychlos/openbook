@@ -516,8 +516,7 @@ ofo_recurrent_run_insert( ofoRecurrentRun *recurrent_run, ofaHub *hub )
 	if( recurrent_run_do_insert( recurrent_run, hub )){
 		ofo_base_set_hub( OFO_BASE( recurrent_run ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( recurrent_run ), ( GCompareFunc ) recurrent_run_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( recurrent_run ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, recurrent_run );
 		ok = TRUE;
 	}
@@ -643,8 +642,7 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 
 	if( recurrent_run_do_update( recurrent_run, hub )){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_RECURRENT_RUN, ( GCompareFunc ) recurrent_run_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_RUN, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_run, NULL );
 		ok = TRUE;
 	}
@@ -796,7 +794,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"REC_T_RUN ORDER BY REC_MNEMO ASC, REC_DATE ASC",
+					"REC_T_RUN",
 					OFO_TYPE_RECURRENT_RUN,
 					OFA_HUB( user_data ));
 

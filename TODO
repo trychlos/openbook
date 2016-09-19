@@ -482,8 +482,6 @@
                 e.g. ofo_recurrent_model_use_ope_template() vs.
                 ofo_recurrent_model_hub_on_deletable_object()
 
-1208 2016- 9-19 check which collections have a real need to be be sorted
-
 1209
 
 -----------------------------------------------------------------------
@@ -1681,6 +1679,9 @@
 1205 2016- 9-18 PeriodClosing: archive account balances indicator should
                 be recorder as a user pref
      2016- 9-18 fixed
+
+1208 2016- 9-19 check which collections have a real need to be be sorted
+     2016- 9-19 a priori, none -> done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
