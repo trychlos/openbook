@@ -77,6 +77,21 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
+ *                                                               Type     Displayable
+ *                                                               -------  -----------
+ * @REC_MODEL_COL_MNEMO             : mnemonic identifier        String       Yes
+ * @REC_MODEL_COL_LABEL             : label                      String       Yes
+ * @REC_MODEL_COL_OPE_TEMPLATE      : operation template         String       Yes
+ * @REC_MODEL_COL_PERIODICITY       : periodicity                String       Yes
+ * @REC_MODEL_COL_PERIODICITY_DETAIL: periodicity detail         String       Yes
+ * @REC_MODEL_COL_DEF_AMOUNT1       : amount 1                   String       Yes
+ * @REC_MODEL_COL_DEF_AMOUNT2       : amount 2                   String       Yes
+ * @REC_MODEL_COL_DEF_AMOUNT3       : amount 3                   String       Yes
+ * @REC_MODEL_COL_NOTES             : notes                      String       Yes
+ * @REC_MODEL_COL_NOTES_PNG         : notes indicator            Pixbuf       Yes
+ * @REC_MODEL_COL_UPD_USER          : last update user           String       Yes
+ * @REC_MODEL_COL_UPD_STAMP         : last update timestamp      String       Yes
+ * @REC_MODEL_COL_OBJECT            : #ofoRecurrentModel object  GObject       No
  */
 enum {
 	REC_MODEL_COL_MNEMO = 0,
@@ -94,23 +109,6 @@ enum {
 	REC_MODEL_COL_OBJECT,
 	REC_N_COLUMNS
 };
-
-/**
- * ofaCurrencyColumns:
- * The columns displayed in the views.
- */
-typedef enum {
-	REC_MODEL_DISP_MNEMO              = 1 << 0,
-	REC_MODEL_DISP_LABEL              = 1 << 1,
-	REC_MODEL_DISP_OPE_TEMPLATE       = 1 << 2,
-	REC_MODEL_DISP_PERIODICITY        = 1 << 3,
-	REC_MODEL_DISP_PERIODICITY_DETAIL = 1 << 4,
-	REC_MODEL_DISP_NOTES              = 1 << 5,
-	REC_MODEL_DISP_NOTES_PNG          = 1 << 6,
-	REC_MODEL_DISP_UPD_USER           = 1 << 7,
-	REC_MODEL_DISP_UPD_STAMP          = 1 << 8
-}
-	ofeRecurrentModelColumns;
 
 GType                   ofa_recurrent_model_store_get_type( void );
 

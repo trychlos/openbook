@@ -74,6 +74,7 @@ static void     load_dataset( ofaRecurrentModelStore *self, ofaHub *hub );
 static void     insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model );
 static void     set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model, GtkTreeIter *iter );
 static gboolean model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIter *iter );
+static void     setup_signaling_connect( ofaRecurrentModelStore *self, ofaHub *hub );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self );
 static void     hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
@@ -202,14 +203,18 @@ ofa_recurrent_model_store_class_init( ofaRecurrentModelStoreClass *klass )
  *
  * A weak notify reference is put on this same @dossier, so that the
  * instance will be unreffed when the @dossier will be destroyed.
+ *
+ * Note that the #myICollector associated to the @hub maintains its own
+ * reference to the #ofaRecurrentModelStore object, reference which will
+ * be freed on @hub finalization.
+ *
+ * Returns: a new reference to the #ofaRecurrentStore object.
  */
 ofaRecurrentModelStore *
 ofa_recurrent_model_store_new( ofaHub *hub )
 {
 	ofaRecurrentModelStore *store;
-	ofaRecurrentModelStorePrivate *priv;
 	myICollector *collector;
-	gulong handler;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
@@ -236,22 +241,7 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 
 		load_dataset( store, hub );
 
-		/* connect to the hub signaling system */
-		priv = ofa_recurrent_model_store_get_instance_private( store );
-
-		priv->hub = hub;
-
-		handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
-		priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-		handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
-		priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-		handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
-		priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-		handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), store );
-		priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+		setup_signaling_connect( store, hub );
 	}
 
 	return( store );
@@ -371,6 +361,32 @@ model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIte
 	}
 
 	return( FALSE );
+}
+
+/*
+ * connect to the hub signaling system
+ */
+static void
+setup_signaling_connect( ofaRecurrentModelStore *self, ofaHub *hub )
+{
+	ofaRecurrentModelStorePrivate *priv;
+	gulong handler;
+
+	priv = ofa_recurrent_model_store_get_instance_private( self );
+
+	priv->hub = hub;
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 /*
