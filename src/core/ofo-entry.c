@@ -232,10 +232,8 @@ static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void         isignal_hub_connect( ofaHub *hub );
 static gboolean     hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty );
 static gboolean     hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
-static gboolean     hub_is_deletable_account_by_mnemo( ofaHub *hub, const gchar *mnemo );
 static gboolean     hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
 static gboolean     hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
-static gboolean     hub_is_deletable_ledger_by_mnemo( ofaHub *hub, const gchar *mnemo );
 static gboolean     hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void         hub_on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
 static void         hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
@@ -879,9 +877,21 @@ entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order )
 gboolean
 ofo_entry_use_account( ofaHub *hub, const gchar *account )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	gchar *query;
+	gint count;
 
-	return( !hub_is_deletable_account_by_mnemo( hub, account ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( my_strlen( account ), FALSE );
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_ACCOUNT='%s'",
+			account );
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /**
@@ -892,9 +902,21 @@ ofo_entry_use_account( ofaHub *hub, const gchar *account )
 gboolean
 ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
 {
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	gchar *query;
+	gint count;
 
-	return( !hub_is_deletable_ledger_by_mnemo( hub, ledger ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( my_strlen( ledger ), FALSE );
+
+	query = g_strdup_printf(
+			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_LEDGER='%s'",
+			ledger );
+
+	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+
+	g_free( query );
+
+	return( count == 0 );
 }
 
 /**
@@ -3160,24 +3182,7 @@ hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 static gboolean
 hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 {
-	return( hub_is_deletable_account_by_mnemo( hub, ofo_account_get_number( account )));
-}
-
-static gboolean
-hub_is_deletable_account_by_mnemo( ofaHub *hub, const gchar *mnemo )
-{
-	gchar *query;
-	gint count;
-
-	query = g_strdup_printf(
-			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_ACCOUNT='%s'",
-			mnemo );
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count == 0 );
+	return( !ofo_entry_use_account( hub, ofo_account_get_number( account )));
 }
 
 static gboolean
@@ -3200,24 +3205,7 @@ hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency )
 static gboolean
 hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger )
 {
-	return( hub_is_deletable_ledger_by_mnemo( hub, ofo_ledger_get_mnemo( ledger )));
-}
-
-static gboolean
-hub_is_deletable_ledger_by_mnemo( ofaHub *hub, const gchar *mnemo )
-{
-	gchar *query;
-	gint count;
-
-	query = g_strdup_printf(
-			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_LEDGER='%s'",
-			mnemo );
-
-	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-
-	g_free( query );
-
-	return( count == 0 );
+	return( !ofo_entry_use_ledger( hub, ofo_ledger_get_mnemo( ledger )));
 }
 
 static gboolean
