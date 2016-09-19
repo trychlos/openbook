@@ -37,6 +37,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
@@ -269,7 +270,7 @@ v_init_view( ofaPage *page )
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
 			menu );
 
-	menu = ofa_tvbin_get_menu( OFA_TVBIN( priv->tview ));
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
