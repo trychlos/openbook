@@ -547,11 +547,11 @@ ofa_ope_template_treeview_set_selected( ofaOpeTemplateTreeview *view, const gcha
 				//g_debug( "row_id=%s, template_id=%s, cmp=%d", row_id, template_id, cmp );
 				g_free( row_id );
 				if( cmp >= 0 ){
-					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
+					ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){
-					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
+					ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
 					break;
 				}
 			}

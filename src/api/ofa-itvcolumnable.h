@@ -35,8 +35,34 @@
  * treeview columns. It sends a 'ofa-toggled' signal when the visibility
  * status of a column changes.
  *
- * NB: the class which implements the #ofaITVColumnable interface must
- * also implement the #ofaIActionable interface.
+ * The #ofaITVColumnable is expected to be implemented by a #GtkTreeView.
+ * Besides of just appending the column to the treeview, it also provides
+ * following features:
+ * - columns are dynamically displayable via the context menu of the view,
+ * - order and size of the columns are saved in the user settings.
+ *
+ * When a column is added to the treeview, an action is created for
+ * toggling its visibility state, and grouped together in a dedicated
+ * action group.
+ * The actions group namespace is <name>-itvcolumnable.action_<n>,
+ * where:
+ * - <name> is the identifier name of the instance as provided in
+ *   #ofa_itvcolumnable_set_name();
+ * - <n> is the column identifier, as provided in
+ *   #ofa_itvcolumnable_add_column().
+ *
+ * This action is materialized by a menu item which is added to a popup
+ * menu, which itself will be later added to the context menu of the
+ * view.
+ *
+ * The class which implements the #ofaITVColumnable interface must
+ * also implement the #ofaIActionable interface. This later interface
+ * is used to defined actions which toggle the visibility state of each
+ * column.
+ *
+ * In Openbook, most of the implementation is assured by the #ofaTVBin
+ * base class, which also implements #ofaIFilterable and #ofaISortable
+ * interfaces.
  */
 
 #include <gtk/gtk.h>
@@ -74,51 +100,46 @@ typedef struct {
 	guint         ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
-	/**
-	 * get_settings_key:
-	 * @instance: this #ofaITVColumnable instance.
-	 *
-	 * Returns: the prefix of the settings key to be used.
-	 *
-	 * Defaults to class name.
-	 *
-	 * Since: version 1.
-	 */
-	const gchar * ( *get_settings_key )     ( const ofaITVColumnable *instance );
 }
 	ofaITVColumnableInterface;
 
 /*
  * Interface-wide
  */
-GType ofa_itvcolumnable_get_type                  ( void );
+GType  ofa_itvcolumnable_get_type                  ( void );
 
-guint ofa_itvcolumnable_get_interface_last_version( void );
+guint  ofa_itvcolumnable_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint ofa_itvcolumnable_get_interface_version     ( GType type );
+guint  ofa_itvcolumnable_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void  ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
+void   ofa_itvcolumnable_set_name                  ( ofaITVColumnable *instance,
+															const gchar *name );
+
+void   ofa_itvcolumnable_set_treeview              ( ofaITVColumnable *instance,
+															GtkTreeView *treeview );
+
+void   ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
 															GtkTreeViewColumn *column,
 															gint column_id,
-															const gchar *group_name,
 															const gchar *menu_label );
 
-gint  ofa_itvcolumnable_get_column_id             ( ofaITVColumnable *instance,
+gint   ofa_itvcolumnable_get_column_id             ( ofaITVColumnable *instance,
 															GtkTreeViewColumn *column );
 
-void  ofa_itvcolumnable_record_settings           ( ofaITVColumnable *instance );
+GMenu *ofa_itvcolumnable_get_menu                  ( ofaITVColumnable *instance );
 
-void  ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
+void   ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
 															gint column_id );
 
-void  ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance,
-															GtkTreeView *treeview );
+void   ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance );
+
+void   ofa_itvcolumnable_write_columns_settings    ( ofaITVColumnable *instance );
 
 G_END_DECLS
 

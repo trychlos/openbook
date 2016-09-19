@@ -456,7 +456,7 @@ ofa_entry_listview_set_selected( ofaEntryListview *view, ofxCounter entry )
 			while( TRUE ){
 				gtk_tree_model_get( tmodel, &iter, ENTRY_COL_ENT_NUMBER_I, &row_number, -1 );
 				if( row_number == entry ){
-					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
+					ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){

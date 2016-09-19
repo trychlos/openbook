@@ -574,7 +574,7 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 				}
 				iter = prev_iter;
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){
-					ofa_tvbin_set_selected( OFA_TVBIN( view ), &prev_iter );
+					ofa_tvbin_select_row( OFA_TVBIN( view ), &prev_iter );
 					break;
 				}
 			}
@@ -598,7 +598,7 @@ select_by_account_id_rec( ofaAccountTreeview *view, const gchar *account_id, Gtk
 		//g_debug( "row_id=%s, account_id=%s, cmp=%d", row_id, account_id, cmp );
 		g_free( row_id );
 		if( cmp >= 0 ){
-			ofa_tvbin_set_selected( OFA_TVBIN( view ), iter );
+			ofa_tvbin_select_row( OFA_TVBIN( view ), iter );
 			return( FALSE );
 		}
 		*prev_iter = *iter;

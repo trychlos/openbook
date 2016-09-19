@@ -42,13 +42,14 @@
 #define ITVCOLUMNABLE_DATA          "ofa-itvcolumnable-data"
 
 typedef struct {
+	gchar              *name;
 	GList              *columns_list;
 	GtkTreeView        *treeview;
 	gint                visible_count;
 }
 	sITVColumnable;
 
-/* the data stored for each displayable column
+/* the data stored for each GtkTreeViewColumn
  */
 typedef struct {
 	gint               id;
@@ -72,7 +73,7 @@ static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 static guint        st_initializations      = 0;	/* interface initialization count */
 
-static const gchar *st_action_prefix        = "action";
+static const gchar *st_action_prefix        = "action_";
 
 static GType           register_type( void );
 static void            interface_base_init( ofaITVColumnableInterface *klass );
@@ -82,14 +83,14 @@ static gint            get_column_id( const ofaITVColumnable *instance, sITVColu
 static sITVColumnable *get_instance_data( const ofaITVColumnable *instance );
 static void            on_instance_finalized( sITVColumnable *sdata, void *instance );
 static void            free_column( sColumn *scol );
+static gchar          *get_actions_group_name( const ofaITVColumnable *instance, sITVColumnable *sdata );
 static sColumn        *get_column_data_by_id( const ofaITVColumnable *instance, sITVColumnable *sdata, gint id );
 static sColumn        *get_column_data_by_ptr( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeViewColumn *column );
 static sColumn        *get_column_data_by_action_name( ofaITVColumnable *instance, sITVColumnable *sdata, const gchar *name );
 static gchar          *column_id_to_action_name( gint id );
 static gint            action_name_to_column_id( const gchar *name );
-static gchar          *get_settings_key( const ofaITVColumnable *instance );
-static gint            get_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
-static void            set_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
+static gint            read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
+static void            write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
 
 /**
  * ofa_itvcolumnable_get_type:
@@ -240,23 +241,75 @@ ofa_itvcolumnable_get_interface_version( GType type )
 }
 
 /**
+ * ofa_itvcolumnable_set_name:
+ * @instance: the #ofaITVColumnable instance.
+ * @name: the name which identifies this @instance.
+ *
+ * Set the name of the instance.
+ *
+ * The provided @name both:
+ * - identifies the actions group (an action is created for each
+ *   toggable column),
+ * - is used as the settings key (to record size and position of the
+ *   columns).
+ *
+ * This identifier @name should be provided before any column be added
+ * to the treeview, or will just be ignored. It defaults to the class
+ * name of the implementation.
+ */
+void
+ofa_itvcolumnable_set_name( ofaITVColumnable *instance, const gchar *name )
+{
+	sITVColumnable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
+
+	sdata = get_instance_data( instance );
+
+	g_return_if_fail( sdata->columns_list == NULL );
+
+	g_free( sdata->name );
+	sdata->name = g_strdup( name );
+}
+
+/**
+ * ofa_itvcolumnable_set_treeview:
+ * @instance: the #ofaITVColumnable instance.
+ * @treeview: the #GtkTreeView to which columns are to be added.
+ *
+ * Set the managed #GtkTreeView.
+ *
+ * The managed @treeview must be set before any column try to be added
+ * to it, or these will fail.
+ */
+void
+ofa_itvcolumnable_set_treeview( ofaITVColumnable *instance, GtkTreeView *treeview )
+{
+	sITVColumnable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
+	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
+
+	sdata = get_instance_data( instance );
+
+	g_return_if_fail( sdata->columns_list == NULL );
+
+	sdata->treeview = g_object_ref( treeview );
+}
+
+/**
  * ofa_itvcolumnable_add_column:
  * @instance: the #ofaITVColumnable instance.
  * @column: the #GtkTreeViewColumn column.
  * @column_id: the identifier of this column.
- * @group_name: the name of the action group.
  * @menu_label: [allow-none]: the localized label for the selection menu;
  *  defaults to column title.
  *
  * Records a new displayable column.
- *
- * It is expected that this method be called after the column has been
- * appended to the GtkTreeView. It is also expected that each column has
- * received its own sort id.
  */
 void
 ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
-					GtkTreeViewColumn *column, gint column_id, const gchar *group_name, const gchar *menu_label )
+					GtkTreeViewColumn *column, gint column_id, const gchar *menu_label )
 {
 	sITVColumnable *sdata;
 	sColumn *scol;
@@ -272,13 +325,20 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	scol = get_column_data_by_id( instance, sdata, column_id );
 	g_return_if_fail( scol == NULL );
 
+	/* define the column and add it to the treeview */
+	gtk_tree_view_column_set_visible( column, FALSE );
+	gtk_tree_view_column_set_reorderable( column, TRUE );
+	gtk_tree_view_column_set_resizable( column, TRUE );
+	gtk_tree_view_column_set_sizing( column, GTK_TREE_VIEW_COLUMN_GROW_ONLY );
+	gtk_tree_view_append_column( sdata->treeview, column );
+
 	/* define new column properties */
 	scol = g_new0( sColumn, 1 );
 	sdata->columns_list = g_list_append( sdata->columns_list, scol );
 
 	scol->id = column_id;
-	scol->group_name = g_strdup( group_name );
-	scol->name = column_id_to_action_name( scol->id );
+	scol->group_name = get_actions_group_name( instance, sdata );	// <name>-itvcolumnable
+	scol->name = column_id_to_action_name( scol->id );				// action_<n>
 	scol->label = g_strdup( menu_label ? menu_label : gtk_tree_view_column_get_title( column ));
 	scol->column = column;
 	scol->def_visible = FALSE;
@@ -287,7 +347,7 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	 * default visibility state is set */
 	action = g_simple_action_new_stateful( scol->name, NULL, g_variant_new_boolean( visible ));
 	g_signal_connect( action, "change-state", G_CALLBACK( on_action_changed_state ), instance );
-	ofa_iactionable_set_menu_item( OFA_IACTIONABLE( instance ), group_name, G_ACTION( action ), scol->label );
+	ofa_iactionable_set_menu_item( OFA_IACTIONABLE( instance ), scol->group_name, G_ACTION( action ), scol->label );
 	g_object_unref( action );
 	scol->action = action;
 }
@@ -377,24 +437,27 @@ get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeV
 }
 
 /**
- * ofa_itvcolumnable_record_settings:
- * @instance: the #ofaITVColumnable instance.
+ * ofa_itvcolumnable_get_menu:
+ * @instance: this #ofaITVColumnable instance.
  *
- * Records the current configuration in user settings.
+ * Returns: the contextual menu associated with the added columns.
  */
-void
-ofa_itvcolumnable_record_settings( ofaITVColumnable *instance )
+GMenu *
+ofa_itvcolumnable_get_menu( ofaITVColumnable *instance )
 {
-	static const gchar *thisfn = "ofa_itvcolumnable_record_settings";
 	sITVColumnable *sdata;
+	gchar *group_name;
+	GMenu *menu;
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ));
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ), NULL );
 
 	sdata = get_instance_data( instance );
-	set_settings( instance, sdata );
+
+	group_name = get_actions_group_name( instance, sdata );
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( instance ), group_name );
+	g_free( group_name );
+
+	return( menu );
 }
 
 /**
@@ -427,7 +490,7 @@ ofa_itvcolumnable_set_default_column( ofaITVColumnable *instance, gint column_id
  * settings, or (if no settings) because they are set as visible by default.
  */
 void
-ofa_itvcolumnable_show_columns( ofaITVColumnable *instance, GtkTreeView *treeview )
+ofa_itvcolumnable_show_columns( ofaITVColumnable *instance )
 {
 	sITVColumnable *sdata;
 	GList *it;
@@ -438,10 +501,9 @@ ofa_itvcolumnable_show_columns( ofaITVColumnable *instance, GtkTreeView *treevie
 	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
 
 	sdata = get_instance_data( instance );
-	sdata->treeview = treeview;
 	sdata->visible_count = 0;
 
-	count = get_settings( instance, sdata );
+	count = read_settings( instance, sdata );
 
 	if( count == 0 ){
 		for( it=sdata->columns_list ; it ; it=it->next ){
@@ -452,6 +514,27 @@ ofa_itvcolumnable_show_columns( ofaITVColumnable *instance, GtkTreeView *treevie
 			}
 		}
 	}
+}
+
+/**
+ * ofa_itvcolumnable_write_columns_settings:
+ * @instance: the #ofaITVColumnable instance.
+ *
+ * Records the current configuration in user settings.
+ */
+void
+ofa_itvcolumnable_write_columns_settings( ofaITVColumnable *instance )
+{
+	static const gchar *thisfn = "ofa_itvcolumnable_write_columns_settings";
+	sITVColumnable *sdata;
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ));
+
+	sdata = get_instance_data( instance );
+	write_settings( instance, sdata );
 }
 
 /*
@@ -466,6 +549,11 @@ get_instance_data( const ofaITVColumnable *instance )
 
 	if( !sdata ){
 		sdata = g_new0( sITVColumnable, 1 );
+
+		sdata->name = NULL;
+		sdata->columns_list = NULL;
+		sdata->treeview = NULL;
+		sdata->visible_count = 0;
 
 		g_object_set_data( G_OBJECT( instance ), ITVCOLUMNABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
@@ -483,6 +571,8 @@ on_instance_finalized( sITVColumnable *sdata, void *instance )
 
 	g_list_free_full( sdata->columns_list, ( GDestroyNotify ) free_column );
 
+	g_object_unref( sdata->treeview );
+	g_free( sdata->name );
 	g_free( sdata );
 }
 
@@ -492,6 +582,16 @@ free_column( sColumn *scol )
 	g_free( scol->group_name );
 	g_free( scol->name );
 	g_free( scol );
+}
+
+static gchar *
+get_actions_group_name( const ofaITVColumnable *instance, sITVColumnable *sdata )
+{
+	gchar *group;
+
+	group = g_strdup_printf( "%s-itvcolumnable", my_strlen( sdata->name ) ? sdata->name : G_OBJECT_TYPE_NAME( instance ));
+
+	return( group );
 }
 
 /*
@@ -556,27 +656,13 @@ action_name_to_column_id( const gchar *name )
 	return( atoi( name+len_prefix ));
 }
 
-static gchar *
-get_settings_key( const ofaITVColumnable *instance )
-{
-	const gchar *ckey;
-
-	ckey = NULL;
-
-	if( OFA_ITVCOLUMNABLE_GET_INTERFACE( instance )->get_settings_key ){
-		ckey = OFA_ITVCOLUMNABLE_GET_INTERFACE( instance )->get_settings_key( instance );
-	}
-
-	return( g_strdup( my_strlen( ckey ) ? ckey : G_OBJECT_TYPE_NAME( instance )));
-}
-
 /*
  * settings: pairs of <column_id;column_width;> in order of appearance
  *
  * Returns: count of found columns.
  */
 static gint
-get_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
+read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
 	gchar *prefix_key, *settings_key;
 	GList *slist, *it;
@@ -586,7 +672,7 @@ get_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	GtkTreeViewColumn *prev;
 	GActionGroup *action_group;
 
-	prefix_key = get_settings_key( instance );
+	prefix_key = read_settings_key( instance );
 	settings_key = g_strdup_printf( "%s-columns", prefix_key );
 	slist = ofa_settings_user_get_string_list( settings_key );
 
@@ -623,7 +709,7 @@ get_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 }
 
 static void
-set_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
+write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
 	gchar *prefix_key, *settings_key;
 	guint i, count;
@@ -634,7 +720,7 @@ set_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	if( sdata->treeview ){
 
 		str = g_string_new( "" );
-		prefix_key = get_settings_key( instance );
+		prefix_key = read_settings_key( instance );
 		settings_key = g_strdup_printf( "%s-columns", prefix_key );
 		count = gtk_tree_view_get_n_columns( sdata->treeview );
 
