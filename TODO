@@ -476,12 +476,15 @@
 1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
                 bow which requests a confirmation for <n> operations
 
-1203 2016- 9-18 modifying an operation template mnemo is not reverberated
-                in recurrent operation
-
 1206 2016- 9-19 duplicate recurrent model
 
-1207
+1207 2016- 9-19 check xxx_use_yyyy() vs. yyy_is_deletable()
+                e.g. ofo_recurrent_model_use_ope_template() vs.
+                ofo_recurrent_model_hub_on_deletable_object()
+
+1208 2016- 9-19 check which collections have a real need to be be sorted
+
+1209
 
 -----------------------------------------------------------------------
  DONE
@@ -1664,6 +1667,12 @@
 1199 2016- 9-16 critical when importing BAT Boursorama du 29/09
                 cf. todo_1199
      2016- 9-18 fixed
+
+1203 2016- 9-18 modifying an operation template mnemo is not reverberated
+                in recurrent operation
+     2016- 9-19 because a collection is already loaded though no store has
+                yet been created
+     2016- 9-19 fixed by freing the collection
 
 1204 2016- 9-18 change accels: Ctrl+R=restore, Ctrl+B=backup Ctrl+I=properties
                 Ctrl+U=user prefs
