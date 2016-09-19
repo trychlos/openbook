@@ -184,7 +184,6 @@ static gboolean      record_do_update( ofoTVARecord *record, const ofaIDBConnect
 static gboolean      record_update_main( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gboolean      record_do_delete( ofoTVARecord *record, const ofaIDBConnect *connect );
 static gint          record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate *end );
-static gint          tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b );
 static void          icollectionable_iface_init( myICollectionableInterface *iface );
 static guint         icollectionable_get_interface_version( void );
 static GList        *icollectionable_load_collection( void *user_data );
@@ -1105,8 +1104,7 @@ ofo_tva_record_insert( ofoTVARecord *tva_record, ofaHub *hub )
 	if( record_do_insert( tva_record, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( tva_record ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( tva_record ), ( GCompareFunc ) tva_record_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_record ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_record );
 		ok = TRUE;
 	}
@@ -1365,8 +1363,7 @@ ofo_tva_record_update( ofoTVARecord *tva_record )
 
 	if( record_do_update( tva_record, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_TVA_RECORD, ( GCompareFunc ) tva_record_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_TVA_RECORD, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_record, NULL );
 		ok = TRUE;
 	}
@@ -1530,12 +1527,6 @@ record_cmp_by_mnemo_end( const ofoTVARecord *a, const gchar *mnemo, const GDate 
 	return( cmp );
 }
 
-static gint
-tva_record_cmp_by_ptr( const ofoTVARecord *a, const ofoTVARecord *b )
-{
-	return( record_cmp_by_mnemo_end( a, ofo_tva_record_get_mnemo( b ), ofo_tva_record_get_end( b )));
-}
-
 /*
  * myICollectionable interface management
  */
@@ -1570,7 +1561,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"TVA_T_RECORDS ORDER BY TFO_MNEMO ASC,TFO_END DESC",
+					"TVA_T_RECORDS",
 					OFO_TYPE_TVA_RECORD,
 					OFA_HUB( user_data ));
 
@@ -1583,7 +1574,7 @@ icollectionable_load_collection( void *user_data )
 		send = my_date_to_str( ofo_tva_record_get_end( record ), MY_DATE_SQL );
 
 		from = g_strdup_printf(
-				"TVA_T_RECORDS_DET WHERE TFO_MNEMO='%s' AND TFO_END='%s' ORDER BY TFO_DET_ROW ASC",
+				"TVA_T_RECORDS_DET WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
 				ofo_tva_record_get_mnemo( record ), send );
 		priv->details = ofo_base_load_rows( st_details_defs, connect, from );
 		g_free( from );
@@ -1596,7 +1587,7 @@ icollectionable_load_collection( void *user_data )
 		}
 
 		from = g_strdup_printf(
-				"TVA_T_RECORDS_BOOL WHERE TFO_MNEMO='%s' AND TFO_END='%s' ORDER BY TFO_BOOL_ROW ASC",
+				"TVA_T_RECORDS_BOOL WHERE TFO_MNEMO='%s' AND TFO_END='%s'",
 				ofo_tva_record_get_mnemo( record ), send );
 		priv->bools = ofo_base_load_rows( st_bools_defs, connect, from );
 		g_free( from );

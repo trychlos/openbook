@@ -190,7 +190,6 @@ static gboolean        model_do_update( ofoOpeTemplate *model, const ofaIDBConne
 static gboolean        model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean        model_do_delete( ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gint            model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo );
-static gint            ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b );
 static void            icollectionable_iface_init( myICollectionableInterface *iface );
 static guint           icollectionable_get_interface_version( void );
 static GList          *icollectionable_load_collection( void *user_data );
@@ -1034,8 +1033,7 @@ ofo_ope_template_insert( ofoOpeTemplate *ope_template, ofaHub *hub )
 	if( model_do_insert( ope_template, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( ope_template ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( ope_template ), ( GCompareFunc ) ope_template_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( ope_template ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, ope_template );
 		ok = TRUE;
 	}
@@ -1248,8 +1246,7 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, const gchar *prev_mnemo )
 
 	if( model_do_update( ope_template, ofa_hub_get_connect( hub ), prev_mnemo )){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_OPE_TEMPLATE, ( GCompareFunc ) ope_template_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ope_template, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1380,13 +1377,7 @@ model_do_delete( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 static gint
 model_cmp_by_mnemo( const ofoOpeTemplate *a, const gchar *mnemo )
 {
-	return( g_utf8_collate( ofo_ope_template_get_mnemo( a ), mnemo ));
-}
-
-static gint
-ope_template_cmp_by_ptr( const ofoOpeTemplate *a, const ofoOpeTemplate *b )
-{
-	return( model_cmp_by_mnemo( a, ofo_ope_template_get_mnemo( b )));
+	return( my_collate( ofo_ope_template_get_mnemo( a ), mnemo ));
 }
 
 /*
@@ -1421,7 +1412,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"OFA_T_OPE_TEMPLATES ORDER BY OTE_MNEMO ASC",
+					"OFA_T_OPE_TEMPLATES",
 					OFO_TYPE_OPE_TEMPLATE,
 					OFA_HUB( user_data ));
 
@@ -1429,7 +1420,7 @@ icollectionable_load_collection( void *user_data )
 		template = OFO_OPE_TEMPLATE( it->data );
 		priv = ofo_ope_template_get_instance_private( template );
 		from = g_strdup_printf(
-				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s' ORDER BY OTE_DET_ROW ASC",
+				"OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s'",
 				ofo_ope_template_get_mnemo( template ));
 		priv->details =
 				ofo_base_load_rows( st_detail_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );

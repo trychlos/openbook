@@ -159,7 +159,7 @@ ofo_bat_line_get_dataset( ofaHub *hub, ofxCounter bat_id )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	where = g_strdup_printf( "WHERE BAT_ID=%ld ORDER BY BAT_LINE_DEFFECT ASC", bat_id );
+	where = g_strdup_printf( "WHERE BAT_ID=%ld", bat_id );
 
 	dataset = bat_line_load_dataset( hub, where );
 

@@ -102,7 +102,6 @@ static gboolean   class_do_insert( ofoClass *class, const ofaIDBConnect *connect
 static gboolean   class_do_update( ofoClass *class, gint prev_id, const ofaIDBConnect *connect );
 static gboolean   class_do_delete( ofoClass *class, const ofaIDBConnect *connect );
 static gint       class_cmp_by_number( const ofoClass *a, gpointer pnum );
-static gint       class_cmp_by_ptr( const ofoClass *a, const ofoClass *b );
 static void       icollectionable_iface_init( myICollectionableInterface *iface );
 static guint      icollectionable_get_interface_version( void );
 static GList     *icollectionable_load_collection( void *user_data );
@@ -441,8 +440,7 @@ ofo_class_insert( ofoClass *class, ofaHub *hub )
 	if( class_do_insert( class, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( class ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( class ), ( GCompareFunc ) class_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( class ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, class );
 		ok = TRUE;
 	}
@@ -518,8 +516,7 @@ ofo_class_update( ofoClass *class, gint prev_id )
 	if( class_do_update( class, prev_id, ofa_hub_get_connect( hub ))){
 		str = g_strdup_printf( "%d", prev_id );
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_CLASS, ( GCompareFunc ) class_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_CLASS, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, class, str );
 		g_free( str );
 		ok = TRUE;
@@ -638,15 +635,6 @@ class_cmp_by_number( const ofoClass *a, gpointer pnum )
 	return( 0 );
 }
 
-static gint
-class_cmp_by_ptr( const ofoClass *a, const ofoClass *b )
-{
-	gint bnum;
-
-	bnum = ofo_class_get_number( b );
-	return( class_cmp_by_number( a, GINT_TO_POINTER( bnum )));
-}
-
 /*
  * myICollectionable interface management
  */
@@ -676,7 +664,7 @@ icollectionable_load_collection( void *user_data )
 
 	list = ofo_base_load_dataset(
 					st_boxed_defs,
-					"OFA_T_CLASSES ORDER BY CLA_NUMBER ASC",
+					"OFA_T_CLASSES",
 					OFO_TYPE_CLASS,
 					OFA_HUB( user_data ));
 

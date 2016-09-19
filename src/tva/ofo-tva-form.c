@@ -197,7 +197,6 @@ static gboolean    form_do_delete_by_mnemo( const ofaIDBConnect *connect, const 
 static gboolean    form_delete_details( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gboolean    form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect );
 static gint        form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo );
-static gint        tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( void *user_data );
@@ -1114,8 +1113,7 @@ ofo_tva_form_insert( ofoTVAForm *tva_form, ofaHub *hub )
 	if( form_do_insert( tva_form, ofa_hub_get_connect( hub ))){
 		ofo_base_set_hub( OFO_BASE( tva_form ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( tva_form ), ( GCompareFunc ) tva_form_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( tva_form ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, tva_form );
 		ok = TRUE;
 	}
@@ -1345,8 +1343,7 @@ ofo_tva_form_update( ofoTVAForm *tva_form, const gchar *prev_mnemo )
 
 	if( form_do_update( tva_form, ofa_hub_get_connect( hub ), prev_mnemo )){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_TVA_FORM, ( GCompareFunc ) tva_form_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_TVA_FORM, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_form, prev_mnemo );
 		ok = TRUE;
 	}
@@ -1496,13 +1493,7 @@ form_delete_bools( ofoTVAForm *form, const ofaIDBConnect *connect )
 static gint
 form_cmp_by_mnemo( const ofoTVAForm *a, const gchar *mnemo )
 {
-	return( g_utf8_collate( ofo_tva_form_get_mnemo( a ), mnemo ));
-}
-
-static gint
-tva_form_cmp_by_ptr( const ofoTVAForm *a, const ofoTVAForm *b )
-{
-	return( form_cmp_by_mnemo( a, ofo_tva_form_get_mnemo( b )));
+	return( my_collate( ofo_tva_form_get_mnemo( a ), mnemo ));
 }
 
 /*
@@ -1539,7 +1530,7 @@ icollectionable_load_collection( void *user_data )
 
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
-					"TVA_T_FORMS ORDER BY TFO_MNEMO ASC",
+					"TVA_T_FORMS",
 					OFO_TYPE_TVA_FORM,
 					OFA_HUB( user_data ));
 
@@ -1550,7 +1541,7 @@ icollectionable_load_collection( void *user_data )
 		priv = ofo_tva_form_get_instance_private( form );
 
 		from = g_strdup_printf(
-				"TVA_T_FORMS_DET WHERE TFO_MNEMO='%s' ORDER BY TFO_DET_ROW ASC",
+				"TVA_T_FORMS_DET WHERE TFO_MNEMO='%s'",
 				ofo_tva_form_get_mnemo( form ));
 		priv->details = ofo_base_load_rows( st_detail_defs, connect, from );
 		g_free( from );
@@ -1563,7 +1554,7 @@ icollectionable_load_collection( void *user_data )
 		}
 
 		from = g_strdup_printf(
-				"TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s' ORDER BY TFO_BOOL_ROW ASC",
+				"TVA_T_FORMS_BOOL WHERE TFO_MNEMO='%s'",
 				ofo_tva_form_get_mnemo( form ));
 		priv->bools = ofo_base_load_rows( st_boolean_defs, connect, from );
 		g_free( from );

@@ -86,7 +86,6 @@ static gboolean    bat_do_delete_main( ofoBat *bat, const ofaIDBConnect *connect
 static gboolean    bat_do_delete_lines( ofoBat *bat, const ofaIDBConnect *connect );
 static gint        bat_cmp_by_date_desc( ofoBat *a, ofoBat *b );
 static gint        bat_cmp_by_id( ofoBat *a, ofxCounter id );
-static gint        bat_cmp_by_ptr( ofoBat *a, ofoBat *b );
 static void        icollectionable_iface_init( myICollectionableInterface *iface );
 static guint       icollectionable_get_interface_version( void );
 static GList      *icollectionable_load_collection( void *user_data );
@@ -954,8 +953,7 @@ ofo_bat_insert( ofoBat *bat, ofaHub *hub )
 	if( bat_do_insert( bat, hub )){
 		ofo_base_set_hub( OFO_BASE( bat ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ),
-				MY_ICOLLECTIONABLE( bat ), ( GCompareFunc ) bat_cmp_by_ptr, hub );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( bat ), NULL, hub );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, bat );
 		ok = TRUE;
 	}
@@ -1103,8 +1101,7 @@ ofo_bat_update( ofoBat *bat )
 
 	if( bat_do_update( bat, ofa_hub_get_connect( hub ))){
 		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ),
-				OFO_TYPE_BAT, ( GCompareFunc ) bat_cmp_by_ptr );
+				ofa_hub_get_collector( hub ), OFO_TYPE_BAT, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, bat, NULL );
 		ok = TRUE;
 	}
@@ -1280,17 +1277,6 @@ bat_cmp_by_id( ofoBat *a, ofxCounter id )
 	return( a_id < id ? -1 : ( a_id > id ? 1 : 0 ));
 }
 
-static gint
-bat_cmp_by_ptr( ofoBat *a, ofoBat *b )
-{
-	gint id_a, id_b;
-
-	id_a = ofo_bat_get_id( a );
-	id_b = ofo_bat_get_id( b );
-
-	return( id_a > id_b ? 1 : ( id_a < id_b ? -1 : 0 ));
-}
-
 /*
  * myICollectionable interface management
  */
@@ -1330,8 +1316,7 @@ icollectionable_load_collection( void *user_data )
 			"SELECT BAT_ID,BAT_URI,BAT_FORMAT,BAT_ACCOUNT,"
 			"	BAT_BEGIN,BAT_END,BAT_RIB,BAT_CURRENCY,BAT_SOLDE_BEGIN,BAT_SOLDE_END,"
 			"	BAT_NOTES,BAT_UPD_USER,BAT_UPD_STAMP "
-			"	FROM OFA_T_BAT "
-			"	ORDER BY BAT_UPD_STAMP ASC", &result, TRUE )){
+			"	FROM OFA_T_BAT", &result, TRUE )){
 
 		for( irow=result ; irow ; irow=irow->next ){
 			icol = ( GSList * ) irow->data;
@@ -1398,7 +1383,7 @@ icollectionable_load_collection( void *user_data )
 		ofa_idbconnect_free_results( result );
 	}
 
-	return( g_list_reverse( dataset ));
+	return( dataset );
 }
 
 /*
