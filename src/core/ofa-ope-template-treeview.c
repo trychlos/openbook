@@ -419,7 +419,7 @@ ofa_ope_template_treeview_set_settings_key( ofaOpeTemplateTreeview *view, const 
 
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
-	ofa_tvbin_set_settings_key( OFA_TVBIN( view ), key );
+	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
 }
 
 static void
