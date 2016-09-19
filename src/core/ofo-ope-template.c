@@ -1245,8 +1245,6 @@ ofo_ope_template_update( ofoOpeTemplate *ope_template, const gchar *prev_mnemo )
 	hub = ofo_base_get_hub( OFO_BASE( ope_template ));
 
 	if( model_do_update( ope_template, ofa_hub_get_connect( hub ), prev_mnemo )){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_OPE_TEMPLATE, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ope_template, prev_mnemo );
 		ok = TRUE;
 	}

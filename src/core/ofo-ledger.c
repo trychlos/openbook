@@ -1218,8 +1218,6 @@ ofo_ledger_update( ofoLedger *ledger, const gchar *prev_mnemo )
 	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 
 	if( ledger_do_update( ledger, prev_mnemo, ofa_hub_get_connect( hub ))){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, ledger, prev_mnemo );
 		ok = TRUE;
 	}

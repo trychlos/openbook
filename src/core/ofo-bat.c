@@ -1100,8 +1100,6 @@ ofo_bat_update( ofoBat *bat )
 	hub = ofo_base_get_hub( OFO_BASE( bat ));
 
 	if( bat_do_update( bat, ofa_hub_get_connect( hub ))){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_BAT, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, bat, NULL );
 		ok = TRUE;
 	}

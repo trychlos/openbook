@@ -940,8 +940,6 @@ ofo_rate_update( ofoRate *rate, const gchar *prev_mnemo )
 	ok = FALSE;
 
 	if( rate_do_update( rate, prev_mnemo, ofa_hub_get_connect( hub ))){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_RATE, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, rate, prev_mnemo );
 		ok = TRUE;
 	}
