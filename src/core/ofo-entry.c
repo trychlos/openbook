@@ -881,7 +881,10 @@ ofo_entry_use_account( ofaHub *hub, const gchar *account )
 	gint count;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( my_strlen( account ), FALSE );
+
+	if( !my_strlen( account )){
+		return( FALSE );
+	}
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_ACCOUNT='%s'",
@@ -906,7 +909,10 @@ ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
 	gint count;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( my_strlen( ledger ), FALSE );
+
+	if( !my_strlen( ledger )){
+		return( FALSE );
+	}
 
 	query = g_strdup_printf(
 			"SELECT COUNT(*) FROM OFA_T_ENTRIES WHERE ENT_LEDGER='%s'",
