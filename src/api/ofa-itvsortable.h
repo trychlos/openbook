@@ -51,7 +51,6 @@ typedef struct _ofaITVSortable                    ofaITVSortable;
  * @get_interface_version: [should] returns the version of this
  *                                  interface that the plugin implements.
  * @get_column_id: [must] returns the identifier of a column.
- * @get_settings_key: [should] returns the prefix of the settings key.
  * @has_sort_model: [should] returns whether the model is sortable.
  * @sort_model: [should] sort the model.
  *
@@ -90,18 +89,6 @@ typedef struct {
 	 */
 	gint          ( *get_column_id )        ( ofaITVSortable *instance,
 													GtkTreeViewColumn *column );
-
-	/**
-	 * get_settings_key:
-	 * @instance: this #ofaITVSortable instance.
-	 *
-	 * Returns: the prefix of the settings key to be used.
-	 *
-	 * Defaults to class name.
-	 *
-	 * Since: version 1.
-	 */
-	const gchar * ( *get_settings_key )     ( const ofaITVSortable *instance );
 
 	/**
 	 * has_sort_model:
@@ -164,15 +151,18 @@ gint          ofa_itvsortable_sort_str_int              ( const gchar *a, const 
 /*
  * Instance-wide
  */
+void          ofa_itvsortable_set_name                  ( ofaITVSortable *instance,
+																const gchar *name );
+
+void          ofa_itvsortable_set_treeview              ( ofaITVSortable *instance,
+																GtkTreeView *treeview );
+
 void          ofa_itvsortable_set_default_sort          ( ofaITVSortable *instance,
 																gint column_id,
 																GtkSortType order );
 
 GtkTreeModel *ofa_itvsortable_set_child_model           ( ofaITVSortable *instance,
 																GtkTreeModel *model );
-
-void          ofa_itvsortable_set_treeview              ( ofaITVSortable *instance,
-																GtkTreeView *treeview );
 
 gboolean      ofa_itvsortable_get_is_sortable           ( ofaITVSortable *instance );
 

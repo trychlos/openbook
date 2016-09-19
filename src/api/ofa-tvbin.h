@@ -32,9 +32,16 @@
  * @include: api/ofa-bin.h
  *
  * This is just a GtkFrame which contains a GtkScrolledWindow which
- * contains a GtkTreeView.
+ * contains a GtkTreeView. It is meant to be used as a base class by
+ * the application.
  *
- * This class implements the needed interfaces  so that all treeviews
+ * #ofaTVBin derived-classes default to be identified by the class name
+ * of the derived class. This may not always be exactly what you want.
+ * The identifier name is used both as the actions group namespace and
+ * as a settings key prefix for the interfaces. It must be set before
+ * attaching the store to the treeview.
+ *
+ * This class implements the interfaces required so that all treeviews
  * in the application will have the same behavior:
  * - the treeview is sortable by column
  * - columns may be added/removed/resized by the user
@@ -63,22 +70,34 @@
  * Columns may be dynamically made visible/invisible.
  *
  * Properties:
- * - ofa-tvbin-hpolicy: horizontal scrollbar policy;
- *                      will typically be NEVER for pages, AUTOMATIC (default) for dialogs.
- * - ofa-tvbin-shadow: shadow type of the surrounding frame;
- *                      will typically be IN for pages, NONE (default) for dialogs.
- * - ofa-tvbin-settings: the prefix of the settings key to be used by interfaces;
- *                       defaults to the class name.
- * - ofa-tvbin-groupname: the name of the action group;
- *                        must be set before defining any column;
- *                        defaults to 'tvbin'.
- * - ofa-tvbin-colsettings: whether this class should write its column settings;
- *                          will typically be %TRUE (default), unless we manage
- *                          several views of the same class (e.g. ofaAccountTreeview)
- *                          in which case the derived class must choose itself the
- *                          view to be used to write its settings.
- * - ofa-tvbin-headers: whether the columns headers are visible;
- *                      defaults to be visible.
+ *
+ * - ofa-tvbin-headers:
+ *   whether the columns headers are visible;
+ *   defaults to be visible.
+ *
+ * - ofa-tvbin-hpolicy:
+ *   horizontal scrollbar policy;
+ *   will typically be NEVER for pages, AUTOMATIC (default) for dialogs.
+ *
+ * - ofa-tvbin-name:
+ *   the identifier name of this class;
+ *   defaults to the class name.
+ *
+ * - ofa-tvbin-selmode:
+ *   the selection mode of the embedded #GtkTreeView;
+ *   defaults to the GTK_SELECTION_BROWSE.
+ *
+ * - ofa-tvbin-shadow:
+ *   shadow type of the surrounding frame;
+ *   will typically be IN for pages, NONE (default) for dialogs.
+ *
+ * - ofa-tvbin-writesettings:
+ *   whether this particular instance should write its column settings
+ *   (i.e. their respective size and position) at dispose time;
+ *   will typically be %TRUE (default), unless we manage several views
+ *   of the same class (e.g. ofaAccountTreeview) in which case the
+ *   derived class must choose itself the view to be used to write its
+ *   settings.
  */
 
 #include <gtk/gtk.h>
@@ -148,6 +167,36 @@ typedef struct {
 
 GType             ofa_tvbin_get_type              ( void ) G_GNUC_CONST;
 
+gboolean          ofa_tvbin_get_headers           ( const ofaTVBin *bin );
+
+void              ofa_tvbin_set_headers           ( ofaTVBin *bin,
+														gboolean visible );
+
+GtkPolicyType     ofa_tvbin_get_hpolicy           ( const ofaTVBin *bin );
+
+void              ofa_tvbin_set_hpolicy           ( ofaTVBin *bin,
+														GtkPolicyType policy );
+
+const gchar      *ofa_tvbin_get_name              ( const ofaTVBin *bin );
+
+void              ofa_tvbin_set_name              ( ofaTVBin *bin,
+														const gchar *name );
+
+GtkSelectionMode  ofa_tvbin_get_selection_mode    ( const ofaTVBin *bin );
+
+void              ofa_tvbin_set_selection_mode    ( ofaTVBin *bin,
+														GtkSelectionMode mode );
+
+GtkShadowType     ofa_tvbin_get_shadow            ( const ofaTVBin *bin );
+
+void              ofa_tvbin_set_shadow            ( ofaTVBin *bin,
+														GtkShadowType type );
+
+gboolean          ofa_tvbin_get_write_settings    ( const ofaTVBin *bin );
+
+void              ofa_tvbin_set_write_settings    ( ofaTVBin *bin,
+														gboolean write );
+
 void              ofa_tvbin_add_column_amount     ( ofaTVBin *bin,
 														gint column_id,
 														const gchar *header,
@@ -198,35 +247,19 @@ void              ofa_tvbin_add_column_text_x     ( ofaTVBin *bin,
 														const gchar *header,
 														const gchar *menu );
 
-GMenu            *ofa_tvbin_get_menu              ( ofaTVBin *bin );
-
 GtkTreeSelection *ofa_tvbin_get_selection         ( ofaTVBin *bin );
 
 GtkWidget        *ofa_tvbin_get_treeview          ( ofaTVBin *bin );
 
-void              ofa_tvbin_set_headers           ( ofaTVBin *bin,
-														gboolean visible );
-
-void              ofa_tvbin_set_selection_mode    ( ofaTVBin *bin,
-														GtkSelectionMode mode );
-
-void              ofa_tvbin_set_settings_key      ( ofaTVBin *bin,
-														const gchar *key );
-
-void              ofa_tvbin_set_store             ( ofaTVBin *bin,
-														GtkTreeModel *store );
-
-void              ofa_tvbin_set_selected          ( ofaTVBin *bin,
-														GtkTreeIter *treeview_iter );
-
-void              ofa_tvbin_set_write_settings    ( ofaTVBin *bin,
-														gboolean write );
+void              ofa_tvbin_select_row            ( ofaTVBin *bin,
+														GtkTreeIter *iter );
 
 void              ofa_tvbin_set_cell_data_func    ( ofaTVBin *bin,
 														GtkTreeCellDataFunc fn_cell,
 														void *fn_data );
 
-void              ofa_tvbin_write_columns_settings( ofaTVBin *bin );
+void              ofa_tvbin_set_store             ( ofaTVBin *bin,
+														GtkTreeModel *store );
 
 G_END_DECLS
 

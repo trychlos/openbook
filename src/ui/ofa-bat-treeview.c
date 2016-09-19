@@ -460,7 +460,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 				row_id = atol( sid );
 				g_free( sid );
 				if( row_id == id ){
-					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
+					ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( tmodel, &iter )){

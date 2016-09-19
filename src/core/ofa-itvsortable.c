@@ -41,6 +41,7 @@ typedef struct {
 
 	/* input
 	 */
+	gchar             *name;
 	GtkTreeView       *treeview;
 	gint               def_column;
 	GtkSortType        def_order;
@@ -68,7 +69,6 @@ static gint          get_column_id( ofaITVSortable *instance, GtkTreeViewColumn 
 static void          on_header_clicked( GtkTreeViewColumn *column, ofaITVSortable *instance );
 static void          set_sort_indicator( ofaITVSortable *instance, sITVSortable *sdata );
 static gint          on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSortable *instance );
-static gchar        *get_settings_key( const ofaITVSortable *instance );
 static void          get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
 static void          set_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
 static sITVSortable *get_itvsortable_data( ofaITVSortable *instance );
@@ -287,6 +287,50 @@ ofa_itvsortable_sort_str_int( const gchar *a, const gchar *b )
 }
 
 /**
+ * ofa_itvsortable_set_name:
+ * @instance: this #ofaIStorable instance.
+ * @name: the identifier name which is to be used as a prefix key in the
+ *  user settings.
+ *
+ * Setup the identifier name.
+ */
+void
+ofa_itvsortable_set_name( ofaITVSortable *instance, const gchar *name )
+{
+	sITVSortable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
+
+	sdata = get_itvsortable_data( instance );
+
+	g_free( sdata->name );
+	sdata->name = g_strdup( my_strlen( name ) ? name : G_OBJECT_TYPE_NAME( instance ));
+
+	setup_sort_model( instance, sdata );
+}
+
+/**
+ * ofa_itvsortable_set_treeview:
+ * @instance: this #ofaIStorable instance.
+ * @treeview: the #GtkTreeView widget.
+ *
+ * Setup the treeview widget.
+ */
+void
+ofa_itvsortable_set_treeview( ofaITVSortable *instance, GtkTreeView *treeview )
+{
+	sITVSortable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
+	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
+
+	sdata = get_itvsortable_data( instance );
+	sdata->treeview = treeview;
+
+	setup_sort_model( instance, sdata );
+}
+
+/**
  * ofa_itvsortable_set_default_sort:
  * @instance: this #ofaIStorable instance.
  * @column_id: the identifier of the default sort column.
@@ -351,27 +395,12 @@ ofa_itvsortable_set_child_model( ofaITVSortable *instance, GtkTreeModel *model )
 	return( sdata->sort_model );
 }
 
-/**
- * ofa_itvsortable_set_treeview:
- * @instance: this #ofaIStorable instance.
- * @treeview: the #GtkTreeView widget.
- *
- * Setup the treeview widget.
+/*
+ * initialize the sort model as soon as all conditions are met:
+ * - the identifier name is set
+ * - the treeview is set
+ * - the store model is set
  */
-void
-ofa_itvsortable_set_treeview( ofaITVSortable *instance, GtkTreeView *treeview )
-{
-	sITVSortable *sdata;
-
-	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
-	g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
-
-	sdata = get_itvsortable_data( instance );
-	sdata->treeview = treeview;
-
-	setup_sort_model( instance, sdata );
-}
-
 static void
 setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata )
 {
@@ -538,20 +567,6 @@ ofa_itvsortable_get_is_sortable( ofaITVSortable *instance )
 	return( FALSE );
 }
 
-static gchar *
-get_settings_key( const ofaITVSortable *instance )
-{
-	const gchar *ckey;
-
-	ckey = NULL;
-
-	if( OFA_ITVSORTABLE_GET_INTERFACE( instance )->get_settings_key ){
-		ckey = OFA_ITVSORTABLE_GET_INTERFACE( instance )->get_settings_key( instance );
-	}
-
-	return( g_strdup( my_strlen( ckey ) ? ckey : G_OBJECT_TYPE_NAME( instance )));
-}
-
 /*
  * sort_settings: sort_column_id;sort_order;
  *
@@ -639,6 +654,7 @@ get_itvsortable_data( ofaITVSortable *instance )
 		g_object_set_data( G_OBJECT( instance ), ITVSORTABLE_DATA, sdata );
 		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
 
+		sdata->name = NULL;
 		sdata->def_column = 0;
 		sdata->def_order = GTK_SORT_ASCENDING;
 	}
@@ -657,7 +673,7 @@ on_instance_finalized( sITVSortable *sdata, GObject *finalized_instance )
 	g_debug( "%s: sdata=%p, finalized_instance=%p",
 			thisfn, ( void * ) sdata, ( void * ) finalized_instance );
 
+	g_free( sdata->name );
 	g_clear_object( &sdata->sort_model );
-
 	g_free( sdata );
 }

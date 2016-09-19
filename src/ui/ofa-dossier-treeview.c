@@ -626,7 +626,7 @@ ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname 
 				cmp = g_utf8_collate( str, dname );
 				g_free( str );
 				if( cmp == 0 ){
-					ofa_tvbin_set_selected( OFA_TVBIN( view ), &iter );
+					ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
 					break;
 				}
 				if( !gtk_tree_model_iter_next( model, &iter )){
