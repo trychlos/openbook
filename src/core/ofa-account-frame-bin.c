@@ -37,6 +37,7 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itheme-manager.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
@@ -226,7 +227,7 @@ account_frame_bin_dispose( GObject *instance )
 
 		/* we expect that the last page seen by the user is those which
 		 * has the better sizes and positions for the columns */
-		ofa_tvbin_write_columns_settings( OFA_TVBIN( priv->current_page ));
+		ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( priv->current_page ));
 	}
 
 	/* chain up to the parent class */
@@ -486,7 +487,6 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	view = ofa_account_treeview_new( class_num );
-
 	ofa_account_treeview_set_settings_key( view, priv->settings_key );
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), priv->cell_fn, priv->cell_data );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
@@ -526,7 +526,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 			menu );
 	g_object_unref( menu );
 
-	menu = ofa_tvbin_get_menu( OFA_TVBIN( view ));
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( view ));
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( view ), OFA_IACTIONABLE( view ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
