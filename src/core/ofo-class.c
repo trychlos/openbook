@@ -515,8 +515,6 @@ ofo_class_update( ofoClass *class, gint prev_id )
 
 	if( class_do_update( class, prev_id, ofa_hub_get_connect( hub ))){
 		str = g_strdup_printf( "%d", prev_id );
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_CLASS, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, class, str );
 		g_free( str );
 		ok = TRUE;

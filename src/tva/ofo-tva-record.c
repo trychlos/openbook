@@ -1362,8 +1362,6 @@ ofo_tva_record_update( ofoTVARecord *tva_record )
 	hub = ofo_base_get_hub( OFO_BASE( tva_record ));
 
 	if( record_do_update( tva_record, ofa_hub_get_connect( hub ))){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_TVA_RECORD, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, tva_record, NULL );
 		ok = TRUE;
 	}

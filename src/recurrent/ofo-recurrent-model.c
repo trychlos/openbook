@@ -744,8 +744,6 @@ ofo_recurrent_model_update( ofoRecurrentModel *recurrent_model, const gchar *pre
 	hub = ofo_base_get_hub( OFO_BASE( recurrent_model ));
 
 	if( model_do_update( recurrent_model, ofa_hub_get_connect( hub ), prev_mnemo )){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_model, prev_mnemo );
 		ok = TRUE;
 	}

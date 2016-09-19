@@ -641,8 +641,6 @@ ofo_recurrent_run_update( ofoRecurrentRun *recurrent_run )
 	hub = ofo_base_get_hub( OFO_BASE( recurrent_run ));
 
 	if( recurrent_run_do_update( recurrent_run, hub )){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_RUN, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, recurrent_run, NULL );
 		ok = TRUE;
 	}

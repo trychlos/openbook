@@ -353,6 +353,8 @@ my_icollector_collection_sort( myICollector *instance, GType type, GCompareFunc 
 	sTyped *typed;
 
 	g_return_if_fail( instance && MY_IS_ICOLLECTOR( instance ));
+	g_return_if_fail( type > 0 );
+	g_return_if_fail( func != NULL );
 
 	sdata = get_collector_data( instance );
 	typed = get_collection( instance, type, sdata, NULL );

@@ -1644,8 +1644,6 @@ ofo_account_update( ofoAccount *account, const gchar *prev_number )
 
 	if( account_do_update( account, ofa_hub_get_connect( hub ), prev_number ) &&
 			account_do_update_arc( account, ofa_hub_get_connect( hub ), prev_number )){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_ACCOUNT, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, account, prev_number );
 		ok = TRUE;
 	}

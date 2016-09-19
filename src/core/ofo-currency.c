@@ -578,8 +578,6 @@ ofo_currency_update( ofoCurrency *currency, const gchar *prev_code )
 	hub = ofo_base_get_hub( OFO_BASE( currency ));
 
 	if( currency_do_update( currency, prev_code, ofa_hub_get_connect( hub ))){
-		my_icollector_collection_sort(
-				ofa_hub_get_collector( hub ), OFO_TYPE_CURRENCY, NULL );
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, currency, prev_code );
 		ok = TRUE;
 	}
