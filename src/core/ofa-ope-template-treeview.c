@@ -377,13 +377,13 @@ setup_columns( ofaOpeTemplateTreeview *self )
 }
 
 /**
- * ofa_ope_template_treeview_get_filter_ledger:
+ * ofa_ope_template_treeview_get_ledger:
  * @view: this #ofaOpeTemplateTreeview instance.
  *
- * Returns: the filtered ledger.
+ * Returns: the ledger mnemonic associated to this @view.
  */
 const gchar *
-ofa_ope_template_treeview_get_filter_ledger( ofaOpeTemplateTreeview *view )
+ofa_ope_template_treeview_get_ledger( ofaOpeTemplateTreeview *view )
 {
 	ofaOpeTemplateTreeviewPrivate *priv;
 
