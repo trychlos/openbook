@@ -330,7 +330,7 @@ ofa_batline_treeview_set_settings_key( ofaBatlineTreeview *view, const gchar *ke
 
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
-	ofa_tvbin_set_settings_key( OFA_TVBIN( view ), key );
+	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
 }
 
 /**
