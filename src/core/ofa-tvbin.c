@@ -45,6 +45,7 @@ typedef struct {
 	/* properties
 	 */
 	gboolean         headers_visible;
+	gboolean         hexpand;
 	GtkPolicyType    hpolicy;
 	gchar           *name;
 	GtkSelectionMode selection_mode;
@@ -67,6 +68,7 @@ typedef struct {
  */
 enum {
 	PROP_HEADERS_ID = 1,
+	PROP_HEXPAND_ID,
 	PROP_HPOLICY_ID,
 	PROP_NAME_ID,
 	PROP_SELMODE_ID,
@@ -179,6 +181,10 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 				g_value_set_boolean( value, priv->headers_visible );
 				break;
 
+			case PROP_HEXPAND_ID:
+				g_value_set_boolean( value, priv->hexpand );
+				break;
+
 			case PROP_HPOLICY_ID:
 				g_value_set_int( value, priv->hpolicy );
 				break;
@@ -224,6 +230,10 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 		switch( property_id ){
 			case PROP_HEADERS_ID:
 				priv->headers_visible = g_value_get_boolean( value );
+				break;
+
+			case PROP_HEXPAND_ID:
+				priv->hexpand  = g_value_get_boolean( value );
 				break;
 
 			case PROP_HPOLICY_ID:
@@ -302,7 +312,7 @@ init_top_widget( ofaTVBin *self )
 	gtk_container_add( GTK_CONTAINER( priv->frame ), priv->scrolled );
 
 	priv->treeview = gtk_tree_view_new();
-	gtk_widget_set_hexpand( priv->treeview, TRUE );
+	ofa_tvbin_set_hexpand( self, priv->hexpand );
 	gtk_widget_set_vexpand( priv->treeview, TRUE );
 	ofa_tvbin_set_headers( self, priv->headers_visible );
 	gtk_container_add( GTK_CONTAINER( priv->scrolled ), priv->treeview );
@@ -352,6 +362,16 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 					"ofa-tvbin-headers",
 					"Headers visible",
 					"Whether the columns headers are visible",
+					TRUE,
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_HEXPAND_ID,
+			g_param_spec_boolean(
+					"ofa-tvbin-hexpand",
+					"Expand horizontally",
+					"Whether the treeview expand horizontally",
 					TRUE,
 					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
@@ -598,6 +618,53 @@ ofa_tvbin_set_headers( ofaTVBin *bin, gboolean visible )
 
 	priv->headers_visible = visible;
 	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( priv->treeview ), visible );
+}
+
+/**
+ * ofa_tvbin_get_hexpand:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: the horizontal expandable status of the #GtkTreeView.
+ */
+gboolean
+ofa_tvbin_get_hexpand( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), FALSE );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->hexpand );
+}
+
+/**
+ * ofa_tvbin_set_hexpand:
+ * @bin: this #ofaTVBin instance.
+ * @expand: whether the #GtkTreeView should horizontally expand.
+ *
+ * Setup the horizontal expandable status.
+ *
+ * May also be set via the "ofa-tvbin-hexpand" construction property.
+ *
+ * The treeview defaults to horizontally expand.
+ */
+void
+ofa_tvbin_set_hexpand( ofaTVBin *bin, gboolean expand )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+	g_return_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ));
+
+	priv->hexpand = expand;
+	gtk_widget_set_hexpand( priv->treeview, expand );
 }
 
 /**
@@ -1278,6 +1345,27 @@ ofa_tvbin_get_treeview( ofaTVBin *bin )
 	g_return_val_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ), NULL );
 
 	return( priv->treeview );
+}
+
+/*
+ * ofa_tvbin_get_tree_model:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: the #GtkTreeModel attached to the treeview.
+ */
+GtkTreeModel *
+ofa_tvbin_get_tree_model( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_val_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ), NULL );
+
+	return( gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview )));
 }
 
 /*

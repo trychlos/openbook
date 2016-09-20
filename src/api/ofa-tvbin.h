@@ -75,6 +75,10 @@
  *   whether the columns headers are visible;
  *   defaults to be visible.
  *
+ * - ofa-tvbin-hexpand:
+ *   whether the frame should expand horizontaly to the available size;
+ *   defaults to TRUE.
+ *
  * - ofa-tvbin-hpolicy:
  *   horizontal scrollbar policy;
  *   will typically be NEVER for pages, AUTOMATIC (default) for dialogs.
@@ -172,6 +176,11 @@ gboolean          ofa_tvbin_get_headers           ( ofaTVBin *bin );
 void              ofa_tvbin_set_headers           ( ofaTVBin *bin,
 														gboolean visible );
 
+gboolean          ofa_tvbin_get_hexpand           ( ofaTVBin *bin );
+
+void              ofa_tvbin_set_hexpand           ( ofaTVBin *bin,
+														gboolean expand );
+
 GtkPolicyType     ofa_tvbin_get_hpolicy           ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_hpolicy           ( ofaTVBin *bin,
@@ -250,6 +259,8 @@ void              ofa_tvbin_add_column_text_x     ( ofaTVBin *bin,
 GtkTreeSelection *ofa_tvbin_get_selection         ( ofaTVBin *bin );
 
 GtkWidget        *ofa_tvbin_get_treeview          ( ofaTVBin *bin );
+
+GtkTreeModel     *ofa_tvbin_get_tree_model        ( ofaTVBin *bin );
 
 void              ofa_tvbin_select_row            ( ofaTVBin *bin,
 														GtkTreeIter *iter );
