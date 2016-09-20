@@ -223,6 +223,8 @@ my_idialog_init( myIDialog *instance )
 		button_connect( instance, "Cancel", GTK_RESPONSE_CANCEL, G_CALLBACK( on_cancel_clicked ));
 		button_connect( instance, "Close", GTK_RESPONSE_CLOSE, G_CALLBACK( on_close_clicked ));
 		button_connect( instance, "OK", GTK_RESPONSE_OK, G_CALLBACK( on_ok_clicked ));
+
+		gtk_widget_show_all( GTK_WIDGET( instance ));
 	}
 }
 
