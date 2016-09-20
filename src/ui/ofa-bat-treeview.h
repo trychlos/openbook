@@ -77,6 +77,8 @@ ofaBatTreeview *ofa_bat_treeview_new             ( void );
 void            ofa_bat_treeview_set_settings_key( ofaBatTreeview *view,
 														const gchar *key );
 
+void            ofa_bat_treeview_setup_columns   ( ofaBatTreeview *view );
+
 void            ofa_bat_treeview_set_hub         ( ofaBatTreeview *view,
 														ofaHub *hub );
 

@@ -76,6 +76,8 @@ ofaClassTreeview *ofa_class_treeview_new             ( void );
 void              ofa_class_treeview_set_settings_key( ofaClassTreeview *view,
 															const gchar *key );
 
+void              ofa_class_treeview_setup_columns   ( ofaClassTreeview *view );
+
 void              ofa_class_treeview_set_hub         ( ofaClassTreeview *view,
 															ofaHub *hub );
 

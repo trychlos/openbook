@@ -30,16 +30,23 @@
  * @short_description: #ofaLedgerTreeview class definition.
  * @include: ui/ofa-ledger-treeview.h
  *
- * A convenience class to display ledgers treeview based on a liststore
- * (use cases: ofaLedgersSet main page, ofaIntClosing dialog)
+ * Manage a treeview with the list of the ledgers.
  *
- * In the provided parent container, this class will create a GtkTreeView
- * embedded in a GtkScrolledWindow.
+ * The class provides the following signals, which are proxyed from
+ * #ofaTVBin base class.
+ *    +------------------+--------------+
+ *    | Signal           | Ledger may   |
+ *    |                  | be %NULL     |
+ *    +------------------+--------------+
+ *    | ofa-ledchanged   |      Yes     |
+ *    | ofa-ledactivated |       No     |
+ *    | ofa-leddelete    |       No     |
+ *    +------------------+--------------+
  */
 
+#include "api/ofa-hub-def.h"
+#include "api/ofa-tvbin.h"
 #include "api/ofo-dossier-def.h"
-
-#include "core/ofa-ledger-store.h"
 
 G_BEGIN_DECLS
 
@@ -62,35 +69,24 @@ typedef struct {
 }
 	ofaLedgerTreeviewClass;
 
-GType              ofa_ledger_treeview_get_type          ( void ) G_GNUC_CONST;
+GType              ofa_ledger_treeview_get_type         ( void ) G_GNUC_CONST;
 
-ofaLedgerTreeview *ofa_ledger_treeview_new               ( void );
+ofaLedgerTreeview *ofa_ledger_treeview_new              ( void );
 
-void               ofa_ledger_treeview_set_columns       ( ofaLedgerTreeview *view,
-																const gint *columns );
-
-void               ofa_ledger_treeview_set_hub           ( ofaLedgerTreeview *view,
-																ofaHub *hub );
-
-void               ofa_ledger_treeview_set_selection_mode( ofaLedgerTreeview *view,
-																GtkSelectionMode mode );
-
-void               ofa_ledger_treeview_set_settings_key  ( ofaLedgerTreeview *view,
+void               ofa_ledger_treeview_set_settings_key ( ofaLedgerTreeview *view,
 																const gchar *key );
 
-void               ofa_ledger_treeview_set_hexpand       ( ofaLedgerTreeview *view,
-																gboolean hexpand );
+void               ofa_ledger_treeview_setup_columns    ( ofaLedgerTreeview *view );
 
-GtkTreeSelection  *ofa_ledger_treeview_get_selection     ( ofaLedgerTreeview *view );
+void               ofa_ledger_treeview_set_hub          ( ofaLedgerTreeview *view,
+																ofaHub *hub );
 
-GList             *ofa_ledger_treeview_get_selected      ( ofaLedgerTreeview *view );
+GList             *ofa_ledger_treeview_get_selected     ( ofaLedgerTreeview *view );
 
-#define            ofa_ledger_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+#define            ofa_ledger_treeview_free_selected(L) g_list_free_full(( L ), ( GDestroyNotify ) g_free )
 
-void               ofa_ledger_treeview_set_selected      ( ofaLedgerTreeview *view,
-																	const gchar *ledger );
-
-GtkWidget         *ofa_ledger_treeview_get_treeview      ( ofaLedgerTreeview *view );
+void               ofa_ledger_treeview_set_selected     ( ofaLedgerTreeview *view,
+																const gchar *ledger );
 
 G_END_DECLS
 

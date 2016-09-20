@@ -278,8 +278,7 @@ idialog_init( myIDialog *instance )
 
 	priv->template_bin = ofa_ope_template_frame_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->template_bin ));
-	ofa_ope_template_frame_bin_set_settings_key(
-			priv->template_bin, G_OBJECT_TYPE_NAME( instance ));
+	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, G_OBJECT_TYPE_NAME( instance ));
 
 	g_signal_connect( priv->template_bin, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
 	g_signal_connect( priv->template_bin, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );

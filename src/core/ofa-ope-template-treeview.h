@@ -89,6 +89,8 @@ void                    ofa_ope_template_treeview_set_selected    ( ofaOpeTempla
 void                    ofa_ope_template_treeview_set_settings_key( ofaOpeTemplateTreeview *view,
 																			const gchar *key );
 
+void                    ofa_ope_template_treeview_setup_columns   ( ofaOpeTemplateTreeview *view );
+
 G_END_DECLS
 
 #endif /* __OFA_OPE_TEMPLATE_TREEVIEW_H__ */

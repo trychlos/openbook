@@ -80,6 +80,8 @@ gint                ofa_account_treeview_get_class       ( ofaAccountTreeview *v
 void                ofa_account_treeview_set_settings_key( ofaAccountTreeview *view,
 																	const gchar *key );
 
+void                ofa_account_treeview_setup_columns   ( ofaAccountTreeview *view );
+
 ofoAccount         *ofa_account_treeview_get_selected    ( ofaAccountTreeview *view );
 
 void                ofa_account_treeview_set_selected    ( ofaAccountTreeview *view,

@@ -172,9 +172,6 @@ setup_tree_view( ofaPage *page )
 	ofaLedgerPagePrivate *priv;
 	GtkWidget *parent;
 	ofaHub *hub;
-	static const gint st_ledger_cols[] = {
-			LEDGER_COL_MNEMO, LEDGER_COL_LABEL, LEDGER_COL_NOTES_PNG, LEDGER_COL_LAST_ENTRY, LEDGER_COL_LAST_CLOSE,
-			-1 };
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
@@ -185,9 +182,9 @@ setup_tree_view( ofaPage *page )
 
 	priv->tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
-	ofa_ledger_treeview_set_columns( priv->tview, st_ledger_cols );
+	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
-	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_BROWSE );
+	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_ledger_treeview_set_hub( priv->tview, hub );
 
 	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( on_row_selected ), page );
@@ -242,7 +239,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
-	return( ofa_ledger_treeview_get_treeview( priv->tview ));
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

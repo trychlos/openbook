@@ -319,9 +319,6 @@ setup_ledgers_treeview( ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
 	GtkWidget *tview_parent, *label;
-	static const gint st_ledger_cols[] = {
-			LEDGER_COL_MNEMO, LEDGER_COL_LABEL, LEDGER_COL_LAST_ENTRY, LEDGER_COL_LAST_CLOSE,
-			-1 };
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
@@ -330,14 +327,13 @@ setup_ledgers_treeview( ofaLedgerClose *self )
 
 	priv->tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
-	ofa_ledger_treeview_set_columns( priv->tview, st_ledger_cols );
+	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_MULTIPLE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( self ));
-	ofa_ledger_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
 	ofa_ledger_treeview_set_hub( priv->tview, priv->hub);
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_ledger_treeview_get_treeview( priv->tview ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 
 	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( on_rows_selected ), self );
 	g_signal_connect( priv->tview, "ofa-activated", G_CALLBACK( on_rows_activated ), self );
@@ -426,7 +422,7 @@ on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self )
 	gtk_widget_set_sensitive( GTK_WIDGET( priv->tview ), !priv->all_ledgers );
 
 	if( priv->all_ledgers ){
-		selection = ofa_ledger_treeview_get_selection( priv->tview );
+		selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
 		gtk_tree_selection_select_all( selection );
 	}
 }

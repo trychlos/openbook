@@ -319,9 +319,7 @@ ofa_ope_template_treeview_new( const gchar *ledger )
 
 	name = g_strdup_printf( "opetemplate_%s", ledger );
 
-	view = g_object_new( OFA_TYPE_OPE_TEMPLATE_TREEVIEW,
-				"ofa-tvbin-groupname", name,
-				NULL );
+	view = g_object_new( OFA_TYPE_OPE_TEMPLATE_TREEVIEW, NULL );
 
 	g_free( name );
 
@@ -341,8 +339,6 @@ ofa_ope_template_treeview_new( const gchar *ledger )
 	 */
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
-	setup_columns( view );
-
 	/* because the ofaOpeTemplateTreeview is built to live inside of a
 	 * GtkNotebook, not each view will save its settings, but only
 	 * the last being saw by the user (see ofaOpeTemplateFrameBin::dispose)
@@ -350,30 +346,6 @@ ofa_ope_template_treeview_new( const gchar *ledger )
 	ofa_tvbin_set_write_settings( OFA_TVBIN( view ), FALSE );
 
 	return( view );
-}
-
-/*
- * Defines the treeview columns
- */
-static void
-setup_columns( ofaOpeTemplateTreeview *self )
-{
-	static const gchar *thisfn = "ofa_ope_template_treeview_setup_columns";
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_MNEMO,         _( "Mnemo" ),  _( "Identifier" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LABEL,         _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LEDGER,        _( "Ledger" ),     NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_REF,           _( "Ref." ),   _( "Piece reference" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES,         _( "Notes" ),      NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES_PNG,        "",         _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_USER,      _( "User" ),   _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_STAMP,         NULL,      _( "Last update timestamp" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_RECURRENT,     _( "R" ),      _( "Recurrent indicator" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_VAT,           _( "V" ),      _( "VAT indicator" ));
-
-	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), OPE_TEMPLATE_COL_LABEL );
 }
 
 /**
@@ -420,6 +392,50 @@ ofa_ope_template_treeview_set_settings_key( ofaOpeTemplateTreeview *view, const 
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
 	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+}
+
+/**
+ * ofa_ope_template_treeview_setup_columns:
+ * @view: this #ofaOpeTemplateTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_ope_template_treeview_setup_columns( ofaOpeTemplateTreeview *view )
+{
+	ofaOpeTemplateTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_OPE_TEMPLATE_TREEVIEW( view ));
+
+	priv = ofa_ope_template_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_columns( view );
+}
+
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaOpeTemplateTreeview *self )
+{
+	static const gchar *thisfn = "ofa_ope_template_treeview_setup_columns";
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_MNEMO,         _( "Mnemo" ),  _( "Identifier" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LABEL,         _( "Label" ),      NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_LEDGER,        _( "Ledger" ),     NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_REF,           _( "Ref." ),   _( "Piece reference" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES,         _( "Notes" ),      NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES_PNG,        "",         _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_USER,      _( "User" ),   _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_STAMP,         NULL,      _( "Last update timestamp" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_RECURRENT,     _( "R" ),      _( "Recurrent indicator" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_VAT,           _( "V" ),      _( "VAT indicator" ));
+
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), OPE_TEMPLATE_COL_LABEL );
 }
 
 static void
