@@ -190,13 +190,14 @@ am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-ope-template-treeview.lo ofa-open-prefs-bin.lo ofa-page.lo \
 	ofa-periodicity.lo ofa-periodicity-bin.lo \
 	ofa-portfolio-collection.lo ofa-preferences.lo \
-	ofa-render-page.lo ofa-settings.lo ofa-stream-format.lo \
-	ofa-stream-format-bin.lo ofa-stream-format-disp.lo \
-	ofa-tree-store.lo ofa-tvbin.lo ofo-account.lo ofo-base.lo \
-	ofo-bat.lo ofo-bat-line.lo ofo-class.lo ofo-concil.lo \
-	ofo-currency.lo ofo-dossier.lo ofo-entry.lo ofo-ledger.lo \
-	ofo-ope-template.lo ofo-rate.lo ofs-account-balance.lo \
-	ofs-concil-id.lo ofs-currency.lo ofs-ope.lo
+	ofa-rate-store.lo ofa-render-page.lo ofa-settings.lo \
+	ofa-stream-format.lo ofa-stream-format-bin.lo \
+	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
+	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
+	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
+	ofo-entry.lo ofo-ledger.lo ofo-ope-template.lo ofo-rate.lo \
+	ofs-account-balance.lo ofs-concil-id.lo ofs-currency.lo \
+	ofs-ope.lo
 am__objects_1 = resources.lo
 nodist_libofa_core_la_OBJECTS = $(am__objects_1)
 libofa_core_la_OBJECTS = $(am_libofa_core_la_OBJECTS) \
@@ -568,6 +569,8 @@ libofa_core_la_SOURCES = \
 	ofa-periodicity-bin.c								\
 	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
+	ofa-rate-store.c									\
+	ofa-rate-store.h									\
 	ofa-render-page.c									\
 	ofa-settings.c										\
 	ofa-stream-format.c									\
@@ -765,6 +768,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-periodicity.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-portfolio-collection.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format-bin.Plo@am__quote@

@@ -154,6 +154,8 @@ libofa_core_la_SOURCES = \
 	ofa-periodicity-bin.c								\
 	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
+	ofa-rate-store.c									\
+	ofa-rate-store.h									\
 	ofa-render-page.c									\
 	ofa-settings.c										\
 	ofa-stream-format.c									\
