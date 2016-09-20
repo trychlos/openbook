@@ -60,7 +60,7 @@
    - myIActionMap, myAccelGroup: simplify code and review interface.
    - All collections: are no more sorted (todo #1208).
    - Object classes: review xxx_use_yyy() usage (todo #1207).
-   - ofaRateStore: new class.
+   - ofaRateStore, ofaRateTreeview: new classes.
 
 -----------------------------------------------------------------------
  Version 0.59

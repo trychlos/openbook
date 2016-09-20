@@ -208,6 +208,8 @@ openbook_SOURCES = \
 	ofa-rate-page.h										\
 	ofa-rate-properties.c								\
 	ofa-rate-properties.h								\
+	ofa-rate-treeview.c									\
+	ofa-rate-treeview.h									\
 	ofa-reconcil-bin.c									\
 	ofa-reconcil-bin.h									\
 	ofa-reconcil-page.c									\
