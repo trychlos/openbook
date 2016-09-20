@@ -58,7 +58,8 @@
           <object class="GtkGrid" id="top-grid">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
+            <property name="column_spacing">4</property>
             <child>
               <object class="GtkNotebook" id="properties-book">
                 <property name="visible">True</property>
@@ -68,12 +69,12 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="valign">start</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
-                    <property name="row_spacing">3</property>
-                    <property name="column_spacing">5</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
+                    <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkLabel" id="p1-account-label">
                         <property name="visible">True</property>
@@ -156,10 +157,10 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                           <object class="GtkGrid" id="grid5">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
                             <property name="column_homogeneous">True</property>
                             <child>
                               <object class="GtkRadioButton" id="p1-root-account">
@@ -221,10 +222,10 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                           <object class="GtkGrid" id="grid6">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
                             <child>
                               <object class="GtkCheckButton" id="p1-settleable">
                                 <property name="label" translatable="yes">Keep un_settled entries</property>
@@ -343,11 +344,11 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                   <object class="GtkGrid" id="balance-grid">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
-                    <property name="row_spacing">3</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
                     <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkFrame" id="frame21">
@@ -696,7 +697,6 @@ It is modifiable as long as no entry has been imputed on the account.</property>
                   <object class="GtkScrolledWindow" id="scrolledwindow1">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="shadow_type">in</property>
                     <child>
                       <object class="GtkTextView" id="pn-notes">
                         <property name="visible">True</property>
@@ -780,6 +780,16 @@ It is modifiable as long as no entry has been imputed on the account.</property>
               <packing>
                 <property name="left_attach">0</property>
                 <property name="top_attach">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkSeparator" id="separator1">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+              </object>
+              <packing>
+                <property name="left_attach">0</property>
+                <property name="top_attach">3</property>
               </packing>
             </child>
           </object>
