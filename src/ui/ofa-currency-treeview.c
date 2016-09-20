@@ -381,7 +381,7 @@ get_and_send( ofaCurrencyTreeview *self, GtkTreeSelection *selection, const gcha
  * ofa_currency_treeview_get_selected:
  * @view: this #ofaCurrencyTreeview instance.
  *
- * Return: the currently selected class, or %NULL.
+ * Return: the currently selected currency, or %NULL.
  */
 ofoCurrency *
 ofa_currency_treeview_get_selected( ofaCurrencyTreeview *view )
