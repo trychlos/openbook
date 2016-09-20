@@ -392,7 +392,7 @@ ofa_currency_treeview_get_selected( ofaCurrencyTreeview *view )
  * @view: this #ofaCurrencyTreeview instance.
  * @selection:
  *
- * Return: the currently selected class, or %NULL.
+ * Return: the currently selected currency, or %NULL.
  */
 static ofoCurrency *
 get_selected_with_selection( ofaCurrencyTreeview *self, GtkTreeSelection *selection )
