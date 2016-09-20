@@ -306,7 +306,6 @@ on_row_selected( ofaCurrencyTreeview *tview, ofoCurrency *currency, ofaCurrencyP
 	is_currency = currency && OFO_IS_CURRENCY( currency );
 
 	g_simple_action_set_enabled( priv->update_action, is_currency );
-
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, currency ));
 }
 
