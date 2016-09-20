@@ -314,13 +314,10 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	sITVColumnable *sdata;
 	sColumn *scol;
 	GSimpleAction *action;
-	gboolean visible;
 
 	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
 
 	sdata = get_instance_data( instance );
-
-	visible = gtk_tree_view_column_get_visible( column );
 
 	scol = get_column_data_by_id( instance, sdata, column_id );
 	g_return_if_fail( scol == NULL );
@@ -345,7 +342,7 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 
 	/* define a new action and attach it to the action group
 	 * default visibility state is set */
-	action = g_simple_action_new_stateful( scol->name, NULL, g_variant_new_boolean( visible ));
+	action = g_simple_action_new_stateful( scol->name, NULL, g_variant_new_boolean( FALSE ));
 	g_signal_connect( action, "change-state", G_CALLBACK( on_action_changed_state ), instance );
 	ofa_iactionable_set_menu_item( OFA_IACTIONABLE( instance ), scol->group_name, G_ACTION( action ), scol->label );
 	g_object_unref( action );

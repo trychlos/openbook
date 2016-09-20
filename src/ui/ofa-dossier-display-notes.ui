@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.19.0 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <template class="ofaDossierDisplayNotes" parent="GtkDialog">
     <property name="can_focus">False</property>
+    <property name="border_width">4</property>
     <property name="title" translatable="yes">Display the dossier notes</property>
     <property name="type_hint">dialog</property>
     <child internal-child="vbox">

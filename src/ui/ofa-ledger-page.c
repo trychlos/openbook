@@ -76,10 +76,10 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
-static void       on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
+static void       on_row_selected( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
+static void       on_row_activated( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
 static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self );
-static void       on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self );
+static void       on_delete_key( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
 static void       on_new_clicked( GtkButton *button, ofaLedgerPage *page );
 static void       on_update_clicked( GtkButton *button, ofaLedgerPage *page );
 static void       do_update( ofaLedgerPage *self, ofoLedger *ledger );
@@ -170,29 +170,27 @@ static GtkWidget *
 setup_tree_view( ofaPage *page )
 {
 	ofaLedgerPagePrivate *priv;
-	GtkWidget *parent;
 	ofaHub *hub;
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
-	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margins( parent, 4, 4, 4, 0 );
-
 	priv->tview = ofa_ledger_treeview_new();
-	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
-	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
 	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_ledger_treeview_set_hub( priv->tview, hub );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
-	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( on_row_selected ), page );
-	g_signal_connect( priv->tview, "ofa-activated", G_CALLBACK( on_row_activated ), page );
+	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
-	g_signal_connect( priv->tview, "ofa-delete", G_CALLBACK( on_delete_key ), page );
 
-	return( parent );
+	/* ofaBatTreeview signals */
+	g_signal_connect( priv->tview, "ofa-ledchanged", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( priv->tview, "ofa-ledactivated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( priv->tview, "ofa-leddelete", G_CALLBACK( on_delete_key ), page );
+
+	return( GTK_WIDGET( priv->tview ));
 }
 
 static GtkWidget *
@@ -246,40 +244,12 @@ v_get_top_focusable_widget( const ofaPage *page )
  * LedgerTreeview callback
  */
 static void
-on_row_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
-{
-	ofoLedger *ledger;
-	ofaHub *hub;
-
-	if( selected ){
-		hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-		ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) selected->data );
-		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-
-		do_update( self, ledger );
-	}
-}
-
-/*
- * LedgerTreeview callback
- */
-static void
-on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
+on_row_selected( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
-	ofoLedger *ledger;
 	gboolean is_ledger;
-	ofaHub *hub;
 
 	priv = ofa_ledger_page_get_instance_private( self );
-
-	ledger = NULL;
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-
-	if( selected ){
-		ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) selected->data );
-		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	}
 
 	is_ledger = ledger && OFO_IS_LEDGER( ledger );
 
@@ -293,6 +263,16 @@ on_row_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
 			is_ledger && ofo_ledger_has_entries( ledger ));
 }
 
+/*
+ * LedgerTreeview callback
+ */
+static void
+on_row_activated( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
+{
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	do_update( self, ledger );
+}
+
 static void
 on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self )
 {
@@ -303,11 +283,9 @@ on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self )
  * only delete if there is only one selected ledger
  */
 static void
-on_delete_key( ofaLedgerTreeview *view, GList *selected, ofaLedgerPage *self )
+on_delete_key( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
 {
-	if( g_list_length( selected ) == 1 ){
-		on_delete_clicked( NULL, self );
-	}
+	on_delete_clicked( NULL, self );
 }
 
 static void
