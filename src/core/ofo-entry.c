@@ -894,7 +894,7 @@ ofo_entry_use_account( ofaHub *hub, const gchar *account )
 
 	g_free( query );
 
-	return( count == 0 );
+	return( count > 0 );
 }
 
 /**
@@ -922,7 +922,7 @@ ofo_entry_use_ledger( ofaHub *hub, const gchar *ledger )
 
 	g_free( query );
 
-	return( count == 0 );
+	return( count > 0 );
 }
 
 /**
