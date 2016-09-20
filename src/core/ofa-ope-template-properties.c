@@ -114,8 +114,8 @@ enum {
 	DET_N_COLUMNS
 };
 
-/* space between widgets in a detail line */
-#define DETAIL_SPACE                    2
+/* horizontal space between widgets in a detail line */
+#define DETAIL_SPACE                    0
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-template-properties.ui";
 
@@ -578,7 +578,7 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 
 	/* ope template detail comment */
 	entry = GTK_ENTRY( gtk_entry_new());
-	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), 2*DETAIL_SPACE );
+	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_widget_set_halign( GTK_WIDGET( entry ), GTK_ALIGN_START );
 	gtk_entry_set_alignment( entry, 0 );
 	gtk_entry_set_max_length( entry, OTE_DET_COMMENT_MAX_LENGTH );
