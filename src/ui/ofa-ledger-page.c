@@ -32,8 +32,11 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itheme-manager.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofo-dossier.h"
@@ -50,42 +53,38 @@ typedef struct {
 
 	/* internals
 	 */
-	gboolean            is_writable;
-	gint                exe_id;			/* internal identifier of the current exercice */
+	gboolean           is_writable;
+	gint               exe_id;			/* internal identifier of the current exercice */
 
 	/* UI
 	 */
-	ofaLedgerTreeview  *tview;
-	GtkWidget          *update_btn;
-	GtkWidget          *delete_btn;
-	GtkWidget          *entries_btn;
+	ofaLedgerTreeview *tview;
+
+	/* actions
+	 */
+	GSimpleAction     *new_action;
+	GSimpleAction     *update_action;
+	GSimpleAction     *delete_action;
+	GSimpleAction     *view_entries_action;
 }
 	ofaLedgerPagePrivate;
-
-/* column ordering in the selection listview
- */
-enum {
-	COL_MNEMO = 0,
-	COL_LABEL,
-	COL_CLOSING,
-	COL_OBJECT,
-	N_COLUMNS
-};
 
 static GtkWidget *v_setup_view( ofaPage *page );
 static GtkWidget *setup_tree_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_selected( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
 static void       on_row_activated( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
 static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self );
 static void       on_delete_key( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
-static void       on_new_clicked( GtkButton *button, ofaLedgerPage *page );
-static void       on_update_clicked( GtkButton *button, ofaLedgerPage *page );
-static void       do_update( ofaLedgerPage *self, ofoLedger *ledger );
-static void       on_delete_clicked( GtkButton *button, ofaLedgerPage *page );
+static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
+static void       action_do_update( ofaLedgerPage *self, ofoLedger *ledger );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
+static gboolean   check_for_deletability( ofaLedgerPage *self, ofoLedger *ledger );
 static gboolean   delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger );
-static void       on_entry_page( GtkButton *button, ofaLedgerPage *self );
+static void       action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerPage ))
@@ -143,6 +142,7 @@ ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -198,34 +198,92 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaLedgerPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
-	GtkWidget *btn;
+	const gchar *namespace;
 
 	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
 
+	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
-	btn = ofa_buttons_box_add_button_with_mnemonic(
-				buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
-	gtk_widget_set_sensitive( btn, priv->is_writable );
+	/* new action */
+	priv->new_action = g_simple_action_new( "new", NULL );
+	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
+	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE_NEW_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE_NEW_BTN ));
 
-	priv->update_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+	/* update action */
+	priv->update_action = g_simple_action_new( "update", NULL );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
-	priv->delete_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
+	/* delete action */
+	priv->delete_action = g_simple_action_new( "delete", NULL );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE_DELETE_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE_DELETE_BTN ));
 
 	ofa_buttons_box_add_spacer( buttons_box );
 
-	priv->entries_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "_View entries..." ), G_CALLBACK( on_entry_page ), page );
+	/* view entries */
+	priv->view_entries_action = g_simple_action_new( "viewentries", NULL );
+	g_signal_connect( priv->view_entries_action, "activate", G_CALLBACK( action_on_view_entries_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->view_entries_action ),
+			_( "View entries" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->view_entries_action ),
+					_( "_View entries..." )));
 
 	return( GTK_WIDGET( buttons_box ));
+}
+
+static void
+v_init_view( ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_ledger_page_v_init_view";
+	ofaLedgerPagePrivate *priv;
+	GMenu *menu;
+	const gchar *namespace;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	namespace = G_OBJECT_TYPE_NAME( page );
+	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), namespace );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
+			menu );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 static GtkWidget *
@@ -253,14 +311,9 @@ on_row_selected( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self
 
 	is_ledger = ledger && OFO_IS_LEDGER( ledger );
 
-	gtk_widget_set_sensitive( priv->update_btn,
-			is_ledger );
-
-	gtk_widget_set_sensitive( priv->delete_btn,
-			priv->is_writable && is_ledger && ofo_ledger_is_deletable( ledger ));
-
-	gtk_widget_set_sensitive( priv->entries_btn,
-			is_ledger && ofo_ledger_has_entries( ledger ));
+	g_simple_action_set_enabled( priv->update_action, is_ledger );
+	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, ledger ));
+	g_simple_action_set_enabled( priv->view_entries_action, is_ledger && ofo_ledger_has_entries( ledger ));
 }
 
 /*
@@ -270,13 +323,20 @@ static void
 on_row_activated( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
 {
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	do_update( self, ledger );
+
+	action_do_update( self, ledger );
 }
 
 static void
 on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self )
 {
-	on_new_clicked( NULL, self );
+	ofaLedgerPagePrivate *priv;
+
+	priv = ofa_ledger_page_get_instance_private( self );
+
+	if( priv->is_writable ){
+		g_action_activate( G_ACTION( priv->new_action ), NULL );
+	}
 }
 
 /*
@@ -285,11 +345,17 @@ on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self )
 static void
 on_delete_key( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
 {
-	on_delete_clicked( NULL, self );
+	ofaLedgerPagePrivate *priv;
+
+	priv = ofa_ledger_page_get_instance_private( self );
+
+	if( check_for_deletability( self, ledger )){
+		g_action_activate( G_ACTION( priv->delete_action ), NULL );
+	}
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaLedgerPage *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self )
 {
 	ofoLedger *ledger;
 	GtkWindow *toplevel;
@@ -300,7 +366,7 @@ on_new_clicked( GtkButton *button, ofaLedgerPage *self )
 }
 
 static void
-on_update_clicked( GtkButton *button, ofaLedgerPage *self )
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
 	GList *selected;
@@ -316,11 +382,11 @@ on_update_clicked( GtkButton *button, ofaLedgerPage *self )
 
 	ofa_ledger_treeview_free_selected( selected );
 
-	do_update( self, ledger );
+	action_do_update( self, ledger );
 }
 
 static void
-do_update( ofaLedgerPage *self, ofoLedger *ledger )
+action_do_update( ofaLedgerPage *self, ofoLedger *ledger )
 {
 	GtkWindow *toplevel;
 
@@ -335,7 +401,7 @@ do_update( ofaLedgerPage *self, ofoLedger *ledger )
  * enregistrée, et après confirmation de l'utilisateur
  */
 static void
-on_delete_clicked( GtkButton *button, ofaLedgerPage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
@@ -365,6 +431,19 @@ on_delete_clicked( GtkButton *button, ofaLedgerPage *self )
 }
 
 static gboolean
+check_for_deletability( ofaLedgerPage *self, ofoLedger *ledger )
+{
+	ofaLedgerPagePrivate *priv;
+	gboolean is_ledger;
+
+	priv = ofa_ledger_page_get_instance_private( self );
+
+	is_ledger = ledger && OFO_IS_LEDGER( ledger );
+
+	return( priv->is_writable && is_ledger && ofo_ledger_is_deletable( ledger ));
+}
+
+static gboolean
 delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger )
 {
 	gchar *msg;
@@ -382,7 +461,7 @@ delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger )
 }
 
 static void
-on_entry_page( GtkButton *button, ofaLedgerPage *self )
+action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
 	GList *list;

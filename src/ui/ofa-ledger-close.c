@@ -36,7 +36,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -103,7 +106,7 @@ static void      idialog_init( myIDialog *instance );
 static void      setup_ledgers_treeview( ofaLedgerClose *self );
 static void      setup_date( ofaLedgerClose *self );
 static void      setup_others( ofaLedgerClose *self );
-static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
+static void      setup_actions( ofaLedgerClose *self );
 static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
 static void      on_date_changed( GtkEditable *entry, ofaLedgerClose *self );
@@ -310,6 +313,7 @@ idialog_init( myIDialog *instance )
 	setup_ledgers_treeview( OFA_LEDGER_CLOSE( instance ));
 	setup_date( OFA_LEDGER_CLOSE( instance ));
 	setup_others( OFA_LEDGER_CLOSE( instance ));
+	setup_actions( OFA_LEDGER_CLOSE( instance ));
 
 	load_settings( OFA_LEDGER_CLOSE( instance ));
 }
@@ -329,14 +333,15 @@ setup_ledgers_treeview( ofaLedgerClose *self )
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_MULTIPLE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( self ));
-	ofa_ledger_treeview_set_hub( priv->tview, priv->hub);
+	ofa_ledger_treeview_setup_columns( priv->tview );
+	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 
-	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( on_rows_selected ), self );
-	g_signal_connect( priv->tview, "ofa-activated", G_CALLBACK( on_rows_activated ), self );
+	/* row activation is only sent when selection_count is 1 - not usable here */
+	g_signal_connect( priv->tview, "ofa-ledchanged", G_CALLBACK( on_rows_selected ), self );
 }
 
 static void
@@ -389,19 +394,23 @@ setup_others( ofaLedgerClose *self )
 	my_style_add( label, "labelerror" );
 }
 
-/*
- * LedgerTreeview callback
- */
 static void
-on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self )
+setup_actions( ofaLedgerClose *self )
 {
-	if( is_dialog_validable( self, selected )){
-		do_close( self );
-	}
+	ofaLedgerClosePrivate *priv;
+	GMenu *menu;
+
+	priv = ofa_ledger_close_get_instance_private( self );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			menu );
 }
 
 /*
  * LedgerTreeview callback
+ * @selected: list of path of selected tows
  */
 static void
 on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self )

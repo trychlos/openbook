@@ -71,8 +71,6 @@ static void       on_selection_changed( ofaLedgerTreeview *self, GtkTreeSelectio
 static void       on_selection_activated( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty );
 static void       on_selection_delete( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty );
 static void       get_and_send( ofaLedgerTreeview *self, GtkTreeSelection *selection, const gchar *signal );
-static ofoLedger *get_selected_with_selection( ofaLedgerTreeview *self, GtkTreeSelection *selection );
-static GList     *get_selected_list( ofaLedgerTreeview *self );
 static gboolean   find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *ledger, GtkTreeIter *iter );
 static gint       v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
@@ -152,12 +150,11 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 	 * #ofaLedgerTreeview proxyes it with this 'ofa-ledchanged' signal,
 	 * providing the #ofoLedger selected object.
 	 *
-	 * Argument is the current #ofoLedger object, may be %NULL if the
-	 * selection is not unique.
+	 * Argument is the list of path of selected rows.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaLedgerTreeview *view,
-	 * 						ofoLedger       *object,
+	 * 						GList           *list,
 	 * 						gpointer         user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -170,7 +167,7 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_OBJECT );
+				G_TYPE_POINTER );
 
 	/**
 	 * ofaLedgerTreeview::ofa-ledactivated:
@@ -353,7 +350,11 @@ ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
 static void
 on_selection_changed( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty )
 {
-	get_and_send( self, selection, "ofa-ledchanged" );
+	GList *list;
+
+	list = gtk_tree_selection_get_selected_rows( selection, NULL );
+	g_signal_emit_by_name( self, "ofa-ledchanged", list );
+	g_list_free_full( list, ( GDestroyNotify ) gtk_tree_path_free );
 }
 
 static void
@@ -377,41 +378,30 @@ on_selection_delete( ofaLedgerTreeview *self, GtkTreeSelection *selection, void 
 }
 
 /*
- * Ledger may be %NULL when selection is empty
+ * we have make sure that selection contains one and only one row
+ *
+ * gtk_tree_selection_get_selected_rows() works even if selection mode
+ * is GTK_SELECTION_MULTIPLE (which may happen here)
  */
 static void
 get_and_send( ofaLedgerTreeview *self, GtkTreeSelection *selection, const gchar *signal )
 {
-	ofoLedger *ledger;
-
-	ledger = get_selected_with_selection( self, selection );
-	g_return_if_fail( !ledger || OFO_IS_LEDGER( ledger ));
-
-	g_signal_emit_by_name( self, signal, ledger );
-}
-
-/*
- * get_selected_with_selection:
- * @view: this #ofaLedgerTreeview instance.
- * @selection:
- *
- * Return: the currently selected ledger, or %NULL.
- */
-static ofoLedger *
-get_selected_with_selection( ofaLedgerTreeview *self, GtkTreeSelection *selection )
-{
+	GList *list;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofoLedger *ledger;
 
-	ledger = NULL;
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+	list = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	g_return_if_fail( g_list_length( list ) == 1 );
+
+	if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) list->data )){
 		gtk_tree_model_get( tmodel, &iter, LEDGER_COL_OBJECT, &ledger, -1 );
-		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 		g_object_unref( ledger );
+		g_signal_emit_by_name( self, signal, ledger );
 	}
 
-	return( ledger );
+	g_list_free_full( list, ( GDestroyNotify ) gtk_tree_path_free );
 }
 
 /**
@@ -427,19 +417,6 @@ GList *
 ofa_ledger_treeview_get_selected( ofaLedgerTreeview *view )
 {
 	ofaLedgerTreeviewPrivate *priv;
-
-	g_return_val_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ), NULL );
-
-	priv = ofa_ledger_treeview_get_instance_private( view );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( get_selected_list( view ));
-}
-
-static GList *
-get_selected_list( ofaLedgerTreeview *self )
-{
 	GtkTreeSelection *selection;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -447,8 +424,14 @@ get_selected_list( ofaLedgerTreeview *self )
 	GList *sel_mnemos;
 	gchar *ledger;
 
+	g_return_val_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ), NULL );
+
+	priv = ofa_ledger_treeview_get_instance_private( view );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
 	sel_mnemos = NULL;
-	selection = ofa_tvbin_get_selection( OFA_TVBIN( self ));
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
 	sel_rows = gtk_tree_selection_get_selected_rows( selection, &tmodel );
 
 	for( irow=sel_rows ; irow ; irow=irow->next ){
