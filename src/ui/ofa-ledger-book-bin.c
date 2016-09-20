@@ -80,7 +80,7 @@ static void setup_bin( ofaLedgerBookBin *bin );
 static void setup_ledger_selection( ofaLedgerBookBin *bin );
 static void setup_date_selection( ofaLedgerBookBin *bin );
 static void setup_others( ofaLedgerBookBin *bin );
-static void on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaLedgerBookBin *self );
+static void on_tview_selection_changed( ofaLedgerTreeview *tview, void *unused, ofaLedgerBookBin *self );
 static void on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerBookBin *self );
 static void on_new_page_toggled( GtkToggleButton *button, ofaLedgerBookBin *self );
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerBookBin *self );
@@ -228,9 +228,6 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 	ofaLedgerBookBinPrivate *priv;
 	GtkWidget *widget, *toggle, *label;
 	ofaHub *hub;
-	static const gint st_ledger_cols[] = {
-			LEDGER_COL_MNEMO, LEDGER_COL_LAST_ENTRY, LEDGER_COL_LAST_CLOSE,
-			-1 };
 
 	priv = ofa_ledger_book_bin_get_instance_private( bin );
 
@@ -243,17 +240,16 @@ setup_ledger_selection( ofaLedgerBookBin *bin )
 
 	priv->ledgers_tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->ledgers_tview ));
-	ofa_ledger_treeview_set_hexpand( priv->ledgers_tview, FALSE );
-	ofa_ledger_treeview_set_columns( priv->ledgers_tview, st_ledger_cols );
+	ofa_tvbin_set_hexpand( OFA_TVBIN( priv->ledgers_tview ), FALSE );
+	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->ledgers_tview ), GTK_SELECTION_MULTIPLE );
 	ofa_ledger_treeview_set_settings_key( priv->ledgers_tview, G_OBJECT_TYPE_NAME( bin ));
-	ofa_ledger_treeview_set_selection_mode( priv->ledgers_tview, GTK_SELECTION_MULTIPLE );
 	ofa_ledger_treeview_set_hub( priv->ledgers_tview, hub );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_ledger_treeview_get_treeview( priv->ledgers_tview ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_tvbin_get_treeview( OFA_TVBIN( priv->ledgers_tview )));
 
-	g_signal_connect( priv->ledgers_tview, "ofa-changed", G_CALLBACK( on_tview_selection_changed ), bin );
+	g_signal_connect( priv->ledgers_tview, "ofa-selchanged", G_CALLBACK( on_tview_selection_changed ), bin );
 
 	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p1-all-ledgers" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
@@ -300,7 +296,7 @@ setup_others( ofaLedgerBookBin *bin )
 }
 
 static void
-on_tview_selection_changed( ofaLedgerTreeview *tview, GList *selected_mnemos, ofaLedgerBookBin *self )
+on_tview_selection_changed( ofaLedgerTreeview *tview, void *unused, ofaLedgerBookBin *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }

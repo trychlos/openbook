@@ -79,6 +79,8 @@ ofaDossierTreeview *ofa_dossier_treeview_new             ( void );
 void                ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view,
 																const gchar *key );
 
+void                ofa_dossier_treeview_setup_columns   ( ofaDossierTreeview *view );
+
 gboolean            ofa_dossier_treeview_get_selected    ( ofaDossierTreeview *view,
 																ofaIDBMeta **meta,
 																ofaIDBPeriod **period );

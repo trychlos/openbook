@@ -249,29 +249,7 @@ ofa_dossier_treeview_new( void )
 	 */
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
-	setup_columns( view );
-
 	return( view );
-}
-
-/*
- * Defines the treeview columns
- */
-static void
-setup_columns( ofaDossierTreeview *self )
-{
-	static const gchar *thisfn = "ofa_dossier_treeview_setup_columns";
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), DOSSIER_COL_DOSNAME,  _( "Dossier" ),  _( "Dossier name" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_PROVNAME, _( "Provider" ), _( "Provider name" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_PERNAME,  _( "Period" ),       NULL );
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), DOSSIER_COL_END,      _( "End" ),      _( "Exercice end" ));
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), DOSSIER_COL_BEGIN,    _( "Begin" ),    _( "Exercice begin" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_STATUS,   _( "Status" ),       NULL );
-
-	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), DOSSIER_COL_DOSNAME );
 }
 
 /**
@@ -298,6 +276,46 @@ ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view, const gchar *ke
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
 	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+}
+
+/**
+ * ofa_dossier_treeview_setup_columns:
+ * @view: this #ofaDossierTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_dossier_treeview_setup_columns( ofaDossierTreeview *view )
+{
+	ofaDossierTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
+
+	priv = ofa_dossier_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_columns( view );
+}
+
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaDossierTreeview *self )
+{
+	static const gchar *thisfn = "ofa_dossier_treeview_setup_columns";
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), DOSSIER_COL_DOSNAME,  _( "Dossier" ),  _( "Dossier name" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_PROVNAME, _( "Provider" ), _( "Provider name" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_PERNAME,  _( "Period" ),       NULL );
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), DOSSIER_COL_END,      _( "End" ),      _( "Exercice end" ));
+	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), DOSSIER_COL_BEGIN,    _( "Begin" ),    _( "Exercice begin" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), DOSSIER_COL_STATUS,   _( "Status" ),       NULL );
+
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), DOSSIER_COL_DOSNAME );
 }
 
 static void

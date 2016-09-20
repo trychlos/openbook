@@ -281,6 +281,7 @@ setup_treeview( ofaBatSelect *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
+	ofa_bat_treeview_setup_columns( priv->tview );
 	ofa_bat_treeview_set_hub( priv->tview, hub );
 	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
 

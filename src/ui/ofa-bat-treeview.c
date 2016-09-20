@@ -250,9 +250,53 @@ ofa_bat_treeview_new( void )
 	 */
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
-	setup_columns( view );
-
 	return( view );
+}
+
+/**
+ * ofa_bat_treeview_set_settings_key:
+ * @view: this #ofaBatTreeview instance.
+ * @key: [allow-none]: the prefix of the settings key.
+ *
+ * Setup the setting key, or reset it to its default if %NULL.
+ */
+void
+ofa_bat_treeview_set_settings_key( ofaBatTreeview *view, const gchar *key )
+{
+	static const gchar *thisfn = "ofa_bat_treeview_set_settings_key";
+	ofaBatTreeviewPrivate *priv;
+
+	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
+
+	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
+
+	priv = ofa_bat_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	/* we do not manage any settings here, so directly pass it to the
+	 * base class */
+	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+}
+
+/**
+ * ofa_bat_treeview_setup_columns:
+ * @view: this #ofaBatTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_bat_treeview_setup_columns( ofaBatTreeview *view )
+{
+	ofaBatTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
+
+	priv = ofa_bat_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_columns( view );
 }
 
 /*
@@ -283,32 +327,6 @@ setup_columns( ofaBatTreeview *self )
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAT_COL_URI );
-}
-
-/**
- * ofa_bat_treeview_set_settings_key:
- * @view: this #ofaBatTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_bat_treeview_set_settings_key( ofaBatTreeview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_bat_treeview_set_settings_key";
-	ofaBatTreeviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
-
-	priv = ofa_bat_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
 }
 
 /**

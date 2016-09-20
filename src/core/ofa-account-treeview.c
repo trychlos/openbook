@@ -76,8 +76,8 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void        setup_columns( ofaAccountTreeview *self );
 static void        setup_key_pressed_event( ofaAccountTreeview *self );
+static void        setup_columns( ofaAccountTreeview *self );
 static void        on_selection_changed( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        on_selection_activated( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        on_selection_delete( ofaAccountTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -323,9 +323,7 @@ ofa_account_treeview_new( gint class_number )
 
 	name = g_strdup_printf( "class%d", class_number );
 
-	view = g_object_new( OFA_TYPE_ACCOUNT_TREEVIEW,
-				"ofa-tvbin-groupname", name,
-				NULL );
+	view = g_object_new( OFA_TYPE_ACCOUNT_TREEVIEW, NULL );
 
 	g_free( name );
 
@@ -345,7 +343,6 @@ ofa_account_treeview_new( gint class_number )
 	 */
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
-	setup_columns( view );
 	setup_key_pressed_event( view );
 
 	/* because the ofaAccountTreeview is built to live inside of a
@@ -355,40 +352,6 @@ ofa_account_treeview_new( gint class_number )
 	ofa_tvbin_set_write_settings( OFA_TVBIN( view ), FALSE );
 
 	return( view );
-}
-
-/*
- * Defines the treeview columns
- */
-static void
-setup_columns( ofaAccountTreeview *self )
-{
-	static const gchar *thisfn = "ofa_account_treeview_setup_columns";
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_NUMBER,        _( "Number" ),   _( "Account number" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), ACCOUNT_COL_LABEL,         _( "Label" ),        NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CURRENCY,      _( "Currency" ),     NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_NOTES,         _( "Notes" ),        NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ACCOUNT_COL_NOTES_PNG,        "",           _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_USER,      _( "User" ),     _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_STAMP,         NULL,        _( "Last update timestamp" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_VAL_DEBIT,     _( "Debit" ),    _( "Validated debit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_VAL_CREDIT,    _( "Credit" ),   _( "Validated credit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_ROUGH_DEBIT,   _( "Debit" ),    _( "Rough debit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_ROUGH_CREDIT,  _( "Credit" ),   _( "Rough credit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_DEBIT,     _( "Debit" ),    _( "Future debit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_CREDIT,    _( "Credit" ),   _( "Future credit" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_SETTLEABLE,    _( "S" ),        _( "Settleable" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_RECONCILIABLE, _( "R" ),        _( "Reconciliable" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_FORWARDABLE,   _( "F" ),        _( "Forwardable" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CLOSED,        _( "C" ),        _( "Closed" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_DEBIT,     _( "Debit" ),    _( "Exercice debit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_CREDIT,    _( "Credit" ),   _( "Exercice credit" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_SOLDE,     _( "Solde" ),    _( "Exercice solde" ));
-
-	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ACCOUNT_COL_LABEL );
 }
 
 /*
@@ -448,6 +411,60 @@ ofa_account_treeview_set_settings_key( ofaAccountTreeview *view, const gchar *ke
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
 	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+}
+
+/**
+ * ofa_account_treeview_setup_columns:
+ * @view: this #ofaAccountTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_account_treeview_setup_columns( ofaAccountTreeview *view )
+{
+	ofaAccountTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_ACCOUNT_TREEVIEW( view ));
+
+	priv = ofa_account_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_columns( view );
+}
+
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaAccountTreeview *self )
+{
+	static const gchar *thisfn = "ofa_account_treeview_setup_columns";
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_NUMBER,        _( "Number" ),   _( "Account number" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), ACCOUNT_COL_LABEL,         _( "Label" ),        NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CURRENCY,      _( "Currency" ),     NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_NOTES,         _( "Notes" ),        NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ACCOUNT_COL_NOTES_PNG,        "",           _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_USER,      _( "User" ),     _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_STAMP,         NULL,        _( "Last update timestamp" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_VAL_DEBIT,     _( "Debit" ),    _( "Validated debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_VAL_CREDIT,    _( "Credit" ),   _( "Validated credit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_ROUGH_DEBIT,   _( "Debit" ),    _( "Rough debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_ROUGH_CREDIT,  _( "Credit" ),   _( "Rough credit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_DEBIT,     _( "Debit" ),    _( "Future debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_FUT_CREDIT,    _( "Credit" ),   _( "Future credit" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_SETTLEABLE,    _( "S" ),        _( "Settleable" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_RECONCILIABLE, _( "R" ),        _( "Reconciliable" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_FORWARDABLE,   _( "F" ),        _( "Forwardable" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CLOSED,        _( "C" ),        _( "Closed" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_DEBIT,     _( "Debit" ),    _( "Exercice debit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_CREDIT,    _( "Credit" ),   _( "Exercice credit" ));
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_SOLDE,     _( "Solde" ),    _( "Exercice solde" ));
+
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ACCOUNT_COL_LABEL );
 }
 
 static void

@@ -249,29 +249,7 @@ ofa_class_treeview_new( void )
 	 */
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
-	setup_columns( view );
-
 	return( view );
-}
-
-/*
- * Defines the treeview columns
- */
-static void
-setup_columns( ofaClassTreeview *self )
-{
-	static const gchar *thisfn = "ofa_class_treeview_setup_columns";
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CLASS_COL_NUMBER,    _( "Number" ), _( "Class number" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CLASS_COL_LABEL,     _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_NOTES,     _( "Notes" ),      NULL );
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CLASS_COL_NOTES_PNG,    "",         _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_UPD_USER,  _( "User" ),   _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CLASS_COL_UPD_STAMP,     NULL,      _( "Last update timestamp" ));
-
-	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), CLASS_COL_LABEL );
 }
 
 /**
@@ -298,6 +276,46 @@ ofa_class_treeview_set_settings_key( ofaClassTreeview *view, const gchar *key )
 	/* we do not manage any settings here, so directly pass it to the
 	 * base class */
 	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+}
+
+/**
+ * ofa_class_treeview_setup_columns:
+ * @view: this #ofaClassTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_class_treeview_setup_columns( ofaClassTreeview *view )
+{
+	ofaClassTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_CLASS_TREEVIEW( view ));
+
+	priv = ofa_class_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_columns( view );
+}
+
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaClassTreeview *self )
+{
+	static const gchar *thisfn = "ofa_class_treeview_setup_columns";
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
+
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CLASS_COL_NUMBER,    _( "Number" ), _( "Class number" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CLASS_COL_LABEL,     _( "Label" ),      NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_NOTES,     _( "Notes" ),      NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CLASS_COL_NOTES_PNG,    "",         _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_UPD_USER,  _( "User" ),   _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CLASS_COL_UPD_STAMP,     NULL,      _( "Last update timestamp" ));
+
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), CLASS_COL_LABEL );
 }
 
 /**

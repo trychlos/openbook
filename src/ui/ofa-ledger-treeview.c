@@ -34,6 +34,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-itvcolumnable.h"
+#include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-ledger.h"
@@ -49,16 +51,7 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkTreeView       *tview;
 	ofaLedgerStore    *store;
-	gchar             *settings_key;
-
-	/* sorted model
-	 */
-	GtkTreeModel      *sort_model;			/* a sort model stacked on top of the store */
-	GtkTreeViewColumn *sort_column;
-	gint               sort_column_id;
-	gint               sort_order;
 }
 	ofaLedgerTreeviewPrivate;
 
@@ -67,40 +60,29 @@ typedef struct {
 enum {
 	CHANGED = 0,
 	ACTIVATED,
-	INSERT,
 	DELETE,
 	N_SIGNALS
 };
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void         setup_top_widget( ofaLedgerTreeview *self );
-static void         create_treeview_columns( ofaLedgerTreeview *view, const gint *columns );
-static void         tview_on_header_clicked( GtkTreeViewColumn *column, ofaLedgerTreeview *self );
-static void         tview_set_sort_indicator( ofaLedgerTreeview *self );
-static gint         tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerTreeview *self );
-static gint         tview_on_sort_int( const gchar *a, const gchar *b );
-static gint         tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb );
-static gboolean     tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaLedgerTreeview *self );
-static void         tview_on_key_insert( ofaLedgerTreeview *page );
-static void         tview_on_key_delete( ofaLedgerTreeview *page );
-static void         on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaLedgerTreeview *self );
-static void         on_row_selected( GtkTreeSelection *selection, ofaLedgerTreeview *self );
-static GList       *get_selected( ofaLedgerTreeview *self );
-static void         select_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger );
-static gboolean     find_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger, GtkTreeIter *iter );
-static const gchar *get_default_settings_key( ofaLedgerTreeview *self );
-static void         get_sort_settings( ofaLedgerTreeview *self );
-static void         set_sort_settings( ofaLedgerTreeview *self );
+static void       setup_columns( ofaLedgerTreeview *self );
+static void       on_selection_changed( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty );
+static void       on_selection_activated( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty );
+static void       on_selection_delete( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty );
+static void       get_and_send( ofaLedgerTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static ofoLedger *get_selected_with_selection( ofaLedgerTreeview *self, GtkTreeSelection *selection );
+static GList     *get_selected_list( ofaLedgerTreeview *self );
+static gboolean   find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *ledger, GtkTreeIter *iter );
+static gint       v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
-G_DEFINE_TYPE_EXTENDED( ofaLedgerTreeview, ofa_ledger_treeview, GTK_TYPE_BIN, 0,
+G_DEFINE_TYPE_EXTENDED( ofaLedgerTreeview, ofa_ledger_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaLedgerTreeview ))
 
 static void
 ledger_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_treeview_finalize";
-	ofaLedgerTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -108,9 +90,6 @@ ledger_treeview_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_LEDGER_TREEVIEW( instance ));
 
 	/* free data members here */
-	priv = ofa_ledger_treeview_get_instance_private( OFA_LEDGER_TREEVIEW( instance ));
-
-	g_free( priv->settings_key );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_treeview_parent_class )->finalize( instance );
@@ -150,8 +129,7 @@ ofa_ledger_treeview_init( ofaLedgerTreeview *self )
 	priv = ofa_ledger_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->settings_key = g_strdup( get_default_settings_key( self ));
-	priv->sort_model = NULL;
+	priv->store = NULL;
 }
 
 static void
@@ -164,21 +142,26 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_treeview_finalize;
 
+	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+
 	/**
-	 * ofaLedgerTreeview::changed:
+	 * ofaLedgerTreeview::ofa-ledchanged:
 	 *
-	 * This signal is sent on the #ofaLedgerTreeview when the selection
-	 * is changed.
+	 * #ofaTVBin sends a 'ofa-selchanged' signal, with the current
+	 * #GtkTreeSelection as an argument.
+	 * #ofaLedgerTreeview proxyes it with this 'ofa-ledchanged' signal,
+	 * providing the #ofoLedger selected object.
 	 *
-	 * Arguments is the list of selected mnemos.
+	 * Argument is the current #ofoLedger object, may be %NULL if the
+	 * selection is not unique.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaLedgerTreeview *view,
-	 * 						GList           *sel_mnemos,
+	 * 						ofoLedger       *object,
 	 * 						gpointer         user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
-				"ofa-changed",
+				"ofa-ledchanged",
 				OFA_TYPE_LEDGER_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -187,23 +170,27 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_POINTER );
+				G_TYPE_OBJECT );
 
 	/**
-	 * ofaLedgerTreeview::activated:
+	 * ofaLedgerTreeview::ofa-ledactivated:
 	 *
-	 * This signal is sent on the #ofaLedgerTreeview when the selection is
-	 * activated.
+	 * #ofaTVBin sends a 'ofa-selactivated' signal, with the current
+	 * #GtkTreeSelection as an argument.
+	 * #ofaLedgerTreeview proxyes it with this 'ofa-ledactivated' signal,
+	 * providing the #ofoLedger selected object.
+	 * The signal is not sent (not proxyied) if the selection is not
+	 * unique.
 	 *
-	 * Arguments is the list of selected mnemos.
+	 * Argument is the current #ofoLedger object.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaLedgerTreeview *view,
-	 * 						GList           *sel_mnemos,
+	 * 						ofoLedger       *object,
 	 * 						gpointer         user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
-				"ofa-activated",
+				"ofa-ledactivated",
 				OFA_TYPE_LEDGER_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -212,45 +199,27 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_POINTER );
+				G_TYPE_OBJECT );
 
 	/**
-	 * ofaLedgerTreeview::insert:
+	 * ofaLedgerTreeview::ofa-leddelete:
 	 *
-	 * This signal is sent on the #ofaLedgerTreeview when the insertion
-	 * key is hit.
+	 * #ofaTVBin sends a 'ofa-seldelete' signal, with the current
+	 * #GtkTreeSelection as an argument.
+	 * #ofaLedgerTreeview proxyes it with this 'ofa-leddelete' signal,
+	 * providing the #ofoLedger selected object.
+	 * The signal is not sent (not proxyied) if the selection is not
+	 * unique.
+	 *
+	 * Argument is the current #ofoLedger object.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaLedgerTreeview *view,
-	 * 						gpointer         user_data );
-	 */
-	st_signals[ INSERT ] = g_signal_new_class_handler(
-				"ofa-insert",
-				OFA_TYPE_LEDGER_TREEVIEW,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
-	 * ofaLedgerTreeview::delete:
-	 *
-	 * This signal is sent on the #ofaLedgerTreeview when the deletion
-	 * key is hit.
-	 *
-	 * Arguments is the list of selected mnemos.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaLedgerTreeview *view,
-	 * 						GList           *sel_mnemos,
+	 * 						ofoLedger       *object,
 	 * 						gpointer         user_data );
 	 */
 	st_signals[ DELETE ] = g_signal_new_class_handler(
-				"ofa-delete",
+				"ofa-leddelete",
 				OFA_TYPE_LEDGER_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
@@ -259,7 +228,7 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_POINTER );
+				G_TYPE_OBJECT );
 }
 
 /**
@@ -270,56 +239,34 @@ ofa_ledger_treeview_new( void )
 {
 	ofaLedgerTreeview *view;
 
-	view = g_object_new( OFA_TYPE_LEDGER_TREEVIEW, NULL );
+	view = g_object_new( OFA_TYPE_LEDGER_TREEVIEW,
+					"ofa-tvbin-shadow", GTK_SHADOW_IN,
+					NULL );
 
-	setup_top_widget( view );
+	/* signals sent by ofaTVBin base class are intercepted to provide
+	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
+	 */
+	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
+	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
+
+	/* the 'ofa-seldelete' signal is sent in response to the Delete key press.
+	 * There may be no current selection.
+	 * in this case, the signal is just ignored (not proxied).
+	 */
+	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
 	return( view );
 }
 
-/*
- * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
- */
-static void
-setup_top_widget( ofaLedgerTreeview *self )
-{
-	ofaLedgerTreeviewPrivate *priv;
-	GtkTreeSelection *select;
-	GtkWidget *top_widget, *scrolled;
-
-	priv = ofa_ledger_treeview_get_instance_private( self );
-
-	top_widget = gtk_frame_new( NULL );
-	gtk_container_add( GTK_CONTAINER( self ), top_widget );
-	gtk_frame_set_shadow_type( GTK_FRAME( top_widget ), GTK_SHADOW_IN );
-
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_add( GTK_CONTAINER( top_widget ), scrolled );
-	gtk_scrolled_window_set_policy(
-			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-
-	priv->tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( priv->tview ), TRUE );
-	gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( priv->tview ));
-	gtk_tree_view_set_headers_visible( priv->tview, TRUE );
-
-	g_signal_connect( priv->tview, "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect( priv->tview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
-
-	select = gtk_tree_view_get_selection( priv->tview );
-	g_signal_connect( select, "changed", G_CALLBACK( on_row_selected ), self );
-}
-
 /**
- * ofa_ledger_treeview_set_columns:
+ * ofa_ledger_treeview_set_settings_key:
  * @view: this #ofaLedgerTreeview instance.
- * @columns: a -1-terminated list of columns to be displayed.
+ * @key: [allow-none]: the prefix of the settings key.
  *
- * Setup the displayable columns.
+ * Setup the setting key, or reset it to its default if %NULL.
  */
 void
-ofa_ledger_treeview_set_columns( ofaLedgerTreeview *view, const gint *columns )
+ofa_ledger_treeview_set_settings_key( ofaLedgerTreeview *view, const gchar *key )
 {
 	ofaLedgerTreeviewPrivate *priv;
 
@@ -329,96 +276,51 @@ ofa_ledger_treeview_set_columns( ofaLedgerTreeview *view, const gint *columns )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	create_treeview_columns( view, columns );
+	/* we do not manage any settings here, so directly pass it to the
+	 * base class */
+	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
 }
 
-static void
-create_treeview_columns( ofaLedgerTreeview *self, const gint *columns )
+/**
+ * ofa_ledger_treeview_setup_columns:
+ * @view: this #ofaLedgerTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_ledger_treeview_setup_columns( ofaLedgerTreeview *view )
 {
 	ofaLedgerTreeviewPrivate *priv;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	gint i;
 
-	priv = ofa_ledger_treeview_get_instance_private( self );
+	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
 
-	for( i=0 ; columns[i] >= 0 ; ++i ){
+	priv = ofa_ledger_treeview_get_instance_private( view );
 
-		if( columns[i] == LEDGER_COL_MNEMO ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Mnemo" ), cell, "text", columns[i], NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
+	g_return_if_fail( !priv->dispose_has_run );
 
-		if( columns[i] == LEDGER_COL_LABEL ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Label" ), cell, "text", columns[i], NULL );
-			gtk_tree_view_column_set_expand( column, TRUE );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
+	setup_columns( view );
+}
 
-		if( columns[i] == LEDGER_COL_LAST_ENTRY ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Last entry" ), cell, "text", columns[i], NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaLedgerTreeview *self )
+{
+	static const gchar *thisfn = "ofa_ledger_treeview_setup_columns";
 
-		if( columns[i] == LEDGER_COL_LAST_CLOSE ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Last closing" ), cell, "text", columns[i], NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-		if( columns[i] == LEDGER_COL_NOTES ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Notes" ), cell, "text", columns[i], NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), LEDGER_COL_MNEMO,      _( "Mnemo" ),      _( "Mnemonic" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), LEDGER_COL_LABEL,      _( "Label" ),          NULL );
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), LEDGER_COL_LAST_ENTRY, _( "Last entry" ), _( "Last entry number" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), LEDGER_COL_LAST_CLOSE, _( "Last close" ), _( "Last close date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), LEDGER_COL_NOTES,      _( "Notes" ),          NULL );
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), LEDGER_COL_NOTES_PNG,     "",             _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), LEDGER_COL_UPD_USER,   _( "User" ),       _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), LEDGER_COL_UPD_STAMP,      NULL,          _( "Last update timestamp" ));
 
-		if( columns[i] == LEDGER_COL_NOTES_PNG ){
-			cell = gtk_cell_renderer_pixbuf_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							"", cell, "pixbuf", columns[i], NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
-
-		if( columns[i] == LEDGER_COL_UPD_USER ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "User" ), cell, "text", columns[i], NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
-
-		if( columns[i] == LEDGER_COL_UPD_STAMP ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Timestamp" ), cell, "text", columns[i], NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-			gtk_tree_view_column_set_sort_column_id( column, columns[i] );
-			g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-		}
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( self ));
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), LEDGER_COL_LABEL );
 }
 
 /**
@@ -426,14 +328,8 @@ create_treeview_columns( ofaLedgerTreeview *self, const gint *columns )
  * @view: this #ofaLedgerTreeview instance.
  * @hub: the #ofaHub object of the application.
  *
- * Setup the underlying store, define the sortable tree model and
- * attach it to the @view.
- *
- * As this function allocates actual data and sort them, it should be
- * the last called during the #ofaLedgerTreeview initialization.
- *
- * Another reason is that some sortable columns have to be explicitely
- * setup with the sort model, so columns should be defined before.
+ * Initialize the underlying store.
+ * Read the settings and show the columns accordingly.
  */
 void
 ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
@@ -447,324 +343,82 @@ ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	/* the treeview must have been created first */
-	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
-
 	priv->store = ofa_ledger_store_new( hub );
-
-	priv->sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( priv->store ));
-	/* the sortable model maintains its own reference on the store */
+	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( priv->sort_model ), ( GtkTreeIterCompareFunc ) tview_on_sort_model, view, NULL );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->sort_model ), LEDGER_COL_NOTES_PNG, ( GtkTreeIterCompareFunc ) tview_on_sort_model, view, NULL );
-
-	gtk_tree_view_set_model( priv->tview, priv->sort_model );
-	/* the treeview maintains its own reference on the sortable model */
-	g_object_unref( priv->sort_model );
-
-	get_sort_settings( view );
-	tview_set_sort_indicator( view );
+	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), LEDGER_COL_MNEMO, GTK_SORT_ASCENDING );
 }
 
 static void
-tview_on_header_clicked( GtkTreeViewColumn *column, ofaLedgerTreeview *self )
+on_selection_changed( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty )
 {
-	ofaLedgerTreeviewPrivate *priv;
+	get_and_send( self, selection, "ofa-ledchanged" );
+}
 
-	priv = ofa_ledger_treeview_get_instance_private( self );
-
-	if( column != priv->sort_column ){
-		gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-		priv->sort_column = column;
-		priv->sort_column_id = gtk_tree_view_column_get_sort_column_id( column );
-		priv->sort_order = GTK_SORT_ASCENDING;
-
-	} else {
-		priv->sort_order = priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
+static void
+on_selection_activated( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty )
+{
+	if( gtk_tree_selection_count_selected_rows( selection ) == 1 ){
+		get_and_send( self, selection, "ofa-ledactivated" );
 	}
-
-	set_sort_settings( self );
-	tview_set_sort_indicator( self );
 }
 
 /*
- * It happens that Gtk+ makes use of up arrow '^' (resp. a down arrow 'v')
- * to indicate a descending (resp. ascending) sort order. This is counter-
- * intuitive as we are expecting the arrow pointing to the smallest item.
+ * Delete key pressed
+ * ofaTVBin base class makes sure the selection is not empty.
+ */
+static void
+on_selection_delete( ofaLedgerTreeview *self, GtkTreeSelection *selection, void *empty )
+{
+	if( gtk_tree_selection_count_selected_rows( selection ) == 1 ){
+		get_and_send( self, selection, "ofa-leddelete" );
+	}
+}
+
+/*
+ * Ledger may be %NULL when selection is empty
+ */
+static void
+get_and_send( ofaLedgerTreeview *self, GtkTreeSelection *selection, const gchar *signal )
+{
+	ofoLedger *ledger;
+
+	ledger = get_selected_with_selection( self, selection );
+	g_return_if_fail( !ledger || OFO_IS_LEDGER( ledger ));
+
+	g_signal_emit_by_name( self, signal, ledger );
+}
+
+/*
+ * get_selected_with_selection:
+ * @view: this #ofaLedgerTreeview instance.
+ * @selection:
  *
- * So inverse the sort order of the sort indicator.
+ * Return: the currently selected ledger, or %NULL.
  */
-static void
-tview_set_sort_indicator( ofaLedgerTreeview *self )
+static ofoLedger *
+get_selected_with_selection( ofaLedgerTreeview *self, GtkTreeSelection *selection )
 {
-	ofaLedgerTreeviewPrivate *priv;
-
-	priv = ofa_ledger_treeview_get_instance_private( self );
-
-	if( priv->sort_model ){
-		gtk_tree_sortable_set_sort_column_id(
-				GTK_TREE_SORTABLE( priv->sort_model ), priv->sort_column_id, priv->sort_order );
-	}
-
-	if( priv->sort_column ){
-		gtk_tree_view_column_set_sort_indicator(
-				priv->sort_column, TRUE );
-		gtk_tree_view_column_set_sort_order(
-				priv->sort_column,
-				priv->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING );
-	}
-}
-
-/*
- * sorting the treeview
- */
-static gint
-tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerTreeview *self )
-{
-	static const gchar *thisfn = "ofa_ledger_treeview_tview_on_sort_model";
-	ofaLedgerTreeviewPrivate *priv;
-	gint cmp;
-	gchar *mnemoa, *labela, *entrya, *closea, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *entryb, *closeb, *notesb, *upduserb, *updstampb;
-	GdkPixbuf *pnga, *pngb;
-
-	gtk_tree_model_get( tmodel, a,
-			LEDGER_COL_MNEMO,       &mnemoa,
-			LEDGER_COL_LABEL,       &labela,
-			LEDGER_COL_LAST_ENTRY,  &entrya,
-			LEDGER_COL_LAST_CLOSE,  &closea,
-			LEDGER_COL_NOTES,       &notesa,
-			LEDGER_COL_NOTES_PNG,   &pnga,
-			LEDGER_COL_UPD_USER,    &updusera,
-			LEDGER_COL_UPD_STAMP,   &updstampa,
-			-1 );
-
-	gtk_tree_model_get( tmodel, b,
-			LEDGER_COL_MNEMO,       &mnemob,
-			LEDGER_COL_LABEL,       &labelb,
-			LEDGER_COL_LAST_ENTRY,  &entryb,
-			LEDGER_COL_LAST_CLOSE,  &closeb,
-			LEDGER_COL_NOTES,       &notesb,
-			LEDGER_COL_NOTES_PNG,   &pngb,
-			LEDGER_COL_UPD_USER,    &upduserb,
-			LEDGER_COL_UPD_STAMP,   &updstampb,
-			-1 );
-
-	cmp = 0;
-	priv = ofa_ledger_treeview_get_instance_private( self );
-
-	switch( priv->sort_column_id ){
-		case LEDGER_COL_MNEMO:
-			cmp = my_collate( mnemoa, mnemob );
-			break;
-		case LEDGER_COL_LABEL:
-			cmp = my_collate( labela, labelb );
-			break;
-		case LEDGER_COL_LAST_ENTRY:
-			cmp = tview_on_sort_int( entrya, entryb );
-			break;
-		case LEDGER_COL_LAST_CLOSE:
-			cmp = my_date_compare_by_str( closea, closeb, ofa_prefs_date_display());
-			break;
-		case LEDGER_COL_NOTES:
-			cmp = my_collate( notesa, notesb );
-			break;
-		case LEDGER_COL_NOTES_PNG:
-			cmp = tview_on_sort_png( pnga, pngb );
-			break;
-		case LEDGER_COL_UPD_USER:
-			cmp = my_collate( updusera, upduserb );
-			break;
-		case LEDGER_COL_UPD_STAMP:
-			cmp = my_collate( updstampa, updstampb );
-			break;
-		default:
-			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
-			break;
-	}
-
-	g_free( mnemoa );
-	g_free( labela );
-	g_free( entrya );
-	g_free( closea );
-	g_free( notesa );
-	g_free( updusera );
-	g_free( updstampa );
-	g_object_unref( pnga );
-
-	g_free( mnemob );
-	g_free( labelb );
-	g_free( entryb );
-	g_free( closeb );
-	g_free( notesb );
-	g_free( upduserb );
-	g_free( updstampb );
-	g_object_unref( pngb );
-
-	return( cmp );
-}
-
-static gint
-tview_on_sort_int( const gchar *a, const gchar *b )
-{
-	int inta, intb;
-
-	if( !my_strlen( a )){
-		if( !my_strlen( b )){
-			return( 0 );
-		}
-		return( -1 );
-	}
-	inta = atoi( a );
-
-	if( !my_strlen( b )){
-		return( 1 );
-	}
-	intb = atoi( b );
-
-	return( inta < intb ? -1 : ( inta > intb ? 1 : 0 ));
-}
-
-static gint
-tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb )
-{
-	gsize lena, lenb;
-
-	if( !pnga ){
-		return( -1 );
-	}
-	lena = gdk_pixbuf_get_byte_length( pnga );
-
-	if( !pngb ){
-		return( 1 );
-	}
-	lenb = gdk_pixbuf_get_byte_length( pngb );
-
-	if( lena < lenb ){
-		return( -1 );
-	}
-	if( lena > lenb ){
-		return( 1 );
-	}
-
-	return( memcmp( pnga, pngb, lena ));
-}
-
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaLedgerTreeview *self )
-{
-	gboolean stop;
-
-	stop = FALSE;
-
-	if( event->state == 0 ){
-		if( event->keyval == GDK_KEY_Insert ){
-			tview_on_key_insert( self );
-		} else if( event->keyval == GDK_KEY_Delete ){
-			tview_on_key_delete( self );
-		}
-	}
-
-	return( stop );
-}
-
-static void
-tview_on_key_insert( ofaLedgerTreeview *page )
-{
-	g_signal_emit_by_name( page, "ofa-insert" );
-}
-
-static void
-tview_on_key_delete( ofaLedgerTreeview *page )
-{
-	GList *sel_objects;
-
-	sel_objects = get_selected( page );
-	g_signal_emit_by_name( page, "ofa-delete", sel_objects );
-	ofa_ledger_treeview_free_selected( sel_objects );
-}
-
-static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaLedgerTreeview *self )
-{
-	GList *sel_objects;
-
-	sel_objects = get_selected( self );
-	g_signal_emit_by_name( self, "ofa-activated", sel_objects );
-	ofa_ledger_treeview_free_selected( sel_objects );
-}
-
-static void
-on_row_selected( GtkTreeSelection *selection, ofaLedgerTreeview *self )
-{
-	GList *sel_objects;
-
-	sel_objects = get_selected( self );
-	g_signal_emit_by_name( self, "ofa-changed", sel_objects );
-	ofa_ledger_treeview_free_selected( sel_objects );
-}
-
-static GList *
-get_selected( ofaLedgerTreeview *self )
-{
-	ofaLedgerTreeviewPrivate *priv;
-	GtkTreeSelection *select;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	GList *sel_rows, *irow;
-	GList *sel_mnemos;
-	gchar *ledger;
+	ofoLedger *ledger;
 
-	priv = ofa_ledger_treeview_get_instance_private( self );
-
-	sel_mnemos = NULL;
-	select = gtk_tree_view_get_selection( priv->tview );
-	sel_rows = gtk_tree_selection_get_selected_rows( select, &tmodel );
-
-	for( irow=sel_rows ; irow ; irow=irow->next ){
-		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
-			gtk_tree_model_get( tmodel, &iter, LEDGER_COL_MNEMO, &ledger, -1 );
-			sel_mnemos = g_list_append( sel_mnemos, ledger );
-		}
+	ledger = NULL;
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+		gtk_tree_model_get( tmodel, &iter, LEDGER_COL_OBJECT, &ledger, -1 );
+		g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+		g_object_unref( ledger );
 	}
 
-	g_list_free_full( sel_rows, ( GDestroyNotify ) gtk_tree_path_free );
-
-	return( sel_mnemos );
-}
-
-/**
- * ofa_ledger_treeview_get_selection:
- * @view:
- *
- * Returns: the #GtkTreeSelection object.
- */
-GtkTreeSelection *
-ofa_ledger_treeview_get_selection( ofaLedgerTreeview *view )
-{
-	ofaLedgerTreeviewPrivate *priv;
-
-	g_return_val_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ), NULL );
-
-	priv = ofa_ledger_treeview_get_instance_private( view );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( gtk_tree_view_get_selection( priv->tview ));
+	return( ledger );
 }
 
 /**
  * ofa_ledger_treeview_get_selected:
+ * @view: this #ofaLedgerTreeview instance.
  *
- * Returns: the list of #ofoLedger ledgers selected mnemonics.
+ * Returns: the list of ledger's selected mnemonics.
  *
  * The returned list should be ofa_ledger_treeview_free_selected() by
  * the caller.
@@ -780,59 +434,84 @@ ofa_ledger_treeview_get_selected( ofaLedgerTreeview *view )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( get_selected( view ));
+	return( get_selected_list( view ));
+}
+
+static GList *
+get_selected_list( ofaLedgerTreeview *self )
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GList *sel_rows, *irow;
+	GList *sel_mnemos;
+	gchar *ledger;
+
+	sel_mnemos = NULL;
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( self ));
+	sel_rows = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+
+	for( irow=sel_rows ; irow ; irow=irow->next ){
+		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
+			gtk_tree_model_get( tmodel, &iter, LEDGER_COL_MNEMO, &ledger, -1 );
+			sel_mnemos = g_list_append( sel_mnemos, ledger );
+		}
+	}
+
+	g_list_free_full( sel_rows, ( GDestroyNotify ) gtk_tree_path_free );
+
+	return( sel_mnemos );
 }
 
 /**
  * ofa_ledger_treeview_set_selected:
+ * @view: this #ofaLedgerTreeview instance.
+ * @ledger: [allow-none]: the mnemonic of the ledger to be selected.
+ *
+ * Select the specified @ledger.
  */
 void
-ofa_ledger_treeview_set_selected( ofaLedgerTreeview *tview, const gchar *ledger )
+ofa_ledger_treeview_set_selected( ofaLedgerTreeview *view, const gchar *ledger )
 {
 	ofaLedgerTreeviewPrivate *priv;
+	GtkTreeSelection *selection;
+	GtkTreeIter iter;
 
-	g_return_if_fail( tview && OFA_IS_LEDGER_TREEVIEW( tview ));
+	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
 
-	priv = ofa_ledger_treeview_get_instance_private( tview );
+	priv = ofa_ledger_treeview_get_instance_private( view );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	select_row_by_mnemo( tview, ledger );
-}
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
+	gtk_tree_selection_unselect_all( selection );
 
-static void
-select_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger )
-{
-	ofaLedgerTreeviewPrivate *priv;
-	GtkTreeIter iter;
-	GtkTreeSelection *select;
-
-	priv = ofa_ledger_treeview_get_instance_private( tview );
-
-	if( find_row_by_mnemo( tview, ledger, &iter )){
-		select = gtk_tree_view_get_selection( priv->tview );
-		gtk_tree_selection_select_iter( select, &iter );
+	if( my_strlen( ledger ) && find_row_by_mnemo( view, ledger, &iter )){
+		ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
 	}
 }
 
+/*
+ * this works because there is no filter on this view
+ */
 static gboolean
-find_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger, GtkTreeIter *iter )
+find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *ledger, GtkTreeIter *iter )
 {
-	ofaLedgerTreeviewPrivate *priv;
+	GtkTreeModel *tmodel;
 	gchar *mnemo;
 	gint cmp;
 
-	priv = ofa_ledger_treeview_get_instance_private( tview );
+	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( self ));
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), iter )){
+	if( gtk_tree_model_get_iter_first( tmodel, iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, LEDGER_COL_MNEMO, &mnemo, -1 );
+			gtk_tree_model_get( tmodel, iter, LEDGER_COL_MNEMO, &mnemo, -1 );
 			cmp = g_utf8_collate( mnemo, ledger );
 			g_free( mnemo );
 			if( cmp == 0 ){
 				return( TRUE );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), iter )){
+			if( !gtk_tree_model_iter_next( tmodel, iter )){
 				break;
 			}
 		}
@@ -841,6 +520,7 @@ find_row_by_mnemo( ofaLedgerTreeview *tview, const gchar *ledger, GtkTreeIter *i
 	return( FALSE );
 }
 
+#if 0
 /**
  * ofa_ledger_treeview_set_selection_mode:
  */
@@ -859,33 +539,6 @@ ofa_ledger_treeview_set_selection_mode( ofaLedgerTreeview *view, GtkSelectionMod
 	g_return_if_fail( priv->tview && GTK_IS_TREE_VIEW( priv->tview ));
 	select = gtk_tree_view_get_selection( priv->tview );
 	gtk_tree_selection_set_mode( select, mode );
-}
-
-/**
- * ofa_ledger_treeview_set_settings_key:
- * @view: this #ofaLedgerTreeview instance.
- * @key: [allow-none]: the desired settings key.
- *
- * Setup the desired settings key.
- *
- * The settings key defaults to the class name 'ofaLedgerTreeview'.
- *
- * When called with null or empty @key, this reset the settings key to
- * the default.
- */
-void
-ofa_ledger_treeview_set_settings_key( ofaLedgerTreeview *view, const gchar *key )
-{
-	ofaLedgerTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
-
-	priv = ofa_ledger_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	g_free( priv->settings_key );
-	priv->settings_key = g_strdup( my_strlen( key ) ? key : get_default_settings_key( view ));
 }
 
 /**
@@ -1010,4 +663,89 @@ set_sort_settings( ofaLedgerTreeview *self )
 
 	g_free( str );
 	g_free( sort_key );
+}
+#endif
+
+static gint
+v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+{
+	static const gchar *thisfn = "ofa_ledger_treeview_v_sort";
+	gint cmp;
+	gchar *mnemoa, *labela, *entrya, *closea, *notesa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *entryb, *closeb, *notesb, *upduserb, *updstampb;
+	GdkPixbuf *pnga, *pngb;
+
+	gtk_tree_model_get( tmodel, a,
+			LEDGER_COL_MNEMO,       &mnemoa,
+			LEDGER_COL_LABEL,       &labela,
+			LEDGER_COL_LAST_ENTRY,  &entrya,
+			LEDGER_COL_LAST_CLOSE,  &closea,
+			LEDGER_COL_NOTES,       &notesa,
+			LEDGER_COL_NOTES_PNG,   &pnga,
+			LEDGER_COL_UPD_USER,    &updusera,
+			LEDGER_COL_UPD_STAMP,   &updstampa,
+			-1 );
+
+	gtk_tree_model_get( tmodel, b,
+			LEDGER_COL_MNEMO,       &mnemob,
+			LEDGER_COL_LABEL,       &labelb,
+			LEDGER_COL_LAST_ENTRY,  &entryb,
+			LEDGER_COL_LAST_CLOSE,  &closeb,
+			LEDGER_COL_NOTES,       &notesb,
+			LEDGER_COL_NOTES_PNG,   &pngb,
+			LEDGER_COL_UPD_USER,    &upduserb,
+			LEDGER_COL_UPD_STAMP,   &updstampb,
+			-1 );
+
+	cmp = 0;
+
+	switch( column_id ){
+		case LEDGER_COL_MNEMO:
+			cmp = my_collate( mnemoa, mnemob );
+			break;
+		case LEDGER_COL_LABEL:
+			cmp = my_collate( labela, labelb );
+			break;
+		case LEDGER_COL_LAST_ENTRY:
+			cmp = ofa_itvsortable_sort_str_int( entrya, entryb );
+			break;
+		case LEDGER_COL_LAST_CLOSE:
+			cmp = my_date_compare_by_str( closea, closeb, ofa_prefs_date_display());
+			break;
+		case LEDGER_COL_NOTES:
+			cmp = my_collate( notesa, notesb );
+			break;
+		case LEDGER_COL_NOTES_PNG:
+			cmp = ofa_itvsortable_sort_png( pnga, pngb );
+			break;
+		case LEDGER_COL_UPD_USER:
+			cmp = my_collate( updusera, upduserb );
+			break;
+		case LEDGER_COL_UPD_STAMP:
+			cmp = my_collate( updstampa, updstampb );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, column_id );
+			break;
+	}
+
+	g_free( mnemoa );
+	g_free( labela );
+	g_free( entrya );
+	g_free( closea );
+	g_free( notesa );
+	g_free( updusera );
+	g_free( updstampa );
+	g_clear_object( &pnga );
+
+	g_free( mnemob );
+	g_free( labelb );
+	g_free( entryb );
+	g_free( closeb );
+	g_free( notesb );
+	g_free( upduserb );
+	g_free( updstampb );
+	g_clear_object( &pngb );
+
+	return( cmp );
 }

@@ -639,6 +639,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_tview ));
 	ofa_dossier_treeview_set_settings_key( priv->p2_dossier_tview, G_OBJECT_TYPE_NAME( self ));
+	ofa_dossier_treeview_setup_columns( priv->p2_dossier_tview );
 	ofa_dossier_treeview_set_filter_show( priv->p2_dossier_tview, FALSE );
 
 	g_signal_connect( priv->p2_dossier_tview, "ofa-doschanged", G_CALLBACK( p2_on_dossier_changed ), self );

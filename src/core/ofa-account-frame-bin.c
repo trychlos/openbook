@@ -488,6 +488,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 
 	view = ofa_account_treeview_new( class_num );
 	ofa_account_treeview_set_settings_key( view, priv->settings_key );
+	ofa_account_treeview_setup_columns( view );
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), priv->cell_fn, priv->cell_data );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 

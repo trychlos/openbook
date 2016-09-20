@@ -76,6 +76,8 @@ ofaCurrencyTreeview *ofa_currency_treeview_new             ( void );
 void                 ofa_currency_treeview_set_settings_key( ofaCurrencyTreeview *view,
 																	const gchar *key );
 
+void                 ofa_currency_treeview_setup_columns   ( ofaCurrencyTreeview *view );
+
 void                 ofa_currency_treeview_set_hub         ( ofaCurrencyTreeview *view,
 																	ofaHub *hub );
 
