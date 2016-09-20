@@ -33,15 +33,19 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"
 
-#include "ui/ofa-rate-properties.h"
 #include "ui/ofa-rate-page.h"
+#include "ui/ofa-rate-properties.h"
+#include "ui/ofa-rate-treeview.h"
 
 /* private instance data
  */
@@ -49,55 +53,35 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub       *hub;
-	GList        *hub_handlers;
-	gboolean      is_writable;
+	ofaHub          *hub;
+	GList           *hub_handlers;
+	gboolean         is_writable;
 
 	/* UI
 	 */
-	GtkTreeView  *tview;
-	GtkTreeModel *tmodel;
-	GtkWidget    *new_btn;
-	GtkWidget    *update_btn;
-	GtkWidget    *delete_btn;
+	ofaRateTreeview *tview;
+
+	/* actions
+	 */
+	GSimpleAction   *new_action;
+	GSimpleAction   *update_action;
+	GSimpleAction   *delete_action;
 }
 	ofaRatePagePrivate;
 
-/* column ordering in the selection listview
- */
-enum {
-	COL_MNEMO,
-	COL_LABEL,
-	COL_BEGIN,			/* minimum begin of all validities */
-	COL_END,			/* max end */
-	COL_OBJECT,
-	N_COLUMNS
-};
-
 static GtkWidget *v_setup_view( ofaPage *page );
-static void       connect_to_hub_signaling_system( ofaRatePage *self );
-static GtkWidget *setup_tree_view( ofaRatePage *self );
 static GtkWidget *v_setup_buttons( ofaPage *page );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       insert_dataset( ofaRatePage *self );
-static void       insert_new_row( ofaRatePage *self, ofoRate *rate, gboolean with_selection );
-static void       set_row_by_iter( ofaRatePage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *rate );
-static gboolean   find_row_by_mnemo( ofaRatePage *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter );
-static gchar     *get_min_val_date( ofoRate *rate );
-static gchar     *get_max_val_date( ofoRate *rate );
-static gint       on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatePage *self );
-static void       setup_first_selection( ofaRatePage *self );
-static gboolean   on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRatePage *self );
-static void       on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page );
-static void       on_row_selected( GtkTreeSelection *selection, ofaRatePage *self );
-static void       on_new_clicked( GtkButton *button, ofaRatePage *page );
-static void       on_hub_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
-static void       on_update_clicked( GtkButton *button, ofaRatePage *page );
-static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self );
-static void       on_delete_clicked( GtkButton *button, ofaRatePage *page );
-static gboolean   delete_confirmed( ofaRatePage *self, ofoRate *rate );
-static void       on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self );
-static void       on_hub_reload_dataset( ofaHub *hub, GType type, ofaRatePage *self );
+static void       on_row_selected( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self );
+static void       on_row_activated( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self );
+static void       on_delete_key( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self );
+static void       on_insert_key( ofaRateTreeview *tview, ofaRatePage *self );
+static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self );
+static gboolean   check_for_deletability( ofaRatePage *self, ofoRate *class );
+static void       delete_with_confirm( ofaRatePage *self, ofoRate *class );
 
 G_DEFINE_TYPE_EXTENDED( ofaRatePage, ofa_rate_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaRatePage ))
@@ -134,6 +118,10 @@ rate_page_dispose( GObject *instance )
 		 * have been already finalized (e.g. when the application
 		 * terminates) */
 		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+
+		g_object_unref( priv->new_action );
+		g_object_unref( priv->update_action );
+		g_object_unref( priv->delete_action );
 	}
 
 	/* chain up to the parent class */
@@ -144,11 +132,16 @@ static void
 ofa_rate_page_init( ofaRatePage *self )
 {
 	static const gchar *thisfn = "ofa_rate_page_init";
+	ofaRatePagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_RATE_PAGE( self ));
+
+	priv = ofa_rate_page_get_instance_private( self );
+
+	priv->hub_handlers = NULL;
 }
 
 static void
@@ -163,6 +156,7 @@ ofa_rate_page_class_init( ofaRatePageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -171,7 +165,6 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_rate_page_v_setup_view";
 	ofaRatePagePrivate *priv;
-	GtkWidget *tview;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -179,121 +172,23 @@ v_setup_view( ofaPage *page )
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
-	connect_to_hub_signaling_system( OFA_RATE_PAGE( page ));
-	tview = setup_tree_view( OFA_RATE_PAGE( page ));
-	insert_dataset( OFA_RATE_PAGE( page ));
+	priv->tview = ofa_rate_treeview_new();
+	ofa_rate_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
+	ofa_rate_treeview_setup_columns( priv->tview );
+	ofa_rate_treeview_set_hub( priv->tview, priv->hub );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
-	return( tview );
-}
+	/* ofaTVBin signals */
+	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
 
-static void
-connect_to_hub_signaling_system( ofaRatePage *self )
-{
-	ofaRatePagePrivate *priv;
-	gulong handler;
+	/* ofaBatTreeview signals */
+	g_signal_connect( priv->tview, "ofa-ratchanged", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( priv->tview, "ofa-ratactivated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( priv->tview, "ofa-ratdelete", G_CALLBACK( on_delete_key ), page );
 
-	priv = ofa_rate_page_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-static GtkWidget *
-setup_tree_view( ofaRatePage *self )
-{
-	ofaRatePagePrivate *priv;
-	GtkFrame *frame;
-	GtkScrolledWindow *scroll;
-	GtkTreeView *tview;
-	GtkTreeModel *tmodel;
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
-
-	priv = ofa_rate_page_get_instance_private( self );
-
-	frame = GTK_FRAME( gtk_frame_new( NULL ));
-	my_utils_widget_set_margins( GTK_WIDGET( frame ), 4, 4, 4, 0 );
-	gtk_frame_set_shadow_type( frame, GTK_SHADOW_IN );
-
-	scroll = GTK_SCROLLED_WINDOW( gtk_scrolled_window_new( NULL, NULL ));
-	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
-	gtk_scrolled_window_set_policy( scroll, GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( frame ), GTK_WIDGET( scroll ));
-
-	tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_hexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( tview ), TRUE );
-	gtk_tree_view_set_headers_visible( tview, TRUE );
-	gtk_container_add( GTK_CONTAINER( scroll ), GTK_WIDGET( tview ));
-	g_signal_connect( tview, "row-activated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_tview_key_pressed ), self );
-	priv->tview = tview;
-
-	tmodel = GTK_TREE_MODEL( gtk_list_store_new(
-			N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_OBJECT ));
-	gtk_tree_view_set_model( tview, tmodel );
-	g_object_unref( tmodel );
-	priv->tmodel = tmodel;
-
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Mnemo" ),
-			text_cell, "text", COL_MNEMO,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			text_cell, "text", COL_LABEL,
-			NULL );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
-
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_sensitive( text_cell, FALSE );
-	g_object_set( G_OBJECT( text_cell ), "style", PANGO_STYLE_ITALIC, NULL );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Val. begin" ),
-			text_cell, "text", COL_BEGIN,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_sensitive( text_cell, FALSE );
-	g_object_set( G_OBJECT( text_cell ), "style", PANGO_STYLE_ITALIC, NULL );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Val. end" ),
-			text_cell, "text", COL_END,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-
-	select = gtk_tree_view_get_selection( tview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( select, "changed", G_CALLBACK( on_row_selected ), self );
-
-	gtk_tree_sortable_set_default_sort_func(
-			GTK_TREE_SORTABLE( tmodel ), ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tmodel ),
-			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
-
-	return( GTK_WIDGET( frame ));
+	return( GTK_WIDGET( priv->tview ));
 }
 
 static GtkWidget *
@@ -301,26 +196,76 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaRatePagePrivate *priv;
 	ofaButtonsBox *buttons_box;
+	const gchar *namespace;
 
+	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
-	priv->new_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_NEW, G_CALLBACK( on_new_clicked ), page );
-	gtk_widget_set_sensitive( priv->new_btn, priv->is_writable );
+	/* new action */
+	priv->new_action = g_simple_action_new( "new", NULL );
+	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
+	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE_NEW_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE_NEW_BTN ));
 
-	priv->update_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( on_update_clicked ), page );
+	/* update action */
+	priv->update_action = g_simple_action_new( "update", NULL );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
-	priv->delete_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_DELETE, G_CALLBACK( on_delete_clicked ), page );
+	/* delete action */
+	priv->delete_action = g_simple_action_new( "delete", NULL );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE_DELETE_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE_DELETE_BTN ));
 
 	return( GTK_WIDGET( buttons_box ));
+}
+
+static void
+v_init_view( ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_rate_page_v_init_view";
+	ofaRatePagePrivate *priv;
+	GMenu *menu;
+	const gchar *namespace;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	namespace = G_OBJECT_TYPE_NAME( page );
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), namespace );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
+			menu );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 static GtkWidget *
@@ -332,260 +277,77 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
-	return( GTK_WIDGET( priv->tview ));
-}
-
-static void
-insert_dataset( ofaRatePage *self )
-{
-	ofaRatePagePrivate *priv;
-	GList *dataset, *it;
-	ofoRate *rate;
-
-	priv = ofa_rate_page_get_instance_private( self );
-
-	dataset = ofo_rate_get_dataset( priv->hub );
-
-	for( it=dataset ; it ; it=it->next ){
-
-		rate = OFO_RATE( it->data );
-		insert_new_row( self, rate, FALSE );
-	}
-
-	setup_first_selection( self );
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*
- * we insert the mnemo as soon as the row is created, so that the
- * on_sort_model() function does not complain about null strings
+ * Signal sent by ofaRateTreeview on selection change
+ *
+ * Other actions do not depend of the selection:
+ * - new: enabled when dossier is writable.
  */
 static void
-insert_new_row( ofaRatePage *self, ofoRate *rate, gboolean with_selection )
+on_row_selected( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self )
 {
 	ofaRatePagePrivate *priv;
-	GtkTreeIter iter;
-	GtkTreePath *path;
-
-	priv = ofa_rate_page_get_instance_private( self );
-
-	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( priv->tmodel ),
-			&iter,
-			-1,
-			COL_MNEMO,  ofo_rate_get_mnemo( rate ),
-			COL_OBJECT, rate,
-			-1 );
-
-	set_row_by_iter( self, priv->tmodel, &iter, rate );
-
-	/* select the newly added rate */
-	if( with_selection ){
-		path = gtk_tree_model_get_path( priv->tmodel, &iter );
-		gtk_tree_view_set_cursor( priv->tview, path, NULL, FALSE );
-		gtk_tree_path_free( path );
-		gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
-	}
-}
-
-/*
- * the mnemo is set here even it is has been already set when creating
- * the row in order to takeninto account a possible identifier
- * modification
- */
-static void
-set_row_by_iter( ofaRatePage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, ofoRate *rate )
-{
-	gchar *sbegin, *send;
-
-	sbegin = get_min_val_date( rate );
-	send = get_max_val_date( rate );
-
-	gtk_list_store_set(
-			GTK_LIST_STORE( tmodel ),
-			iter,
-			COL_MNEMO,  ofo_rate_get_mnemo( rate ),
-			COL_LABEL,  ofo_rate_get_label( rate ),
-			COL_BEGIN,  sbegin,
-			COL_END,    send,
-			-1 );
-
-	g_free( sbegin );
-	g_free( send );
-}
-
-static gboolean
-find_row_by_mnemo( ofaRatePage *self, const gchar *mnemo, GtkTreeModel **tmodel, GtkTreeIter *iter )
-{
-	ofaRatePagePrivate *priv;
-	gchar *row_mnemo;
-	gint cmp;
-
-	priv = ofa_rate_page_get_instance_private( self );
-
-	*tmodel = gtk_tree_view_get_model( priv->tview );
-
-	if( gtk_tree_model_get_iter_first( *tmodel, iter )){
-		while( TRUE ){
-			gtk_tree_model_get( *tmodel, iter, COL_MNEMO, &row_mnemo, -1 );
-			cmp = g_utf8_collate( row_mnemo, mnemo );
-			g_free( row_mnemo );
-			if( cmp == 0 ){
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( *tmodel, iter )){
-				break;
-			}
-		}
-	}
-
-	return( FALSE );
-}
-
-static gchar *
-get_min_val_date( ofoRate *rate )
-{
-	const GDate *dmin;
-	gchar *str, *sbegin;
-
-	dmin = ofo_rate_get_min_valid( rate );
-
-	if( my_date_is_valid( dmin )){
-		str = my_date_to_str( dmin, ofa_prefs_date_check());
-		sbegin = g_strdup_printf( _( "from %s" ), str );
-		g_free( str );
-
-	} else {
-		sbegin = g_strdup_printf( _( "from infinite" ));
-	}
-
-	return( sbegin );
-}
-
-static gchar *
-get_max_val_date( ofoRate *rate )
-{
-	const GDate *dmax;
-	gchar *str, *send;
-
-	dmax = ofo_rate_get_max_valid( rate );
-
-	if( my_date_is_valid( dmax )){
-		str = my_date_to_str( dmax, ofa_prefs_date_check());
-		send = g_strdup_printf( _( "to %s" ), str );
-		g_free( str );
-
-	} else {
-		send = g_strdup_printf( _( "to infinite" ));
-	}
-
-	return( send );
-}
-
-/*
- * sorting the treeview in only sorting per mnemo
- */
-static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRatePage *self )
-{
-	gchar *amnemo, *bmnemo, *afold, *bfold;
-	gint cmp;
-
-	gtk_tree_model_get( tmodel, a, COL_MNEMO, &amnemo, -1 );
-	afold = g_utf8_casefold( amnemo, -1 );
-
-	gtk_tree_model_get( tmodel, b, COL_MNEMO, &bmnemo, -1 );
-	bfold = g_utf8_casefold( bmnemo, -1 );
-
-	cmp = g_utf8_collate( afold, bfold );
-
-	g_free( amnemo );
-	g_free( afold );
-	g_free( bmnemo );
-	g_free( bfold );
-
-	return( cmp );
-}
-
-static void
-setup_first_selection( ofaRatePage *self )
-{
-	ofaRatePagePrivate *priv;
-	GtkTreeIter iter;
-	GtkTreeSelection *select;
-
-	priv = ofa_rate_page_get_instance_private( self );
-
-	if( gtk_tree_model_get_iter_first( priv->tmodel, &iter )){
-		select = gtk_tree_view_get_selection( priv->tview );
-		gtk_tree_selection_select_iter( select, &iter );
-	}
-
-	gtk_widget_grab_focus( GTK_WIDGET( priv->tview ));
-}
-
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-on_tview_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRatePage *self )
-{
-	gboolean stop;
-
-	stop = FALSE;
-
-	if( event->state == 0 ){
-		if( event->keyval == GDK_KEY_Insert ){
-			on_new_clicked( NULL, self );
-
-		} else if( event->keyval == GDK_KEY_Delete ){
-			on_delete_clicked( NULL, self );
-		}
-	}
-
-	return( stop );
-}
-
-/*
- * double click on a row opens the rate properties
- */
-static void
-on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaPage *page )
-{
-	on_update_clicked( NULL, OFA_RATE_PAGE( page ));
-}
-
-static void
-on_row_selected( GtkTreeSelection *selection, ofaRatePage *self )
-{
-	ofaRatePagePrivate *priv;
-	GtkTreeIter iter;
-	ofoRate *rate;
 	gboolean is_rate;
 
 	priv = ofa_rate_page_get_instance_private( self );
 
-	if( gtk_tree_selection_get_selected( selection, NULL, &iter )){
-		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
-		g_object_unref( rate );
-	}
-
 	is_rate = rate && OFO_IS_RATE( rate );
 
-	if( priv->update_btn ){
-		gtk_widget_set_sensitive( priv->update_btn,
-				is_rate );
-	}
+	g_simple_action_set_enabled( priv->update_action, is_rate );
+	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, rate ));
+}
 
-	if( priv->delete_btn ){
-		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_writable && is_rate && ofo_rate_is_deletable( rate ));
+/*
+ * signal sent by ofaRateTreeview on selection activation
+ */
+static void
+on_row_activated( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self )
+{
+	ofaRatePagePrivate *priv;
+
+	priv = ofa_rate_page_get_instance_private( self );
+
+	g_action_activate( G_ACTION( priv->update_action ), NULL );
+}
+
+/*
+ * signal sent by ofaTVBin on Insert key
+ *
+ * Note that the key may be pressend even if dossier is not writable.
+ * If this is the case, just silently ignore the key.
+ */
+static void
+on_insert_key( ofaRateTreeview *tview, ofaRatePage *self )
+{
+	ofaRatePagePrivate *priv;
+
+	priv = ofa_rate_page_get_instance_private( self );
+
+	if( priv->is_writable ){
+		g_action_activate( G_ACTION( priv->new_action ), NULL );
+	}
+}
+
+/*
+ * signal sent by ofaRateTreeview on Delete key
+ *
+ * Note that the key may be pressed, even if the button
+ * is disabled. So have to check all prerequisite conditions.
+ * If the current row is not deletable, just silently ignore the key.
+ */
+static void
+on_delete_key( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self )
+{
+	if( check_for_deletability( self, rate )){
+		delete_with_confirm( self, rate );
 	}
 }
 
 static void
-on_new_clicked( GtkButton *button, ofaRatePage *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self )
 {
 	ofoRate *rate;
 	GtkWindow *toplevel;
@@ -595,108 +357,56 @@ on_new_clicked( GtkButton *button, ofaRatePage *self )
 	ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
 }
 
-/*
- * SIGNAL_HUB_NEW signal handler
- */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
-{
-	static const gchar *thisfn = "ofa_rate_page_on_hub_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_RATE( object )){
-		insert_new_row( self, OFO_RATE( object ), TRUE );
-	}
-}
-
-static void
-on_update_clicked( GtkButton *button, ofaRatePage *self )
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self )
 {
 	ofaRatePagePrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeIter iter;
 	ofoRate *rate;
 	GtkWindow *toplevel;
 
 	priv = ofa_rate_page_get_instance_private( self );
 
-	select = gtk_tree_view_get_selection( priv->tview );
+	rate = ofa_rate_treeview_get_selected( priv->tview );
+	g_return_if_fail( rate && OFO_IS_RATE( rate ));
 
-	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
-
-		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
-		g_object_unref( rate );
-		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRatePage *self )
-{
-	static const gchar *thisfn = "ofa_rate_page_on_hub_updated_object";
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
-
-	if( OFO_IS_RATE( object )){
-		if( find_row_by_mnemo( self, prev_id, &tmodel, &iter )){
-			set_row_by_iter( self, tmodel, &iter, OFO_RATE( object ));
-		} else {
-			g_warning( "%s: unable to find '%s' rate", thisfn, prev_id );
-		}
-	}
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
 }
 
 static void
-on_delete_clicked( GtkButton *button, ofaRatePage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self )
 {
 	ofaRatePagePrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeIter iter;
 	ofoRate *rate;
 
 	priv = ofa_rate_page_get_instance_private( self );
 
-	select = gtk_tree_view_get_selection( priv->tview );
+	rate = ofa_rate_treeview_get_selected( priv->tview );
+	g_return_if_fail( rate && OFO_IS_RATE( rate ));
 
-	if( gtk_tree_selection_get_selected( select, NULL, &iter )){
-
-		gtk_tree_model_get( priv->tmodel, &iter, COL_OBJECT, &rate, -1 );
-		g_object_unref( rate );
-
-		if( delete_confirmed( self, rate ) &&
-				ofo_rate_delete( rate )){
-
-			/* nothing to do here as all is managed by dossier signaling
-			 * system */
-		}
-	}
-
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
+	delete_with_confirm( self, rate );
 }
 
 static gboolean
-delete_confirmed( ofaRatePage *self, ofoRate *rate )
+check_for_deletability( ofaRatePage *self, ofoRate *rate )
+{
+	ofaRatePagePrivate *priv;
+	gboolean is_rate;
+
+	priv = ofa_rate_page_get_instance_private( self );
+
+	is_rate = rate && OFO_IS_RATE( rate );
+
+	return( is_rate && priv->is_writable && ofo_rate_is_deletable( rate ));
+}
+
+static void
+delete_with_confirm( ofaRatePage *self, ofoRate *rate )
 {
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Are you sure you want to delete the '%s - %s' rate ?" ),
+	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' rate ?" ),
 			ofo_rate_get_mnemo( rate ),
 			ofo_rate_get_label( rate ));
 
@@ -704,54 +414,7 @@ delete_confirmed( ofaRatePage *self, ofoRate *rate )
 
 	g_free( msg );
 
-	return( delete_ok );
-}
-
-/*
- * SIGNAL_HUB_DELETED signal handler
- */
-static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaRatePage *self )
-{
-	static const gchar *thisfn = "ofa_rate_page_on_hub_deleted_object";
-	static const gchar *mnemo;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_RATE( object )){
-		mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
-		if( find_row_by_mnemo( self, mnemo, &tmodel, &iter )){
-			gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-		} else {
-			g_warning( "%s: unable to find '%s' rate", thisfn, mnemo );
-		}
-	}
-}
-
-/*
- * SIGNAL_HUB_RELOAD signal handler
- */
-static void
-on_hub_reload_dataset( ofaHub *hub, GType type, ofaRatePage *self )
-{
-	static const gchar *thisfn = "ofa_rate_page_on_hub_reload_dataset";
-	ofaRatePagePrivate *priv;
-	GtkTreeModel *tmodel;
-
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
-
-	priv = ofa_rate_page_get_instance_private( self );
-
-	if( type == OFO_TYPE_RATE ){
-		tmodel = gtk_tree_view_get_model( priv->tview );
-		gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
-		insert_dataset( self );
+	if( delete_ok ){
+		ofo_rate_delete( rate );
 	}
 }

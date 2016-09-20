@@ -90,7 +90,7 @@ G_DEFINE_TYPE_EXTENDED( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerPage ))
 
 static void
-ledgers_page_finalize( GObject *instance )
+ledger_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_page_finalize";
 
@@ -106,13 +106,21 @@ ledgers_page_finalize( GObject *instance )
 }
 
 static void
-ledgers_page_dispose( GObject *instance )
+ledger_page_dispose( GObject *instance )
 {
+	ofaLedgerPagePrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_LEDGER_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
+		priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( instance ));
+
+		g_object_unref( priv->new_action );
+		g_object_unref( priv->update_action );
+		g_object_unref( priv->delete_action );
+		g_object_unref( priv->view_entries_action );
 	}
 
 	/* chain up to the parent class */
@@ -137,8 +145,8 @@ ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = ledgers_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = ledgers_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = ledger_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = ledger_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;

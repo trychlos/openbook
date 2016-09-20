@@ -438,7 +438,7 @@
                 - ofaDossier: Treeview, Manager, Open, RestoreAssistant
                 - ofaLedger: Treeview, BookBin, Close, Page
                 - ofaOpeTemplate:Treeview, FrameBin, Page, Select
-                - Rate:
+                - Rate: Treeview, Store, Page
 
 1183 2016- 8-23 DossierManager: disable Open action when the dossier is
                 already opened.

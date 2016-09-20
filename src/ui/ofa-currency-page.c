@@ -67,9 +67,9 @@ typedef struct {
 
 	/* actions
 	 */
-	GSimpleAction     *new_action;
-	GSimpleAction     *update_action;
-	GSimpleAction     *delete_action;
+	GSimpleAction       *new_action;
+	GSimpleAction       *update_action;
+	GSimpleAction       *delete_action;
 }
 	ofaCurrencyPagePrivate;
 
@@ -94,7 +94,7 @@ G_DEFINE_TYPE_EXTENDED( ofaCurrencyPage, ofa_currency_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaCurrencyPage ))
 
 static void
-currencies_page_finalize( GObject *instance )
+currency_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_currency_page_finalize";
 
@@ -110,7 +110,7 @@ currencies_page_finalize( GObject *instance )
 }
 
 static void
-currencies_page_dispose( GObject *instance )
+currency_page_dispose( GObject *instance )
 {
 	ofaCurrencyPagePrivate *priv;
 
@@ -158,8 +158,8 @@ ofa_currency_page_class_init( ofaCurrencyPageClass *klass )
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = currencies_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = currencies_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = currency_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = currency_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
@@ -427,6 +427,7 @@ delete_with_confirm( ofaCurrencyPage *self, ofoCurrency *currency )
 		ofo_currency_delete( currency );
 	}
 }
+
 /*
  * SIGNAL_HUB_UPDATED signal handler
  *
