@@ -44,8 +44,8 @@
  *    +------------------+--------------+
  */
 
-#include "api/ofa-tvbin.h"
 #include "api/ofa-hub-def.h"
+#include "api/ofa-tvbin.h"
 #include "api/ofo-currency-def.h"
 
 G_BEGIN_DECLS
