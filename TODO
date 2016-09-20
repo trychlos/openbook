@@ -438,6 +438,7 @@
                 - ofaDossier: Treeview, Manager, Open, RestoreAssistant
                 - ofaLedger: Treeview, BookBin, Close, Page
                 - ofaOpeTemplate:Treeview, FrameBin, Page, Select
+                - Rate:
 
 1183 2016- 8-23 DossierManager: disable Open action when the dossier is
                 already opened.
@@ -477,7 +478,9 @@
 
 1206 2016- 9-19 duplicate recurrent model
 
-1209
+1209 2016- 9-20 app. accelerators do not work when a dossier is opened
+
+1210
 
 -----------------------------------------------------------------------
  DONE
