@@ -233,7 +233,6 @@ ofa_class_treeview_new( void )
 	ofaClassTreeview *view;
 
 	view = g_object_new( OFA_TYPE_CLASS_TREEVIEW,
-					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 

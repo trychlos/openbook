@@ -59,13 +59,13 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	GtkBin      parent;
+	ofaTVBin      parent;
 }
 	ofaLedgerTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass parent;
+	ofaTVBinClass parent;
 }
 	ofaLedgerTreeviewClass;
 
