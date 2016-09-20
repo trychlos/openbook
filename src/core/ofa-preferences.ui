@@ -56,7 +56,7 @@
           <object class="GtkGrid" id="grid0">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <property name="column_spacing">4</property>
             <child>
               <object class="GtkNotebook" id="notebook">
@@ -66,10 +66,12 @@
                   <object class="GtkGrid" id="grid1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
+                    <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkFrame" id="frame11">
                         <property name="visible">True</property>
@@ -82,10 +84,11 @@
                           <object class="GtkGrid" id="grid11">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkCheckButton" id="p1-quit-on-escape">
                                 <property name="label" translatable="yes">Quit on _Escape</property>
@@ -100,7 +103,6 @@
                               <packing>
                                 <property name="left_attach">0</property>
                                 <property name="top_attach">0</property>
-                                <property name="width">2</property>
                               </packing>
                             </child>
                             <child>
@@ -117,7 +119,6 @@
                               <packing>
                                 <property name="left_attach">0</property>
                                 <property name="top_attach">2</property>
-                                <property name="width">2</property>
                               </packing>
                             </child>
                             <child>
@@ -127,20 +128,10 @@
                                 <property name="can_focus">True</property>
                                 <property name="receives_default">False</property>
                                 <property name="tooltip_text" translatable="yes">Whether the user should be asked for confirmation when quitting the assistant on Escape key</property>
+                                <property name="margin_left">20</property>
                                 <property name="use_underline">True</property>
                                 <property name="xalign">0</property>
                                 <property name="draw_indicator">True</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">1</property>
-                                <property name="top_attach">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="label7">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="width_chars">3</property>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -175,10 +166,11 @@
                           <object class="GtkGrid" id="grid12">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkCheckButton" id="p1-confirm-altf4">
                                 <property name="label" translatable="yes">Ask for confirmation on Alt-_F4</property>
@@ -243,11 +235,12 @@
                   <object class="GtkGrid" id="grid2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
-                    <property name="row_spacing">3</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
+                    <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkFrame" id="frame22">
                         <property name="visible">True</property>
@@ -258,11 +251,11 @@
                           <object class="GtkGrid" id="grid22">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
-                            <property name="row_spacing">3</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <property name="row_spacing">2</property>
                             <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkLabel" id="label221">
@@ -340,10 +333,10 @@
                   <object class="GtkGrid" id="grid3">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
                     <child>
                       <object class="GtkFrame" id="frame31">
                         <property name="visible">True</property>
@@ -355,10 +348,11 @@
                           <object class="GtkGrid" id="grid31">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkCheckButton" id="p4-delete-with-child">
                                 <property name="label" translatable="yes">Also _delete all its children when deleting a root account</property>
@@ -410,10 +404,10 @@
                   <object class="GtkGrid" id="grid4">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
@@ -427,11 +421,11 @@
                           <object class="GtkGrid" id="grid41">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
-                            <property name="row_spacing">3</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <property name="row_spacing">2</property>
                             <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkLabel" id="p4-display-label">
@@ -555,11 +549,11 @@
                           <object class="GtkGrid" id="grid42">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
-                            <property name="row_spacing">3</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <property name="row_spacing">2</property>
                             <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkLabel" id="p4-decimal-label">
@@ -696,10 +690,10 @@
                   <object class="GtkGrid" id="grid5">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
                     <property name="row_spacing">3</property>
                     <child>
                       <object class="GtkFrame" id="p5-frame-folder">
@@ -712,11 +706,11 @@
                           <object class="GtkGrid" id="grid52">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="margin_left">12</property>
-                            <property name="margin_right">4</property>
-                            <property name="margin_top">4</property>
-                            <property name="margin_bottom">4</property>
-                            <property name="row_spacing">3</property>
+                            <property name="margin_left">8</property>
+                            <property name="margin_right">2</property>
+                            <property name="margin_top">2</property>
+                            <property name="margin_bottom">2</property>
+                            <property name="row_spacing">2</property>
                             <property name="column_spacing">4</property>
                             <child>
                               <object class="GtkLabel" id="p52-label">
@@ -795,10 +789,10 @@
                   <object class="GtkGrid" id="p6-import-parent">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
                     <child>
                       <placeholder/>
                     </child>
