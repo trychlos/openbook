@@ -55,7 +55,7 @@
           <object class="GtkGrid" id="grid1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <property name="column_spacing">4</property>
             <child>
               <object class="GtkNotebook" id="notebook1">
@@ -65,11 +65,11 @@
                   <object class="GtkGrid" id="grid2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
-                    <property name="row_spacing">3</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
                     <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkLabel" id="p1-mnemo-label">
@@ -162,10 +162,10 @@
                   <object class="GtkScrolledWindow" id="scrolledwindow3">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
                     <child>
                       <object class="GtkViewport" id="viewport2">
                         <property name="visible">True</property>
@@ -218,10 +218,10 @@
                   <object class="GtkScrolledWindow" id="scrolledwindow2">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="margin_left">4</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">2</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
                     <child>
                       <object class="GtkViewport" id="viewport1">
                         <property name="visible">True</property>
@@ -344,7 +344,6 @@
                   <object class="GtkScrolledWindow" id="scrolledwindow1">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <property name="shadow_type">in</property>
                     <child>
                       <object class="GtkTextView" id="pn-notes">
                         <property name="visible">True</property>
