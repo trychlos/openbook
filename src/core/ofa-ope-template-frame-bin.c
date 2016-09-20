@@ -95,8 +95,6 @@ enum {
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
-static const gchar *st_action_group_name    = "opetemplate";
-
 static void       setup_bin( ofaOpeTemplateFrameBin *self );
 static void       setup_actions( ofaOpeTemplateFrameBin *self );
 static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboolean bcreate );
@@ -446,12 +444,13 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 	ofaOpeTemplateTreeview *view;
 	GtkWidget *label;
 	ofoLedger *ledger_obj;
-	const gchar *ledger_label;
+	const gchar *ledger_label, *namespace;
 	gint page_num;
 	GMenu *menu;
 
 	g_debug( "%s: self=%p, ledger=%s", thisfn, ( void * ) self, ledger );
 
+	namespace = G_OBJECT_TYPE_NAME( self );
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
@@ -496,7 +495,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 	/* create a new context menu for each page of the notebook */
 	menu = g_menu_new();
 	g_menu_append_section( menu, NULL,
-			G_MENU_MODEL( ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), st_action_group_name )));
+			G_MENU_MODEL( ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), namespace )));
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( view ), OFA_IACTIONABLE( self ),
 			menu );
@@ -668,9 +667,11 @@ void
 ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTemplateAction id )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
+	const gchar *namespace;
 
 	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
 
+	namespace = G_OBJECT_TYPE_NAME( bin );
 	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
@@ -682,12 +683,12 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 
 		case TEMPLATE_ACTION_NEW:
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->new_action ),
+							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->new_action ),
 							OFA_IACTIONABLE_NEW_BTN ));
 			g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), bin );
 			g_simple_action_set_enabled( priv->new_action, priv->is_writable );
@@ -695,12 +696,12 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 
 		case TEMPLATE_ACTION_PROPERTIES:
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->update_action ),
 					priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->update_action ),
+							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->update_action ),
 							OFA_IACTIONABLE_PROPERTIES_BTN ));
 			g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), bin );
 			g_simple_action_set_enabled( priv->update_action, TRUE );
@@ -708,12 +709,12 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 
 		case TEMPLATE_ACTION_DELETE:
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->delete_action ),
+							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->delete_action ),
 							OFA_IACTIONABLE_DELETE_BTN ));
 			g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), bin );
 			g_simple_action_set_enabled( priv->delete_action, TRUE );
@@ -721,12 +722,12 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 
 		case TEMPLATE_ACTION_DUPLICATE:
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->duplicate_action ),
+					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->duplicate_action ),
 					_( "Duplicate this" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->duplicate_action ),
+							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->duplicate_action ),
 							_( "_Duplicate" )));
 			g_signal_connect( priv->duplicate_action, "activate", G_CALLBACK( action_on_duplicate_activated ), bin );
 			g_simple_action_set_enabled( priv->duplicate_action, TRUE );
@@ -734,12 +735,12 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 
 		case TEMPLATE_ACTION_GUIDED_INPUT:
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->guided_input_action ),
+					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->guided_input_action ),
 					_( "Guided input" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), st_action_group_name, G_ACTION( priv->guided_input_action ),
+							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->guided_input_action ),
 							_( "_Guided input" )));
 			g_signal_connect( priv->guided_input_action, "activate", G_CALLBACK( action_on_guided_input_activated ), bin );
 			g_simple_action_set_enabled( priv->duplicate_action, TRUE );

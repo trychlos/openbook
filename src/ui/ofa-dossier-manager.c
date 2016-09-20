@@ -74,7 +74,6 @@ typedef struct {
 }
 	ofaDossierManagerPrivate;
 
-static const gchar *st_action_group_name = "ofaDossierManager";
 static const gchar *st_resource_ui       = "/org/trychlos/openbook/ui/ofa-dossier-manager.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
@@ -267,7 +266,9 @@ idialog_init_actions( ofaDossierManager *self )
 	ofaDossierManagerPrivate *priv;
 	GtkWidget *container;
 	ofaButtonsBox *buttons_box;
+	const gchar *namespace;
 
+	namespace = G_OBJECT_TYPE_NAME( self );
 	priv = ofa_dossier_manager_get_instance_private( self );
 
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "buttons-box" );
@@ -280,12 +281,12 @@ idialog_init_actions( ofaDossierManager *self )
 	g_simple_action_set_enabled( priv->new_action, TRUE );
 	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->new_action ),
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 
 	/* open action */
@@ -293,12 +294,12 @@ idialog_init_actions( ofaDossierManager *self )
 	g_simple_action_set_enabled( priv->new_action, TRUE );
 	g_signal_connect( priv->open_action, "activate", G_CALLBACK( action_on_open_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->open_action ),
+			OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->open_action ),
 			_( "Open" ));
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->open_action ),
+					OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->open_action ),
 					_( "_Open..." )));
 
 	/* delete action */
@@ -306,12 +307,12 @@ idialog_init_actions( ofaDossierManager *self )
 	g_simple_action_set_enabled( priv->delete_action, TRUE );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->delete_action ),
 			OFA_IACTIONABLE_DELETE_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( self ), st_action_group_name, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
 }
 
@@ -320,10 +321,12 @@ idialog_init_menu( ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
 	GMenu *menu;
+	const gchar *namespace;
 
+	namespace = G_OBJECT_TYPE_NAME( self );
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), st_action_group_name );
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), namespace );
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( priv->dossier_tview ), OFA_IACTIONABLE( self ),
 			menu );
