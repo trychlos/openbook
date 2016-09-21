@@ -58,6 +58,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter            *getter;
+	gchar                 *settings_prefix;
 
 	/* data
 	 */
@@ -118,6 +119,7 @@ dossier_open_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->account );
 	g_free( priv->password );
 
@@ -162,6 +164,7 @@ ofa_dossier_open_init( ofaDossierOpen *self )
 	priv = ofa_dossier_open_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->opened = FALSE;
 	priv->read_only = FALSE;
 
@@ -382,7 +385,7 @@ idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 	priv->dossier_tview = ofa_dossier_treeview_new();
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_tvbin_set_headers( OFA_TVBIN( priv->dossier_tview ), FALSE );
-	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, G_OBJECT_TYPE_NAME( self ));
+	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, priv->settings_prefix );
 	ofa_dossier_treeview_setup_columns( priv->dossier_tview );
 	ofa_dossier_treeview_set_filter_show( priv->dossier_tview, FALSE );
 

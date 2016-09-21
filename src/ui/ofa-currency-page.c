@@ -60,6 +60,7 @@ typedef struct {
 	ofaHub              *hub;
 	GList               *hub_handlers;
 	gboolean             is_writable;
+	gchar               *settings_prefix;
 
 	/* UI
 	 */
@@ -95,6 +96,7 @@ static void
 currency_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_currency_page_finalize";
+	ofaCurrencyPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -102,6 +104,9 @@ currency_page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CURRENCY_PAGE( instance ));
 
 	/* free data members here */
+	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_currency_page_parent_class )->finalize( instance );
@@ -147,6 +152,7 @@ ofa_currency_page_init( ofaCurrencyPage *self )
 	priv = ofa_currency_page_get_instance_private( self );
 
 	priv->hub_handlers = NULL;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -206,9 +212,7 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaCurrencyPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
-	const gchar *namespace;
 
-	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
@@ -219,36 +223,36 @@ v_setup_buttons( ofaPage *page )
 	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
 	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 
 	/* update action */
 	priv->update_action = g_simple_action_new( "update", NULL );
 	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 			OFA_IACTIONABLE_DELETE_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
 
 	return( GTK_WIDGET( buttons_box ));
@@ -260,14 +264,12 @@ v_init_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_currency_page_v_init_view";
 	ofaCurrencyPagePrivate *priv;
 	GMenu *menu;
-	const gchar *namespace;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
 
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), namespace );
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
 			menu );

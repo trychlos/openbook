@@ -92,6 +92,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter             *getter;
+	gchar                  *settings_prefix;
 
 	/* p1: select file to be imported
 	 */
@@ -273,6 +274,7 @@ restore_assistant_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->p1_folder );
 	g_free( priv->p1_furi );
 	g_free( priv->p2_dbname );
@@ -323,7 +325,7 @@ ofa_restore_assistant_init( ofaRestoreAssistant *self )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->is_destroy_allowed = TRUE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -621,14 +623,12 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	GtkWidget *parent;
 	ofaButtonsBox *buttons_box;
 	GMenu *menu;
-	const gchar *namespace;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	g_return_if_fail( page && GTK_IS_CONTAINER( page ));
 
-	namespace = G_OBJECT_TYPE_NAME( self );
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	priv->p2_furi = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-furi" );
@@ -639,7 +639,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_tview ));
-	ofa_dossier_treeview_set_settings_key( priv->p2_dossier_tview, G_OBJECT_TYPE_NAME( self ));
+	ofa_dossier_treeview_set_settings_key( priv->p2_dossier_tview, priv->settings_prefix );
 	ofa_dossier_treeview_setup_columns( priv->p2_dossier_tview );
 	ofa_dossier_treeview_set_filter_show( priv->p2_dossier_tview, FALSE );
 
@@ -660,16 +660,16 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_simple_action_set_enabled( priv->p2_new_action, TRUE );
 	g_signal_connect( priv->p2_new_action, "activate", G_CALLBACK( p2_on_new_activated ), self );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->p2_new_action ),
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->p2_new_action ),
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( self ), namespace, G_ACTION( priv->p2_new_action ),
+					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->p2_new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 
 	/* contextual menu */
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), namespace );
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( priv->p2_dossier_tview ), OFA_IACTIONABLE( self ),
 			menu );

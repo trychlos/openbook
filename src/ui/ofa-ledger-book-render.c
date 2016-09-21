@@ -69,6 +69,7 @@ typedef struct {
 	GDate                from_date;
 	GDate                to_date;
 	gint                 count;					/* count of returned entries */
+	gchar               *settings_prefix;
 
 	/* print datas
 	 */
@@ -117,9 +118,6 @@ typedef struct {
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4
 
 static const gchar *st_page_header_title = N_( "General Ledgers Book" );
-
-static const gchar *st_page_settings     = "ofaLedgerBookRender-settings";
-static const gchar *st_print_settings    = "ofaLedgerBookRender-print";
 
 /* these are parms which describe the page layout
  */
@@ -185,6 +183,7 @@ ledger_book_render_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
+	g_free( priv->settings_prefix );
 	ofs_currency_list_free( &priv->ledger_totals );
 	ofs_currency_list_free( &priv->report_totals );
 
@@ -212,11 +211,16 @@ static void
 ofa_ledger_book_render_init( ofaLedgerBookRender *self )
 {
 	static const gchar *thisfn = "ofa_ledger_book_render_init";
+	ofaLedgerBookRenderPrivate *priv;
 
 	g_return_if_fail( OFA_IS_LEDGER_BOOK_RENDER( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofa_ledger_book_render_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -270,7 +274,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
-	bin = ofa_ledger_book_bin_new( OFA_IGETTER( page ), G_OBJECT_TYPE_NAME( page ));
+	bin = ofa_ledger_book_bin_new( OFA_IGETTER( page ), priv->settings_prefix );
 	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 
@@ -292,11 +296,14 @@ render_page_get_page_orientation( ofaRenderPage *page )
 static void
 render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
 {
+	ofaLedgerBookRenderPrivate *priv;
 	myISettings *settings;
+
+	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
 	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
 	*keyfile = my_isettings_get_keyfile( settings );
-	*group_name = g_strdup( st_print_settings );
+	*group_name = g_strdup_printf( "%s-print", priv->settings_prefix );
 }
 
 static GList *
@@ -936,12 +943,18 @@ draw_ledger_totals( ofaIRenderable *instance )
 static void
 get_settings( ofaLedgerBookRender *self )
 {
+	ofaLedgerBookRenderPrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
 	GtkWidget *paned;
 	gint pos;
+	gchar *settings_key;
 
-	slist = ofa_settings_user_get_string_list( st_page_settings );
+	priv = ofa_ledger_book_render_get_instance_private( self );
+
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	slist = ofa_settings_user_get_string_list( settings_key );
+
 	if( slist ){
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
@@ -954,21 +967,29 @@ get_settings( ofaLedgerBookRender *self )
 
 		ofa_settings_free_string_list( slist );
 	}
+
+	g_free( settings_key );
 }
 
 static void
 set_settings( ofaLedgerBookRender *self )
 {
+	ofaLedgerBookRenderPrivate *priv;
 	GtkWidget *paned;
 	gint pos;
-	gchar *str;
+	gchar *str, *settings_key;
+
+	priv = ofa_ledger_book_render_get_instance_private( self );
+
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
 	pos = gtk_paned_get_position( GTK_PANED( paned ));
 
 	str = g_strdup_printf( "%d;", pos );
 
-	ofa_settings_user_set_string( st_page_settings, str );
+	ofa_settings_user_set_string( settings_key, str );
 
 	g_free( str );
+	g_free( settings_key );
 }

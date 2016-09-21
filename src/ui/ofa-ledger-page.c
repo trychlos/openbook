@@ -55,6 +55,7 @@ typedef struct {
 	 */
 	gboolean           is_writable;
 	gint               exe_id;			/* internal identifier of the current exercice */
+	gchar             *settings_prefix;
 
 	/* UI
 	 */
@@ -92,6 +93,7 @@ static void
 ledger_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_page_finalize";
+	ofaLedgerPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -99,6 +101,9 @@ ledger_page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_LEDGER_PAGE( instance ));
 
 	/* free data members here */
+	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_page_parent_class )->finalize( instance );
@@ -130,11 +135,16 @@ static void
 ofa_ledger_page_init( ofaLedgerPage *self )
 {
 	static const gchar *thisfn = "ofa_ledger_page_init";
+	ofaLedgerPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
+
+	priv = ofa_ledger_page_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -184,7 +194,7 @@ setup_treeview( ofaPage *page )
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	priv->tview = ofa_ledger_treeview_new();
-	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
+	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 	ofa_ledger_treeview_set_hub( priv->tview, hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
@@ -205,11 +215,9 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaLedgerPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
-	const gchar *namespace;
 
 	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
 
-	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
@@ -220,36 +228,36 @@ v_setup_buttons( ofaPage *page )
 	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
 	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 
 	/* update action */
 	priv->update_action = g_simple_action_new( "update", NULL );
 	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 			OFA_IACTIONABLE_DELETE_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
 
 	ofa_buttons_box_add_spacer( buttons_box );
@@ -258,12 +266,12 @@ v_setup_buttons( ofaPage *page )
 	priv->view_entries_action = g_simple_action_new( "viewentries", NULL );
 	g_signal_connect( priv->view_entries_action, "activate", G_CALLBACK( action_on_view_entries_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->view_entries_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_entries_action ),
 			_( "View entries" ));
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->view_entries_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_entries_action ),
 					_( "_View entries..." )));
 
 	return( GTK_WIDGET( buttons_box ));
@@ -275,14 +283,12 @@ v_init_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_ledger_page_v_init_view";
 	ofaLedgerPagePrivate *priv;
 	GMenu *menu;
-	const gchar *namespace;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), namespace );
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
 			menu );
