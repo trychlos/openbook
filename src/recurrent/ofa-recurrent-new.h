@@ -40,7 +40,7 @@
 
 #include "api/ofa-igetter-def.h"
 
-#include "recurrent/ofa-recurrent-manage-page.h"
+#include "recurrent/ofa-recurrent-model-page.h"
 
 G_BEGIN_DECLS
 
@@ -67,7 +67,7 @@ GType ofa_recurrent_new_get_type( void ) G_GNUC_CONST;
 
 void  ofa_recurrent_new_run     ( ofaIGetter *getter,
 										GtkWindow *parent,
-										ofaRecurrentManagePage *page );
+										ofaRecurrentModelPage *page );
 
 G_END_DECLS
 

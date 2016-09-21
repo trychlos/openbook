@@ -36,7 +36,7 @@
 #include "api/ofa-itheme-manager.h"
 
 #include "recurrent/ofa-recurrent-main.h"
-#include "recurrent/ofa-recurrent-manage-page.h"
+#include "recurrent/ofa-recurrent-model-page.h"
 #include "recurrent/ofa-recurrent-run-page.h"
 
 /* a structure which defines the menu items
@@ -87,7 +87,7 @@ static const sItemDef st_items_ref[] = {
  */
 static sThemeDef st_theme_defs[] = {
 		{ "recurrent-run",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type },
-		{ "recurrent-define",  N_( "_Recurrent models management" ),  ofa_recurrent_manage_page_get_type },
+		{ "recurrent-define",  N_( "_Recurrent models management" ),  ofa_recurrent_model_page_get_type },
 		{ 0 }
 };
 
@@ -207,5 +207,5 @@ on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_d
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_MANAGE_PAGE );
+	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_MODEL_PAGE );
 }

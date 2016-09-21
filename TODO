@@ -439,6 +439,7 @@
                 - ofaLedger: Treeview, BookBin, Close, Page
                 - ofaOpeTemplate:Treeview, FrameBin, Page, Select
                 - Rate: Treeview, Store, Page
+                - RecurrentModel: Treeview, Store, Page
 
 1183 2016- 8-23 DossierManager: disable Open action when the dossier is
                 already opened.
@@ -482,12 +483,6 @@
 
 1210 2016- 9-20 AccountFrameBin, OpeTemplateBin: shouldn't the namespace
                 be the same as the settings key provided by the caller ?
-
-1211 2016- 9-20 RecurrentManagePage: rename to RecurrentModelPage
-
-1212 2016- 9-21 xxx_treeview_setup_columns() may be called if not already
-                done when setting hub() -> it should not be needed to
-                explicitely call it
 
 1213
 
@@ -1698,6 +1693,14 @@
 
 1208 2016- 9-19 check which collections have a real need to be be sorted
      2016- 9-19 a priori, none -> done
+
+1211 2016- 9-20 RecurrentManagePage: rename to RecurrentModelPage
+     2016- 9-21 done
+
+1212 2016- 9-21 xxx_treeview_setup_columns() may be called if not already
+                done when setting hub() -> it should not be needed to
+                explicitely call it
+     2016- 9-21 done for some of most simple
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

@@ -164,7 +164,7 @@ am__DEPENDENCIES_1 =
 libofa_recurrent_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_recurrent_la_OBJECTS = ofa-extension.lo \
 	ofa-recurrent-dbmodel.lo ofa-recurrent-execlose.lo \
-	ofa-recurrent-main.lo ofa-recurrent-manage-page.lo \
+	ofa-recurrent-main.lo ofa-recurrent-model-page.lo \
 	ofa-recurrent-model-properties.lo ofa-recurrent-model-store.lo \
 	ofa-recurrent-model-treeview.lo ofa-recurrent-new.lo \
 	ofa-recurrent-run-page.lo ofa-recurrent-run-treeview.lo \
@@ -455,8 +455,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-execlose.h							\
 	ofa-recurrent-main.c								\
 	ofa-recurrent-main.h								\
-	ofa-recurrent-manage-page.c							\
-	ofa-recurrent-manage-page.h							\
+	ofa-recurrent-model-page.c							\
+	ofa-recurrent-model-page.h							\
 	ofa-recurrent-model-properties.c					\
 	ofa-recurrent-model-properties.h					\
 	ofa-recurrent-model-store.c							\
@@ -581,7 +581,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-dbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-execlose.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-main.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-manage-page.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-model-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-model-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-model-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-model-treeview.Plo@am__quote@

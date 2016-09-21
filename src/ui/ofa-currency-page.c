@@ -182,7 +182,6 @@ v_setup_view( ofaPage *page )
 
 	priv->tview = ofa_currency_treeview_new();
 	ofa_currency_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
-	ofa_currency_treeview_setup_columns( priv->tview );
 	ofa_currency_treeview_set_hub( priv->tview, priv->hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
