@@ -70,20 +70,19 @@ typedef struct {
 	ofaLedgerPagePrivate;
 
 static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_tree_view( ofaPage *page );
+static GtkWidget *setup_treeview( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_selected( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
-static void       on_row_activated( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
+static void       on_row_selected( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self );
+static void       on_row_activated( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self );
 static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self );
 static void       on_delete_key( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self );
 static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
 static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
-static void       action_do_update( ofaLedgerPage *self, ofoLedger *ledger );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
 static gboolean   check_for_deletability( ofaLedgerPage *self, ofoLedger *ledger );
-static gboolean   delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger );
+static void       delete_with_confirm( ofaLedgerPage *self, ofoLedger *ledger );
 static void       action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE, 0,
@@ -169,13 +168,13 @@ v_setup_view( ofaPage *page )
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
-	frame = setup_tree_view( page );
+	frame = setup_treeview( page );
 
 	return( frame );
 }
 
 static GtkWidget *
-setup_tree_view( ofaPage *page )
+setup_treeview( ofaPage *page )
 {
 	ofaLedgerPagePrivate *priv;
 	ofaHub *hub;
@@ -186,6 +185,7 @@ setup_tree_view( ofaPage *page )
 
 	priv->tview = ofa_ledger_treeview_new();
 	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
+	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_ledger_treeview_set_hub( priv->tview, hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
@@ -310,13 +310,15 @@ v_get_top_focusable_widget( const ofaPage *page )
  * LedgerTreeview callback
  */
 static void
-on_row_selected( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
+on_row_selected( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
+	ofoLedger *ledger;
 	gboolean is_ledger;
 
 	priv = ofa_ledger_page_get_instance_private( self );
 
+	ledger = list ? ( ofoLedger * ) list->data : NULL;
 	is_ledger = ledger && OFO_IS_LEDGER( ledger );
 
 	g_simple_action_set_enabled( priv->update_action, is_ledger );
@@ -328,11 +330,13 @@ on_row_selected( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self
  * LedgerTreeview callback
  */
 static void
-on_row_activated( ofaLedgerTreeview *view, ofoLedger *ledger, ofaLedgerPage *self )
+on_row_activated( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self )
 {
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+	ofaLedgerPagePrivate *priv;
 
-	action_do_update( self, ledger );
+	priv = ofa_ledger_page_get_instance_private( self );
+
+	g_action_activate( G_ACTION( priv->update_action ), NULL );
 }
 
 static void
@@ -373,40 +377,33 @@ action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *
 	ofa_ledger_properties_run( OFA_IGETTER( self ), toplevel, ledger );
 }
 
+/*
+ * selection mode is BROWSE: we expect to have here one and only one
+ * selected object
+ */
 static void
 action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self )
 {
 	ofaLedgerPagePrivate *priv;
 	GList *selected;
 	ofoLedger *ledger;
-	ofaHub *hub;
+	GtkWindow *toplevel;
 
 	priv = ofa_ledger_page_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
-	ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) selected->data );
+	ledger = ( ofoLedger * ) selected->data;
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_ledger_properties_run( OFA_IGETTER( self ), toplevel, ledger );
+
 	ofa_ledger_treeview_free_selected( selected );
-
-	action_do_update( self, ledger );
-}
-
-static void
-action_do_update( ofaLedgerPage *self, ofoLedger *ledger )
-{
-	GtkWindow *toplevel;
-
-	if( ledger ){
-		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_ledger_properties_run( OFA_IGETTER( self ), toplevel, ledger );
-	}
 }
 
 /*
- * un ledger peut être supprimé tant qu'aucune écriture n'y a été
- * enregistrée, et après confirmation de l'utilisateur
+ * a ledger can be deleted while no entry has been recorded in it,
+ * and after user confirm.
  */
 static void
 action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self )
@@ -414,26 +411,17 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPag
 	ofaLedgerPagePrivate *priv;
 	ofoLedger *ledger;
 	GList *selected;
-	const gchar *mnemo;
-	ofaHub *hub;
 
 	priv = ofa_ledger_page_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 	selected = ofa_ledger_treeview_get_selected( priv->tview );
-	mnemo = selected->data;
-	ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
-	ofa_ledger_treeview_free_selected( selected );
-
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
-	g_return_if_fail( ofo_ledger_is_deletable( ledger ));
-
-	if( delete_confirmed( self, ledger ) &&
-			ofo_ledger_delete( ledger )){
-
-		/* this is managed by the ofaLedgerTreeview convenience
-		 * class, graceful to the dossier signaling system */
+	if( g_list_length( selected ) == 1 ){
+		ledger = ( ofoLedger * ) selected->data;
+		g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
+		g_return_if_fail( ofo_ledger_is_deletable( ledger ));
+		delete_with_confirm( self, ledger );
 	}
+	ofa_ledger_treeview_free_selected( selected );
 
 	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
@@ -451,8 +439,8 @@ check_for_deletability( ofaLedgerPage *self, ofoLedger *ledger )
 	return( priv->is_writable && is_ledger && ofo_ledger_is_deletable( ledger ));
 }
 
-static gboolean
-delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger )
+static void
+delete_with_confirm( ofaLedgerPage *self, ofoLedger *ledger )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -465,7 +453,9 @@ delete_confirmed( ofaLedgerPage *self, ofoLedger *ledger )
 
 	g_free( msg );
 
-	return( delete_ok );
+	if( delete_ok ){
+		ofo_ledger_delete( ledger );
+	}
 }
 
 static void

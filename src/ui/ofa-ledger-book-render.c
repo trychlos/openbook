@@ -270,7 +270,7 @@ render_page_get_args_widget( ofaRenderPage *page )
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
-	bin = ofa_ledger_book_bin_new( OFA_IGETTER( page ));
+	bin = ofa_ledger_book_bin_new( OFA_IGETTER( page ), G_OBJECT_TYPE_NAME( page ));
 	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 

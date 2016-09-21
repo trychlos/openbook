@@ -35,8 +35,11 @@
 
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itheme-manager.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-settings.h"
@@ -45,7 +48,7 @@
 #include "ofa-recurrent-main.h"
 #include "ofa-recurrent-manage-page.h"
 #include "ofa-recurrent-model-properties.h"
-#include "ofa-recurrent-model-store.h"
+#include "ofa-recurrent-model-treeview.h"
 #include "ofa-recurrent-new.h"
 #include "ofa-recurrent-run-page.h"
 #include "ofo-recurrent-model.h"
@@ -57,56 +60,38 @@ typedef struct {
 	/* internals
 	 */
 	gboolean           is_writable;
+	gchar             *settings_prefix;
 
 	/* UI
 	 */
-	GtkWidget         *tview;
-	GtkWidget         *update_btn;
-	GtkWidget         *delete_btn;
-	GtkWidget         *generate_btn;
+	ofaRecurrentModelTreeview *tview;
 
-	/* sorting the view
+	/* actions
 	 */
-	gint               sort_column_id;
-	gint               sort_sens;
-	GtkTreeViewColumn *sort_column;
+	GSimpleAction     *new_action;
+	GSimpleAction     *update_action;
+	GSimpleAction     *delete_action;
+	GSimpleAction     *generate_action;
+	GSimpleAction     *view_waiting_action;
 }
 	ofaRecurrentManagePagePrivate;
 
-/* it appears that Gtk+ displays a counter intuitive sort indicator:
- * when asking for ascending sort, Gtk+ displays a 'v' indicator
- * while we would prefer the '^' version -
- * we are defining the inverse indicator, and we are going to sort
- * in reverse order to have our own illusion
- */
-#define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
-
-static const gchar *st_page_settings    = "ofaRecurrentManagePage-settings";
-
 static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_treeview( ofaRecurrentManagePage *self );
+static GtkWidget *setup_treeview( ofaRecurrentManagePage *page );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
-static gint       tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentManagePage *self );
-static gint       tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb );
-static gint       tview_on_sort_detail( const gchar *detaila, const gchar *detailb );
-static gboolean   tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRecurrentManagePage *self );
-static void       tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentManagePage *self );
-static void       tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentManagePage *self );
-static GList     *tview_get_selected( ofaRecurrentManagePage *self );
-static void       store_on_row_inserted_or_removed( ofaRecurrentModelStore *store, ofaRecurrentManagePage *self );
-static void       action_on_new_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void       action_on_update_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void       action_on_delete_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void       action_try_to_delete_current_row( ofaRecurrentManagePage *self );
-static void       action_do_delete( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
-static gboolean   action_delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
-static void       action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void       action_on_view_clicked( GtkButton *button, ofaRecurrentManagePage *self );
-static void       get_settings( ofaRecurrentManagePage *self );
-static void       set_settings( ofaRecurrentManagePage *self );
+static void       on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self );
+static void       on_row_activated( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self );
+static void       on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentManagePage *self );
+static void       on_delete_key( ofaRecurrentModelTreeview *view, ofoRecurrentModel *ledger, ofaRecurrentManagePage *self );
+static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
+static gboolean   check_for_deletability( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
+static void       delete_with_confirm( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
+static void       action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
+static void       action_on_view_waiting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentManagePage, ofa_recurrent_manage_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaRecurrentManagePage ))
@@ -115,6 +100,7 @@ static void
 recurrent_manage_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_recurrent_manage_page_finalize";
+	ofaRecurrentManagePagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -122,6 +108,9 @@ recurrent_manage_page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_RECURRENT_MANAGE_PAGE( instance ));
 
 	/* free data members here */
+	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_recurrent_manage_page_parent_class )->finalize( instance );
@@ -130,13 +119,20 @@ recurrent_manage_page_finalize( GObject *instance )
 static void
 recurrent_manage_page_dispose( GObject *instance )
 {
+	ofaRecurrentManagePagePrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_RECURRENT_MANAGE_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		set_settings( OFA_RECURRENT_MANAGE_PAGE( instance ));
-
 		/* unref object members here */
+		priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( instance ));
+
+		g_object_unref( priv->new_action );
+		g_object_unref( priv->update_action );
+		g_object_unref( priv->delete_action );
+		g_object_unref( priv->generate_action );
+		g_object_unref( priv->view_waiting_action );
 	}
 
 	/* chain up to the parent class */
@@ -156,8 +152,7 @@ ofa_recurrent_manage_page_init( ofaRecurrentManagePage *self )
 
 	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	priv->sort_column_id = -1;
-	priv->sort_sens = -1;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -172,6 +167,7 @@ ofa_recurrent_manage_page_class_init( ofaRecurrentManagePageClass *klass )
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -190,8 +186,6 @@ v_setup_view( ofaPage *page )
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
-	get_settings( OFA_RECURRENT_MANAGE_PAGE( page ));
-
 	widget = setup_treeview( OFA_RECURRENT_MANAGE_PAGE( page ));
 
 	return( widget );
@@ -200,220 +194,28 @@ v_setup_view( ofaPage *page )
 static GtkWidget *
 setup_treeview( ofaRecurrentManagePage *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_manage_page_setup_treeview";
 	ofaRecurrentManagePagePrivate *priv;
-	GtkWidget *frame, *scroll, *tview;
-	GtkTreeModel *tsort;
-	GtkTreeViewColumn *sort_column;
-	gint column_id;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
-	ofaRecurrentModelStore *store;
 	ofaHub *hub;
 
 	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	frame = gtk_frame_new( NULL );
-	my_utils_widget_set_margins( frame, 4, 4, 4, 0 );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
-
-	scroll = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_set_border_width( GTK_CONTAINER( scroll ), 4 );
-	gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW( scroll ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( frame ), scroll );
-
-	tview = gtk_tree_view_new();
-	gtk_widget_set_hexpand( tview, TRUE );
-	gtk_widget_set_vexpand( tview, TRUE );
-	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( tview ), TRUE );
-	gtk_container_add( GTK_CONTAINER( scroll ), tview );
-	priv->tview = tview;
-
-	g_signal_connect( tview, "row-activated", G_CALLBACK( tview_on_row_activated ), self );
-	g_signal_connect( tview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
-
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	store = ofa_recurrent_model_store_new( hub );
 
-	g_signal_connect( store, "ofa-inserted", G_CALLBACK( store_on_row_inserted_or_removed ), self );
-	g_signal_connect( store, "ofa-inserted", G_CALLBACK( store_on_row_inserted_or_removed ), self );
+	priv->tview = ofa_recurrent_model_treeview_new();
+	ofa_recurrent_model_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	ofa_recurrent_model_treeview_setup_columns( priv->tview );
+	ofa_recurrent_model_treeview_set_hub( priv->tview, hub );
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
-	tsort = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( store ));
+	/* ofaTVBin signals */
+	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), self );
 
-	gtk_tree_view_set_model( GTK_TREE_VIEW( tview ), tsort );
-	g_object_unref( tsort );
+	/* ofaBatTreeview signals */
+	g_signal_connect( priv->tview, "ofa-recchanged", G_CALLBACK( on_row_selected ), self );
+	g_signal_connect( priv->tview, "ofa-recactivated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect( priv->tview, "ofa-recdelete", G_CALLBACK( on_delete_key ), self );
 
-	g_debug( "%s: store=%p, tsort=%p",
-			thisfn, ( void * ) store, ( void * ) tsort );
-
-	/* default is to sort by ascending mnemo
-	 */
-	sort_column = NULL;
-	if( priv->sort_column_id < 0 ){
-		priv->sort_column_id = REC_MODEL_COL_MNEMO;
-	}
-	if( priv->sort_sens < 0 ){
-		priv->sort_sens = OFA_SORT_ASCENDING;
-	}
-
-	column_id = REC_MODEL_COL_MNEMO;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Mnemonic" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_LABEL;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_NOTES_PNG;
-	cell = gtk_cell_renderer_pixbuf_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			"",
-			cell, "pixbuf", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_OPE_TEMPLATE;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Operation" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_PERIODICITY;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Periodicity" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_PERIODICITY_DETAIL;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Detail" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_DEF_AMOUNT1;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Edit. 1" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_DEF_AMOUNT2;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Edit. 2" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = REC_MODEL_COL_DEF_AMOUNT3;
-	cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Edit. 3" ),
-			cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( tview ));
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_MULTIPLE );
-	g_signal_connect( select, "changed", G_CALLBACK( tview_on_selection_changed ), self );
-
-	/* default is to sort by ascending operation date
-	 */
-	g_return_val_if_fail( sort_column && GTK_IS_TREE_VIEW_COLUMN( sort_column ), NULL );
-	gtk_tree_view_column_set_sort_indicator( sort_column, TRUE );
-	priv->sort_column = sort_column;
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tsort ), priv->sort_column_id, priv->sort_sens );
-
-	return( frame );
+	return( GTK_WIDGET( priv->tview ));
 }
 
 static GtkWidget *
@@ -421,36 +223,98 @@ v_setup_buttons( ofaPage *page )
 {
 	ofaRecurrentManagePagePrivate *priv;
 	ofaButtonsBox *buttons_box;
-	GtkWidget *btn;
 
 	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 4, 4, 0, 0 );
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
-	btn = ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_NEW, G_CALLBACK( action_on_new_clicked ), page );
-	gtk_widget_set_sensitive( btn, priv->is_writable );
+	/* new action */
+	priv->new_action = g_simple_action_new( "new", NULL );
+	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
+	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE_NEW_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE_NEW_BTN ));
 
-	priv->update_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_PROPERTIES, G_CALLBACK( action_on_update_clicked ), page );
+	/* update action */
+	priv->update_action = g_simple_action_new( "update", NULL );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
+			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
-	priv->delete_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, BUTTON_DELETE, G_CALLBACK( action_on_delete_clicked ), page );
+	/* delete action */
+	priv->delete_action = g_simple_action_new( "delete", NULL );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE_DELETE_ITEM );
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE_DELETE_BTN ));
 
 	ofa_buttons_box_add_spacer( buttons_box );
 
-	priv->generate_btn =
-			ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "_Generate with selected..." ), G_CALLBACK( action_on_generate_clicked ), page );
+	/* generate operations from selected models */
+	priv->generate_action = g_simple_action_new( "generate", NULL );
+	g_signal_connect( priv->generate_action, "activate", G_CALLBACK( action_on_generate_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->generate_action ),
+			_( "Generate from selected..." ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->generate_action ),
+					_( "_Generate from selected..." )));
 
-	btn = ofa_buttons_box_add_button_with_mnemonic(
-					buttons_box, _( "_View waiting operations..." ), G_CALLBACK( action_on_view_clicked ), page );
-	gtk_widget_set_sensitive( btn, TRUE );
+	/* view entries */
+	priv->view_waiting_action = g_simple_action_new( "viewwaiting", NULL );
+	g_signal_connect( priv->view_waiting_action, "activate", G_CALLBACK( action_on_view_waiting_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_waiting_action ),
+			_( "View waiting operations" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_waiting_action ),
+					_( "_View waiting operations" )));
 
 	return( GTK_WIDGET( buttons_box ));
+}
+
+static void
+v_init_view( ofaPage *page )
+{
+	static const gchar *thisfn = "ofa_recurrent_manage_page_v_init_view";
+	ofaRecurrentManagePagePrivate *priv;
+	GMenu *menu;
+
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+
+	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
+			menu );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 static GtkWidget *
@@ -462,211 +326,71 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
 
-	return( priv->tview );
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*
- * Gtk+ changes automatically the sort order
- * we reset yet the sort column id
- *
- * as a side effect of our inversion of indicators, clicking on a new
- * header makes the sort order descending as the default
+ * RecurrentModelTreeview callback
  */
 static void
-tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentManagePage *self )
+on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self )
 {
+#if 0
 	ofaRecurrentManagePagePrivate *priv;
-	gint sort_column_id, new_column_id;
-	GtkSortType sort_order;
-	GtkTreeModel *tsort;
+	gboolean is_model;
 
 	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-	gtk_tree_view_column_set_sort_indicator( column, TRUE );
-	priv->sort_column = column;
+	is_model = ledger && OFO_IS_LEDGER( ledger );
 
-	tsort = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->tview ));
-	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( tsort ), &sort_column_id, &sort_order );
-
-	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
-	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( tsort ), new_column_id, sort_order );
-
-	priv->sort_column_id = new_column_id;
-	priv->sort_sens = sort_order;
-
-	set_settings( self );
+	g_simple_action_set_enabled( priv->update_action, is_ledger );
+	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, ledger ));
+	g_simple_action_set_enabled( priv->view_entries_action, is_ledger && ofo_ledger_has_entries( ledger ));
+#endif
 }
 
 /*
- * sorting the treeview
+ * RecurrentModelTreeview callback
+ * Activation of a single row open the update dialog, else is ignored
  */
-static gint
-tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentManagePage *self )
+static void
+on_row_activated( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_manage_page_tview_on_sort_model";
-	ofaRecurrentManagePagePrivate *priv;
-	gint cmp;
-	gchar *smnemoa, *slabela, *stemplatea, *sperioda, *sdetaila, *sdef1a, *sdef2a, *sdef3a;
-	gchar *smnemob, *slabelb, *stemplateb, *speriodb, *sdetailb, *sdef1b, *sdef2b, *sdef3b;
-	GdkPixbuf *pnga, *pngb;
-
-	gtk_tree_model_get( tmodel, a,
-			REC_MODEL_COL_MNEMO,              &smnemoa,
-			REC_MODEL_COL_LABEL,              &slabela,
-			REC_MODEL_COL_NOTES_PNG,          &pnga,
-			REC_MODEL_COL_OPE_TEMPLATE,       &stemplatea,
-			REC_MODEL_COL_PERIODICITY,        &sperioda,
-			REC_MODEL_COL_PERIODICITY_DETAIL, &sdetaila,
-			REC_MODEL_COL_DEF_AMOUNT1,        &sdef1a,
-			REC_MODEL_COL_DEF_AMOUNT2,        &sdef2a,
-			REC_MODEL_COL_DEF_AMOUNT3,        &sdef3a,
-			-1 );
-
-	gtk_tree_model_get( tmodel, b,
-			REC_MODEL_COL_MNEMO,              &smnemob,
-			REC_MODEL_COL_LABEL,              &slabelb,
-			REC_MODEL_COL_NOTES_PNG,          &pngb,
-			REC_MODEL_COL_OPE_TEMPLATE,       &stemplateb,
-			REC_MODEL_COL_PERIODICITY,        &speriodb,
-			REC_MODEL_COL_PERIODICITY_DETAIL, &sdetailb,
-			REC_MODEL_COL_DEF_AMOUNT1,        &sdef1b,
-			REC_MODEL_COL_DEF_AMOUNT2,        &sdef2b,
-			REC_MODEL_COL_DEF_AMOUNT3,        &sdef3b,
-			-1 );
-
-	cmp = 0;
-
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
-
-	switch( priv->sort_column_id ){
-		case REC_MODEL_COL_MNEMO:
-			cmp = my_collate( smnemoa, smnemob );
-			break;
-		case REC_MODEL_COL_LABEL:
-			cmp = my_collate( slabela, slabelb );
-			break;
-		case REC_MODEL_COL_NOTES_PNG:
-			cmp = tview_on_sort_png( pnga, pngb );
-			break;
-		case REC_MODEL_COL_OPE_TEMPLATE:
-			cmp = my_collate( stemplatea, stemplateb );
-			break;
-		case REC_MODEL_COL_PERIODICITY:
-			cmp = my_collate( sperioda, speriodb );
-			break;
-		case REC_MODEL_COL_PERIODICITY_DETAIL:
-			cmp = tview_on_sort_detail( sdetaila, sdetailb );
-			break;
-		case REC_MODEL_COL_DEF_AMOUNT1:
-			cmp = my_collate( sdef1a, sdef1b );
-			break;
-		case REC_MODEL_COL_DEF_AMOUNT2:
-			cmp = my_collate( sdef2a, sdef2b );
-			break;
-		case REC_MODEL_COL_DEF_AMOUNT3:
-			cmp = my_collate( sdef3a, sdef3b );
-			break;
-		default:
-			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
-			break;
+	if( g_list_length( list ) == 1 ){
+		//g_action_activate( G_ACTION( priv->update_action ), NULL );
 	}
-
-	g_free( sdef1a );
-	g_free( sdef2a );
-	g_free( sdef3a );
-	g_free( sdetaila );
-	g_free( sperioda );
-	g_free( stemplatea );
-	g_free( slabela );
-	g_free( smnemoa );
-	g_object_unref( pnga );
-
-	g_free( sdef1b );
-	g_free( sdef2b );
-	g_free( sdef3b );
-	g_free( sdetailb );
-	g_free( speriodb );
-	g_free( stemplateb );
-	g_free( slabelb );
-	g_free( smnemob );
-	g_object_unref( pngb );
-
-	/* return -1 if a > b, so that the order indicator points to the smallest:
-	 * ^: means from smallest to greatest (ascending order)
-	 * v: means from greatest to smallest (descending order)
-	 */
-	return( -cmp );
-}
-
-static gint
-tview_on_sort_png( const GdkPixbuf *pnga, const GdkPixbuf *pngb )
-{
-	gsize lena, lenb;
-
-	if( !pnga ){
-		return( -1 );
-	}
-	lena = gdk_pixbuf_get_byte_length( pnga );
-
-	if( !pngb ){
-		return( 1 );
-	}
-	lenb = gdk_pixbuf_get_byte_length( pngb );
-
-	if( lena < lenb ){
-		return( -1 );
-	}
-	if( lena > lenb ){
-		return( 1 );
-	}
-
-	return( memcmp( pnga, pngb, lena ));
-}
-
-static gint
-tview_on_sort_detail( const gchar *detaila, const gchar *detailb )
-{
-	int deta, detb;
-
-	if( my_strlen( detaila ) && my_strlen( detailb )){
-		deta = atoi( detaila );
-		detb = atoi( detailb );
-		return( deta < detb ? -1 : ( deta > detb ? 1 : 0 ));
-	}
-
-	return( my_collate( detaila, detailb ));
-}
-
-/*
- * Returns :
- * TRUE to stop other handlers from being invoked for the event.
- * FALSE to propagate the event further.
- */
-static gboolean
-tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaRecurrentManagePage *self )
-{
-	gboolean stop;
-
-	stop = FALSE;
-
-	if( event->state == 0 ){
-		if( event->keyval == GDK_KEY_Insert ){
-			action_on_new_clicked( NULL, self );
-		} else if( event->keyval == GDK_KEY_Delete ){
-			action_try_to_delete_current_row( self );
-		}
-	}
-
-	return( stop );
 }
 
 static void
-tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentManagePage *self )
+on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentManagePage *self )
 {
-	action_on_update_clicked( NULL, self );
+	ofaRecurrentManagePagePrivate *priv;
+
+	priv = ofa_recurrent_manage_page_get_instance_private( self );
+
+	if( priv->is_writable ){
+		//g_action_activate( G_ACTION( priv->new_action ), NULL );
+	}
 }
 
+/*
+ * only delete if there is only one selected ledger
+ */
+static void
+on_delete_key( ofaRecurrentModelTreeview *view, ofoRecurrentModel *ledger, ofaRecurrentManagePage *self )
+{
+	/*
+	ofaRecurrentManagePagePrivate *priv;
+
+	priv = ofa_recurrent_manage_page_get_instance_private( self );
+
+	if( check_for_deletability( self, ledger )){
+		g_action_activate( G_ACTION( priv->delete_action ), NULL );
+	}
+	*/
+}
+
+#if 0
 /*
  * selection is multiple mode (0 to n selected rows)
  */
@@ -772,13 +496,14 @@ store_on_row_inserted_or_removed( ofaRecurrentModelStore *store, ofaRecurrentMan
 
 	gtk_widget_set_sensitive( priv->generate_btn, count > 0 );
 }
+#endif
 
 /*
  * create a new recurrent model
  * creating a new recurrent record is the rule of 'Declare' button
  */
 static void
-action_on_new_clicked( GtkButton *button, ofaRecurrentManagePage *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
 {
 	ofoRecurrentModel *model;
 	GtkWindow *toplevel;
@@ -789,24 +514,25 @@ action_on_new_clicked( GtkButton *button, ofaRecurrentManagePage *self )
 }
 
 /*
- * Update button is expected to be sensitive when the selection count is 1
- * (and dossier is writable, and record is updatable)
+ * Update action is expected to be used when selection is single
  */
 static void
-action_on_update_clicked( GtkButton *button, ofaRecurrentManagePage *self )
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
 {
+	ofaRecurrentManagePagePrivate *priv;
 	GList *selected;
 	ofoRecurrentModel *model;
 	GtkWindow *toplevel;
 
-	selected = tview_get_selected( self );
-	g_return_if_fail( g_list_length( selected ) == 1 );
+	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	model = ( ofoRecurrentModel * ) selected->data;
-	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
-
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
+	selected = ofa_recurrent_model_treeview_get_selected( priv->tview );
+	if( g_list_length( selected ) == 1 ){
+		model = ( ofoRecurrentModel * ) selected->data;
+		g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
+	}
 
 	g_list_free( selected );
 }
@@ -816,59 +542,41 @@ action_on_update_clicked( GtkButton *button, ofaRecurrentManagePage *self )
  * (and dossier is writable, and record is deletable)
  */
 static void
-action_on_delete_clicked( GtkButton *button, ofaRecurrentManagePage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
 {
+	ofaRecurrentManagePagePrivate *priv;
 	GList *selected;
 	ofoRecurrentModel *model;
 
-	selected = tview_get_selected( self );
-	g_return_if_fail( g_list_length( selected ) == 1 );
+	priv = ofa_recurrent_manage_page_get_instance_private( self );
 
-	model = ( ofoRecurrentModel * ) selected->data;
-	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
-
-	action_do_delete( self, model );
-
-	g_list_free( selected );
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
-}
-
-/*
- * when pressing the 'Delete' key on the treeview
- * cannot be sure that the current row is deletable
- */
-static void
-action_try_to_delete_current_row( ofaRecurrentManagePage *self )
-{
-	GList *selected;
-	ofoRecurrentModel *model;
-
-	selected = tview_get_selected( self );
+	selected = ofa_recurrent_model_treeview_get_selected( priv->tview );
 	if( g_list_length( selected ) == 1 ){
 		model = ( ofoRecurrentModel * ) selected->data;
 		g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
-
-		if( ofo_recurrent_model_is_deletable( model )){
-			action_do_delete( self, model );
-		}
+		g_return_if_fail( check_for_deletability( self, model ));
+		delete_with_confirm( self, model );
 	}
+	ofa_recurrent_model_treeview_free_selected( selected );
 
-	g_list_free( selected );
-}
-
-static void
-action_do_delete( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
-{
-	g_return_if_fail( ofo_recurrent_model_is_deletable( model ));
-
-	if( action_delete_confirmed( self, model )){
-		ofo_recurrent_model_delete( model );
-		/* taken into account by dossier signaling system */
-	}
+	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static gboolean
-action_delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
+check_for_deletability( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
+{
+	ofaRecurrentManagePagePrivate *priv;
+	gboolean is_model;
+
+	priv = ofa_recurrent_manage_page_get_instance_private( self );
+
+	is_model = model && OFO_IS_RECURRENT_MODEL( model );
+
+	return( priv->is_writable && is_model && ofo_recurrent_model_is_deletable( model ));
+}
+
+static void
+delete_with_confirm( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -880,14 +588,16 @@ action_delete_confirmed( ofaRecurrentManagePage *self, ofoRecurrentModel *model 
 
 	g_free( msg );
 
-	return( delete_ok );
+	if( delete_ok ){
+		ofo_recurrent_model_delete( model );
+	}
 }
 
 /*
- * generating new operations on current selection
+ * generating new operations from current selection
  */
 static void
-action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self )
+action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
 {
 	GtkWindow *toplevel;
 
@@ -900,54 +610,10 @@ action_on_generate_clicked( GtkButton *button, ofaRecurrentManagePage *self )
  * opening the Run page
  */
 static void
-action_on_view_clicked( GtkButton *button, ofaRecurrentManagePage *self )
+action_on_view_waiting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
 {
 	ofaIThemeManager *manager;
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
 	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
-}
-
-/*
- * settings: sort_column_id;sort_sens;
- */
-static void
-get_settings( ofaRecurrentManagePage *self )
-{
-	ofaRecurrentManagePagePrivate *priv;
-	GList *slist, *it;
-	const gchar *cstr;
-
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
-
-	slist = ofa_settings_user_get_string_list( st_page_settings );
-
-	it = slist ? slist : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_column_id = atoi( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->sort_sens = atoi( cstr );
-	}
-
-	ofa_settings_free_string_list( slist );
-}
-
-static void
-set_settings( ofaRecurrentManagePage *self )
-{
-	ofaRecurrentManagePagePrivate *priv;
-	gchar *str;
-
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
-
-	str = g_strdup_printf( "%d;%d;", priv->sort_column_id, priv->sort_sens );
-
-	ofa_settings_user_set_string( st_page_settings, str );
-
-	g_free( str );
 }

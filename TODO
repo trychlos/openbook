@@ -480,7 +480,16 @@
 
 1209 2016- 9-20 app. accelerators do not work when a dossier is opened
 
-1210
+1210 2016- 9-20 AccountFrameBin, OpeTemplateBin: shouldn't the namespace
+                be the same as the settings key provided by the caller ?
+
+1211 2016- 9-20 RecurrentManagePage: rename to RecurrentModelPage
+
+1212 2016- 9-21 xxx_treeview_setup_columns() may be called if not already
+                done when setting hub() -> it should not be needed to
+                explicitely call it
+
+1213
 
 -----------------------------------------------------------------------
  DONE

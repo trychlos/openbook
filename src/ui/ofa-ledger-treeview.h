@@ -35,13 +35,17 @@
  * The class provides the following signals, which are proxyed from
  * #ofaTVBin base class.
  *    +------------------+--------------+
- *    | Signal           | Ledger may   |
- *    |                  | be %NULL     |
+ *    | Signal           | Ledger list  |
+ *    |                  | may be %NULL |
  *    +------------------+--------------+
  *    | ofa-ledchanged   |      Yes     |
  *    | ofa-ledactivated |       No     |
  *    | ofa-leddelete    |       No     |
  *    +------------------+--------------+
+ *
+ * As the treeview may allow multiple selection, both signals provide
+ * a list of path of selected rows. It is up to the user of this class
+ * to decide whether an action may apply or not on a multiple selection.
  */
 
 #include "api/ofa-hub-def.h"
@@ -83,7 +87,7 @@ void               ofa_ledger_treeview_set_hub          ( ofaLedgerTreeview *vie
 
 GList             *ofa_ledger_treeview_get_selected     ( ofaLedgerTreeview *view );
 
-#define            ofa_ledger_treeview_free_selected(L) g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+#define            ofa_ledger_treeview_free_selected(L) g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
 void               ofa_ledger_treeview_set_selected     ( ofaLedgerTreeview *view,
 																const gchar *ledger );
