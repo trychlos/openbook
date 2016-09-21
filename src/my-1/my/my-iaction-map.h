@@ -103,9 +103,14 @@ guint               my_iaction_map_get_interface_last_version( void );
  */
 guint               my_iaction_map_get_interface_version     ( GType type );
 
+myIActionMap       *my_iaction_map_lookup_map                ( const gchar *target );
+
 /*
  * Instance-wide
  */
+void                my_iaction_map_register                  ( myIActionMap *instance,
+																	const gchar *target );
+
 GMenuModel         *my_iaction_map_get_menu_model            ( const myIActionMap *instance );
 
 G_END_DECLS

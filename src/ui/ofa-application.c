@@ -143,10 +143,8 @@ static void                  appli_store_ref( ofaApplication *application, GtkBu
 static void                  application_activate( GApplication *application );
 static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 static void                  maintainer_test_function( void );
-
 static void                  on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaApplication *application );
 static void                  enable_action_open( ofaApplication *application, gboolean enable );
-
 static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_open( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -156,14 +154,12 @@ static void                  on_quit( GSimpleAction *action, GVariant *parameter
 static void                  on_plugin_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_about( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_version( ofaApplication *application );
-
 static void                  igetter_iface_init( ofaIGetterInterface *iface );
 static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *instance );
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
 static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
-
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
 static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
 
@@ -478,11 +474,11 @@ ofa_application_new( void )
 
 	extenders = ofa_extender_collection_new( OFA_IGETTER( application ), PKGLIBDIR );
 	ofa_hub_set_extender_collection( priv->hub, extenders );
-
 	ofa_hub_register_types( priv->hub );
 	ofa_hub_init_signaling_system( priv->hub );
 
 	ofa_box_register_types();
+	my_iaction_map_register( MY_IACTION_MAP( application ), "app" );
 
 	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
 	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
