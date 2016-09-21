@@ -271,6 +271,8 @@ void              ofa_tvbin_set_cell_data_func    ( ofaTVBin *bin,
 void              ofa_tvbin_set_store             ( ofaTVBin *bin,
 														GtkTreeModel *store );
 
+void              ofa_tvbin_refilter              ( ofaTVBin *bin );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_TVBIN_H__ */

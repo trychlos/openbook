@@ -387,7 +387,7 @@ idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 	ofa_tvbin_set_headers( OFA_TVBIN( priv->dossier_tview ), FALSE );
 	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, priv->settings_prefix );
 	ofa_dossier_treeview_setup_columns( priv->dossier_tview );
-	ofa_dossier_treeview_set_filter_show( priv->dossier_tview, FALSE );
+	ofa_dossier_treeview_set_show_all( priv->dossier_tview, FALSE );
 
 	g_signal_connect( priv->dossier_tview, "ofa-doschanged", G_CALLBACK( on_dossier_changed ), self );
 

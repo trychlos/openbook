@@ -1483,6 +1483,29 @@ ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 }
 
 /*
+ * ofa_tvbin_refilter:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Ask the underlying tree model to refilter itself.
+ */
+void
+ofa_tvbin_refilter( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+	GtkTreeModel *filter_model;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	filter_model = ofa_itvfilterable_get_model( OFA_ITVFILTERABLE( bin ));
+
+	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
+}
+
+/*
  * ofaIActionable interface management
  */
 static void

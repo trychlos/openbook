@@ -88,7 +88,7 @@ gboolean            ofa_dossier_treeview_get_selected    ( ofaDossierTreeview *v
 void                ofa_dossier_treeview_set_selected    ( ofaDossierTreeview *view,
 																const gchar *dname );
 
-void                ofa_dossier_treeview_set_filter_show ( ofaDossierTreeview *view,
+void                ofa_dossier_treeview_set_show_all    ( ofaDossierTreeview *view,
 																gboolean show_all );
 
 void                ofa_dossier_treeview_setup_store     ( ofaDossierTreeview *view );
