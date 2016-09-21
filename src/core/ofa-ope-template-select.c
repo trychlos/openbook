@@ -48,6 +48,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter             *getter;
+	gchar                  *settings_prefix;
 
 	/* UI
 	 */
@@ -92,6 +93,7 @@ ope_template_select_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_ope_template_select_get_instance_private( OFA_OPE_TEMPLATE_SELECT( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->ope_mnemo );
 
 	/* chain up to the parent class */
@@ -132,6 +134,7 @@ ofa_ope_template_select_init( ofaOpeTemplateSelect *self )
 	priv = ofa_ope_template_select_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -278,7 +281,7 @@ idialog_init( myIDialog *instance )
 
 	priv->template_bin = ofa_ope_template_frame_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->template_bin ));
-	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, G_OBJECT_TYPE_NAME( instance ));
+	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, priv->settings_prefix );
 
 	g_signal_connect( priv->template_bin, "ofa-changed", G_CALLBACK( on_ope_template_changed ), instance );
 	g_signal_connect( priv->template_bin, "ofa-activated", G_CALLBACK( on_ope_template_activated ), instance );

@@ -56,10 +56,13 @@
 typedef struct {
 	gboolean            dispose_has_run;
 
+	/* runtime
+	 */
 	ofaIGetter         *getter;
 	ofaHub             *hub;
 	gboolean            done;				/* whether we have actually done something */
 	GDate               closing;
+	gchar              *settings_prefix;
 
 	/* UI
 	 */
@@ -97,8 +100,7 @@ typedef struct {
 }
 	sClose;
 
-static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-ledger-close.ui";
-static const gchar  *st_settings        = "LedgerClose";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-close.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      idialog_iface_init( myIDialogInterface *iface );
@@ -135,6 +137,7 @@ static void
 ledger_close_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_close_finalize";
+	ofaLedgerClosePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -142,6 +145,9 @@ ledger_close_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_LEDGER_CLOSE( instance ));
 
 	/* free data members here */
+	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_close_parent_class )->finalize( instance );
@@ -182,6 +188,7 @@ ofa_ledger_close_init( ofaLedgerClose *self )
 
 	priv->dispose_has_run = FALSE;
 	my_date_clear( &priv->closing );
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -333,7 +340,7 @@ setup_treeview( ofaLedgerClose *self )
 
 	priv->tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
-	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( self ));
+	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
@@ -821,10 +828,12 @@ load_settings( ofaLedgerClose *self )
 	ofaLedgerClosePrivate *priv;
 	GList *list, *it;
 	const gchar *cstr;
+	gchar *settings_key;
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
-	list = ofa_settings_user_get_string_list( st_settings );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	list = ofa_settings_user_get_string_list( settings_key );
 
 	it = list;
 	cstr = it ? it->data : NULL;
@@ -835,20 +844,24 @@ load_settings( ofaLedgerClose *self )
 	}
 
 	ofa_settings_free_string_list( list );
+	g_free( settings_key );
 }
 
 static void
 set_settings( ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
-	gchar *str;
+	gchar *str, *settings_key;
 
 	priv = ofa_ledger_close_get_instance_private( self );
+
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
 	str = g_strdup_printf( "%s;",
 			priv->all_ledgers ? "True":"False" );
 
-	ofa_settings_user_set_string( st_settings, str );
+	ofa_settings_user_set_string( settings_key, str );
 
 	g_free( str );
+	g_free( settings_key );
 }

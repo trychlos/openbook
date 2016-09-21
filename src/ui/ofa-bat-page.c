@@ -59,6 +59,7 @@ typedef struct {
 	/* runtime data
 	 */
 	gboolean        is_writable;		/* whether the dossier is current */
+	gchar          *settings_prefix;
 
 	/* actions
 	 */
@@ -93,6 +94,7 @@ static void
 bat_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_bat_page_finalize";
+	ofaBatPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -100,6 +102,9 @@ bat_page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BAT_PAGE( instance ));
 
 	/* free data members here */
+	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_bat_page_parent_class )->finalize( instance );
@@ -131,11 +136,16 @@ static void
 ofa_bat_page_init( ofaBatPage *self )
 {
 	static const gchar *thisfn = "ofa_bat_page_init";
+	ofaBatPagePrivate *priv;
 
-	g_return_if_fail( OFA_IS_BAT_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_BAT_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofa_bat_page_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -170,7 +180,7 @@ v_setup_view( ofaPage *page )
 	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
 	priv->tview = ofa_bat_treeview_new();
-	ofa_bat_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
+	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_bat_treeview_set_hub( priv->tview, hub );
 
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
@@ -189,11 +199,9 @@ v_setup_buttons( ofaPage *page )
 	static const gchar *thisfn = "ofa_bat_page_v_setup_buttons";
 	ofaBatPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
-	const gchar *namespace;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
@@ -203,36 +211,36 @@ v_setup_buttons( ofaPage *page )
 	priv->new_action = g_simple_action_new( "new", NULL );
 	g_simple_action_set_enabled( priv->new_action, FALSE );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 
 	/* update action */
 	priv->update_action = g_simple_action_new( "update", NULL );
 	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 			OFA_IACTIONABLE_DELETE_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
 
 	ofa_buttons_box_add_spacer( buttons_box );
@@ -242,12 +250,12 @@ v_setup_buttons( ofaPage *page )
 	g_simple_action_set_enabled( priv->import_action, priv->is_writable );
 	g_signal_connect( priv->import_action, "activate", G_CALLBACK( action_on_import_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->import_action ),
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->import_action ),
 			OFA_IACTIONABLE_IMPORT_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), namespace, G_ACTION( priv->import_action ),
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->import_action ),
 					OFA_IACTIONABLE_IMPORT_BTN ));
 
 	return( GTK_WIDGET( buttons_box ));
@@ -259,14 +267,12 @@ v_init_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_bat_page_v_init_view";
 	ofaBatPagePrivate *priv;
 	GMenu *menu;
-	const gchar *namespace;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	namespace = G_OBJECT_TYPE_NAME( page );
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), namespace );
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
 			menu );

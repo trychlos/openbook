@@ -53,6 +53,7 @@ typedef struct {
 	 */
 	ofaIGetter          *getter;
 	ofeAccountAllowed    allowed;
+	gchar               *settings_prefix;
 
 	/* UI
 	 */
@@ -100,6 +101,7 @@ account_select_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_account_select_get_instance_private( OFA_ACCOUNT_SELECT( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->account_number );
 
 	/* chain up to the parent class */
@@ -140,6 +142,7 @@ ofa_account_select_init( ofaAccountSelect *self )
 	priv = ofa_account_select_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -290,10 +293,8 @@ idialog_init( myIDialog *instance )
 	priv->account_bin = ofa_account_frame_bin_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 0, 4, 0, 0 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
-	ofa_account_frame_bin_set_settings_key(
-			priv->account_bin, G_OBJECT_TYPE_NAME( instance ));
-	ofa_account_frame_bin_set_cell_data_func(
-			priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, instance );
+	ofa_account_frame_bin_set_settings_key( priv->account_bin, priv->settings_prefix );
+	ofa_account_frame_bin_set_cell_data_func( priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, instance );
 
 	g_signal_connect( priv->account_bin, "ofa-changed", G_CALLBACK( on_selection_changed ), instance );
 	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_selection_activated ), instance );

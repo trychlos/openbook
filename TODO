@@ -440,6 +440,9 @@
                 - ofaOpeTemplate:Treeview, FrameBin, Page, Select
                 - Rate: Treeview, Store, Page
                 - RecurrentModel: Treeview, Store, Page
+                - RecurrentRun:
+                - TVAForm:
+                - TVARecord:
 
 1183 2016- 8-23 DossierManager: disable Open action when the dossier is
                 already opened.
@@ -480,9 +483,6 @@
 1206 2016- 9-19 duplicate recurrent model
 
 1209 2016- 9-20 app. accelerators do not work when a dossier is opened
-
-1210 2016- 9-20 AccountFrameBin, OpeTemplateBin: shouldn't the namespace
-                be the same as the settings key provided by the caller ?
 
 1213
 
@@ -1693,6 +1693,10 @@
 
 1208 2016- 9-19 check which collections have a real need to be be sorted
      2016- 9-19 a priori, none -> done
+
+1210 2016- 9-20 AccountFrameBin, OpeTemplateBin: shouldn't the namespace
+                be the same as the settings key provided by the caller ?
+     2016- 9-21 fixed
 
 1211 2016- 9-20 RecurrentManagePage: rename to RecurrentModelPage
      2016- 9-21 done

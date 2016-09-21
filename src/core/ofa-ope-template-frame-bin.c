@@ -96,7 +96,6 @@ enum {
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 static void       setup_bin( ofaOpeTemplateFrameBin *self );
-static void       setup_actions( ofaOpeTemplateFrameBin *self );
 static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboolean bcreate );
 static GtkWidget *book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger );
 static void       book_on_page_switched( GtkNotebook *book, GtkWidget *wpage, guint npage, ofaOpeTemplateFrameBin *self );
@@ -191,11 +190,11 @@ ope_template_frame_bin_dispose( GObject *instance )
 		}
 		g_clear_object( &priv->store );
 
-		g_object_unref( priv->new_action );
-		g_object_unref( priv->update_action );
-		g_object_unref( priv->delete_action );
-		g_object_unref( priv->duplicate_action );
-		g_object_unref( priv->guided_input_action );
+		g_clear_object( &priv->new_action );
+		g_clear_object( &priv->update_action );
+		g_clear_object( &priv->delete_action );
+		g_clear_object( &priv->duplicate_action );
+		g_clear_object( &priv->guided_input_action );
 
 		/* we expect that the last page seen by the user is those which
 		 * has the better sizes and positions for the columns */
@@ -221,7 +220,7 @@ ofa_ope_template_frame_bin_init( ofaOpeTemplateFrameBin *self )
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->settings_key = NULL;
+	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->current_page = NULL;
 }
 
@@ -314,7 +313,6 @@ ofa_ope_template_frame_bin_new( void )
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
 
 	setup_bin( self );
-	setup_actions( self );
 
 	return( self );
 }
@@ -352,40 +350,6 @@ setup_bin( ofaOpeTemplateFrameBin *self )
 	/* UI buttons box */
 	priv->buttonsbox = ofa_buttons_box_new();
 	gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( priv->buttonsbox ), 1, 0, 1, 1 );
-}
-
-/*
- * Defined the actions managed here.
- * All possible actions are defined, and default to be be disabled.
- * Only actions which are explicitely setup by the caller will be
- * activatable and have a button and a menu item.
- */
-static void
-setup_actions( ofaOpeTemplateFrameBin *self )
-{
-	ofaOpeTemplateFrameBinPrivate *priv;
-
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
-
-	/* new */
-	priv->new_action = g_simple_action_new( "new", NULL );
-	g_simple_action_set_enabled( priv->new_action, FALSE );
-
-	/* update */
-	priv->update_action = g_simple_action_new( "update", NULL );
-	g_simple_action_set_enabled( priv->update_action, FALSE );
-
-	/* delete */
-	priv->delete_action = g_simple_action_new( "delete", NULL );
-	g_simple_action_set_enabled( priv->delete_action, FALSE );
-
-	/* duplicate */
-	priv->duplicate_action = g_simple_action_new( "duplicate", NULL );
-	g_simple_action_set_enabled( priv->duplicate_action, FALSE );
-
-	/* guided input */
-	priv->guided_input_action = g_simple_action_new( "guided-input", NULL );
-	g_simple_action_set_enabled( priv->guided_input_action, FALSE );
 }
 
 /*
@@ -444,13 +408,12 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 	ofaOpeTemplateTreeview *view;
 	GtkWidget *label;
 	ofoLedger *ledger_obj;
-	const gchar *ledger_label, *namespace;
+	const gchar *ledger_label;
 	gint page_num;
 	GMenu *menu;
 
 	g_debug( "%s: self=%p, ledger=%s", thisfn, ( void * ) self, ledger );
 
-	namespace = G_OBJECT_TYPE_NAME( self );
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
@@ -495,7 +458,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 	/* create a new context menu for each page of the notebook */
 	menu = g_menu_new();
 	g_menu_append_section( menu, NULL,
-			G_MENU_MODEL( ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), namespace )));
+			G_MENU_MODEL( ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_key )));
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( view ), OFA_IACTIONABLE( self ),
 			menu );
@@ -667,11 +630,9 @@ void
 ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTemplateAction id )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
-	const gchar *namespace;
 
 	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
 
-	namespace = G_OBJECT_TYPE_NAME( bin );
 	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
@@ -682,65 +643,75 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 			break;
 
 		case TEMPLATE_ACTION_NEW:
+			priv->new_action = g_simple_action_new( "new", NULL );
+			g_simple_action_set_enabled( priv->new_action, FALSE );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->new_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->new_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
 							OFA_IACTIONABLE_NEW_BTN ));
 			g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), bin );
 			g_simple_action_set_enabled( priv->new_action, priv->is_writable );
 			break;
 
 		case TEMPLATE_ACTION_PROPERTIES:
+			priv->update_action = g_simple_action_new( "update", NULL );
+			g_simple_action_set_enabled( priv->update_action, FALSE );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->update_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
 					priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->update_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
 							OFA_IACTIONABLE_PROPERTIES_BTN ));
 			g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), bin );
 			g_simple_action_set_enabled( priv->update_action, TRUE );
 			break;
 
 		case TEMPLATE_ACTION_DELETE:
+			priv->delete_action = g_simple_action_new( "delete", NULL );
+			g_simple_action_set_enabled( priv->delete_action, FALSE );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->delete_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->delete_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
 							OFA_IACTIONABLE_DELETE_BTN ));
 			g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), bin );
 			g_simple_action_set_enabled( priv->delete_action, TRUE );
 			break;
 
 		case TEMPLATE_ACTION_DUPLICATE:
+			priv->duplicate_action = g_simple_action_new( "duplicate", NULL );
+			g_simple_action_set_enabled( priv->duplicate_action, FALSE );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->duplicate_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->duplicate_action ),
 					_( "Duplicate this" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->duplicate_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->duplicate_action ),
 							_( "_Duplicate" )));
 			g_signal_connect( priv->duplicate_action, "activate", G_CALLBACK( action_on_duplicate_activated ), bin );
 			g_simple_action_set_enabled( priv->duplicate_action, TRUE );
 			break;
 
 		case TEMPLATE_ACTION_GUIDED_INPUT:
+			priv->guided_input_action = g_simple_action_new( "guided-input", NULL );
+			g_simple_action_set_enabled( priv->guided_input_action, FALSE );
 			ofa_iactionable_set_menu_item(
-					OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->guided_input_action ),
+					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->guided_input_action ),
 					_( "Guided input" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
 					ofa_iactionable_set_button(
-							OFA_IACTIONABLE( bin ), namespace, G_ACTION( priv->guided_input_action ),
+							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->guided_input_action ),
 							_( "_Guided input" )));
 			g_signal_connect( priv->guided_input_action, "activate", G_CALLBACK( action_on_guided_input_activated ), bin );
 			g_simple_action_set_enabled( priv->duplicate_action, TRUE );
@@ -761,15 +732,21 @@ action_update_enabled( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
 
 	has_template = template && OFO_IS_OPE_TEMPLATE( template );
 
-	g_simple_action_set_enabled( priv->new_action, is_new_allowed( self ));
-
-	g_simple_action_set_enabled( priv->update_action, has_template );
-
-	g_simple_action_set_enabled( priv->delete_action, is_delete_allowed( self, template ));
-
-	g_simple_action_set_enabled( priv->duplicate_action, has_template && is_new_allowed( self ));
-
-	g_simple_action_set_enabled( priv->guided_input_action, has_template && is_new_allowed( self ));
+	if( priv->new_action ){
+		g_simple_action_set_enabled( priv->new_action, is_new_allowed( self ));
+	}
+	if( priv->update_action ){
+		g_simple_action_set_enabled( priv->update_action, has_template );
+	}
+	if( priv->delete_action ){
+		g_simple_action_set_enabled( priv->delete_action, is_delete_allowed( self, template ));
+	}
+	if( priv->duplicate_action ){
+		g_simple_action_set_enabled( priv->duplicate_action, has_template && is_new_allowed( self ));
+	}
+	if( priv->guided_input_action ){
+		g_simple_action_set_enabled( priv->guided_input_action, has_template && is_new_allowed( self ));
+	}
 }
 
 static void
@@ -1014,7 +991,7 @@ ofa_ope_template_frame_bin_set_settings_key( ofaOpeTemplateFrameBin *bin, const 
 	g_return_if_fail( !priv->dispose_has_run );
 
 	g_free( priv->settings_key );
-	priv->settings_key = g_strdup( key );
+	priv->settings_key = g_strdup( my_strlen( key ) ? key : G_OBJECT_TYPE_NAME( bin ));
 }
 
 /**

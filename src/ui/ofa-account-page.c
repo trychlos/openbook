@@ -46,6 +46,10 @@
  */
 typedef struct {
 
+	/* runtime
+	 */
+	gchar              *settings_prefix;
+
 	/* UI
 	 */
 	ofaAccountFrameBin *account_bin;
@@ -64,6 +68,7 @@ static void
 accounts_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_account_page_finalize";
+	ofaAccountPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -71,6 +76,9 @@ accounts_page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_ACCOUNT_PAGE( instance ));
 
 	/* free data members here */
+	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_account_page_parent_class )->finalize( instance );
@@ -94,11 +102,16 @@ static void
 ofa_account_page_init( ofaAccountPage *self )
 {
 	static const gchar *thisfn = "ofa_account_page_init";
+	ofaAccountPagePrivate *priv;
 
 	g_return_if_fail( self && OFA_IS_ACCOUNT_PAGE( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	priv = ofa_account_page_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -128,10 +141,8 @@ v_setup_page( ofaPage *page )
 	priv->account_bin = ofa_account_frame_bin_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
-	ofa_account_frame_bin_set_settings_key(
-			priv->account_bin, G_OBJECT_TYPE_NAME( page ));
-	ofa_account_frame_bin_set_cell_data_func(
-			priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, page );
+	ofa_account_frame_bin_set_settings_key( priv->account_bin, priv->settings_prefix );
+	ofa_account_frame_bin_set_cell_data_func( priv->account_bin, ( GtkTreeCellDataFunc ) on_treeview_cell_data_func, page );
 
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_NEW );
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_UPDATE );
