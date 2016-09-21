@@ -357,186 +357,6 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 	g_signal_emit_by_name( self, signal, meta, period );
 }
 
-#if 0
-/*
- * call right after the object instanciation
- * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
- */
-static void
-attach_top_widget( ofaDossierTreeview *self )
-{
-	ofaDossierTreeviewPrivate *priv;
-	GtkWidget *top_widget;
-	GtkTreeSelection *select;
-	GtkWidget *scrolled;
-
-	priv = ofa_dossier_treeview_get_instance_private( self );
-
-	top_widget = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( top_widget ), GTK_SHADOW_IN );
-
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_scrolled_window_set_policy(
-			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-	gtk_container_add( GTK_CONTAINER( top_widget ), scrolled );
-
-	priv->tview = GTK_TREE_VIEW( gtk_tree_view_new());
-	gtk_widget_set_hexpand( GTK_WIDGET( priv->tview ), TRUE );
-	gtk_widget_set_vexpand( GTK_WIDGET( priv->tview ), TRUE );
-	gtk_tree_view_set_headers_visible( priv->tview, FALSE );
-	gtk_container_add( GTK_CONTAINER( scrolled ), GTK_WIDGET( priv->tview ));
-
-	g_signal_connect(
-			G_OBJECT( priv->tview ), "row-activated", G_CALLBACK( on_row_activated ), self );
-
-	select = gtk_tree_view_get_selection( priv->tview );
-	g_signal_connect(
-			G_OBJECT( select ), "changed", G_CALLBACK( on_row_selected ), self );
-
-	gtk_container_add( GTK_CONTAINER( self ), top_widget );
-}
-
-/**
- * ofa_dossier_treeview_set_columns:
- * @view:
- * @columns: a zero-terminated list of columns id.
- */
-void
-ofa_dossier_treeview_set_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns )
-{
-	ofaDossierTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	create_treeview_columns( view, columns );
-}
-
-/**
- * ofa_dossier_treeview_set_headers:
- */
-void
-ofa_dossier_treeview_set_headers( ofaDossierTreeview *view, gboolean visible )
-{
-	ofaDossierTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ));
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->show_headers = visible;
-	gtk_tree_view_set_headers_visible( priv->tview, visible );
-}
-
-static void
-create_treeview_columns( ofaDossierTreeview *view, ofaDossierDispColumn *columns )
-{
-	ofaDossierTreeviewPrivate *priv;
-	GtkCellRenderer *cell;
-	GtkTreeViewColumn *column;
-	gint i;
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	for( i=0 ; columns[i] ; ++i ){
-		if( columns[i] == DOSSIER_DISP_DOSNAME ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Dossier" ), cell, "text", DOSSIER_COL_DOSNAME, NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-		}
-
-		if( columns[i] == DOSSIER_DISP_PROVNAME ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Provider" ), cell, "text", DOSSIER_COL_PROVNAME, NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-		}
-
-		if( columns[i] == DOSSIER_DISP_BEGIN ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Begin" ), cell, "text", DOSSIER_COL_BEGIN, NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-		}
-
-		if( columns[i] == DOSSIER_DISP_END ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "End" ), cell, "text", DOSSIER_COL_END, NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-		}
-
-		if( columns[i] == DOSSIER_DISP_STATUS ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Status" ), cell, "text", DOSSIER_COL_STATUS, NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-		}
-
-		if( columns[i] == DOSSIER_DISP_PERNAME ){
-			cell = gtk_cell_renderer_text_new();
-			column = gtk_tree_view_column_new_with_attributes(
-							_( "Period name" ), cell, "text", DOSSIER_COL_PERNAME, NULL );
-			gtk_tree_view_append_column( priv->tview, column );
-		}
-	}
-
-	gtk_widget_show_all( GTK_WIDGET( view ));
-}
-
-/**
- * ofa_dossier_treeview_get_treeview:
- * @view: this #ofaDossierTreeview instance.
- *
- * Returns: the underlying #GtkTreeView widget.
- */
-GtkWidget *
-ofa_dossier_treeview_get_treeview( ofaDossierTreeview *view )
-{
-	ofaDossierTreeviewPrivate *priv;
-	GtkWidget *tview;
-
-	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	tview = GTK_WIDGET( priv->tview );
-
-	return( tview );
-}
-
-/**
- * ofa_dossier_treeview_get_store:
- * @view: this #ofaDossierTreeview instance.
- *
- * Returns: the underlying #ofaDossierStore store.
- */
-ofaDossierStore *
-ofa_dossier_treeview_get_store( ofaDossierTreeview *view )
-{
-	ofaDossierTreeviewPrivate *priv;
-	ofaDossierStore *store;
-
-	g_return_val_if_fail( view && OFA_IS_DOSSIER_TREEVIEW( view ), NULL );
-
-	priv = ofa_dossier_treeview_get_instance_private( view );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	store = priv->store;
-
-	return( store );
-}
-#endif
-
 /**
  * ofa_dossier_treeview_get_selected:
  * @view: this #ofaDossierTreeview instance.
@@ -656,7 +476,7 @@ ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname 
 }
 
 /**
- * ofa_dossier_treeview_set_filter_show:
+ * ofa_dossier_treeview_set_show_all:
  * @view: this #ofaDossierTreeview instance.
  * @show_all: whether show all periods of each dossier.
  *
@@ -670,7 +490,7 @@ ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname 
  * case.
  */
 void
-ofa_dossier_treeview_set_filter_show( ofaDossierTreeview *view, gboolean show_all )
+ofa_dossier_treeview_set_show_all( ofaDossierTreeview *view, gboolean show_all )
 {
 	ofaDossierTreeviewPrivate *priv;
 
@@ -681,6 +501,7 @@ ofa_dossier_treeview_set_filter_show( ofaDossierTreeview *view, gboolean show_al
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->show_all = show_all;
+	ofa_tvbin_refilter( OFA_TVBIN( view ));
 }
 
 /**

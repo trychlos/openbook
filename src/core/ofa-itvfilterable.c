@@ -173,7 +173,7 @@ ofa_itvfilterable_get_interface_version( GType type )
 
 /**
  * ofa_itvfilterable_set_child_model:
- * @instance: this #ofaIStorable instance.
+ * @instance: this #ofaITVFilterable instance.
  * @model: the child model.
  *
  * Setup the underlying child model.
@@ -200,6 +200,27 @@ ofa_itvfilterable_set_child_model( ofaITVFilterable *instance, GtkTreeModel *mod
 	gtk_tree_model_filter_set_visible_func(
 			GTK_TREE_MODEL_FILTER( sdata->filter_model ),
 			( GtkTreeModelFilterVisibleFunc ) on_filter_model, instance, NULL );
+
+	return( sdata->filter_model );
+}
+
+/**
+ * ofa_itvfilterable_get_model:
+ * @instance: this #ofaITVFilterable instance.
+ *
+ * Returns: the filter model.
+ *
+ * The returned reference is owned by the #ofaITVFilterable @instance, and
+ * should not be released by the caller.
+ */
+GtkTreeModel *
+ofa_itvfilterable_get_model( ofaITVFilterable *instance )
+{
+	sITVFilterable *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_ITVFILTERABLE( instance ), NULL );
+
+	sdata = get_itvfilterable_data( instance );
 
 	return( sdata->filter_model );
 }
