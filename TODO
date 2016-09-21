@@ -477,8 +477,6 @@
                 box which requests a confirmation for <n> operations
                 + progress bar
 
-1206 2016- 9-19 duplicate recurrent model
-
 1213
 
 -----------------------------------------------------------------------
@@ -1688,6 +1686,9 @@
 1205 2016- 9-18 PeriodClosing: archive account balances indicator should
                 be recorder as a user pref
      2016- 9-18 fixed
+
+1206 2016- 9-19 duplicate recurrent model
+     2016- 9-21 done
 
 1207 2016- 9-19 check xxx_use_yyyy() vs. yyy_is_deletable()
                 e.g. ofo_recurrent_model_use_ope_template() vs.

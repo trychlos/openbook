@@ -124,6 +124,7 @@ typedef struct {
 	ofoRecurrentModelPrivate;
 
 static ofoRecurrentModel *model_find_by_mnemo( GList *set, const gchar *mnemo );
+static gchar             *get_mnemo_new_from( const ofoRecurrentModel *model );
 static void               recurrent_model_set_upd_user( ofoRecurrentModel *model, const gchar *upd_user );
 static void               recurrent_model_set_upd_stamp( ofoRecurrentModel *model, const GTimeVal *upd_stamp );
 static gboolean           model_do_insert( ofoRecurrentModel *model, const ofaIDBConnect *connect );
@@ -311,6 +312,46 @@ ofo_recurrent_model_new( void )
 }
 
 /**
+ * ofo_recurrent_model_new_from_model:
+ * @model: the source #oforecurrent_model_ to be copied from.
+ *
+ * Allocates a new #ofoRecurrentModel object, initializing it with data
+ * copied from @model #ofoRecurrentModel source.
+ *
+ * Update the mnemo to make it unique.
+ * Update the label.
+ */
+ofoRecurrentModel *
+ofo_recurrent_model_new_from_model( const ofoRecurrentModel *model )
+{
+	ofoRecurrentModel *dest;
+	gchar *new_mnemo, *new_label;
+
+	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), NULL );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
+
+	dest = ofo_recurrent_model_new();
+
+	new_mnemo = get_mnemo_new_from( model );
+	ofo_recurrent_model_set_mnemo( dest, new_mnemo );
+	g_free( new_mnemo );
+
+	new_label = g_strdup_printf( "%s (%s)", ofo_recurrent_model_get_label( model ), _( "Duplicate" ));
+	ofo_recurrent_model_set_label( dest, new_label );
+	g_free( new_label );
+
+	ofo_recurrent_model_set_ope_template( dest, ofo_recurrent_model_get_ope_template( model ));
+	ofo_recurrent_model_set_periodicity( dest, ofo_recurrent_model_get_periodicity( model ));
+	ofo_recurrent_model_set_periodicity_detail( dest, ofo_recurrent_model_get_periodicity_detail( model ));
+	ofo_recurrent_model_set_notes( dest, ofo_recurrent_model_get_notes( model ));
+	ofo_recurrent_model_set_def_amount1( dest, ofo_recurrent_model_get_def_amount1( model ));
+	ofo_recurrent_model_set_def_amount2( dest, ofo_recurrent_model_get_def_amount2( model ));
+	ofo_recurrent_model_set_def_amount3( dest, ofo_recurrent_model_get_def_amount3( model ));
+
+	return( dest );
+}
+
+/**
  * ofo_recurrent_model_get_mnemo:
  * @model:
  */
@@ -318,6 +359,42 @@ const gchar *
 ofo_recurrent_model_get_mnemo( const ofoRecurrentModel *model )
 {
 	ofo_base_getter( RECURRENT_MODEL, model, string, NULL, REC_MNEMO );
+}
+
+/*
+ * Returns a new mnemo derived from the given one, as a newly allocated
+ * string that the caller should g_free().
+ */
+static gchar *
+get_mnemo_new_from( const ofoRecurrentModel *model )
+{
+	ofaHub *hub;
+	const gchar *mnemo;
+	gint len_mnemo;
+	gchar *str;
+	gint i, maxlen;
+
+	str = NULL;
+	hub = ofo_base_get_hub( OFO_BASE( model ));
+	mnemo = ofo_recurrent_model_get_mnemo( model );
+	len_mnemo = my_strlen( mnemo );
+	for( i=2 ; ; ++i ){
+		/* if we are greater than 9999, there is a problem... */
+		maxlen = ( i < 10 ? RECM_MNEMO_MAX_LENGTH-1 :
+					( i < 100 ? RECM_MNEMO_MAX_LENGTH-2 :
+					( i < 1000 ? RECM_MNEMO_MAX_LENGTH-3 : RECM_MNEMO_MAX_LENGTH-4 )));
+		if( maxlen < len_mnemo ){
+			str = g_strdup_printf( "%*.*s%d", maxlen, maxlen, mnemo, i );
+		} else {
+			str = g_strdup_printf( "%s%d", mnemo, i );
+		}
+		if( !ofo_recurrent_model_get_by_mnemo( hub, str )){
+			break;
+		}
+		g_free( str );
+	}
+
+	return( str );
 }
 
 /**

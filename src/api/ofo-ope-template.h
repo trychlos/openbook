@@ -157,7 +157,6 @@ ofoOpeTemplate *ofo_ope_template_new                      ( void );
 ofoOpeTemplate *ofo_ope_template_new_from_template        ( ofoOpeTemplate *model );
 
 const gchar    *ofo_ope_template_get_mnemo                ( const ofoOpeTemplate *model );
-gchar          *ofo_ope_template_get_mnemo_new_from       ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_label                ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_ledger               ( const ofoOpeTemplate *model );
 gboolean        ofo_ope_template_get_ledger_locked        ( const ofoOpeTemplate *model );
