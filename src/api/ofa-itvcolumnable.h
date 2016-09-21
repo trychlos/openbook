@@ -132,6 +132,8 @@ void   ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
 gint   ofa_itvcolumnable_get_column_id             ( ofaITVColumnable *instance,
 															GtkTreeViewColumn *column );
 
+guint  ofa_itvcolumnable_get_columns_count         ( ofaITVColumnable *instance );
+
 GMenu *ofa_itvcolumnable_get_menu                  ( ofaITVColumnable *instance );
 
 void   ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,

@@ -46,7 +46,7 @@
 #include "api/ofo-dossier.h"
 
 #include "ofa-recurrent-main.h"
-#include "ofa-recurrent-manage-page.h"
+#include "ofa-recurrent-model-page.h"
 #include "ofa-recurrent-model-properties.h"
 #include "ofa-recurrent-model-treeview.h"
 #include "ofa-recurrent-new.h"
@@ -72,98 +72,98 @@ typedef struct {
 	GSimpleAction     *update_action;
 	GSimpleAction     *delete_action;
 	GSimpleAction     *generate_action;
-	GSimpleAction     *view_waiting_action;
+	GSimpleAction     *view_opes_action;
 }
-	ofaRecurrentManagePagePrivate;
+	ofaRecurrentModelPagePrivate;
 
 static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_treeview( ofaRecurrentManagePage *page );
+static GtkWidget *setup_treeview( ofaRecurrentModelPage *page );
 static void       v_init_view( ofaPage *page );
 static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self );
-static void       on_row_activated( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self );
-static void       on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentManagePage *self );
-static void       on_delete_key( ofaRecurrentModelTreeview *view, ofoRecurrentModel *ledger, ofaRecurrentManagePage *self );
-static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
-static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
-static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
-static gboolean   check_for_deletability( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
-static void       delete_with_confirm( ofaRecurrentManagePage *self, ofoRecurrentModel *model );
-static void       action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
-static void       action_on_view_waiting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self );
+static void       on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModelPage *self );
+static void       on_row_activated( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModelPage *self );
+static void       on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentModelPage *self );
+static void       on_delete_key( ofaRecurrentModelTreeview *view, ofoRecurrentModel *model, ofaRecurrentModelPage *self );
+static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
+static gboolean   check_for_deletability( ofaRecurrentModelPage *self, ofoRecurrentModel *model );
+static void       delete_with_confirm( ofaRecurrentModelPage *self, ofoRecurrentModel *model );
+static void       action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
+static void       action_on_view_waiting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaRecurrentManagePage, ofa_recurrent_manage_page, OFA_TYPE_PAGE, 0,
-		G_ADD_PRIVATE( ofaRecurrentManagePage ))
+G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelPage, ofa_recurrent_model_page, OFA_TYPE_PAGE, 0,
+		G_ADD_PRIVATE( ofaRecurrentModelPage ))
 
 static void
-recurrent_manage_page_finalize( GObject *instance )
+recurrent_model_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_recurrent_manage_page_finalize";
-	ofaRecurrentManagePagePrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_model_page_finalize";
+	ofaRecurrentModelPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_RECURRENT_MANAGE_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_RECURRENT_MODEL_PAGE( instance ));
 
 	/* free data members here */
-	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( instance ));
+	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( instance ));
 
 	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_recurrent_manage_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_recurrent_model_page_parent_class )->finalize( instance );
 }
 
 static void
-recurrent_manage_page_dispose( GObject *instance )
+recurrent_model_page_dispose( GObject *instance )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_RECURRENT_MANAGE_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_RECURRENT_MODEL_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( instance ));
+		priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( instance ));
 
 		g_object_unref( priv->new_action );
 		g_object_unref( priv->update_action );
 		g_object_unref( priv->delete_action );
 		g_object_unref( priv->generate_action );
-		g_object_unref( priv->view_waiting_action );
+		g_object_unref( priv->view_opes_action );
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_recurrent_manage_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_recurrent_model_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_recurrent_manage_page_init( ofaRecurrentManagePage *self )
+ofa_recurrent_model_page_init( ofaRecurrentModelPage *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_manage_page_init";
-	ofaRecurrentManagePagePrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_model_page_init";
+	ofaRecurrentModelPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_RECURRENT_MANAGE_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_RECURRENT_MODEL_PAGE( self ));
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
-ofa_recurrent_manage_page_class_init( ofaRecurrentManagePageClass *klass )
+ofa_recurrent_model_page_class_init( ofaRecurrentModelPageClass *klass )
 {
-	static const gchar *thisfn = "ofa_recurrent_manage_page_class_init";
+	static const gchar *thisfn = "ofa_recurrent_model_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = recurrent_manage_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = recurrent_manage_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = recurrent_model_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = recurrent_model_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
 	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
@@ -174,36 +174,35 @@ ofa_recurrent_manage_page_class_init( ofaRecurrentManagePageClass *klass )
 static GtkWidget *
 v_setup_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_recurrent_manage_page_v_setup_view";
-	ofaRecurrentManagePagePrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_model_page_v_setup_view";
+	ofaRecurrentModelPagePrivate *priv;
 	ofaHub *hub;
 	GtkWidget *widget;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
+	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
-	widget = setup_treeview( OFA_RECURRENT_MANAGE_PAGE( page ));
+	widget = setup_treeview( OFA_RECURRENT_MODEL_PAGE( page ));
 
 	return( widget );
 }
 
 static GtkWidget *
-setup_treeview( ofaRecurrentManagePage *self )
+setup_treeview( ofaRecurrentModelPage *self )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 	ofaHub *hub;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
 
 	priv->tview = ofa_recurrent_model_treeview_new();
 	ofa_recurrent_model_treeview_set_settings_key( priv->tview, priv->settings_prefix );
-	ofa_recurrent_model_treeview_setup_columns( priv->tview );
 	ofa_recurrent_model_treeview_set_hub( priv->tview, hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
@@ -221,10 +220,10 @@ setup_treeview( ofaRecurrentManagePage *self )
 static GtkWidget *
 v_setup_buttons( ofaPage *page )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 	ofaButtonsBox *buttons_box;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
+	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
 
 	buttons_box = ofa_buttons_box_new();
 	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
@@ -280,17 +279,18 @@ v_setup_buttons( ofaPage *page )
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->generate_action ),
 					_( "_Generate from selected..." )));
 
-	/* view entries */
-	priv->view_waiting_action = g_simple_action_new( "viewwaiting", NULL );
-	g_signal_connect( priv->view_waiting_action, "activate", G_CALLBACK( action_on_view_waiting_activated ), page );
+	/* view operations - always enabled */
+	priv->view_opes_action = g_simple_action_new( "viewwaiting", NULL );
+	g_simple_action_set_enabled( priv->view_opes_action, TRUE );
+	g_signal_connect( priv->view_opes_action, "activate", G_CALLBACK( action_on_view_waiting_activated ), page );
 	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_waiting_action ),
-			_( "View waiting operations" ));
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_opes_action ),
+			_( "View operations..." ));
 	ofa_buttons_box_append_button(
 			buttons_box,
 			ofa_iactionable_set_button(
-					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_waiting_action ),
-					_( "_View waiting operations" )));
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_opes_action ),
+					_( "_View operations..." )));
 
 	return( GTK_WIDGET( buttons_box ));
 }
@@ -298,13 +298,13 @@ v_setup_buttons( ofaPage *page )
 static void
 v_init_view( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_recurrent_manage_page_v_init_view";
-	ofaRecurrentManagePagePrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_model_page_v_init_view";
+	ofaRecurrentModelPagePrivate *priv;
 	GMenu *menu;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
+	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -320,11 +320,11 @@ v_init_view( ofaPage *page )
 static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 
-	g_return_val_if_fail( page && OFA_IS_RECURRENT_MANAGE_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_RECURRENT_MODEL_PAGE( page ), NULL );
 
-	priv = ofa_recurrent_manage_page_get_instance_private( OFA_RECURRENT_MANAGE_PAGE( page ));
+	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
 
 	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
@@ -333,20 +333,26 @@ v_get_top_focusable_widget( const ofaPage *page )
  * RecurrentModelTreeview callback
  */
 static void
-on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self )
+on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModelPage *self )
 {
-#if 0
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 	gboolean is_model;
+	ofoRecurrentModel *model;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
-	is_model = ledger && OFO_IS_LEDGER( ledger );
+	is_model = FALSE;
+	model = NULL;
 
-	g_simple_action_set_enabled( priv->update_action, is_ledger );
-	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, ledger ));
-	g_simple_action_set_enabled( priv->view_entries_action, is_ledger && ofo_ledger_has_entries( ledger ));
-#endif
+	if( g_list_length( list ) == 1 ){
+		model = ( ofoRecurrentModel * ) list->data;
+		is_model = model && OFO_IS_RECURRENT_MODEL( model );
+	}
+
+	g_simple_action_set_enabled( priv->update_action, is_model );
+	g_simple_action_set_enabled( priv->delete_action, is_model && check_for_deletability( self, model ));
+
+	g_simple_action_set_enabled( priv->generate_action, priv->is_writable && g_list_length( list ) > 0 );
 }
 
 /*
@@ -354,156 +360,50 @@ on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManag
  * Activation of a single row open the update dialog, else is ignored
  */
 static void
-on_row_activated( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentManagePage *self )
+on_row_activated( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModelPage *self )
 {
+	ofaRecurrentModelPagePrivate *priv;
+
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
 	if( g_list_length( list ) == 1 ){
-		//g_action_activate( G_ACTION( priv->update_action ), NULL );
+		g_action_activate( G_ACTION( priv->update_action ), NULL );
 	}
 }
 
 static void
-on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentManagePage *self )
+on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentModelPage *self )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	if( priv->is_writable ){
-		//g_action_activate( G_ACTION( priv->new_action ), NULL );
+		g_action_activate( G_ACTION( priv->new_action ), NULL );
 	}
 }
 
 /*
- * only delete if there is only one selected ledger
+ * only delete if there is only one selected model
  */
 static void
-on_delete_key( ofaRecurrentModelTreeview *view, ofoRecurrentModel *ledger, ofaRecurrentManagePage *self )
+on_delete_key( ofaRecurrentModelTreeview *view, ofoRecurrentModel *model, ofaRecurrentModelPage *self )
 {
-	/*
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
-	if( check_for_deletability( self, ledger )){
+	if( check_for_deletability( self, model )){
 		g_action_activate( G_ACTION( priv->delete_action ), NULL );
 	}
-	*/
 }
-
-#if 0
-/*
- * selection is multiple mode (0 to n selected rows)
- */
-static void
-tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentManagePage *self )
-{
-	ofaRecurrentManagePagePrivate *priv;
-	GList *selected;
-	guint count;
-	ofoRecurrentModel *model;
-
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
-
-	selected = tview_get_selected( self );
-	count = g_list_length( selected );
-
-	model = ( count == 1 ) ? ( ofoRecurrentModel * ) selected->data : NULL;
-	g_return_if_fail( count != 1 || ( model && OFO_IS_RECURRENT_MODEL( model )));
-
-	if( priv->update_btn ){
-		gtk_widget_set_sensitive( priv->update_btn,
-				count == 1 );
-	}
-	if( priv->delete_btn ){
-		gtk_widget_set_sensitive( priv->delete_btn,
-				priv->is_writable && count == 1 && ofo_recurrent_model_is_deletable( model ));
-	}
-	if( priv->generate_btn ){
-		gtk_widget_set_sensitive( priv->generate_btn,
-				priv->is_writable && count > 0 );
-	}
-
-	g_list_free( selected );
-}
-
-/*
- * Returns a GList of selected ofoRecurrentModel objects
- *
- * The returned list should be #g_list_free() by the caller.
- */
-static GList *
-tview_get_selected( ofaRecurrentManagePage *self )
-{
-	ofaRecurrentManagePagePrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GList *objects, *paths, *it;
-	ofoRecurrentModel *object;
-
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
-
-	objects = NULL;
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->tview ));
-	paths = gtk_tree_selection_get_selected_rows( select, &tmodel );
-
-	if( paths ){
-		for( it=paths ; it ; it=it->next ){
-			if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data )){
-				gtk_tree_model_get( tmodel, &iter, REC_MODEL_COL_OBJECT, &object, -1 );
-				g_return_val_if_fail( object && OFO_IS_RECURRENT_MODEL( object ), NULL );
-				g_object_unref( object );
-				objects = g_list_prepend( objects, object );
-			}
-		}
-		g_list_free_full( paths, ( GDestroyNotify ) gtk_tree_path_free );
-	}
-
-	return( objects );
-}
-
-/**
- * ofa_recurrent_manage_page_get_selected:
- * @page: this #ofaRecurrentManagePage page.
- *
- * Returns: a GList of selected ofoRecurrentModel objects.
- *
- * The returned list should be #g_list_free() by the caller.
- */
-GList *
-ofa_recurrent_manage_page_get_selected( ofaRecurrentManagePage *page )
-{
-	g_return_val_if_fail( page && OFA_IS_RECURRENT_MANAGE_PAGE( page ), NULL );
-	g_return_val_if_fail( !OFA_PAGE( page )->prot->dispose_has_run, NULL );
-
-	return( tview_get_selected( page ));
-}
-
-static void
-store_on_row_inserted_or_removed( ofaRecurrentModelStore *store, ofaRecurrentManagePage *self )
-{
-	ofaRecurrentManagePagePrivate *priv;
-	GList *dataset;
-	guint count;
-	ofaHub *hub;
-
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	dataset = ofo_recurrent_model_get_dataset( hub );
-	count = g_list_length( dataset );
-
-	gtk_widget_set_sensitive( priv->generate_btn, count > 0 );
-}
-#endif
 
 /*
  * create a new recurrent model
  * creating a new recurrent record is the rule of 'Declare' button
  */
 static void
-action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
 	ofoRecurrentModel *model;
 	GtkWindow *toplevel;
@@ -517,14 +417,14 @@ action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentMan
  * Update action is expected to be used when selection is single
  */
 static void
-action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 	GList *selected;
 	ofoRecurrentModel *model;
 	GtkWindow *toplevel;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	selected = ofa_recurrent_model_treeview_get_selected( priv->tview );
 	if( g_list_length( selected ) == 1 ){
@@ -542,13 +442,13 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrent
  * (and dossier is writable, and record is deletable)
  */
 static void
-action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 	GList *selected;
 	ofoRecurrentModel *model;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	selected = ofa_recurrent_model_treeview_get_selected( priv->tview );
 	if( g_list_length( selected ) == 1 ){
@@ -563,12 +463,12 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrent
 }
 
 static gboolean
-check_for_deletability( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
+check_for_deletability( ofaRecurrentModelPage *self, ofoRecurrentModel *model )
 {
-	ofaRecurrentManagePagePrivate *priv;
+	ofaRecurrentModelPagePrivate *priv;
 	gboolean is_model;
 
-	priv = ofa_recurrent_manage_page_get_instance_private( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	is_model = model && OFO_IS_RECURRENT_MODEL( model );
 
@@ -576,7 +476,7 @@ check_for_deletability( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
 }
 
 static void
-delete_with_confirm( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
+delete_with_confirm( ofaRecurrentModelPage *self, ofoRecurrentModel *model )
 {
 	gchar *msg;
 	gboolean delete_ok;
@@ -597,7 +497,7 @@ delete_with_confirm( ofaRecurrentManagePage *self, ofoRecurrentModel *model )
  * generating new operations from current selection
  */
 static void
-action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
+action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
 	GtkWindow *toplevel;
 
@@ -610,7 +510,7 @@ action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
  * opening the Run page
  */
 static void
-action_on_view_waiting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentManagePage *self )
+action_on_view_waiting_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
 	ofaIThemeManager *manager;
 

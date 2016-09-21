@@ -337,6 +337,10 @@ ofa_class_treeview_set_hub( ofaClassTreeview *view, ofaHub *hub )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
+	if( !ofa_itvcolumnable_get_columns_count( OFA_ITVCOLUMNABLE( view ))){
+		setup_columns( view );
+	}
+
 	priv->store = ofa_class_store_new( hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );

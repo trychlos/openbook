@@ -52,10 +52,6 @@ typedef struct {
 	GtkShadowType    shadow;
 	gboolean         write_settings;
 
-	/* runtime
-	 */
-	guint            columns_count;
-
 	/* UI
 	 */
 	GtkWidget       *frame;
@@ -339,7 +335,6 @@ ofa_tvbin_init( ofaTVBin *self )
 	priv = ofa_tvbin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->columns_count = 0;
 }
 
 static void
@@ -762,7 +757,7 @@ ofa_tvbin_set_name( ofaTVBin *bin, const gchar *name )
 	priv = ofa_tvbin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
-	g_return_if_fail( priv->columns_count == 0 );
+	g_return_if_fail( ofa_itvcolumnable_get_columns_count( OFA_ITVCOLUMNABLE( bin )) == 0 );
 
 	g_free( priv->name );
 	priv->name = g_strdup( my_strlen( name ) ? name : G_OBJECT_TYPE_NAME( bin ));
@@ -1296,13 +1291,12 @@ add_column( ofaTVBin *bin, GtkTreeViewColumn *column, gint column_id, const gcha
 
 	priv = ofa_tvbin_get_instance_private( bin );
 
-	if( priv->columns_count == 0 ){
+	if( ofa_itvcolumnable_get_columns_count( OFA_ITVCOLUMNABLE( bin )) == 0 ){
 		ofa_itvcolumnable_set_name( OFA_ITVCOLUMNABLE( bin ), priv->name );
 		ofa_itvcolumnable_set_treeview( OFA_ITVCOLUMNABLE( bin ), GTK_TREE_VIEW( priv->treeview ));
 	}
 
 	ofa_itvcolumnable_add_column( OFA_ITVCOLUMNABLE( bin ), column, column_id, menu_label );
-	priv->columns_count += 1;
 }
 
 /*
@@ -1474,7 +1468,7 @@ ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 	priv = ofa_tvbin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
-	g_return_if_fail( priv->columns_count > 0 );
+	g_return_if_fail( ofa_itvcolumnable_get_columns_count( OFA_ITVCOLUMNABLE( bin )) > 0 );
 
 	filter_model = ofa_itvfilterable_set_child_model( OFA_ITVFILTERABLE( bin ), store );
 

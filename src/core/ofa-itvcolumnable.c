@@ -434,6 +434,24 @@ get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeV
 }
 
 /**
+ * ofa_itvcolumnable_get_columns_count:
+ * @instance: this #ofaITVColumnable instance.
+ *
+ * Returns: the count of defined columns.
+ */
+guint
+ofa_itvcolumnable_get_columns_count( ofaITVColumnable *instance )
+{
+	sITVColumnable *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ), 0 );
+
+	sdata = get_instance_data( instance );
+
+	return( g_list_length( sdata->columns_list ));
+}
+
+/**
  * ofa_itvcolumnable_get_menu:
  * @instance: this #ofaITVColumnable instance.
  *

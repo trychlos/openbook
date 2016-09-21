@@ -58,7 +58,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter              *getter;
-	ofaRecurrentManagePage  *manage_page;
+	ofaRecurrentModelPage   *model_page;
 
 	/* internals
 	 */
@@ -196,10 +196,10 @@ ofa_recurrent_new_class_init( ofaRecurrentNewClass *klass )
  * ofa_recurrent_new_run:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the parent window.
- * @page: the current #ofaRecurrentManagePage page.
+ * @page: the current #ofaRecurrentModelPage page.
  */
 void
-ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentManagePage *page )
+ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentModelPage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_new_run";
 	ofaRecurrentNew *self;
@@ -218,7 +218,7 @@ ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentManage
 	priv = ofa_recurrent_new_get_instance_private( self );
 
 	priv->getter = getter;
-	priv->manage_page = page;
+	priv->model_page = page;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -484,7 +484,7 @@ generate_do( ofaRecurrentNew *self )
 	priv = ofa_recurrent_new_get_instance_private( self );
 
 	hub = ofa_igetter_get_hub( priv->getter );
-	models_dataset = ofa_recurrent_manage_page_get_selected( priv->manage_page );
+	models_dataset = ofa_recurrent_model_page_get_selected( priv->model_page );
 	//g_debug( "generate_do: models_dataset_count=%d", g_list_length( models_dataset ));
 
 	count = 0;

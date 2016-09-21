@@ -43,7 +43,6 @@
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-currency.h"
-#include "api/ofo-dossier.h"
 
 #include "core/ofa-account-store.h"
 #include "core/ofa-account-treeview.h"

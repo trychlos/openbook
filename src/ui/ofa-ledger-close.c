@@ -333,9 +333,7 @@ setup_treeview( ofaLedgerClose *self )
 
 	priv->tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
-	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_MULTIPLE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( self ));
-	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
