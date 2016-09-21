@@ -103,17 +103,19 @@ static const gchar  *st_settings        = "LedgerClose";
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
-static void      setup_ledgers_treeview( ofaLedgerClose *self );
+static void      setup_treeview( ofaLedgerClose *self );
 static void      setup_date( ofaLedgerClose *self );
 static void      setup_others( ofaLedgerClose *self );
 static void      setup_actions( ofaLedgerClose *self );
 static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
+static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
 static void      on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
 static void      on_date_changed( GtkEditable *entry, ofaLedgerClose *self );
-static void      check_for_enable_dlg( ofaLedgerClose *self, GList *selected );
+static gboolean  check_for_enable_dlg( ofaLedgerClose *self, GList *selected );
 static gboolean  is_dialog_validable( ofaLedgerClose *self, GList *selected );
-static void      check_foreach_ledger( ofaLedgerClose *self, const gchar *ledger );
+static void      check_foreach_ledger( ofaLedgerClose *self, ofoLedger *ledger );
 static void      on_ok_clicked( GtkButton *button, ofaLedgerClose *self );
+static void      do_ok( ofaLedgerClose *self );
 static gboolean  do_close( ofaLedgerClose *self );
 static void      do_close_ledgers( sClose *close_data );
 static void      prepare_grid( sClose *close_data, const gchar *mnemo, GtkWidget *grid );
@@ -310,7 +312,7 @@ idialog_init( myIDialog *instance )
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	setup_ledgers_treeview( OFA_LEDGER_CLOSE( instance ));
+	setup_treeview( OFA_LEDGER_CLOSE( instance ));
 	setup_date( OFA_LEDGER_CLOSE( instance ));
 	setup_others( OFA_LEDGER_CLOSE( instance ));
 	setup_actions( OFA_LEDGER_CLOSE( instance ));
@@ -319,7 +321,7 @@ idialog_init( myIDialog *instance )
 }
 
 static void
-setup_ledgers_treeview( ofaLedgerClose *self )
+setup_treeview( ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
 	GtkWidget *tview_parent, *label;
@@ -340,8 +342,8 @@ setup_ledgers_treeview( ofaLedgerClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 
-	/* row activation is only sent when selection_count is 1 - not usable here */
 	g_signal_connect( priv->tview, "ofa-ledchanged", G_CALLBACK( on_rows_selected ), self );
+	g_signal_connect( priv->tview, "ofa-ledactivated", G_CALLBACK( on_rows_activated ), self );
 }
 
 static void
@@ -410,12 +412,24 @@ setup_actions( ofaLedgerClose *self )
 
 /*
  * LedgerTreeview callback
- * @selected: list of path of selected tows
+ * @selected: list of selected objects
  */
 static void
 on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self )
 {
 	check_for_enable_dlg( self, selected );
+}
+
+/*
+ * LedgerTreeview callback
+ * @selected: list of selected objects
+ */
+static void
+on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self )
+{
+	if( check_for_enable_dlg( self, selected )){
+		do_ok( self );
+	}
 }
 
 static void
@@ -449,7 +463,7 @@ on_date_changed( GtkEditable *entry, ofaLedgerClose *self )
 	check_for_enable_dlg( self, NULL );
 }
 
-static void
+static gboolean
 check_for_enable_dlg( ofaLedgerClose *self, GList *selected )
 {
 	ofaLedgerClosePrivate *priv;
@@ -464,6 +478,8 @@ check_for_enable_dlg( ofaLedgerClose *self, GList *selected )
 	if( ok ){
 		set_settings( self );
 	}
+
+	return( ok );
 }
 
 /*
@@ -525,7 +541,7 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 		}
 
 		for( it=selected ; it ; it=it->next ){
-			check_foreach_ledger( self, ( const gchar * ) it->data );
+			check_foreach_ledger( self, ( ofoLedger * ) it->data );
 		}
 
 		if( priv->count == 0 ){
@@ -549,19 +565,17 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 }
 
 static void
-check_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo )
+check_foreach_ledger( ofaLedgerClose *self, ofoLedger *ledger )
 {
 	ofaLedgerClosePrivate *priv;
-	ofoLedger *ledger;
 	const GDate *last;
+
+	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
 	g_return_if_fail( my_date_is_valid( &priv->closing ));
 	priv->count += 1;
-
-	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
-	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	last = ofo_ledger_get_last_close( ledger );
 	if( my_date_is_valid( last ) && my_date_compare( &priv->closing, last ) < 0 ){
@@ -572,11 +586,19 @@ check_foreach_ledger( ofaLedgerClose *self, const gchar *mnemo )
 static void
 on_ok_clicked( GtkButton *button, ofaLedgerClose *self )
 {
+	do_ok( self );
+}
+
+static void
+do_ok( ofaLedgerClose *self )
+{
 	ofaLedgerClosePrivate *priv;
 	GtkWidget *close_btn;
 	GtkWindow *toplevel;
 
 	priv = ofa_ledger_close_get_instance_private( self );
+
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->do_close_btn ), FALSE );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 
@@ -594,8 +616,6 @@ on_ok_clicked( GtkButton *button, ofaLedgerClose *self )
 					"ledger until you fix the errors." ));
 
 	} else if( do_close( self )){
-		gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-
 		close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( self ), GTK_RESPONSE_CANCEL );
 		g_return_if_fail( close_btn && GTK_IS_BUTTON( close_btn ));
 		gtk_button_set_label( GTK_BUTTON( close_btn ), _( "_Close" ));

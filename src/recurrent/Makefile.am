@@ -72,6 +72,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-model-properties.h					\
 	ofa-recurrent-model-store.c							\
 	ofa-recurrent-model-store.h							\
+	ofa-recurrent-model-treeview.c						\
+	ofa-recurrent-model-treeview.h						\
 	ofa-recurrent-new.c									\
 	ofa-recurrent-new.h									\
 	ofa-recurrent-run-page.c							\

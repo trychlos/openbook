@@ -70,7 +70,6 @@
  * Columns may be dynamically made visible/invisible.
  *
  * Properties:
- *
  * - ofa-tvbin-headers:
  *   whether the columns headers are visible;
  *   defaults to be visible.

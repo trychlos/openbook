@@ -51,6 +51,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	gchar               *settings_key;
 
 	/* UI
 	 */
@@ -77,7 +78,6 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-book-bin.ui";
-static const gchar *st_settings         = "RenderLedgersBook";
 
 static void setup_bin( ofaLedgerBookBin *self );
 static void setup_ledger_selection( ofaLedgerBookBin *self );
@@ -98,6 +98,7 @@ static void
 ledgers_book_bin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ledger_book_bin_finalize";
+	ofaLedgerBookBinPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -105,6 +106,9 @@ ledgers_book_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_LEDGER_BOOK_BIN( instance ));
 
 	/* free data members here */
+	priv = ofa_ledger_book_bin_get_instance_private( OFA_LEDGER_BOOK_BIN( instance ));
+
+	g_free( priv->settings_key );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ledger_book_bin_parent_class )->finalize( instance );
@@ -144,6 +148,7 @@ ofa_ledger_book_bin_init( ofaLedgerBookBin *self )
 	priv = ofa_ledger_book_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_key = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -181,11 +186,13 @@ ofa_ledger_book_bin_class_init( ofaLedgerBookBinClass *klass )
 /**
  * ofa_ledger_book_bin_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_key: the prefix of the user's settings keys used by this
+ *  class and its derivative.
  *
  * Returns: a newly allocated #ofaLedgerBookBin object.
  */
 ofaLedgerBookBin *
-ofa_ledger_book_bin_new( ofaIGetter *getter )
+ofa_ledger_book_bin_new( ofaIGetter *getter, const gchar *settings_key )
 {
 	ofaLedgerBookBin *self;
 	ofaLedgerBookBinPrivate *priv;
@@ -196,6 +203,11 @@ ofa_ledger_book_bin_new( ofaIGetter *getter )
 
 	priv = ofa_ledger_book_bin_get_instance_private( self );
 	priv->getter = getter;
+
+	if( my_strlen( settings_key )){
+		g_free( priv->settings_key );
+		priv->settings_key = g_strdup( settings_key );
+	}
 
 	setup_bin( self );
 	setup_ledger_selection( self );
@@ -247,7 +259,7 @@ setup_ledger_selection( ofaLedgerBookBin *self )
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_hexpand( OFA_TVBIN( priv->tview ), FALSE );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_MULTIPLE );
-	ofa_ledger_treeview_set_settings_key( priv->tview, st_settings );
+	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_key );
 	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_ledger_treeview_set_hub( priv->tview, hub );
 
@@ -500,7 +512,7 @@ load_settings( ofaLedgerBookBin *bin )
 
 	priv = ofa_ledger_book_bin_get_instance_private( bin );
 
-	list = ofa_settings_user_get_string_list( st_settings );
+	list = ofa_settings_user_get_string_list( priv->settings_key );
 
 	it = list;
 	cstr = it ? it->data : NULL;
@@ -558,7 +570,7 @@ set_settings( ofaLedgerBookBin *bin )
 			my_strlen( sdto ) ? sdto : "",
 			priv->new_page ? "True":"False" );
 
-	ofa_settings_user_set_string( st_settings, str );
+	ofa_settings_user_set_string( priv->settings_key, str );
 
 	g_free( sdfrom );
 	g_free( sdto );
