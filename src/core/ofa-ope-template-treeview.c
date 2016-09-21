@@ -37,6 +37,7 @@
 #include "api/ofa-istore.h"
 #include "api/ofa-itree-adder.h"
 #include "api/ofa-itvcolumnable.h"
+#include "api/ofa-itvsortable.h"
 #include "api/ofa-ope-template-store.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-ledger.h"
@@ -79,6 +80,7 @@ static void            on_selection_delete( ofaOpeTemplateTreeview *self, GtkTre
 static void            get_and_send( ofaOpeTemplateTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoOpeTemplate *get_selected_with_selection( ofaOpeTemplateTreeview *self, GtkTreeSelection *selection );
 static gboolean        v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
+static gint            v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateTreeview, ofa_ope_template_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateTreeview ))
@@ -208,6 +210,7 @@ ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ope_template_treeview_finalize;
 
 	OFA_TVBIN_CLASS( klass )->filter = v_filter;
+	OFA_TVBIN_CLASS( klass )->sort = v_sort;
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -593,4 +596,88 @@ v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 	g_free( ledger );
 
 	return( cmp == 0 );
+}
+
+static gint
+v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+{
+	static const gchar *thisfn = "ofa_ope_template_treeview_v_sort";
+	gint cmp;
+	gchar *mnemoa, *labela, *ledgera, *refa, *notesa, *usera, *stampa;
+	gchar *mnemob, *labelb, *ledgerb, *refb, *notesb, *userb, *stampb;
+	GdkPixbuf *pnga, *pngb;
+
+	gtk_tree_model_get( tmodel, a,
+			OPE_TEMPLATE_COL_MNEMO,     &mnemoa,
+			OPE_TEMPLATE_COL_LABEL,     &labela,
+			OPE_TEMPLATE_COL_LEDGER,    &ledgera,
+			OPE_TEMPLATE_COL_REF,       &refa,
+			OPE_TEMPLATE_COL_NOTES,     &notesa,
+			OPE_TEMPLATE_COL_NOTES_PNG, &pnga,
+			OPE_TEMPLATE_COL_UPD_USER,  &usera,
+			OPE_TEMPLATE_COL_UPD_STAMP, &stampa,
+			-1 );
+
+	gtk_tree_model_get( tmodel, b,
+			OPE_TEMPLATE_COL_MNEMO,     &mnemob,
+			OPE_TEMPLATE_COL_LABEL,     &labelb,
+			OPE_TEMPLATE_COL_LEDGER,    &ledgerb,
+			OPE_TEMPLATE_COL_REF,       &refb,
+			OPE_TEMPLATE_COL_NOTES,     &notesb,
+			OPE_TEMPLATE_COL_NOTES_PNG, &pngb,
+			OPE_TEMPLATE_COL_UPD_USER,  &userb,
+			OPE_TEMPLATE_COL_UPD_STAMP, &stampb,
+			-1 );
+
+	cmp = 0;
+
+	switch( column_id ){
+		case OPE_TEMPLATE_COL_MNEMO:
+			cmp = my_collate( mnemoa, mnemob );
+			break;
+		case OPE_TEMPLATE_COL_LABEL:
+			cmp = my_collate( labela, labelb );
+			break;
+		case OPE_TEMPLATE_COL_LEDGER:
+			cmp = my_collate( ledgera, ledgerb );
+			break;
+		case OPE_TEMPLATE_COL_REF:
+			cmp = my_collate( refa, refb );
+			break;
+		case OPE_TEMPLATE_COL_NOTES:
+			cmp = my_collate( notesa, notesb );
+			break;
+		case OPE_TEMPLATE_COL_NOTES_PNG:
+			cmp = ofa_itvsortable_sort_png( pnga, pngb );
+			break;
+		case OPE_TEMPLATE_COL_UPD_USER:
+			cmp = my_collate( usera, userb );
+			break;
+		case OPE_TEMPLATE_COL_UPD_STAMP:
+			cmp = my_collate( stampa, stampb );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, column_id );
+			break;
+	}
+
+	g_free( mnemoa );
+	g_free( labela );
+	g_free( ledgera );
+	g_free( refa );
+	g_free( notesa );
+	g_free( usera );
+	g_free( stampa );
+	g_clear_object( &pnga );
+
+	g_free( mnemob );
+	g_free( labelb );
+	g_free( ledgerb );
+	g_free( refb );
+	g_free( notesb );
+	g_free( userb );
+	g_free( stampb );
+	g_clear_object( &pngb );
+
+	return( cmp );
 }
