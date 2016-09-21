@@ -915,25 +915,15 @@ static void
 do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
-	gchar *new_mnemo;
 	ofoOpeTemplate *duplicate;
-	gchar *str;
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	duplicate = ofo_ope_template_new_from_template( template );
-	new_mnemo = ofo_ope_template_get_mnemo_new_from( template );
-	ofo_ope_template_set_mnemo( duplicate, new_mnemo );
-
-	str = g_strdup_printf( "%s (%s)", ofo_ope_template_get_label( template ), _( "Duplicate" ));
-	ofo_ope_template_set_label( duplicate, str );
-	g_free( str );
 
 	if( !ofo_ope_template_insert( duplicate, priv->hub )){
 		g_object_unref( duplicate );
 	}
-
-	g_free( new_mnemo );
 }
 
 static void

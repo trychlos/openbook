@@ -59,6 +59,9 @@ typedef struct {
 }
 	ofoRecurrentModelClass;
 
+/* data max length */
+#define RECM_MNEMO_MAX_LENGTH           64
+
 GType              ofo_recurrent_model_get_type               ( void ) G_GNUC_CONST;
 
 GList             *ofo_recurrent_model_get_dataset            ( ofaHub *hub );
@@ -68,6 +71,7 @@ ofoRecurrentModel *ofo_recurrent_model_get_by_mnemo           ( ofaHub *hub, con
 gboolean           ofo_recurrent_model_use_ope_template       ( ofaHub *hub, const gchar *ope_template );
 
 ofoRecurrentModel *ofo_recurrent_model_new                    ( void );
+ofoRecurrentModel *ofo_recurrent_model_new_from_model         ( const ofoRecurrentModel *model );
 
 const gchar       *ofo_recurrent_model_get_mnemo              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_label              ( const ofoRecurrentModel *model );

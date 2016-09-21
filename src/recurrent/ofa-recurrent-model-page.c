@@ -70,6 +70,7 @@ typedef struct {
 	 */
 	GSimpleAction     *new_action;
 	GSimpleAction     *update_action;
+	GSimpleAction     *duplicate_action;
 	GSimpleAction     *delete_action;
 	GSimpleAction     *generate_action;
 	GSimpleAction     *view_opes_action;
@@ -87,6 +88,7 @@ static void       on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentMo
 static void       on_delete_key( ofaRecurrentModelTreeview *view, ofoRecurrentModel *model, ofaRecurrentModelPage *self );
 static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
 static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
+static void       action_on_duplicate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
 static gboolean   check_for_deletability( ofaRecurrentModelPage *self, ofoRecurrentModel *model );
 static void       delete_with_confirm( ofaRecurrentModelPage *self, ofoRecurrentModel *model );
@@ -253,6 +255,18 @@ v_setup_buttons( ofaPage *page )
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
+	/* duplicate action */
+	priv->duplicate_action = g_simple_action_new( "duplicate", NULL );
+	g_signal_connect( priv->duplicate_action, "activate", G_CALLBACK( action_on_duplicate_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->duplicate_action ),
+			_( "Duplicate this" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_set_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->duplicate_action ),
+					_( "Duplicate" )));
+
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
@@ -350,6 +364,7 @@ on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModel
 	}
 
 	g_simple_action_set_enabled( priv->update_action, is_model );
+	g_simple_action_set_enabled( priv->duplicate_action, is_model );
 	g_simple_action_set_enabled( priv->delete_action, is_model && check_for_deletability( self, model ));
 
 	g_simple_action_set_enabled( priv->generate_action, priv->is_writable && g_list_length( list ) > 0 );
@@ -432,6 +447,29 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecurrent
 		g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 		ofa_recurrent_model_properties_run( OFA_IGETTER( self ), toplevel, model );
+	}
+
+	g_list_free( selected );
+}
+
+static void
+action_on_duplicate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
+{
+	ofaRecurrentModelPagePrivate *priv;
+	GList *selected;
+	ofoRecurrentModel *model;
+	ofoRecurrentModel *duplicate;
+
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	selected = ofa_recurrent_model_treeview_get_selected( priv->tview );
+	if( g_list_length( selected ) == 1 ){
+		model = ( ofoRecurrentModel * ) selected->data;
+		g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+		duplicate = ofo_recurrent_model_new_from_model( model );
+		if( !ofo_recurrent_model_insert( duplicate, ofa_igetter_get_hub( OFA_IGETTER( self )))){
+			g_object_unref( duplicate );
+		}
 	}
 
 	g_list_free( selected );

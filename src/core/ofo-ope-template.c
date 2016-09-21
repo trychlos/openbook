@@ -179,6 +179,7 @@ typedef struct {
 	ofoOpeTemplatePrivate;
 
 static ofoOpeTemplate *model_find_by_mnemo( GList *set, const gchar *mnemo );
+static gchar          *get_mnemo_new_from( const ofoOpeTemplate *model );
 static void            ope_template_set_upd_user( ofoOpeTemplate *model, const gchar *upd_user );
 static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
 static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *connect );
@@ -382,14 +383,21 @@ ofo_ope_template_new_from_template( ofoOpeTemplate *model )
 {
 	ofoOpeTemplate *dest;
 	gint count, i;
+	gchar *new_mnemo, *new_label;
 
 	g_return_val_if_fail( model && OFO_IS_OPE_TEMPLATE( model ), NULL );
 	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, NULL );
 
 	dest = ofo_ope_template_new();
 
-	ofo_ope_template_set_mnemo( dest, ofo_ope_template_get_mnemo( model ));
-	ofo_ope_template_set_label( dest, ofo_ope_template_get_label( model ));
+	new_mnemo = get_mnemo_new_from( model );
+	ofo_ope_template_set_mnemo( dest, new_mnemo );
+	g_free( new_mnemo );
+
+	new_label = g_strdup_printf( "%s (%s)", ofo_ope_template_get_label( model ), _( "Duplicate" ));
+	ofo_ope_template_set_label( dest, new_label );
+	g_free( new_label );
+
 	ofo_ope_template_set_ledger( dest, ofo_ope_template_get_ledger( model ));
 	ofo_ope_template_set_ledger_locked( dest, ofo_ope_template_get_ledger_locked( model ));
 	ofo_ope_template_set_ref( dest, ofo_ope_template_get_ref( model ));
@@ -422,14 +430,12 @@ ofo_ope_template_get_mnemo( const ofoOpeTemplate *model )
 	ofo_base_getter( OPE_TEMPLATE, model, string, NULL, OTE_MNEMO );
 }
 
-/**
- * ofo_ope_template_get_mnemo_new_from:
- *
+/*
  * Returns a new mnemo derived from the given one, as a newly allocated
  * string that the caller should g_free().
  */
-gchar *
-ofo_ope_template_get_mnemo_new_from( const ofoOpeTemplate *model )
+static gchar *
+get_mnemo_new_from( const ofoOpeTemplate *model )
 {
 	ofaHub *hub;
 	const gchar *mnemo;
