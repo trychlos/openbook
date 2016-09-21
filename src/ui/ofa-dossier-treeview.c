@@ -575,7 +575,7 @@ v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 static gint
 v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
-	static const gchar *thisfn = "ofa_currency_treeview_v_sort";
+	static const gchar *thisfn = "ofa_dossier_treeview_v_sort";
 	gint cmp;
 	gchar *dosa, *prova, *pera, *enda, *begina, *stata;
 	gchar *dosb, *provb, *perb, *endb, *beginb, *statb;
