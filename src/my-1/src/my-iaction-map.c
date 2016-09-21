@@ -32,10 +32,21 @@
 #define IACTION_MAP_LAST_VERSION          1
 
 static guint  st_initializations        = 0;	/* interface initialization count */
+static GList *st_registered             = NULL;
 
-static GType         register_type( void );
-static void          interface_base_init( myIActionMapInterface *klass );
-static void          interface_base_finalize( myIActionMapInterface *klass );
+/* a data structure allocated for each instance, and attached to the
+ * registered list
+ */
+typedef struct {
+	myIActionMap *map;
+	gchar        *target;
+}
+	sMap;
+
+static GType   register_type( void );
+static void    interface_base_init( myIActionMapInterface *klass );
+static void    interface_base_finalize( myIActionMapInterface *klass );
+static void    on_instance_finalized( sMap *smap, GObject *finalized_instance );
 
 /**
  * my_iaction_map_get_type:
@@ -163,6 +174,57 @@ my_iaction_map_get_interface_version( GType type )
 }
 
 /**
+ * my_iaction_map_lookup_map:
+ * @target: the searched target.
+ *
+ * Returns: the #myIActionMap instance which manages this @target.
+ */
+myIActionMap *
+my_iaction_map_lookup_map( const gchar *target )
+{
+	GList *it;
+	sMap *smap;
+
+	g_return_val_if_fail( my_strlen( target ), NULL );
+
+	for( it=st_registered ; it ; it=it->next ){
+		smap = ( sMap * ) it->data;
+		if( !my_collate( smap->target, target )){
+			return( smap->map );
+		}
+	}
+
+	return( NULL );
+}
+
+/**
+ * my_iaction_map_register:
+ * @instance: this #myIActionMap instance.
+ * @target: the target which is managed by this @instance.
+ *
+ * Register the @instance for this @target.
+ */
+void
+my_iaction_map_register( myIActionMap *instance, const gchar *target )
+{
+	static const gchar *thisfn = "my_iaction_map_register";
+	sMap *smap;
+
+	g_debug( "%s: instance=%p (%s), target=%s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), target );
+
+	g_return_if_fail( instance && MY_IS_IACTION_MAP( instance ));
+	g_return_if_fail( my_strlen( target ));
+
+	smap = g_new0( sMap, 1 );
+	smap->map = instance;
+	smap->target = g_strdup( target );
+	g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, smap );
+
+	st_registered = g_list_prepend( st_registered, smap );
+}
+
+/**
  * my_iaction_map_get_menu_model:
  * @instance: this #myIActionMap instance.
  *
@@ -182,4 +244,18 @@ my_iaction_map_get_menu_model( const myIActionMap *instance )
 	g_info( "%s: myIActionMap's %s implementation does not provide 'get_menu_model()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
+}
+
+static void
+on_instance_finalized( sMap *smap, GObject *finalized_instance )
+{
+	static const gchar *thisfn = "my_iaction_map_on_instance_finalized";
+
+	g_debug( "%s: smap=%p, finalized_instance=%p",
+			thisfn, ( void * ) smap, ( void * ) finalized_instance );
+
+	st_registered = g_list_remove( st_registered, smap );
+
+	g_free( smap->target );
+	g_free( smap );
 }

@@ -1502,7 +1502,9 @@ ofa_tvbin_refilter( ofaTVBin *bin )
 
 	filter_model = ofa_itvfilterable_get_model( OFA_ITVFILTERABLE( bin ));
 
-	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
+	if( filter_model && GTK_IS_TREE_MODEL_FILTER( filter_model )){
+		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
+	}
 }
 
 /*

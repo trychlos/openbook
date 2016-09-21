@@ -583,6 +583,7 @@ ofa_main_window_new( ofaApplication *application )
 
 	g_object_get( G_OBJECT( application ), OFA_PROP_APPLICATION_NAME, &priv->orig_title, NULL );
 
+	my_iaction_map_register( MY_IACTION_MAP( window ), "win" );
 	menubar_setup( window, MY_IACTION_MAP( application ));
 
 	return( window );
@@ -835,6 +836,8 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 	ofaMainWindowPrivate *priv;
 	GtkWidget *menubar;
 	GMenuModel *model;
+
+	g_debug( "%s: window=%p, map=%p", thisfn, ( void * ) window, ( void * ) map );
 
 	priv = ofa_main_window_get_instance_private( window );
 

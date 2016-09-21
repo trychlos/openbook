@@ -479,8 +479,6 @@
 
 1206 2016- 9-19 duplicate recurrent model
 
-1209 2016- 9-20 app. accelerators do not work when a dossier is opened
-
 1213
 
 -----------------------------------------------------------------------
@@ -1698,6 +1696,9 @@
 
 1208 2016- 9-19 check which collections have a real need to be be sorted
      2016- 9-19 a priori, none -> done
+
+1209 2016- 9-20 app. accelerators do not work when a dossier is opened
+     2016- 9-21 fixed
 
 1210 2016- 9-20 AccountFrameBin, OpeTemplateBin: shouldn't the namespace
                 be the same as the settings key provided by the caller ?
