@@ -238,9 +238,7 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-
 		load_dataset( store, hub );
-
 		setup_signaling_connect( store, hub );
 	}
 

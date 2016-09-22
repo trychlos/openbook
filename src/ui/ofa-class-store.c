@@ -185,9 +185,7 @@ ofa_class_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-
 		connect_to_hub_signaling_system( store, hub );
-
 		load_dataset( store, hub );
 	}
 
