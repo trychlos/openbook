@@ -325,6 +325,7 @@ idialog_init( myIDialog *instance )
 	setup_actions( OFA_LEDGER_CLOSE( instance ));
 
 	load_settings( OFA_LEDGER_CLOSE( instance ));
+	check_for_enable_dlg( OFA_LEDGER_CLOSE( instance ), NULL );
 }
 
 static void
