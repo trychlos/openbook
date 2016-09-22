@@ -1363,6 +1363,37 @@ ofa_tvbin_get_tree_model( ofaTVBin *bin )
 }
 
 /*
+ * ofa_tvbin_select_first_row:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Select the first row of the treeview (if any).
+ *
+ * This is needed whe GTK_SELECTION_MULTIPLE is set: getting the focus
+ * is not enough for the treeview selects something.
+ */
+void
+ofa_tvbin_select_first_row( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+	GtkTreeModel *model;
+	GtkTreeIter iter;
+
+	g_debug( "ofa_tvbin_select_first_row" );
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+
+	if( gtk_tree_model_get_iter_first( model, &iter )){
+		ofa_tvbin_select_row( bin, &iter );
+	}
+}
+
+/*
  * ofa_tvbin_select_row:
  * @bin: this #ofaTVBin instance.
  * @iter: a #GtkTreeIter on the #GtkTreeView's model.
@@ -1376,6 +1407,8 @@ ofa_tvbin_select_row( ofaTVBin *bin, GtkTreeIter *treeview_iter )
 	GtkTreeSelection *selection;
 	GtkTreeModel *model;
 	GtkTreePath *path;
+
+	g_debug( "ofa_tvbin_select_row" );
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 

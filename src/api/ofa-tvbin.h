@@ -261,6 +261,8 @@ GtkWidget        *ofa_tvbin_get_treeview          ( ofaTVBin *bin );
 
 GtkTreeModel     *ofa_tvbin_get_tree_model        ( ofaTVBin *bin );
 
+void              ofa_tvbin_select_first_row      ( ofaTVBin *bin );
+
 void              ofa_tvbin_select_row            ( ofaTVBin *bin,
 														GtkTreeIter *iter );
 
