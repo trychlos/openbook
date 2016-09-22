@@ -196,9 +196,7 @@ ofa_dossier_store_new( ofaPortfolioCollection *dir )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		g_signal_connect( dir, "changed", G_CALLBACK( on_file_dir_changed ), store );
-
 		load_dataset( store, dir );
-
 		st_store = store;
 	}
 
