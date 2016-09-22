@@ -39,14 +39,19 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofo-ledger.h"
 
-#include "core/ofa-ope-template-properties.h"
 #include "core/ofa-ope-template-frame-bin.h"
+#include "core/ofa-ope-template-properties.h"
+#include "core/ofa-ope-template-treeview.h"
 
 #include "ui/ofa-ope-template-page.h"
 
 /* private instance data
  */
 typedef struct {
+
+	/* runtime
+	 */
+	gchar                  *settings_prefix;
 
 	/* UI
 	 */
@@ -65,6 +70,7 @@ static void
 ope_template_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_ope_template_page_finalize";
+	ofaOpeTemplatePagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -72,6 +78,9 @@ ope_template_page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_OPE_TEMPLATE_PAGE( instance ));
 
 	/* free data members here */
+	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_ope_template_page_parent_class )->finalize( instance );
@@ -95,11 +104,16 @@ static void
 ofa_ope_template_page_init( ofaOpeTemplatePage *self )
 {
 	static const gchar *thisfn = "ofa_ope_template_page_init";
+	ofaOpeTemplatePagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_OPE_TEMPLATE_PAGE( self ));
+
+	priv = ofa_ope_template_page_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -129,8 +143,7 @@ v_setup_page( ofaPage *page )
 	priv->template_bin = ofa_ope_template_frame_bin_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->template_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->template_bin ), 0, 0, 1, 1 );
-
-	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, G_OBJECT_TYPE_NAME( page ));
+	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, priv->settings_prefix );
 
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_NEW );
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_PROPERTIES );
@@ -148,15 +161,18 @@ static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaOpeTemplatePagePrivate *priv;
-	GtkWidget *top_widget;
+	GtkWidget *current_page, *treeview;
 
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATE_PAGE( page ), NULL );
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	top_widget = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
+	current_page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
+	g_return_val_if_fail( current_page && OFA_IS_OPE_TEMPLATE_TREEVIEW( current_page ), NULL );
 
-	return( top_widget );
+	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( current_page ));
+
+	return( treeview );
 }
 
 /*
