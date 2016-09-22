@@ -161,16 +161,16 @@ static GtkWidget *
 v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaAccountPagePrivate *priv;
-	GtkWidget *widget, *treeview;
+	GtkWidget *current_page, *treeview;
 
 	g_return_val_if_fail( page && OFA_IS_ACCOUNT_PAGE( page ), NULL );
 
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
-	widget = ofa_account_frame_bin_get_current_page( priv->account_bin );
-	g_return_val_if_fail( widget && OFA_IS_ACCOUNT_TREEVIEW( widget ), NULL );
+	current_page = ofa_account_frame_bin_get_current_page( priv->account_bin );
+	g_return_val_if_fail( current_page && OFA_IS_ACCOUNT_TREEVIEW( current_page ), NULL );
 
-	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( widget ));
+	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( current_page ));
 
 	return( treeview );
 }
