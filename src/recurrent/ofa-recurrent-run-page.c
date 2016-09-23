@@ -46,6 +46,7 @@
 #include "api/ofs-ope.h"
 
 #include "ofa-recurrent-run-page.h"
+#include "ofa-recurrent-run-store.h"
 #include "ofa-recurrent-run-treeview.h"
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
@@ -53,6 +54,10 @@
 /* priv instance data
  */
 typedef struct {
+
+	/* runtime
+	 */
+	gchar                   *settings_prefix;
 
 	/* UI
 	 */
@@ -66,12 +71,6 @@ typedef struct {
 	GtkWidget               *cancel_btn;
 	GtkWidget               *wait_btn;
 	GtkWidget               *validate_btn;
-
-	/* filtering
-	 */
-	gboolean                 cancelled_visible;
-	gboolean                 waiting_visible;
-	gboolean                 validated_visible;
 }
 	ofaRecurrentRunPagePrivate;
 
@@ -84,7 +83,6 @@ typedef struct {
 	sCount;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-run-page.ui";
-static const gchar *st_page_settings    = "ofaRecurrentRunPage-settings";
 
 typedef void ( *RecurrentValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, guint *count );
 
@@ -114,6 +112,7 @@ static void
 recurrent_run_page_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_page_finalize";
+	ofaRecurrentRunPagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -121,6 +120,9 @@ recurrent_run_page_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_RECURRENT_RUN_PAGE( instance ));
 
 	/* free data members here */
+	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_recurrent_run_page_parent_class )->finalize( instance );
@@ -146,11 +148,16 @@ static void
 ofa_recurrent_run_page_init( ofaRecurrentRunPage *self )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_page_init";
+	ofaRecurrentRunPagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_RECURRENT_RUN_PAGE( self ));
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -216,11 +223,17 @@ setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	priv->tview = ofa_recurrent_run_treeview_new( hub, TRUE );
+
+	priv->tview = ofa_recurrent_run_treeview_new( hub, REC_MODE_FROM_DBMS );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 
-	ofa_recurrent_run_treeview_set_selection_mode( priv->tview, GTK_SELECTION_MULTIPLE );
-	g_signal_connect( priv->tview, "ofa-changed", G_CALLBACK( tview_on_selection_changed ), self );
+	/* ofaTVBin signals */
+	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), self );
+
+	/* ofaBatTreeview signals */
+	g_signal_connect( priv->tview, "ofa-recchanged", G_CALLBACK( on_row_selected ), self );
+	g_signal_connect( priv->tview, "ofa-recactivated", G_CALLBACK( on_row_activated ), self );
+	g_signal_connect( priv->tview, "ofa-recdelete", G_CALLBACK( on_delete_key ), self );
 
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 }
@@ -301,49 +314,128 @@ v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
 
-	return( ofa_recurrent_run_treeview_get_treeview( priv->tview ));
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 static void
 filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
+	gint visible;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	priv->cancelled_visible = gtk_toggle_button_get_active( button );
-
-	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_CANCELLED, priv->cancelled_visible );
-
-	set_settings( self );
+	visible = ofa_recurrent_run_treeview_get_visible( priv->tview );
+	if( gtk_toggle_button_get_active( button )){
+		visible |= REC_VISIBLE_CANCELLED;
+	} else {
+		visible &= ~REC_VISIBLE_CANCELLED;
+	}
+	ofa_recurrent_run_treeview_set_visible( priv->tview, visible );
 }
 
 static void
 filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
+	gint visible;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	priv->waiting_visible = gtk_toggle_button_get_active( button );
-
-	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_WAITING, priv->waiting_visible );
-
-	set_settings( self );
+	visible = ofa_recurrent_run_treeview_get_visible( priv->tview );
+	if( gtk_toggle_button_get_active( button )){
+		visible |= REC_VISIBLE_WAITING;
+	} else {
+		visible &= ~REC_VISIBLE_WAITING;
+	}
+	ofa_recurrent_run_treeview_set_visible( priv->tview, visible );
 }
 
 static void
 filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
+	gint visible;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	priv->validated_visible = gtk_toggle_button_get_active( button );
+	visible = ofa_recurrent_run_treeview_get_visible( priv->tview );
+	if( gtk_toggle_button_get_active( button )){
+		visible |= REC_VISIBLE_VALIDATED;
+	} else {
+		visible &= ~REC_VISIBLE_VALIDATED;
+	}
+	ofa_recurrent_run_treeview_set_visible( priv->tview, visible );
+}
 
-	ofa_recurrent_run_treeview_set_visible( priv->tview, REC_STATUS_VALIDATED, priv->validated_visible );
+/*
+ * RecurrentRunTreeview callback
+ */
+static void
+on_row_selected( ofaRecurrentRunTreeview *view, GList *list, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	gboolean is_model;
+	ofoRecurrentRun *model;
 
-	set_settings( self );
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	is_model = FALSE;
+	model = NULL;
+
+	if( g_list_length( list ) == 1 ){
+		model = ( ofoRecurrentRun * ) list->data;
+		is_model = model && OFO_IS_RECURRENT_MODEL( model );
+	}
+
+	g_simple_action_set_enabled( priv->update_action, is_model );
+	g_simple_action_set_enabled( priv->duplicate_action, is_model );
+	g_simple_action_set_enabled( priv->delete_action, is_model && check_for_deletability( self, model ));
+
+	g_simple_action_set_enabled( priv->generate_action, priv->is_writable && g_list_length( list ) > 0 );
+}
+
+/*
+ * RecurrentRunTreeview callback
+ * Activation of a single row open the update dialog, else is ignored
+ */
+static void
+on_row_activated( ofaRecurrentRunTreeview *view, GList *list, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	if( g_list_length( list ) == 1 ){
+		g_action_activate( G_ACTION( priv->update_action ), NULL );
+	}
+}
+
+static void
+on_insert_key( ofaRecurrentRunTreeview *view, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	if( priv->is_writable ){
+		g_action_activate( G_ACTION( priv->new_action ), NULL );
+	}
+}
+
+/*
+ * only delete if there is only one selected model
+ */
+static void
+on_delete_key( ofaRecurrentRunTreeview *view, ofoRecurrentRun *model, ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_model_page_get_instance_private( self );
+
+	if( check_for_deletability( self, model )){
+		g_action_activate( G_ACTION( priv->delete_action ), NULL );
+	}
 }
 
 static void
@@ -456,7 +548,7 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, 
 {
 	const gchar *rec_id, *tmpl_id, *ledger_id;
 	ofoDossier *dossier;
-	ofoRecurrentModel *model;
+	ofoRecurrentRun *model;
 	ofoOpeTemplate *template_obj;
 	ofoLedger *ledger_obj;
 	ofsOpe *ope;
@@ -523,7 +615,7 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, 
 }
 
 /*
- * settings: sort_column_id;sort_sens;paned_position;cancelled_visible;waiting_visible;validated_visible;
+ * settings: paned_position;cancelled_visible;waiting_visible;validated_visible;
  */
 static void
 get_settings( ofaRecurrentRunPage *self )
@@ -531,23 +623,15 @@ get_settings( ofaRecurrentRunPage *self )
 	ofaRecurrentRunPagePrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
-	gint sort_column_id, sort_sens, pos;
+	gint pos;
+	gchar *settings_key;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	slist = ofa_settings_user_get_string_list( st_page_settings );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	slist = ofa_settings_user_get_string_list( settings_key );
 
 	it = slist ? slist : NULL;
-	cstr = it ? it->data : NULL;
-	sort_column_id = cstr ? atoi( cstr ) : 0;
-
-	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
-	sort_sens = cstr ? atoi( cstr ) : 0;
-
-	ofa_recurrent_run_treeview_set_sort_settings( priv->tview, sort_column_id, sort_sens );
-
-	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	pos = 0;
 	if( my_strlen( cstr )){
@@ -580,27 +664,30 @@ get_settings( ofaRecurrentRunPage *self )
 	}
 
 	ofa_settings_free_string_list( slist );
+	g_free( settings_key );
 }
 
 static void
 set_settings( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
-	gchar *str;
-	gint sort_column_id, sort_sens, pos;
+	gchar *str, *settings_key;
+	gint pos;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	ofa_recurrent_run_treeview_get_sort_settings( priv->tview, &sort_column_id, &sort_sens );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+
 	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
 
-	str = g_strdup_printf( "%d;%d;%d;%s;%s;%s;",
-			sort_column_id, sort_sens, pos,
+	str = g_strdup_printf( "%d;%s;%s;%s;",
+			pos,
 			priv->cancelled_visible ? "True":"False",
 			priv->waiting_visible ? "True":"False",
 			priv->validated_visible ? "True":"False" );
 
-	ofa_settings_user_set_string( st_page_settings, str );
+	ofa_settings_user_set_string( settings_key, str );
 
 	g_free( str );
+	g_free( settings_key );
 }

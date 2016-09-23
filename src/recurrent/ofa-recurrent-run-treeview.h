@@ -30,15 +30,27 @@
  * @short_description: #ofaRecurrentRunTreeview class definition.
  * @include: recurrent/ofa-recurrent-run-treeview.h
  *
- * A convenience class to display ofoRecurrentRun objects in a
- * liststore-based treeview.
+ * Manage a treeview with the list of the generated run operations.
+ * This list may be provided by the caller, or got ftom the dbms.
  *
- * Signals defined here:
- * - ofa-changed: when the selection has changed
- * - ofa-activated: when the selection is activated.
+ * The class provides the following signals, which are proxyed from
+ * #ofaTVBin base class.
+ *    +------------------+--------------+
+ *    | Signal           | Run list     |
+ *    |                  | may be %NULL |
+ *    +------------------+--------------+
+ *    | ofa-recchanged   |      Yes     |
+ *    | ofa-recactivated |       No     |
+ *    | ofa-recdelete    |       No     |
+ *    +------------------+--------------+
+ *
+ * As the treeview may allow multiple selection, both signals provide
+ * a list of path of selected rows. It is up to the user of this class
+ * to decide whether an action may apply or not on a multiple selection.
  */
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-tvbin.h"
 
 G_BEGIN_DECLS
 
@@ -51,48 +63,43 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	GtkBin      parent;
+	ofaTVBin      parent;
 }
 	ofaRecurrentRunTreeview;
 
 typedef struct {
 	/*< public members >*/
-	GtkBinClass parent;
+	ofaTVBinClass parent;
 }
 	ofaRecurrentRunTreeviewClass;
 
+/**
+ * Filtering the list
+ */
+enum {
+	REC_VISIBLE_NONE      = 0,
+	REC_VISIBLE_CANCELLED = 1 << 0,
+	REC_VISIBLE_WAITING   = 1 << 1,
+	REC_VISIBLE_VALIDATED = 1 << 2,
+};
+
 GType                    ofa_recurrent_run_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaHub *hub,
-																			gboolean auto_update );
+ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( void );
 
-void                     ofa_recurrent_run_treeview_set_visible       ( ofaRecurrentRunTreeview *bin,
-																			const gchar *status,
-																			gboolean visible );
+void                     ofa_recurrent_run_treeview_set_settings_key  ( ofaRecurrentRunTreeview *view,
+																			const gchar *settings_key );
 
-void                     ofa_recurrent_run_treeview_set_selection_mode( ofaRecurrentRunTreeview *bin,
-																			GtkSelectionMode mode );
+void                     ofa_recurrent_run_treeview_setup_columns     ( ofaRecurrentRunTreeview *view );
 
-void                     ofa_recurrent_run_treeview_get_sort_settings ( ofaRecurrentRunTreeview *bin,
-																			gint *sort_column_id,
-																			gint *sort_sens );
+gint                     ofa_recurrent_run_treeview_get_visible       ( ofaRecurrentRunTreeview *view );
 
-void                     ofa_recurrent_run_treeview_set_sort_settings ( ofaRecurrentRunTreeview *bin,
-																			gint sort_column_id,
-																			gint sort_sens );
+void                     ofa_recurrent_run_treeview_set_visible       ( ofaRecurrentRunTreeview *view,
+																			gint visible );
 
-void                     ofa_recurrent_run_treeview_set_from_list     ( ofaRecurrentRunTreeview *bin,
-																			GList *dataset );
-
-void                     ofa_recurrent_run_treeview_set_from_db       ( ofaRecurrentRunTreeview *bin );
-
-void                     ofa_recurrent_run_treeview_clear             ( ofaRecurrentRunTreeview *bin );
-
-GtkWidget               *ofa_recurrent_run_treeview_get_treeview      ( ofaRecurrentRunTreeview *bin );
+GList                   *ofa_recurrent_run_treeview_get_selected      ( ofaRecurrentRunTreeview *view );
 
 #define                  ofa_recurrent_run_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
-
-GList                   *ofa_recurrent_run_treeview_get_selected      ( ofaRecurrentRunTreeview *bin );
 
 G_END_DECLS
 
