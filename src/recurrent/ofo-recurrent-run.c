@@ -127,7 +127,6 @@ static const sLabels st_labels[] = {
 		{ 0 }
 };
 
-static ofxCounter recurrent_run_get_numseq( const ofoRecurrentRun *model );
 static void       recurrent_run_set_numseq( ofoRecurrentRun *model, ofxCounter numseq );
 static void       recurrent_run_set_upd_user( ofoRecurrentRun *model, const gchar *upd_user );
 static void       recurrent_run_set_upd_stamp( ofoRecurrentRun *model, const GTimeVal *upd_stamp );
@@ -389,11 +388,11 @@ ofo_recurrent_run_get_amount3( const ofoRecurrentRun *model )
 	ofo_base_getter( RECURRENT_RUN, model, amount, 0, REC_AMOUNT3 );
 }
 
-/*
+/**
  * ofo_recurrent_run_get_numseq:
  */
-static ofxCounter
-recurrent_run_get_numseq( const ofoRecurrentRun *model )
+ofxCounter
+ofo_recurrent_run_get_numseq( const ofoRecurrentRun *model )
 {
 	ofo_base_getter( RECURRENT_RUN, model, counter, 0, REC_NUMSEQ );
 }
@@ -715,7 +714,7 @@ recurrent_run_update_main( ofoRecurrentRun *recrun, ofaHub *hub )
 		query = g_string_append( query, "REC_AMOUNT3=NULL," );
 	}
 
-	numseq = recurrent_run_get_numseq( recrun );
+	numseq = ofo_recurrent_run_get_numseq( recrun );
 
 	g_string_append_printf( query,
 			"	REC_UPD_USER='%s',REC_UPD_STAMP='%s'"

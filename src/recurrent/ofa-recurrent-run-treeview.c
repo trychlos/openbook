@@ -34,6 +34,9 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-icontext.h"
+#include "api/ofa-itvcolumnable.h"
+#include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
 
 #include "ofa-recurrent-run-treeview.h"
@@ -43,102 +46,52 @@
 /* private instance data
  */
 typedef struct {
-	gboolean           dispose_has_run;
+	gboolean              dispose_has_run;
 
 	/* runtime
 	 */
-	ofaHub            *hub;
-	GList             *hub_handlers;
-	gboolean           auto_update;
+	ofaHub               *hub;
+	GList                *hub_handlers;
+	gint                 visible;
+	gchar               *settings_prefix;
 
 	/* UI
 	 */
-	GtkWidget         *tview;
-	GtkListStore      *store;
-	GtkTreeModel      *tfilter;
-	GtkTreeModel      *tsort;
-	GtkListStore      *status_store;
-
-	/* filtering
-	 */
-	gboolean           cancelled_visible;
-	gboolean           waiting_visible;
-	gboolean           validated_visible;
-
-	/* sorting the view
-	 */
-	gint               sort_column_id;
-	gint               sort_sens;
-	GtkTreeViewColumn *sort_column;
+	ofaRecurrentRunStore *store;
 }
 	ofaRecurrentRunTreeviewPrivate;
-
-/* columns in the operation store
- */
-enum {
-	COL_MNEMO = 0,
-	COL_LABEL,
-	COL_DATE,
-	COL_STATUS,
-	COL_AMOUNT1,
-	COL_AMOUNT2,
-	COL_AMOUNT3,
-	COL_OBJECT,
-	COL_MODEL,
-	COL_N_COLUMNS
-};
-
-/* the id of the column is set against each editable GtkCellRenderer
- */
-#define DATA_COLUMN_ID                  "ofa-data-column-id"
-
-/* it appears that Gtk+ displays a counter intuitive sort indicator:
- * when asking for ascending sort, Gtk+ displays a 'v' indicator
- * while we would prefer the '^' version -
- * we are defining the inverse indicator, and we are going to sort
- * in reverse order to have our own illusion
- */
-#define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
 
 /* signals defined here
  */
 enum {
 	CHANGED = 0,
 	ACTIVATED,
+	DELETE,
 	N_SIGNALS
 };
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void     setup_bin( ofaRecurrentRunTreeview *self );
-static void     setup_treeview( ofaRecurrentRunTreeview *self );
-static gboolean tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self );
-static void     tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self );
-static gint     tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunTreeview *self );
 static void     tview_on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self );
 static void     tview_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecurrentRunTreeview *self );
-static void     tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self );
-static void     tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentRunTreeview *self );
-static GList   *tview_get_selected( ofaRecurrentRunTreeview *self );
-static void     store_insert_row( ofaRecurrentRunTreeview *self, ofoRecurrentRun *ope );
-static void     store_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun *ope );
-static void     store_update_mnemo_all( ofaRecurrentRunTreeview *self, const gchar *prev_mnemo, const gchar *new_mnemo );
-static void     store_update_object( ofaRecurrentRunTreeview *self, ofoRecurrentRun *object );
-static gboolean store_remove_object( ofaRecurrentRunTreeview *self, ofoRecurrentRun *object );
-static void     do_insert_dataset( ofaRecurrentRunTreeview *self, GList *dataset );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentRunTreeview *self );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self );
-static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentRunTreeview *self );
+static void     on_selection_changed( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
+static void     on_selection_activated( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
+static void     on_selection_delete( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
+static void     get_and_send( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static GList   *get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection );
+static void     get_settings( ofaRecurrentRunTreeview *self );
+static void     set_settings( ofaRecurrentRunTreeview *self );
+static gboolean v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint     v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
-G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunTreeview, ofa_recurrent_run_treeview, GTK_TYPE_BIN, 0,
+G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunTreeview, ofa_recurrent_run_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaRecurrentRunTreeview ))
 
 static void
 recurrent_run_treeview_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_treeview_finalize";
+	ofaRecurrentRunTreeviewPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -146,6 +99,9 @@ recurrent_run_treeview_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_RECURRENT_RUN_TREEVIEW( instance ));
 
 	/* free data members here */
+	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_recurrent_run_treeview_parent_class )->finalize( instance );
@@ -188,8 +144,8 @@ ofa_recurrent_run_treeview_init( ofaRecurrentRunTreeview *self )
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-	priv->sort_column_id = -1;
-	priv->sort_sens = -1;
+	priv->visible = REC_VISIBLE_NONE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -201,6 +157,9 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = recurrent_run_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_run_treeview_finalize;
+
+	OFA_TVBIN_CLASS( klass )->filter = v_filter;
+	OFA_TVBIN_CLASS( klass )->sort = v_sort;
 
 	/**
 	 * ofaRecurrentRunTreeview::changed:
@@ -215,7 +174,7 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
 	 * 						GList           *sel_mnemos,
 	 * 						gpointer         user_data );
 	 */
-	st_signals[ CHANGED ] = g_signal_new_class_handler(
+	st_signals[ CHANGED ] = g_signal_new_recurrent_run_handler(
 				"ofa-changed",
 				OFA_TYPE_RECURRENT_RUN_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
@@ -240,7 +199,7 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
 	 * 						GList           *sel_mnemos,
 	 * 						gpointer         user_data );
 	 */
-	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
+	st_signals[ ACTIVATED ] = g_signal_new_recurrent_run_handler(
 				"ofa-activated",
 				OFA_TYPE_RECURRENT_RUN_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
@@ -255,8 +214,6 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
 
 /**
  * ofa_recurrent_run_treeview_new:
- * @hub: the #ofaHub object hub of the application.
- * @auto_update: whether the newly inserted operations should be displayed.
  *
  * Returns: a new empty #ofaRecurrentRunTreeview composite object.
  *
@@ -265,402 +222,97 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
  * later should not be updated when new operations are inserted.
  */
 ofaRecurrentRunTreeview *
-ofa_recurrent_run_treeview_new( ofaHub *hub, gboolean auto_update )
+ofa_recurrent_run_treeview_new( void )
 {
-	ofaRecurrentRunTreeview *self;
-	ofaRecurrentRunTreeviewPrivate *priv;
-	gulong handler;
+	ofaRecurrentRunTreeview *view;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	view = g_object_new( OFA_TYPE_RECURRENT_RUN_TREEVIEW,
+					"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
+					"ofa-tvbin-shadow", GTK_SHADOW_IN,
+					NULL );
 
-	self = g_object_new( OFA_TYPE_RECURRENT_RUN_TREEVIEW, NULL );
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	priv->hub = hub;
-	priv->auto_update = auto_update;
-
-	setup_bin( self );
-	setup_treeview( self );
-
-	/* connect to the hub signaling system */
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	return( self );
-}
-
-/*
- * if not already done, create a GtkTreeView inside of a GtkScrolledWindow
- */
-static void
-setup_bin( ofaRecurrentRunTreeview *self )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkWidget *top_widget, *scrolled;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	top_widget = gtk_frame_new( NULL );
-	gtk_container_add( GTK_CONTAINER( self ), top_widget );
-	gtk_frame_set_shadow_type( GTK_FRAME( top_widget ), GTK_SHADOW_IN );
-
-	scrolled = gtk_scrolled_window_new( NULL, NULL );
-	gtk_container_add( GTK_CONTAINER( top_widget ), scrolled );
-	gtk_scrolled_window_set_policy(
-			GTK_SCROLLED_WINDOW( scrolled ), GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC );
-
-	priv->tview = gtk_tree_view_new();
-	gtk_widget_set_hexpand( priv->tview, TRUE );
-	gtk_widget_set_vexpand( priv->tview, TRUE );
-	gtk_container_add( GTK_CONTAINER( scrolled ), priv->tview );
-	gtk_tree_view_set_headers_visible( GTK_TREE_VIEW( priv->tview ), TRUE );
-}
-
-/*
- * initialize the previously created treeview
- */
-static void
-setup_treeview( ofaRecurrentRunTreeview *self )
-{
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_setup_treeview";
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkListStore *store;
-	GtkTreeModel *tfilter, *tsort;
-	GtkTreeViewColumn *sort_column;
-	gint column_id;
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	store = gtk_list_store_new(
-					COL_N_COLUMNS,
-					G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* mnemo, label, date */
-					G_TYPE_STRING,										/* status */
-					G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* amount1,amount2,amount3 */
-					G_TYPE_OBJECT, G_TYPE_OBJECT );						/* ofoRecurrentRun, ofoRecurrentModel objects */
-	priv->store = store;
-
-	tfilter = gtk_tree_model_filter_new( GTK_TREE_MODEL( store ), NULL );
-	g_object_unref( store );
-	priv->tfilter = tfilter;
-
-	gtk_tree_model_filter_set_visible_func(
-			GTK_TREE_MODEL_FILTER( tfilter ),
-			( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row,
-			self,
-			NULL );
-
-	tsort = gtk_tree_model_sort_new_with_model( tfilter );
-	g_object_unref( tfilter );
-	priv->tsort = tsort;
-
-	gtk_tree_view_set_model( GTK_TREE_VIEW( priv->tview ), tsort );
-	g_object_unref( tsort );
-
-	g_debug( "%s: store=%p, tfilter=%p, tsort=%p",
-			thisfn, ( void * ) store, ( void * ) tfilter, ( void * ) tsort );
-
-	/* default is to sort by descending operation date
+	/* signals sent by ofaTVBin base class are intercepted to provide
+	 * a #ofoRecurrentRun object instead of just the raw GtkTreeSelection
 	 */
-	sort_column = NULL;
-	if( priv->sort_column_id < 0 ){
-		priv->sort_column_id = COL_DATE;
-	}
-	if( priv->sort_sens < 0 ){
-		priv->sort_sens = OFA_SORT_DESCENDING;
-	}
+	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
+	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
 
-	column_id = COL_MNEMO;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Operation" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_LABEL;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_DATE;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Date" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_STATUS;
-	text_cell = gtk_cell_renderer_text_new();
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Status" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_AMOUNT1;
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( tview_on_cell_edited ), self );
-	my_double_renderer_init( text_cell,
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Amount 1" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_AMOUNT2;
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( tview_on_cell_edited ), self );
-	my_double_renderer_init( text_cell,
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Amount 2" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	column_id = COL_AMOUNT3;
-	text_cell = gtk_cell_renderer_text_new();
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( tview_on_cell_edited ), self );
-	my_double_renderer_init( text_cell,
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Amount 3" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_append_column( GTK_TREE_VIEW( priv->tview ), column );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( G_OBJECT( column ), "clicked", G_CALLBACK( tview_on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( tsort ), column_id, ( GtkTreeIterCompareFunc ) tview_on_sort_model, self, NULL );
-	if( priv->sort_column_id == column_id ){
-		sort_column = column;
-	}
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->tview ));
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( select, "changed", G_CALLBACK( tview_on_selection_changed ), self );
-
-	g_signal_connect( priv->tview, "row-activated", G_CALLBACK( tview_on_row_activated ), self );
-
-	/* default is to sort by ascending operation date
+	/* the 'ofa-seldelete' signal is sent in response to the Delete key press.
+	 * There may be no current selection.
+	 * in this case, the signal is just ignored (not proxied).
 	 */
-	g_return_if_fail( sort_column && GTK_IS_TREE_VIEW_COLUMN( sort_column ));
-	gtk_tree_view_column_set_sort_indicator( sort_column, TRUE );
-	priv->sort_column = sort_column;
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( tsort ), priv->sort_column_id, priv->sort_sens );
+	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
+
+	return( view );
 }
 
-/*
- * a row is visible depending of the status filter
- */
-static gboolean
-tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	gboolean visible;
-	ofoRecurrentRun *object;
-	const gchar *status;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	visible = FALSE;
-
-	gtk_tree_model_get( tmodel, iter, COL_OBJECT, &object, -1 );
-	if( object ){
-		g_return_val_if_fail( OFO_IS_RECURRENT_RUN( object ), FALSE );
-		g_object_unref( object );
-
-		status = ofo_recurrent_run_get_status( object );
-
-		if( !my_collate( status, REC_STATUS_CANCELLED )){
-			visible = priv->cancelled_visible;
-
-		} else if( !my_collate( status, REC_STATUS_WAITING )){
-			visible = priv->waiting_visible;
-
-		} else if( !my_collate( status, REC_STATUS_VALIDATED )){
-			visible = priv->validated_visible;
-		}
-	}
-
-	return( visible );
-}
-
-/*
- * Gtk+ changes automatically the sort order
- * we reset yet the sort column id
+/**
+ * ofa_recurrent_run_treeview_set_settings_key:
+ * @view: this #ofaRecurrentRunTreeview instance.
+ * @key: [allow-none]: the prefix of the settings key.
  *
- * as a side effect of our inversion of indicators, clicking on a new
- * header makes the sort order descending as the default
+ * Setup the setting key, or reset it to its default if %NULL.
  */
-static void
-tview_on_header_clicked( GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self )
+void
+ofa_recurrent_run_treeview_set_settings_key( ofaRecurrentRunTreeview *view, const gchar *key )
+{
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_set_settings_key";
+	ofaRecurrentRunTreeviewPrivate *priv;
+
+	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
+
+	g_return_if_fail( view && OFA_IS_CLASS_TREEVIEW( view ));
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( key );
+
+	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+}
+
+/**
+ * ofa_recurrent_run_treeview_setup_columns:
+ * @view: this #ofaRecurrentRunTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_recurrent_run_treeview_setup_columns( ofaRecurrentRunTreeview *view )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
-	gint sort_column_id, new_column_id;
-	GtkSortType sort_order;
-	GtkTreeModel *tsort;
 
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+	g_return_if_fail( view && OFA_IS_CLASS_TREEVIEW( view ));
 
-	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-	gtk_tree_view_column_set_sort_indicator( column, TRUE );
-	priv->sort_column = column;
+	priv = ofa_recurrent_run_treeview_get_instance_private( view );
 
-	tsort = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->tview ));
-	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( tsort ), &sort_column_id, &sort_order );
+	g_return_if_fail( !priv->dispose_has_run );
 
-	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
-	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( tsort ), new_column_id, sort_order );
-
-	priv->sort_column_id = new_column_id;
-	priv->sort_sens = sort_order;
+	setup_columns( view );
 }
 
 /*
- * sorting the store
+ * Defines the treeview columns
  */
-static gint
-tview_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunTreeview *self )
+static void
+setup_columns( ofaRecurrentRunTreeview *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_tview_on_sort_model";
-	ofaRecurrentRunTreeviewPrivate *priv;
-	gint cmp;
-	gchar *smnemoa, *slabela, *sdatea, *statusa;
-	gchar *smnemob, *slabelb, *sdateb, *statusb;
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_setup_columns";
 
-	gtk_tree_model_get( tmodel, a,
-			COL_MNEMO,  &smnemoa,
-			COL_LABEL,  &slabela,
-			COL_DATE,   &sdatea,
-			COL_STATUS, &statusa,
-			-1 );
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	gtk_tree_model_get( tmodel, b,
-			COL_MNEMO,  &smnemob,
-			COL_LABEL,  &slabelb,
-			COL_DATE,   &sdateb,
-			COL_STATUS, &statusb,
-			-1 );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_MNEMO,     _( "Mnemo" ),    _( "Mnemonic" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), REC_RUN_COL_NUMSEQ,    _( "Seq." ),     _( "Sequence number" ));
+	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), REC_RUN_COL_LABEL,     _( "Label" ),        NULL );
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), REC_RUN_COL_DATE,      _( "Date" ),     _( "Operation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_RUN_COL_STATUS,    _( "Status" ),       NULL );
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT1,   _( "Amount n° 1" ),  NULL);
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT2,   _( "Amount n° 2" ),  NULL);
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3,   _( "Amount n° 3" ),  NULL);
 
-	cmp = 0;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	switch( priv->sort_column_id ){
-		case COL_MNEMO:
-			cmp = my_collate( smnemoa, smnemob );
-			break;
-		case COL_LABEL:
-			cmp = my_collate( slabela, slabelb );
-			break;
-		case COL_DATE:
-			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display());
-			break;
-		case COL_STATUS:
-			cmp = my_collate( statusa, statusb );
-			break;
-		default:
-			g_warning( "%s: unhandled column: %d", thisfn, priv->sort_column_id );
-			break;
-	}
-
-	g_free( statusa );
-	g_free( sdatea );
-	g_free( slabela );
-	g_free( smnemoa );
-
-	g_free( statusb );
-	g_free( sdateb );
-	g_free( slabelb );
-	g_free( smnemob );
-
-	/* return -1 if a > b, so that the order indicator points to the smallest:
-	 * ^: means from smallest to greatest (ascending order)
-	 * v: means from greatest to smallest (descending order)
-	 */
-	return( -cmp );
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), REC_RUN_COL_LABEL );
 }
 
 static void
@@ -786,393 +438,82 @@ tview_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, o
 }
 
 static void
-tview_on_row_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaRecurrentRunTreeview *self )
+on_selection_changed( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty )
 {
-	GList *sel_objects;
+	get_and_send( self, selection, "ofa-recchanged" );
+}
 
-	sel_objects = tview_get_selected( self );
-	g_signal_emit_by_name( self, "ofa-activated", sel_objects );
-	ofa_recurrent_run_treeview_free_selected( sel_objects );
+static void
+on_selection_activated( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty )
+{
+	get_and_send( self, selection, "ofa-recactivated" );
 }
 
 /*
- * mode BROWSE
+ * Delete key pressed
+ * ofaTVBin base class makes sure the selection is not empty.
  */
 static void
-tview_on_selection_changed( GtkTreeSelection *selection, ofaRecurrentRunTreeview *self )
+on_selection_delete( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty )
 {
-	GList *sel_objects;
-
-	sel_objects = tview_get_selected( self );
-	g_signal_emit_by_name( self, "ofa-changed", sel_objects );
-	ofa_recurrent_run_treeview_free_selected( sel_objects );
+	get_and_send( self, selection, "ofa-recdelete" );
 }
 
 /*
- * Returns a list of selected ofoRecurrentRun objects.
- * The returned list should be #ofa_recurrent_run_treeview_free_selected().
+ * gtk_tree_selection_get_selected_rows() works even if selection mode
+ * is GTK_SELECTION_MULTIPLE (which may happen here)
  */
-static GList *
-tview_get_selected( ofaRecurrentRunTreeview *self )
+static void
+get_and_send( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, const gchar *signal )
+{
+	GList *list;
+
+	list = ofa_recurrent_run_treeview_get_selected( self );
+	g_signal_emit_by_name( self, signal, list );
+	ofa_recurrent_run_treeview_free_selected( list );
+}
+
+/**
+ * ofa_recurrent_run_treeview_get_visible:
+ * @view: this #ofaRecurrentRunTreeview instance.
+ *
+ * Returns: the Or'ed visibility status.
+ */
+gint
+ofa_recurrent_run_treeview_get_visible( ofaRecurrentRunTreeview *view )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	GList *sel_rows, *irow;
-	GList *sel_objects;
-	ofoRecurrentRun *run_obj;
 
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
+	g_return_val_if_fail( view && OFA_IS_RECURRENT_RUN_TREEVIEW( view ), 0 );
 
-	sel_objects = NULL;
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->tview ));
-	sel_rows = gtk_tree_selection_get_selected_rows( select, &tmodel );
+	priv = ofa_recurrent_run_treeview_get_instance_private( view );
 
-	for( irow=sel_rows ; irow ; irow=irow->next ){
-		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
-			gtk_tree_model_get( tmodel, &iter, COL_OBJECT, &run_obj, -1 );
-			sel_objects = g_list_append( sel_objects, run_obj );
-		}
-	}
+	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
-	g_list_free_full( sel_rows, ( GDestroyNotify ) gtk_tree_path_free );
-
-	return( sel_objects );
+	return( priv->visible );
 }
 
 /**
  * ofa_recurrent_run_treeview_set_visible:
- * @bin: this #ofaRecurrentRunTreeview instance.
- * @status: the operation status.
- * @visible: whether this status should be visible.
+ * @view: this #ofaRecurrentRunTreeview instance.
+ * @visible: the Or'ed visibility status.
  *
  * Set the visibility status.
  */
 void
-ofa_recurrent_run_treeview_set_visible( ofaRecurrentRunTreeview *bin, const gchar *status, gboolean visible )
+ofa_recurrent_run_treeview_set_visible( ofaRecurrentRunTreeview *view, gint visible )
 {
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_set_visible";
 	ofaRecurrentRunTreeviewPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_RECURRENT_RUN_TREEVIEW( bin ));
+	g_return_if_fail( view && OFA_IS_RECURRENT_RUN_TREEVIEW( view ));
 
-	priv = ofa_recurrent_run_treeview_get_instance_private( bin );
+	priv = ofa_recurrent_run_treeview_get_instance_private( view );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	if( !my_collate( status, REC_STATUS_CANCELLED )){
-		priv->cancelled_visible = visible;
-
-	} else if( !my_collate( status, REC_STATUS_WAITING )){
-		priv->waiting_visible = visible;
-
-	} else if( !my_collate( status, REC_STATUS_VALIDATED )){
-		priv->validated_visible = visible;
-
-	} else {
-		g_warning( "%s: unknown status: %s", thisfn, status );
-		g_return_if_reached();
-	}
-
-	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-}
-
-/**
- * ofa_recurrent_run_treeview_selection_mode:
- * @bin: this #ofaRecurrentRunTreeview instance.
- * @mode: the desired #GtkSelectionMode mode.
- *
- * Set the selection mode.
- *
- * The @bin defaults to have a single selection mode (GTK_SELECTION_BROWSE).
- */
-void
-ofa_recurrent_run_treeview_set_selection_mode( ofaRecurrentRunTreeview *bin, GtkSelectionMode mode )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkTreeSelection *select;
-
-	g_return_if_fail( bin && OFA_IS_RECURRENT_RUN_TREEVIEW( bin ));
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	select = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->tview ));
-	gtk_tree_selection_set_mode( select, mode );
-}
-
-/**
- * ofa_recurrent_run_treeview_get_sort_settings:
- * @bin: this #ofaRecurrentRunTreeview widget.
- * @sort_column_id: [out]: the identifier of the sorted column.
- * @sort_sens: [out]: the sens of the sort.
- *
- * Returns: the current sort settings.
- */
-void
-ofa_recurrent_run_treeview_get_sort_settings( ofaRecurrentRunTreeview *bin, gint *sort_column_id, gint *sort_sens )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_RECURRENT_RUN_TREEVIEW( bin ));
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	if( sort_column_id ){
-		*sort_column_id = priv->sort_column_id;
-	}
-	if( sort_sens ){
-		*sort_sens = priv->sort_sens;
-	}
-}
-
-/**
- * ofa_recurrent_run_treeview_set_sort_settings:
- * @bin: this #ofaRecurrentRunTreeview widget.
- * @sort_column_id: the identifier of the sorted column.
- * @sort_sens: the sens of the sort.
- *
- * Set the requested sort settings.
- */
-void
-ofa_recurrent_run_treeview_set_sort_settings( ofaRecurrentRunTreeview *bin, gint sort_column_id, gint sort_sens )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_RECURRENT_RUN_TREEVIEW( bin ));
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->sort_column_id = sort_column_id;
-	priv->sort_sens = sort_sens;
-
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( priv->tsort ), priv->sort_column_id, priv->sort_sens );
-}
-
-static void
-store_insert_row( ofaRecurrentRunTreeview *self, ofoRecurrentRun *ope )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkTreeIter iter;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	gtk_list_store_insert( priv->store, &iter, -1 );
-	store_set_row( self, &iter, ope );
-}
-
-/*
- * set data through a store iter
- */
-static void
-store_set_row( ofaRecurrentRunTreeview *self, GtkTreeIter *iter, ofoRecurrentRun *ope )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	ofoRecurrentModel *model;
-	const gchar *mnemo, *stt, *csdef;
-	gchar *sdate, *status, *samount1, *samount2, *samount3;
-	ofxAmount amount;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	mnemo = ofo_recurrent_run_get_mnemo( ope );
-	model = ofo_recurrent_model_get_by_mnemo( priv->hub, mnemo );
-
-	if( model ){
-		sdate = my_date_to_str( ofo_recurrent_run_get_date( ope ), ofa_prefs_date_display());
-		stt = ofo_recurrent_run_get_status( ope );
-		status = ofo_recurrent_run_get_status_label( stt );
-
-		csdef = ofo_recurrent_model_get_def_amount1( model );
-		if( my_strlen( csdef )){
-			amount = ofo_recurrent_run_get_amount1( ope );
-			samount1 = ofa_amount_to_str( amount, NULL );
-		} else {
-			samount1 = g_strdup( "" );
-		}
-
-		csdef = ofo_recurrent_model_get_def_amount2( model );
-		if( my_strlen( csdef )){
-			amount = ofo_recurrent_run_get_amount2( ope );
-			samount2 = ofa_amount_to_str( amount, NULL );
-		} else {
-			samount2 = g_strdup( "" );
-		}
-
-		csdef = ofo_recurrent_model_get_def_amount3( model );
-		if( my_strlen( csdef )){
-			amount = ofo_recurrent_run_get_amount3( ope );
-			samount3 = ofa_amount_to_str( amount, NULL );
-		} else {
-			samount3 = g_strdup( "" );
-		}
-
-		gtk_list_store_set( priv->store, iter,
-				COL_MNEMO,   mnemo,
-				COL_LABEL,   ofo_recurrent_model_get_label( model ),
-				COL_DATE,    sdate ? sdate : "",
-				COL_STATUS,  status,
-				COL_AMOUNT1, samount1,
-				COL_AMOUNT2, samount2,
-				COL_AMOUNT3, samount3,
-				COL_OBJECT,  ope,
-				COL_MODEL,   model,
-				-1 );
-
-		g_free( samount3 );
-		g_free( samount2 );
-		g_free( samount1 );
-		g_free( status );
-		g_free( sdate );
-	}
-}
-
-/*
- * Change the ope mnemonic of all concerned rows
- */
-static void
-store_update_mnemo_all( ofaRecurrentRunTreeview *self, const gchar *prev_mnemo, const gchar *new_mnemo )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkTreeIter iter;
-	gchar *row_mnemo;
-	gint cmp;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), &iter, COL_MNEMO, &row_mnemo, -1 );
-			cmp = my_collate( row_mnemo, prev_mnemo );
-			g_free( row_mnemo );
-			if( cmp == 0 ){
-				gtk_list_store_set( priv->store, &iter, COL_MNEMO, new_mnemo, -1 );
-			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), &iter )){
-				break;
-			}
-		}
-	}
-}
-
-static void
-store_update_object( ofaRecurrentRunTreeview *self, ofoRecurrentRun *object )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkTreeIter iter;
-	ofoRecurrentRun *row_obj;
-	gint cmp;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), &iter, COL_OBJECT, &row_obj, -1 );
-			cmp = ofo_recurrent_run_compare( object, row_obj );
-			g_object_unref( row_obj );
-			if( cmp == 0 ){
-				store_set_row( self, &iter, object );
-				return;
-			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), &iter )){
-				break;
-			}
-		}
-	}
-}
-
-static gboolean
-store_remove_object( ofaRecurrentRunTreeview *self, ofoRecurrentRun *object )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GtkTreeIter iter;
-	ofoRecurrentRun *row_obj;
-	gint cmp;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( priv->store ), &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), &iter, COL_OBJECT, &row_obj, -1 );
-			cmp = ofo_recurrent_run_compare( object, row_obj );
-			g_object_unref( row_obj );
-			if( cmp == 0 ){
-				gtk_list_store_remove( priv->store, &iter );
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( priv->store ), &iter )){
-				break;
-			}
-		}
-	}
-
-	return( FALSE );
-}
-
-/**
- * ofa_recurrent_run_treeview_set_from_list:
- * @bin: this #ofaRecurrentRunTreeview instance.
- * @dataset: a list of objects to be displayed.
- *
- * Display the provided list of objects.
- */
-void
-ofa_recurrent_run_treeview_set_from_list( ofaRecurrentRunTreeview *bin, GList *dataset )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_RECURRENT_RUN_TREEVIEW( bin ));
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	do_insert_dataset( bin, dataset );
-}
-
-/**
- * ofa_recurrent_run_treeview_set_from_db:
- * @bin: this #ofaRecurrentRunTreeview instance.
- *
- * Load the current dataset from database, and displays it.
- */
-void
-ofa_recurrent_run_treeview_set_from_db( ofaRecurrentRunTreeview *bin )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GList *dataset;
-
-	g_return_if_fail( bin && OFA_IS_RECURRENT_RUN_TREEVIEW( bin ));
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	dataset = ofo_recurrent_run_get_dataset( priv->hub );
-	do_insert_dataset( bin, dataset );
-}
-
-static void
-do_insert_dataset( ofaRecurrentRunTreeview *self, GList *dataset )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-	GList *it;
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( self );
-
-	gtk_list_store_clear( priv->store );
-
-	for( it=dataset ; it ; it=it->next ){
-		g_return_if_fail( OFO_IS_RECURRENT_RUN( it->data ));
-		store_insert_row( self, OFO_RECURRENT_RUN( it->data ));
-	}
+	priv->visible = visible;
+	set_settings( view );
+	ofa_tvbin_refilter( OFA_TVBIN( view ));
 }
 
 /**
@@ -1196,26 +537,6 @@ ofa_recurrent_run_treeview_clear( ofaRecurrentRunTreeview *bin )
 }
 
 /**
- * ofa_recurrent_run_treeview_get_treeview:
- * @bin: this #ofaRecurrentRunTreeview instance.
- *
- * Returns: the underlying #GtkTreeView widget.
- */
-GtkWidget *
-ofa_recurrent_run_treeview_get_treeview( ofaRecurrentRunTreeview *bin )
-{
-	ofaRecurrentRunTreeviewPrivate *priv;
-
-	g_return_val_if_fail( bin && OFA_IS_RECURRENT_RUN_TREEVIEW( bin ), NULL );
-
-	priv = ofa_recurrent_run_treeview_get_instance_private( bin );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	return( priv->tview );
-}
-
-/**
  * ofa_recurrent_run_treeview_get_selected:
  *
  * Returns: the list of #ofoRecurrentRun selected objects.
@@ -1227,6 +548,7 @@ GList *
 ofa_recurrent_run_treeview_get_selected( ofaRecurrentRunTreeview *view )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
+	GtkTreeSelection *selection;
 
 	g_return_val_if_fail( view && OFA_IS_RECURRENT_RUN_TREEVIEW( view ), NULL );
 
@@ -1234,89 +556,194 @@ ofa_recurrent_run_treeview_get_selected( ofaRecurrentRunTreeview *view )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( tview_get_selected( view ));
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
+
+	return( get_selected_with_selection( view, selection ));
 }
 
 /*
- * SIGNAL_HUB_NEW signal handler
+ * gtk_tree_selection_get_selected_rows() works even if selection mode
+ * is GTK_SELECTION_MULTIPLE (which is the default here)
+ */
+static GList *
+get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GList *selected_rows, *irow, *selected_objects;
+	ofoRecurrentRun *run;
+
+	selected_objects = NULL;
+	selected_rows = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	for( irow=selected_rows ; irow ; irow=irow->next ){
+		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
+			gtk_tree_model_get( tmodel, &iter, REC_RUN_COL_OBJECT, &run, -1 );
+			g_return_val_if_fail( run && OFO_IS_RECURRENT_RUN( run ), NULL );
+			selected_objects = g_list_prepend( selected_objects, run );
+		}
+	}
+
+	g_list_free_full( selected_rows, ( GDestroyNotify ) gtk_tree_path_free );
+
+	return( selected_objects );
+}
+
+/*
+ * settings: visible_filter;
  */
 static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self )
+get_settings( ofaRecurrentRunTreeview *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_new_object";
 	ofaRecurrentRunTreeviewPrivate *priv;
-
-	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
+	GList *slist, *it;
+	const gchar *cstr;
+	gchar *settings_key;
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
-	if( OFO_IS_RECURRENT_RUN( object ) && priv->auto_update ){
-		store_insert_row( self, OFO_RECURRENT_RUN( object ));
+	settings_key = g_strdup_printf( "%s-treeview", priv->settings_prefix );
+	slist = ofa_settings_user_get_string_list( settings_key );
+
+	it = slist ? slist : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->visible = atoi( cstr );
 	}
+
+	ofa_settings_free_string_list( slist );
+	g_free( settings_key );
 }
 
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentRunTreeview *self )
+set_settings( ofaRecurrentRunTreeview *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_updated_object";
-	const gchar *code, *new_code;
+	ofaRecurrentRunTreeviewPrivate *priv;
+	gchar *str, *settings_key;
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self );
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
-	if( OFO_IS_RECURRENT_MODEL( object )){
-		new_code = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
-		code = prev_id ? prev_id : new_code;
-		if( my_collate( code, new_code )){
-			store_update_mnemo_all( self, code, new_code );
+	settings_key = g_strdup_printf( "%s-treeview", priv->settings_prefix );
+
+	str = g_strdup_printf( "%d;", priv->visible );
+
+	ofa_settings_user_set_string( settings_key, str );
+
+	g_free( str );
+	g_free( settings_key );
+}
+
+static gboolean
+v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	gboolean visible;
+	ofoRecurrentRun *object;
+	const gchar *status;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( bin ));
+
+	visible = FALSE;
+
+	gtk_tree_model_get( tmodel, iter, REC_RUN_COL_OBJECT, &object, -1 );
+	if( object ){
+		g_return_val_if_fail( OFO_IS_RECURRENT_RUN( object ), FALSE );
+		g_object_unref( object );
+
+		status = ofo_recurrent_run_get_status( object );
+
+		if( !my_collate( status, REC_STATUS_CANCELLED )){
+			visible = priv->visible & REC_VISIBLE_CANCELLED;
+
+		} else if( !my_collate( status, REC_STATUS_WAITING )){
+			visible = priv->visible & REC_VISIBLE_WAITING;
+
+		} else if( !my_collate( status, REC_STATUS_VALIDATED )){
+			visible = priv->visible & REC_VISIBLE_VALIDATED;
 		}
-	} else if( OFO_IS_RECURRENT_RUN( object )){
-			store_update_object( self, OFO_RECURRENT_RUN( object ));
 	}
+
+	return( visible );
 }
 
-/*
- * SIGNAL_HUB_DELETED signal handler
- */
-static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunTreeview *self )
+static gint
+v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_deleted_object";
+	static const gchar *thisfn = "ofa_recurrent_run_treeview_v_sort";
+	gchar *mnemoa, *labela, *seqa, *datea, *statusa, *amount1a, *amount2a, *amount3a;
+	gchar *mnemob, *labelb, *seqb, *dateb, *statusb, *amount1b, *amount2b, *amount3b;
+	gint cmp;
 
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
+	gtk_tree_model_get( tmodel, a,
+			REC_RUN_COL_MNEMO,   &mnemoa,
+			REC_RUN_COL_NUMSEQ,  &seqa,
+			REC_RUN_COL_LABEL,   &labela,
+			REC_RUN_COL_DATE,    &datea,
+			REC_RUN_COL_STATUS,  &statusa,
+			REC_RUN_COL_AMOUNT1, &amount1a,
+			REC_RUN_COL_AMOUNT2, &amount2a,
+			REC_RUN_COL_AMOUNT3, &amount3a,
+			-1 );
 
-	if( OFO_IS_RECURRENT_RUN( object )){
-		store_remove_object( self, OFO_RECURRENT_RUN( object ));
+	gtk_tree_model_get( tmodel, b,
+			REC_RUN_COL_MNEMO,   &mnemob,
+			REC_RUN_COL_NUMSEQ,  &seqb,
+			REC_RUN_COL_LABEL,   &labelb,
+			REC_RUN_COL_DATE,    &dateb,
+			REC_RUN_COL_STATUS,  &statusb,
+			REC_RUN_COL_AMOUNT1, &amount1b,
+			REC_RUN_COL_AMOUNT2, &amount2b,
+			REC_RUN_COL_AMOUNT3, &amount3b,
+			-1 );
+
+	cmp = 0;
+
+	switch( column_id ){
+		case REC_RUN_COL_MNEMO:
+			cmp = my_collate( mnemoa, mnemob );
+			break;
+		case REC_RUN_COL_NUMSEQ:
+			cmp = ofa_itvsortable_sort_str_int( seqa, seqb );
+			break;
+		case REC_RUN_COL_LABEL:
+			cmp = my_collate( labela, labelb );
+			break;
+		case REC_RUN_COL_DATE:
+			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_display());
+			break;
+		case REC_RUN_COL_STATUS:
+			cmp = my_collate( statusa, statusb );
+			break;
+		case REC_RUN_COL_AMOUNT1:
+			cmp = ofa_itvsortable_sort_str_amount( amount1a, amount1b );
+			break;
+		case REC_RUN_COL_AMOUNT2:
+			cmp = ofa_itvsortable_sort_str_amount( amount2a, amount2b );
+			break;
+		case REC_RUN_COL_AMOUNT3:
+			cmp = ofa_itvsortable_sort_str_amount( amount3a, amount3b );
+			break;
+		default:
+			g_warning( "%s: unhandled column: %d", thisfn, column_id );
+			break;
 	}
-}
 
-/*
- * SIGNAL_HUB_RELOAD signal handler
- */
-static void
-hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentRunTreeview *self )
-{
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_hub_on_reload_dataset";
+	g_free( mnemoa );
+	g_free( seqa );
+	g_free( labela );
+	g_free( datea );
+	g_free( statusa );
+	g_free( amount1a );
+	g_free( amount2a );
+	g_free( amount3a );
 
-	g_debug( "%s: hub=%p, type=%lu, self=%p",
-			thisfn, ( void * ) hub, type, ( void * ) self );
+	g_free( mnemob );
+	g_free( seqb );
+	g_free( labelb );
+	g_free( dateb );
+	g_free( statusb );
+	g_free( amount1b );
+	g_free( amount2b );
+	g_free( amount3b );
 
-	if( type == OFO_TYPE_RECURRENT_RUN ){
-		ofa_recurrent_run_treeview_set_from_db( self );
-	}
+	return( cmp );
 }

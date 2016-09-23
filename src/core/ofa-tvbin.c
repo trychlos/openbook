@@ -72,6 +72,10 @@ enum {
 	PROP_WRITESETTINGS_ID,
 };
 
+/* the function which is called when initializing an editable cell renderer
+ */
+typedef void (*ofaTVBinInitEditableFn )( gint, GtkCellRenderer *, void * );
+
 /* signals defined here
  */
 enum {
@@ -1469,8 +1473,104 @@ ofa_tvbin_set_cell_data_func( ofaTVBin *bin, GtkTreeCellDataFunc fn_cell, void *
 	g_list_free( columns );
 }
 
+/**
+ * ofa_tvbin_set_cell_edited_func:
+ * @bin: this #ofaTVBin instance.
+ * @fn_cell: the function.
+ * @fn_data: user data.
+ *
+ * Setup the fonction to be used on GtkCellRendererText's edition.
+ *
+ * It is expected that all columns have been defined prior a cell data
+ * func be set, as this same cell data func has to be proxyied to each
+ * and every column.
+ */
+void
+ofa_tvbin_set_cell_edited_func( ofaTVBin *bin, GCallback fn_cell, void *fn_data )
+{
+	static const gchar *thisfn = "ofa_tvbin_set_cell_edited_func";
+	ofaTVBinPrivate *priv;
+	GList *columns, *itco, *cells, *itce;
+
+	g_debug( "%s: bin=%p, fn_cell=%p, fn_data=%p",
+			thisfn, ( void * ) bin, ( void * ) fn_cell, ( void * ) fn_data );
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+	g_return_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ));
+
+	columns = gtk_tree_view_get_columns( GTK_TREE_VIEW( priv->treeview ));
+	for( itco=columns ; itco ; itco=itco->next ){
+		cells = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( itco->data ));
+		for( itce=cells ; itce ; itce=itce->next ){
+			if( GTK_IS_CELL_RENDERER_TEXT( itce->data )){
+				g_signal_connect( itce->data, "edited", fn_cell, fn_data );
+			}
+		}
+		g_list_free( cells );
+	}
+	g_list_free( columns );
+}
+
+/**
+ * ofa_tvbin_init_editable_column:
+ * @bin: this #ofaTVBin instance.
+ * @column_id: the identifier of the column.
+ * @fn_init: the initialilzation function.
+ * @fn_data: user data.
+ *
+ * Invokes the @fn_init function on the #GtkCellRenderer associated to
+ * the @column_id #GtkTreeViewColumn.
+ *
+ * Depict of the prototype of the @fn_init function, if will be invoked
+ * with following arguments:
+ * - gint column_id,
+ * - GtkCellRenderer *renderer,
+ * - void *fn_data.
+ *
+ * It is expected that all columns have been defined prior a cell data
+ * func be set, as this same cell data func has to be proxyied to each
+ * and every column.
+ */
+void
+ofa_tvbin_init_editable_column( ofaTVBin *bin, gint column_id, GCallback fn_init, void *fn_data )
+{
+	static const gchar *thisfn = "ofa_tvbin_set_cell_edited_func";
+	ofaTVBinPrivate *priv;
+	gint itcol_id;
+	GList *columns, *itco, *cells, *itce;
+
+	g_debug( "%s: bin=%p, column_id=%d, fn_init=%p, fn_data=%p",
+			thisfn, ( void * ) bin, column_id, ( void * ) fn_init, ( void * ) fn_data );
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+	g_return_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ));
+
+	columns = gtk_tree_view_get_columns( GTK_TREE_VIEW( priv->treeview ));
+	for( itco=columns ; itco ; itco=itco->next ){
+		itcol_id = ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( bin ), GTK_TREE_VIEW_COLUMN( itco->data ));
+		if( itcol_id == column_id ){
+			cells = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( itco->data ));
+			for( itce=cells ; itce ; itce=itce->next ){
+				if( GTK_IS_CELL_RENDERER_TEXT( itce->data )){
+					(( ofaTVBinInitEditableFn ) *fn_init )( column_id, GTK_CELL_RENDERER( itce->data ), fn_data );
+				}
+			}
+			g_list_free( cells );
+		}
+	}
+	g_list_free( columns );
+}
+
 /*
- * ofa_tvbin_set_store:
+ * ofa_tvbin_set_store:)
  * @bin: this #ofaTVBin instance.
  * @store: the underlying store.
  *

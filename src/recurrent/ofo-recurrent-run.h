@@ -84,6 +84,7 @@ const GTimeVal  *ofo_recurrent_run_get_upd_stamp   ( const ofoRecurrentRun *mode
 gdouble          ofo_recurrent_run_get_amount1     ( const ofoRecurrentRun *model );
 gdouble          ofo_recurrent_run_get_amount2     ( const ofoRecurrentRun *model );
 gdouble          ofo_recurrent_run_get_amount3     ( const ofoRecurrentRun *model );
+ofxCounter       ofo_recurrent_run_get_numseq      ( const ofoRecurrentRun *model );
 
 gint             ofo_recurrent_run_compare         ( const ofoRecurrentRun *a, const ofoRecurrentRun *b );
 
