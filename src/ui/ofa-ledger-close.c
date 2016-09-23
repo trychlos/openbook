@@ -342,7 +342,6 @@ setup_treeview( ofaLedgerClose *self )
 	priv->tview = ofa_ledger_treeview_new();
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
-	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -350,6 +349,8 @@ setup_treeview( ofaLedgerClose *self )
 
 	g_signal_connect( priv->tview, "ofa-ledchanged", G_CALLBACK( on_rows_selected ), self );
 	g_signal_connect( priv->tview, "ofa-ledactivated", G_CALLBACK( on_rows_activated ), self );
+
+	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
 }
 
 static void

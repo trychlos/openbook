@@ -58,6 +58,7 @@ typedef struct {
 
 	/* runtime data
 	 */
+	ofaHub         *hub;
 	gboolean        is_writable;		/* whether the dossier is current */
 	gchar          *settings_prefix;
 
@@ -169,19 +170,17 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
-	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-	priv->is_writable = ofa_hub_dossier_is_writable( hub );
+	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	priv->tview = ofa_bat_treeview_new();
 	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
-	ofa_bat_treeview_set_hub( priv->tview, hub );
 
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
@@ -281,6 +280,11 @@ v_init_view( ofaPage *page )
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+
+	/* install the store at the very end of the initialization
+	 * (i.e. after treeview creation, signals connection, actions and
+	 *  menus definition) */
+	ofa_bat_treeview_set_hub( priv->tview, priv->hub );
 }
 
 static GtkWidget *
@@ -313,7 +317,6 @@ on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self )
 	is_bat = bat && OFO_IS_BAT( bat );
 
 	g_simple_action_set_enabled( priv->update_action, is_bat );
-
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, bat ));
 }
 

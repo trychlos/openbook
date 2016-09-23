@@ -55,6 +55,8 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	ofaHub              *hub;
+	gchar               *settings_prefix;
 
 	/* UI
 	 */
@@ -93,6 +95,7 @@ static void
 bat_select_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_bat_select_finalize";
+	ofaBatSelectPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -100,6 +103,9 @@ bat_select_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BAT_SELECT( instance ));
 
 	/* free data members here */
+	priv = ofa_bat_select_get_instance_private( OFA_BAT_SELECT( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_bat_select_parent_class )->finalize( instance );
@@ -142,6 +148,7 @@ ofa_bat_select_init( ofaBatSelect *self )
 	priv = ofa_bat_select_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -260,9 +267,7 @@ static void
 setup_treeview( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	ofaHub *hub;
 	GtkWidget *widget;
-	gchar *key;
 	GMenu *menu;
 
 	priv = ofa_bat_select_get_instance_private( self );
@@ -273,21 +278,22 @@ setup_treeview( ofaBatSelect *self )
 	priv->tview = ofa_bat_treeview_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
+	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 
-	key = g_strdup_printf( "%s.Bat", G_OBJECT_TYPE_NAME( self ));
-	ofa_bat_treeview_set_settings_key( priv->tview, key );
-	g_free( key );
-
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-	ofa_bat_treeview_set_hub( priv->tview, hub );
-	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_selection_changed ), self );
 	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), self );
 
 	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
 	ofa_icontext_set_menu( OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ), menu );
+
+	/* install the store at the very end of the initialization
+	 * (i.e. after treeview creation, signals connection, actions and
+	 *  menus definition) */
+	ofa_bat_treeview_set_hub( priv->tview, priv->hub );
+	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
 }
 
 static void
@@ -369,34 +375,34 @@ get_settings( ofaBatSelect *self )
 	ofaBatSelectPrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
-	gchar *key;
+	gchar *settings_key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	key = g_strdup_printf( "%s-settings", G_OBJECT_TYPE_NAME( self ));
-	slist = ofa_settings_user_get_string_list( key );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	slist = ofa_settings_user_get_string_list( settings_key );
 
 	it = slist ? slist : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	priv->pane_pos = cstr ? atoi( cstr ) : 200;
 
 	ofa_settings_free_string_list( slist );
-	g_free( key );
+	g_free( settings_key );
 }
 
 static void
 set_settings( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	gchar *str, *key;
+	gchar *str, *settings_key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	key = g_strdup_printf( "%s-settings", G_OBJECT_TYPE_NAME( self ));
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	str = g_strdup_printf( "%u;", priv->pane_pos );
 
-	ofa_settings_user_set_string( key, str );
+	ofa_settings_user_set_string( settings_key, str );
 
 	g_free( str );
-	g_free( key );
+	g_free( settings_key );
 }
