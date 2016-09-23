@@ -332,7 +332,7 @@ ofa_iactionable_set_menu_item( ofaIActionable *instance, const gchar *group_name
 }
 
 /**
- * ofa_iactionable_set_button:
+ * ofa_iactionable_new_button:
  * @instance: this #ofaIActionable instance.
  * @group_name: the name of the action group.
  * @action: the action.
@@ -344,11 +344,8 @@ ofa_iactionable_set_menu_item( ofaIActionable *instance, const gchar *group_name
  * #gtk_widget_destroy() by the caller.
  */
 GtkWidget *
-ofa_iactionable_set_button( ofaIActionable *instance, const gchar *group_name, GAction *action, const gchar *button_label )
+ofa_iactionable_new_button( ofaIActionable *instance, const gchar *group_name, GAction *action, const gchar *button_label )
 {
-	sIActionable *sdata;
-	sActionGroup *sgroup;
-	gchar *action_name;
 	GtkWidget *button;
 
 	g_return_val_if_fail( instance && OFA_IS_IACTIONABLE( instance ), NULL );
@@ -356,19 +353,42 @@ ofa_iactionable_set_button( ofaIActionable *instance, const gchar *group_name, G
 	g_return_val_if_fail( action && G_IS_ACTION( action ), NULL );
 	g_return_val_if_fail( my_strlen( button_label ), NULL );
 
+	button = gtk_button_new_with_mnemonic( button_label );
+	ofa_iactionable_set_button( instance, button, group_name, action );
+
+	return( button );
+}
+
+/**
+ * ofa_iactionable_set_button:
+ * @instance: this #ofaIActionable instance.
+ * @button: the button to be set.
+ * @group_name: the name of the action group.
+ * @action: the action.
+ *
+ * Associates the @button to the @action.
+ */
+void
+ofa_iactionable_set_button( ofaIActionable *instance, GtkWidget *button, const gchar *group_name, GAction *action )
+{
+	sIActionable *sdata;
+	sActionGroup *sgroup;
+	gchar *action_name;
+
+	g_return_if_fail( instance && OFA_IS_IACTIONABLE( instance ));
+	g_return_if_fail( button && GTK_IS_WIDGET( button ));
+	g_return_if_fail( my_strlen( group_name ));
+	g_return_if_fail( action && G_IS_ACTION( action ));
+
 	sdata = get_instance_data( instance );
 	set_action_group( instance, sdata, group_name, action );
 	sgroup = get_group_by_name( instance, sdata, group_name );
-
-	button = gtk_button_new_with_mnemonic( button_label );
 
 	action_name = g_strdup_printf( "%s.%s", group_name, g_action_get_name( action ));
 	gtk_actionable_set_action_name( GTK_ACTIONABLE( button ), action_name );
 	g_free( action_name );
 
 	gtk_widget_insert_action_group( button, group_name, G_ACTION_GROUP( sgroup->action_group ));
-
-	return( button );
 }
 
 static void
