@@ -187,9 +187,8 @@ v_setup_view( ofaPage *page )
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	priv->tview = ofa_currency_treeview_new();
-	ofa_currency_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
-	ofa_currency_treeview_set_hub( priv->tview, priv->hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
+	ofa_currency_treeview_set_settings_key( priv->tview, G_OBJECT_TYPE_NAME( page ));
 
 	/* in case the last consumer of a currency disappears, then update
 	 * the actions sensitivities */
@@ -278,6 +277,11 @@ v_init_view( ofaPage *page )
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+
+	/* install the store at the very end of the initialization
+	 * (i.e. after treeview creation, signals connection, actions and
+	 *  menus definition) */
+	ofa_currency_treeview_set_hub( priv->tview, priv->hub );
 }
 
 static GtkWidget *

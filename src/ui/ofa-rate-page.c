@@ -54,7 +54,6 @@ typedef struct {
 	/* internals
 	 */
 	ofaHub          *hub;
-	GList           *hub_handlers;
 	gboolean         is_writable;
 	gchar           *settings_prefix;
 
@@ -119,11 +118,6 @@ rate_page_dispose( GObject *instance )
 		/* unref object members here */
 		priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( instance ));
 
-		/* note when deconnecting the handlers that the dossier may
-		 * have been already finalized (e.g. when the application
-		 * terminates) */
-		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
-
 		g_object_unref( priv->new_action );
 		g_object_unref( priv->update_action );
 		g_object_unref( priv->delete_action );
@@ -146,7 +140,6 @@ ofa_rate_page_init( ofaRatePage *self )
 
 	priv = ofa_rate_page_get_instance_private( self );
 
-	priv->hub_handlers = NULL;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
@@ -181,9 +174,8 @@ v_setup_view( ofaPage *page )
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	priv->tview = ofa_rate_treeview_new();
-	ofa_rate_treeview_set_settings_key( priv->tview, priv->settings_prefix );
-	ofa_rate_treeview_set_hub( priv->tview, priv->hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
+	ofa_rate_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
@@ -267,6 +259,11 @@ v_init_view( ofaPage *page )
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+
+	/* install the store at the very end of the initialization
+	 * (i.e. after treeview creation, signals connection, actions and
+	 *  menus definition) */
+	ofa_rate_treeview_set_hub( priv->tview, priv->hub );
 }
 
 static GtkWidget *

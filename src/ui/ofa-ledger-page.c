@@ -53,6 +53,7 @@ typedef struct {
 
 	/* internals
 	 */
+	ofaHub            *hub;
 	gboolean           is_writable;
 	gint               exe_id;			/* internal identifier of the current exercice */
 	gchar             *settings_prefix;
@@ -169,14 +170,14 @@ v_setup_view( ofaPage *page )
 	static const gchar *thisfn = "ofa_ledger_page_v_setup_view";
 	ofaLedgerPagePrivate *priv;
 	GtkWidget *frame;
-	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	priv->is_writable = ofa_hub_dossier_is_writable( hub );
+	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	frame = setup_treeview( page );
 
@@ -187,16 +188,12 @@ static GtkWidget *
 setup_treeview( ofaPage *page )
 {
 	ofaLedgerPagePrivate *priv;
-	ofaHub *hub;
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
-
-	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	priv->tview = ofa_ledger_treeview_new();
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
-	ofa_ledger_treeview_set_hub( priv->tview, hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
 	/* ofaTVBin signals */
@@ -297,6 +294,11 @@ v_init_view( ofaPage *page )
 	ofa_icontext_append_submenu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+
+	/* install the store at the very end of the initialization
+	 * (i.e. after treeview creation, signals connection, actions and
+	 *  menus definition) */
+	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
 }
 
 static GtkWidget *
@@ -472,7 +474,6 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLed
 	const gchar *mnemo;
 	ofoLedger *ledger;
 	ofaIThemeManager *manager;
-	ofaHub *hub;
 
 	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
 
@@ -482,8 +483,7 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLed
 	g_return_if_fail( list && list->data );
 
 	mnemo = ( const gchar * ) list->data;
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
+	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	ofa_ledger_treeview_free_selected( list );
