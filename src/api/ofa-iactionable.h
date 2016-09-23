@@ -45,7 +45,7 @@
  * interface defines one menu for each action group.
  *
  * Each action may be activated via a #GtkButton as long as one has been
- * defined with #ofa_iactionable_set_button().
+ * defined with #ofa_iactionable_new_button().
  *
  * #GAction actions and their respective handlers have to be handled by
  * the implementation class.
@@ -142,10 +142,15 @@ void          ofa_iactionable_set_action                ( ofaIActionable *instan
 																const gchar *group_name,
 																GAction *action );
 
-GtkWidget    *ofa_iactionable_set_button                ( ofaIActionable *instance,
+GtkWidget    *ofa_iactionable_new_button                ( ofaIActionable *instance,
 																const gchar *group_name,
 																GAction *action,
 																const gchar *button_label );
+
+void          ofa_iactionable_set_button                ( ofaIActionable *instance,
+																GtkWidget *button,
+																const gchar *group_name,
+																GAction *action );
 
 GMenuItem    *ofa_iactionable_set_menu_item             ( ofaIActionable *instance,
 																const gchar *group_name,
