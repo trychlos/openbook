@@ -629,7 +629,10 @@ tview_on_key_insert( ofaOpeTemplateTreeview *view, ofaOpeTemplateFrameBin *self 
 void
 ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTemplateAction id )
 {
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_add_action";
 	ofaOpeTemplateFrameBinPrivate *priv;
+
+	g_debug( "%s: bin=%p, id=%u", thisfn, ( void * ) bin, id );
 
 	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
 

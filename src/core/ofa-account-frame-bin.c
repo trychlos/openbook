@@ -779,7 +779,10 @@ tview_on_key_insert( ofaAccountTreeview *treeview, ofaAccountFrameBin *self )
 void
 ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 {
+	static const gchar *thisfn = "ofa_account_frame_bin_add_action";
 	ofaAccountFrameBinPrivate *priv;
+
+	g_debug( "%s: bin=%p, id=%u", thisfn, ( void * ) bin, id );
 
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
 
