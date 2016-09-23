@@ -1492,8 +1492,11 @@ ofa_tvbin_set_cell_data_func( ofaTVBin *bin, GtkTreeCellDataFunc fn_cell, void *
 void
 ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 {
+	static const gchar *thisfn = "ofa_tvbin_set_store";
 	ofaTVBinPrivate *priv;
 	GtkTreeModel *sort_model, *filter_model;
+
+	g_debug( "%s: bin=%p, store=%p", thisfn, ( void * ) bin, ( void * ) store );
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 	g_return_if_fail( store && GTK_IS_TREE_MODEL( store ));
