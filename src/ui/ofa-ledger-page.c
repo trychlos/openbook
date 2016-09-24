@@ -200,7 +200,7 @@ setup_treeview( ofaPage *page )
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
 
-	/* ofaBatTreeview signals */
+	/* ofaLedgerTreeview signals */
 	g_signal_connect( priv->tview, "ofa-ledchanged", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "ofa-ledactivated", G_CALLBACK( on_row_activated ), page );
 	g_signal_connect( priv->tview, "ofa-leddelete", G_CALLBACK( on_delete_key ), page );
