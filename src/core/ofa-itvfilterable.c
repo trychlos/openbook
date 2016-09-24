@@ -204,27 +204,6 @@ ofa_itvfilterable_set_child_model( ofaITVFilterable *instance, GtkTreeModel *mod
 	return( sdata->filter_model );
 }
 
-/**
- * ofa_itvfilterable_get_model:
- * @instance: this #ofaITVFilterable instance.
- *
- * Returns: the filter model.
- *
- * The returned reference is owned by the #ofaITVFilterable @instance, and
- * should not be released by the caller.
- */
-GtkTreeModel *
-ofa_itvfilterable_get_model( ofaITVFilterable *instance )
-{
-	sITVFilterable *sdata;
-
-	g_return_val_if_fail( instance && OFA_IS_ITVFILTERABLE( instance ), NULL );
-
-	sdata = get_itvfilterable_data( instance );
-
-	return( sdata->filter_model );
-}
-
 static gboolean
 on_filter_model( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaITVFilterable *instance )
 {
