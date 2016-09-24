@@ -32,7 +32,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -71,10 +70,10 @@ typedef struct {
 }
 	ofaClassPagePrivate;
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *v_setup_view( ofaActionPage *page );
+static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaClassTreeview *treeview, ofoClass *class, ofaClassPage *self );
 static void       on_row_activated( ofaClassTreeview *treeview, ofoClass *class, ofaClassPage *self );
 static void       on_delete_key( ofaClassTreeview *tview, ofoClass *class, ofaClassPage *self );
@@ -85,7 +84,7 @@ static void       action_on_delete_activated( GSimpleAction *action, GVariant *e
 static gboolean   check_for_deletability( ofaClassPage *self, ofoClass *class );
 static void       delete_with_confirm( ofaClassPage *self, ofoClass *class );
 
-G_DEFINE_TYPE_EXTENDED( ofaClassPage, ofa_class_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaClassPage, ofa_class_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaClassPage ))
 
 static void
@@ -155,14 +154,27 @@ ofa_class_page_class_init( ofaClassPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = class_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = class_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaClassPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_CLASS_PAGE( page ), NULL );
+
+	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static GtkWidget *
+v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_class_page_v_setup_view";
 	ofaClassPagePrivate *priv;
@@ -176,7 +188,6 @@ v_setup_view( ofaPage *page )
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	priv->tview = ofa_class_treeview_new();
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_class_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_class_treeview_setup_columns( priv->tview );
 
@@ -191,16 +202,12 @@ v_setup_view( ofaPage *page )
 	return( GTK_WIDGET( priv->tview ));
 }
 
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
+static void
+v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaClassPagePrivate *priv;
-	ofaButtonsBox *buttons_box;
 
 	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -238,12 +245,10 @@ v_setup_buttons( ofaPage *page )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
-
-	return( GTK_WIDGET( buttons_box ));
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_class_page_v_init_view";
 	ofaClassPagePrivate *priv;
@@ -267,18 +272,6 @@ v_init_view( ofaPage *page )
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
 	ofa_class_treeview_set_hub( priv->tview, priv->hub );
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaClassPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_CLASS_PAGE( page ), NULL );
-
-	priv = ofa_class_page_get_instance_private( OFA_CLASS_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

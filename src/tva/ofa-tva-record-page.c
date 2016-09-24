@@ -31,7 +31,6 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -70,11 +69,11 @@ typedef struct {
 }
 	ofaTVARecordPagePrivate;
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_treeview( ofaTVARecordPage *self );
-static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *v_setup_view( ofaActionPage *page );
+static GtkWidget *setup_treeview( ofaTVARecordPage *self );
+static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
 static void       on_row_activated( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
 static void       on_delete_key( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
@@ -84,7 +83,7 @@ static void       action_on_delete_activated( GSimpleAction *action, GVariant *e
 static gboolean   check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record );
 static void       delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record );
 
-G_DEFINE_TYPE_EXTENDED( ofaTVARecordPage, ofa_tva_record_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaTVARecordPage, ofa_tva_record_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaTVARecordPage ))
 
 static void
@@ -154,14 +153,27 @@ ofa_tva_record_page_class_init( ofaTVARecordPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = tva_record_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_record_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaTVARecordPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_TVA_RECORD_PAGE( page ), NULL );
+
+	priv = ofa_tva_record_page_get_instance_private( OFA_TVA_RECORD_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static GtkWidget *
+v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_tva_record_page_v_setup_view";
 	ofaTVARecordPagePrivate *priv;
@@ -191,7 +203,6 @@ setup_treeview( ofaTVARecordPage *self )
 	priv = ofa_tva_record_page_get_instance_private( self );
 
 	priv->tview = ofa_tva_record_treeview_new();
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_tva_record_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_tva_record_treeview_setup_columns( priv->tview );
 
@@ -206,16 +217,12 @@ setup_treeview( ofaTVARecordPage *self )
 	return( GTK_WIDGET( priv->tview ));
 }
 
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
+static void
+v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaTVARecordPagePrivate *priv;
-	ofaButtonsBox *buttons_box;
 
 	priv = ofa_tva_record_page_get_instance_private( OFA_TVA_RECORD_PAGE( page ));
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
 	/* new action - always disabled */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -255,12 +262,10 @@ v_setup_buttons( ofaPage *page )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
-
-	return( GTK_WIDGET( buttons_box ));
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_tva_record_page_v_init_view";
 	ofaTVARecordPagePrivate *priv;
@@ -284,18 +289,6 @@ v_init_view( ofaPage *page )
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
 	ofa_tva_record_treeview_set_hub( priv->tview, priv->hub );
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaTVARecordPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_TVA_RECORD_PAGE( page ), NULL );
-
-	priv = ofa_tva_record_page_get_instance_private( OFA_TVA_RECORD_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

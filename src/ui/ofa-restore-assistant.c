@@ -651,6 +651,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv->p2_is_new_dossier = FALSE;
 
 	buttons_box = ofa_buttons_box_new();
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 0, 0, 2, 2 );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-buttons-box" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( buttons_box ));

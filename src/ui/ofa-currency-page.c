@@ -32,7 +32,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -74,10 +73,10 @@ typedef struct {
 }
 	ofaCurrencyPagePrivate;
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *v_setup_view( ofaActionPage *page );
+static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaCurrencyTreeview *tview, ofoCurrency *currency, ofaCurrencyPage *self );
 static void       on_row_activated( ofaCurrencyTreeview *tview, ofoCurrency *currency, ofaCurrencyPage *self );
 static void       on_delete_key( ofaCurrencyTreeview *tview, ofoCurrency *currency, ofaCurrencyPage *self );
@@ -89,7 +88,7 @@ static gboolean   check_for_deletability( ofaCurrencyPage *self, ofoCurrency *cl
 static void       delete_with_confirm( ofaCurrencyPage *self, ofoCurrency *class );
 static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaCurrencyPage, ofa_currency_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaCurrencyPage, ofa_currency_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaCurrencyPage ))
 
 static void
@@ -165,14 +164,27 @@ ofa_currency_page_class_init( ofaCurrencyPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = currency_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaCurrencyPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_CURRENCY_PAGE( page ), NULL );
+
+	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static GtkWidget *
+v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_currency_page_v_setup_view";
 	ofaCurrencyPagePrivate *priv;
@@ -187,7 +199,6 @@ v_setup_view( ofaPage *page )
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	priv->tview = ofa_currency_treeview_new();
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_currency_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_currency_treeview_setup_columns( priv->tview );
 
@@ -207,16 +218,12 @@ v_setup_view( ofaPage *page )
 	return( GTK_WIDGET( priv->tview ));
 }
 
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
+static void
+v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaCurrencyPagePrivate *priv;
-	ofaButtonsBox *buttons_box;
 
 	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -254,12 +261,10 @@ v_setup_buttons( ofaPage *page )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
-
-	return( GTK_WIDGET( buttons_box ));
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_currency_page_v_init_view";
 	ofaCurrencyPagePrivate *priv;
@@ -283,18 +288,6 @@ v_init_view( ofaPage *page )
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
 	ofa_currency_treeview_set_hub( priv->tview, priv->hub );
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaCurrencyPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_CURRENCY_PAGE( page ), NULL );
-
-	priv = ofa_currency_page_get_instance_private( OFA_CURRENCY_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

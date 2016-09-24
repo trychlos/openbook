@@ -278,6 +278,7 @@ idialog_init_actions( ofaDossierManager *self )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "buttons-box" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 	buttons_box = ofa_buttons_box_new();
+	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 0, 0, 2, 2 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( buttons_box ));
 
 	/* new action */

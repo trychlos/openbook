@@ -36,7 +36,7 @@
  * order with insensitive case.
  */
 
-#include "api/ofa-page-def.h"
+#include "api/ofa-action-page.h"
 
 G_BEGIN_DECLS
 
@@ -49,13 +49,13 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	ofaPage      parent;
+	ofaActionPage      parent;
 }
 	ofaCurrencyPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaActionPageClass parent;
 }
 	ofaCurrencyPageClass;
 
