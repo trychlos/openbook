@@ -77,19 +77,21 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                           Type     Displayable
- *                                                           -------  -----------
- * @TVA_FORM_COL_MNEMO         : mnemonic identifier          String       Yes
- * @TVA_FORM_COL_LABEL         : label                        String       Yes
- * @TVA_FORM_COL_NOTES         : notes                        String       Yes
- * @TVA_FORM_COL_NOTES_PNG     : notes indicator              Pixbuf       Yes
- * @TVA_FORM_COL_UPD_USER      : last update user             String       Yes
- * @TVA_FORM_COL_UPD_STAMP     : last update timestamp        String       Yes
- * @TVA_FORM_COL_OBJECT        : #ofoTVAForm object           GObject       No
+ *                                                                                Type     Displayable
+ *                                                                                -------  -----------
+ * @TVA_FORM_COL_MNEMO             : mnemonic identifier                          String       Yes
+ * @TVA_FORM_COL_LABEL             : label                                        String       Yes
+ * @TVA_FORM_COL_HAS_CORRESPONDENCE: whether the form has a correspondence block  String       Yes
+ * @TVA_FORM_COL_NOTES             : notes                                        String       Yes
+ * @TVA_FORM_COL_NOTES_PNG         : notes indicator                              Pixbuf       Yes
+ * @TVA_FORM_COL_UPD_USER          : last update user                             String       Yes
+ * @TVA_FORM_COL_UPD_STAMP         : last update timestamp                        String       Yes
+ * @TVA_FORM_COL_OBJECT            : #ofoTVAForm object                           GObject       No
  */
 enum {
 	TVA_FORM_COL_MNEMO = 0,
 	TVA_FORM_COL_LABEL,
+	TVA_FORM_COL_HAS_CORRESPONDENCE,
 	TVA_FORM_COL_NOTES,
 	TVA_FORM_COL_NOTES_PNG,
 	TVA_FORM_COL_UPD_USER,
