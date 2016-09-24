@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -47,10 +49,10 @@ typedef struct {
 	ofaTVAFormStorePrivate;
 
 static GType st_col_types[TVA_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING,				/* mnemo, label */
-		G_TYPE_STRING, 0,							/* notes, notes_png */
-		G_TYPE_STRING, G_TYPE_STRING,				/* upd_user, upd_stamp */
-		G_TYPE_OBJECT								/* the #ofoTVAForm itself */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, has_corresp. */
+		G_TYPE_STRING, 0,								/* notes, notes_png */
+		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
+		G_TYPE_OBJECT									/* the #ofoTVAForm itself */
 };
 
 /* signals defined here
@@ -287,12 +289,14 @@ static void
 set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_tva_form_store_set_row";
-	gchar *stamp;
+	gchar *stamp, *hascorresp;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 
 	stamp  = my_utils_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
+
+	hascorresp = g_strdup( ofo_tva_form_get_has_correspondence( form ) ? _( "C" ) : "" );
 
 	notes = ofo_tva_form_get_notes( form );
 	error = NULL;
@@ -305,17 +309,19 @@ set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			TVA_FORM_COL_MNEMO,     ofo_tva_form_get_mnemo( form ),
-			TVA_FORM_COL_LABEL,     ofo_tva_form_get_label( form ),
-			TVA_FORM_COL_NOTES,     notes,
-			TVA_FORM_COL_NOTES_PNG, notes_png,
-			TVA_FORM_COL_UPD_USER,  ofo_tva_form_get_upd_user( form ),
-			TVA_FORM_COL_UPD_STAMP, stamp,
-			TVA_FORM_COL_OBJECT,    form,
+			TVA_FORM_COL_MNEMO,              ofo_tva_form_get_mnemo( form ),
+			TVA_FORM_COL_LABEL,              ofo_tva_form_get_label( form ),
+			TVA_FORM_COL_HAS_CORRESPONDENCE, hascorresp,
+			TVA_FORM_COL_NOTES,              notes,
+			TVA_FORM_COL_NOTES_PNG,          notes_png,
+			TVA_FORM_COL_UPD_USER,           ofo_tva_form_get_upd_user( form ),
+			TVA_FORM_COL_UPD_STAMP,          stamp,
+			TVA_FORM_COL_OBJECT,             form,
 			-1 );
 
 	g_object_unref( notes_png );
 	g_free( stamp );
+	g_free( hascorresp );
 }
 
 /*
