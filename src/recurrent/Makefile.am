@@ -64,6 +64,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-dbmodel.h								\
 	ofa-recurrent-execlose.c							\
 	ofa-recurrent-execlose.h							\
+	ofa-recurrent-generate.c							\
+	ofa-recurrent-generate.h							\
 	ofa-recurrent-main.c								\
 	ofa-recurrent-main.h								\
 	ofa-recurrent-model-page.c							\
@@ -74,8 +76,6 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-model-store.h							\
 	ofa-recurrent-model-treeview.c						\
 	ofa-recurrent-model-treeview.h						\
-	ofa-recurrent-new.c									\
-	ofa-recurrent-new.h									\
 	ofa-recurrent-run-page.c							\
 	ofa-recurrent-run-page.h							\
 	ofa-recurrent-run-store.c							\

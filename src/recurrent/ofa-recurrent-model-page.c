@@ -45,11 +45,11 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
+#include "ofa-recurrent-generate.h"
 #include "ofa-recurrent-main.h"
 #include "ofa-recurrent-model-page.h"
 #include "ofa-recurrent-model-properties.h"
 #include "ofa-recurrent-model-treeview.h"
-#include "ofa-recurrent-new.h"
 #include "ofa-recurrent-run-page.h"
 #include "ofo-recurrent-model.h"
 
@@ -573,7 +573,7 @@ action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 	GtkWindow *toplevel;
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_recurrent_new_run( OFA_IGETTER( self ), toplevel, self );
+	ofa_recurrent_generate_run( OFA_IGETTER( self ), toplevel, self );
 }
 
 /*

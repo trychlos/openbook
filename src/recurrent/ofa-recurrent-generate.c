@@ -48,7 +48,7 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofs-ope.h"
 
-#include "ofa-recurrent-new.h"
+#include "ofa-recurrent-generate.h"
 #include "ofa-recurrent-model-treeview.h"
 #include "ofa-recurrent-run-store.h"
 #include "ofa-recurrent-run-treeview.h"
@@ -89,87 +89,87 @@ typedef struct {
 	GSimpleAction           *reset_action;
 	GSimpleAction           *generate_action;
 }
-	ofaRecurrentNewPrivate;
+	ofaRecurrentGeneratePrivate;
 
 /* a structure passed to #ofa_periodicity_enum_dates_between()
  */
 typedef struct {
-	ofaRecurrentNew   *self;
-	ofoRecurrentModel *model;
-	ofoOpeTemplate    *template;
-	GList             *opes;
-	guint              already;
-	GList             *messages;
+	ofaRecurrentGenerate *self;
+	ofoRecurrentModel    *model;
+	ofoOpeTemplate       *template;
+	GList                *opes;
+	guint                 already;
+	GList                *messages;
 }
 	sEnumDates;
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-new.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-generate.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
-static void     init_treeview( ofaRecurrentNew *self );
-static void     init_dates( ofaRecurrentNew *self );
-static void     init_actions( ofaRecurrentNew *self );
-static void     init_data( ofaRecurrentNew *self );
-static void     on_begin_date_changed( GtkEditable *editable, ofaRecurrentNew *self );
-static void     on_end_date_changed( GtkEditable *editable, ofaRecurrentNew *self );
-static void     on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *date );
-static gboolean is_dialog_validable( ofaRecurrentNew *self );
-static void     action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentNew *self );
-static void     action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentNew *self );
-static void     generate_do( ofaRecurrentNew *self );
-static gboolean confirm_redo( ofaRecurrentNew *self, const GDate *last_date );
-static GList   *generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages );
+static void     init_treeview( ofaRecurrentGenerate *self );
+static void     init_dates( ofaRecurrentGenerate *self );
+static void     init_actions( ofaRecurrentGenerate *self );
+static void     init_data( ofaRecurrentGenerate *self );
+static void     on_begin_date_changed( GtkEditable *editable, ofaRecurrentGenerate *self );
+static void     on_end_date_changed( GtkEditable *editable, ofaRecurrentGenerate *self );
+static void     on_date_changed( ofaRecurrentGenerate *self, GtkEditable *editable, GDate *date );
+static gboolean is_dialog_validable( ofaRecurrentGenerate *self );
+static void     action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
+static void     action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
+static void     generate_do( ofaRecurrentGenerate *self );
+static gboolean confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date );
+static GList   *generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages );
 static void     generate_enum_dates_cb( const GDate *date, sEnumDates *data );
-static void     display_error_messages( ofaRecurrentNew *self, GList *messages );
-static gboolean do_record( ofaRecurrentNew *self, gchar **msgerr );
-static void     get_settings( ofaRecurrentNew *self );
-static void     set_settings( ofaRecurrentNew *self );
-static void     set_msgerr( ofaRecurrentNew *self, const gchar *msg );
+static void     display_error_messages( ofaRecurrentGenerate *self, GList *messages );
+static gboolean do_record( ofaRecurrentGenerate *self, gchar **msgerr );
+static void     get_settings( ofaRecurrentGenerate *self );
+static void     set_settings( ofaRecurrentGenerate *self );
+static void     set_msgerr( ofaRecurrentGenerate *self, const gchar *msg );
 static void     iactionable_iface_init( ofaIActionableInterface *iface );
 static guint    iactionable_get_interface_version( void );
 
-G_DEFINE_TYPE_EXTENDED( ofaRecurrentNew, ofa_recurrent_new, GTK_TYPE_DIALOG, 0,
-		G_ADD_PRIVATE( ofaRecurrentNew )
+G_DEFINE_TYPE_EXTENDED( ofaRecurrentGenerate, ofa_recurrent_generate, GTK_TYPE_DIALOG, 0,
+		G_ADD_PRIVATE( ofaRecurrentGenerate )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IWINDOW, iwindow_iface_init )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IDIALOG, idialog_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init ))
 
 static void
-recurrent_new_finalize( GObject *instance )
+recurrent_generate_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_finalize";
-	ofaRecurrentNewPrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_generate_finalize";
+	ofaRecurrentGeneratePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_RECURRENT_NEW( instance ));
+	g_return_if_fail( instance && OFA_IS_RECURRENT_GENERATE( instance ));
 
 	/* free data members here */
-	priv = ofa_recurrent_new_get_instance_private( OFA_RECURRENT_NEW( instance ));
+	priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( instance ));
 
 	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_recurrent_new_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_recurrent_generate_parent_class )->finalize( instance );
 }
 
 static void
-recurrent_new_dispose( GObject *instance )
+recurrent_generate_dispose( GObject *instance )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_RECURRENT_NEW( instance ));
+	g_return_if_fail( instance && OFA_IS_RECURRENT_GENERATE( instance ));
 
-	priv = ofa_recurrent_new_get_instance_private( OFA_RECURRENT_NEW( instance ));
+	priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( instance ));
 
 	if( !priv->dispose_has_run ){
 
 		priv->dispose_has_run = TRUE;
 
-		set_settings( OFA_RECURRENT_NEW( instance ));
+		set_settings( OFA_RECURRENT_GENERATE( instance ));
 
 		/* unref object members here */
 		g_list_free_full( priv->dataset, ( GDestroyNotify ) g_object_unref );
@@ -179,21 +179,21 @@ recurrent_new_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_recurrent_new_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_recurrent_generate_parent_class )->dispose( instance );
 }
 
 static void
-ofa_recurrent_new_init( ofaRecurrentNew *self )
+ofa_recurrent_generate_init( ofaRecurrentGenerate *self )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_init";
-	ofaRecurrentNewPrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_generate_init";
+	ofaRecurrentGeneratePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_RECURRENT_NEW( self ));
+	g_return_if_fail( self && OFA_IS_RECURRENT_GENERATE( self ));
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
@@ -204,20 +204,20 @@ ofa_recurrent_new_init( ofaRecurrentNew *self )
 }
 
 static void
-ofa_recurrent_new_class_init( ofaRecurrentNewClass *klass )
+ofa_recurrent_generate_class_init( ofaRecurrentGenerateClass *klass )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_class_init";
+	static const gchar *thisfn = "ofa_recurrent_generate_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = recurrent_new_dispose;
-	G_OBJECT_CLASS( klass )->finalize = recurrent_new_finalize;
+	G_OBJECT_CLASS( klass )->dispose = recurrent_generate_dispose;
+	G_OBJECT_CLASS( klass )->finalize = recurrent_generate_finalize;
 
 	gtk_widget_class_set_template_from_resource( GTK_WIDGET_CLASS( klass ), st_resource_ui );
 }
 
 /**
- * ofa_recurrent_new_run:
+ * ofa_recurrent_generate_run:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the parent window.
  * @page: the current #ofaRecurrentModelPage page.
@@ -226,11 +226,11 @@ ofa_recurrent_new_class_init( ofaRecurrentNewClass *klass )
  * Make sure there is one single dialog opened at time.
  */
 void
-ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentModelPage *page )
+ofa_recurrent_generate_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentModelPage *page )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_run";
-	ofaRecurrentNew *self;
-	ofaRecurrentNewPrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_generate_run";
+	ofaRecurrentGenerate *self;
+	ofaRecurrentGeneratePrivate *priv;
 	ofaHub *hub;
 	myICollector *collector;
 	myIWindow *shown;
@@ -243,26 +243,26 @@ ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentModelP
 
 	hub = ofa_igetter_get_hub( getter );
 	collector = ofa_hub_get_collector( hub );
-	self = ( ofaRecurrentNew * ) my_icollector_single_get_object( collector, OFA_TYPE_RECURRENT_NEW );
+	self = ( ofaRecurrentGenerate * ) my_icollector_single_get_object( collector, OFA_TYPE_RECURRENT_GENERATE );
 
 	if( self ){
 		shown = my_iwindow_present( MY_IWINDOW( self ));
-		g_return_if_fail( shown && OFA_IS_RECURRENT_NEW( shown ));
+		g_return_if_fail( shown && OFA_IS_RECURRENT_GENERATE( shown ));
 
-		if( is_dialog_validable( OFA_RECURRENT_NEW( shown ))){
-			priv = ofa_recurrent_new_get_instance_private( OFA_RECURRENT_NEW( shown ));
+		if( is_dialog_validable( OFA_RECURRENT_GENERATE( shown ))){
+			priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( shown ));
 			g_action_activate( G_ACTION( priv->reset_action ), NULL );
 			g_action_activate( G_ACTION( priv->generate_action ), NULL );
 		}
 
 	} else {
-		self = g_object_new( OFA_TYPE_RECURRENT_NEW, NULL );
+		self = g_object_new( OFA_TYPE_RECURRENT_GENERATE, NULL );
 		my_icollector_single_set_object( collector, self );
 
 		my_iwindow_set_parent( MY_IWINDOW( self ), parent );
 		my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
-		priv = ofa_recurrent_new_get_instance_private( self );
+		priv = ofa_recurrent_generate_get_instance_private( self );
 
 		priv->getter = getter;
 		priv->hub = hub;
@@ -279,7 +279,7 @@ ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentModelP
 static void
 iwindow_iface_init( myIWindowInterface *iface )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_iwindow_iface_init";
+	static const gchar *thisfn = "ofa_recurrent_generate_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 }
@@ -290,7 +290,7 @@ iwindow_iface_init( myIWindowInterface *iface )
 static void
 idialog_iface_init( myIDialogInterface *iface )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_idialog_iface_init";
+	static const gchar *thisfn = "ofa_recurrent_generate_idialog_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -300,12 +300,12 @@ idialog_iface_init( myIDialogInterface *iface )
 static void
 idialog_init( myIDialog *instance )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_idialog_init";
-	ofaRecurrentNewPrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_generate_idialog_init";
+	ofaRecurrentGeneratePrivate *priv;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	priv = ofa_recurrent_new_get_instance_private( OFA_RECURRENT_NEW( instance ));
+	priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( instance ));
 
 	priv->top_paned = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "paned" );
 	g_return_if_fail( priv->top_paned && GTK_IS_PANED( priv->top_paned ));
@@ -315,12 +315,12 @@ idialog_init( myIDialog *instance )
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_record );
 	gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 
-	init_treeview( OFA_RECURRENT_NEW( instance ));
-	init_dates( OFA_RECURRENT_NEW( instance ));
-	init_actions( OFA_RECURRENT_NEW( instance ));
-	init_data( OFA_RECURRENT_NEW( instance ));
+	init_treeview( OFA_RECURRENT_GENERATE( instance ));
+	init_dates( OFA_RECURRENT_GENERATE( instance ));
+	init_actions( OFA_RECURRENT_GENERATE( instance ));
+	init_data( OFA_RECURRENT_GENERATE( instance ));
 
-	get_settings( OFA_RECURRENT_NEW( instance ));
+get_settings( OFA_RECURRENT_GENERATE( instance ));
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
@@ -329,12 +329,12 @@ idialog_init( myIDialog *instance )
  * setup an emmpty treeview for to-be-generated ofoRecurrentRun opes
  */
 static void
-init_treeview( ofaRecurrentNew *self )
+init_treeview( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	GtkWidget *parent;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tview-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -354,14 +354,14 @@ init_treeview( ofaRecurrentNew *self )
  * - end date
  */
 static void
-init_dates( ofaRecurrentNew *self )
+init_dates( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	GtkWidget *prompt, *entry, *label;
 	const GDate *last_date;
 	gchar *str;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	/* previous date */
 	last_date = ofo_recurrent_gen_get_last_run_date( priv->hub );
@@ -421,13 +421,13 @@ init_dates( ofaRecurrentNew *self )
 }
 
 static void
-init_actions( ofaRecurrentNew *self )
+init_actions( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	GtkWidget *btn;
 	GMenu *menu;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	priv->reset_action = g_simple_action_new( "reset", NULL );
 	g_simple_action_set_enabled( priv->reset_action, FALSE );
@@ -464,11 +464,11 @@ init_actions( ofaRecurrentNew *self )
 }
 
 static void
-init_data( ofaRecurrentNew *self )
+init_data( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	priv->store = ofa_recurrent_run_store_new( priv->hub, REC_MODE_FROM_LIST );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
@@ -476,45 +476,45 @@ init_data( ofaRecurrentNew *self )
 }
 
 static void
-on_begin_date_changed( GtkEditable *editable, ofaRecurrentNew *self )
+on_begin_date_changed( GtkEditable *editable, ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	on_date_changed( self, editable, &priv->begin_date );
 }
 
 static void
-on_end_date_changed( GtkEditable *editable, ofaRecurrentNew *self )
+on_end_date_changed( GtkEditable *editable, ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	on_date_changed( self, editable, &priv->end_date );
 }
 
 static void
-on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *date )
+on_date_changed( ofaRecurrentGenerate *self, GtkEditable *editable, GDate *date )
 {
 	my_date_set_from_date( date, my_date_editable_get_date( editable, NULL ));
 	is_dialog_validable( self );
 }
 
 static gboolean
-is_dialog_validable( ofaRecurrentNew *self )
+is_dialog_validable( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	gboolean valid;
 	gchar *msgerr;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	msgerr = NULL;
 	valid = TRUE;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	if( !my_date_is_valid( &priv->begin_date )){
 		msgerr = g_strdup( _( "Empty beginning date" ));
@@ -538,11 +538,11 @@ is_dialog_validable( ofaRecurrentNew *self )
 }
 
 static void
-action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentNew *self )
+action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	gtk_list_store_clear( GTK_LIST_STORE( priv->store ));
 	g_list_free_full( priv->dataset, ( GDestroyNotify ) g_object_unref );
@@ -556,11 +556,11 @@ action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentN
 }
 
 static void
-action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentNew *self )
+action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	gtk_widget_set_sensitive( priv->begin_entry, FALSE );
 	gtk_widget_set_sensitive( priv->end_entry, FALSE );
@@ -570,15 +570,15 @@ action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 }
 
 static void
-generate_do( ofaRecurrentNew *self )
+generate_do( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	GList *models_dataset, *it, *opes, *messages;
 	const GDate *last_date;
 	gchar *str;
 	gint count;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	models_dataset = ofa_recurrent_model_page_get_selected( priv->model_page );
 	//g_debug( "generate_do: models_dataset_count=%d", g_list_length( models_dataset ));
@@ -641,13 +641,13 @@ generate_do( ofaRecurrentNew *self )
  * or equal than last generation date
  */
 static gboolean
-confirm_redo( ofaRecurrentNew *self, const GDate *last_date )
+confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	gchar *sbegin, *slast, *str;
 	gboolean ok;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	sbegin = my_date_to_str( &priv->begin_date, ofa_prefs_date_display());
 	slast = my_date_to_str( last_date, ofa_prefs_date_display());
@@ -671,14 +671,14 @@ confirm_redo( ofaRecurrentNew *self, const GDate *last_date )
  * generating new operations (mnemo+date) between the two dates
  */
 static GList *
-generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages )
+generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages )
 {
-	static const gchar *thisfn = "ofa_recurrent_new_generate_do_opes";
-	ofaRecurrentNewPrivate *priv;
+	static const gchar *thisfn = "ofa_recurrent_generate_generate_do_opes";
+	ofaRecurrentGeneratePrivate *priv;
 	const gchar *per_main, *per_detail;
 	sEnumDates sdata;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	per_main = ofo_recurrent_model_get_periodicity( model );
 	per_detail = ofo_recurrent_model_get_periodicity_detail( model );
@@ -712,14 +712,14 @@ generate_do_opes( ofaRecurrentNew *self, ofoRecurrentModel *model, const GDate *
 static void
 generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	ofoRecurrentRun *recrun;
 	const gchar *mnemo, *csdef;
 	ofsOpe *ope;
 	gchar *msg, *str;
 	gboolean valid;
 
-	priv = ofa_recurrent_new_get_instance_private( data->self );
+	priv = ofa_recurrent_generate_get_instance_private( data->self );
 
 	mnemo = ofo_recurrent_model_get_mnemo( data->model );
 
@@ -785,7 +785,7 @@ generate_enum_dates_cb( const GDate *date, sEnumDates *data )
 }
 
 static void
-display_error_messages( ofaRecurrentNew *self, GList *messages )
+display_error_messages( ofaRecurrentGenerate *self, GList *messages )
 {
 	GString *str;
 	GList *it;
@@ -812,15 +812,15 @@ display_error_messages( ofaRecurrentNew *self, GList *messages )
  *  in the DBMS with 'waiting' status
  */
 static gboolean
-do_record( ofaRecurrentNew *self, gchar **msgerr )
+do_record( ofaRecurrentGenerate *self, gchar **msgerr )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	ofoRecurrentRun *object;
 	GList *it;
 	gchar *str;
 	gint count;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	for( it=priv->dataset ; it ; it=it->next ){
 		object = OFO_RECURRENT_RUN( it->data );
@@ -852,15 +852,15 @@ do_record( ofaRecurrentNew *self, gchar **msgerr )
  * settings: paned_position;
  */
 static void
-get_settings( ofaRecurrentNew *self )
+get_settings( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
 	gint pos;
 	gchar *settings_key;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	slist = ofa_settings_user_get_string_list( settings_key );
@@ -881,13 +881,13 @@ get_settings( ofaRecurrentNew *self )
 }
 
 static void
-set_settings( ofaRecurrentNew *self )
+set_settings( ofaRecurrentGenerate *self )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	gchar *str, *settings_key;
 	gint pos;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
 
@@ -901,12 +901,12 @@ set_settings( ofaRecurrentNew *self )
 }
 
 static void
-set_msgerr( ofaRecurrentNew *self, const gchar *msg )
+set_msgerr( ofaRecurrentGenerate *self, const gchar *msg )
 {
-	ofaRecurrentNewPrivate *priv;
+	ofaRecurrentGeneratePrivate *priv;
 	GtkWidget *label;
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	if( !priv->msg_label ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
