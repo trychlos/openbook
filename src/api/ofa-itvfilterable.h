@@ -108,8 +108,6 @@ guint         ofa_itvfilterable_get_interface_version     ( GType type );
 GtkTreeModel *ofa_itvfilterable_set_child_model            ( ofaITVFilterable *instance,
 																	GtkTreeModel *model );
 
-GtkTreeModel *ofa_itvfilterable_get_model                  ( ofaITVFilterable *instance );
-
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_ITVFILTERABLE_H__ */
