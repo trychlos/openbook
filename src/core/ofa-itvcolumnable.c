@@ -434,6 +434,39 @@ get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeV
 }
 
 /**
+ * ofa_itvcolumnable_get_column_id_renderer:
+ * @instance: this #ofaITVColumnable instance.
+ * @renderer: a #GtkCellRenderer.
+ *
+ * Returns: the identifier of the @column to which the @renderer is
+ * attached.
+ */
+gint
+ofa_itvcolumnable_get_column_id_renderer( ofaITVColumnable *instance, GtkCellRenderer *renderer )
+{
+	sITVColumnable *sdata;
+	GList *it, *cells, *itc;
+	sColumn *scol;
+
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ), -1 );
+	g_return_val_if_fail( renderer && GTK_IS_CELL_RENDERER( renderer ), -1 );
+
+	sdata = get_instance_data( instance );
+
+	for( it=sdata->columns_list ; it ; it=it->next ){
+		scol = ( sColumn * ) it->data;
+		cells = gtk_cell_layout_get_cells( GTK_CELL_LAYOUT( scol->column ));
+		for( itc=cells ; itc ; itc=itc->next ){
+			if( GTK_CELL_RENDERER( itc->data ) == renderer ){
+				return( scol->id );
+			}
+		}
+	}
+
+	return( -1 );
+}
+
+/**
  * ofa_itvcolumnable_get_columns_count:
  * @instance: this #ofaITVColumnable instance.
  *
