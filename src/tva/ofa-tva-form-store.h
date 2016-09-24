@@ -42,6 +42,10 @@
  *
  * The #ofaTVAFormStore takes advantage of the dossier signaling
  * system to maintain itself up to date.
+ *
+ * Signals defined here:
+ * - ofa-inserted: when a new row is inserted,
+ * - ofa-removed: when a row is removed.
  */
 
 #include "api/ofa-hub-def.h"
@@ -73,6 +77,15 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
+ *                                                           Type     Displayable
+ *                                                           -------  -----------
+ * @TVA_FORM_COL_MNEMO         : mnemonic identifier          String       Yes
+ * @TVA_FORM_COL_LABEL         : label                        String       Yes
+ * @TVA_FORM_COL_NOTES         : notes                        String       Yes
+ * @TVA_FORM_COL_NOTES_PNG     : notes indicator              Pixbuf       Yes
+ * @TVA_FORM_COL_UPD_USER      : last update user             String       Yes
+ * @TVA_FORM_COL_UPD_STAMP     : last update timestamp        String       Yes
+ * @TVA_FORM_COL_OBJECT        : #ofoTVAForm object           GObject       No
  */
 enum {
 	TVA_FORM_COL_MNEMO = 0,
@@ -84,20 +97,6 @@ enum {
 	TVA_FORM_COL_OBJECT,
 	TVA_N_COLUMNS
 };
-
-/**
- * ofaCurrencyColumns:
- * The columns displayed in the views.
- */
-typedef enum {
-	TVA_FORM_DISP_MNEMO     = 1 << 0,
-	TVA_FORM_DISP_LABEL     = 1 << 1,
-	TVA_FORM_DISP_NOTES     = 1 << 2,
-	TVA_FORM_DISP_NOTES_PNG = 1 << 3,
-	TVA_FORM_DISP_UPD_USER  = 1 << 4,
-	TVA_FORM_DISP_UPD_STAMP = 1 << 5
-}
-	ofaTVAFormColumns;
 
 GType            ofa_tva_form_store_get_type( void );
 
