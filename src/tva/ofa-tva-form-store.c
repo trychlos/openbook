@@ -281,7 +281,6 @@ insert_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form )
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
 	set_row( self, hub, form, &iter );
-
 	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
@@ -289,14 +288,14 @@ static void
 set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_tva_form_store_set_row";
-	gchar *stamp, *hascorresp;
-	const gchar *notes;
+	gchar *stamp;
+	const gchar *notes, *chascorresp;
 	GError *error;
 	GdkPixbuf *notes_png;
 
 	stamp  = my_utils_stamp_to_str( ofo_tva_form_get_upd_stamp( form ), MY_STAMP_DMYYHM );
 
-	hascorresp = g_strdup( ofo_tva_form_get_has_correspondence( form ) ? _( "C" ) : "" );
+	chascorresp = ofo_tva_form_get_has_correspondence( form ) ? _( "C" ) : "";
 
 	notes = ofo_tva_form_get_notes( form );
 	error = NULL;
@@ -311,7 +310,7 @@ set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter
 			iter,
 			TVA_FORM_COL_MNEMO,              ofo_tva_form_get_mnemo( form ),
 			TVA_FORM_COL_LABEL,              ofo_tva_form_get_label( form ),
-			TVA_FORM_COL_HAS_CORRESPONDENCE, hascorresp,
+			TVA_FORM_COL_HAS_CORRESPONDENCE, chascorresp,
 			TVA_FORM_COL_NOTES,              notes,
 			TVA_FORM_COL_NOTES_PNG,          notes_png,
 			TVA_FORM_COL_UPD_USER,           ofo_tva_form_get_upd_user( form ),
@@ -321,7 +320,6 @@ set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter
 
 	g_object_unref( notes_png );
 	g_free( stamp );
-	g_free( hascorresp );
 }
 
 /*
