@@ -164,12 +164,11 @@ am__DEPENDENCIES_1 =
 libofa_tva_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_tva_la_OBJECTS = ofa-extension.lo ofa-tva-dbmodel.lo \
 	ofa-tva-declare-page.lo ofa-tva-execlose.lo \
-	ofa-tva-form-properties.lo ofa-tva-form-store.lo \
-	ofa-tva-form-treeview.lo ofa-tva-main.lo \
-	ofa-tva-manage-page.lo ofa-tva-record-new.lo \
-	ofa-tva-record-properties.lo ofa-tva-record-store.lo \
-	ofa-tva-style.lo ofa-tva-tree-adder.lo ofo-tva-form.lo \
-	ofo-tva-record.lo
+	ofa-tva-form-page.lo ofa-tva-form-properties.lo \
+	ofa-tva-form-store.lo ofa-tva-form-treeview.lo ofa-tva-main.lo \
+	ofa-tva-record-new.lo ofa-tva-record-properties.lo \
+	ofa-tva-record-store.lo ofa-tva-style.lo ofa-tva-tree-adder.lo \
+	ofo-tva-form.lo ofo-tva-record.lo
 am__objects_1 = resources.lo
 nodist_libofa_tva_la_OBJECTS = $(am__objects_1)
 libofa_tva_la_OBJECTS = $(am_libofa_tva_la_OBJECTS) \
@@ -452,6 +451,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-declare-page.h								\
 	ofa-tva-execlose.c									\
 	ofa-tva-execlose.h									\
+	ofa-tva-form-page.c									\
+	ofa-tva-form-page.h									\
 	ofa-tva-form-properties.c							\
 	ofa-tva-form-properties.h							\
 	ofa-tva-form-store.c								\
@@ -460,8 +461,6 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-form-treeview.h								\
 	ofa-tva-main.c										\
 	ofa-tva-main.h										\
-	ofa-tva-manage-page.c								\
-	ofa-tva-manage-page.h								\
 	ofa-tva-record-new.c								\
 	ofa-tva-record-new.h								\
 	ofa-tva-record-properties.c							\
@@ -580,11 +579,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-dbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-declare-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-execlose.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-form-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-main.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-manage-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-new.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-properties.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-tva-record-store.Plo@am__quote@
