@@ -71,6 +71,9 @@ static void        on_selection_activated( ofaTVAFormTreeview *self, GtkTreeSele
 static void        on_selection_delete( ofaTVAFormTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        get_and_send( ofaTVAFormTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoTVAForm *get_selected_with_selection( ofaTVAFormTreeview *self, GtkTreeSelection *selection );
+static void        on_store_insertion( ofaTVAFormStore *store, ofaTVAFormTreeview *self );
+static void        on_store_deletion( ofaTVAFormStore *store, ofaTVAFormTreeview *self );
+static void        store_update_selection( ofaTVAFormTreeview *self );
 static gint        v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVAFormTreeview, ofa_tva_form_treeview, OFA_TYPE_TVBIN, 0,
@@ -343,6 +346,9 @@ ofa_tva_form_treeview_set_hub( ofaTVAFormTreeview *view, ofaHub *hub )
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 
+	g_signal_connect( priv->store, "ofa-inserted", G_CALLBACK( on_store_insertion ), view );
+	g_signal_connect( priv->store, "ofa-removed", G_CALLBACK( on_store_deletion ), view );
+
 	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), TVA_FORM_COL_MNEMO, GTK_SORT_ASCENDING );
 }
 
@@ -419,6 +425,32 @@ get_selected_with_selection( ofaTVAFormTreeview *self, GtkTreeSelection *selecti
 	}
 
 	return( form );
+}
+
+/*
+ * ofaTVAFormStore callbacks
+ * We are connected here to refresh the caller actions after a store
+ * modification
+ */
+static void
+on_store_insertion( ofaTVAFormStore *store, ofaTVAFormTreeview *self )
+{
+	store_update_selection( self );
+}
+
+static void
+on_store_deletion( ofaTVAFormStore *store, ofaTVAFormTreeview *self )
+{
+	store_update_selection( self );
+}
+
+static void
+store_update_selection( ofaTVAFormTreeview *self )
+{
+	GtkTreeSelection *selection;
+
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( self ));
+	on_selection_changed( self, selection, NULL );
 }
 
 static gint
