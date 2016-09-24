@@ -22,17 +22,20 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_TVA_DECLARE_PAGE_H__
-#define __OFA_TVA_DECLARE_PAGE_H__
+#ifndef __OFA_TVA_RECORD_PAGE_H__
+#define __OFA_TVA_RECORD_PAGE_H__
 
 /**
- * SECTION: ofa_tva_declare_page
- * @short_description: #ofaTVADeclarePage class definition.
- * @include: tva/ofa-tva-declare-page.h
+ * SECTION: ofa_tva_record_page
+ * @short_description: #ofaTVARecordPage class definition.
+ * @include: tva/ofa-tva-record-page.h
+ *
+ * Manages the VAT declarations as a set of TVARecord rows.
  *
  * This is an ofaPage-derived page which shows the list of existing
  * TVA declarations, either current or validated. The user has Update
  * and Delete usual buttons.
+ *
  * Defining a new TVA declaration means selecting a TVA form from
  * management page, and clicking 'Declare from form' button.
  */
@@ -43,30 +46,27 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_TVA_DECLARE_PAGE                ( ofa_tva_declare_page_get_type())
-#define OFA_TVA_DECLARE_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TVA_DECLARE_PAGE, ofaTVADeclarePage ))
-#define OFA_TVA_DECLARE_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TVA_DECLARE_PAGE, ofaTVADeclarePageClass ))
-#define OFA_IS_TVA_DECLARE_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TVA_DECLARE_PAGE ))
-#define OFA_IS_TVA_DECLARE_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TVA_DECLARE_PAGE ))
-#define OFA_TVA_DECLARE_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TVA_DECLARE_PAGE, ofaTVADeclarePageClass ))
+#define OFA_TYPE_TVA_RECORD_PAGE                ( ofa_tva_record_page_get_type())
+#define OFA_TVA_RECORD_PAGE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TVA_RECORD_PAGE, ofaTVARecordPage ))
+#define OFA_TVA_RECORD_PAGE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TVA_RECORD_PAGE, ofaTVARecordPageClass ))
+#define OFA_IS_TVA_RECORD_PAGE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TVA_RECORD_PAGE ))
+#define OFA_IS_TVA_RECORD_PAGE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TVA_RECORD_PAGE ))
+#define OFA_TVA_RECORD_PAGE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TVA_RECORD_PAGE, ofaTVARecordPageClass ))
 
 typedef struct {
 	/*< public members >*/
 	ofaPage      parent;
 }
-	ofaTVADeclarePage;
+	ofaTVARecordPage;
 
 typedef struct {
 	/*< public members >*/
 	ofaPageClass parent;
 }
-	ofaTVADeclarePageClass;
+	ofaTVARecordPageClass;
 
-GType ofa_tva_declare_page_get_type    ( void ) G_GNUC_CONST;
-
-void  ofa_tva_declare_page_set_selected( ofaTVADeclarePage *page,
-												ofoTVARecord *record );
+GType ofa_tva_record_page_get_type    ( void ) G_GNUC_CONST;
 
 G_END_DECLS
 
-#endif /* __OFA_TVA_DECLARE_PAGE_H__ */
+#endif /* __OFA_TVA_RECORD_PAGE_H__ */

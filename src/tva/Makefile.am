@@ -61,8 +61,6 @@ libofa_tva_la_SOURCES = \
 	ofa-extension.c										\
 	ofa-tva-dbmodel.c									\
 	ofa-tva-dbmodel.h									\
-	ofa-tva-declare-page.c								\
-	ofa-tva-declare-page.h								\
 	ofa-tva-execlose.c									\
 	ofa-tva-execlose.h									\
 	ofa-tva-form-page.c									\
@@ -77,6 +75,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-main.h										\
 	ofa-tva-record-new.c								\
 	ofa-tva-record-new.h								\
+	ofa-tva-record-page.c								\
+	ofa-tva-record-page.h								\
 	ofa-tva-record-properties.c							\
 	ofa-tva-record-properties.h							\
 	ofa-tva-record-store.c								\

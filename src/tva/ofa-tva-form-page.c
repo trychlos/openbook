@@ -44,12 +44,12 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
-#include "tva/ofa-tva-declare-page.h"
 #include "tva/ofa-tva-form-page.h"
 #include "tva/ofa-tva-form-properties.h"
 #include "tva/ofa-tva-form-treeview.h"
 #include "tva/ofa-tva-main.h"
 #include "tva/ofa-tva-record-new.h"
+#include "tva/ofa-tva-record-page.h"
 #include "tva/ofo-tva-form.h"
 #include "tva/ofo-tva-record.h"
 

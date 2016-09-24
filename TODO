@@ -423,27 +423,6 @@
 1181 2016- 8- 4 obsolete ofa_buttons_box_add_button_with_mnemonic
                 + BUTTON_DELETE/NEW/PROPERTIES
 
-1182 2016- 8- 4 General review:
-                makes use of ofaIActionable, ofaIContext, ofaISortable and
-                ofaITVColumnable interfaces:
-                - check columns list & descriptions in store
-                - have a treeview derived from ofaTVBin (maybe with v_sort)
-                - implement actions in the page
-                - check dialog properties
-                Done for:
-                - ofaAccount: Treeview, FrameBin, Page, Select 
-                - ofaBat: Treeview, lineTreeview, Page, Select
-                - ofaClass: Treeview, Page
-                - ofaCurrency: Treeview, Page
-                - ofaDossier: Treeview, Manager, Open, RestoreAssistant
-                - ofaLedger: Treeview, BookBin, Close, Page
-                - ofaOpeTemplate:Treeview, FrameBin, Page, Select
-                - Rate: Treeview, Store, Page
-                - RecurrentModel: Treeview, Store, Page
-                - RecurrentRun: Treeview, Store, New, Page
-                - TVAForm: Treeview, Store, Page
-                - TVARecord:
-
 1183 2016- 8-23 DossierManager: disable Open action when the dossier is
                 already opened.
 
@@ -1628,6 +1607,27 @@
 
 1178 2016- 8- 2 rename ofaISortable to ofaITVSortable
      2016- 8- 4 done
+
+1182 2016- 8- 4 General review:
+                makes use of ofaIActionable, ofaIContext, ofaISortable and
+                ofaITVColumnable interfaces:
+                - check columns list & descriptions in store
+                - have a treeview derived from ofaTVBin (maybe with v_sort)
+                - implement actions in the page
+                - check dialog properties
+                Done for:
+                - ofaAccount: Treeview, FrameBin, Page, Select 
+                - ofaBat: Treeview, lineTreeview, Page, Select
+                - ofaClass: Treeview, Page
+                - ofaCurrency: Treeview, Page
+                - ofaDossier: Treeview, Manager, Open, RestoreAssistant
+                - ofaLedger: Treeview, BookBin, Close, Page
+                - ofaOpeTemplate:Treeview, FrameBin, Page, Select
+                - Rate: Treeview, Store, Page
+                - RecurrentModel: Treeview, Store, Page
+                - RecurrentRun: Treeview, Store, New, Page
+                - TVAForm: Treeview, Store, Page
+                - TVARecord: Treeview, Store, Page
 
 1186 2016- 8-31 ofaListStore: should it be obsoleted because useless ?
                 Rationale is that list stores are only a particular case
