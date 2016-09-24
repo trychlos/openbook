@@ -33,9 +33,9 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itheme-manager.h"
 
-#include "tva/ofa-tva-declare-page.h"
 #include "tva/ofa-tva-form-page.h"
 #include "tva/ofa-tva-main.h"
+#include "tva/ofa-tva-record-page.h"
 
 /* a structure which defines the menu items
  * menu items are identified by action_name, which must be linked
@@ -85,7 +85,7 @@ static const sItemDef st_items_ref[] = {
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "vat-declare",  N_( "VAT _declarations" ),  ofa_tva_declare_page_get_type },
+		{ "vat-declare",  N_( "VAT _declarations" ),  ofa_tva_record_page_get_type },
 		{ "vat-manage",  N_( "VAT _forms management" ),  ofa_tva_form_page_get_type },
 		{ 0 }
 };
@@ -191,7 +191,7 @@ on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_DECLARE_PAGE );
+	ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_RECORD_PAGE );
 }
 
 static void
