@@ -178,6 +178,7 @@ v_setup_view( ofaPage *page )
 	priv->tview = ofa_class_treeview_new();
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_class_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	ofa_class_treeview_setup_columns( priv->tview );
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
@@ -210,7 +211,7 @@ v_setup_buttons( ofaPage *page )
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
-			ofa_iactionable_set_button(
+			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 
@@ -222,7 +223,7 @@ v_setup_buttons( ofaPage *page )
 			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 	ofa_buttons_box_append_button(
 			buttons_box,
-			ofa_iactionable_set_button(
+			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
 					OFA_IACTIONABLE_PROPERTIES_BTN ));
 
@@ -234,7 +235,7 @@ v_setup_buttons( ofaPage *page )
 			OFA_IACTIONABLE_DELETE_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
-			ofa_iactionable_set_button(
+			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
 

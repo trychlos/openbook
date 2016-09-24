@@ -406,7 +406,7 @@ ofo_tva_form_use_ope_template( ofaHub *hub, const gchar *ope_template )
 
 	g_free( query );
 
-	return( count == 0 );
+	return( count > 0 );
 }
 
 /**

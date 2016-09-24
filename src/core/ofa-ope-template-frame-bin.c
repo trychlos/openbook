@@ -647,13 +647,12 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 
 		case TEMPLATE_ACTION_NEW:
 			priv->new_action = g_simple_action_new( "new", NULL );
-			g_simple_action_set_enabled( priv->new_action, FALSE );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
-					ofa_iactionable_set_button(
+					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
 							OFA_IACTIONABLE_NEW_BTN ));
 			g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), bin );
@@ -662,62 +661,58 @@ ofa_ope_template_frame_bin_add_action( ofaOpeTemplateFrameBin *bin, ofeOpeTempla
 
 		case TEMPLATE_ACTION_PROPERTIES:
 			priv->update_action = g_simple_action_new( "update", NULL );
-			g_simple_action_set_enabled( priv->update_action, FALSE );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
 					priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
-					ofa_iactionable_set_button(
+					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
 							OFA_IACTIONABLE_PROPERTIES_BTN ));
 			g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), bin );
-			g_simple_action_set_enabled( priv->update_action, TRUE );
+			g_simple_action_set_enabled( priv->update_action, FALSE );
 			break;
 
 		case TEMPLATE_ACTION_DELETE:
 			priv->delete_action = g_simple_action_new( "delete", NULL );
-			g_simple_action_set_enabled( priv->delete_action, FALSE );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_ITEM );
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
-					ofa_iactionable_set_button(
+					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
 							OFA_IACTIONABLE_DELETE_BTN ));
 			g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), bin );
-			g_simple_action_set_enabled( priv->delete_action, TRUE );
+			g_simple_action_set_enabled( priv->delete_action, FALSE );
 			break;
 
 		case TEMPLATE_ACTION_DUPLICATE:
 			priv->duplicate_action = g_simple_action_new( "duplicate", NULL );
-			g_simple_action_set_enabled( priv->duplicate_action, FALSE );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->duplicate_action ),
 					_( "Duplicate this" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
-					ofa_iactionable_set_button(
+					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->duplicate_action ),
 							_( "_Duplicate" )));
 			g_signal_connect( priv->duplicate_action, "activate", G_CALLBACK( action_on_duplicate_activated ), bin );
-			g_simple_action_set_enabled( priv->duplicate_action, TRUE );
+			g_simple_action_set_enabled( priv->duplicate_action, FALSE );
 			break;
 
 		case TEMPLATE_ACTION_GUIDED_INPUT:
 			priv->guided_input_action = g_simple_action_new( "guided-input", NULL );
-			g_simple_action_set_enabled( priv->guided_input_action, FALSE );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->guided_input_action ),
 					_( "Guided input" ));
 			ofa_buttons_box_append_button(
 					priv->buttonsbox,
-					ofa_iactionable_set_button(
+					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->guided_input_action ),
 							_( "_Guided input" )));
 			g_signal_connect( priv->guided_input_action, "activate", G_CALLBACK( action_on_guided_input_activated ), bin );
-			g_simple_action_set_enabled( priv->duplicate_action, TRUE );
+			g_simple_action_set_enabled( priv->guided_input_action, FALSE );
 			break;
 
 		default:
@@ -825,6 +820,12 @@ is_delete_allowed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	ok = priv->is_writable && template && ofo_ope_template_is_deletable( template );
+
+	if( template ){
+		g_debug( "template=%s, is_deletable=%s",
+				ofo_ope_template_get_mnemo( template ),
+				ofo_ope_template_is_deletable( template ) ? "True":"False" );
+	}
 
 	return( ok );
 }

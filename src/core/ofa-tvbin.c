@@ -1628,7 +1628,7 @@ void
 ofa_tvbin_refilter( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
-	GtkTreeModel *filter_model;
+	GtkTreeModel *sort_model, *filter_model;
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 
@@ -1636,10 +1636,12 @@ ofa_tvbin_refilter( ofaTVBin *bin )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	filter_model = ofa_itvfilterable_get_model( OFA_ITVFILTERABLE( bin ));
-
-	if( filter_model && GTK_IS_TREE_MODEL_FILTER( filter_model )){
-		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
+	sort_model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+	if( sort_model && GTK_IS_TREE_MODEL_SORT( sort_model )){
+		filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
+		if( filter_model && GTK_IS_TREE_MODEL_FILTER( filter_model )){
+			gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( filter_model ));
+		}
 	}
 }
 

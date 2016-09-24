@@ -151,7 +151,7 @@ ofa_recurrent_model_treeview_class_init( ofaRecurrentModelTreeviewClass *klass )
 	 * #ofaRecurrentModelTreeview proxyes it with this 'ofa-recchanged'
 	 * signal, providing the selected objects.
 	 *
-	 * Argument is the list of selected objects.
+	 * Argument is the list of selected objects; may be %NULL.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaRecurrentModelTreeview *view,

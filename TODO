@@ -440,7 +440,7 @@
                 - ofaOpeTemplate:Treeview, FrameBin, Page, Select
                 - Rate: Treeview, Store, Page
                 - RecurrentModel: Treeview, Store, Page
-                - RecurrentRun:
+                - RecurrentRun: Treeview, Store, New, Page
                 - TVAForm:
                 - TVARecord:
 
@@ -477,7 +477,11 @@
                 box which requests a confirmation for <n> operations
                 + progress bar
 
-1213
+1213 2016- 9-24 make sure ofaRecurrentNew is a singleton
+                regenerating from RecurrentModel should focus to an already
+                opened RecurrentNew dialog
+
+1214
 
 -----------------------------------------------------------------------
  DONE

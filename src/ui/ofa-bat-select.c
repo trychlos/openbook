@@ -279,6 +279,7 @@ setup_treeview( ofaBatSelect *self )
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	ofa_bat_treeview_setup_columns( priv->tview );
 
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));

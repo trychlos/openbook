@@ -51,8 +51,8 @@ typedef struct {
 	ofaRecurrentRunStorePrivate;
 
 static GType st_col_types[REC_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, numseq */
-		G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING,		/* numseq, date, status */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* mnemo, numseq, numseq_int */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, date, status */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* amount1, amount2, amount3 */
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoRecurrentRun itself, the #ofoRecurrentModel */
 };
@@ -262,7 +262,7 @@ create_new_store( ofaHub *hub, gint mode )
 
 	setup_signaling_connect( store, hub );
 
-	priv = ofa_recurrent_run_get_instance_private( store );
+	priv = ofa_recurrent_run_store_get_instance_private( store );
 
 	priv->mode = mode;
 
@@ -317,7 +317,7 @@ ofa_recurrent_run_store_set_from_list( ofaRecurrentRunStore *store, GList *datas
 	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->mode == REC_MODE_FROM_LIST );
 
-	do_insert_dataset( store, dataset );
+	do_insert_dataset( store, priv->hub, dataset );
 }
 
 static void
@@ -422,15 +422,15 @@ find_row_by_object( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIte
 	ofoRecurrentRun *row_object;
 	gint cmp;
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, REC_RUN_COL_OBJECT, &row_object, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, REC_RUN_COL_OBJECT, &row_object, -1 );
 			cmp = ofo_recurrent_run_compare( row_object, run );
 			g_object_unref( row_object );
 			if( cmp == 0 ){
 				return( TRUE );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
 				break;
 			}
 		}
