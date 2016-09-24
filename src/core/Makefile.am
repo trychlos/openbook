@@ -72,6 +72,7 @@ libofa_core_la_SOURCES = \
 	ofa-account-store.h									\
 	ofa-account-treeview.c								\
 	ofa-account-treeview.h								\
+	ofa-action-page.c									\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
 	ofa-amount.c										\

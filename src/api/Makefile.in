@@ -383,6 +383,7 @@ api_include_HEADERS = \
 	ofa-extension.h										\
 	\
 	ofa-account-editable.h								\
+	ofa-action-page.h									\
 	ofa-amount.h										\
 	ofa-box.h											\
 	ofa-buttons-box.h									\

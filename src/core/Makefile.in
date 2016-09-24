@@ -165,9 +165,10 @@ libofa_core_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_core_la_OBJECTS = ofa-account-editable.lo \
 	ofa-account-frame-bin.lo ofa-account-properties.lo \
 	ofa-account-select.lo ofa-account-store.lo \
-	ofa-account-treeview.lo ofa-admin-credentials-bin.lo \
-	ofa-amount.lo ofa-box.lo ofa-buttons-box.lo ofa-core.lo \
-	ofa-counter.lo ofa-currency-combo.lo ofa-currency-store.lo \
+	ofa-account-treeview.lo ofa-action-page.lo \
+	ofa-admin-credentials-bin.lo ofa-amount.lo ofa-box.lo \
+	ofa-buttons-box.lo ofa-core.lo ofa-counter.lo \
+	ofa-currency-combo.lo ofa-currency-store.lo \
 	ofa-date-filter-hv-bin.lo ofa-dbms-root-bin.lo \
 	ofa-dossier-delete-prefs-bin.lo ofa-dossier-prefs.lo \
 	ofa-entry-listview.lo ofa-entry-store.lo \
@@ -487,6 +488,7 @@ libofa_core_la_SOURCES = \
 	ofa-account-store.h									\
 	ofa-account-treeview.c								\
 	ofa-account-treeview.h								\
+	ofa-action-page.c									\
 	ofa-admin-credentials-bin.c							\
 	ofa-admin-credentials-bin.h							\
 	ofa-amount.c										\
@@ -704,6 +706,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-treeview.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-action-page.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-admin-credentials-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-amount.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-box.Plo@am__quote@
