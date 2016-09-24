@@ -181,7 +181,7 @@ v_setup_view( ofaPage *page )
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
 
-	/* ofaBatTreeview signals */
+	/* ofaRateTreeview signals */
 	g_signal_connect( priv->tview, "ofa-ratchanged", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "ofa-ratactivated", G_CALLBACK( on_row_activated ), page );
 	g_signal_connect( priv->tview, "ofa-ratdelete", G_CALLBACK( on_delete_key ), page );

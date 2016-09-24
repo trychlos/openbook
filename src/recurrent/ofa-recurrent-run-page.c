@@ -234,7 +234,7 @@ setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 	ofa_recurrent_run_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_run_treeview_setup_columns( priv->tview );
 
-	/* ofaBatTreeview signals */
+	/* ofaRecurrentRunTreeview signals */
 	g_signal_connect( priv->tview, "ofa-recchanged", G_CALLBACK( on_row_selected ), self );
 
 	gtk_widget_show_all( GTK_WIDGET( parent ));

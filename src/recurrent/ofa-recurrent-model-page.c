@@ -202,14 +202,14 @@ setup_treeview( ofaRecurrentModelPage *self )
 	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	priv->tview = ofa_recurrent_model_treeview_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_recurrent_model_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_model_treeview_setup_columns( priv->tview );
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), self );
 
-	/* ofaBatTreeview signals */
+	/* ofaRecurrentModelTreeview signals */
 	g_signal_connect( priv->tview, "ofa-recchanged", G_CALLBACK( on_row_selected ), self );
 	g_signal_connect( priv->tview, "ofa-recactivated", G_CALLBACK( on_row_activated ), self );
 	g_signal_connect( priv->tview, "ofa-recdelete", G_CALLBACK( on_delete_key ), self );

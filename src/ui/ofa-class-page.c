@@ -183,7 +183,7 @@ v_setup_view( ofaPage *page )
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
 
-	/* ofaBatTreeview signals */
+	/* ofaClassTreeview signals */
 	g_signal_connect( priv->tview, "ofa-classchanged", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "ofa-classactivated", G_CALLBACK( on_row_activated ), page );
 	g_signal_connect( priv->tview, "ofa-classdelete", G_CALLBACK( on_delete_key ), page );
