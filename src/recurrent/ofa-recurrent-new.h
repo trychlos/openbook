@@ -36,6 +36,10 @@
  * - type:       non-modal dialog
  * - settings:   yes
  * - current:    no
+ *
+ * Because this dialog is not modal, the user may dynamically change
+ * the selection in #ofaRecurrentModelPage page, and try to re-generate
+ * new recurrent operations with the new selection.
  */
 
 #include "api/ofa-igetter-def.h"

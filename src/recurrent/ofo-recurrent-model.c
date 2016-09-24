@@ -291,10 +291,11 @@ ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *ope_template )
 			ope_template );
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+	g_debug( "count=%d", count );
 
 	g_free( query );
 
-	return( count == 0 );
+	return( count > 0 );
 }
 
 /**

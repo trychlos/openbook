@@ -85,7 +85,7 @@ enum {
 
 GType                    ofa_recurrent_run_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( void );
+ofaRecurrentRunTreeview *ofa_recurrent_run_treeview_new               ( ofaHub *hub );
 
 void                     ofa_recurrent_run_treeview_set_settings_key  ( ofaRecurrentRunTreeview *view,
 																			const gchar *settings_key );

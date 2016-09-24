@@ -289,7 +289,7 @@ idialog_init_actions( ofaDossierManager *self )
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
-			ofa_iactionable_set_button(
+			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 
@@ -302,7 +302,7 @@ idialog_init_actions( ofaDossierManager *self )
 			_( "Open" ));
 	ofa_buttons_box_append_button(
 			buttons_box,
-			ofa_iactionable_set_button(
+			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->open_action ),
 					_( "_Open..." )));
 
@@ -315,7 +315,7 @@ idialog_init_actions( ofaDossierManager *self )
 			OFA_IACTIONABLE_DELETE_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
-			ofa_iactionable_set_button(
+			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
 }

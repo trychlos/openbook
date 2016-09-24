@@ -664,7 +664,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			OFA_IACTIONABLE_NEW_ITEM );
 	ofa_buttons_box_append_button(
 			buttons_box,
-			ofa_iactionable_set_button(
+			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->p2_new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
 

@@ -33,7 +33,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-periodicity.h"
@@ -57,6 +60,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	ofaHub                  *hub;
 	gchar                   *settings_prefix;
 
 	/* UI
@@ -68,9 +72,9 @@ typedef struct {
 	GtkWidget               *waiting_toggle;
 	GtkWidget               *validated_toggle;
 
-	GtkWidget               *cancel_btn;
-	GtkWidget               *wait_btn;
-	GtkWidget               *validate_btn;
+	GSimpleAction           *cancel_action;
+	GSimpleAction           *waiting_action;
+	GSimpleAction           *validate_action;
 }
 	ofaRecurrentRunPagePrivate;
 
@@ -90,16 +94,16 @@ static GtkWidget *v_setup_view( ofaPage *page );
 static void       setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void       setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void       setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
-static void       setup_datas( ofaRecurrentRunPage *self );
+static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
 static void       filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
-static void       tview_on_selection_changed( ofaRecurrentRunTreeview *bin, GList *selected, ofaRecurrentRunPage *self );
-static void       tview_examine_selected( ofaRecurrentRunTreeview *bin, GList *selected, guint *cancelled, guint *waiting, guint *validated );
-static void       action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self );
-static void       action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self );
-static void       action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self );
+static void       on_row_selected( ofaRecurrentRunTreeview *view, GList *list, ofaRecurrentRunPage *self );
+static void       tview_examine_selected( ofaRecurrentRunPage *self, GList *selected, guint *cancelled, guint *waiting, guint *validated );
+static void       action_on_cancel_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
+static void       action_on_wait_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
+static void       action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
 static void       action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, RecurrentValidCb cb, void *user_data );
 static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, sCount *counts );
 static void       get_settings( ofaRecurrentRunPage *self );
@@ -131,6 +135,8 @@ recurrent_run_page_finalize( GObject *instance )
 static void
 recurrent_run_page_dispose( GObject *instance )
 {
+	ofaRecurrentRunPagePrivate *priv;
+
 	g_return_if_fail( instance && OFA_IS_RECURRENT_RUN_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
@@ -138,6 +144,11 @@ recurrent_run_page_dispose( GObject *instance )
 		set_settings( OFA_RECURRENT_RUN_PAGE( instance ));
 
 		/* unref object members here */
+		priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( instance ));
+
+		g_object_unref( priv->cancel_action );
+		g_object_unref( priv->waiting_action );
+		g_object_unref( priv->validate_action );
 	}
 
 	/* chain up to the parent class */
@@ -171,6 +182,7 @@ ofa_recurrent_run_page_class_init( ofaRecurrentRunPageClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = recurrent_run_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -179,17 +191,14 @@ v_setup_view( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_page_v_setup_view";
 	ofaRecurrentRunPagePrivate *priv;
-	ofoDossier *dossier;
 	GtkWidget *page_widget, *widget;
-	ofaHub *hub;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	dossier = ofa_hub_get_dossier( hub );
-	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), NULL );
+	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	gtk_widget_set_hexpand( page_widget, TRUE );
@@ -201,7 +210,6 @@ v_setup_view( ofaPage *page )
 	setup_filters( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
 	setup_actions( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
 
-	setup_datas( OFA_RECURRENT_RUN_PAGE( page ));
 	get_settings( OFA_RECURRENT_RUN_PAGE( page ));
 
 	return( page_widget );
@@ -215,25 +223,19 @@ setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	GtkWidget *tview_parent;
-	ofaHub *hub;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
 	tview_parent = my_utils_container_get_child_by_name( parent, "tview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-
-	priv->tview = ofa_recurrent_run_treeview_new( hub, REC_MODE_FROM_DBMS );
+	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
-
-	/* ofaTVBin signals */
-	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), self );
+	ofa_recurrent_run_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	ofa_recurrent_run_treeview_setup_columns( priv->tview );
 
 	/* ofaBatTreeview signals */
 	g_signal_connect( priv->tview, "ofa-recchanged", G_CALLBACK( on_row_selected ), self );
-	g_signal_connect( priv->tview, "ofa-recactivated", G_CALLBACK( on_row_activated ), self );
-	g_signal_connect( priv->tview, "ofa-recdelete", G_CALLBACK( on_delete_key ), self );
 
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 }
@@ -276,33 +278,72 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
+	priv->cancel_action = g_simple_action_new( "cancel", NULL );
+	g_simple_action_set_enabled( priv->cancel_action, FALSE );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->cancel_action ),
+			_( "Cancel..." ));
 	btn = my_utils_container_get_child_by_name( parent, "p2-cancel-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	priv->cancel_btn = btn;
-	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_cancel_clicked ), self );
+	ofa_iactionable_set_button(
+			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->cancel_action ));
+	g_signal_connect( priv->cancel_action, "activate", G_CALLBACK( action_on_cancel_activated ), self );
 
+	priv->waiting_action = g_simple_action_new( "waiting", NULL );
+	g_simple_action_set_enabled( priv->waiting_action, FALSE );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->waiting_action ),
+			_( "Wait..." ));
 	btn = my_utils_container_get_child_by_name( parent, "p2-wait-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	priv->wait_btn = btn;
-	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_wait_clicked ), self );
+	ofa_iactionable_set_button(
+			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->waiting_action ));
+	g_signal_connect( priv->waiting_action, "activate", G_CALLBACK( action_on_wait_activated ), self );
 
+	priv->validate_action = g_simple_action_new( "validate", NULL );
+	g_simple_action_set_enabled( priv->validate_action, FALSE );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->validate_action ),
+			_( "Validate..." ));
 	btn = my_utils_container_get_child_by_name( parent, "p2-validate-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
-	priv->validate_btn = btn;
-	g_signal_connect( btn, "clicked", G_CALLBACK( action_on_validate_clicked ), self );
+	ofa_iactionable_set_button(
+			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->validate_action ));
+	g_signal_connect( priv->validate_action, "activate", G_CALLBACK( action_on_validate_activated ), self );
 }
 
-/*
- * load the current datas
- */
 static void
-setup_datas( ofaRecurrentRunPage *self )
+v_init_view( ofaPage *page )
 {
+	static const gchar *thisfn = "ofa_recurrent_run_page_v_init_view";
 	ofaRecurrentRunPagePrivate *priv;
+	GMenu *menu;
+	ofaRecurrentRunStore *store;
 
-	priv = ofa_recurrent_run_page_get_instance_private( self );
+	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	ofa_recurrent_run_treeview_set_from_db( priv->tview );
+	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
+			menu );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+
+	/* install the store at the very end of the initialization
+	 * (i.e. after treeview creation, signals connection, actions and
+	 *  menus definition) */
+	store = ofa_recurrent_run_store_new( priv->hub, REC_MODE_FROM_DBMS );
+	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( store ));
+	g_object_unref( store );
+
+	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
+	 * setup the initial selection if a first row exists */
+	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
 }
 
 static GtkWidget *
@@ -375,86 +416,19 @@ static void
 on_row_selected( ofaRecurrentRunTreeview *view, GList *list, ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
-	gboolean is_model;
-	ofoRecurrentRun *model;
-
-	priv = ofa_recurrent_model_page_get_instance_private( self );
-
-	is_model = FALSE;
-	model = NULL;
-
-	if( g_list_length( list ) == 1 ){
-		model = ( ofoRecurrentRun * ) list->data;
-		is_model = model && OFO_IS_RECURRENT_MODEL( model );
-	}
-
-	g_simple_action_set_enabled( priv->update_action, is_model );
-	g_simple_action_set_enabled( priv->duplicate_action, is_model );
-	g_simple_action_set_enabled( priv->delete_action, is_model && check_for_deletability( self, model ));
-
-	g_simple_action_set_enabled( priv->generate_action, priv->is_writable && g_list_length( list ) > 0 );
-}
-
-/*
- * RecurrentRunTreeview callback
- * Activation of a single row open the update dialog, else is ignored
- */
-static void
-on_row_activated( ofaRecurrentRunTreeview *view, GList *list, ofaRecurrentRunPage *self )
-{
-	ofaRecurrentRunPagePrivate *priv;
-
-	priv = ofa_recurrent_model_page_get_instance_private( self );
-
-	if( g_list_length( list ) == 1 ){
-		g_action_activate( G_ACTION( priv->update_action ), NULL );
-	}
-}
-
-static void
-on_insert_key( ofaRecurrentRunTreeview *view, ofaRecurrentRunPage *self )
-{
-	ofaRecurrentRunPagePrivate *priv;
-
-	priv = ofa_recurrent_model_page_get_instance_private( self );
-
-	if( priv->is_writable ){
-		g_action_activate( G_ACTION( priv->new_action ), NULL );
-	}
-}
-
-/*
- * only delete if there is only one selected model
- */
-static void
-on_delete_key( ofaRecurrentRunTreeview *view, ofoRecurrentRun *model, ofaRecurrentRunPage *self )
-{
-	ofaRecurrentRunPagePrivate *priv;
-
-	priv = ofa_recurrent_model_page_get_instance_private( self );
-
-	if( check_for_deletability( self, model )){
-		g_action_activate( G_ACTION( priv->delete_action ), NULL );
-	}
-}
-
-static void
-tview_on_selection_changed( ofaRecurrentRunTreeview *bin, GList *selected, ofaRecurrentRunPage *self )
-{
-	ofaRecurrentRunPagePrivate *priv;
 	guint cancelled, waiting, validated;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	tview_examine_selected( bin, selected, &cancelled, &waiting, &validated );
+	tview_examine_selected( self, list, &cancelled, &waiting, &validated );
 
-	gtk_widget_set_sensitive( priv->cancel_btn, waiting > 0 );
-	gtk_widget_set_sensitive( priv->wait_btn, cancelled > 0 );
-	gtk_widget_set_sensitive( priv->validate_btn, waiting > 0 );
+	g_simple_action_set_enabled( priv->cancel_action, waiting > 0 );
+	g_simple_action_set_enabled( priv->waiting_action, cancelled > 0 );
+	g_simple_action_set_enabled( priv->validate_action, waiting > 0 );
 }
 
 static void
-tview_examine_selected( ofaRecurrentRunTreeview *bin, GList *selected, guint *cancelled, guint *waiting, guint *validated )
+tview_examine_selected( ofaRecurrentRunPage *self, GList *selected, guint *cancelled, guint *waiting, guint *validated )
 {
 	GList *it;
 	ofoRecurrentRun *obj;
@@ -479,19 +453,19 @@ tview_examine_selected( ofaRecurrentRunTreeview *bin, GList *selected, guint *ca
 }
 
 static void
-action_on_cancel_clicked( GtkButton *button, ofaRecurrentRunPage *self )
+action_on_cancel_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
 {
 	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_CANCELLED, NULL, NULL );
 }
 
 static void
-action_on_wait_clicked( GtkButton *button, ofaRecurrentRunPage *self )
+action_on_wait_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
 {
 	action_update_status( self, REC_STATUS_CANCELLED, REC_STATUS_WAITING, NULL, NULL );
 }
 
 static void
-action_on_validate_clicked( GtkButton *button, ofaRecurrentRunPage *self )
+action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
 {
 	gchar *str;
 	GtkWindow *toplevel;
@@ -546,34 +520,35 @@ action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, co
 static void
 action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, sCount *counts )
 {
+	ofaRecurrentRunPagePrivate *priv;
 	const gchar *rec_id, *tmpl_id, *ledger_id;
 	ofoDossier *dossier;
-	ofoRecurrentRun *model;
+	ofoRecurrentModel *model;
 	ofoOpeTemplate *template_obj;
 	ofoLedger *ledger_obj;
 	ofsOpe *ope;
 	GList *entries, *it;
 	GDate dmin;
-	ofaHub *hub;
 	ofoEntry *entry;
 	ofxCounter ope_number;
 	const gchar *csdef;
 	ofxAmount amount;
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( self ));
-	dossier = ofa_hub_get_dossier( hub );
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	dossier = ofa_hub_get_dossier( priv->hub );
 	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 	rec_id = ofo_recurrent_run_get_mnemo( recrun );
-	model = ofo_recurrent_model_get_by_mnemo( hub, rec_id );
+	model = ofo_recurrent_model_get_by_mnemo( priv->hub, rec_id );
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
 	tmpl_id = ofo_recurrent_model_get_ope_template( model );
-	template_obj = ofo_ope_template_get_by_mnemo( hub, tmpl_id );
+	template_obj = ofo_ope_template_get_by_mnemo( priv->hub, tmpl_id );
 	g_return_if_fail( template_obj && OFO_IS_OPE_TEMPLATE( template_obj ));
 
 	ledger_id = ofo_ope_template_get_ledger( template_obj );
-	ledger_obj = ofo_ledger_get_by_mnemo( hub, ledger_id );
+	ledger_obj = ofo_ledger_get_by_mnemo( priv->hub, ledger_id );
 	g_return_if_fail( ledger_obj && OFO_IS_LEDGER( ledger_obj ));
 
 	ope = ofs_ope_new( template_obj );
@@ -609,7 +584,7 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, 
 	for( it=entries ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ofo_entry_set_ope_number( entry, ope_number );
-		ofo_entry_insert( entry, hub );
+		ofo_entry_insert( entry, priv->hub );
 		counts->entry_count += 1;
 	}
 }
@@ -682,9 +657,9 @@ set_settings( ofaRecurrentRunPage *self )
 
 	str = g_strdup_printf( "%d;%s;%s;%s;",
 			pos,
-			priv->cancelled_visible ? "True":"False",
-			priv->waiting_visible ? "True":"False",
-			priv->validated_visible ? "True":"False" );
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->cancelled_toggle )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->waiting_toggle )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_toggle )) ? "True":"False" );
 
 	ofa_settings_user_set_string( settings_key, str );
 

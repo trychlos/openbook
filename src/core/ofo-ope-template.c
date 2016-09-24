@@ -575,6 +575,7 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 
 	if( hub ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, model, &deletable );
+		g_debug( "deletable=%s", deletable ? "True":"False" );
 	}
 
 	return( deletable );

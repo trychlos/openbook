@@ -1790,7 +1790,7 @@ isignal_hub_connect( ofaHub *hub )
 static gboolean
 hub_on_deletable_object( ofaHub *hub, ofoBase *object, void *empty )
 {
-	static const gchar *thisfn = "ofo_entry_hub_on_deletable_object";
+	static const gchar *thisfn = "ofo_dossier_hub_on_deletable_object";
 	gboolean deletable;
 
 	g_debug( "%s: hub=%p, object=%p (%s), empty=%p",
@@ -1890,6 +1890,7 @@ hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
 			ofo_ope_template_get_mnemo( template ));
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
+	g_debug( "count=%d", count );
 
 	g_free( query );
 
