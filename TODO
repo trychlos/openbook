@@ -477,10 +477,6 @@
                 box which requests a confirmation for <n> operations
                 + progress bar
 
-1213 2016- 9-24 make sure ofaRecurrentNew is a singleton
-                regenerating from RecurrentModel should focus to an already
-                opened RecurrentNew dialog
-
 1214
 
 -----------------------------------------------------------------------
@@ -1716,6 +1712,11 @@
                 done when setting hub() -> it should not be needed to
                 explicitely call it
      2016- 9-21 done for some of most simple
+
+1213 2016- 9-24 make sure ofaRecurrentNew is a singleton
+                regenerating from RecurrentModel should focus to an already
+                opened RecurrentNew dialog
+     2016- 9-24 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
