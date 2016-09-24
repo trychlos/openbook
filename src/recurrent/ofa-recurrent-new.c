@@ -30,6 +30,7 @@
 #include <stdlib.h>
 
 #include "my/my-date-editable.h"
+#include "my/my-icollector.h"
 #include "my/my-idialog.h"
 #include "my/my-iwindow.h"
 #include "my/my-style.h"
@@ -114,6 +115,7 @@ static void     init_data( ofaRecurrentNew *self );
 static void     on_begin_date_changed( GtkEditable *editable, ofaRecurrentNew *self );
 static void     on_end_date_changed( GtkEditable *editable, ofaRecurrentNew *self );
 static void     on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *date );
+static gboolean is_dialog_validable( ofaRecurrentNew *self );
 static void     action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentNew *self );
 static void     action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentNew *self );
 static void     generate_do( ofaRecurrentNew *self );
@@ -219,6 +221,9 @@ ofa_recurrent_new_class_init( ofaRecurrentNewClass *klass )
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the parent window.
  * @page: the current #ofaRecurrentModelPage page.
+ *
+ * Generate new operations from selected recurrent models.
+ * Make sure there is one single dialog opened at time.
  */
 void
 ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentModelPage *page )
@@ -226,25 +231,46 @@ ofa_recurrent_new_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentModelP
 	static const gchar *thisfn = "ofa_recurrent_new_run";
 	ofaRecurrentNew *self;
 	ofaRecurrentNewPrivate *priv;
+	ofaHub *hub;
+	myICollector *collector;
+	myIWindow *shown;
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
-	g_debug( "%s: getter=%p, parent=%p",
-			thisfn, ( void * ) getter, ( void * ) parent );
+	g_debug( "%s: getter=%p, parent=%p, page=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) page );
 
-	self = g_object_new( OFA_TYPE_RECURRENT_NEW, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	hub = ofa_igetter_get_hub( getter );
+	collector = ofa_hub_get_collector( hub );
+	self = ( ofaRecurrentNew * ) my_icollector_single_get_object( collector, OFA_TYPE_RECURRENT_NEW );
 
-	priv = ofa_recurrent_new_get_instance_private( self );
+	if( self ){
+		shown = my_iwindow_present( MY_IWINDOW( self ));
+		g_return_if_fail( shown && OFA_IS_RECURRENT_NEW( shown ));
 
-	priv->getter = getter;
-	priv->model_page = page;
-	priv->hub = ofa_igetter_get_hub( priv->getter );
+		if( is_dialog_validable( OFA_RECURRENT_NEW( shown ))){
+			priv = ofa_recurrent_new_get_instance_private( OFA_RECURRENT_NEW( shown ));
+			g_action_activate( G_ACTION( priv->reset_action ), NULL );
+			g_action_activate( G_ACTION( priv->generate_action ), NULL );
+		}
 
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	} else {
+		self = g_object_new( OFA_TYPE_RECURRENT_NEW, NULL );
+		my_icollector_single_set_object( collector, self );
+
+		my_iwindow_set_parent( MY_IWINDOW( self ), parent );
+		my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+
+		priv = ofa_recurrent_new_get_instance_private( self );
+
+		priv->getter = getter;
+		priv->hub = hub;
+		priv->model_page = page;
+
+		/* after this call, @self may be invalid */
+		my_iwindow_present( MY_IWINDOW( self ));
+	}
 }
 
 /*
@@ -472,13 +498,19 @@ on_end_date_changed( GtkEditable *editable, ofaRecurrentNew *self )
 static void
 on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *date )
 {
+	my_date_set_from_date( date, my_date_editable_get_date( editable, NULL ));
+	is_dialog_validable( self );
+}
+
+static gboolean
+is_dialog_validable( ofaRecurrentNew *self )
+{
 	ofaRecurrentNewPrivate *priv;
 	gboolean valid;
 	gchar *msgerr;
 
 	priv = ofa_recurrent_new_get_instance_private( self );
 
-	my_date_set_from_date( date, my_date_editable_get_date( editable, &valid ));
 	msgerr = NULL;
 	valid = TRUE;
 
@@ -501,6 +533,8 @@ on_date_changed( ofaRecurrentNew *self, GtkEditable *editable, GDate *date )
 	g_free( msgerr );
 
 	g_simple_action_set_enabled( priv->generate_action, valid );
+
+	return( valid );
 }
 
 static void

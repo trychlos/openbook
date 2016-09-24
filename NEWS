@@ -42,6 +42,9 @@
    - BalanceRender: improve appearance of header notes (todo #1191).
    - OpeTemplate: make the treeview sortable (todo #1200).
    - RecurrentModel: allow to be duplicated (todo #1206).
+   - RecurrentModel: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
+   - RecurrentNew: managed as a singleton (todo #1213).
+   - RecurrentRun: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
 
  Bug fixes:
 
