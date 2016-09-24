@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_RECURRENT_NEW_H__
-#define __OFA_RECURRENT_NEW_H__
+#ifndef __OFA_RECURRENT_GENERATE_H__
+#define __OFA_RECURRENT_GENERATE_H__
 
 /**
- * SECTION: ofa_recurrent_new
- * @short_description: #ofaRecurrentNew class definition.
- * @include: recurrent/ofa-recurrent-new.h
+ * SECTION: ofa_recurrent_generate
+ * @short_description: #ofaRecurrentGenerate class definition.
+ * @include: recurrent/ofa-recurrent-generate.h
  *
  * Let the user validate the generated operations before recording.
  *
@@ -48,31 +48,31 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_RECURRENT_NEW                ( ofa_recurrent_new_get_type())
-#define OFA_RECURRENT_NEW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RECURRENT_NEW, ofaRecurrentNew ))
-#define OFA_RECURRENT_NEW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECURRENT_NEW, ofaRecurrentNewClass ))
-#define OFA_IS_RECURRENT_NEW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RECURRENT_NEW ))
-#define OFA_IS_RECURRENT_NEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_NEW ))
-#define OFA_RECURRENT_NEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_NEW, ofaRecurrentNewClass ))
+#define OFA_TYPE_RECURRENT_GENERATE                ( ofa_recurrent_generate_get_type())
+#define OFA_RECURRENT_GENERATE( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerate ))
+#define OFA_RECURRENT_GENERATE_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerateClass ))
+#define OFA_IS_RECURRENT_GENERATE( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RECURRENT_GENERATE ))
+#define OFA_IS_RECURRENT_GENERATE_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_GENERATE ))
+#define OFA_RECURRENT_GENERATE_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_GENERATE, ofaRecurrentGenerateClass ))
 
 typedef struct {
 	/*< public members >*/
 	GtkDialog      parent;
 }
-	ofaRecurrentNew;
+	ofaRecurrentGenerate;
 
 typedef struct {
 	/*< public members >*/
 	GtkDialogClass parent;
 }
-	ofaRecurrentNewClass;
+	ofaRecurrentGenerateClass;
 
-GType ofa_recurrent_new_get_type( void ) G_GNUC_CONST;
+GType ofa_recurrent_generate_get_type( void ) G_GNUC_CONST;
 
-void  ofa_recurrent_new_run     ( ofaIGetter *getter,
+void  ofa_recurrent_generate_run     ( ofaIGetter *getter,
 										GtkWindow *parent,
 										ofaRecurrentModelPage *page );
 
 G_END_DECLS
 
-#endif /* __OFA_RECURRENT_NEW_H__ */
+#endif /* __OFA_RECURRENT_GENERATE_H__ */
