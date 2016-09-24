@@ -33,7 +33,7 @@
  * Display the chart of accounts, letting the user edit it.
  */
 
-#include "api/ofa-page-def.h"
+#include "api/ofa-action-page.h"
 
 G_BEGIN_DECLS
 
@@ -46,13 +46,13 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	ofaPage      parent;
+	ofaActionPage      parent;
 }
 	ofaRatePage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaActionPageClass parent;
 }
 	ofaRatePageClass;
 

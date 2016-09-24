@@ -45,7 +45,6 @@ typedef struct {
 
 /* some styles layout
  */
-#define STYLE_BOX_PADDING               2
 #define STYLE_ROW_MARGIN                2
 #define STYLE_SPACER                   30
 
@@ -141,7 +140,6 @@ setup_top_grid( ofaButtonsBox *box )
 	priv = ofa_buttons_box_get_instance_private( box );
 
 	top_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	my_utils_widget_set_margins( top_widget, 0, 0, STYLE_BOX_PADDING, STYLE_BOX_PADDING );
 	gtk_container_add( GTK_CONTAINER( box ), top_widget );
 
 	grid = gtk_grid_new();

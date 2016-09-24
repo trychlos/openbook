@@ -33,7 +33,6 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -78,11 +77,11 @@ typedef struct {
 }
 	ofaRecurrentModelPagePrivate;
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_treeview( ofaRecurrentModelPage *page );
-static void       v_init_view( ofaPage *page );
-static GtkWidget *v_setup_buttons( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *v_setup_view( ofaActionPage *page );
+static GtkWidget *setup_treeview( ofaRecurrentModelPage *page );
+static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModelPage *self );
 static void       on_row_activated( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModelPage *self );
 static void       on_insert_key( ofaRecurrentModelTreeview *view, ofaRecurrentModelPage *self );
@@ -96,7 +95,7 @@ static void       delete_with_confirm( ofaRecurrentModelPage *self, ofoRecurrent
 static void       action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
 static void       action_on_view_opes_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelPage, ofa_recurrent_model_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelPage, ofa_recurrent_model_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaRecurrentModelPage ))
 
 static void
@@ -168,14 +167,27 @@ ofa_recurrent_model_page_class_init( ofaRecurrentModelPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = recurrent_model_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_model_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaRecurrentModelPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_RECURRENT_MODEL_PAGE( page ), NULL );
+
+	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static GtkWidget *
+v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_page_v_setup_view";
 	ofaRecurrentModelPagePrivate *priv;
@@ -202,7 +214,6 @@ setup_treeview( ofaRecurrentModelPage *self )
 	priv = ofa_recurrent_model_page_get_instance_private( self );
 
 	priv->tview = ofa_recurrent_model_treeview_new();
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_recurrent_model_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_model_treeview_setup_columns( priv->tview );
 
@@ -217,16 +228,12 @@ setup_treeview( ofaRecurrentModelPage *self )
 	return( GTK_WIDGET( priv->tview ));
 }
 
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
+static void
+v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaRecurrentModelPagePrivate *priv;
-	ofaButtonsBox *buttons_box;
 
 	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -303,12 +310,10 @@ v_setup_buttons( ofaPage *page )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_opes_action ),
 					_( "_View operations..." )));
-
-	return( GTK_WIDGET( buttons_box ));
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_page_v_init_view";
 	ofaRecurrentModelPagePrivate *priv;
@@ -336,18 +341,6 @@ v_init_view( ofaPage *page )
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
 	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaRecurrentModelPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_RECURRENT_MODEL_PAGE( page ), NULL );
-
-	priv = ofa_recurrent_model_page_get_instance_private( OFA_RECURRENT_MODEL_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

@@ -30,7 +30,6 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -71,11 +70,11 @@ typedef struct {
 }
 	ofaLedgerPagePrivate;
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_treeview( ofaPage *page );
-static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *v_setup_view( ofaActionPage *page );
+static GtkWidget *setup_treeview( ofaLedgerPage *page );
+static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self );
 static void       on_row_activated( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self );
 static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self );
@@ -87,7 +86,7 @@ static gboolean   check_for_deletability( ofaLedgerPage *self, ofoLedger *ledger
 static void       delete_with_confirm( ofaLedgerPage *self, ofoLedger *ledger );
 static void       action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPage *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaLedgerPage, ofa_ledger_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerPage ))
 
 static void
@@ -158,14 +157,27 @@ ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaLedgerPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
+
+	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static GtkWidget *
+v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_ledger_page_v_setup_view";
 	ofaLedgerPagePrivate *priv;
@@ -179,20 +191,19 @@ v_setup_view( ofaPage *page )
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
-	frame = setup_treeview( page );
+	frame = setup_treeview( OFA_LEDGER_PAGE( page ));
 
 	return( frame );
 }
 
 static GtkWidget *
-setup_treeview( ofaPage *page )
+setup_treeview( ofaLedgerPage *page )
 {
 	ofaLedgerPagePrivate *priv;
 
-	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
+	priv = ofa_ledger_page_get_instance_private( page );
 
 	priv->tview = ofa_ledger_treeview_new();
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
@@ -208,18 +219,12 @@ setup_treeview( ofaPage *page )
 	return( GTK_WIDGET( priv->tview ));
 }
 
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
+static void
+v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaLedgerPagePrivate *priv;
-	ofaButtonsBox *buttons_box;
-
-	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
 
 	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -271,12 +276,10 @@ v_setup_buttons( ofaPage *page )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_entries_action ),
 					_( "_View entries..." )));
-
-	return( GTK_WIDGET( buttons_box ));
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_ledger_page_v_init_view";
 	ofaLedgerPagePrivate *priv;
@@ -300,18 +303,6 @@ v_init_view( ofaPage *page )
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
 	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaLedgerPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_LEDGER_PAGE( page ), NULL );
-
-	priv = ofa_ledger_page_get_instance_private( OFA_LEDGER_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

@@ -32,7 +32,6 @@
 #include "my/my-double.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -75,10 +74,10 @@ typedef struct {
 }
 	ofaBatPagePrivate;
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *v_setup_view( ofaActionPage *page );
+static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
 static void       on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
 static void       on_delete_key( ofaBatTreeview *tview, ofoBat *bat, ofaBatPage *self );
@@ -88,7 +87,7 @@ static void       action_on_import_activated( GSimpleAction *action, GVariant *e
 static gboolean   check_for_deletability( ofaBatPage *self, ofoBat *bat );
 static void       delete_with_confirm( ofaBatPage *self, ofoBat *bat );
 
-G_DEFINE_TYPE_EXTENDED( ofaBatPage, ofa_bat_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaBatPage, ofa_bat_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaBatPage ))
 
 static void
@@ -159,14 +158,27 @@ ofa_bat_page_class_init( ofaBatPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = bat_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaBatPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_BAT_PAGE( page ), NULL );
+
+	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static GtkWidget *
+v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_bat_page_v_setup_view";
 	ofaBatPagePrivate *priv;
@@ -183,8 +195,6 @@ v_setup_view( ofaPage *page )
 	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_bat_treeview_setup_columns( priv->tview );
 
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
-
 	/* ofaBatTreeview signals */
 	g_signal_connect( priv->tview, "ofa-batchanged", G_CALLBACK( on_row_selected ), page );
 	g_signal_connect( priv->tview, "ofa-batactivated", G_CALLBACK( on_row_activated ), page );
@@ -193,19 +203,14 @@ v_setup_view( ofaPage *page )
 	return( GTK_WIDGET( priv->tview ));
 }
 
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
+static void
+v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
-	static const gchar *thisfn = "ofa_bat_page_v_setup_buttons";
+	static const gchar *thisfn = "ofa_bat_page_v_setup_actions";
 	ofaBatPagePrivate *priv;
-	ofaButtonsBox *buttons_box;
-
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
 	/* new action is present, but always disabled here (see import) */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -257,12 +262,10 @@ v_setup_buttons( ofaPage *page )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->import_action ),
 					OFA_IACTIONABLE_IMPORT_BTN ));
-
-	return( GTK_WIDGET( buttons_box ));
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_bat_page_v_init_view";
 	ofaBatPagePrivate *priv;
@@ -286,18 +289,6 @@ v_init_view( ofaPage *page )
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
 	ofa_bat_treeview_set_hub( priv->tview, priv->hub );
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaBatPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_BAT_PAGE( page ), NULL );
-
-	priv = ofa_bat_page_get_instance_private( OFA_BAT_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

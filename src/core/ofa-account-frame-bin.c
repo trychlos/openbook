@@ -371,6 +371,7 @@ setup_bin( ofaAccountFrameBin *self )
 
 	/* UI buttons box */
 	priv->buttonsbox = ofa_buttons_box_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->buttonsbox ), 0, 0, 2, 2 );
 	gtk_grid_attach( GTK_GRID( priv->grid ), GTK_WIDGET( priv->buttonsbox ), 1, 0, 1, 1 );
 }
 

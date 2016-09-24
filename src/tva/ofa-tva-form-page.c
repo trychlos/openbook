@@ -32,7 +32,6 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
@@ -76,11 +75,11 @@ typedef struct {
 }
 	ofaTVAFormPagePrivate;
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static GtkWidget *setup_treeview( ofaTVAFormPage *self );
-static GtkWidget *v_setup_buttons( ofaPage *page );
-static void       v_init_view( ofaPage *page );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *v_setup_view( ofaActionPage *page );
+static GtkWidget *setup_treeview( ofaTVAFormPage *self );
+static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaTVAFormTreeview *view, ofoTVAForm *form, ofaTVAFormPage *self );
 static void       on_row_activated( ofaTVAFormTreeview *view, ofoTVAForm *form, ofaTVAFormPage *self );
 static void       on_insert_key( ofaTVAFormTreeview *view, ofaTVAFormPage *self );
@@ -92,7 +91,7 @@ static gboolean   check_for_deletability( ofaTVAFormPage *self, ofoTVAForm *form
 static void       delete_with_confirm( ofaTVAFormPage *self, ofoTVAForm *form );
 static void       action_on_declare_activated( GSimpleAction *action, GVariant *empty, ofaTVAFormPage *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaTVAFormPage, ofa_tva_form_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaTVAFormPage, ofa_tva_form_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaTVAFormPage ))
 
 static void
@@ -163,14 +162,27 @@ ofa_tva_form_page_class_init( ofaTVAFormPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = tva_form_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_form_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->setup_buttons = v_setup_buttons;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaTVAFormPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_TVA_FORM_PAGE( page ), NULL );
+
+	priv = ofa_tva_form_page_get_instance_private( OFA_TVA_FORM_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static GtkWidget *
+v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_tva_form_page_v_setup_view";
 	ofaTVAFormPagePrivate *priv;
@@ -200,7 +212,6 @@ setup_treeview( ofaTVAFormPage *self )
 	priv = ofa_tva_form_page_get_instance_private( self );
 
 	priv->tview = ofa_tva_form_treeview_new();
-	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 2, 2, 2, 0 );
 	ofa_tva_form_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_tva_form_treeview_setup_columns( priv->tview );
 
@@ -215,16 +226,12 @@ setup_treeview( ofaTVAFormPage *self )
 	return( GTK_WIDGET( priv->tview ));
 }
 
-static GtkWidget *
-v_setup_buttons( ofaPage *page )
+static void
+v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaTVAFormPagePrivate *priv;
-	ofaButtonsBox *buttons_box;
 
 	priv = ofa_tva_form_page_get_instance_private( OFA_TVA_FORM_PAGE( page ));
-
-	buttons_box = ofa_buttons_box_new();
-	my_utils_widget_set_margins( GTK_WIDGET( buttons_box ), 2, 2, 0, 0 );
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -279,12 +286,10 @@ v_setup_buttons( ofaPage *page )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->declare_action ),
 					_( "De_clare from selected..." )));
-
-	return( GTK_WIDGET( buttons_box ));
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_tva_form_page_v_init_view";
 	ofaTVAFormPagePrivate *priv;
@@ -308,18 +313,6 @@ v_init_view( ofaPage *page )
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
 	ofa_tva_form_treeview_set_hub( priv->tview, priv->hub );
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaTVAFormPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_TVA_FORM_PAGE( page ), NULL );
-
-	priv = ofa_tva_form_page_get_instance_private( OFA_TVA_FORM_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 /*

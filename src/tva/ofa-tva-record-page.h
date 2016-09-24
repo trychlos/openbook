@@ -40,7 +40,7 @@
  * management page, and clicking 'Declare from form' button.
  */
 
-#include "api/ofa-page-def.h"
+#include "api/ofa-action-page.h"
 
 #include "tva/ofo-tva-record.h"
 
@@ -55,13 +55,13 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	ofaPage      parent;
+	ofaActionPage      parent;
 }
 	ofaTVARecordPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaActionPageClass parent;
 }
 	ofaTVARecordPageClass;
 
