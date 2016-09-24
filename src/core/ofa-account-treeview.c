@@ -445,7 +445,7 @@ setup_columns( ofaAccountTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_NUMBER,        _( "Number" ),   _( "Account number" ));
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), ACCOUNT_COL_LABEL,         _( "Label" ),        NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_CURRENCY,      _( "Currency" ),     NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_NOTES,         _( "Notes" ),        NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), ACCOUNT_COL_NOTES,         _( "Notes" ),        NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), ACCOUNT_COL_NOTES_PNG,        "",           _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_USER,      _( "User" ),     _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ACCOUNT_COL_UPD_STAMP,         NULL,        _( "Last update timestamp" ));

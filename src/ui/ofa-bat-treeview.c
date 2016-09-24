@@ -321,7 +321,7 @@ setup_columns( ofaBatTreeview *self )
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAT_COL_END_SOLDE,   _( "End" ),      _( "End solde" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_CURRENCY,    _( "Currency" ),     NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_ACCOUNT,     _( "Account" ),  _( "Openbook account" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),        NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), BAT_COL_NOTES,       _( "Notes" ),        NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), BAT_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAT_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAT_COL_UPD_STAMP,       NULL,        _( "Last update timestamp" ));

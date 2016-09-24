@@ -316,7 +316,7 @@ setup_columns( ofaRecurrentModelTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_DEF_AMOUNT1,        _( "Amount 1" ), _( "Updatable amount n° 1" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_DEF_AMOUNT2,        _( "Amount 2" ), _( "Updatable amount n° 2" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_DEF_AMOUNT3,        _( "Amount 3" ), _( "Updatable amount n° 3" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_NOTES,              _( "Notes" ),        NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), REC_MODEL_COL_NOTES,              _( "Notes" ),        NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), REC_MODEL_COL_NOTES_PNG,             "",           _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), REC_MODEL_COL_UPD_USER,           _( "User" ),     _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), REC_MODEL_COL_UPD_STAMP,              NULL,        _( "Last update timestamp" ));
@@ -447,7 +447,7 @@ get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *
 static gint
 v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
-	static const gchar *thisfn = "ofa_ledger_treeview_v_sort";
+	static const gchar *thisfn = "ofa_recurrent_model_treeview_v_sort";
 	gint cmp;
 	gchar *mnemoa, *labela, *templa, *pera, *detaila, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa;
 	gchar *mnemob, *labelb, *templb, *perb, *detailb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb;

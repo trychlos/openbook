@@ -309,7 +309,7 @@ setup_columns( ofaClassTreeview *self )
 
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), CLASS_COL_NUMBER,    _( "Number" ), _( "Class number" ));
 	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), CLASS_COL_LABEL,     _( "Label" ),      NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_NOTES,     _( "Notes" ),      NULL );
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), CLASS_COL_NOTES,     _( "Notes" ),      NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), CLASS_COL_NOTES_PNG,    "",         _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), CLASS_COL_UPD_USER,  _( "User" ),   _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), CLASS_COL_UPD_STAMP,     NULL,      _( "Last update timestamp" ));

@@ -81,6 +81,8 @@ libofa_tva_la_SOURCES = \
 	ofa-tva-record-properties.h							\
 	ofa-tva-record-store.c								\
 	ofa-tva-record-store.h								\
+	ofa-tva-record-treeview.c							\
+	ofa-tva-record-treeview.h							\
 	ofa-tva-style.c										\
 	ofa-tva-style.h										\
 	ofa-tva-tree-adder.c								\
