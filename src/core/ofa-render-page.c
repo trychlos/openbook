@@ -213,6 +213,8 @@ setup_view1( ofaRenderPage *self )
 
 	drawing = gtk_drawing_area_new();
 	gtk_container_add( GTK_CONTAINER( viewport ), drawing );
+	gtk_widget_set_hexpand( drawing, TRUE );
+	gtk_widget_set_vexpand( drawing, TRUE );
 	g_signal_connect( drawing, "draw", G_CALLBACK( on_draw ), self );
 	priv->drawing_area = drawing;
 
