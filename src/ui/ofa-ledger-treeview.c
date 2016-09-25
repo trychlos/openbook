@@ -376,7 +376,7 @@ get_and_send( ofaLedgerTreeview *self, GtkTreeSelection *selection, const gchar 
 {
 	GList *list;
 
-	list = ofa_ledger_treeview_get_selected( self );
+	list = get_selected_with_selection( self, selection );
 	g_signal_emit_by_name( self, signal, list );
 	ofa_ledger_treeview_free_selected( list );
 }

@@ -46,8 +46,9 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
-#include "core/ofa-entry-listview.h"
 #include "core/ofa-entry-store.h"
+
+#include "ui/ofa-entry-treeview.h"
 
 /* private instance data
  */
@@ -57,7 +58,7 @@ typedef struct {
 	/* initialization
 	 */
 }
-	ofaEntryListviewPrivate;
+	ofaEntryTreeviewPrivate;
 
 /* signals defined here
  */
@@ -86,43 +87,43 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 #define RGBA_DELETED                    "#808080"		/* gray foreground */
 #define RGBA_FUTURE                     "#ffe8a8"		/* pale orange background */
 
-static void      setup_columns( ofaEntryListview *self );
-static void      on_selection_changed( ofaEntryListview *self, GtkTreeSelection *selection, void *empty );
-static void      on_selection_activated( ofaEntryListview *self, GtkTreeSelection *selection, void *empty );
-static void      on_selection_delete( ofaEntryListview *self, GtkTreeSelection *selection, void *empty );
-static void      get_and_send( ofaEntryListview *self, GtkTreeSelection *selection, const gchar *signal );
-static ofoEntry *get_selected_with_selection( ofaEntryListview *self, GtkTreeSelection *selection );
-static gint      get_row_errlevel( ofaEntryListview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean  v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
+static void      setup_columns( ofaEntryTreeview *self );
+static void      on_selection_changed( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty );
+static void      on_selection_activated( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty );
+static void      on_selection_delete( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty );
+static void      get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static GList    *get_selected_with_selection( ofaEntryTreeview *self, GtkTreeSelection *selection );
+static gint      get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gboolean  v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gint      v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
-G_DEFINE_TYPE_EXTENDED( ofaEntryListview, ofa_entry_listview, OFA_TYPE_TVBIN, 0,
-		G_ADD_PRIVATE( ofaEntryListview ))
+G_DEFINE_TYPE_EXTENDED( ofaEntryTreeview, ofa_entry_treeview, OFA_TYPE_TVBIN, 0,
+		G_ADD_PRIVATE( ofaEntryTreeview ))
 
 static void
-entry_listview_finalize( GObject *instance )
+entry_treeview_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_entry_listview_finalize";
+	static const gchar *thisfn = "ofa_entry_treeview_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_ENTRY_LISTVIEW( instance ));
+	g_return_if_fail( instance && OFA_IS_ENTRY_TREEVIEW( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_entry_listview_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_entry_treeview_parent_class )->finalize( instance );
 }
 
 static void
-entry_listview_dispose( GObject *instance )
+entry_treeview_dispose( GObject *instance )
 {
-	ofaEntryListviewPrivate *priv;
+	ofaEntryTreeviewPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_ENTRY_LISTVIEW( instance ));
+	g_return_if_fail( instance && OFA_IS_ENTRY_TREEVIEW( instance ));
 
-	priv = ofa_entry_listview_get_instance_private( OFA_ENTRY_LISTVIEW( instance ));
+	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -132,56 +133,56 @@ entry_listview_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_entry_listview_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_entry_treeview_parent_class )->dispose( instance );
 }
 
 static void
-ofa_entry_listview_init( ofaEntryListview *self )
+ofa_entry_treeview_init( ofaEntryTreeview *self )
 {
-	static const gchar *thisfn = "ofa_entry_listview_init";
-	ofaEntryListviewPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_treeview_init";
+	ofaEntryTreeviewPrivate *priv;
 
-	g_return_if_fail( self && OFA_IS_ENTRY_LISTVIEW( self ));
+	g_return_if_fail( self && OFA_IS_ENTRY_TREEVIEW( self ));
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	priv = ofa_entry_listview_get_instance_private( self );
+	priv = ofa_entry_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_entry_listview_class_init( ofaEntryListviewClass *klass )
+ofa_entry_treeview_class_init( ofaEntryTreeviewClass *klass )
 {
-	static const gchar *thisfn = "ofa_entry_listview_class_init";
+	static const gchar *thisfn = "ofa_entry_treeview_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = entry_listview_dispose;
-	G_OBJECT_CLASS( klass )->finalize = entry_listview_finalize;
+	G_OBJECT_CLASS( klass )->dispose = entry_treeview_dispose;
+	G_OBJECT_CLASS( klass )->finalize = entry_treeview_finalize;
 
 	OFA_TVBIN_CLASS( klass )->filter = v_filter;
 	OFA_TVBIN_CLASS( klass )->sort = v_sort;
 
 	/**
-	 * ofaEntryListview::ofa-entchanged:
+	 * ofaEntryTreeview::ofa-entchanged:
 	 *
 	 * #ofaTVBin sends a 'ofa-selchanged' signal, with the current
 	 * #GtkTreeSelection as an argument.
-	 * #ofaEntryListview proxyes it with this 'ofa-entchanged' signal,
-	 * providing the #ofoEntry selected object.
+	 * #ofaEntryTreeview proxyes it with this 'ofa-entchanged' signal,
+	 * signal, providing the selected objects.
 	 *
-	 * Argument is the current #ofoEntry object, may be %NULL.
+	 * Argument is the list of selected objects; may be %NULL.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaEntryListview *view,
-	 * 						ofoEntry       *object,
+	 * void ( *handler )( ofaEntryTreeview *view,
+	 * 						GList          *list,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-entchanged",
-				OFA_TYPE_ENTRY_LISTVIEW,
+				OFA_TYPE_ENTRY_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -189,26 +190,26 @@ ofa_entry_listview_class_init( ofaEntryListviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_OBJECT );
+				G_TYPE_POINTER );
 
 	/**
-	 * ofaEntryListview::ofa-entactivated:
+	 * ofaEntryTreeview::ofa-entactivated:
 	 *
 	 * #ofaTVBin sends a 'ofa-selactivated' signal, with the current
 	 * #GtkTreeSelection as an argument.
-	 * #ofaEntryListview proxyes it with this 'ofa-entactivated' signal,
-	 * providing the #ofoEntry selected object.
+	 * #ofaEntryTreeview proxyes it with this 'ofa-entactivated' signal,
+	 * providing the selected objects.
 	 *
-	 * Argument is the current #ofoEntry object.
+	 * Argument is the list of selected objects.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaEntryListview *view,
-	 * 						ofoEntry       *object,
+	 * void ( *handler )( ofaEntryTreeview *view,
+	 * 						GList          *list,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
 				"ofa-entactivated",
-				OFA_TYPE_ENTRY_LISTVIEW,
+				OFA_TYPE_ENTRY_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -216,26 +217,26 @@ ofa_entry_listview_class_init( ofaEntryListviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_OBJECT );
+				G_TYPE_POINTER );
 
 	/**
-	 * ofaEntryListview::ofa-entdelete:
+	 * ofaEntryTreeview::ofa-entdelete:
 	 *
 	 * #ofaTVBin sends a 'ofa-seldelete' signal, with the current
 	 * #GtkTreeSelection as an argument.
-	 * #ofaEntryListview proxyes it with this 'ofa-entdelete' signal,
-	 * providing the #ofoEntry selected object.
+	 * #ofaEntryTreeview proxyes it with this 'ofa-entdelete' signal,
+	 * providing the selected objects.
 	 *
-	 * Argument is the current #ofoEntry object.
+	 * Argument is the list of selected objects.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaEntryListview *view,
-	 * 						ofoEntry       *object,
+	 * void ( *handler )( ofaEntryTreeview *view,
+	 * 						GList          *list,
 	 * 						gpointer        user_data );
 	 */
 	st_signals[ DELETE ] = g_signal_new_class_handler(
 				"ofa-entdelete",
-				OFA_TYPE_ENTRY_LISTVIEW,
+				OFA_TYPE_ENTRY_TREEVIEW,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -243,20 +244,22 @@ ofa_entry_listview_class_init( ofaEntryListviewClass *klass )
 				NULL,
 				G_TYPE_NONE,
 				1,
-				G_TYPE_OBJECT );
+				G_TYPE_POINTER );
 }
 
 /**
- * ofa_entry_listview_new:
+ * ofa_entry_treeview_new:
  *
  * Returns: a new instance.
  */
-ofaEntryListview *
-ofa_entry_listview_new( void )
+ofaEntryTreeview *
+ofa_entry_treeview_new( void )
 {
-	ofaEntryListview *view;
+	ofaEntryTreeview *view;
 
-	view = g_object_new( OFA_TYPE_ENTRY_LISTVIEW,
+	view = g_object_new( OFA_TYPE_ENTRY_TREEVIEW,
+				"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
+				"ofa-tvbin-shadow", GTK_SHADOW_IN,
 				NULL );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
@@ -271,18 +274,62 @@ ofa_entry_listview_new( void )
 	 */
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
-	setup_columns( view );
-
 	return( view );
+}
+
+/**
+ * ofa_entry_treeview_set_settings_key:
+ * @view: this #ofaEntryTreeview instance.
+ * @key: [allow-none]: the prefix of the settings key.
+ *
+ * Setup the setting key, or reset it to its default if %NULL.
+ */
+void
+ofa_entry_treeview_set_settings_key( ofaEntryTreeview *view, const gchar *key )
+{
+	static const gchar *thisfn = "ofa_entry_treeview_set_settings_key";
+	ofaEntryTreeviewPrivate *priv;
+
+	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
+
+	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
+
+	priv = ofa_entry_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	/* we do not manage any settings here, so directly pass it to the
+	 * base class */
+	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
+}
+
+/**
+ * ofa_entry_treeview_setup_columns:
+ * @view: this #ofaEntryTreeview instance.
+ *
+ * Setup the treeview columns.
+ */
+void
+ofa_entry_treeview_setup_columns( ofaEntryTreeview *view )
+{
+	ofaEntryTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
+
+	priv = ofa_entry_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_columns( view );
 }
 
 /*
  * Defines the treeview columns
  */
 static void
-setup_columns( ofaEntryListview *self )
+setup_columns( ofaEntryTreeview *self )
 {
-	static const gchar *thisfn = "ofa_entry_listview_setup_columns";
+	static const gchar *thisfn = "ofa_entry_treeview_setup_columns";
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
@@ -303,47 +350,21 @@ setup_columns( ofaEntryListview *self )
 	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_ENT_NUMBER,    _( "Ent.num" ),     _( "Entry number" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_UPD_USER,      _( "Ent.user" ),    _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), ENTRY_COL_UPD_STAMP,     _( "Ent.stamp" ),   _( "Last update timestamp" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_NUMBER, _( "Concil.num" ),  _( "Rough debit" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_DATE,   _( "Concil.date" ), _( "Rough credit" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Future debit" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_NUMBER, _( "Concil.num" ),  _( "Conciliation number" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), ENTRY_COL_CONCIL_DATE,   _( "Concil.date" ), _( "Conciliation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ENTRY_COL_LABEL );
 }
 
-/**
- * ofa_entry_listview_set_settings_key:
- * @view: this #ofaEntryListview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_entry_listview_set_settings_key( ofaEntryListview *view, const gchar *key )
-{
-	static const gchar *thisfn = "ofa_entry_listview_set_settings_key";
-	ofaEntryListviewPrivate *priv;
-
-	g_debug( "%s: view=%p, key=%s", thisfn, ( void * ) view, key );
-
-	g_return_if_fail( view && OFA_IS_ENTRY_LISTVIEW( view ));
-
-	priv = ofa_entry_listview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to the
-	 * base class */
-	ofa_tvbin_set_name( OFA_TVBIN( view ), key );
-}
-
 static void
-on_selection_changed( ofaEntryListview *self, GtkTreeSelection *selection, void *empty )
+on_selection_changed( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty )
 {
 	get_and_send( self, selection, "ofa-entchanged" );
 }
 
 static void
-on_selection_activated( ofaEntryListview *self, GtkTreeSelection *selection, void *empty )
+on_selection_activated( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty )
 {
 	get_and_send( self, selection, "ofa-entactivated" );
 }
@@ -353,7 +374,7 @@ on_selection_activated( ofaEntryListview *self, GtkTreeSelection *selection, voi
  * ofaTVBin base class makes sure the selection is not empty.
  */
 static void
-on_selection_delete( ofaEntryListview *self, GtkTreeSelection *selection, void *empty )
+on_selection_delete( ofaEntryTreeview *self, GtkTreeSelection *selection, void *empty )
 {
 	get_and_send( self, selection, "ofa-entdelete" );
 }
@@ -362,80 +383,86 @@ on_selection_delete( ofaEntryListview *self, GtkTreeSelection *selection, void *
  * Entry may be %NULL when selection is empty (on 'ofa-entchanged' signal)
  */
 static void
-get_and_send( ofaEntryListview *self, GtkTreeSelection *selection, const gchar *signal )
+get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selection, const gchar *signal )
 {
-	ofoEntry *entry;
+	GList *list;
 
-	entry = get_selected_with_selection( self, selection );
-	g_return_if_fail( !entry || OFO_IS_ENTRY( entry ));
-
-	g_signal_emit_by_name( self, signal, entry );
+	list = get_selected_with_selection( self, selection );
+	g_signal_emit_by_name( self, signal, list );
+	ofa_entry_treeview_free_selected( list );
 }
 
 /**
- * ofa_entry_listview_get_selected:
- * @view: this #ofaEntryListview instance.
+ * ofa_entry_treeview_get_selected:
+ * @view: this #ofaEntryTreeview instance.
  *
- * Return: the currently selected #ofoEntry, or %NULL.
+ * Returns: the list of selected objects, which may be %NULL.
+ *
+ * The returned list should be ofa_recurrent_model_treeview_free_selected()
+ * by the caller.
  */
-ofoEntry *
-ofa_entry_listview_get_selected( ofaEntryListview *view )
+GList *
+ofa_entry_treeview_get_selected( ofaEntryTreeview *view )
 {
-	static const gchar *thisfn = "ofa_entry_listview_get_selected";
-	ofaEntryListviewPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_treeview_get_selected";
+	ofaEntryTreeviewPrivate *priv;
 	GtkTreeSelection *selection;
-	ofoEntry *entry;
 
 	g_debug( "%s: view=%p", thisfn, ( void * ) view );
 
-	g_return_val_if_fail( view && OFA_IS_ENTRY_LISTVIEW( view ), NULL );
+	g_return_val_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ), NULL );
 
-	priv = ofa_entry_listview_get_instance_private( view );
+	priv = ofa_entry_treeview_get_instance_private( view );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
-	entry = get_selected_with_selection( view, selection );
 
-	return( entry );
+	return( get_selected_with_selection( view, selection ));
 }
 
 /*
  * get_selected_with_selection:
- * @view: this #ofaEntryListview instance.
+ * @view: this #ofaEntryTreeview instance.
  * @selection: the current #GtkTreeSelection.
  *
- * Return: the currently selected #ofoAccount, or %NULL.
+ * Return: the list of selected objects, or %NULL.
  */
-static ofoEntry *
-get_selected_with_selection( ofaEntryListview *self, GtkTreeSelection *selection )
+static GList *
+get_selected_with_selection( ofaEntryTreeview *self, GtkTreeSelection *selection )
 {
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
+	GList *selected_rows, *irow, *selected_objects;
 	ofoEntry *entry;
 
-	entry = NULL;
-	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, ENTRY_COL_OBJECT, &entry, -1 );
-		g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
-		g_object_unref( entry );
+	selected_objects = NULL;
+	selected_rows = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	for( irow=selected_rows ; irow ; irow=irow->next ){
+		if( gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) irow->data )){
+			gtk_tree_model_get( tmodel, &iter, ENTRY_COL_OBJECT, &entry, -1 );
+			g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), NULL );
+			selected_objects = g_list_prepend( selected_objects, entry );
+		}
 	}
 
-	return( entry );
+	g_list_free_full( selected_rows, ( GDestroyNotify ) gtk_tree_path_free );
+
+	return( selected_objects );
 }
 
 /**
- * ofa_entry_listview_set_selected:
- * @view: this #ofaEntryListview instance.
+ * ofa_entry_treeview_set_selected:
+ * @view: this #ofaEntryTreeview instance.
  * @entry: the number of the entry to be selected.
  *
  * Selects the entry identified by @entry.
  */
 void
-ofa_entry_listview_set_selected( ofaEntryListview *view, ofxCounter entry )
+ofa_entry_treeview_set_selected( ofaEntryTreeview *view, ofxCounter entry )
 {
-	static const gchar *thisfn = "ofa_entry_listview_set_selected";
-	ofaEntryListviewPrivate *priv;
+	static const gchar *thisfn = "ofa_entry_treeview_set_selected";
+	ofaEntryTreeviewPrivate *priv;
 	GtkWidget *treeview;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
@@ -443,9 +470,9 @@ ofa_entry_listview_set_selected( ofaEntryListview *view, ofxCounter entry )
 
 	g_debug( "%s: view=%p, entry=%lu", thisfn, ( void * ) view, entry );
 
-	g_return_if_fail( view && OFA_IS_ENTRY_LISTVIEW( view ));
+	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
 
-	priv = ofa_entry_listview_get_instance_private( view );
+	priv = ofa_entry_treeview_get_instance_private( view );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -468,8 +495,8 @@ ofa_entry_listview_set_selected( ofaEntryListview *view, ofxCounter entry )
 }
 
 /**
- * ofa_entry_listview_cell_data_render:
- * @view: this #ofaEntryListview instance.
+ * ofa_entry_treeview_cell_data_render:
+ * @view: this #ofaEntryTreeview instance.
  * @column: the #GtkTreeViewColumn treeview colum.
  * @renderer: a #GtkCellRenderer attached to the column.
  * @model: the #GtkTreeModel of the treeview.
@@ -485,21 +512,21 @@ ofa_entry_listview_set_selected( ofaEntryListview *view, ofxCounter entry )
  * Detail accounts who have no currency are red written.
  */
 void
-ofa_entry_listview_cell_data_render( ofaEntryListview *view,
+ofa_entry_treeview_cell_data_render( ofaEntryTreeview *view,
 				GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter )
 {
-	ofaEntryListviewPrivate *priv;
+	ofaEntryTreeviewPrivate *priv;
 	ofaEntryStatus status;
 	GdkRGBA color;
 	gint err_level;
 	const gchar *color_str;
 
-	g_return_if_fail( view && OFA_IS_ENTRY_LISTVIEW( view ));
+	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
 	g_return_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ));
 	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_TEXT( renderer ));
 	g_return_if_fail( model && GTK_IS_TREE_MODEL( model ));
 
-	priv = ofa_entry_listview_get_instance_private( view );
+	priv = ofa_entry_treeview_get_instance_private( view );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -557,7 +584,7 @@ ofa_entry_listview_cell_data_render( ofaEntryListview *view,
 }
 
 static gint
-get_row_errlevel( ofaEntryListview *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	gchar *msgerr, *msgwarn;
 	gint err_level;
@@ -580,20 +607,16 @@ get_row_errlevel( ofaEntryListview *self, GtkTreeModel *tmodel, GtkTreeIter *ite
 	return( err_level );
 }
 
-/*
- * We are here filtering the child model of the GtkTreeModelFilter,
- * which happens to be the sort model, itself being built on top of
- * the ofaEntryStore
- */
 static gboolean
-v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
+v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
+	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL_FILTER( tmodel ), FALSE );
 #if 0
-	ofaEntryListviewPrivate *priv;
+	ofaEntryTreeviewPrivate *priv;
 	gchar *number;
 	gint class_num;
 
-	priv = ofa_entry_listview_get_instance_private( OFA_ENTRY_LISTVIEW( tvbin ));
+	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( model, iter, ACCOUNT_COL_NUMBER, &number, -1 );
 	class_num = ofo_account_get_class_from_number( number );
@@ -607,10 +630,12 @@ v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 static gint
 v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
-	static const gchar *thisfn = "ofa_entry_listview_v_sort";
+	static const gchar *thisfn = "ofa_entry_treeview_v_sort";
 	gint cmp;
 	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma, *stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea, *statusa;
 	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb, *stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb, *statusb;
+
+	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL_SORT( tmodel ), 0 );
 
 	gtk_tree_model_get( tmodel, a,
 			ENTRY_COL_DOPE,          &dopea,

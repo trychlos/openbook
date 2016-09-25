@@ -153,6 +153,8 @@ openbook_SOURCES = \
 	ofa-dossier-treeview.h								\
 	ofa-entry-page.c									\
 	ofa-entry-page.h									\
+	ofa-entry-treeview.c								\
+	ofa-entry-treeview.h								\
 	ofa-exercice-combo.c								\
 	ofa-exercice-combo.h								\
 	ofa-exercice-close-assistant.c						\

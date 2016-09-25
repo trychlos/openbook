@@ -386,7 +386,7 @@ get_and_send( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, cons
 {
 	GList *list;
 
-	list = ofa_recurrent_model_treeview_get_selected( self );
+	list = get_selected_with_selection( self, selection );
 	g_signal_emit_by_name( self, signal, list );
 	ofa_recurrent_model_treeview_free_selected( list );
 }
