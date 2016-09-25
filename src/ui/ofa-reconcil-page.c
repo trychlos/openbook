@@ -264,7 +264,7 @@ static void         itreeview_display_iface_init( ofaITreeviewDisplayInterface *
 static guint        itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar       *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean     itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static GtkWidget   *v_setup_view( ofaPage *page );
+static void         v_setup_page( ofaPage *page );
 static void         setup_treeview_header( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_treeview( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_treeview_footer( ofaReconcilPage *self, GtkContainer *parent );
@@ -423,7 +423,7 @@ ofa_reconcil_page_class_init( ofaReconcilPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = reconciliation_dispose;
 	G_OBJECT_CLASS( klass )->finalize = reconciliation_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -486,10 +486,10 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
  * the second row contains another grid which manages the treeview,
  * along with header and footer
  */
-static GtkWidget *
-v_setup_view( ofaPage *page )
+static void
+v_setup_page( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_v_setup_view";
+	static const gchar *thisfn = "ofa_reconcil_page_v_setup_page";
 	ofaReconcilPagePrivate *priv;
 	GtkWidget *widget, *page_widget;
 	GtkTreeSelection *select;
@@ -499,11 +499,11 @@ v_setup_view( ofaPage *page )
 	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( page ));
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
-	g_return_val_if_fail( widget && GTK_IS_PANED( widget ), NULL );
+	g_return_if_fail( widget && GTK_IS_PANED( widget ));
 	priv->top_paned = widget;
 
 	setup_treeview_header( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
@@ -526,7 +526,7 @@ v_setup_view( ofaPage *page )
 	gtk_tree_selection_unselect_all( select );
 	on_tview_selection_changed( select, OFA_RECONCIL_PAGE( page ));
 
-	return( page_widget );
+	gtk_container_add( GTK_CONTAINER( page ), page_widget );
 }
 
 static void

@@ -246,7 +246,7 @@ static void            itreeview_display_iface_init( ofaITreeviewDisplayInterfac
 static guint           itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar          *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean        itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static GtkWidget      *v_setup_view( ofaPage *page );
+static void            v_setup_page( ofaPage *page );
 static void            reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent );
 static void            setup_gen_selection( ofaEntryPage *self );
 static void            setup_ledger_selection( ofaEntryPage *self );
@@ -402,7 +402,7 @@ ofa_entry_page_class_init( ofaEntryPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = entry_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
@@ -460,10 +460,10 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
 }
 
-static GtkWidget *
-v_setup_view( ofaPage *page )
+static void
+v_setup_page( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_entry_page_v_setup_view";
+	static const gchar *thisfn = "ofa_entry_page_v_setup_page";
 	ofaEntryPagePrivate *priv;
 	GtkWidget *frame;
 
@@ -472,7 +472,7 @@ v_setup_view( ofaPage *page )
 	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( page ));
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
@@ -480,6 +480,7 @@ v_setup_view( ofaPage *page )
 	frame = gtk_frame_new( NULL );
 	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
 	reparent_from_dialog( OFA_ENTRY_PAGE( page ), GTK_CONTAINER( frame ));
+	gtk_container_add( GTK_CONTAINER( page ), frame );
 
 	setup_ledger_selection( OFA_ENTRY_PAGE( page ));
 	setup_account_selection( OFA_ENTRY_PAGE( page ));
@@ -508,8 +509,6 @@ v_setup_view( ofaPage *page )
 	} else {
 		on_gen_selection_toggled( priv->account_btn, OFA_ENTRY_PAGE( page ));
 	}
-
-	return( frame );
 }
 
 static void

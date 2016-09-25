@@ -84,7 +84,7 @@ static const gchar *st_pane_setting     = "GuidedInputExDlg-pane";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-guided-ex.ui";
 static const gchar *st_ui_name          = "ofaGuidedExWindow";
 
-static GtkWidget *v_setup_view( ofaPage *page );
+static void       v_setup_page( ofaPage *page );
 static void       pane_restore_position( GtkWidget *pane );
 static void       pane_save_position( GtkWidget *pane );
 static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
@@ -184,14 +184,14 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = guided_ex_dispose;
 	G_OBJECT_CLASS( klass )->finalize = guided_ex_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
 }
 
-static GtkWidget *
-v_setup_view( ofaPage *page )
+static void
+v_setup_page( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_guided_ex_v_setup_view";
+	static const gchar *thisfn = "ofa_guided_ex_v_setup_page";
 	ofaGuidedExPrivate *priv;
 	GtkWidget *page_widget, *pane;
 
@@ -203,7 +203,7 @@ v_setup_view( ofaPage *page )
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	pane = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
-	g_return_val_if_fail( pane && GTK_IS_PANED( pane ), NULL );
+	g_return_if_fail( pane && GTK_IS_PANED( pane ));
 
 	priv->pane = pane;
 	pane_restore_position( pane );
@@ -215,7 +215,7 @@ v_setup_view( ofaPage *page )
 
 	left_init_view( OFA_GUIDED_EX( page ));
 
-	return( page_widget );
+	gtk_container_add( GTK_CONTAINER( page ), page_widget );
 }
 
 static void
