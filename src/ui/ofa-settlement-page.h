@@ -36,7 +36,7 @@
  * - current:    no
  */
 
-#include "api/ofa-page-def.h"
+#include "api/ofa-paned-page.h"
 
 G_BEGIN_DECLS
 
@@ -49,13 +49,13 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	ofaPage      parent;
+	ofaPanedPage      parent;
 }
 	ofaSettlementPage;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPanedPageClass parent;
 }
 	ofaSettlementPageClass;
 

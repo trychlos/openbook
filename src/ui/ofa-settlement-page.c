@@ -81,7 +81,7 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkWidget         *top_paned;
+	GtkWidget         *paned;
 	GtkTreeView       *tview;
 
 	/* frame 1: account selection
@@ -175,7 +175,8 @@ typedef struct {
 #define COLOR_SETTLED                   "#e0e0e0"		/* light gray background */
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-settlement-page.ui";
-static const gchar *st_ui_name          = "SettlementPageWindow";
+static const gchar *st_ui_name1         = "SettlementPageView1";
+static const gchar *st_ui_name2         = "SettlementPageView2";
 
 static const gchar *st_pref_settlement  = "ofaSettlementPage-settings";
 static const gchar *st_pref_columns     = "ofaSettlementPage-columns";
@@ -198,11 +199,14 @@ static void           itreeview_display_iface_init( ofaITreeviewDisplayInterface
 static guint          itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar         *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean       itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static void           v_setup_page( ofaPage *page );
+static void           v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static GtkWidget     *setup_view1( ofaSettlementPage *self );
 static void           setup_footer( ofaSettlementPage *self, GtkContainer *parent );
 static void           setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent );
+static GtkWidget     *setup_view2( ofaSettlementPage *self );
 static void           setup_account_selection( ofaSettlementPage *self, GtkContainer *parent );
 static void           setup_settlement_selection( ofaSettlementPage *self, GtkContainer *parent );
+static void           setup_actions( ofaSettlementPage *self, GtkContainer *parent );
 static void           setup_signaling_connect( ofaSettlementPage *self );
 static void           on_account_changed( GtkEntry *entry, ofaSettlementPage *self );
 static void           on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self );
@@ -233,7 +237,7 @@ static void           on_hub_updated_object( ofaHub *hub, ofoBase *object, const
 static void           on_updated_entry( ofaSettlementPage *self, ofoEntry *entry );
 static gboolean       find_entry_by_number( ofaSettlementPage *self, GtkTreeModel *tmodel, ofxCounter number, GtkTreeIter *iter );
 
-G_DEFINE_TYPE_EXTENDED( ofaSettlementPage, ofa_settlement_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaSettlementPage, ofa_settlement_page, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaSettlementPage )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
@@ -307,7 +311,7 @@ ofa_settlement_page_class_init( ofaSettlementPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = settlement_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = settlement_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
 }
 
 /*
@@ -378,36 +382,46 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 }
 
 static void
-v_setup_page( ofaPage *page )
+v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
-	static const gchar *thisfn = "ofa_settlement_page_v_setup_page";
+	static const gchar *thisfn = "ofa_settlement_page_v_setup_view";
 	ofaSettlementPagePrivate *priv;
-	GtkWidget *page_widget, *widget;
+	GtkWidget *view;
 
-	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+	g_debug( "%s: page=%p, paned=%p", thisfn, ( void * ) page, ( void * ) paned );
 
 	priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( page ));
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
-	g_return_if_fail( widget && GTK_IS_PANED( widget ));
-	priv->top_paned = widget;
+	priv->paned = GTK_WIDGET( paned );
 
-	/* build first the targets of the data, and only after the triggers */
-	setup_footer( OFA_SETTLEMENT_PAGE( page ), GTK_CONTAINER( widget ));
-	setup_entries_treeview( OFA_SETTLEMENT_PAGE( page ), GTK_CONTAINER( widget ));
-	setup_settlement_selection( OFA_SETTLEMENT_PAGE( page ), GTK_CONTAINER( widget ));
-	setup_account_selection( OFA_SETTLEMENT_PAGE( page ), GTK_CONTAINER( widget ));
+	view = setup_view1( OFA_SETTLEMENT_PAGE( page ));
+	gtk_paned_pack1( paned, view, TRUE, FALSE );
+
+	view = setup_view2( OFA_SETTLEMENT_PAGE( page ));
+	gtk_paned_pack2( paned, view, FALSE, FALSE );
 
 	get_settings( OFA_SETTLEMENT_PAGE( page ));
 
 	/* connect to dossier signaling system */
 	setup_signaling_connect( OFA_SETTLEMENT_PAGE( page ));
+}
 
-	gtk_container_add( GTK_CONTAINER( page ), page_widget );
+static GtkWidget *
+setup_view1( ofaSettlementPage *self )
+{
+	GtkWidget *box;
+
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_container_attach_from_resource( GTK_CONTAINER( box ), st_resource_ui, st_ui_name1, "top1" );
+
+	/* build first the targets of the data, and only after the triggers */
+	setup_footer( self, GTK_CONTAINER( box ));
+	setup_entries_treeview( self, GTK_CONTAINER( box ));
+
+	return( box );
 }
 
 static void
@@ -417,16 +431,6 @@ setup_footer( ofaSettlementPage *self, GtkContainer *parent )
 	GtkWidget *widget;
 
 	priv = ofa_settlement_page_get_instance_private( self );
-
-	widget = my_utils_container_get_child_by_name( parent, "settle-btn" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	g_signal_connect( widget, "clicked", G_CALLBACK( on_settle_clicked ), self );
-	priv->settle_btn = widget;
-
-	widget = my_utils_container_get_child_by_name( parent, "unsettle-btn" );
-	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
-	g_signal_connect( widget, "clicked", G_CALLBACK( on_unsettle_clicked ), self );
-	priv->unsettle_btn = widget;
 
 	widget = my_utils_container_get_child_by_name( parent, "footer-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
@@ -690,6 +694,21 @@ setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent )
 	priv->tview = tview;
 }
 
+static GtkWidget *
+setup_view2( ofaSettlementPage *self )
+{
+	GtkWidget *box;
+
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_container_attach_from_resource( GTK_CONTAINER( box ), st_resource_ui, st_ui_name2, "top2" );
+
+	setup_settlement_selection( self, GTK_CONTAINER( box ));
+	setup_account_selection( self, GTK_CONTAINER( box ));
+	setup_actions( self, GTK_CONTAINER( box ));
+
+	return( box );
+}
+
 static void
 setup_account_selection( ofaSettlementPage *self, GtkContainer *parent )
 {
@@ -768,6 +787,25 @@ setup_settlement_selection( ofaSettlementPage *self, GtkContainer *parent )
 	if( idx != -1 ){
 		gtk_combo_box_set_active( GTK_COMBO_BOX( combo ), idx );
 	}
+}
+
+static void
+setup_actions( ofaSettlementPage *self, GtkContainer *parent )
+{
+	ofaSettlementPagePrivate *priv;
+	GtkWidget *widget;
+
+	priv = ofa_settlement_page_get_instance_private( self );
+
+	widget = my_utils_container_get_child_by_name( parent, "settle-btn" );
+	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	g_signal_connect( widget, "clicked", G_CALLBACK( on_settle_clicked ), self );
+	priv->settle_btn = widget;
+
+	widget = my_utils_container_get_child_by_name( parent, "unsettle-btn" );
+	g_return_if_fail( widget && GTK_IS_BUTTON( widget ));
+	g_signal_connect( widget, "clicked", G_CALLBACK( on_unsettle_clicked ), self );
+	priv->unsettle_btn = widget;
 }
 
 static void
@@ -1483,7 +1521,7 @@ get_settings( ofaSettlementPage *self )
 	if( pos <= 10 ){
 		pos = 150;
 	}
-	gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
+	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
 	ofa_settings_free_string_list( slist );
 }
@@ -1497,7 +1535,7 @@ set_settings( ofaSettlementPage *self )
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
+	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
 
 	str = g_strdup_printf( "%s;%d;%d;%d;%d;",
 			priv->account_number, priv->settlement, priv->sort_column_id, priv->sort_sens, pos );
