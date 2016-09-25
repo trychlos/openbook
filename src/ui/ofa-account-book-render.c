@@ -149,8 +149,8 @@ static const gint st_body_font_size      = 9;
 #define st_sens_width                    (gdouble) 18/9*st_body_font_size
 #define st_column_hspacing               (gdouble) 4
 
-static void               page_init_view( ofaPage *page );
 static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
+static void               paned_page_init_view( ofaPanedPage *page );
 static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
 static const gchar       *render_page_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page );
@@ -242,8 +242,9 @@ ofa_account_book_render_class_init( ofaAccountBookRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = account_book_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_book_render_finalize;
 
-	OFA_PAGE_CLASS( klass )->init_view = page_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
+
+	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_init_view;
 
 	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = render_page_get_args_widget;
 	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = render_page_get_paper_name;
@@ -253,13 +254,17 @@ ofa_account_book_render_class_init( ofaAccountBookRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
 }
 
-static void
-page_init_view( ofaPage *page )
+static GtkWidget *
+page_get_top_focusable_widget( const ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_account_book_render_page_init_view";
-	ofaAccountBookRenderPrivate *priv;
+	return( NULL );
+}
 
-	OFA_PAGE_CLASS( ofa_account_book_render_parent_class )->init_view( page );
+static void
+paned_page_init_view( ofaPanedPage *page )
+{
+	static const gchar *thisfn = "ofa_account_book_render_paned_page_init_view";
+	ofaAccountBookRenderPrivate *priv;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -267,12 +272,6 @@ page_init_view( ofaPage *page )
 
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
 	get_settings( OFA_ACCOUNT_BOOK_RENDER( page ));
-}
-
-static GtkWidget *
-page_get_top_focusable_widget( const ofaPage *page )
-{
-	return( NULL );
 }
 
 static GtkWidget *

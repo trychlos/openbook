@@ -105,8 +105,8 @@ static const gint st_body_font_size      = 9;
 #define st_currency_width                (gdouble) 23/10*st_body_font_size
 #define st_column_hspacing               (gdouble) 4
 
-static void               page_init_view( ofaPage *page );
 static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
+static void               paned_page_init_view( ofaPanedPage *page );
 static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
 static const gchar       *render_page_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page );
@@ -187,8 +187,9 @@ ofa_ledger_summary_render_class_init( ofaLedgerSummaryRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_summary_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_summary_render_finalize;
 
-	OFA_PAGE_CLASS( klass )->init_view = page_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
+
+	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_init_view;
 
 	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = render_page_get_args_widget;
 	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = render_page_get_paper_name;
@@ -198,12 +199,10 @@ ofa_ledger_summary_render_class_init( ofaLedgerSummaryRenderClass *klass )
 }
 
 static void
-page_init_view( ofaPage *page )
+paned_page_init_view( ofaPanedPage *page )
 {
-	static const gchar *thisfn = "ofa_ledger_summary_render_page_init_view";
+	static const gchar *thisfn = "ofa_ledger_summary_render_paned_page_init_view";
 	ofaLedgerSummaryRenderPrivate *priv;
-
-	OFA_PAGE_CLASS( ofa_ledger_summary_render_parent_class )->init_view( page );
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 

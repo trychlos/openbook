@@ -130,8 +130,8 @@ static const gchar *st_notes_font        = "Sans Italic 5";
 #define COLOR_BLACK                      0,      0,      0
 #define COLOR_WHITE                      1,      1,      1
 
-static void               page_init_view( ofaPage *page );
 static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
+static void               paned_page_init_view( ofaPanedPage *page );
 static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
 static const gchar       *render_page_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page );
@@ -233,8 +233,9 @@ ofa_balance_render_class_init( ofaBalanceRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = balance_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = balance_render_finalize;
 
-	OFA_PAGE_CLASS( klass )->init_view = page_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
+
+	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_init_view;
 
 	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = render_page_get_args_widget;
 	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = render_page_get_paper_name;
@@ -244,13 +245,17 @@ ofa_balance_render_class_init( ofaBalanceRenderClass *klass )
 	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
 }
 
-static void
-page_init_view( ofaPage *page )
+static GtkWidget *
+page_get_top_focusable_widget( const ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_balance_render_page_init_view";
-	ofaBalanceRenderPrivate *priv;
+	return( NULL );
+}
 
-	OFA_PAGE_CLASS( ofa_balance_render_parent_class )->init_view( page );
+static void
+paned_page_init_view( ofaPanedPage *page )
+{
+	static const gchar *thisfn = "ofa_balance_render_paned_page_init_view";
+	ofaBalanceRenderPrivate *priv;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -258,12 +263,6 @@ page_init_view( ofaPage *page )
 
 	on_args_changed( priv->args_bin, OFA_BALANCE_RENDER( page ));
 	get_settings( OFA_BALANCE_RENDER( page ));
-}
-
-static GtkWidget *
-page_get_top_focusable_widget( const ofaPage *page )
-{
-	return( NULL );
 }
 
 static GtkWidget *
