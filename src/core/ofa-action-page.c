@@ -40,9 +40,9 @@ typedef struct {
 	ofaActionPagePrivate;
 
 static void       v_setup_page( ofaPage *page );
-static GtkWidget *do_setup_view( ofaActionPage *page );
-static void       do_setup_actions( ofaActionPage *page );
-static void       do_init_view( ofaActionPage *page );
+static GtkWidget *do_setup_view( ofaActionPage *self );
+static void       do_setup_actions( ofaActionPage *self );
+static void       do_init_view( ofaActionPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaActionPage, ofa_action_page, OFA_TYPE_PAGE, 0,
 		G_ADD_PRIVATE( ofaActionPage ))
@@ -130,35 +130,35 @@ v_setup_page( ofaPage *page )
 }
 
 static GtkWidget *
-do_setup_view( ofaActionPage *page )
+do_setup_view( ofaActionPage *self )
 {
 	GtkWidget *view;
 
 	view = NULL;
 
-	if( OFA_ACTION_PAGE_GET_CLASS( page )->setup_view ){
-		view = OFA_ACTION_PAGE_GET_CLASS( page )->setup_view( page );
+	if( OFA_ACTION_PAGE_GET_CLASS( self )->setup_view ){
+		view = OFA_ACTION_PAGE_GET_CLASS( self )->setup_view( self );
 	}
 
 	return( view );
 }
 
 static void
-do_setup_actions( ofaActionPage *page )
+do_setup_actions( ofaActionPage *self )
 {
 	ofaButtonsBox *buttons_box;
 
-	if( OFA_ACTION_PAGE_GET_CLASS( page )->setup_actions ){
+	if( OFA_ACTION_PAGE_GET_CLASS( self )->setup_actions ){
 		buttons_box = ofa_buttons_box_new();
-		gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( buttons_box ), 1, 0, 1, 1 );
-		OFA_ACTION_PAGE_GET_CLASS( page )->setup_actions( page, buttons_box );
+		gtk_grid_attach( GTK_GRID( self ), GTK_WIDGET( buttons_box ), 1, 0, 1, 1 );
+		OFA_ACTION_PAGE_GET_CLASS( self )->setup_actions( self, buttons_box );
 	}
 }
 
 static void
-do_init_view( ofaActionPage *page )
+do_init_view( ofaActionPage *self )
 {
-	if( OFA_ACTION_PAGE_GET_CLASS( page )->init_view ){
-		OFA_ACTION_PAGE_GET_CLASS( page )->init_view( page );
+	if( OFA_ACTION_PAGE_GET_CLASS( self )->init_view ){
+		OFA_ACTION_PAGE_GET_CLASS( self )->init_view( self );
 	}
 }

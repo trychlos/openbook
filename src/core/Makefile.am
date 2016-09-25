@@ -150,6 +150,7 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-treeview.h							\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
+	ofa-paned-page.c									\
 	ofa-page.c											\
 	ofa-periodicity.c									\
 	ofa-periodicity-bin.c								\
