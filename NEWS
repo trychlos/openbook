@@ -68,6 +68,7 @@
    - All collections: are no more sorted (todo #1208).
    - Object classes: review xxx_use_yyy() usage (todo #1207).
    - ofaActionPage: new ofaPage-derived class.
+   - ofaPanedPage: new ofaPage-derived class.
    - ofaRateStore, ofaRateTreeview: new classes.
    - RecurrentManagePage: renamed to RecurrentModelPage (todo #1211).
 

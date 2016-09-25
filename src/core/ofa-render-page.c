@@ -46,7 +46,7 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkWidget *top_paned;
+	GtkWidget *paned;
 	GtkWidget *drawing_area;
 	GtkWidget *msg_label;
 	GtkWidget *render_btn;
@@ -82,11 +82,12 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-render-page.ui";
 static const gchar *st_ui_name          = "RenderPageWindow";
 
-static GtkWidget         *v_setup_view( ofaPage *page );
+static void               v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static GtkWidget         *setup_view1( ofaRenderPage *self );
+static GtkWidget         *setup_view2( ofaRenderPage *self );
 static void               setup_args_area( ofaRenderPage *self, GtkContainer *parent );
 static void               setup_actions_area( ofaRenderPage *self, GtkContainer *parent );
-static void               setup_drawing_area( ofaRenderPage *self, GtkContainer *parent );
-static void               setup_page_size( ofaRenderPage *self, GtkContainer *parent );
+static void               setup_page_size( ofaRenderPage *self );
 static GList             *get_dataset( ofaRenderPage *page );
 static gboolean           on_draw( GtkWidget *area, cairo_t *cr, ofaRenderPage *page );
 static void               draw_widget_background( cairo_t *cr, GtkWidget *area );
@@ -107,7 +108,7 @@ static void               iprintable_begin_print( ofaIPrintable *instance, GtkPr
 static void               iprintable_draw_page( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context, gint page_num );
 static void               iprintable_end_print( ofaIPrintable *instance, GtkPrintOperation *operation, GtkPrintContext *context );
 
-G_DEFINE_TYPE_EXTENDED( ofaRenderPage, ofa_render_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaRenderPage, ofa_render_page, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaRenderPage )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPRINTABLE, iprintable_iface_init ))
 
@@ -167,43 +168,87 @@ ofa_render_page_class_init( ofaRenderPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = render_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = render_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
 }
 
-static GtkWidget *
-v_setup_view( ofaPage *page )
+static void
+v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
 	static const gchar *thisfn = "ofa_render_page_v_setup_view";
 	ofaRenderPagePrivate *priv;
-	GtkWidget *widget, *page_widget;
+	GtkWidget *view;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
 	priv = ofa_render_page_get_instance_private( OFA_RENDER_PAGE( page ));
 
-	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
-	g_return_val_if_fail( widget && GTK_IS_PANED( widget ), NULL );
-	priv->top_paned = widget;
+	priv->paned = GTK_WIDGET( paned );
 
-	setup_args_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
-	setup_actions_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
-	setup_drawing_area( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
-	setup_page_size( OFA_RENDER_PAGE( page ), GTK_CONTAINER( widget ));
+	view = setup_view1( OFA_RENDER_PAGE( page ));
+	gtk_paned_pack1( paned, view, TRUE, FALSE );
 
-	return( page_widget );
+	view = setup_view2( OFA_RENDER_PAGE( page ));
+	gtk_paned_pack2( paned, view, FALSE, FALSE );
+
+	setup_page_size( OFA_RENDER_PAGE( page ));
+}
+
+static GtkWidget *
+setup_view1( ofaRenderPage *self )
+{
+	ofaRenderPagePrivate *priv;
+	GtkWidget *grid, *scrolled, *viewport, *drawing, *label;
+
+	priv = ofa_render_page_get_instance_private( self );
+
+	grid = gtk_grid_new();
+	gtk_grid_set_row_spacing( GTK_GRID( grid ), 2 );
+
+	/* setup the drawing area */
+	scrolled = gtk_scrolled_window_new( NULL, NULL );
+	gtk_grid_attach( GTK_GRID( grid ), scrolled, 0, 0, 1, 1 );
+
+	viewport = gtk_viewport_new( NULL, NULL );
+	gtk_container_add( GTK_CONTAINER( scrolled ), viewport );
+
+	drawing = gtk_drawing_area_new();
+	gtk_container_add( GTK_CONTAINER( viewport ), drawing );
+	g_signal_connect( drawing, "draw", G_CALLBACK( on_draw ), self );
+	priv->drawing_area = drawing;
+
+	/* setup the message zone */
+	label = gtk_label_new( NULL );
+	gtk_grid_attach( GTK_GRID( grid ), label, 0, 1, 1, 1 );
+	gtk_label_set_xalign( GTK_LABEL( label ), 0 );
+	priv->msg_label = label;
+
+	return( grid );
+}
+
+static GtkWidget *
+setup_view2( ofaRenderPage *self )
+{
+	GtkWidget *parent;
+
+	parent = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_container_attach_from_resource( GTK_CONTAINER( parent ), st_resource_ui, st_ui_name, "top" );
+
+	setup_args_area( self, GTK_CONTAINER( parent ));
+	setup_actions_area( self, GTK_CONTAINER( parent ));
+
+	return( parent );
 }
 
 static void
-setup_args_area( ofaRenderPage *page, GtkContainer *parent )
+setup_args_area( ofaRenderPage *self, GtkContainer *parent )
 {
 	GtkWidget *area, *widget;
 
 	area = my_utils_container_get_child_by_name( parent, "args-zone" );
 	g_return_if_fail( area && GTK_IS_CONTAINER( area ));
 
-	if( OFA_RENDER_PAGE_GET_CLASS( page )->get_args_widget ){
-		widget = OFA_RENDER_PAGE_GET_CLASS( page )->get_args_widget( page );
+	if( OFA_RENDER_PAGE_GET_CLASS( self )->get_args_widget ){
+		widget = OFA_RENDER_PAGE_GET_CLASS( self )->get_args_widget( self );
 		if( widget ){
 			gtk_container_add( GTK_CONTAINER( area ), widget );
 		}
@@ -232,25 +277,7 @@ setup_actions_area( ofaRenderPage *self, GtkContainer *parent )
 }
 
 static void
-setup_drawing_area( ofaRenderPage *self, GtkContainer *parent )
-{
-	ofaRenderPagePrivate *priv;
-	GtkWidget *drawing, *label;
-
-	priv = ofa_render_page_get_instance_private( self );
-
-	drawing = my_utils_container_get_child_by_name( parent, "drawing-zone" );
-	g_return_if_fail( drawing && GTK_IS_DRAWING_AREA( drawing ));
-	g_signal_connect( drawing, "draw", G_CALLBACK( on_draw ), self );
-	priv->drawing_area = drawing;
-
-	label = my_utils_container_get_child_by_name( parent, "message" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	priv->msg_label = label;
-}
-
-static void
-setup_page_size( ofaRenderPage *self, GtkContainer *parent )
+setup_page_size( ofaRenderPage *self )
 {
 	static const gchar *thisfn = "ofa_render_page_setup_page_size";
 	ofaRenderPagePrivate *priv;
@@ -594,7 +621,7 @@ ofa_render_page_get_top_paned( ofaRenderPage *page )
 
 	priv = ofa_render_page_get_instance_private( page );
 
-	return( priv->top_paned );
+	return( priv->paned );
 }
 
 /*
