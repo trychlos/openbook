@@ -374,7 +374,7 @@ get_and_send( ofaTVAFormTreeview *self, GtkTreeSelection *selection, const gchar
 {
 	ofoTVAForm *form;
 
-	form = ofa_tva_form_treeview_get_selected( self );
+	form = get_selected_with_selection( self, selection );
 	g_signal_emit_by_name( self, signal, form );
 }
 

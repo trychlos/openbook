@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ENTRY_LISTVIEW_H__
-#define __OFA_ENTRY_LISTVIEW_H__
+#ifndef __OFA_ENTRY_TREEVIEW_H__
+#define __OFA_ENTRY_TREEVIEW_H__
 
 /**
- * SECTION: ofa_entry_listview
- * @short_description: #ofaEntryListview class definition.
- * @include: ui/ofa-entry-listview.h
+ * SECTION: ofa_entry_treeview
+ * @short_description: #ofaEntryTreeview class definition.
+ * @include: ui/ofa-entry-treeview.h
  *
  * Manage a treeview with a filtered list of entries.
  *
@@ -43,8 +43,9 @@
  *    | ofa-entdelete    |      No    |
  *    +------------------+------------+
  *
- * Properties:
- * - none.
+ * As the treeview may allow multiple selection, both signals provide
+ * a list of selected objects. It is up to the user of this class to
+ * decide whether an action may apply or not on a multiple selection.
  */
 
 #include "api/ofa-tvbin.h"
@@ -52,24 +53,24 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ENTRY_LISTVIEW                ( ofa_entry_listview_get_type())
-#define OFA_ENTRY_LISTVIEW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ENTRY_LISTVIEW, ofaEntryListview ))
-#define OFA_ENTRY_LISTVIEW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ENTRY_LISTVIEW, ofaEntryListviewClass ))
-#define OFA_IS_ENTRY_LISTVIEW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ENTRY_LISTVIEW ))
-#define OFA_IS_ENTRY_LISTVIEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ENTRY_LISTVIEW ))
-#define OFA_ENTRY_LISTVIEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ENTRY_LISTVIEW, ofaEntryListviewClass ))
+#define OFA_TYPE_ENTRY_TREEVIEW                ( ofa_entry_treeview_get_type())
+#define OFA_ENTRY_TREEVIEW( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ENTRY_TREEVIEW, ofaEntryTreeview ))
+#define OFA_ENTRY_TREEVIEW_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ENTRY_TREEVIEW, ofaEntryTreeviewClass ))
+#define OFA_IS_ENTRY_TREEVIEW( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ENTRY_TREEVIEW ))
+#define OFA_IS_ENTRY_TREEVIEW_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ENTRY_TREEVIEW ))
+#define OFA_ENTRY_TREEVIEW_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ENTRY_TREEVIEW, ofaEntryTreeviewClass ))
 
 typedef struct {
 	/*< public members >*/
 	ofaTVBin      parent;
 }
-	ofaEntryListview;
+	ofaEntryTreeview;
 
 typedef struct {
 	/*< public members >*/
 	ofaTVBinClass parent;
 }
-	ofaEntryListviewClass;
+	ofaEntryTreeviewClass;
 
 /* error levels, in ascending order
  */
@@ -79,19 +80,23 @@ enum {
 	ENTRY_ERR_ERROR
 };
 
-GType             ofa_entry_listview_get_type          ( void ) G_GNUC_CONST;
+GType             ofa_entry_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaEntryListview *ofa_entry_listview_new               ( void );
+ofaEntryTreeview *ofa_entry_treeview_new               ( void );
 
-void              ofa_entry_listview_set_settings_key  ( ofaEntryListview *view,
+void              ofa_entry_treeview_set_settings_key  ( ofaEntryTreeview *view,
 																const gchar *key );
 
-ofoEntry         *ofa_entry_listview_get_selected      ( ofaEntryListview *view );
+void              ofa_entry_treeview_setup_columns     ( ofaEntryTreeview *view );
 
-void              ofa_entry_listview_set_selected      ( ofaEntryListview *view,
+GList            *ofa_entry_treeview_get_selected      ( ofaEntryTreeview *view );
+
+#define           ofa_entry_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
+
+void              ofa_entry_treeview_set_selected      ( ofaEntryTreeview *view,
 																ofxCounter entry );
 
-void              ofa_entry_listview_cell_data_render  ( ofaEntryListview *view,
+void              ofa_entry_treeview_cell_data_render  ( ofaEntryTreeview *view,
 																GtkTreeViewColumn *column,
 																GtkCellRenderer *renderer,
 																GtkTreeModel *model,
@@ -99,4 +104,4 @@ void              ofa_entry_listview_cell_data_render  ( ofaEntryListview *view,
 
 G_END_DECLS
 
-#endif /* __OFA_ENTRY_LISTVIEW_H__ */
+#endif /* __OFA_ENTRY_TREEVIEW_H__ */
