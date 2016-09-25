@@ -111,14 +111,15 @@ typedef struct {
 	/**
 	 * setup_actions:
 	 * @page: this #ofaActionPage object.
-	 * @box: the #ofaButtonsBox which will embed action buttons.
+	 * @buttons_box: the #ofaButtonsBox which will embed action buttons.
 	 *
 	 * This virtual function is called after #setup_view() above method.
 	 *
 	 * The derived class may take advantage of this method to add to the
 	 * provided #ofaButtonsBox the action buttons it wishes implement.
 	 */
-	void        ( *setup_actions )( ofaActionPage *page, ofaButtonsBox *box );
+	void        ( *setup_actions )( ofaActionPage *page,
+											ofaButtonsBox *box );
 
 	/**
 	 * init_view:

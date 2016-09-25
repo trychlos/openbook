@@ -430,6 +430,7 @@ api_include_HEADERS = \
 	ofa-list-store.h									\
 	ofa-ope-template-editable.h							\
 	ofa-ope-template-store.h							\
+	ofa-paned-page.h									\
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
