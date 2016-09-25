@@ -126,7 +126,7 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget           *msg_label;
-	GtkWidget           *top_paned;
+	GtkWidget           *paned;
 
 	/* UI - reconciliated balance
 	 * this is the balance of the account
@@ -207,7 +207,8 @@ static const gchar *st_resource_ui           = "/org/trychlos/openbook/ui/ofa-re
 static const gchar *st_resource_light_green  = "/org/trychlos/openbook/ui/light-green-14.png";
 static const gchar *st_resource_light_yellow = "/org/trychlos/openbook/ui/light-yellow-14.png";
 static const gchar *st_resource_light_empty  = "/org/trychlos/openbook/ui/light-empty-14.png";
-static const gchar *st_ui_name               = "ReconciliationWindow";
+static const gchar *st_ui_name1              = "ReconciliationView1";
+static const gchar *st_ui_name2              = "ReconciliationView2";
 
 /* it appears that Gtk+ displays a counter intuitive sort indicator:
  * when asking for ascending sort, Gtk+ displays a 'v' indicator
@@ -264,10 +265,13 @@ static void         itreeview_display_iface_init( ofaITreeviewDisplayInterface *
 static guint        itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar       *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean     itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static void         v_setup_page( ofaPage *page );
+static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
+static void         v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static GtkWidget   *setup_view1( ofaReconcilPage *self );
 static void         setup_treeview_header( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_treeview( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_treeview_footer( ofaReconcilPage *self, GtkContainer *parent );
+static GtkWidget   *setup_view2( ofaReconcilPage *self );
 static void         setup_account_selection( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_entries_filter( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_date_filter( ofaReconcilPage *self, GtkContainer *parent );
@@ -275,7 +279,6 @@ static void         setup_manual_rappro( ofaReconcilPage *self, GtkContainer *pa
 static void         setup_size_group( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_auto_rappro( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_action_buttons( ofaReconcilPage *self, GtkContainer *parent );
-static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
 static void         account_on_entry_changed( GtkEntry *entry, ofaReconcilPage *self );
 static gchar       *account_on_preselect( GtkEditable *editable, ofeAccountAllowed allowed, ofaReconcilPage *self );
 static void         account_clear_content( ofaReconcilPage *self );
@@ -350,7 +353,7 @@ static void         on_deleted_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
 static void         set_message( ofaReconcilPage *page, const gchar *msg );
 
-G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaReconcilPage, ofa_reconcil_page, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaReconcilPage )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
@@ -423,8 +426,9 @@ ofa_reconcil_page_class_init( ofaReconcilPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = reconciliation_dispose;
 	G_OBJECT_CLASS( klass )->finalize = reconciliation_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
 }
 
 /*
@@ -481,52 +485,70 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
 }
 
+static GtkWidget *
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaReconcilPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_RECONCIL_PAGE( page ), NULL );
+
+	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( page ));
+
+	return( GTK_WIDGET( priv->tview ));
+}
+
 /*
  * grid: the first row contains 'n' columns for selection and filters
  * the second row contains another grid which manages the treeview,
  * along with header and footer
  */
 static void
-v_setup_page( ofaPage *page )
+v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_v_setup_page";
+	static const gchar *thisfn = "ofa_reconcil_page_v_setup_view";
 	ofaReconcilPagePrivate *priv;
-	GtkWidget *widget, *page_widget;
-	GtkTreeSelection *select;
+	GtkWidget *view;
+	GtkTreeSelection *selection;
 
-	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+	g_debug( "%s: page=%p, paned=%p", thisfn, ( void * ) page, ( void * ) paned );
 
 	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( page ));
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
-	g_return_if_fail( widget && GTK_IS_PANED( widget ));
-	priv->top_paned = widget;
+	priv->paned = GTK_WIDGET( paned );
 
-	setup_treeview_header( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_treeview( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_treeview_footer( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
+	view = setup_view1( OFA_RECONCIL_PAGE( page ));
+	gtk_paned_pack1( paned, view, TRUE, FALSE );
 
-	setup_account_selection( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_entries_filter( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_date_filter( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_manual_rappro( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_size_group( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_auto_rappro( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
-	setup_action_buttons( OFA_RECONCIL_PAGE( page ), GTK_CONTAINER( page_widget ));
+	view = setup_view2( OFA_RECONCIL_PAGE( page ));
+	gtk_paned_pack2( paned, view, FALSE, FALSE );
 
-	connect_to_hub_signaling_system( OFA_RECONCIL_PAGE( page ));
+	/* enable the actions */
+	selection = gtk_tree_view_get_selection( priv->tview );
+	gtk_tree_selection_unselect_all( selection );
+	on_tview_selection_changed( selection, OFA_RECONCIL_PAGE( page ));
 
 	get_settings( OFA_RECONCIL_PAGE( page ));
 
-	select = gtk_tree_view_get_selection( priv->tview );
-	gtk_tree_selection_unselect_all( select );
-	on_tview_selection_changed( select, OFA_RECONCIL_PAGE( page ));
+	/* connect to dossier signaling system */
+	connect_to_hub_signaling_system( OFA_RECONCIL_PAGE( page ));
+}
 
-	gtk_container_add( GTK_CONTAINER( page ), page_widget );
+static GtkWidget *
+setup_view1( ofaReconcilPage *self )
+{
+	GtkWidget *box;
+
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_container_attach_from_resource( GTK_CONTAINER( box ), st_resource_ui, st_ui_name1, "top1" );
+
+	setup_treeview_header( self, GTK_CONTAINER( box ));
+	setup_treeview( self, GTK_CONTAINER( box ));
+	setup_treeview_footer( self, GTK_CONTAINER( box ));
+
+	return( box );
 }
 
 static void
@@ -832,6 +854,25 @@ setup_treeview_footer( ofaReconcilPage *self, GtkContainer *parent )
 	g_return_if_fail( priv->bal_credit_label && GTK_IS_LABEL( priv->bal_credit_label ));
 }
 
+static GtkWidget *
+setup_view2( ofaReconcilPage *self )
+{
+	GtkWidget *box;
+
+	box = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+	my_utils_container_attach_from_resource( GTK_CONTAINER( box ), st_resource_ui, st_ui_name2, "top2" );
+
+	setup_account_selection( self, GTK_CONTAINER( box ));
+	setup_entries_filter( self, GTK_CONTAINER( box ));
+	setup_date_filter( self, GTK_CONTAINER( box ));
+	setup_manual_rappro( self, GTK_CONTAINER( box ));
+	setup_size_group( self, GTK_CONTAINER( box ));
+	setup_auto_rappro( self, GTK_CONTAINER( box ));
+	setup_action_buttons( self, GTK_CONTAINER( box ));
+
+	return( box );
+}
+
 /*
  * account selection is an entry + a select button
  */
@@ -1047,18 +1088,6 @@ setup_action_buttons( ofaReconcilPage *self, GtkContainer *parent )
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	g_signal_connect( button, "clicked", G_CALLBACK( on_print_clicked ), self );
 	priv->print_btn = button;
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaReconcilPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_RECONCIL_PAGE( page ), NULL );
-
-	priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( page ));
-
-	return( GTK_WIDGET( priv->tview ));
 }
 
 /*
@@ -3695,7 +3724,7 @@ get_settings( ofaReconcilPage *self )
 		it = it ? it->next : NULL;
 		cstr = it ? it->data : NULL;
 		pos = cstr ? atoi( cstr ) : 0;
-		gtk_paned_set_position( GTK_PANED( priv->top_paned ), MAX( pos, 150 ));
+		gtk_paned_set_position( GTK_PANED( priv->paned ), MAX( pos, 150 ));
 
 		ofa_settings_free_string_list( slist );
 	}
@@ -3729,7 +3758,7 @@ set_settings( ofaReconcilPage *self )
 			date_sql = g_strdup( "" );
 		}
 
-		pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
+		pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
 
 		str = g_strdup_printf( "%s;%s;%s;%d;", account ? account : "", smode, date_sql, pos );
 
