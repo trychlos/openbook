@@ -125,7 +125,7 @@ v_setup_page( ofaPage *page )
 	/* setup the action buttons at row=0, column=1 */
 	do_setup_actions( OFA_ACTION_PAGE( page ));
 
-	/* initialize the view as and of setup */
+	/* initialize the view at end of setup */
 	do_init_view( OFA_ACTION_PAGE( page ));
 }
 

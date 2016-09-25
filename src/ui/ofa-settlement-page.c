@@ -198,7 +198,7 @@ static void           itreeview_display_iface_init( ofaITreeviewDisplayInterface
 static guint          itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar         *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean       itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static GtkWidget     *v_setup_view( ofaPage *page );
+static void           v_setup_page( ofaPage *page );
 static void           setup_footer( ofaSettlementPage *self, GtkContainer *parent );
 static void           setup_entries_treeview( ofaSettlementPage *self, GtkContainer *parent );
 static void           setup_account_selection( ofaSettlementPage *self, GtkContainer *parent );
@@ -307,7 +307,7 @@ ofa_settlement_page_class_init( ofaSettlementPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = settlement_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = settlement_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
 }
 
 /*
@@ -377,10 +377,10 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 	return( visible );
 }
 
-static GtkWidget *
-v_setup_view( ofaPage *page )
+static void
+v_setup_page( ofaPage *page )
 {
-	static const gchar *thisfn = "ofa_settlement_page_v_setup_view";
+	static const gchar *thisfn = "ofa_settlement_page_v_setup_page";
 	ofaSettlementPagePrivate *priv;
 	GtkWidget *page_widget, *widget;
 
@@ -389,11 +389,11 @@ v_setup_view( ofaPage *page )
 	priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( page ));
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, st_ui_name, "top" );
-	g_return_val_if_fail( widget && GTK_IS_PANED( widget ), NULL );
+	g_return_if_fail( widget && GTK_IS_PANED( widget ));
 	priv->top_paned = widget;
 
 	/* build first the targets of the data, and only after the triggers */
@@ -407,7 +407,7 @@ v_setup_view( ofaPage *page )
 	/* connect to dossier signaling system */
 	setup_signaling_connect( OFA_SETTLEMENT_PAGE( page ));
 
-	return( page_widget );
+	gtk_container_add( GTK_CONTAINER( page ), page_widget );
 }
 
 static void

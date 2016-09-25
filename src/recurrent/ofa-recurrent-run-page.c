@@ -65,7 +65,7 @@ typedef struct {
 
 	/* UI
 	 */
-	GtkWidget               *top_paned;
+	GtkWidget               *paned;
 	ofaRecurrentRunTreeview *tview;
 
 	GtkWidget               *cancelled_toggle;
@@ -90,12 +90,13 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-
 
 typedef void ( *RecurrentValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, guint *count );
 
-static GtkWidget *v_setup_view( ofaPage *page );
-static void       setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent );
+static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static GtkWidget *setup_view1( ofaRecurrentRunPage *self );
+static GtkWidget *setup_view2( ofaRecurrentRunPage *self );
 static void       setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void       setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
-static void       v_init_view( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       v_init_view( ofaPanedPage *page );
 static void       filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
@@ -109,7 +110,7 @@ static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecu
 static void       get_settings( ofaRecurrentRunPage *self );
 static void       set_settings( ofaRecurrentRunPage *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunPage, ofa_recurrent_run_page, OFA_TYPE_PAGE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunPage, ofa_recurrent_run_page, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaRecurrentRunPage ))
 
 static void
@@ -181,63 +182,78 @@ ofa_recurrent_run_page_class_init( ofaRecurrentRunPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = recurrent_run_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_run_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PAGE_CLASS( klass )->init_view = v_init_view;
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PANED_PAGE_CLASS( klass )->init_view = v_init_view;
 }
 
 static GtkWidget *
-v_setup_view( ofaPage *page )
+v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_RECURRENT_RUN_PAGE( page ), NULL );
+
+	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
+
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+}
+
+static void
+v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_page_v_setup_view";
 	ofaRecurrentRunPagePrivate *priv;
-	GtkWidget *page_widget, *widget;
+	GtkWidget *view;
 
-	g_debug( "%s: page=%p", thisfn, ( void * ) page );
+	g_debug( "%s: page=%p, paned=%p", thisfn, ( void * ) page, ( void * ) paned );
 
 	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	page_widget = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
-	gtk_widget_set_hexpand( page_widget, TRUE );
-	widget = my_utils_container_attach_from_resource( GTK_CONTAINER( page_widget ), st_resource_ui, "RecurrentRunPageWindow", "top" );
-	g_return_val_if_fail( widget && GTK_IS_PANED( widget ), NULL );
-	priv->top_paned = widget;
+	priv->paned = GTK_WIDGET( paned );
 
-	setup_treeview( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
-	setup_filters( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
-	setup_actions( OFA_RECURRENT_RUN_PAGE( page ), GTK_CONTAINER( priv->top_paned ));
+	view = setup_view1( OFA_RECURRENT_RUN_PAGE( page ));
+	gtk_paned_pack1( paned, view, TRUE, FALSE );
+
+	view = setup_view2( OFA_RECURRENT_RUN_PAGE( page ));
+	gtk_paned_pack2( paned, view, FALSE, FALSE );
 
 	get_settings( OFA_RECURRENT_RUN_PAGE( page ));
-
-	return( page_widget );
 }
 
-/*
- * initialize the treeview
- */
-static void
-setup_treeview( ofaRecurrentRunPage *self, GtkContainer *parent )
+static GtkWidget *
+setup_view1( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
-	GtkWidget *tview_parent;
 
-	priv = ofa_recurrent_run_page_get_instance_private( self );
-
-	tview_parent = my_utils_container_get_child_by_name( parent, "tview-parent" );
-	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
+	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( self ));
 
 	priv->tview = ofa_recurrent_run_treeview_new( priv->hub );
-	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_recurrent_run_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_run_treeview_setup_columns( priv->tview );
 
 	/* ofaRecurrentRunTreeview signals */
 	g_signal_connect( priv->tview, "ofa-recchanged", G_CALLBACK( on_row_selected ), self );
 
-	gtk_widget_show_all( GTK_WIDGET( parent ));
+	return( GTK_WIDGET( priv->tview ));
+}
+
+static GtkWidget *
+setup_view2( ofaRecurrentRunPage *self )
+{
+	GtkWidget *parent;
+
+	parent = gtk_grid_new();
+	my_utils_container_attach_from_resource( GTK_CONTAINER( parent ), st_resource_ui, "RecurrentRunPageWindow", "top" );
+
+	setup_filters( OFA_RECURRENT_RUN_PAGE( self ), GTK_CONTAINER( parent ));
+	setup_actions( OFA_RECURRENT_RUN_PAGE( self ), GTK_CONTAINER( parent ));
+
+	return( parent );
 }
 
 /*
@@ -313,7 +329,7 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 }
 
 static void
-v_init_view( ofaPage *page )
+v_init_view( ofaPanedPage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_page_v_init_view";
 	ofaRecurrentRunPagePrivate *priv;
@@ -344,18 +360,6 @@ v_init_view( ofaPage *page )
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
 	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
-}
-
-static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaRecurrentRunPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_RECURRENT_RUN_PAGE( page ), NULL );
-
-	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( page ));
-
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
 }
 
 static void
@@ -615,7 +619,7 @@ get_settings( ofaRecurrentRunPage *self )
 	if( pos <= 10 ){
 		pos = 150;
 	}
-	gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
+	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
@@ -653,7 +657,7 @@ set_settings( ofaRecurrentRunPage *self )
 
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
-	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
+	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
 
 	str = g_strdup_printf( "%d;%s;%s;%s;",
 			pos,
