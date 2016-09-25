@@ -31,7 +31,7 @@
  * @include: ui/ofa-guided-ex.h
  */
 
-#include "api/ofa-page-def.h"
+#include "api/ofa-paned-page.h"
 
 G_BEGIN_DECLS
 
@@ -44,13 +44,13 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	ofaPage      parent;
+	ofaPanedPage      parent;
 }
 	ofaGuidedEx;
 
 typedef struct {
 	/*< public members >*/
-	ofaPageClass parent;
+	ofaPanedPageClass parent;
 }
 	ofaGuidedExClass;
 
