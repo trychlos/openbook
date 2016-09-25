@@ -57,43 +57,10 @@ typedef struct {
 	 * This virtual function is called at the end of instance
 	 * construction (before instance initialization returns).
 	 *
-	 * The base class default implementation successively calls
-	 * #setup_view() and #setup_buttons_box() virtual methods,
-	 * attaching the two returned widgets respectively on columns 0
-	 * and 1 of the top grid of the page.
+	 * The derived class should implement this method in order to
+	 * display something in the view.
 	 */
 	void        ( *setup_page )              ( ofaPage *page );
-
-	/**
-	 * setup_view:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function is called by #setup_page() default
-	 * implementation of the base class virtual method. There is
-	 * no default implementation.
-	 */
-	GtkWidget * ( *setup_view )              ( ofaPage *page );
-
-	/**
-	 * setup_buttons:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function is called by #setup_page() default
-	 * implementation of the base class virtual method. There is
-	 * no default implementation.
-	 */
-	GtkWidget * ( *setup_buttons )           ( ofaPage *page );
-
-	/**
-	 * init_view:
-	 * @page: this #ofaPage object.
-	 *
-	 * This virtual function is called after the page has been set up.
-	 *
-	 * This is mostly useful when a first stage of derived class setup
-	 * the view, while a second stage will actually initialized it.
-	 */
-	void        ( *init_view )               ( ofaPage *page );
 
 	/**
 	 * get_top_focusable_widget:

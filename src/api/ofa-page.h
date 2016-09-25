@@ -33,66 +33,28 @@
  *
  * The main window is organized with an horizontal paned which
  * includes:
- * - a treeview on the left pane,
+ * - a treeview on the left pane, as a fast way to selection the page
+ *   to be displayed,
  * - a notebook on the right pane.
- * All datas of the application are displayed as pages of this right-
- * pane 'main' notebook. The top child of these pages is always a
- * #GtkGrid -derived classes. Most of them, though this is far from
- * being mandatory, have a similar display:
  *
- * +------------------------------------------------------------------+
- * | GtkGrid created by the main window,                              |
- * |  top child of the 'main' notebook's page for this theme          |
- * |+------------------------------------------------+---------------+|
- * || left=0, top=0                                  | left=1        ||
- * ||                                                |               ||
- * ||  the view for this theme                       |  buttons box  ||
- * ||                                                |               ||
- * |+------------------------------------------------+---------------+|
- * +------------------------------------------------------------------+
+ * Each and every tab of this 'main' notebook (the right pane above) is
+ * first a #GtkGrid. This #ofaPage class is thought to manage these
+ * tabs.
  *
- * Class               View description                          Buttons box
- * ------------------  ----------------------------------------  -----------
- * ofaAccountPage      an empty grid which is handled by the     book-handled
- *                     ofaAccountsBook class
+ * In other words, the application is built to display all its datas
+ * in #ofaPage -derived classes, which so are manageable through the
+ * 'main' notebook tabs.
  *
- * ofaBatPage          a tree view on a list store                   Yes
+ * The application manages three types of #ofaPage -derived classes:
  *
- * ofaClassPage        a tree view on a list store                   Yes
+ * a/ with a column of action buttons on the right side, managed
+ *    through a #ofaButtonsBox (e.g. the #ofaClassPage)
  *
- * ofaCurrencyPage     a tree view on a list store                   Yes
+ * b/ with a vertical #GtkPaned which let us display filters or
+ *    parameters on one or the other pane (e.g. the #ofaRenderPage's)
  *
- * ofaGuidedEx         a paned which embeds:                         No
- *                     - on the left, a tree view on a tree
- *                       store where operation templates are
- *                       stored 'under' the journal;
- *                     - on the right, the characteristics of
- *                       the current operation template
- *
- * ofaLedgerPage       a tree view on a list store                   Yes
- *
- * ofaOpeTemplatePage  a top frame, a grid with dynamic fields       Yes
- *
- * ofaRatePage         a tree view on a list store                   Yes
- *
- * ofaReconcilPage     several top frames, with a treeview on        No
- *                     a tree store
- *
- * ofaEntryPage        several top frames with a treeview on a       No
- *                     list store
- *
- * Dynamic of the build
- * ====================
- * ofaPage::constructed()
- *    do_setup_page()
- *       [ setup_page() ]
- *           ofaPage::v_setup_page()
- *             do_setup_view(), attaching it to left=0, top=0
- *                [ setup_view() ]
- *             do_setup_buttons(), attaching it to left=1, top=0
- *                [ setup_buttons() ]
- *    do_init_view()
- *       [ init_view() ]
+ * c/ without any customization at all, the entire page being directly
+ *    managed by the derived class (e.g. the #ofaEntryPage).
  */
 
 #include <gtk/gtk.h>
