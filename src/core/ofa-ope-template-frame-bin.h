@@ -86,25 +86,27 @@ typedef enum {
 }
 	ofeOpeTemplateAction;
 
-GType                   ofa_ope_template_frame_bin_get_type              ( void ) G_GNUC_CONST;
+GType                   ofa_ope_template_frame_bin_get_type          ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new                   ( void );
+ofaOpeTemplateFrameBin *ofa_ope_template_frame_bin_new               ( void );
 
-void                    ofa_ope_template_frame_bin_add_action            ( ofaOpeTemplateFrameBin *bin,
-																				ofeOpeTemplateAction id );
+void                    ofa_ope_template_frame_bin_add_action        ( ofaOpeTemplateFrameBin *bin,
+																			ofeOpeTemplateAction id );
 
-GtkWidget              *ofa_ope_template_frame_bin_get_current_page      ( ofaOpeTemplateFrameBin *bin );
+GtkWidget              *ofa_ope_template_frame_bin_get_current_page  ( ofaOpeTemplateFrameBin *bin );
 
-ofoOpeTemplate         *ofa_ope_template_frame_bin_get_selected          ( ofaOpeTemplateFrameBin *bin );
+GList                  *ofa_ope_template_frame_bin_get_pages_list    ( ofaOpeTemplateFrameBin *bin );
 
-void                    ofa_ope_template_frame_bin_set_selected          ( ofaOpeTemplateFrameBin *bin,
-																				const gchar *mnemo );
+ofoOpeTemplate         *ofa_ope_template_frame_bin_get_selected      ( ofaOpeTemplateFrameBin *bin );
 
-void                    ofa_ope_template_frame_bin_set_settings_key      ( ofaOpeTemplateFrameBin *bin,
-																				const gchar *key );
+void                    ofa_ope_template_frame_bin_set_selected      ( ofaOpeTemplateFrameBin *bin,
+																			const gchar *mnemo );
 
-void                    ofa_ope_template_frame_bin_set_getter            ( ofaOpeTemplateFrameBin *bin,
-																				ofaIGetter *getter );
+void                    ofa_ope_template_frame_bin_set_settings_key  ( ofaOpeTemplateFrameBin *bin,
+																			const gchar *key );
+
+void                    ofa_ope_template_frame_bin_set_getter        ( ofaOpeTemplateFrameBin *bin,
+																			ofaIGetter *getter );
 
 G_END_DECLS
 

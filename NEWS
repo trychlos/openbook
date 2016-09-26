@@ -61,6 +61,7 @@
    - PeriodClose: fix the 'archive accounts' user preference (todo #1205).
    - RecurrentModel: fix update on OpeTemplate mnemmonic modification (todo #1203).
    - TVBin: Fix sort on incomplete rows (todo #1199).
+   - AccountSelect, OpeTemplateSelect: fix columns visibility propagation (todo #1215).
 
  Other changes:
 

@@ -72,7 +72,7 @@ static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter
 static void     load_dataset( ofaTVAFormStore *self );
 static void     insert_row( ofaTVAFormStore *self, const ofoTVAForm *form );
 static void     set_row_by_iter( ofaTVAFormStore *self, const ofoTVAForm *form, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaTVAFormStore *self );
+static void     hub_connect_to_signaling_system( ofaTVAFormStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaTVAFormStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTVAFormStore *self );
 static gboolean find_form_by_mnemo( ofaTVAFormStore *self, const gchar *code, GtkTreeIter *iter );
@@ -237,7 +237,7 @@ ofa_tva_form_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		setup_signaling_connect( store );
+		hub_connect_to_signaling_system( store );
 		load_dataset( store );
 	}
 
@@ -333,7 +333,7 @@ set_row_by_iter( ofaTVAFormStore *self, const ofoTVAForm *form, GtkTreeIter *ite
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaTVAFormStore *self )
+hub_connect_to_signaling_system( ofaTVAFormStore *self )
 {
 	ofaTVAFormStorePrivate *priv;
 	gulong handler;

@@ -149,9 +149,6 @@ static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountFra
 static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *self );
 static void       hub_on_updated_class_label( ofaAccountFrameBin *self, ofoClass *class );
 static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self );static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
-static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
-static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self );
-
 static void       hub_on_deleted_class_label( ofaAccountFrameBin *self, ofoClass *class );
 static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountFrameBin *self );
 static void       iactionable_iface_init( ofaIActionableInterface *iface );
@@ -630,6 +627,36 @@ ofa_account_frame_bin_get_current_page( ofaAccountFrameBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->current_page );
+}
+
+/**
+ * ofa_account_frame_bin_get_pages_list:
+ * @bin: this #ofaAccountFrameBin instance.
+ *
+ * Returns the list of #ofaAccountTreeview pages.
+ *
+ * The returned list should be g_list_free() by the caller.
+ */
+GList *
+ofa_account_frame_bin_get_pages_list( ofaAccountFrameBin *bin )
+{
+	ofaAccountFrameBinPrivate *priv;
+	GList *list;
+	gint i, count;
+
+	g_return_val_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ), NULL );
+
+	priv = ofa_account_frame_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	list = NULL;
+	count = gtk_notebook_get_n_pages( GTK_NOTEBOOK( priv->notebook ));
+	for( i=0 ; i<count ; ++i ){
+		list = g_list_prepend( list, gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), i ));
+	}
+
+	return( list );
 }
 
 /**

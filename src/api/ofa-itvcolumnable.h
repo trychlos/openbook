@@ -144,6 +144,9 @@ void   ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
 
 void   ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance );
 
+void   ofa_itvcolumnable_propagate_visible_columns ( ofaITVColumnable *instance,
+															GList *pages_list );
+
 void   ofa_itvcolumnable_write_columns_settings    ( ofaITVColumnable *instance );
 
 G_END_DECLS

@@ -90,7 +90,7 @@ static sStore *get_store_data( ofaRecurrentTreeAdder *self, void *store, gboolea
 static void    on_store_finalized( ofaRecurrentTreeAdder *self, GObject *finalized_store );
 static void    free_store( sStore *sdata );
 static void    free_ids( sIDs *sids );
-static void    connect_to_hub_signaling_system( ofaRecurrentTreeAdder *self, ofaHub *hub );
+static void    hub_connect_to_signaling_system( ofaRecurrentTreeAdder *self, ofaHub *hub );
 static void    hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentTreeAdder *self );
 static void    hub_on_new_recurrent_model( ofaRecurrentTreeAdder *self, ofaHub *hub, ofoRecurrentModel *model );
 static void    ope_template_store_set_recurrent_model( ofaRecurrentTreeAdder *self, ofaHub *hub, ofoRecurrentModel *model, sStore *store_data );
@@ -227,7 +227,7 @@ itree_adder_set_values( ofaITreeAdder *instance, ofaIStore *store, ofaHub *hub, 
 
 	if( !priv->hub ){
 		priv->hub = hub;
-		connect_to_hub_signaling_system( OFA_RECURRENT_TREE_ADDER( instance ), hub );
+		hub_connect_to_signaling_system( OFA_RECURRENT_TREE_ADDER( instance ), hub );
 	}
 
 	store_data = get_store_data( OFA_RECURRENT_TREE_ADDER( instance ), store, TRUE );
@@ -381,7 +381,7 @@ free_ids( sIDs *sids )
  * Hub signaling system
  */
 static void
-connect_to_hub_signaling_system( ofaRecurrentTreeAdder *self, ofaHub *hub )
+hub_connect_to_signaling_system( ofaRecurrentTreeAdder *self, ofaHub *hub )
 {
 	g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );

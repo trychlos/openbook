@@ -86,7 +86,8 @@ static void       action_on_update_activated( GSimpleAction *action, GVariant *e
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaCurrencyPage *self );
 static gboolean   check_for_deletability( ofaCurrencyPage *self, ofoCurrency *class );
 static void       delete_with_confirm( ofaCurrencyPage *self, ofoCurrency *class );
-static void       on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
+static void       hub_connect_to_signaling_system( ofaCurrencyPage *self );
+static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyPage, ofa_currency_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaCurrencyPage ))
@@ -188,7 +189,6 @@ action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_currency_page_v_setup_view";
 	ofaCurrencyPagePrivate *priv;
-	gulong handler;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -204,8 +204,7 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	/* in case the last consumer of a currency disappears, then update
 	 * the actions sensitivities */
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), page );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+	hub_connect_to_signaling_system( OFA_CURRENCY_PAGE( page ));
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
@@ -430,6 +429,21 @@ delete_with_confirm( ofaCurrencyPage *self, ofoCurrency *currency )
 }
 
 /*
+ * connect to the dossier signaling system
+ */
+static void
+hub_connect_to_signaling_system( ofaCurrencyPage *self )
+{
+	ofaCurrencyPagePrivate *priv;
+	gulong handler;
+
+	priv = ofa_currency_page_get_instance_private( self );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+}
+
+/*
  * SIGNAL_HUB_UPDATED signal handler
  *
  * When a first object takes a reference on a currency, or when an
@@ -437,9 +451,9 @@ delete_with_confirm( ofaCurrencyPage *self, ofoCurrency *currency )
  * sensitivity should be reviewed.
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyPage *self )
 {
-	static const gchar *thisfn = "ofa_currency_page_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_currency_page_hub_on_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn, ( void * ) hub,

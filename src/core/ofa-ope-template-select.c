@@ -247,13 +247,19 @@ static gboolean
 iwindow_is_destroy_allowed( const myIWindow *instance )
 {
 	ofaOpeTemplateSelectPrivate *priv;
-	GtkWidget *page;
+	GtkWidget *current_page;
+	GList *pages_list;
 
 	priv = ofa_ope_template_select_get_instance_private( OFA_OPE_TEMPLATE_SELECT( instance ));
 
 	/* save the settings before hiding */
-	page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
-	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( page ));
+	current_page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
+	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( current_page ));
+
+	/* propagate the visible columns to other pages of the book */
+	pages_list = ofa_ope_template_frame_bin_get_pages_list( priv->template_bin );
+	ofa_itvcolumnable_propagate_visible_columns( OFA_ITVCOLUMNABLE( current_page ), pages_list );
+	g_list_free( pages_list );
 
 	return( FALSE );
 }

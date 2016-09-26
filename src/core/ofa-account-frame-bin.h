@@ -96,6 +96,8 @@ void                ofa_account_frame_bin_add_action        ( ofaAccountFrameBin
 
 GtkWidget          *ofa_account_frame_bin_get_current_page  ( ofaAccountFrameBin *bin );
 
+GList              *ofa_account_frame_bin_get_pages_list    ( ofaAccountFrameBin *bin );
+
 ofoAccount         *ofa_account_frame_bin_get_selected      ( ofaAccountFrameBin *bin );
 
 void                ofa_account_frame_bin_set_selected      ( ofaAccountFrameBin *bin,

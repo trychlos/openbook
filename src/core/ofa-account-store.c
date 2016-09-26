@@ -87,7 +87,7 @@ static void     realign_children( ofaAccountStore *store, const ofoAccount *acco
 static GList   *remove_rows_by_number( ofaAccountStore *store, const gchar *number );
 static GList   *remove_rows_rec( ofaAccountStore *store, GtkTreeIter *iter, GList *list );
 static gint     cmp_account_by_number( const ofoAccount *a, const ofoAccount *b );
-static void     hub_setup_signaling_system( ofaAccountStore *store );
+static void     hub_connect_to_signaling_system( ofaAccountStore *store );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
 static void     hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *store );
@@ -213,7 +213,7 @@ ofa_account_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_setup_signaling_system( store );
+		hub_connect_to_signaling_system( store );
 	}
 
 	return( g_object_ref( store ));
@@ -697,7 +697,7 @@ cmp_account_by_number( const ofoAccount *a, const ofoAccount *b )
  * connect to the hub signaling system
  */
 static void
-hub_setup_signaling_system( ofaAccountStore *store )
+hub_connect_to_signaling_system( ofaAccountStore *store )
 {
 	ofaAccountStorePrivate *priv;
 	gulong handler;

@@ -518,6 +518,36 @@ ofa_ope_template_frame_bin_get_current_page( ofaOpeTemplateFrameBin *bin )
 }
 
 /**
+ * ofa_ope_template_frame_bin_get_pages_list:
+ * @bin: this #ofaOpeTemplateFrameBin instance.
+ *
+ * Returns the list of #ofaOpeTemplateTreeview pages.
+ *
+ * The returned list should be g_list_free() by the caller.
+ */
+GList *
+ofa_ope_template_frame_bin_get_pages_list( ofaOpeTemplateFrameBin *bin )
+{
+	ofaOpeTemplateFrameBinPrivate *priv;
+	GList *list;
+	gint i, count;
+
+	g_return_val_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ), NULL );
+
+	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	list = NULL;
+	count = gtk_notebook_get_n_pages( GTK_NOTEBOOK( priv->notebook ));
+	for( i=0 ; i<count ; ++i ){
+		list = g_list_prepend( list, gtk_notebook_get_nth_page( GTK_NOTEBOOK( priv->notebook ), i ));
+	}
+
+	return( list );
+}
+
+/**
  * ofa_ope_template_frame_bin_get_selected:
  * @bin: this #ofaOpeTemplateFrameBin instance.
  *

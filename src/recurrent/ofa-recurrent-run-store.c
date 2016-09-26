@@ -74,7 +74,7 @@ static void                  do_insert_dataset( ofaRecurrentRunStore *self, cons
 static void                  insert_row( ofaRecurrentRunStore *self, const ofoRecurrentRun *run );
 static void                  set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTreeIter *iter );
 static gboolean              find_row_by_object( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIter *iter );
-static void                  setup_signaling_connect( ofaRecurrentRunStore *self );
+static void                  hub_connect_to_signaling_system( ofaRecurrentRunStore *self );
 static void                  hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunStore *self );
 static void                  hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentRunStore *self );
 static void                  hub_on_updated_recurrent_model_mnemo( ofaRecurrentRunStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
@@ -264,7 +264,7 @@ create_new_store( ofaHub *hub, gint mode )
 			GTK_TREE_SORTABLE( store ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	setup_signaling_connect( store );
+	hub_connect_to_signaling_system( store );
 
 	return( store );
 }
@@ -446,7 +446,7 @@ find_row_by_object( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIte
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaRecurrentRunStore *self )
+hub_connect_to_signaling_system( ofaRecurrentRunStore *self )
 {
 	ofaRecurrentRunStorePrivate *priv;
 	gulong handler;

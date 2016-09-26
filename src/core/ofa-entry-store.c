@@ -79,7 +79,7 @@ static void     set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, Gt
 static void     set_row_concil( ofaEntryStore *store, ofoConcil *concil, GtkTreeIter *iter );
 static gboolean find_row_by_number( ofaEntryStore *store, ofxCounter number, GtkTreeIter *iter );
 static void     do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted );
-static void     hub_setup_signaling_system( ofaEntryStore *store );
+static void     hub_connect_to_signaling_system( ofaEntryStore *store );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *store );
 static void     hub_do_update_account_number( ofaEntryStore *store, const gchar *prev, const gchar *number );
@@ -190,7 +190,7 @@ ofa_entry_store_new( ofaHub *hub )
 			GTK_TREE_SORTABLE( store ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	hub_setup_signaling_system( store );
+	hub_connect_to_signaling_system( store );
 
 	return( store );
 }
@@ -448,7 +448,7 @@ do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted )
  * connect to the hub signaling system
  */
 static void
-hub_setup_signaling_system( ofaEntryStore *store )
+hub_connect_to_signaling_system( ofaEntryStore *store )
 {
 	ofaEntryStorePrivate *priv;
 	gulong handler;

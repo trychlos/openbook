@@ -459,11 +459,6 @@
 
 1214 2016- 9-25 fix SQL searcheds with %...%
 
-1215 2016- 9-25 AccountSelect: does not save/restore the columns 
-
-1217 2016- 9-26 normalize setup_signaling_connect() function name
-                + callback functions
-
 1219
 
 -----------------------------------------------------------------------
@@ -1726,9 +1721,18 @@
                 opened RecurrentNew dialog
      2016- 9-24 done
 
+1215 2016- 9-25 AccountSelect: does not save/restore the columns 
+     2016- 9-26 it actually does, but does not propagate the current view
+                to each other pages when hiding
+     2016- 9-26 fixed
+
 1216 2016- 9-26 Stores: remove hub from insert_row()/set_row() args
                 + set_row -> set_row_by_iter
      2016- 9-26
+
+1217 2016- 9-26 normalize setup_signaling_connect() function name
+                + callback functions
+     2016- 9-26 done
 
 1218 2016- 9-26 virtual functions: <base_class>_v_<method_name>
      2016- 9-26 done

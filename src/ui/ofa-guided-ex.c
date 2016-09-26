@@ -116,7 +116,7 @@ static GtkWidget *setup_view2( ofaGuidedEx *self );
 static void       right_on_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self );
 static void       right_on_ok( GtkButton *button, ofaGuidedEx *self );
 static void       right_on_cancel( GtkButton *button, ofaGuidedEx *self );
-static void       connect_to_hub_signaling_system( ofaGuidedEx *self );
+static void       hub_connect_to_signaling_system( ofaGuidedEx *self );
 static void       hub_on_new_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self );
 static void       hub_on_updated_object( ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
 static void       hub_on_deleted_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self );
@@ -234,7 +234,7 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	view = setup_view2( OFA_GUIDED_EX( page ));
 	gtk_paned_pack2( paned, view, TRUE, FALSE );
 
-	connect_to_hub_signaling_system( OFA_GUIDED_EX( page ));
+	hub_connect_to_signaling_system( OFA_GUIDED_EX( page ));
 
 	left_init_view( OFA_GUIDED_EX( page ));
 }
@@ -967,7 +967,7 @@ right_on_cancel( GtkButton *button, ofaGuidedEx *self )
 }
 
 static void
-connect_to_hub_signaling_system( ofaGuidedEx *self )
+hub_connect_to_signaling_system( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
 	gulong handler;
