@@ -70,11 +70,11 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentModelStore *self );
-static void     load_dataset( ofaRecurrentModelStore *self, ofaHub *hub );
-static void     insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model );
-static void     set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model, GtkTreeIter *iter );
+static void     load_dataset( ofaRecurrentModelStore *self );
+static void     insert_row( ofaRecurrentModelStore *self, const ofoRecurrentModel *model );
+static void     set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter );
 static gboolean model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaRecurrentModelStore *self, ofaHub *hub );
+static void     setup_signaling_connect( ofaRecurrentModelStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self );
 static void     hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
@@ -214,6 +214,7 @@ ofaRecurrentModelStore *
 ofa_recurrent_model_store_new( ofaHub *hub )
 {
 	ofaRecurrentModelStore *store;
+	ofaRecurrentModelStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -227,6 +228,9 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_RECURRENT_MODEL_STORE, NULL );
 
+		priv = ofa_recurrent_model_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[REC_MODEL_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), REC_N_COLUMNS, st_col_types );
@@ -238,8 +242,8 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		load_dataset( store, hub );
-		setup_signaling_connect( store, hub );
+		load_dataset( store );
+		setup_signaling_connect( store );
 	}
 
 	return( store );
@@ -266,32 +270,35 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurren
 }
 
 static void
-load_dataset( ofaRecurrentModelStore *self, ofaHub *hub )
+load_dataset( ofaRecurrentModelStore *self )
 {
+	ofaRecurrentModelStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoRecurrentModel *model;
 
-	dataset = ofo_recurrent_model_get_dataset( hub );
+	priv = ofa_recurrent_model_store_get_instance_private( self );
+
+	dataset = ofo_recurrent_model_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		model = OFO_RECURRENT_MODEL( it->data );
-		insert_row( self, hub, model );
+		insert_row( self, model );
 	}
 }
 
 static void
-insert_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model )
+insert_row( ofaRecurrentModelStore *self, const ofoRecurrentModel *model )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
-	set_row( self, hub, model, &iter );
+	set_row_by_iter( self, model, &iter );
 
 	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
-set_row( ofaRecurrentModelStore *self, ofaHub *hub, const ofoRecurrentModel *model, GtkTreeIter *iter )
+set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_store_set_row";
 	gchar *stamp;
@@ -365,25 +372,23 @@ model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIte
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaRecurrentModelStore *self, ofaHub *hub )
+setup_signaling_connect( ofaRecurrentModelStore *self )
 {
 	ofaRecurrentModelStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_recurrent_model_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -402,7 +407,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self )
 			( void * ) self );
 
 	if( OFO_IS_RECURRENT_MODEL( object )){
-		insert_row( self, hub, OFO_RECURRENT_MODEL( object ));
+		insert_row( self, OFO_RECURRENT_MODEL( object ));
 	}
 }
 
@@ -427,7 +432,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 		new_code = ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object ));
 		code = prev_id ? prev_id : new_code;
 		if( model_find_by_mnemo( self, code, &iter )){
-			set_row( self, hub, OFO_RECURRENT_MODEL( object ), &iter);
+			set_row_by_iter( self, OFO_RECURRENT_MODEL( object ), &iter);
 		}
 
 	} else if( OFO_IS_OPE_TEMPLATE( object )){
@@ -511,6 +516,6 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentModelStore *self )
 
 	if( type == OFO_TYPE_RECURRENT_MODEL ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		load_dataset( self, hub );
+		load_dataset( self );
 	}
 }

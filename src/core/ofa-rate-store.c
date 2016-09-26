@@ -55,10 +55,10 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRateStore *self );
-static void     load_dataset( ofaRateStore *self, ofaHub *hub );
-static void     insert_row( ofaRateStore *self, ofaHub *hub, const ofoRate *rate );
-static void     set_row( ofaRateStore *self, ofaHub *hub, const ofoRate *rate, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaRateStore *self, ofaHub *hub );
+static void     load_dataset( ofaRateStore *self );
+static void     insert_row( ofaRateStore *self, const ofoRate *rate );
+static void     set_row_by_iter( ofaRateStore *self, const ofoRate *rate, GtkTreeIter *iter );
+static void     setup_signaling_connect( ofaRateStore *self );
 static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaRateStore *self );
 static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRateStore *self );
 static gboolean find_rate_by_mnemo( ofaRateStore *self, const gchar *code, GtkTreeIter *iter );
@@ -154,6 +154,7 @@ ofaRateStore *
 ofa_rate_store_new( ofaHub *hub )
 {
 	ofaRateStore *store;
+	ofaRateStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -167,6 +168,9 @@ ofa_rate_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_RATE_STORE, NULL );
 
+		priv = ofa_rate_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[RATE_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), RATE_N_COLUMNS, st_col_types );
@@ -178,8 +182,8 @@ ofa_rate_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		load_dataset( store, hub );
-		setup_signaling_connect( store, hub );
+		load_dataset( store );
+		setup_signaling_connect( store );
 	}
 
 	return( g_object_ref( store ));
@@ -206,30 +210,33 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRateStor
 }
 
 static void
-load_dataset( ofaRateStore *self, ofaHub *hub )
+load_dataset( ofaRateStore *self )
 {
+	ofaRateStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoRate *rate;
 
-	dataset = ofo_rate_get_dataset( hub );
+	priv = ofa_rate_store_get_instance_private( self );
+
+	dataset = ofo_rate_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		rate = OFO_RATE( it->data );
-		insert_row( self, hub, rate );
+		insert_row( self, rate );
 	}
 }
 
 static void
-insert_row( ofaRateStore *self, ofaHub *hub, const ofoRate *rate )
+insert_row( ofaRateStore *self, const ofoRate *rate )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
-	set_row( self, hub, rate, &iter );
+	set_row_by_iter( self, rate, &iter );
 }
 
 static void
-set_row( ofaRateStore *self, ofaHub *hub, const ofoRate *rate, GtkTreeIter *iter )
+set_row_by_iter( ofaRateStore *self, const ofoRate *rate, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_rate_store_set_row";
 	gchar *stamp;
@@ -267,25 +274,23 @@ set_row( ofaRateStore *self, ofaHub *hub, const ofoRate *rate, GtkTreeIter *iter
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaRateStore *self, ofaHub *hub )
+setup_signaling_connect( ofaRateStore *self )
 {
 	ofaRateStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_rate_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -304,7 +309,7 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaRateStore *self )
 			( void * ) self );
 
 	if( OFO_IS_RATE( object )){
-		insert_row( self, hub, OFO_RATE( object ));
+		insert_row( self, OFO_RATE( object ));
 	}
 }
 
@@ -329,7 +334,7 @@ on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRa
 		new_mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
 		mnemo = prev_id ? prev_id : new_mnemo;
 		if( find_rate_by_mnemo( self, mnemo, &iter )){
-			set_row( self, hub, OFO_RATE( object ), &iter);
+			set_row_by_iter( self, OFO_RATE( object ), &iter);
 		}
 	}
 }
@@ -394,6 +399,6 @@ on_hub_reload_dataset( ofaHub *hub, GType type, ofaRateStore *self )
 
 	if( type == OFO_TYPE_RATE ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		load_dataset( self, hub );
+		load_dataset( self );
 	}
 }

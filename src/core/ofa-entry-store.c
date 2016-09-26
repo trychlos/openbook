@@ -74,14 +74,13 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *store );
-static void     insert_row( ofaEntryStore *store, ofaHub *hub, const ofoEntry *entry );
-static void     set_row( ofaEntryStore *store, ofaHub *hub, const ofoEntry *entry, GtkTreeIter *iter );
+static void     insert_row( ofaEntryStore *store, const ofoEntry *entry );
+static void     set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter );
 static void     set_row_concil( ofaEntryStore *store, ofoConcil *concil, GtkTreeIter *iter );
 static gboolean find_row_by_number( ofaEntryStore *store, ofxCounter number, GtkTreeIter *iter );
 static void     do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted );
-static void     hub_setup_signaling_system( ofaEntryStore *store, ofaHub *hub );
+static void     hub_setup_signaling_system( ofaEntryStore *store );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store );
-static void     hub_on_new_entry( ofaEntryStore *store, ofoEntry *entry );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *store );
 static void     hub_do_update_account_number( ofaEntryStore *store, const gchar *prev, const gchar *number );
 static void     hub_do_update_currency_code( ofaEntryStore *store, const gchar *prev, const gchar *code );
@@ -172,10 +171,14 @@ ofaEntryStore *
 ofa_entry_store_new( ofaHub *hub )
 {
 	ofaEntryStore *store;
+	ofaEntryStorePrivate *priv;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	store = g_object_new( OFA_TYPE_ENTRY_STORE, NULL );
+
+	priv = ofa_entry_store_get_instance_private( store );
+	priv->hub = hub;
 
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
@@ -187,7 +190,7 @@ ofa_entry_store_new( ofaHub *hub )
 			GTK_TREE_SORTABLE( store ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	hub_setup_signaling_system( store, hub );
+	hub_setup_signaling_system( store );
 
 	return( store );
 }
@@ -227,7 +230,7 @@ ofa_entry_store_load( ofaEntryStore *store, const gchar *account, const gchar *l
 	ofxCounter count;
 	ofoEntry *entry;
 
-g_return_val_if_fail( store && OFA_IS_ENTRY_STORE( store ), 0 );
+	g_return_val_if_fail( store && OFA_IS_ENTRY_STORE( store ), 0 );
 
 	priv = ofa_entry_store_get_instance_private( store );
 
@@ -239,7 +242,7 @@ g_return_val_if_fail( store && OFA_IS_ENTRY_STORE( store ), 0 );
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		insert_row( store, priv->hub, entry );
+		insert_row( store, entry );
 	}
 
 	count = g_list_length( dataset );
@@ -249,7 +252,7 @@ g_return_val_if_fail( store && OFA_IS_ENTRY_STORE( store ), 0 );
 }
 
 static void
-insert_row( ofaEntryStore *store, ofaHub *hub, const ofoEntry *entry )
+insert_row( ofaEntryStore *store, const ofoEntry *entry )
 {
 	GtkTreeIter iter;
 
@@ -261,11 +264,11 @@ insert_row( ofaEntryStore *store, ofaHub *hub, const ofoEntry *entry )
 			ENTRY_COL_OBJECT,       entry ,
 			-1 );
 
-	set_row( store, hub, entry, &iter );
+	set_row_by_iter( store, entry, &iter );
 }
 
 static void
-set_row( ofaEntryStore *store, ofaHub *hub, const ofoEntry *entry, GtkTreeIter *iter )
+set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter )
 {
 	ofaEntryStorePrivate *priv;
 	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp;
@@ -445,22 +448,20 @@ do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted )
  * connect to the hub signaling system
  */
 static void
-hub_setup_signaling_system( ofaEntryStore *store, ofaHub *hub )
+hub_setup_signaling_system( ofaEntryStore *store )
 {
 	ofaEntryStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_entry_store_get_instance_private( store );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -479,23 +480,8 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store )
 			( void * ) store );
 
 	if( OFO_IS_ENTRY( object )){
-		hub_on_new_entry( store, OFO_ENTRY( object ));
+		insert_row( store, OFO_ENTRY( object ));
 	}
-}
-
-/*
- * A new entry has been created
- * update our dataset if the entry in all case (the filter model will
- * eventually take care of displaying it or not)
- */
-static void
-hub_on_new_entry( ofaEntryStore *store, ofoEntry *entry )
-{
-	ofaEntryStorePrivate *priv;
-
-	priv = ofa_entry_store_get_instance_private( store );
-
-	insert_row( store, priv->hub, entry );
 }
 
 /*
@@ -635,13 +621,10 @@ hub_on_updated_concil( ofaEntryStore *store, ofoConcil *concil )
 static void
 hub_on_updated_entry( ofaEntryStore *store, ofoEntry *entry )
 {
-	ofaEntryStorePrivate *priv;
 	GtkTreeIter iter;
 
-	priv = ofa_entry_store_get_instance_private( store );
-
 	if( find_row_by_number( store, ofo_entry_get_number( entry ), &iter )){
-		set_row( store, priv->hub, entry, &iter );
+		set_row_by_iter( store, entry, &iter );
 	}
 }
 

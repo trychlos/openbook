@@ -68,13 +68,13 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static ofaRecurrentRunStore *create_new_store( ofaHub *hub, gint mode );
-static void                  load_dataset( ofaRecurrentRunStore *self, ofaHub *hub );
+static void                  load_dataset( ofaRecurrentRunStore *self );
 static gint                  on_sort_run( GtkTreeModel *trun, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunStore *self );
-static void                  do_insert_dataset( ofaRecurrentRunStore *self, ofaHub *hub, const GList *dataset );
-static void                  insert_row( ofaRecurrentRunStore *self, ofaHub *hub, const ofoRecurrentRun *run );
-static void                  set_row( ofaRecurrentRunStore *self, ofaHub *hub, const ofoRecurrentRun *run, GtkTreeIter *iter );
+static void                  do_insert_dataset( ofaRecurrentRunStore *self, const GList *dataset );
+static void                  insert_row( ofaRecurrentRunStore *self, const ofoRecurrentRun *run );
+static void                  set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTreeIter *iter );
 static gboolean              find_row_by_object( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIter *iter );
-static void                  setup_signaling_connect( ofaRecurrentRunStore *self, ofaHub *hub );
+static void                  setup_signaling_connect( ofaRecurrentRunStore *self );
 static void                  hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunStore *self );
 static void                  hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentRunStore *self );
 static void                  hub_on_updated_recurrent_model_mnemo( ofaRecurrentRunStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
@@ -233,7 +233,7 @@ ofa_recurrent_run_store_new( ofaHub *hub, gint mode )
 		} else {
 			store = create_new_store( hub, mode );
 			my_icollector_single_set_object( collector, store );
-			load_dataset( store, hub );
+			load_dataset( store );
 		}
 
 	} else {
@@ -251,6 +251,10 @@ create_new_store( ofaHub *hub, gint mode )
 
 	store = g_object_new( OFA_TYPE_RECURRENT_RUN_STORE, NULL );
 
+	priv = ofa_recurrent_run_store_get_instance_private( store );
+	priv->hub = hub;
+	priv->mode = mode;
+
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), REC_N_COLUMNS, st_col_types );
 
@@ -260,22 +264,21 @@ create_new_store( ofaHub *hub, gint mode )
 			GTK_TREE_SORTABLE( store ),
 			GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-	setup_signaling_connect( store, hub );
-
-	priv = ofa_recurrent_run_store_get_instance_private( store );
-
-	priv->mode = mode;
+	setup_signaling_connect( store );
 
 	return( store );
 }
 
 static void
-load_dataset( ofaRecurrentRunStore *self, ofaHub *hub )
+load_dataset( ofaRecurrentRunStore *self )
 {
+	ofaRecurrentRunStorePrivate *priv;
 	GList *dataset;
 
-	dataset = ofo_recurrent_run_get_dataset( hub );
-	do_insert_dataset( self, hub, dataset );
+	priv = ofa_recurrent_run_store_get_instance_private( self );
+
+	dataset = ofo_recurrent_run_get_dataset( priv->hub );
+	do_insert_dataset( self, dataset );
 }
 
 /*
@@ -317,34 +320,34 @@ ofa_recurrent_run_store_set_from_list( ofaRecurrentRunStore *store, GList *datas
 	g_return_if_fail( !priv->dispose_has_run );
 	g_return_if_fail( priv->mode == REC_MODE_FROM_LIST );
 
-	do_insert_dataset( store, priv->hub, dataset );
+	do_insert_dataset( store, dataset );
 }
 
 static void
-do_insert_dataset( ofaRecurrentRunStore *self, ofaHub *hub, const GList *dataset )
+do_insert_dataset( ofaRecurrentRunStore *self, const GList *dataset )
 {
 	const GList *it;
 	ofoRecurrentRun *run;
 
 	for( it=dataset ; it ; it=it->next ){
 		run = OFO_RECURRENT_RUN( it->data );
-		insert_row( self, hub, run );
+		insert_row( self, run );
 	}
 }
 
 static void
-insert_row( ofaRecurrentRunStore *self, ofaHub *hub, const ofoRecurrentRun *run )
+insert_row( ofaRecurrentRunStore *self, const ofoRecurrentRun *run )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
-	set_row( self, hub, run, &iter );
+	set_row_by_iter( self, run, &iter );
 
 	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
-set_row( ofaRecurrentRunStore *self, ofaHub *hub, const ofoRecurrentRun *run, GtkTreeIter *iter )
+set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTreeIter *iter )
 {
 	ofaRecurrentRunStorePrivate *priv;
 	ofoRecurrentModel *model;
@@ -443,25 +446,23 @@ find_row_by_object( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIte
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaRecurrentRunStore *self, ofaHub *hub )
+setup_signaling_connect( ofaRecurrentRunStore *self )
 {
 	ofaRecurrentRunStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_recurrent_run_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -483,7 +484,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentRunStore *self )
 	priv = ofa_recurrent_run_store_get_instance_private( self );
 
 	if( OFO_IS_RECURRENT_RUN( object ) && priv->mode == REC_MODE_FROM_DBMS ){
-		insert_row( self, hub, OFO_RECURRENT_RUN( object ));
+		insert_row( self, OFO_RECURRENT_RUN( object ));
 	}
 }
 
@@ -511,7 +512,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 		}
 	} else if( OFO_IS_RECURRENT_RUN( object )){
 		if( find_row_by_object( self, OFO_RECURRENT_RUN( object ), &iter )){
-			set_row( self, hub, OFO_RECURRENT_RUN( object ), &iter );
+			set_row_by_iter( self, OFO_RECURRENT_RUN( object ), &iter );
 		}
 	}
 }
@@ -585,6 +586,6 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaRecurrentRunStore *self )
 
 	if( type == OFO_TYPE_RECURRENT_RUN && priv->mode == REC_MODE_FROM_DBMS ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		load_dataset( self, hub );
+		load_dataset( self );
 	}
 }

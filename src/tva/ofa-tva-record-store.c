@@ -73,10 +73,10 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecordStore *self );
-static void     load_dataset( ofaTVARecordStore *self, ofaHub *hub );
-static void     insert_row( ofaTVARecordStore *self, ofaHub *hub, const ofoTVARecord *record );
-static void     set_row( ofaTVARecordStore *self, ofaHub *hub, const ofoTVARecord *record, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaTVARecordStore *self, ofaHub *hub );
+static void     load_dataset( ofaTVARecordStore *self );
+static void     insert_row( ofaTVARecordStore *self, const ofoTVARecord *record );
+static void     set_row( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIter *iter );
+static void     setup_signaling_connect( ofaTVARecordStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *self );
 static gboolean find_record_by_key( ofaTVARecordStore *self, const gchar *mnemo, const GDate *end, GtkTreeIter *iter );
@@ -213,6 +213,7 @@ ofaTVARecordStore *
 ofa_tva_record_store_new( ofaHub *hub )
 {
 	ofaTVARecordStore *store;
+	ofaTVARecordStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -226,6 +227,9 @@ ofa_tva_record_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_TVA_RECORD_STORE, NULL );
 
+		priv = ofa_tva_record_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[TVA_RECORD_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), TVA_RECORD_N_COLUMNS, st_col_types );
@@ -237,8 +241,8 @@ ofa_tva_record_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		setup_signaling_connect( store, hub );
-		load_dataset( store, hub );
+		setup_signaling_connect( store );
+		load_dataset( store );
 	}
 
 	return( store );
@@ -275,33 +279,37 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecor
 }
 
 static void
-load_dataset( ofaTVARecordStore *self, ofaHub *hub )
+load_dataset( ofaTVARecordStore *self )
 {
+	ofaTVARecordStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoTVARecord *record;
 
-	dataset = ofo_tva_record_get_dataset( hub );
+	priv = ofa_tva_record_store_get_instance_private( self );
+
+	dataset = ofo_tva_record_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		record = OFO_TVA_RECORD( it->data );
-		insert_row( self, hub, record );
+		insert_row( self, record );
 	}
 }
 
 static void
-insert_row( ofaTVARecordStore *self, ofaHub *hub, const ofoTVARecord *record )
+insert_row( ofaTVARecordStore *self, const ofoTVARecord *record )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
-	set_row( self, hub, record, &iter );
+	set_row( self, record, &iter );
 	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
-set_row( ofaTVARecordStore *self, ofaHub *hub, const ofoTVARecord *record, GtkTreeIter *iter )
+set_row( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_tva_record_store_set_row";
+	ofaTVARecordStorePrivate *priv;
 	const gchar *cvalidated;
 	gchar *sbegin, *send, *sdope, *stamp;
 	const gchar *notes;
@@ -309,7 +317,9 @@ set_row( ofaTVARecordStore *self, ofaHub *hub, const ofoTVARecord *record, GtkTr
 	GError *error;
 	GdkPixbuf *notes_png;
 
-	form = ofo_tva_form_get_by_mnemo( hub, ofo_tva_record_get_mnemo( record ));
+	priv = ofa_tva_record_store_get_instance_private( self );
+
+	form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( record ));
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
 	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_display());
@@ -355,25 +365,23 @@ set_row( ofaTVARecordStore *self, ofaHub *hub, const ofoTVARecord *record, GtkTr
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaTVARecordStore *self, ofaHub *hub )
+setup_signaling_connect( ofaTVARecordStore *self )
 {
 	ofaTVARecordStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_tva_record_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -392,7 +400,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *self )
 			( void * ) self );
 
 	if( OFO_IS_TVA_RECORD( object )){
-		insert_row( self, hub, OFO_TVA_RECORD( object ));
+		insert_row( self, OFO_TVA_RECORD( object ));
 	}
 }
 
@@ -418,7 +426,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTV
 		mnemo = ofo_tva_record_get_mnemo( OFO_TVA_RECORD( object ));
 		dend = ofo_tva_record_get_end( OFO_TVA_RECORD( object ));
 		if( find_record_by_key( self, mnemo, dend, &iter )){
-			set_row( self, hub, OFO_TVA_RECORD( object ), &iter);
+			set_row( self, OFO_TVA_RECORD( object ), &iter);
 		}
 	}
 }
@@ -509,6 +517,6 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaTVARecordStore *self )
 
 	if( type == OFO_TYPE_TVA_RECORD ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		load_dataset( self, hub );
+		load_dataset( self );
 	}
 }

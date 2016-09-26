@@ -69,10 +69,10 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVAFormStore *self );
-static void     load_dataset( ofaTVAFormStore *self, ofaHub *hub );
-static void     insert_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form );
-static void     set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaTVAFormStore *self, ofaHub *hub );
+static void     load_dataset( ofaTVAFormStore *self );
+static void     insert_row( ofaTVAFormStore *self, const ofoTVAForm *form );
+static void     set_row_by_iter( ofaTVAFormStore *self, const ofoTVAForm *form, GtkTreeIter *iter );
+static void     setup_signaling_connect( ofaTVAFormStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaTVAFormStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTVAFormStore *self );
 static gboolean find_form_by_mnemo( ofaTVAFormStore *self, const gchar *code, GtkTreeIter *iter );
@@ -209,6 +209,7 @@ ofaTVAFormStore *
 ofa_tva_form_store_new( ofaHub *hub )
 {
 	ofaTVAFormStore *store;
+	ofaTVAFormStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -222,6 +223,9 @@ ofa_tva_form_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_TVA_FORM_STORE, NULL );
 
+		priv = ofa_tva_form_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[TVA_FORM_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), TVA_N_COLUMNS, st_col_types );
@@ -233,8 +237,8 @@ ofa_tva_form_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		setup_signaling_connect( store, hub );
-		load_dataset( store, hub );
+		setup_signaling_connect( store );
+		load_dataset( store );
 	}
 
 	return( store );
@@ -261,31 +265,34 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVAFormS
 }
 
 static void
-load_dataset( ofaTVAFormStore *self, ofaHub *hub )
+load_dataset( ofaTVAFormStore *self )
 {
+	ofaTVAFormStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoTVAForm *form;
 
-	dataset = ofo_tva_form_get_dataset( hub );
+	priv = ofa_tva_form_store_get_instance_private( self );
+
+	dataset = ofo_tva_form_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		form = OFO_TVA_FORM( it->data );
-		insert_row( self, hub, form );
+		insert_row( self, form );
 	}
 }
 
 static void
-insert_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form )
+insert_row( ofaTVAFormStore *self, const ofoTVAForm *form )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
-	set_row( self, hub, form, &iter );
+	set_row_by_iter( self, form, &iter );
 	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
-set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter *iter )
+set_row_by_iter( ofaTVAFormStore *self, const ofoTVAForm *form, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_tva_form_store_set_row";
 	gchar *stamp;
@@ -326,25 +333,23 @@ set_row( ofaTVAFormStore *self, ofaHub *hub, const ofoTVAForm *form, GtkTreeIter
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaTVAFormStore *self, ofaHub *hub )
+setup_signaling_connect( ofaTVAFormStore *self )
 {
 	ofaTVAFormStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_tva_form_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -363,7 +368,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaTVAFormStore *self )
 			( void * ) self );
 
 	if( OFO_IS_TVA_FORM( object )){
-		insert_row( self, hub, OFO_TVA_FORM( object ));
+		insert_row( self, OFO_TVA_FORM( object ));
 	}
 }
 
@@ -388,7 +393,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTV
 		new_id = ofo_tva_form_get_mnemo( OFO_TVA_FORM( object ));
 		code = prev_id ? prev_id : new_id;
 		if( find_form_by_mnemo( self, code, &iter )){
-			set_row( self, hub, OFO_TVA_FORM( object ), &iter);
+			set_row_by_iter( self, OFO_TVA_FORM( object ), &iter);
 		}
 
 	} else if( OFO_IS_OPE_TEMPLATE( object )){
@@ -479,6 +484,6 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaTVAFormStore *self )
 
 	if( type == OFO_TYPE_TVA_FORM ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		load_dataset( self, hub );
+		load_dataset( self );
 	}
 }

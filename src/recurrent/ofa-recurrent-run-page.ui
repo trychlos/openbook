@@ -11,7 +11,7 @@
         <property name="row_spacing">2</property>
         <property name="column_spacing">4</property>
         <child>
-          <object class="GtkFrame" id="frame3">
+          <object class="GtkFrame" id="frame1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <property name="hexpand">True</property>
@@ -86,50 +86,69 @@
           </packing>
         </child>
         <child>
-          <object class="GtkGrid" id="grid4">
+          <object class="GtkFrame" id="frame2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">2</property>
-            <property name="column_spacing">2</property>
-            <property name="column_homogeneous">True</property>
+            <property name="label_xalign">0</property>
+            <property name="shadow_type">in</property>
             <child>
-              <object class="GtkButton" id="p2-cancel-btn">
-                <property name="label" translatable="yes">_Cancel</property>
+              <object class="GtkGrid" id="grid4">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_underline">True</property>
+                <property name="can_focus">False</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">8</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
+                <property name="row_spacing">2</property>
+                <property name="column_spacing">8</property>
+                <property name="column_homogeneous">True</property>
+                <child>
+                  <object class="GtkButton" id="p2-cancel-btn">
+                    <property name="label" translatable="yes">_Cancel</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_underline">True</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">0</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="p2-wait-btn">
+                    <property name="label" translatable="yes">_Wait</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_underline">True</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkButton" id="p2-validate-btn">
+                    <property name="label" translatable="yes">_Validate</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="use_underline">True</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">2</property>
+                    <property name="top_attach">0</property>
+                  </packing>
+                </child>
               </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">0</property>
-              </packing>
             </child>
-            <child>
-              <object class="GtkButton" id="p2-wait-btn">
-                <property name="label" translatable="yes">_Wait</property>
+            <child type="label">
+              <object class="GtkLabel">
                 <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_underline">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes"> Actions </property>
               </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">0</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="p2-validate-btn">
-                <property name="label" translatable="yes">_Validate</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_underline">True</property>
-              </object>
-              <packing>
-                <property name="left_attach">2</property>
-                <property name="top_attach">0</property>
-              </packing>
             </child>
           </object>
           <packing>
