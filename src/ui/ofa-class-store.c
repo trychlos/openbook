@@ -61,11 +61,11 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassStore *self );
-static void     load_dataset( ofaClassStore *self, ofaHub *hub );
-static void     insert_row( ofaClassStore *self, ofaHub *hub, ofoClass *class );
+static void     load_dataset( ofaClassStore *self );
+static void     insert_row( ofaClassStore *self, ofoClass *class );
 static void     set_row_by_iter( ofaClassStore *self, GtkTreeIter *iter, ofoClass *class );
 static gboolean find_row_by_id( ofaClassStore *self, gint id, GtkTreeIter *iter );
-static void     connect_to_hub_signaling_system( ofaClassStore *self, ofaHub *hub );
+static void     connect_to_hub_signaling_system( ofaClassStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaClassStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassStore *self );
 static void     hub_on_updated_class( ofaClassStore *self, ofaHub *hub, const gchar *prev_id, ofoClass *class );
@@ -161,6 +161,7 @@ ofaClassStore *
 ofa_class_store_new( ofaHub *hub )
 {
 	ofaClassStore *store;
+	ofaClassStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -174,6 +175,9 @@ ofa_class_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_CLASS_STORE, NULL );
 
+		priv = ofa_class_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[CLASS_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), CLASS_N_COLUMNS, st_col_types );
@@ -185,8 +189,8 @@ ofa_class_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		connect_to_hub_signaling_system( store, hub );
-		load_dataset( store, hub );
+		connect_to_hub_signaling_system( store );
+		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -210,21 +214,24 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaClassSto
 }
 
 static void
-load_dataset( ofaClassStore *self, ofaHub *hub )
+load_dataset( ofaClassStore *self )
 {
+	ofaClassStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoClass *class;
 
-	dataset = ofo_class_get_dataset( hub );
+	priv = ofa_class_store_get_instance_private( self );
+
+	dataset = ofo_class_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		class = OFO_CLASS( it->data );
-		insert_row( self, hub, class );
+		insert_row( self, class );
 	}
 }
 
 static void
-insert_row( ofaClassStore *self, ofaHub *hub, ofoClass *class )
+insert_row( ofaClassStore *self, ofoClass *class )
 {
 	GtkTreeIter iter;
 
@@ -297,28 +304,23 @@ find_row_by_id( ofaClassStore *self, gint id, GtkTreeIter *iter )
  * connect to the dossier signaling system
  */
 static void
-connect_to_hub_signaling_system( ofaClassStore *self, ofaHub *hub )
+connect_to_hub_signaling_system( ofaClassStore *self )
 {
-	static const gchar *thisfn = "ofa_class_store_connect_to_hub_signaling_system";
 	ofaClassStorePrivate *priv;
 	gulong handler;
 
-	g_debug( "%s: self=%p, hub=%p", thisfn, ( void * ) self, ( void * ) hub );
-
 	priv = ofa_class_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -337,7 +339,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaClassStore *self )
 			( void * ) self );
 
 	if( OFO_IS_CLASS( object )){
-		insert_row( self, hub, OFO_CLASS( object ));
+		insert_row( self, OFO_CLASS( object ));
 	}
 }
 
@@ -373,7 +375,7 @@ hub_on_updated_class( ofaClassStore *self, ofaHub *hub, const gchar *prev_id, of
 	if( find_row_by_id( self, prev_num, &iter )){
 		if( prev_num != class_num ){
 			gtk_list_store_remove( GTK_LIST_STORE( self ), &iter );
-			insert_row( self, hub, class );
+			insert_row( self, class );
 
 		} else if( find_row_by_id( self, class_num, &iter )){
 			set_row_by_iter( self, &iter, class );
@@ -416,6 +418,6 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaClassStore *self )
 
 	if( type == OFO_TYPE_CLASS ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		load_dataset( self, hub );
+		load_dataset( self );
 	}
 }

@@ -71,11 +71,11 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore *self );
-static void     load_dataset( ofaBatStore *self, ofaHub *hub );
-static void     insert_row( ofaBatStore *self, ofaHub *hub, ofoBat *bat );
+static void     load_dataset( ofaBatStore *self );
+static void     insert_row( ofaBatStore *self, ofoBat *bat );
 static void     set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat );
 static gboolean find_bat_by_id( ofaBatStore *self, ofxCounter id, GtkTreeIter *iter );
-static void     connect_to_hub_signaling_system( ofaBatStore *self, ofaHub *hub );
+static void     connect_to_hub_signaling_system( ofaBatStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *self );
 static void     hub_on_updated_bat( ofaBatStore *self, ofoBat *bat );
@@ -177,6 +177,7 @@ ofaBatStore *
 ofa_bat_store_new( ofaHub *hub )
 {
 	ofaBatStore *store;
+	ofaBatStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -190,6 +191,9 @@ ofa_bat_store_new( ofaHub *hub )
 	} else {
 		store = g_object_new( OFA_TYPE_BAT_STORE, NULL );
 
+		priv = ofa_bat_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[BAT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), BAT_N_COLUMNS, st_col_types );
@@ -201,8 +205,8 @@ ofa_bat_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		connect_to_hub_signaling_system( store, hub );
-		load_dataset( store, hub );
+		connect_to_hub_signaling_system( store );
+		load_dataset( store );
 	}
 
 	return( g_object_ref( store ));
@@ -233,21 +237,24 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaBatStore
 }
 
 static void
-load_dataset( ofaBatStore *self, ofaHub *hub )
+load_dataset( ofaBatStore *self )
 {
+	ofaBatStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoBat *bat;
 
-	dataset = ofo_bat_get_dataset( hub );
+	priv = ofa_bat_store_get_instance_private( self );
+
+	dataset = ofo_bat_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		bat = OFO_BAT( it->data );
-		insert_row( self, hub, bat );
+		insert_row( self, bat );
 	}
 }
 
 static void
-insert_row( ofaBatStore *self, ofaHub *hub, ofoBat *bat )
+insert_row( ofaBatStore *self, ofoBat *bat )
 {
 	GtkTreeIter iter;
 
@@ -258,7 +265,7 @@ insert_row( ofaBatStore *self, ofaHub *hub, ofoBat *bat )
 static void
 set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 {
-	static const gchar *thisfn = "ofa_bat_store_set_row_by_iter";
+	static const gchar *thisfn = "ofa_bat_store_set_row";
 	ofaBatStorePrivate *priv;
 	gchar *sid, *sbegin, *send, *sbeginsolde, *sendsolde, *scount, *stamp, *sunused;
 	const GDate *date;
@@ -384,28 +391,23 @@ find_bat_by_id( ofaBatStore *self, ofxCounter id, GtkTreeIter *iter )
  * connect to the dossier signaling system
  */
 static void
-connect_to_hub_signaling_system( ofaBatStore *self, ofaHub *hub )
+connect_to_hub_signaling_system( ofaBatStore *self )
 {
-	static const gchar *thisfn = "ofa_bat_store_connect_to_hub_signaling_system";
 	ofaBatStorePrivate *priv;
 	gulong handler;
 
-	g_debug( "%s: self=%p, hub=%p", thisfn, ( void * ) self, ( void * ) hub );
-
 	priv = ofa_bat_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -424,7 +426,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *self )
 			( void * ) self );
 
 	if( OFO_IS_BAT( object )){
-		insert_row( self, hub, OFO_BAT( object ));
+		insert_row( self, OFO_BAT( object ));
 	}
 }
 
@@ -612,6 +614,6 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaBatStore *self )
 
 	if( type == OFO_TYPE_BAT ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		load_dataset( self, hub );
+		load_dataset( self );
 	}
 }

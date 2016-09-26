@@ -73,6 +73,7 @@
    - ofaPanedPage: new ofaPage-derived class.
    - ofaRateStore, ofaRateTreeview: new classes.
    - RecurrentManagePage: renamed to RecurrentModelPage (todo #1211).
+   - All stores take advantage of hub as a private variable (todo #1216).
 
 -----------------------------------------------------------------------
  Version 0.59

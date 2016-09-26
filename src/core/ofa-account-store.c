@@ -77,17 +77,17 @@ static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
 static void     tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub );
-static void     insert_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account );
-static void     set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *iter );
+static void     insert_row( ofaAccountStore *store, const ofoAccount *account );
+static void     set_row_by_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *iter );
 static gboolean find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
 static gboolean find_row_by_number( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, gboolean *bvalid );
 static gboolean find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter *iter, GtkTreeIter *smaller, gint *last );
 static GList   *get_children_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *iter );
-static void     realign_children( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *parent_iter );
+static void     realign_children( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
 static GList   *remove_rows_by_number( ofaAccountStore *store, const gchar *number );
 static GList   *remove_rows_rec( ofaAccountStore *store, GtkTreeIter *iter, GList *list );
 static gint     cmp_account_by_number( const ofoAccount *a, const ofoAccount *b );
-static void     hub_setup_signaling_system( ofaAccountStore *store, ofaHub *hub );
+static void     hub_setup_signaling_system( ofaAccountStore *store );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountStore *store );
 static void     hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, ofaAccountStore *store );
@@ -183,6 +183,7 @@ ofa_account_store_new( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_account_store_new";
 	ofaAccountStore *store;
+	ofaAccountStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -198,6 +199,9 @@ ofa_account_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_ACCOUNT_STORE, NULL );
 		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 
+		priv = ofa_account_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[ACCOUNT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_tree_store_set_column_types(
 				GTK_TREE_STORE( store ), ACCOUNT_N_COLUMNS, st_col_types );
@@ -209,7 +213,7 @@ ofa_account_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_setup_signaling_system( store, hub );
+		hub_setup_signaling_system( store );
 	}
 
 	return( g_object_ref( store ));
@@ -248,7 +252,7 @@ tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub )
 
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
-		insert_row( OFA_ACCOUNT_STORE( store ), hub, account );
+		insert_row( OFA_ACCOUNT_STORE( store ), account );
 	}
 }
 
@@ -258,7 +262,7 @@ tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub )
  * actual account level.
  */
 static void
-insert_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account )
+insert_row( ofaAccountStore *store, const ofoAccount *account )
 {
 	GtkTreeIter parent_iter, iter;
 	gboolean parent_found;
@@ -274,14 +278,15 @@ insert_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account )
 			ACCOUNT_COL_OBJECT, account,
 			-1 );
 
-	set_row( store, hub, account, &iter );
-	realign_children( store, hub, account, &iter );
+	set_row_by_iter( store, account, &iter );
+	realign_children( store, account, &iter );
 }
 
 static void
-set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *iter )
+set_row_by_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *iter )
 {
-	static const gchar *thisfn = "ofa_account_store_set_row";
+	static const gchar *thisfn = "ofa_account_store_set_row_by_iter";
+	ofaAccountStorePrivate *priv;
 	const gchar *currency_code, *notes;
 	ofoCurrency *currency_obj;
 	gchar *stamp;
@@ -291,9 +296,11 @@ set_row( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTree
 	GdkPixbuf *notes_png;
 	GError *error;
 
+	priv = ofa_account_store_get_instance_private( store );
+
 	currency_code = ofo_account_get_currency( account );
 	if( !ofo_account_is_root( account )){
-		currency_obj = ofo_currency_get_by_code( hub, currency_code );
+		currency_obj = ofo_currency_get_by_code( priv->hub, currency_code );
 		g_return_if_fail( currency_obj && OFO_IS_CURRENCY( currency_obj ));
 
 		val_debit = ofo_account_get_val_debit( account );
@@ -534,7 +541,7 @@ find_row_by_number_rec( ofaAccountStore *store, const gchar *number, GtkTreeIter
  * of the account.
  */
 static void
-realign_children( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account, GtkTreeIter *parent_iter )
+realign_children( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter )
 {
 	static const gchar *thisfn = "ofa_account_store_realign_children";
 	GList *children, *it;
@@ -550,7 +557,7 @@ realign_children( ofaAccountStore *store, ofaHub *hub, const ofoAccount *account
 			children = get_children_iter( store, account, &iter );
 			for( it=children ; it ; it=it->next ){
 				//g_debug( "realign_children: re-inserting %s", ofo_account_get_number( OFO_ACCOUNT( it->data )));
-				insert_row( store, hub, OFO_ACCOUNT( it->data ));
+				insert_row( store, OFO_ACCOUNT( it->data ));
 			}
 			g_list_free_full( children, ( GDestroyNotify ) g_object_unref );
 		}
@@ -690,25 +697,23 @@ cmp_account_by_number( const ofoAccount *a, const ofoAccount *b )
  * connect to the hub signaling system
  */
 static void
-hub_setup_signaling_system( ofaAccountStore *store, ofaHub *hub )
+hub_setup_signaling_system( ofaAccountStore *store )
 {
 	ofaAccountStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_account_store_get_instance_private( store );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), store );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -727,7 +732,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountStore *store )
 			( void * ) store );
 
 	if( OFO_IS_ACCOUNT( object )){
-		insert_row( store, hub, OFO_ACCOUNT( object ));
+		insert_row( store, OFO_ACCOUNT( object ));
 	}
 }
 
@@ -772,12 +777,12 @@ hub_on_updated_account( ofaHub *hub, ofoAccount *account, const gchar *prev_id, 
 		/* first element of the list is the account itself */
 		list = remove_rows_by_number( store, prev_id );
 		for( it=list ; it ; it=it->next ){
-			insert_row( store, hub, OFO_ACCOUNT( it->data ));
+			insert_row( store, OFO_ACCOUNT( it->data ));
 		}
 		g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
 
 	} else if( find_row_by_number( store, number, &iter, NULL )){
-		set_row( store, hub, account, &iter);
+		set_row_by_iter( store, account, &iter);
 	}
 }
 
@@ -856,7 +861,7 @@ hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *store
 
 	if( !ofa_prefs_account_delete_root_with_children()){
 		for( it=children ; it ; it=it->next ){
-			insert_row( store, hub, OFO_ACCOUNT( it->data ));
+			insert_row( store, OFO_ACCOUNT( it->data ));
 		}
 	}
 

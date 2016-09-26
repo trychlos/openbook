@@ -62,11 +62,11 @@ static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *self );
 static void     list_store_load_dataset( ofaListStore *self, ofaHub *hub );
-static void     insert_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope );
-static void     set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkTreeIter *iter );
+static void     insert_row( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope );
+static void     set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
 static void     remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo );
-static void     hub_setup_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub );
+static void     hub_setup_signaling_system( ofaOpeTemplateStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
 static void     hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
@@ -163,6 +163,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_new";
 	ofaOpeTemplateStore *store;
+	ofaOpeTemplateStorePrivate *priv;
 	myICollector *collector;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
@@ -178,6 +179,9 @@ ofa_ope_template_store_new( ofaHub *hub )
 		store = g_object_new( OFA_TYPE_OPE_TEMPLATE_STORE, NULL );
 		g_debug( "%s: returning newly allocated store=%p", thisfn, ( void * ) store );
 
+		priv = ofa_ope_template_store_get_instance_private( store );
+		priv->hub = hub;
+
 		st_col_types[OPE_TEMPLATE_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		ofa_istore_set_columns_type(
 				OFA_ISTORE( store ), hub, OPE_TEMPLATE_COL_OBJECT, OPE_TEMPLATE_N_COLUMNS, st_col_types );
@@ -190,7 +194,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_setup_signaling_system( store, hub );
+		hub_setup_signaling_system( store );
 	}
 
 	return( g_object_ref( store ));
@@ -229,12 +233,12 @@ list_store_load_dataset( ofaListStore *self, ofaHub *hub )
 
 	for( it=dataset ; it ; it=it->next ){
 		ope = OFO_OPE_TEMPLATE( it->data );
-		insert_row( OFA_OPE_TEMPLATE_STORE( self ), hub, ope );
+		insert_row( OFA_OPE_TEMPLATE_STORE( self ), ope );
 	}
 }
 
 static void
-insert_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope )
+insert_row( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope )
 {
 	GtkTreeIter iter;
 
@@ -246,17 +250,20 @@ insert_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope )
 			OPE_TEMPLATE_COL_OBJECT, ope,
 			-1 );
 
-	set_row( self, hub, ope, &iter );
+	set_row_by_iter( self, ope, &iter );
 }
 
 static void
-set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkTreeIter *iter )
+set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_set_row";
+	ofaOpeTemplateStorePrivate *priv;
 	gchar *stamp;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
+
+	priv = ofa_ope_template_store_get_instance_private( self );
 
 	stamp  = my_utils_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
 
@@ -287,7 +294,7 @@ set_row( ofaOpeTemplateStore *self, ofaHub *hub, const ofoOpeTemplate *ope, GtkT
 	g_object_unref( notes_png );
 	g_free( stamp );
 
-	ofa_itree_adder_set_values( hub, OFA_ISTORE( self ), iter, ( void * ) ope );
+	ofa_itree_adder_set_values( priv->hub, OFA_ISTORE( self ), iter, ( void * ) ope );
 }
 
 /*
@@ -361,25 +368,23 @@ remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *number )
  * of this self is equal to those of the dossier
  */
 static void
-hub_setup_signaling_system( ofaOpeTemplateStore *self, ofaHub *hub )
+hub_setup_signaling_system( ofaOpeTemplateStore *self )
 {
 	ofaOpeTemplateStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_ope_template_store_get_instance_private( self );
 
-	priv->hub = hub;
-
-	handler = g_signal_connect( hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
 }
@@ -399,7 +404,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self )
 			( void * ) self );
 
 	if( OFO_IS_OPE_TEMPLATE( object )){
-		insert_row( self, hub, OFO_OPE_TEMPLATE( object ));
+		insert_row( self, OFO_OPE_TEMPLATE( object ));
 	}
 }
 
@@ -425,10 +430,10 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOp
 
 		if( prev_id && g_utf8_collate( prev_id, mnemo )){
 			remove_row_by_mnemo( self, prev_id );
-			insert_row( self, hub, OFO_OPE_TEMPLATE( object ));
+			insert_row( self, OFO_OPE_TEMPLATE( object ));
 
 		} else if( find_row_by_mnemo( self, mnemo, &iter, NULL )){
-			set_row( self, hub, OFO_OPE_TEMPLATE( object ), &iter);
+			set_row_by_iter( self, OFO_OPE_TEMPLATE( object ), &iter);
 
 		} else {
 			g_debug( "%s: not found: mnemo=%s", thisfn, mnemo );
