@@ -39,6 +39,7 @@
  New features and improvements:
 
    - Accelerators: define new keys in Dossier menu (todo #1204).
+   - AccountSelect, OpeTemplateSelect: save settings before hiding the dialog.
    - BalanceRender: improve appearance of header notes (todo #1191).
    - OpeTemplate: make the treeview sortable (todo #1200).
    - RecurrentModel: allow to be duplicated (todo #1206).
