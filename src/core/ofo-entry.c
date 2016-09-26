@@ -2201,7 +2201,7 @@ do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter 
 		entry_set_settlement_stamp( entry, NULL );
 
 		g_string_append_printf( query,
-				"ENT_STLMT_NUMBER=NULL,ENT_STLMT_USER=NULL,ENT_STLMT_STAMP=NULL " );
+				"ENT_STLMT_NUMBER=NULL,ENT_STLMT_USER=NULL,ENT_STLMT_STAMP=0 " );
 	}
 
 	g_string_append_printf( query, "WHERE ENT_NUMBER=%ld", ofo_entry_get_number( entry ));
