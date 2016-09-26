@@ -733,16 +733,17 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 			col_id = atoi( cstr );
 			it = it->next;
 			cstr = it ? it->data : NULL;
-			g_return_val_if_fail( my_strlen( cstr ), 0 );
-			col_width = atoi( cstr );
-			scol = get_column_data_by_id( instance, sdata, col_id );
-			if( scol && scol->column ){
-				gtk_tree_view_move_column_after( sdata->treeview, scol->column, prev );
-				gtk_tree_view_column_set_fixed_width( scol->column, col_width );
-				action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( instance ), scol->group_name );
-				g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( TRUE ));
-				prev = scol->column;
-				count += 1;
+			if( my_strlen( cstr )){
+				col_width = atoi( cstr );
+				scol = get_column_data_by_id( instance, sdata, col_id );
+				if( scol && scol->column ){
+					gtk_tree_view_move_column_after( sdata->treeview, scol->column, prev );
+					gtk_tree_view_column_set_fixed_width( scol->column, col_width );
+					action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( instance ), scol->group_name );
+					g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( TRUE ));
+					prev = scol->column;
+					count += 1;
+				}
 			}
 		}
 		it = it ? it->next : NULL;

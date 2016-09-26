@@ -60,15 +60,17 @@ typedef struct {
 /* store data types
  */
 static GType st_col_types[ENTRY_N_COLUMNS] = {
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* dope, deffect, label */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, currency, ledger */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ope_template, account, debit */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* credit, ope_number, stlmt_number */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* stlmt_user, stlmt_stamp, ent_number_str */
-	G_TYPE_INT,										/* ent_number_int */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* upd_user, upd_stamp, concil_number */
-	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* concil_date, status_str, status_int */
-	G_TYPE_OBJECT									/* the #ofoEntry itself */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* dope, deffect, label */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ref, currency, ledger */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* ope_template, account, debit */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* credit, ope_number, stlmt_number */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* stlmt_user, stlmt_stamp, ent_number_str */
+	G_TYPE_ULONG,										/* ent_number_int */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,		/* upd_user, upd_stamp, concil_number */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,			/* concil_date, status_str, status_int */
+	G_TYPE_OBJECT,										/* the #ofoEntry itself */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_BOOLEAN, 		/* msgerr, msgwarn, dope_set */
+	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN						/* deffect_set, currency_set */
 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *store );
@@ -91,7 +93,7 @@ static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntrySto
 static void     hub_on_deleted_concil( ofaEntryStore *store, ofoConcil *concil );
 static void     hub_on_deleted_entry( ofaEntryStore *store, ofoEntry *entry );
 
-G_DEFINE_TYPE_EXTENDED( ofaEntryStore, ofa_entry_store, GTK_TYPE_LIST_STORE, 0,
+G_DEFINE_TYPE_EXTENDED( ofaEntryStore, ofa_entry_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaEntryStore ))
 
 static void
@@ -175,8 +177,8 @@ ofa_entry_store_new( ofaHub *hub )
 
 	store = g_object_new( OFA_TYPE_ENTRY_STORE, NULL );
 
-	gtk_tree_store_set_column_types(
-			GTK_TREE_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
+	gtk_list_store_set_column_types(
+			GTK_LIST_STORE( store ), ENTRY_N_COLUMNS, st_col_types );
 
 	gtk_tree_sortable_set_default_sort_func(
 			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
@@ -191,7 +193,7 @@ ofa_entry_store_new( ofaHub *hub )
 }
 
 /*
- * sorting the store per entry number
+ * sorting the store per entry number ascending
  */
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *store )

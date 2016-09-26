@@ -55,8 +55,10 @@
 typedef struct {
 	gboolean dispose_has_run;
 
-	/* initialization
+	/* runtime
 	 */
+	GtkTreeModelFilterVisibleFunc filter_fn;
+	void                         *filter_data;
 }
 	ofaEntryTreeviewPrivate;
 
@@ -150,6 +152,8 @@ ofa_entry_treeview_init( ofaEntryTreeview *self )
 	priv = ofa_entry_treeview_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->filter_fn = NULL;
+	priv->filter_data = NULL;
 }
 
 static void
@@ -355,6 +359,29 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ENTRY_COL_LABEL );
+}
+
+/**
+ * ofa_entry_treeview_set_filter:
+ * @view: this #ofaEntryTreeview instance.
+ * @filter_fn: an external filter function.
+ * @filter_data: the data to be passed to the @filter_fn function.
+ *
+ * Setup the filtering function.
+ */
+void
+ofa_entry_treeview_set_filter_func( ofaEntryTreeview *view, GtkTreeModelFilterVisibleFunc filter_fn, void *filter_data )
+{
+	ofaEntryTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_ENTRY_TREEVIEW( view ));
+
+	priv = ofa_entry_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->filter_fn = filter_fn;
+	priv->filter_data = filter_data;
 }
 
 static void
@@ -610,21 +637,11 @@ get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *ite
 static gboolean
 v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
-	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL_FILTER( tmodel ), FALSE );
-#if 0
 	ofaEntryTreeviewPrivate *priv;
-	gchar *number;
-	gint class_num;
 
 	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( tvbin ));
 
-	gtk_tree_model_get( model, iter, ACCOUNT_COL_NUMBER, &number, -1 );
-	class_num = ofo_account_get_class_from_number( number );
-	g_free( number );
-
-	return( priv->class_num == class_num );
-#endif
-	return( TRUE );
+	return( priv->filter_fn ? ( *priv->filter_fn )( tmodel, iter, priv->filter_data ) : TRUE );
 }
 
 static gint
@@ -634,8 +651,6 @@ v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *
 	gint cmp;
 	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma, *stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea, *statusa;
 	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb, *stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb, *statusb;
-
-	g_return_val_if_fail( tmodel && GTK_IS_TREE_MODEL_SORT( tmodel ), 0 );
 
 	gtk_tree_model_get( tmodel, a,
 			ENTRY_COL_DOPE,          &dopea,

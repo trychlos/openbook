@@ -102,6 +102,10 @@ void              ofa_entry_treeview_cell_data_render  ( ofaEntryTreeview *view,
 																GtkTreeModel *model,
 																GtkTreeIter *iter );
 
+void              ofa_entry_treeview_set_filter_func   ( ofaEntryTreeview *view,
+																GtkTreeModelFilterVisibleFunc filter_fn,
+																void *filter_data );
+
 G_END_DECLS
 
 #endif /* __OFA_ENTRY_TREEVIEW_H__ */

@@ -451,12 +451,19 @@
 
 1198 2016- 9-15 ofaIStore, ofaListStore, ofaTtreeStore: review respective
                 rules and features of the interface and of the base classes
+                + review the emitted signals
 
 1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
                 box which requests a confirmation for <n> operations
                 + progress bar
 
-1214
+1214 2016- 9-25 fix SQL searcheds with %...%
+
+1215 2016- 9-25 AccountSelect: does not save/restore the columns 
+
+1216 2016- 9-26 Stores: remove hub from insert_row()/set_row() args
+
+1217
 
 -----------------------------------------------------------------------
  DONE

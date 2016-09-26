@@ -44,6 +44,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-list-store.h"
 #include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
@@ -57,7 +58,7 @@ G_BEGIN_DECLS
 
 typedef struct {
 	/*< public members >*/
-	GtkListStore      parent;
+	ofaListStore      parent;
 }
 	ofaEntryStore;
 
@@ -66,7 +67,7 @@ typedef struct {
  */
 typedef struct {
 	/*< public members >*/
-	GtkListStoreClass parent;
+	ofaListStoreClass parent;
 }
 	ofaEntryStoreClass;
 
