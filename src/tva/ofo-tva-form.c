@@ -44,6 +44,7 @@
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-ope-template.h"
+#include "api/ofo-rate.h"
 
 #include "tva/ofo-tva-form.h"
 
@@ -223,6 +224,8 @@ static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *t
 static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean    hub_on_updated_account_id( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean    hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean    hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean    do_update_formulas( ofaHub *hub, const gchar *new_id, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
@@ -2278,6 +2281,14 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void 
 				hub_on_updated_ope_template_mnemo( hub, mnemo, prev_id );
 			}
 		}
+
+	} else if( OFO_IS_RATE( object )){
+		if( my_strlen( prev_id )){
+			mnemo = ofo_rate_get_mnemo( OFO_RATE( object ));
+			if( my_collate( mnemo, prev_id )){
+				hub_on_updated_rate_mnemo( hub, mnemo, prev_id );
+			}
+		}
 	}
 }
 
@@ -2285,58 +2296,12 @@ static gboolean
 hub_on_updated_account_id( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_tva_form_hub_on_updated_account_id";
-	gchar *query;
-	const ofaIDBConnect *connect;
-	GSList *result, *irow, *icol;
-	gchar *etp_mnemo, *det_base, *det_amount;
-	gint det_row;
 	gboolean ok;
-	const gchar *prev_base, *prev_amount;
 
 	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) hub, mnemo, prev_id );
 
-	connect = ofa_hub_get_connect( hub );
-
-	query = g_strdup_printf(
-					"SELECT TFO_MNEMO,TFO_DET_ROW,TFO_DET_BASE,TFO_DET_AMOUNT "
-					"	FROM TVA_T_FORMS_DET "
-					"	WHERE TFO_DET_BASE LIKE '%%%s%%' OR TFO_DET_AMOUNT LIKE '%%%s%%'",
-					prev_id, prev_id );
-
-	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
-	g_free( query );
-
-	if( ok ){
-		for( irow=result ; irow ; irow=irow->next ){
-			icol = irow->data;
-			etp_mnemo = g_strdup(( gchar * ) icol->data );
-			icol = icol->next;
-			det_row = atoi(( gchar * ) icol->data );
-			icol = icol->next;
-			prev_base = ( const gchar * ) icol->data;
-			det_base = my_utils_str_replace( prev_base, prev_id, mnemo );
-			icol = icol->next;
-			prev_amount = ( const gchar * ) icol->data;
-			det_amount = my_utils_str_replace( prev_amount, prev_id, mnemo );
-
-			if( my_collate( prev_base, det_base ) || my_collate( prev_amount, det_amount )){
-				query = g_strdup_printf(
-								"UPDATE TVA_T_FORMS_DET "
-								"	SET TFO_DET_BASE='%s',TFO_DET_AMOUNT='%s' "
-								"	WHERE TFO_MNEMO='%s' AND TFO_DET_ROW=%d",
-										det_base, det_amount, etp_mnemo, det_row );
-
-				ofa_idbconnect_query( connect, query, TRUE );
-
-				g_free( query );
-			}
-
-			g_free( det_base );
-			g_free( det_amount );
-			g_free( etp_mnemo );
-		}
-	}
+	ok = do_update_formulas( hub, mnemo, prev_id );
 
 	return( ok );
 }
@@ -2361,6 +2326,76 @@ hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar 
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 	g_free( query );
+
+	return( ok );
+}
+
+static gboolean
+hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
+{
+	static const gchar *thisfn = "ofo_tva_form_hub_on_updated_rate_mnemo";
+	gboolean ok;
+
+	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
+			thisfn, ( void * ) hub, mnemo, prev_id );
+
+	ok = do_update_formulas( hub, mnemo, prev_id );
+
+	return( ok );
+}
+
+static gboolean
+do_update_formulas( ofaHub *hub, const gchar *new_id, const gchar *prev_id )
+{
+	gchar *query;
+	const ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+	gchar *etp_mnemo, *det_base, *det_amount;
+	gint det_row;
+	gboolean ok;
+	const gchar *prev_base, *prev_amount;
+
+	connect = ofa_hub_get_connect( hub );
+
+	query = g_strdup_printf(
+					"SELECT TFO_MNEMO,TFO_DET_ROW,TFO_DET_BASE,TFO_DET_AMOUNT "
+					"	FROM TVA_T_FORMS_DET "
+					"	WHERE TFO_DET_BASE LIKE '%%%s%%' OR TFO_DET_AMOUNT LIKE '%%%s%%'",
+							prev_id, prev_id );
+
+	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
+	g_free( query );
+
+	if( ok ){
+		for( irow=result ; irow ; irow=irow->next ){
+			icol = irow->data;
+			etp_mnemo = g_strdup(( gchar * ) icol->data );
+			icol = icol->next;
+			det_row = atoi(( gchar * ) icol->data );
+			icol = icol->next;
+			prev_base = ( const gchar * ) icol->data;
+			det_base = my_utils_str_replace( prev_base, prev_id, new_id );
+			icol = icol->next;
+			prev_amount = ( const gchar * ) icol->data;
+			det_amount = my_utils_str_replace( prev_amount, prev_id, new_id );
+
+			if( my_collate( prev_base, det_base ) || my_collate( prev_amount, det_amount )){
+				query = g_strdup_printf(
+								"UPDATE TVA_T_FORMS_DET "
+								"	SET TFO_DET_BASE='%s',TFO_DET_AMOUNT='%s' "
+								"	WHERE TFO_MNEMO='%s' AND TFO_DET_ROW=%d",
+										det_base, det_amount, etp_mnemo, det_row );
+
+				ofa_idbconnect_query( connect, query, TRUE );
+
+				g_free( query );
+			}
+
+			g_free( det_base );
+			g_free( det_amount );
+			g_free( etp_mnemo );
+		}
+	}
 
 	return( ok );
 }

@@ -854,6 +854,10 @@ my_utils_str_remove_underlines( const gchar *string )
  *
  * Replace 'old' string with 'new' in string, returning a newly
  * allocated string which should be g_free() by the caller.
+ *
+ * #my_utils_str_replace makes use of word boundary in a regex. It so
+ * makes sure to only replace a whole word, and not a part of a bigger
+ * (longer) one.
  */
 gchar *
 my_utils_str_replace( const gchar *string, const gchar *old, const gchar *new )

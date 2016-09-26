@@ -457,8 +457,6 @@
                 box which requests a confirmation for <n> operations
                 + progress bar
 
-1214 2016- 9-25 fix SQL searcheds with %...%
-
 1219
 
 -----------------------------------------------------------------------
@@ -1720,6 +1718,9 @@
                 regenerating from RecurrentModel should focus to an already
                 opened RecurrentNew dialog
      2016- 9-24 done
+
+1214 2016- 9-25 fix SQL searcheds with %...%
+     2016- 9-26 this was already done, but has been improved
 
 1215 2016- 9-25 AccountSelect: does not save/restore the columns 
      2016- 9-26 it actually does, but does not propagate the current view

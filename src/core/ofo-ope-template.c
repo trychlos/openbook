@@ -219,6 +219,7 @@ static void            hub_on_updated_object( ofaHub *hub, ofoBase *object, cons
 static gboolean        hub_on_updated_account_id( ofaHub *hub, const gchar *new_id, const gchar *prev_id );
 static gboolean        hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean        hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static gboolean        do_update_formulas( ofaHub *hub, const gchar *new_id, const gchar *prev_id );
 
 G_DEFINE_TYPE_EXTENDED( ofoOpeTemplate, ofo_ope_template, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoOpeTemplate )
@@ -2138,13 +2139,17 @@ hub_on_updated_account_id( ofaHub *hub, const gchar *new_id, const gchar *prev_i
 			thisfn, ( void * ) hub, new_id, prev_id );
 
 	query = g_strdup_printf(
-					"UPDATE OFA_T_OPE_TEMPLATES_DET "
-					"	SET OTE_DET_ACCOUNT='%s' WHERE OTE_DET_ACCOUNT='%s'",
+					"UPDATE OFA_T_OPE_TEMPLATES_DET SET "
+					"	OTE_DET_ACCOUNT='%s' WHERE OTE_DET_ACCOUNT='%s'",
 								new_id, prev_id );
 
 	ok = ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE );
 
 	g_free( query );
+
+	if( ok ){
+		ok = do_update_formulas( hub, new_id, prev_id );
+	}
 
 	return( ok );
 }
@@ -2175,24 +2180,34 @@ static gboolean
 hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id )
 {
 	static const gchar *thisfn = "ofo_ope_template_hub_on_updated_rate_mnemo";
-	gchar *query;
-	const ofaIDBConnect *connect;
-	GSList *result, *irow, *icol;
-	gchar *etp_mnemo, *det_debit, *det_credit;
-	gint det_row;
 	gboolean ok;
-	const gchar *prev_debit, *prev_credit;
 
 	g_debug( "%s: hub=%p, mnemo=%s, prev_id=%s",
 			thisfn, ( void * ) hub, mnemo, prev_id );
 
+	ok = do_update_formulas( hub, mnemo, prev_id );
+
+	return( ok );
+}
+
+static gboolean
+do_update_formulas( ofaHub *hub, const gchar *new_id, const gchar *prev_id )
+{
+	gchar *query;
+	const ofaIDBConnect *connect;
+	GSList *result, *irow, *icol;
+	gchar *etp_mnemo, *det_label, *det_debit, *det_credit;
+	gint det_row;
+	gboolean ok;
+	const gchar *prev_label, *prev_debit, *prev_credit;
+
 	connect = ofa_hub_get_connect( hub );
 
 	query = g_strdup_printf(
-					"SELECT OTE_MNEMO,OTE_DET_ROW,OTE_DET_DEBIT,OTE_DET_CREDIT "
+					"SELECT OTE_MNEMO,OTE_DET_ROW,OTE_DET_LABEL,OTE_DET_DEBIT,OTE_DET_CREDIT "
 					"	FROM OFA_T_OPE_TEMPLATES_DET "
-					"	WHERE OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
-							prev_id, prev_id );
+					"	WHERE OTE_DET_LABEL LIKE '%%%s%%' OR OTE_DET_DEBIT LIKE '%%%s%%' OR OTE_DET_CREDIT LIKE '%%%s%%'",
+							prev_id, prev_id, prev_id );
 
 	ok = ofa_idbconnect_query_ex( connect, query, &result, TRUE );
 	g_free( query );
@@ -2204,18 +2219,22 @@ hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id
 			icol = icol->next;
 			det_row = atoi(( gchar * ) icol->data );
 			icol = icol->next;
+			prev_label = ( const gchar * ) icol->data;
+			det_label = my_utils_str_replace( prev_label, prev_id, new_id );
+			icol = icol->next;
 			prev_debit = ( const gchar * ) icol->data;
-			det_debit = my_utils_str_replace( prev_debit, prev_id, mnemo );
+			det_debit = my_utils_str_replace( prev_debit, prev_id, new_id );
 			icol = icol->next;
 			prev_credit = ( const gchar * ) icol->data;
-			det_credit = my_utils_str_replace( prev_credit, prev_id, mnemo );
+			det_credit = my_utils_str_replace( prev_credit, prev_id, new_id );
 
-			if( my_collate( prev_debit, det_debit ) || my_collate( prev_credit, det_credit )){
+			if( my_collate( prev_label, det_label ) ||
+					my_collate( prev_debit, det_debit ) || my_collate( prev_credit, det_credit )){
 				query = g_strdup_printf(
 								"UPDATE OFA_T_OPE_TEMPLATES_DET "
-								"	SET OTE_DET_DEBIT='%s',OTE_DET_CREDIT='%s' "
+								"	SET OTE_DET_LABEL='%s',OTE_DET_DEBIT='%s',OTE_DET_CREDIT='%s' "
 								"	WHERE OTE_MNEMO='%s' AND OTE_DET_ROW=%d",
-										det_debit, det_credit,
+										det_label, det_debit, det_credit,
 										etp_mnemo, det_row );
 
 				ofa_idbconnect_query( connect, query, TRUE );
@@ -2225,6 +2244,7 @@ hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id
 
 			g_free( det_credit );
 			g_free( det_debit );
+			g_free( det_label );
 			g_free( etp_mnemo );
 		}
 	}
