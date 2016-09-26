@@ -42,6 +42,7 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
+#include "api/ofa-isignal-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
@@ -169,12 +170,15 @@ static GList    *iimportable_import_parse_validity( ofaIImporter *importer, ofsI
 static void      iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
 static gboolean  rate_get_exists( const ofoRate *rate, const ofaIDBConnect *connect );
 static gboolean  rate_drop_content( const ofaIDBConnect *connect );
+static void      isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void      isignal_hub_connect( ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofoRate, ofo_rate, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRate )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
 rate_free_validity( GList *fields )
@@ -1652,4 +1656,27 @@ rate_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_RATES", TRUE ) &&
 			ofa_idbconnect_query( connect, "DELETE FROM OFA_T_RATES_VAL", TRUE ));
+}
+
+/*
+ * ofaISignalHub interface management
+ */
+static void
+isignal_hub_iface_init( ofaISignalHubInterface *iface )
+{
+	static const gchar *thisfn = "ofo_rate_isignal_hub_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->connect = isignal_hub_connect;
+}
+
+static void
+isignal_hub_connect( ofaHub *hub )
+{
+	static const gchar *thisfn = "ofo_rate_isignal_hub_connect";
+
+	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
+
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 }

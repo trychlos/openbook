@@ -65,7 +65,7 @@ static void     load_dataset( ofaClassStore *self );
 static void     insert_row( ofaClassStore *self, ofoClass *class );
 static void     set_row_by_iter( ofaClassStore *self, GtkTreeIter *iter, ofoClass *class );
 static gboolean find_row_by_id( ofaClassStore *self, gint id, GtkTreeIter *iter );
-static void     connect_to_hub_signaling_system( ofaClassStore *self );
+static void     hub_connect_to_signaling_system( ofaClassStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaClassStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaClassStore *self );
 static void     hub_on_updated_class( ofaClassStore *self, ofaHub *hub, const gchar *prev_id, ofoClass *class );
@@ -189,7 +189,7 @@ ofa_class_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		connect_to_hub_signaling_system( store );
+		hub_connect_to_signaling_system( store );
 		load_dataset( store );
 	}
 
@@ -304,7 +304,7 @@ find_row_by_id( ofaClassStore *self, gint id, GtkTreeIter *iter )
  * connect to the dossier signaling system
  */
 static void
-connect_to_hub_signaling_system( ofaClassStore *self )
+hub_connect_to_signaling_system( ofaClassStore *self )
 {
 	ofaClassStorePrivate *priv;
 	gulong handler;

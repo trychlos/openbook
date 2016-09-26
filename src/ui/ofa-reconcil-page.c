@@ -341,14 +341,14 @@ static gboolean     search_for_parent_by_concil( ofaReconcilPage *self, ofoBase 
 static GList       *convert_selected_to_store_refs( ofaReconcilPage *self, GList *selected );
 static void         get_settings( ofaReconcilPage *self );
 static void         set_settings( ofaReconcilPage *self );
-static void         connect_to_hub_signaling_system( ofaReconcilPage *self );
-static void         on_hub_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
+static void         hub_connect_to_signaling_system( ofaReconcilPage *self );
+static void         hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
 static void         on_new_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         remediate_entry_orphan( ofaReconcilPage *self, ofoEntry *entry );
 static void         remediate_orphan( ofaReconcilPage *self, GtkTreeIter *parent_iter );
-static void         on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
+static void         hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
 static void         on_updated_entry( ofaReconcilPage *self, ofoEntry *entry );
-static void         on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
+static void         hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
 static void         on_deleted_entry( ofaReconcilPage *self, ofoEntry *entry );
 static void         on_print_clicked( GtkButton *button, ofaReconcilPage *self );
 static void         set_message( ofaReconcilPage *page, const gchar *msg );
@@ -533,7 +533,7 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	get_settings( OFA_RECONCIL_PAGE( page ));
 
 	/* connect to dossier signaling system */
-	connect_to_hub_signaling_system( OFA_RECONCIL_PAGE( page ));
+	hub_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 }
 
 static GtkWidget *
@@ -3771,23 +3771,20 @@ set_settings( ofaReconcilPage *self )
 }
 
 static void
-connect_to_hub_signaling_system( ofaReconcilPage *self )
+hub_connect_to_signaling_system( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gulong handler;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	handler = g_signal_connect(
-					priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-					priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect(
-					priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -3795,9 +3792,9 @@ connect_to_hub_signaling_system( ofaReconcilPage *self )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_on_hub_new_object";
+	static const gchar *thisfn = "ofa_reconcil_page_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -3912,9 +3909,9 @@ remediate_orphan( ofaReconcilPage *self, GtkTreeIter *parent_iter )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_reconcil_page_hub_on_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
@@ -3965,9 +3962,9 @@ on_updated_entry( ofaReconcilPage *self, ofoEntry *entry )
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_page_on_hub_deleted_object";
+	static const gchar *thisfn = "ofa_reconcil_page_hub_on_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p (%s)",
 			thisfn,

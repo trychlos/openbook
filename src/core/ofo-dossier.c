@@ -234,8 +234,8 @@ static gboolean    hub_is_deletable_account( ofaHub *hub, ofoAccount *account );
 static gboolean    hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
 static gboolean    hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
 static gboolean    hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
-static void        on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
-static void        on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
+static void        hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
+static void        hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static void        hub_on_updated_account_id( ofaHub *hub, const gchar *prev_id, const gchar *new_id );
 static void        hub_on_updated_currency_code( ofaHub *hub, const gchar *prev_id, const gchar *code );
 static void        hub_on_updated_ledger_mnemo( ofaHub *hub, const gchar *prev_mnemo, const gchar *new_mnemo );
@@ -1780,8 +1780,8 @@ isignal_hub_connect( ofaHub *hub )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( on_hub_exe_dates_changed ), NULL );
-	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_EXE_DATES_CHANGED, G_CALLBACK( hub_on_exe_dates_changed ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
 }
 
 /*
@@ -1904,15 +1904,16 @@ hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
  * current exercice.
  */
 static void
-on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
+hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty )
 {
+	static const gchar *thisfn = "ofo_dossier_hub_on_exe_dates_changed";
 	const ofaIDBConnect *connect;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 	ofoDossier *dossier;
 
-	g_debug( "on_hub_exe_dates_changed: hub=%p, prev_begin=%p, prev_end=%p, empty=%p",
-			hub, ( void * ) prev_begin, ( void * ) prev_end, ( void * ) empty );
+	g_debug( "%s: hub=%p, prev_begin=%p, prev_end=%p, empty=%p",
+			thisfn, ( void * ) hub, ( void * ) prev_begin, ( void * ) prev_end, ( void * ) empty );
 
 	dossier = ofa_hub_get_dossier( hub );
 	if( dossier && OFO_IS_DOSSIER( dossier )){
@@ -1933,9 +1934,9 @@ on_hub_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty )
 {
-	static const gchar *thisfn = "ofo_dossier_on_hub_updated_object";
+	static const gchar *thisfn = "ofo_dossier_hub_on_updated_object";
 	const gchar *code, *new_id, *new_mnemo;
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, empty=%p",

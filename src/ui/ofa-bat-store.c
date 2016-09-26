@@ -75,7 +75,7 @@ static void     load_dataset( ofaBatStore *self );
 static void     insert_row( ofaBatStore *self, ofoBat *bat );
 static void     set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat );
 static gboolean find_bat_by_id( ofaBatStore *self, ofxCounter id, GtkTreeIter *iter );
-static void     connect_to_hub_signaling_system( ofaBatStore *self );
+static void     hub_connect_to_signaling_system( ofaBatStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaBatStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaBatStore *self );
 static void     hub_on_updated_bat( ofaBatStore *self, ofoBat *bat );
@@ -205,7 +205,7 @@ ofa_bat_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		connect_to_hub_signaling_system( store );
+		hub_connect_to_signaling_system( store );
 		load_dataset( store );
 	}
 
@@ -391,7 +391,7 @@ find_bat_by_id( ofaBatStore *self, ofxCounter id, GtkTreeIter *iter )
  * connect to the dossier signaling system
  */
 static void
-connect_to_hub_signaling_system( ofaBatStore *self )
+hub_connect_to_signaling_system( ofaBatStore *self )
 {
 	ofaBatStorePrivate *priv;
 	gulong handler;

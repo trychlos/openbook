@@ -262,7 +262,6 @@ static gint            cmp_amounts( ofaEntryPage *self, const gchar *stra, const
 static gint            cmp_counters( ofaEntryPage *self, const gchar *stra, const gchar *strb );
 static void            on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self );
 static void            setup_footer( ofaEntryPage *self );
-static void            setup_signaling_connect( ofaEntryPage *self );
 static GtkWidget      *page_v_get_top_focusable_widget( const ofaPage *page );
 static void            on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self );
 static void            on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self );
@@ -310,15 +309,16 @@ static gboolean        save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, Gtk
 static void            remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
 static void            remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
 static gboolean        find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter );
-static void            on_hub_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
+static void            hub_connect_to_signaling_system( ofaEntryPage *self );
+static void            hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
 static void            do_new_entry( ofaEntryPage *self, ofoEntry *entry );
-static void            on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
+static void            hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
 static void            do_update_account_number( ofaEntryPage *self, const gchar *prev, const gchar *number );
 static void            do_update_ledger_mnemo( ofaEntryPage *self, const gchar *prev, const gchar *mnemo );
 static void            do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *code );
 static void            do_update_concil( ofaEntryPage *self, ofoConcil *concil, gboolean is_deleted );
 static void            do_update_entry( ofaEntryPage *self, ofoEntry *entry );
-static void            on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
+static void            hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
 static void            do_on_deleted_concil( ofaEntryPage *self, ofoConcil *concil );
 static void            do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry );
 static gboolean        on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaEntryPage *self );
@@ -498,7 +498,7 @@ page_v_setup_page( ofaPage *page )
 	setup_gen_selection( OFA_ENTRY_PAGE( page ));
 
 	/* connect to dossier signaling system */
-	setup_signaling_connect( OFA_ENTRY_PAGE( page ));
+	hub_connect_to_signaling_system( OFA_ENTRY_PAGE( page ));
 
 	/* allow the entry dataset to be loaded */
 	priv->initializing = FALSE;
@@ -1393,24 +1393,6 @@ setup_footer( ofaEntryPage *self )
 	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-comment" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->comment = GTK_LABEL( widget );
-}
-
-static void
-setup_signaling_connect( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gulong handler;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
 static GtkWidget *
@@ -3142,13 +3124,31 @@ find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter )
 	return( FALSE );
 }
 
+static void
+hub_connect_to_signaling_system( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gulong handler;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+}
+
 /*
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_hub_new_object";
+	static const gchar *thisfn = "ofa_entry_page_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -3190,9 +3190,9 @@ do_new_entry( ofaEntryPage *self, ofoEntry *entry )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_entry_page_hub_on_updated_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
 			thisfn,
@@ -3343,9 +3343,9 @@ do_update_entry( ofaEntryPage *self, ofoEntry *entry )
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_hub_deleted_object";
+	static const gchar *thisfn = "ofa_entry_page_hub_on_deleted_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), user_data=%p",
 			thisfn,

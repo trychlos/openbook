@@ -66,7 +66,7 @@ static void     insert_row( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope
 static void     set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
 static void     remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo );
-static void     hub_setup_signaling_system( ofaOpeTemplateStore *self );
+static void     hub_connect_to_signaling_system( ofaOpeTemplateStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateStore *self );
 static void     hub_on_updated_account( ofaOpeTemplateStore *self, const gchar *prev_id, const gchar *new_id );
@@ -194,7 +194,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		hub_setup_signaling_system( store );
+		hub_connect_to_signaling_system( store );
 	}
 
 	return( g_object_ref( store ));
@@ -368,7 +368,7 @@ remove_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *number )
  * of this self is equal to those of the dossier
  */
 static void
-hub_setup_signaling_system( ofaOpeTemplateStore *self )
+hub_connect_to_signaling_system( ofaOpeTemplateStore *self )
 {
 	ofaOpeTemplateStorePrivate *priv;
 	gulong handler;

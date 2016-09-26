@@ -123,8 +123,8 @@ static void      do_close_ledgers( sClose *close_data );
 static void      prepare_grid( sClose *close_data, const gchar *mnemo, GtkWidget *grid );
 static gboolean  close_foreach_ledger( sClose *close_data, const gchar *mnemo, GtkWidget *grid );
 static void      do_end_close( sClose *close_data );
-static void      on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *close_data );
-static void      on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *close_data );
+static void      hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *close_data );
+static void      hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *close_data );
 static void      load_settings( ofaLedgerClose *self );
 static void      set_settings( ofaLedgerClose *self );
 
@@ -667,13 +667,11 @@ do_close_ledgers( sClose *close_data )
 	gulong handler;
 
 	handler = g_signal_connect(
-					close_data->hub, SIGNAL_HUB_STATUS_COUNT,
-					G_CALLBACK( on_hub_entry_status_count ), close_data );
+			close_data->hub, SIGNAL_HUB_STATUS_COUNT, G_CALLBACK( hub_on_entry_status_count ), close_data );
 	close_data->hub_handlers = g_list_prepend( close_data->hub_handlers, ( gpointer ) handler );
 
 	handler = g_signal_connect(
-					close_data->hub, SIGNAL_HUB_STATUS_CHANGE,
-					G_CALLBACK( on_hub_entry_status_change ), close_data );
+			close_data->hub, SIGNAL_HUB_STATUS_CHANGE, G_CALLBACK( hub_on_entry_status_change ), close_data );
 	close_data->hub_handlers = g_list_prepend( close_data->hub_handlers, ( gpointer ) handler );
 
 	dialog = gtk_dialog_new_with_buttons(
@@ -791,7 +789,7 @@ do_end_close( sClose *close_data )
  * SIGNAL_HUB_STATUS_COUNT signal handler
  */
 static void
-on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *close_data )
+hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *close_data )
 {
 	close_data->entries_count = count;
 
@@ -806,7 +804,7 @@ on_hub_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, 
  * SIGNAL_HUB_STATUS_CHANGE signal handler
  */
 static void
-on_hub_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *close_data )
+hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *close_data )
 {
 	gdouble progress;
 	gchar *text;

@@ -80,6 +80,8 @@ static void            interface_base_init( ofaITVColumnableInterface *klass );
 static void            interface_base_finalize( ofaITVColumnableInterface *klass );
 static void            on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnable *instance );
 static gint            get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeViewColumn *column );
+static void            do_propagate_visible_columns( ofaITVColumnable *source, sITVColumnable *sdata, ofaITVColumnable *target );
+static void            itvcolumnable_clear_all( ofaITVColumnable *instance );
 static sITVColumnable *get_instance_data( const ofaITVColumnable *instance );
 static void            on_instance_finalized( sITVColumnable *sdata, void *instance );
 static void            free_column( sColumn *scol );
@@ -561,6 +563,86 @@ ofa_itvcolumnable_show_columns( ofaITVColumnable *instance )
 				g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( TRUE ));
 			}
 		}
+	}
+}
+
+/**
+ * ofa_itvcolumnable_propagate_visible_columns:
+ * @instance: the #ofaITVColumnable instance.
+ * @pages_list: a list of other #ofaITVColumnable pages.
+ *
+ * Propagate the columns visibility from @instance to each other page
+ * of @pages_list.
+ */
+void
+ofa_itvcolumnable_propagate_visible_columns( ofaITVColumnable *instance, GList *pages_list )
+{
+	static const gchar *thisfn = "ofa_itvcolumnable_propagate_visible_columns";
+	sITVColumnable *sdata;
+	GList *it;
+	ofaITVColumnable *page;
+
+	g_debug( "%s: instance=%p (%s), pages_list=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) pages_list );
+
+	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ));
+
+	sdata = get_instance_data( instance );
+
+	for( it=pages_list ; it ; it=it->next ){
+		page = ( ofaITVColumnable * ) it->data;
+		if( page && page != instance ){
+			do_propagate_visible_columns( instance, sdata, page );
+		}
+	}
+}
+
+static void
+do_propagate_visible_columns( ofaITVColumnable *source, sITVColumnable *src_data, ofaITVColumnable *target )
+{
+	guint i, count;
+	GtkTreeViewColumn *column, *prev;
+	gint col_id, col_width;
+	sITVColumnable *target_data;
+	sColumn *target_scol;
+	GActionGroup *action_group;
+
+	itvcolumnable_clear_all( target );
+	target_data = get_instance_data( target );
+	prev = NULL;
+
+	count = gtk_tree_view_get_n_columns( src_data->treeview );
+
+	for( i=0 ; i<count ; ++i ){
+		column = gtk_tree_view_get_column( src_data->treeview, i );
+		if( gtk_tree_view_column_get_visible( column )){
+			col_id = get_column_id( source, src_data, column );
+			col_width = gtk_tree_view_column_get_width( column );
+
+			target_scol = get_column_data_by_id( target, target_data, col_id );
+			if( target_scol && target_scol->column ){
+				gtk_tree_view_move_column_after( target_data->treeview, target_scol->column, prev );
+				gtk_tree_view_column_set_fixed_width( target_scol->column, col_width );
+				action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( target ), target_scol->group_name );
+				g_action_group_change_action_state( action_group, target_scol->name, g_variant_new_boolean( TRUE ));
+				prev = target_scol->column;
+			}
+		}
+	}
+}
+
+static void
+itvcolumnable_clear_all( ofaITVColumnable *instance )
+{
+	sITVColumnable *sdata;
+	GList *it;
+	sColumn *scol;
+
+	sdata = get_instance_data( instance );
+
+	for( it=sdata->columns_list ; it ; it=it->next ){
+		scol = ( sColumn * ) it->data;
+		g_simple_action_set_state( scol->action, g_variant_new_boolean( FALSE ));
 	}
 }
 

@@ -75,8 +75,8 @@ static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaTVARecordStore *self );
 static void     load_dataset( ofaTVARecordStore *self );
 static void     insert_row( ofaTVARecordStore *self, const ofoTVARecord *record );
-static void     set_row( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaTVARecordStore *self );
+static void     set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIter *iter );
+static void     hub_connect_to_signaling_system( ofaTVARecordStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTVARecordStore *self );
 static gboolean find_record_by_key( ofaTVARecordStore *self, const gchar *mnemo, const GDate *end, GtkTreeIter *iter );
@@ -241,7 +241,7 @@ ofa_tva_record_store_new( ofaHub *hub )
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
 		my_icollector_single_set_object( collector, store );
-		setup_signaling_connect( store );
+		hub_connect_to_signaling_system( store );
 		load_dataset( store );
 	}
 
@@ -301,14 +301,14 @@ insert_row( ofaTVARecordStore *self, const ofoTVARecord *record )
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
-	set_row( self, record, &iter );
+	set_row_by_iter( self, record, &iter );
 	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
-set_row( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIter *iter )
+set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIter *iter )
 {
-	static const gchar *thisfn = "ofa_tva_record_store_set_row";
+	static const gchar *thisfn = "ofa_tva_record_store_set_row_by_iter";
 	ofaTVARecordStorePrivate *priv;
 	const gchar *cvalidated;
 	gchar *sbegin, *send, *sdope, *stamp;
@@ -365,7 +365,7 @@ set_row( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIter *iter 
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaTVARecordStore *self )
+hub_connect_to_signaling_system( ofaTVARecordStore *self )
 {
 	ofaTVARecordStorePrivate *priv;
 	gulong handler;
@@ -426,7 +426,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaTV
 		mnemo = ofo_tva_record_get_mnemo( OFO_TVA_RECORD( object ));
 		dend = ofo_tva_record_get_end( OFO_TVA_RECORD( object ));
 		if( find_record_by_key( self, mnemo, dend, &iter )){
-			set_row( self, OFO_TVA_RECORD( object ), &iter);
+			set_row_by_iter( self, OFO_TVA_RECORD( object ), &iter);
 		}
 	}
 }

@@ -60,12 +60,12 @@ static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter
 static void     load_dataset( ofaCurrencyStore *self );
 static void     insert_row( ofaCurrencyStore *self, const ofoCurrency *currency );
 static void     set_row_by_iter( ofaCurrencyStore *self, const ofoCurrency *currency, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaCurrencyStore *self );
-static void     on_hub_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self );
-static void     on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self );
+static void     hub_connect_to_signaling_system( ofaCurrencyStore *self );
+static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self );
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self );
 static gboolean find_currency_by_code( ofaCurrencyStore *self, const gchar *code, GtkTreeIter *iter );
-static void     on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self );
-static void     on_hub_reload_dataset( ofaHub *hub, GType type, ofaCurrencyStore *self );
+static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self );
+static void     hub_on_reload_dataset( ofaHub *hub, GType type, ofaCurrencyStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyStore, ofa_currency_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaCurrencyStore ))
@@ -185,7 +185,7 @@ ofa_currency_store_new( ofaHub *hub )
 
 		my_icollector_single_set_object( collector, store );
 		load_dataset( store );
-		setup_signaling_connect( store );
+		hub_connect_to_signaling_system( store );
 	}
 
 	return( g_object_ref( store ));
@@ -280,23 +280,23 @@ set_row_by_iter( ofaCurrencyStore *self, const ofoCurrency *currency, GtkTreeIte
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaCurrencyStore *self )
+hub_connect_to_signaling_system( ofaCurrencyStore *self )
 {
 	ofaCurrencyStorePrivate *priv;
 	gulong handler;
 
 	priv = ofa_currency_store_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( on_hub_new_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( on_hub_updated_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( on_hub_deleted_object ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( on_hub_reload_dataset ), self );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_RELOAD, G_CALLBACK( hub_on_reload_dataset ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -304,9 +304,9 @@ setup_signaling_connect( ofaCurrencyStore *self )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-on_hub_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
 {
-	static const gchar *thisfn = "ofa_currency_store_on_hub_new_object";
+	static const gchar *thisfn = "ofa_currency_store_hub_on_new_object";
 
 	g_debug( "%s: hub=%p, object=%p (%s), instance=%p",
 			thisfn,
@@ -323,9 +323,9 @@ on_hub_new_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-on_hub_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaCurrencyStore *self )
 {
-	static const gchar *thisfn = "ofa_currency_store_on_hub_updated_object";
+	static const gchar *thisfn = "ofa_currency_store_hub_on_updated_object";
 	GtkTreeIter iter;
 	const gchar *code, *new_code;
 
@@ -372,9 +372,9 @@ find_currency_by_code( ofaCurrencyStore *self, const gchar *code, GtkTreeIter *i
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
 {
-	static const gchar *thisfn = "ofa_currency_store_on_hub_deleted_object";
+	static const gchar *thisfn = "ofa_currency_store_hub_on_deleted_object";
 	GtkTreeIter iter;
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
@@ -396,9 +396,9 @@ on_hub_deleted_object( ofaHub *hub, ofoBase *object, ofaCurrencyStore *self )
  * SIGNAL_HUB_RELOAD signal handler
  */
 static void
-on_hub_reload_dataset( ofaHub *hub, GType type, ofaCurrencyStore *self )
+hub_on_reload_dataset( ofaHub *hub, GType type, ofaCurrencyStore *self )
 {
-	static const gchar *thisfn = "ofa_currency_store_on_hub_reload_dataset";
+	static const gchar *thisfn = "ofa_currency_store_hub_on_reload_dataset";
 
 	g_debug( "%s: hub=%p, type=%lu, self=%p",
 			thisfn, ( void * ) hub, type, ( void * ) self );

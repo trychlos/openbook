@@ -74,7 +74,7 @@ static void     load_dataset( ofaRecurrentModelStore *self );
 static void     insert_row( ofaRecurrentModelStore *self, const ofoRecurrentModel *model );
 static void     set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter );
 static gboolean model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIter *iter );
-static void     setup_signaling_connect( ofaRecurrentModelStore *self );
+static void     hub_connect_to_signaling_system( ofaRecurrentModelStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self );
 static void     hub_on_updated_ope_template_mnemo( ofaRecurrentModelStore *self, const gchar *prev_mnemo, const gchar *new_mnemo );
@@ -243,7 +243,7 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 
 		my_icollector_single_set_object( collector, store );
 		load_dataset( store );
-		setup_signaling_connect( store );
+		hub_connect_to_signaling_system( store );
 	}
 
 	return( store );
@@ -372,7 +372,7 @@ model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIte
  * connect to the hub signaling system
  */
 static void
-setup_signaling_connect( ofaRecurrentModelStore *self )
+hub_connect_to_signaling_system( ofaRecurrentModelStore *self )
 {
 	ofaRecurrentModelStorePrivate *priv;
 	gulong handler;

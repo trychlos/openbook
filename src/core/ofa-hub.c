@@ -575,7 +575,7 @@ ofa_hub_get_collector( const ofaHub *hub )
  *
  * Be sure object class handlers are connected to the dossier signaling
  * system, as they may be needed before the class has the opportunity
- * to initialize itself
+ * to initialize itself.
  *
  * Example of a use case: the intermediate closing by ledger may be run
  * without having first loaded the accounts, but the accounts should be
