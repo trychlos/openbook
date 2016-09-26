@@ -49,6 +49,7 @@
    - SettlementPage: takes advantage of new display facilities.
    - TVAForm: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
    - TVARecord: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
+   - Improve formulas updates (todo #1214).
 
  Bug fixes:
 
