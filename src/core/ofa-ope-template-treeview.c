@@ -79,8 +79,8 @@ static void            on_selection_activated( ofaOpeTemplateTreeview *self, Gtk
 static void            on_selection_delete( ofaOpeTemplateTreeview *self, GtkTreeSelection *selection, void *empty );
 static void            get_and_send( ofaOpeTemplateTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoOpeTemplate *get_selected_with_selection( ofaOpeTemplateTreeview *self, GtkTreeSelection *selection );
-static gboolean        v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
-static gint            v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gboolean        tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
+static gint            tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateTreeview, ofa_ope_template_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateTreeview ))
@@ -209,8 +209,8 @@ ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ope_template_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->filter = v_filter;
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->filter = tvbin_v_filter;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -583,7 +583,7 @@ ofa_ope_template_treeview_set_selected( ofaOpeTemplateTreeview *view, const gcha
  * the ofaTreeStore
  */
 static gboolean
-v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
+tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 {
 	ofaOpeTemplateTreeviewPrivate *priv;
 	gchar *ledger;
@@ -599,7 +599,7 @@ v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_ope_template_treeview_v_sort";
 	gint cmp;

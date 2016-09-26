@@ -39,7 +39,7 @@ typedef struct {
 }
 	ofaActionPagePrivate;
 
-static void       v_setup_page( ofaPage *page );
+static void       page_v_setup_page( ofaPage *page );
 static GtkWidget *do_setup_view( ofaActionPage *self );
 static void       do_setup_actions( ofaActionPage *self );
 static void       do_init_view( ofaActionPage *self );
@@ -100,11 +100,11 @@ ofa_action_page_class_init( ofaActionPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = action_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = action_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
+	OFA_PAGE_CLASS( klass )->setup_page = page_v_setup_page;
 }
 
 static void
-v_setup_page( ofaPage *page )
+page_v_setup_page( ofaPage *page )
 {
 	GtkWidget *view;
 

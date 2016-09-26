@@ -69,8 +69,8 @@ static void     on_selection_activated( ofaDossierTreeview *self, GtkTreeSelecti
 static void     on_selection_delete( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static gboolean get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selection, ofaIDBMeta **meta, ofaIDBPeriod **period );
-static gboolean v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint     v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gboolean tvbin_v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierTreeview, ofa_dossier_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaDossierTreeview ))
@@ -139,8 +139,8 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = dossier_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = dossier_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->filter = v_filter;
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->filter = tvbin_v_filter;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	/**
 	 * ofaDossierTreeview::ofa-doschanged:
@@ -533,7 +533,7 @@ ofa_dossier_treeview_setup_store( ofaDossierTreeview *view )
 }
 
 static gboolean
-v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
+tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 {
 	ofaDossierTreeviewPrivate *priv;
 	gboolean visible;
@@ -573,7 +573,7 @@ v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_dossier_treeview_v_sort";
 	gint cmp;

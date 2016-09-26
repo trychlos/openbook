@@ -464,8 +464,6 @@
 1217 2016- 9-26 normalize setup_signaling_connect() function name
                 + callback functions
 
-1218 2016- 9-26 virtual functions: <base_class>_v_<method_name>
-
 1219
 
 -----------------------------------------------------------------------
@@ -1731,6 +1729,9 @@
 1216 2016- 9-26 Stores: remove hub from insert_row()/set_row() args
                 + set_row -> set_row_by_iter
      2016- 9-26
+
+1218 2016- 9-26 virtual functions: <base_class>_v_<method_name>
+     2016- 9-26 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

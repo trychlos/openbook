@@ -265,8 +265,8 @@ static void         itreeview_display_iface_init( ofaITreeviewDisplayInterface *
 static guint        itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar       *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean     itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static GtkWidget   *v_get_top_focusable_widget( const ofaPage *page );
-static void         v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static GtkWidget   *page_v_get_top_focusable_widget( const ofaPage *page );
+static void         paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget   *setup_view1( ofaReconcilPage *self );
 static void         setup_treeview_header( ofaReconcilPage *self, GtkContainer *parent );
 static void         setup_treeview( ofaReconcilPage *self, GtkContainer *parent );
@@ -426,9 +426,9 @@ ofa_reconcil_page_class_init( ofaReconcilPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = reconciliation_dispose;
 	G_OBJECT_CLASS( klass )->finalize = reconciliation_finalize;
 
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
-	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = paned_page_v_setup_view;
 }
 
 /*
@@ -486,7 +486,7 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaReconcilPagePrivate *priv;
 
@@ -503,7 +503,7 @@ v_get_top_focusable_widget( const ofaPage *page )
  * along with header and footer
  */
 static void
-v_setup_view( ofaPanedPage *page, GtkPaned *paned )
+paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
 	static const gchar *thisfn = "ofa_reconcil_page_v_setup_view";
 	ofaReconcilPagePrivate *priv;

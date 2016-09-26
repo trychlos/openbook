@@ -73,7 +73,7 @@ static void     on_selection_activated( ofaBatTreeview *self, GtkTreeSelection *
 static void     on_selection_delete( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoBat  *get_selected_with_selection( ofaBatTreeview *self, GtkTreeSelection *selection );
-static gint     v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatTreeview, ofa_bat_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaBatTreeview ))
@@ -141,7 +141,7 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = bat_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = bat_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	/**
 	 * ofaBatTreeview::ofa-batchanged:
@@ -494,7 +494,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_bat_treeview_v_sort";
 	gint cmp;

@@ -56,8 +56,8 @@ typedef struct {
 }
 	ofaAccountPagePrivate;
 
-static void       v_setup_page( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       page_v_setup_page( ofaPage *page );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaAccountFrameBin *frame, ofoAccount *account, ofaAccountPage *self );
 static void       on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountPage *self );
 
@@ -124,12 +124,12 @@ ofa_account_page_class_init( ofaAccountPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = accounts_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = accounts_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->setup_page = page_v_setup_page;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 }
 
 static void
-v_setup_page( ofaPage *page )
+page_v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_account_page_v_setup_page";
 	ofaAccountPagePrivate *priv;
@@ -158,7 +158,7 @@ v_setup_page( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaAccountPagePrivate *priv;
 	GtkWidget *current_page, *treeview;

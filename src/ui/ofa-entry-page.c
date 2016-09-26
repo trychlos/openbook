@@ -246,7 +246,7 @@ static void            itreeview_display_iface_init( ofaITreeviewDisplayInterfac
 static guint           itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
 static gchar          *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
 static gboolean        itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static void            v_setup_page( ofaPage *page );
+static void            page_v_setup_page( ofaPage *page );
 static void            reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent );
 static void            setup_gen_selection( ofaEntryPage *self );
 static void            setup_ledger_selection( ofaEntryPage *self );
@@ -263,7 +263,7 @@ static gint            cmp_counters( ofaEntryPage *self, const gchar *stra, cons
 static void            on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self );
 static void            setup_footer( ofaEntryPage *self );
 static void            setup_signaling_connect( ofaEntryPage *self );
-static GtkWidget      *v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget      *page_v_get_top_focusable_widget( const ofaPage *page );
 static void            on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self );
 static void            on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self );
 static gboolean        display_entries_from_ledger( ofaEntryPage *self );
@@ -402,8 +402,8 @@ ofa_entry_page_class_init( ofaEntryPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = entry_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->setup_page = page_v_setup_page;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 }
 
 /*
@@ -461,7 +461,7 @@ itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint co
 }
 
 static void
-v_setup_page( ofaPage *page )
+page_v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_entry_page_v_setup_page";
 	ofaEntryPagePrivate *priv;
@@ -1414,7 +1414,7 @@ setup_signaling_connect( ofaEntryPage *self )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaEntryPagePrivate *priv;
 

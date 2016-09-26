@@ -48,7 +48,7 @@ enum {
 	PROP_POSITION_ID,
 };
 
-static void       v_setup_page( ofaPage *page );
+static void       page_v_setup_page( ofaPage *page );
 static void       do_setup_view( ofaPanedPage *self );
 static void       do_init_view( ofaPanedPage *self );
 
@@ -200,11 +200,11 @@ ofa_paned_page_class_init( ofaPanedPageClass *klass )
 					-1, G_MAXINT, 150,
 					G_PARAM_CONSTRUCT | G_PARAM_STATIC_STRINGS | G_PARAM_READWRITE ));
 
-	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
+	OFA_PAGE_CLASS( klass )->setup_page = page_v_setup_page;
 }
 
 static void
-v_setup_page( ofaPage *page )
+page_v_setup_page( ofaPage *page )
 {
 	ofaPanedPagePrivate *priv;
 	GtkWidget *view;

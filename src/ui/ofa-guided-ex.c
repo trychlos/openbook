@@ -85,8 +85,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-guided-
 static const gchar *st_ui_name1         = "ofaGuidedExView1";
 static const gchar *st_ui_name2         = "ofaGuidedExView2";
 
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
+static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static void       pane_restore_position( ofaGuidedEx *self );
 static void       pane_save_position( ofaGuidedEx *self );
 static GtkWidget *setup_view1( ofaGuidedEx *self );
@@ -194,13 +194,13 @@ ofa_guided_ex_class_init( ofaGuidedExClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = guided_ex_dispose;
 	G_OBJECT_CLASS( klass )->finalize = guided_ex_finalize;
 
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
-	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = paned_page_v_setup_view;
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaGuidedExPrivate *priv;
 
@@ -212,7 +212,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static void
-v_setup_view( ofaPanedPage *page, GtkPaned *paned )
+paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
 	static const gchar *thisfn = "ofa_guided_ex_v_setup_view";
 	ofaGuidedExPrivate *priv;

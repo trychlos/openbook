@@ -59,8 +59,8 @@ typedef struct {
 }
 	ofaOpeTemplatePagePrivate;
 
-static void       v_setup_page( ofaPage *page );
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
+static void       page_v_setup_page( ofaPage *page );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static void       on_row_activated( ofaOpeTemplateFrameBin *frame, ofoOpeTemplate *template, ofaOpeTemplatePage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplatePage, ofa_ope_template_page, OFA_TYPE_PAGE, 0,
@@ -126,12 +126,12 @@ ofa_ope_template_page_class_init( ofaOpeTemplatePageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ope_template_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->setup_page = v_setup_page;
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->setup_page = page_v_setup_page;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 }
 
 static void
-v_setup_page( ofaPage *page )
+page_v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_ope_template_page_v_setup_page";
 	ofaOpeTemplatePagePrivate *priv;
@@ -158,7 +158,7 @@ v_setup_page( ofaPage *page )
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaOpeTemplatePagePrivate *priv;
 	GtkWidget *current_page, *treeview;

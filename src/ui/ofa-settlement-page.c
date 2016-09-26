@@ -156,7 +156,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-settlem
 static const gchar *st_ui_name1         = "SettlementPageView1";
 static const gchar *st_ui_name2         = "SettlementPageView2";
 
-static void       v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget *setup_view1( ofaSettlementPage *self );
 static void       setup_footer( ofaSettlementPage *self, GtkContainer *parent );
 static void       setup_treeview( ofaSettlementPage *self, GtkContainer *parent );
@@ -169,7 +169,7 @@ static GtkWidget *setup_view2( ofaSettlementPage *self );
 static void       setup_account_selection( ofaSettlementPage *self, GtkContainer *parent );
 static void       setup_settlement_selection( ofaSettlementPage *self, GtkContainer *parent );
 static void       setup_actions( ofaSettlementPage *self, GtkContainer *parent );
-static void       v_init_view( ofaPanedPage *page );
+static void       paned_page_v_init_view( ofaPanedPage *page );
 static void       on_account_changed( GtkEntry *entry, ofaSettlementPage *self );
 static void       on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self );
 static void       display_entries( ofaSettlementPage *self );
@@ -259,12 +259,12 @@ ofa_settlement_page_class_init( ofaSettlementPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = settlement_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = settlement_page_finalize;
 
-	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PANED_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = paned_page_v_setup_view;
+	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_v_init_view;
 }
 
 static void
-v_setup_view( ofaPanedPage *page, GtkPaned *paned )
+paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
 	static const gchar *thisfn = "ofa_settlement_page_v_setup_view";
 	ofaSettlementPagePrivate *priv;
@@ -651,7 +651,7 @@ setup_actions( ofaSettlementPage *self, GtkContainer *parent )
 }
 
 static void
-v_init_view( ofaPanedPage *page )
+paned_page_v_init_view( ofaPanedPage *page )
 {
 	static const gchar *thisfn = "ofa_settlement_page_v_init_view";
 	ofaSettlementPagePrivate *priv;

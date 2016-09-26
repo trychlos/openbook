@@ -72,7 +72,7 @@ static void      on_selection_activated( ofaRecurrentModelTreeview *self, GtkTre
 static void      on_selection_delete( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
 static void      get_and_send( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList    *get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection );
-static gint      v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint      tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 static gint      sort_periodicity_detail( const gchar *detaila, const gchar *detailb );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelTreeview, ofa_recurrent_model_treeview, OFA_TYPE_TVBIN, 0,
@@ -141,7 +141,7 @@ ofa_recurrent_model_treeview_class_init( ofaRecurrentModelTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = recurrent_model_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_model_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	/**
 	 * ofaRecurrentModelTreeview::ofa-recchanged:
@@ -445,7 +445,7 @@ get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_treeview_v_sort";
 	gint cmp;

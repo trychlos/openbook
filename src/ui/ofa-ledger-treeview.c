@@ -73,7 +73,7 @@ static void       on_selection_delete( ofaLedgerTreeview *self, GtkTreeSelection
 static void       get_and_send( ofaLedgerTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList     *get_selected_with_selection( ofaLedgerTreeview *self, GtkTreeSelection *selection );
 static gboolean   find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *ledger, GtkTreeIter *iter );
-static gint       v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint       tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerTreeview, ofa_ledger_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaLedgerTreeview ))
@@ -141,7 +141,7 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	/**
 	 * ofaLedgerTreeview::ofa-ledchanged:
@@ -492,7 +492,7 @@ find_row_by_mnemo( ofaLedgerTreeview *self, const gchar *ledger, GtkTreeIter *it
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_ledger_treeview_v_sort";
 	gint cmp;
