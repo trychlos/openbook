@@ -33,6 +33,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
@@ -245,6 +246,15 @@ iwindow_iface_init( myIWindowInterface *iface )
 static gboolean
 iwindow_is_destroy_allowed( const myIWindow *instance )
 {
+	ofaOpeTemplateSelectPrivate *priv;
+	GtkWidget *page;
+
+	priv = ofa_ope_template_select_get_instance_private( OFA_OPE_TEMPLATE_SELECT( instance ));
+
+	/* save the settings before hiding */
+	page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
+	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( page ));
+
 	return( FALSE );
 }
 

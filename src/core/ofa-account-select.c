@@ -35,6 +35,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
@@ -252,10 +253,21 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 /*
  * ofaAccountSelect is not destroyed at end, but only hidden.
+ *
+ * This is a good time to save the settings
  */
 static gboolean
 iwindow_is_destroy_allowed( const myIWindow *instance )
 {
+	ofaAccountSelectPrivate *priv;
+	GtkWidget *page;
+
+	priv = ofa_account_select_get_instance_private( OFA_ACCOUNT_SELECT( instance ));
+
+	/* save the settings before hiding */
+	page = ofa_account_frame_bin_get_current_page( priv->account_bin );
+	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( page ));
+
 	return( FALSE );
 }
 
