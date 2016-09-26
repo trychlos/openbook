@@ -46,6 +46,7 @@
    - RecurrentModel: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
    - RecurrentNew: managed as a singleton (todo #1213).
    - RecurrentRun: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
+   - SettlementPage: takes advantage of new display facilities.
    - TVAForm: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
    - TVARecord: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
 

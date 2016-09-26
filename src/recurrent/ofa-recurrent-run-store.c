@@ -51,7 +51,7 @@ typedef struct {
 	ofaRecurrentRunStorePrivate;
 
 static GType st_col_types[REC_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* mnemo, numseq, numseq_int */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* mnemo, numseq, numseq_int */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, date, status */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* amount1, amount2, amount3 */
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoRecurrentRun itself, the #ofoRecurrentModel */
