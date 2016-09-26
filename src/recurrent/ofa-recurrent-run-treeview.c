@@ -76,8 +76,8 @@ static void     on_selection_activated( ofaRecurrentRunTreeview *self, GtkTreeSe
 static void     on_selection_delete( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList   *get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection );
-static gboolean v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint     v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gboolean tvbin_v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunTreeview, ofa_recurrent_run_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaRecurrentRunTreeview ))
@@ -145,8 +145,8 @@ ofa_recurrent_run_treeview_class_init( ofaRecurrentRunTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = recurrent_run_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_run_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->filter = v_filter;
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->filter = tvbin_v_filter;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	/**
 	 * ofaRecurrentRunTreeview::ofa-recchanged:
@@ -621,7 +621,7 @@ get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *se
 }
 
 static gboolean
-v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter )
+tvbin_v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
 	gboolean visible;
@@ -654,7 +654,7 @@ v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_treeview_v_sort";
 	gchar *mnemoa, *labela, *seqa, *datea, *statusa, *amount1a, *amount2a, *amount3a;

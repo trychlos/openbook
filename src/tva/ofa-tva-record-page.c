@@ -69,11 +69,11 @@ typedef struct {
 }
 	ofaTVARecordPagePrivate;
 
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static GtkWidget *v_setup_view( ofaActionPage *page );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *action_page_v_setup_view( ofaActionPage *page );
 static GtkWidget *setup_treeview( ofaTVARecordPage *self );
-static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
-static void       v_init_view( ofaActionPage *page );
+static void       action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       action_page_v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
 static void       on_row_activated( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
 static void       on_delete_key( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
@@ -153,15 +153,15 @@ ofa_tva_record_page_class_init( ofaTVARecordPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = tva_record_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_record_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
-	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
-	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = action_page_v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = action_page_v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = action_page_v_init_view;
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaTVARecordPagePrivate *priv;
 
@@ -173,7 +173,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static GtkWidget *
-v_setup_view( ofaActionPage *page )
+action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_tva_record_page_v_setup_view";
 	ofaTVARecordPagePrivate *priv;
@@ -218,7 +218,7 @@ setup_treeview( ofaTVARecordPage *self )
 }
 
 static void
-v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
+action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaTVARecordPagePrivate *priv;
 
@@ -265,7 +265,7 @@ v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 }
 
 static void
-v_init_view( ofaActionPage *page )
+action_page_v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_tva_record_page_v_init_view";
 	ofaTVARecordPagePrivate *priv;
@@ -372,7 +372,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaTVARecord
 
 	delete_with_confirm( self, record );
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
+	gtk_widget_grab_focus( page_v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static gboolean

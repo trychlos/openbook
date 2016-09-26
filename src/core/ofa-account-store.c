@@ -76,7 +76,7 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountStore *store );
-static void     tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub );
+static void     tree_store_v_load_dataset( ofaTreeStore *store, ofaHub *hub );
 static void     insert_row( ofaAccountStore *store, const ofoAccount *account );
 static void     set_row_by_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *iter );
 static gboolean find_parent_iter( ofaAccountStore *store, const ofoAccount *account, GtkTreeIter *parent_iter );
@@ -164,7 +164,7 @@ ofa_account_store_class_init( ofaAccountStoreClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = account_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_store_finalize;
 
-	OFA_TREE_STORE_CLASS( klass )->load_dataset = tree_store_load_dataset;
+	OFA_TREE_STORE_CLASS( klass )->load_dataset = tree_store_v_load_dataset;
 }
 
 /**
@@ -243,7 +243,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountS
  * load the dataset when columns and dossier have been both set
  */
 static void
-tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub )
+tree_store_v_load_dataset( ofaTreeStore *store, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoAccount *account;
@@ -881,6 +881,6 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaAccountStore *store )
 
 	if( type == OFO_TYPE_ACCOUNT ){
 		gtk_tree_store_clear( GTK_TREE_STORE( store ));
-		tree_store_load_dataset( OFA_TREE_STORE( store ), hub );
+		tree_store_v_load_dataset( OFA_TREE_STORE( store ), hub );
 	}
 }

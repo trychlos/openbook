@@ -87,7 +87,7 @@ static void        cell_data_render_text( GtkCellRendererText *renderer, gboolea
 static gboolean    tview_on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaAccountTreeview *self );
 static void        tview_collapse_node( ofaAccountTreeview *self, GtkWidget *widget );
 static void        tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget );
-static gboolean    v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
+static gboolean    tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountTreeview, ofa_account_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaAccountTreeview ))
@@ -211,7 +211,7 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = account_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = account_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->filter = v_filter;
+	OFA_TVBIN_CLASS( klass )->filter = tvbin_v_filter;
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -821,7 +821,7 @@ tview_expand_node( ofaAccountTreeview *self, GtkWidget *widget )
  * the ofaTreeStore
  */
 static gboolean
-v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
+tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 {
 	ofaAccountTreeviewPrivate *priv;
 	gchar *number;

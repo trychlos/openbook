@@ -67,7 +67,7 @@ static void         on_selection_activated( ofaCurrencyTreeview *self, GtkTreeSe
 static void         on_selection_delete( ofaCurrencyTreeview *self, GtkTreeSelection *selection, void *empty );
 static void         get_and_send( ofaCurrencyTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoCurrency *get_selected_with_selection( ofaCurrencyTreeview *self, GtkTreeSelection *selection );
-static gint         v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint         tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaCurrencyTreeview, ofa_currency_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaCurrencyTreeview ))
@@ -135,7 +135,7 @@ ofa_currency_treeview_class_init( ofaCurrencyTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = currency_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	/**
 	 * ofaCurrencyTreeview::ofa-curchanged:
@@ -434,7 +434,7 @@ get_selected_with_selection( ofaCurrencyTreeview *self, GtkTreeSelection *select
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_currency_treeview_v_sort";
 	gint cmp;

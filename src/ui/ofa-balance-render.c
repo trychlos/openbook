@@ -130,14 +130,14 @@ static const gchar *st_notes_font        = "Sans Italic 5";
 #define COLOR_BLACK                      0,      0,      0
 #define COLOR_WHITE                      1,      1,      1
 
-static GtkWidget         *page_get_top_focusable_widget( const ofaPage *page );
-static void               paned_page_init_view( ofaPanedPage *page );
-static GtkWidget         *render_page_get_args_widget( ofaRenderPage *page );
-static const gchar       *render_page_get_paper_name( ofaRenderPage *page );
-static GtkPageOrientation render_page_get_page_orientation( ofaRenderPage *page );
-static void               render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
-static GList             *render_page_get_dataset( ofaRenderPage *page );
-static void               render_page_free_dataset( ofaRenderPage *page, GList *dataset );
+static GtkWidget         *page_v_get_top_focusable_widget( const ofaPage *page );
+static void               paned_page_v_init_view( ofaPanedPage *page );
+static GtkWidget         *render_page_v_get_args_widget( ofaRenderPage *page );
+static const gchar       *render_page_v_get_paper_name( ofaRenderPage *page );
+static GtkPageOrientation render_page_v_get_page_orientation( ofaRenderPage *page );
+static void               render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
+static GList             *render_page_v_get_dataset( ofaRenderPage *page );
+static void               render_page_v_free_dataset( ofaRenderPage *page, GList *dataset );
 static void               on_args_changed( ofaBalanceBin *bin, ofaBalanceRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
@@ -233,28 +233,28 @@ ofa_balance_render_class_init( ofaBalanceRenderClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = balance_render_dispose;
 	G_OBJECT_CLASS( klass )->finalize = balance_render_finalize;
 
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
-	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_init_view;
+	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_v_init_view;
 
-	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = render_page_get_args_widget;
-	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = render_page_get_paper_name;
-	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = render_page_get_page_orientation;
-	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_get_print_settings;
-	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_get_dataset;
-	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_free_dataset;
+	OFA_RENDER_PAGE_CLASS( klass )->get_args_widget = render_page_v_get_args_widget;
+	OFA_RENDER_PAGE_CLASS( klass )->get_paper_name = render_page_v_get_paper_name;
+	OFA_RENDER_PAGE_CLASS( klass )->get_page_orientation = render_page_v_get_page_orientation;
+	OFA_RENDER_PAGE_CLASS( klass )->get_print_settings = render_page_v_get_print_settings;
+	OFA_RENDER_PAGE_CLASS( klass )->get_dataset = render_page_v_get_dataset;
+	OFA_RENDER_PAGE_CLASS( klass )->free_dataset = render_page_v_free_dataset;
 }
 
 static GtkWidget *
-page_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	return( NULL );
 }
 
 static void
-paned_page_init_view( ofaPanedPage *page )
+paned_page_v_init_view( ofaPanedPage *page )
 {
-	static const gchar *thisfn = "ofa_balance_render_paned_page_init_view";
+	static const gchar *thisfn = "ofa_balance_render_paned_page_v_init_view";
 	ofaBalanceRenderPrivate *priv;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
@@ -266,7 +266,7 @@ paned_page_init_view( ofaPanedPage *page )
 }
 
 static GtkWidget *
-render_page_get_args_widget( ofaRenderPage *page )
+render_page_v_get_args_widget( ofaRenderPage *page )
 {
 	ofaBalanceRenderPrivate *priv;
 	ofaBalanceBin *bin;
@@ -281,19 +281,19 @@ render_page_get_args_widget( ofaRenderPage *page )
 }
 
 static const gchar *
-render_page_get_paper_name( ofaRenderPage *page )
+render_page_v_get_paper_name( ofaRenderPage *page )
 {
 	return( THIS_PAPER_NAME );
 }
 
 static GtkPageOrientation
-render_page_get_page_orientation( ofaRenderPage *page )
+render_page_v_get_page_orientation( ofaRenderPage *page )
 {
 	return( THIS_PAGE_ORIENTATION );
 }
 
 static void
-render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
+render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
 {
 	myISettings *settings;
 
@@ -303,7 +303,7 @@ render_page_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar *
 }
 
 static GList *
-render_page_get_dataset( ofaRenderPage *page )
+render_page_v_get_dataset( ofaRenderPage *page )
 {
 	ofaBalanceRenderPrivate *priv;
 	GList *dataset;
@@ -341,7 +341,7 @@ render_page_get_dataset( ofaRenderPage *page )
 }
 
 static void
-render_page_free_dataset( ofaRenderPage *page, GList *dataset )
+render_page_v_free_dataset( ofaRenderPage *page, GList *dataset )
 {
 	ofs_account_balance_list_free( &dataset );
 }

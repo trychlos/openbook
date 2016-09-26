@@ -74,6 +74,7 @@
    - ofaRateStore, ofaRateTreeview: new classes.
    - RecurrentManagePage: renamed to RecurrentModelPage (todo #1211).
    - All stores take advantage of hub as a private variable (todo #1216).
+   - Normalize virtual method names (todo #1218).
 
 -----------------------------------------------------------------------
  Version 0.59

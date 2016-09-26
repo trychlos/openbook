@@ -90,13 +90,13 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-
 
 typedef void ( *RecurrentValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, guint *count );
 
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static void       v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
+static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget *setup_view1( ofaRecurrentRunPage *self );
 static GtkWidget *setup_view2( ofaRecurrentRunPage *self );
 static void       setup_filters( ofaRecurrentRunPage *self, GtkContainer *parent );
 static void       setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent );
-static void       v_init_view( ofaPanedPage *page );
+static void       paned_page_v_init_view( ofaPanedPage *page );
 static void       filter_on_cancelled_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_waiting_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
 static void       filter_on_validated_btn_toggled( GtkToggleButton *button, ofaRecurrentRunPage *self );
@@ -182,14 +182,14 @@ ofa_recurrent_run_page_class_init( ofaRecurrentRunPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = recurrent_run_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_run_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
-	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_PANED_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = paned_page_v_setup_view;
+	OFA_PANED_PAGE_CLASS( klass )->init_view = paned_page_v_init_view;
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaRecurrentRunPagePrivate *priv;
 
@@ -201,7 +201,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static void
-v_setup_view( ofaPanedPage *page, GtkPaned *paned )
+paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_page_v_setup_view";
 	ofaRecurrentRunPagePrivate *priv;
@@ -329,7 +329,7 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 }
 
 static void
-v_init_view( ofaPanedPage *page )
+paned_page_v_init_view( ofaPanedPage *page )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_page_v_init_view";
 	ofaRecurrentRunPagePrivate *priv;

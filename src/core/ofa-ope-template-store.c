@@ -61,7 +61,7 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *self );
-static void     list_store_load_dataset( ofaListStore *self, ofaHub *hub );
+static void     list_store_v_load_dataset( ofaListStore *self, ofaHub *hub );
 static void     insert_row( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope );
 static void     set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
@@ -141,7 +141,7 @@ ofa_ope_template_store_class_init( ofaOpeTemplateStoreClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ope_template_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ope_template_store_finalize;
 
-	OFA_LIST_STORE_CLASS( klass )->load_dataset = list_store_load_dataset;
+	OFA_LIST_STORE_CLASS( klass )->load_dataset = list_store_v_load_dataset;
 }
 
 /**
@@ -224,7 +224,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTempl
  * load the dataset when columns and dossier have been both set
  */
 static void
-list_store_load_dataset( ofaListStore *self, ofaHub *hub )
+list_store_v_load_dataset( ofaListStore *self, ofaHub *hub )
 {
 	const GList *dataset, *it;
 	ofoOpeTemplate *ope;
@@ -531,7 +531,7 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self )
 
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		list_store_load_dataset( OFA_LIST_STORE( self ), hub );
+		list_store_v_load_dataset( OFA_LIST_STORE( self ), hub );
 	}
 }
 

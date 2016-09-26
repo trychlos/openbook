@@ -73,10 +73,10 @@ typedef struct {
 }
 	ofaCurrencyPagePrivate;
 
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static GtkWidget *v_setup_view( ofaActionPage *page );
-static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
-static void       v_init_view( ofaActionPage *page );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *action_page_v_setup_view( ofaActionPage *page );
+static void       action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       action_page_v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaCurrencyTreeview *tview, ofoCurrency *currency, ofaCurrencyPage *self );
 static void       on_row_activated( ofaCurrencyTreeview *tview, ofoCurrency *currency, ofaCurrencyPage *self );
 static void       on_delete_key( ofaCurrencyTreeview *tview, ofoCurrency *currency, ofaCurrencyPage *self );
@@ -164,15 +164,15 @@ ofa_currency_page_class_init( ofaCurrencyPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = currency_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = currency_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
-	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
-	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = action_page_v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = action_page_v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = action_page_v_init_view;
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaCurrencyPagePrivate *priv;
 
@@ -184,7 +184,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static GtkWidget *
-v_setup_view( ofaActionPage *page )
+action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_currency_page_v_setup_view";
 	ofaCurrencyPagePrivate *priv;
@@ -219,7 +219,7 @@ v_setup_view( ofaActionPage *page )
 }
 
 static void
-v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
+action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaCurrencyPagePrivate *priv;
 
@@ -264,7 +264,7 @@ v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 }
 
 static void
-v_init_view( ofaActionPage *page )
+action_page_v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_currency_page_v_init_view";
 	ofaCurrencyPagePrivate *priv;

@@ -70,11 +70,11 @@ typedef struct {
 }
 	ofaLedgerPagePrivate;
 
-static GtkWidget *v_get_top_focusable_widget( const ofaPage *page );
-static GtkWidget *v_setup_view( ofaActionPage *page );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
+static GtkWidget *action_page_v_setup_view( ofaActionPage *page );
 static GtkWidget *setup_treeview( ofaLedgerPage *page );
-static void       v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
-static void       v_init_view( ofaActionPage *page );
+static void       action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
+static void       action_page_v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self );
 static void       on_row_activated( ofaLedgerTreeview *view, GList *list, ofaLedgerPage *self );
 static void       on_insert_key( ofaLedgerTreeview *view, ofaLedgerPage *self );
@@ -157,15 +157,15 @@ ofa_ledger_page_class_init( ofaLedgerPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = ledger_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = ledger_page_finalize;
 
-	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = v_get_top_focusable_widget;
+	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
-	OFA_ACTION_PAGE_CLASS( klass )->setup_view = v_setup_view;
-	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = v_setup_actions;
-	OFA_ACTION_PAGE_CLASS( klass )->init_view = v_init_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_view = action_page_v_setup_view;
+	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = action_page_v_setup_actions;
+	OFA_ACTION_PAGE_CLASS( klass )->init_view = action_page_v_init_view;
 }
 
 static GtkWidget *
-v_get_top_focusable_widget( const ofaPage *page )
+page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaLedgerPagePrivate *priv;
 
@@ -177,7 +177,7 @@ v_get_top_focusable_widget( const ofaPage *page )
 }
 
 static GtkWidget *
-v_setup_view( ofaActionPage *page )
+action_page_v_setup_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_ledger_page_v_setup_view";
 	ofaLedgerPagePrivate *priv;
@@ -220,7 +220,7 @@ setup_treeview( ofaLedgerPage *page )
 }
 
 static void
-v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
+action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
 	ofaLedgerPagePrivate *priv;
 
@@ -279,7 +279,7 @@ v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 }
 
 static void
-v_init_view( ofaActionPage *page )
+action_page_v_init_view( ofaActionPage *page )
 {
 	static const gchar *thisfn = "ofa_ledger_page_v_init_view";
 	ofaLedgerPagePrivate *priv;
@@ -422,7 +422,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaLedgerPag
 	}
 	ofa_ledger_treeview_free_selected( selected );
 
-	gtk_widget_grab_focus( v_get_top_focusable_widget( OFA_PAGE( self )));
+	gtk_widget_grab_focus( page_v_get_top_focusable_widget( OFA_PAGE( self )));
 }
 
 static gboolean

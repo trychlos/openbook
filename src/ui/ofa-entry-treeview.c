@@ -96,8 +96,8 @@ static void      on_selection_delete( ofaEntryTreeview *self, GtkTreeSelection *
 static void      get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList    *get_selected_with_selection( ofaEntryTreeview *self, GtkTreeSelection *selection );
 static gint      get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean  v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint      v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gboolean  tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint      tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryTreeview, ofa_entry_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaEntryTreeview ))
@@ -166,8 +166,8 @@ ofa_entry_treeview_class_init( ofaEntryTreeviewClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = entry_treeview_dispose;
 	G_OBJECT_CLASS( klass )->finalize = entry_treeview_finalize;
 
-	OFA_TVBIN_CLASS( klass )->filter = v_filter;
-	OFA_TVBIN_CLASS( klass )->sort = v_sort;
+	OFA_TVBIN_CLASS( klass )->filter = tvbin_v_filter;
+	OFA_TVBIN_CLASS( klass )->sort = tvbin_v_sort;
 
 	/**
 	 * ofaEntryTreeview::ofa-entchanged:
@@ -635,7 +635,7 @@ get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *ite
 }
 
 static gboolean
-v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
+tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaEntryTreeviewPrivate *priv;
 
@@ -645,7 +645,7 @@ v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 }
 
 static gint
-v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_entry_treeview_v_sort";
 	gint cmp;

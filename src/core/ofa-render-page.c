@@ -82,7 +82,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-render-page.ui";
 static const gchar *st_ui_name          = "RenderPageWindow";
 
-static void               v_setup_view( ofaPanedPage *page, GtkPaned *paned );
+static void               paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
 static GtkWidget         *setup_view1( ofaRenderPage *self );
 static GtkWidget         *setup_view2( ofaRenderPage *self );
 static void               setup_args_area( ofaRenderPage *self, GtkContainer *parent );
@@ -168,11 +168,11 @@ ofa_render_page_class_init( ofaRenderPageClass *klass )
 	G_OBJECT_CLASS( klass )->dispose = render_page_dispose;
 	G_OBJECT_CLASS( klass )->finalize = render_page_finalize;
 
-	OFA_PANED_PAGE_CLASS( klass )->setup_view = v_setup_view;
+	OFA_PANED_PAGE_CLASS( klass )->setup_view = paned_page_v_setup_view;
 }
 
 static void
-v_setup_view( ofaPanedPage *page, GtkPaned *paned )
+paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 {
 	static const gchar *thisfn = "ofa_render_page_v_setup_view";
 	ofaRenderPagePrivate *priv;
