@@ -59,16 +59,6 @@ static GType st_col_types[TVA_RECORD_N_COLUMNS] = {
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoTVARecord itself, the #ofoTVAForm */
 };
 
-/* signals defined here
- */
-enum {
-	INSERTED = 0,
-	REMOVED,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
@@ -150,50 +140,6 @@ ofa_tva_record_store_class_init( ofaTVARecordStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = tva_record_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_record_store_finalize;
-
-	/**
-	 * ofaTVARecordStore::ofa-inserted:
-	 *
-	 * This signal is sent on the #ofaTVARecordStore when a new
-	 * row is inserted.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaTVARecordStore *store,
-	 * 						gpointer         user_data );
-	 */
-	st_signals[ INSERTED ] = g_signal_new_class_handler(
-				"ofa-inserted",
-				OFA_TYPE_TVA_RECORD_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
-	 * ofaTVARecordStore::ofa-removed:
-	 *
-	 * This signal is sent on the #ofaTVARecordStore when a row is
-	 * removed.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaTVARecordStore *store,
-	 * 						gpointer         user_data );
-	 */
-	st_signals[ REMOVED ] = g_signal_new_class_handler(
-				"ofa-removed",
-				OFA_TYPE_TVA_RECORD_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -302,7 +248,6 @@ insert_row( ofaTVARecordStore *self, const ofoTVARecord *record )
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
 	set_row_by_iter( self, record, &iter );
-	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
@@ -499,7 +444,6 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaTVARecordStore *self )
 	if( OFO_IS_TVA_RECORD( object )){
 		if( find_record_by_ptr( self, OFO_TVA_RECORD( object ), &iter )){
 			gtk_list_store_remove( GTK_LIST_STORE( self ), &iter );
-			g_signal_emit_by_name( self, "ofa-removed" );
 		}
 	}
 }

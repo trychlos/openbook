@@ -42,10 +42,6 @@
  * - second, it may be populated with a list provided by the caller;
  *   in this mode, the store is cleared and released when the caller
  *   itself ends up.
- *
- * Signals defined here:
- * - ofa-inserted: when a new row is inserted,
- * - ofa-removed: when a row is removed.
  */
 
 #include "api/ofa-hub-def.h"

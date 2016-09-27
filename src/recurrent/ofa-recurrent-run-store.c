@@ -57,16 +57,6 @@ static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* the #ofoRecurrentRun itself, the #ofoRecurrentModel */
 };
 
-/* signals defined here
- */
-enum {
-	INSERTED = 0,
-	REMOVED,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static ofaRecurrentRunStore *create_new_store( ofaHub *hub, gint mode );
 static void                  load_dataset( ofaRecurrentRunStore *self );
 static gint                  on_sort_run( GtkTreeModel *trun, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRunStore *self );
@@ -147,50 +137,6 @@ ofa_recurrent_run_store_class_init( ofaRecurrentRunStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = recurrent_run_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = recurrent_run_store_finalize;
-
-	/**
-	 * ofaRecurrentRunStore::ofa-inserted:
-	 *
-	 * This signal is sent on the #ofaRecurrentRunStore when a new
-	 * row is inserted.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaRecurrentRunStore *store,
-	 * 						gpointer            user_data );
-	 */
-	st_signals[ INSERTED ] = g_signal_new_class_handler(
-				"ofa-inserted",
-				OFA_TYPE_RECURRENT_RUN_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
-	 * ofaRecurrentRunStore::ofa-removed:
-	 *
-	 * This signal is sent on the #ofaRecurrentRunStore when a row is
-	 * removed.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaRecurrentRunStore *store,
-	 * 						gpointer            user_data );
-	 */
-	st_signals[ REMOVED ] = g_signal_new_class_handler(
-				"ofa-removed",
-				OFA_TYPE_RECURRENT_RUN_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -342,8 +288,6 @@ insert_row( ofaRecurrentRunStore *self, const ofoRecurrentRun *run )
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
 	set_row_by_iter( self, run, &iter );
-
-	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
