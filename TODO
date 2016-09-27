@@ -449,10 +449,6 @@
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
-1198 2016- 9-15 ofaIStore, ofaListStore, ofaTtreeStore: review respective
-                rules and features of the interface and of the base classes
-                + review the emitted signals
-
 1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
                 box which requests a confirmation for <n> operations
                 + progress bar
@@ -1661,6 +1657,11 @@
 1197 2016- 9-15 Restore: at the end, the close button of the assistant is
                 left inactive
      2016- 9-20 not reproductible -> cancelled
+
+1198 2016- 9-15 ofaIStore, ofaListStore, ofaTtreeStore: review respective
+                rules and features of the interface and of the base classes
+                + review the emitted signals
+     2016- 9-27 done
 
 1199 2016- 9-16 critical when importing BAT Boursorama du 29/09
                 cf. todo_1199

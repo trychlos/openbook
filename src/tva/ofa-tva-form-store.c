@@ -55,16 +55,6 @@ static GType st_col_types[TVA_N_COLUMNS] = {
 		G_TYPE_OBJECT									/* the #ofoTVAForm itself */
 };
 
-/* signals defined here
- */
-enum {
-	INSERTED = 0,
-	REMOVED,
-	N_SIGNALS
-};
-
-static guint st_signals[ N_SIGNALS ]    = { 0 };
-
 static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
@@ -146,50 +136,6 @@ ofa_tva_form_store_class_init( ofaTVAFormStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = tva_form_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tva_form_store_finalize;
-
-	/**
-	 * ofaTVAFormStore::ofa-inserted:
-	 *
-	 * This signal is sent on the #ofaTVAFormStore when a new
-	 * row is inserted.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaTVAFormStore *store,
-	 * 						gpointer       user_data );
-	 */
-	st_signals[ INSERTED ] = g_signal_new_class_handler(
-				"ofa-inserted",
-				OFA_TYPE_TVA_FORM_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
-
-	/**
-	 * ofaTVAFormStore::ofa-removed:
-	 *
-	 * This signal is sent on the #ofaTVAFormStore when a row is
-	 * removed.
-	 *
-	 * Handler is of type:
-	 * void ( *handler )( ofaTVAFormStore *store,
-	 * 						gpointer       user_data );
-	 */
-	st_signals[ REMOVED ] = g_signal_new_class_handler(
-				"ofa-removed",
-				OFA_TYPE_TVA_FORM_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				0,
-				G_TYPE_NONE );
 }
 
 /**
@@ -288,7 +234,6 @@ insert_row( ofaTVAFormStore *self, const ofoTVAForm *form )
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
 	set_row_by_iter( self, form, &iter );
-	g_signal_emit_by_name( self, "ofa-inserted" );
 }
 
 static void
@@ -466,7 +411,6 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaTVAFormStore *self )
 	if( OFO_IS_TVA_FORM( object )){
 		if( find_form_by_mnemo( self, ofo_tva_form_get_mnemo( OFO_TVA_FORM( object )), &iter )){
 			gtk_list_store_remove( GTK_LIST_STORE( self ), &iter );
-			g_signal_emit_by_name( self, "ofa-removed" );
 		}
 	}
 }
