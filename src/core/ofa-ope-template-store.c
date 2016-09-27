@@ -61,7 +61,7 @@ static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/fille
 static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTemplateStore *self );
-static void     list_store_v_load_dataset( ofaListStore *self, ofaHub *hub );
+static void     list_store_v_load_dataset( ofaListStore *self );
 static void     insert_row( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope );
 static void     set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter );
 static gboolean find_row_by_mnemo( ofaOpeTemplateStore *self, const gchar *mnemo, GtkTreeIter *iter, gboolean *bvalid );
@@ -221,19 +221,26 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaOpeTempl
 }
 
 /*
- * load the dataset when columns and dossier have been both set
+ * Load the dataset.
+ *
+ * The #ofaListStore::load_dataset() virtual method is just a redirection
+ * of the #ofaIStore::load_dataset() interface method, which is itself
+ * triggered from the #ofa_istore_load_dataset() public method.
  */
 static void
-list_store_v_load_dataset( ofaListStore *self, ofaHub *hub )
+list_store_v_load_dataset( ofaListStore *store )
 {
+	ofaOpeTemplateStorePrivate *priv;
 	const GList *dataset, *it;
 	ofoOpeTemplate *ope;
 
-	dataset = ofo_ope_template_get_dataset( hub );
+	priv = ofa_ope_template_store_get_instance_private( OFA_OPE_TEMPLATE_STORE( store ));
+
+	dataset = ofo_ope_template_get_dataset( priv->hub );
 
 	for( it=dataset ; it ; it=it->next ){
 		ope = OFO_OPE_TEMPLATE( it->data );
-		insert_row( OFA_OPE_TEMPLATE_STORE( self ), ope );
+		insert_row( OFA_OPE_TEMPLATE_STORE( store ), ope );
 	}
 }
 
@@ -531,7 +538,7 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateStore *self )
 
 	if( type == OFO_TYPE_OPE_TEMPLATE ){
 		gtk_list_store_clear( GTK_LIST_STORE( self ));
-		list_store_v_load_dataset( OFA_LIST_STORE( self ), hub );
+		list_store_v_load_dataset( OFA_LIST_STORE( self ));
 	}
 }
 

@@ -51,8 +51,6 @@ static guint st_initializations         = 0;	/* interface initialization count *
 static GType register_type( void );
 static void  interface_base_init( ofaIStoreInterface *klass );
 static void  interface_base_finalize( ofaIStoreInterface *klass );
-static void  on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaIStore *istore );
-static void  simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter );
 static guint on_column_type_added( ofaIStore *store, GType type, sIStore *sdata );
 static void  on_store_finalized( sIStore *sdata, GObject *finalized_store );
 
@@ -195,6 +193,8 @@ ofa_istore_init( ofaIStore *istore )
 	static const gchar *thisfn = "ofa_istore_init";
 	sIStore *sdata;
 
+	g_debug( "%s: istore=%p", thisfn, ( void * ) istore );
+
 	g_return_if_fail( istore && G_IS_OBJECT( istore ) && OFA_IS_ISTORE( istore ));
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( istore ), ISTORE_DATA );
@@ -207,56 +207,30 @@ ofa_istore_init( ofaIStore *istore )
 	sdata->cols_type = NULL;
 	g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, sdata );
 	g_object_weak_ref( G_OBJECT( istore ), ( GWeakNotify ) on_store_finalized, sdata );
-
-	g_signal_connect( istore, "row-inserted", G_CALLBACK( on_row_inserted ), istore );
-}
-
-static void
-on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaIStore *istore )
-{
-	g_signal_emit_by_name( istore, "ofa-row-inserted", path, iter );
 }
 
 /**
- * ofa_istore_simulate_dataset_load:
+ * ofa_istore_load_dataset:
+ * @istore: this #ofaIStore instance.
+ *
+ * Asks the implementation to load its datas from DBMS.
  */
 void
-ofa_istore_simulate_dataset_load( const ofaIStore *istore )
+ofa_istore_load_dataset( ofaIStore *istore )
 {
-	static const gchar *thisfn = "ofa_istore_simulate_dataset_load";
+	static const gchar *thisfn = "ofa_istore_load_dataset";
 
-	g_debug( "%s: store=%p", thisfn, ( void * ) istore );
+	g_debug( "%s: istore=%p", thisfn, ( void * ) istore );
 
 	g_return_if_fail( istore && OFA_IS_ISTORE( istore ));
 
-	simulate_dataset_load_rec( GTK_TREE_MODEL( istore ), NULL );
-}
-
-/*
- * enter with iter=NULL the first time
- * enter with iter=parent when recursing in sub-trees
- */
-static void
-simulate_dataset_load_rec( GtkTreeModel *tmodel, GtkTreeIter *parent_iter )
-{
-	GtkTreeIter iter, child_iter;
-	GtkTreePath *path;
-
-	if( gtk_tree_model_iter_children( tmodel, &iter, parent_iter )){
-		while( TRUE ){
-			path = gtk_tree_model_get_path( tmodel, &iter );
-			g_signal_emit_by_name( tmodel, "ofa-row-inserted", path, &iter );
-			gtk_tree_path_free( path );
-
-			if( gtk_tree_model_iter_children( tmodel, &child_iter, &iter )){
-				simulate_dataset_load_rec( tmodel, &child_iter );
-			}
-
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
-			}
-		}
+	if( OFA_ISTORE_GET_INTERFACE( istore )->load_dataset ){
+		OFA_ISTORE_GET_INTERFACE( istore )->load_dataset( istore );
+		return;
 	}
+
+	g_info( "%s: ofaIStore's %s implementation does not provide 'load_dataset()' method",
+			thisfn, G_OBJECT_TYPE_NAME( istore ));
 }
 
 /**

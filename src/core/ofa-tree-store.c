@@ -34,24 +34,12 @@
  */
 typedef struct {
 	gboolean dispose_has_run;
-
-	/* runtime
-	 */
-	gboolean dataset_loaded;
 }
 	ofaTreeStorePrivate;
 
-/* signals defined here
- */
-enum {
-	ROW_INSERTED = 0,
-	N_SIGNALS
-};
-
-static gint st_signals[ N_SIGNALS ] = { 0 };
-
 static void   istore_iface_init( ofaIStoreInterface *iface );
 static guint  istore_get_interface_version( void );
+static void   istore_load_dataset( ofaIStore *istore );
 
 G_DEFINE_TYPE_EXTENDED( ofaTreeStore, ofa_tree_store, GTK_TYPE_TREE_STORE, 0,
 		G_ADD_PRIVATE( ofaTreeStore )
@@ -120,44 +108,6 @@ ofa_tree_store_class_init( ofaTreeStoreClass *klass )
 
 	G_OBJECT_CLASS( klass )->dispose = tree_store_dispose;
 	G_OBJECT_CLASS( klass )->finalize = tree_store_finalize;
-
-	/**
-	 * ofaTreeStore::ofa-row-inserted:
-	 *
-	 * The signal is emitted either because a new row has been
-	 * inserted into the #GtkTreeModel implementor, or when we are
-	 * trying to load an already previously loaded dataset.
-	 * This later is typically useful when the build of the display
-	 * is event-based.
-	 *
-	 * Handler is of type:
-	 * 		void user_handler ( ofaTreeStore *store,
-	 * 								GtkTreePath *path,
-	 * 								GtkTreeIter *iter
-	 * 								gpointer     user_data );
-	 *
-	 * It appears that an interface <I> is only able to send a message
-	 * defined in this same interface <I> to an instance of <I> if the
-	 * client <A> class directly implements the interface <I>.
-	 * In other terms, a class <B> which derives from <A>, is not a
-	 * valid dest for a message defined in <I>.
-	 *
-	 * As only #ofaListStore implements #ofaIStore interface, and not
-	 * its derived class, #ofaIStore would be unable to send this
-	 * message when defined to, e.g. #ofaOpeTemplateStore, if this
-	 * definition had stayed in interface itself.
-	 */
-	st_signals[ ROW_INSERTED ] = g_signal_new_class_handler(
-				"ofa-row-inserted",
-				OFA_TYPE_TREE_STORE,
-				G_SIGNAL_RUN_LAST,
-				NULL,
-				NULL,								/* accumulator */
-				NULL,								/* accumulator data */
-				NULL,
-				G_TYPE_NONE,
-				2,
-				G_TYPE_POINTER, G_TYPE_POINTER );
 }
 
 /*
@@ -171,6 +121,7 @@ istore_iface_init( ofaIStoreInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->get_interface_version = istore_get_interface_version;
+	iface->load_dataset = istore_load_dataset;
 }
 
 static guint
@@ -179,34 +130,10 @@ istore_get_interface_version( void )
 	return( 1 );
 }
 
-/**
- * ofa_tree_store_load_dataset:
- * @store: the #ofaTreeStore-derived object.
- * @hub: the #ofaHub hub of the application.
- *
- * The first time, loads the dataset.
- * The other times, only simulates this load, just emitting one signal
- * per row.
- */
-void
-ofa_tree_store_load_dataset( ofaTreeStore *store, ofaHub *hub )
+static void
+istore_load_dataset( ofaIStore *istore )
 {
-	ofaTreeStorePrivate *priv;
-
-	g_return_if_fail( store && OFA_IS_TREE_STORE( store ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_tree_store_get_instance_private( store );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	if( !priv->dataset_loaded ){
-		if( OFA_TREE_STORE_GET_CLASS( store )->load_dataset ){
-			OFA_TREE_STORE_GET_CLASS( store )->load_dataset( store, hub );
-		}
-		priv->dataset_loaded = TRUE;
-
-	} else {
-		ofa_istore_simulate_dataset_load( OFA_ISTORE( store ));
+	if( OFA_TREE_STORE_GET_CLASS( istore )->load_dataset ){
+		OFA_TREE_STORE_GET_CLASS( istore )->load_dataset( OFA_TREE_STORE( istore ));
 	}
 }

@@ -1091,10 +1091,10 @@ set_getter_store( ofaOpeTemplateFrameBin *self )
 	/* then load the store */
 	priv->store = ofa_ope_template_store_new( priv->hub );
 
-	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
+	handler = g_signal_connect( priv->store, "row-inserted", G_CALLBACK( store_on_row_inserted ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
-	ofa_list_store_load_dataset( OFA_LIST_STORE( priv->store ), priv->hub );
+	ofa_istore_load_dataset( OFA_ISTORE( priv->store ));
 }
 
 static void
