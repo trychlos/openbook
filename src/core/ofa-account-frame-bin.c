@@ -36,6 +36,7 @@
 #include "api/ofa-iactioner.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-istore.h"
 #include "api/ofa-itheme-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
@@ -1249,10 +1250,10 @@ set_getter_store( ofaAccountFrameBin *self )
 
 	priv->store = ofa_account_store_new( priv->hub );
 
-	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
+	handler = g_signal_connect( priv->store, "row-inserted", G_CALLBACK( store_on_row_inserted ), self );
 	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 
-	ofa_tree_store_load_dataset( OFA_TREE_STORE( priv->store ), priv->hub );
+	ofa_istore_load_dataset( OFA_ISTORE( priv->store ));
 }
 
 static void

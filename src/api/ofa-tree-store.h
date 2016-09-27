@@ -31,8 +31,11 @@
  * @short_description: The ofaTreeStore application class definition
  * @include: api/ofa-tree-store.h
  *
- * This is a very thin base class for other stores which will manage
- * the dossier objects.
+ * This is a very thin base class for other stores of the application.
+ *
+ * As a convenience, commonly used interfaces are mainly implemented in
+ * this base class, leaving to the derived class to choose to use it or
+ * not.
  */
 
 #include <gtk/gtk.h>
@@ -64,23 +67,17 @@ typedef struct {
 	/*< protected virtual functions >*/
 	/**
 	 * load_dataset:
-	 * @store:
+	 * @store: this #ofaTreeStore instance.
 	 *
-	 * Load the dataset.
+	 * Requests the datastore to load its datas from DBMS.
 	 *
-	 * The base class doesn't do anything the first time.
-	 * It then tries to simulate a reload, thus re-triggering
-	 * "ofa-row-inserted" signal for each row.
+	 * This is just a redirection of the #ofaIStore::load_dataset() method.
 	 */
-	void ( *load_dataset )( ofaTreeStore *store,
-								ofaHub *hub );
+	void ( *load_dataset )( ofaTreeStore *store );
 }
 	ofaTreeStoreClass;
 
 GType ofa_tree_store_get_type    ( void ) G_GNUC_CONST;
-
-void  ofa_tree_store_load_dataset( ofaTreeStore *store,
-										ofaHub *hub );
 
 G_END_DECLS
 

@@ -161,7 +161,7 @@ static GtkWidget *
 page_v_get_top_focusable_widget( const ofaPage *page )
 {
 	ofaOpeTemplatePagePrivate *priv;
-	GtkWidget *current_page, *treeview;
+	GtkWidget *current_page;
 
 	g_return_val_if_fail( page && OFA_IS_OPE_TEMPLATE_PAGE( page ), NULL );
 
@@ -170,9 +170,7 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 	current_page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
 	g_return_val_if_fail( current_page && OFA_IS_OPE_TEMPLATE_TREEVIEW( current_page ), NULL );
 
-	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( current_page ));
-
-	return( treeview );
+	return( ofa_tvbin_get_treeview( OFA_TVBIN( current_page )));
 }
 
 /*

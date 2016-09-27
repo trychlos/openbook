@@ -34,6 +34,11 @@
  * The #ofaIStore interface is implemented by #ofaListStore and
  * #ofaTreeStore. It lets us implement some common behavior between
  * all our stores.
+ *
+ * Implemented behaviors:
+ *
+ * - Provide a common method for loading a store dataset when the #ofaHub
+ *   object of the application has been already set.
  */
 
 #include <glib-object.h>
@@ -73,6 +78,15 @@ typedef struct {
 	guint ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
+	/**
+	 * load_dataset:
+	 * @istore: this #ofaIStore instance.
+	 *
+	 * Requests the datastore to load its datas from DBMS.
+	 *
+	 * Since: version 1.
+	 */
+	void  ( *load_dataset )         ( ofaIStore *istore );
 }
 	ofaIStoreInterface;
 
@@ -93,7 +107,7 @@ guint  ofa_istore_get_interface_version     ( GType type );
  */
 void   ofa_istore_init                      ( ofaIStore *istore );
 
-void   ofa_istore_simulate_dataset_load     ( const ofaIStore *istore );
+void   ofa_istore_load_dataset              ( ofaIStore *istore );
 
 void   ofa_istore_set_columns_type          ( ofaIStore *istore,
 													ofaHub *hub,
