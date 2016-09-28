@@ -77,7 +77,9 @@ typedef struct {
 }
 	ofaTreeStoreClass;
 
-GType ofa_tree_store_get_type    ( void ) G_GNUC_CONST;
+GType ofa_tree_store_get_type        ( void ) G_GNUC_CONST;
+
+void  ofa_tree_store_loading_simulate( ofaTreeStore *store );
 
 G_END_DECLS
 

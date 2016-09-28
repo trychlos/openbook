@@ -140,7 +140,7 @@ page_v_setup_page( ofaPage *page )
 
 	priv = ofa_ope_template_page_get_instance_private( OFA_OPE_TEMPLATE_PAGE( page ));
 
-	priv->template_bin = ofa_ope_template_frame_bin_new();
+	priv->template_bin = ofa_ope_template_frame_bin_new( OFA_IGETTER( page ));
 	my_utils_widget_set_margins( GTK_WIDGET( priv->template_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->template_bin ), 0, 0, 1, 1 );
 	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, priv->settings_prefix );
@@ -154,7 +154,7 @@ page_v_setup_page( ofaPage *page )
 
 	g_signal_connect( priv->template_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
-	ofa_ope_template_frame_bin_set_getter( priv->template_bin, OFA_IGETTER( page ));
+	ofa_ope_template_frame_bin_load_dataset( priv->template_bin );
 }
 
 static GtkWidget *

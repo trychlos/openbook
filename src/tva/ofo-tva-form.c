@@ -226,6 +226,7 @@ static gboolean    hub_on_updated_account_id( ofaHub *hub, const gchar *mnemo, c
 static gboolean    hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean    hub_on_updated_rate_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
 static gboolean    do_update_formulas( ofaHub *hub, const gchar *new_id, const gchar *prev_id );
+static void        hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoTVAForm, ofo_tva_form, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoTVAForm )
@@ -2196,6 +2197,7 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), NULL );
 }
 
 /*
@@ -2398,4 +2400,36 @@ do_update_formulas( ofaHub *hub, const gchar *new_id, const gchar *prev_id )
 	}
 
 	return( ok );
+}
+
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
+static void
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_tva_form_hub_on_deleted_object";
+	ofoOpeTemplate *template_obj;
+	guint count, i;
+	const gchar *cstr;
+
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	if( OFO_IS_TVA_FORM( object )){
+		count = ofo_tva_form_detail_get_count( OFO_TVA_FORM( object ));
+		for( i=0 ; i<count ; ++i ){
+			cstr = ofo_tva_form_detail_get_has_template( OFO_TVA_FORM( object ), i ) ?
+					ofo_tva_form_detail_get_template( OFO_TVA_FORM( object ), i ) : NULL;
+			if( my_strlen( cstr )){
+				template_obj = ofo_ope_template_get_by_mnemo( hub, cstr );
+				if( template_obj ){
+					g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+				}
+			}
+		}
+	}
 }

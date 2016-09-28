@@ -49,6 +49,7 @@ typedef struct {
 	 */
 	ofaHub  *hub;
 	GList   *hub_handlers;
+	gboolean dataset_is_loaded;
 }
 	ofaAccountStorePrivate;
 
@@ -153,6 +154,7 @@ ofa_account_store_init( ofaAccountStore *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->hub_handlers = NULL;
+	priv->dataset_is_loaded = FALSE;
 }
 
 static void
@@ -204,8 +206,7 @@ ofa_account_store_new( ofaHub *hub )
 		priv->hub = hub;
 
 		st_col_types[ACCOUNT_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
-		gtk_tree_store_set_column_types(
-				GTK_TREE_STORE( store ), ACCOUNT_N_COLUMNS, st_col_types );
+		ofa_istore_set_column_types( OFA_ISTORE( store ), hub, ACCOUNT_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
@@ -256,11 +257,18 @@ tree_store_v_load_dataset( ofaTreeStore *store )
 
 	priv = ofa_account_store_get_instance_private( OFA_ACCOUNT_STORE( store ));
 
-	dataset = ofo_account_get_dataset( priv->hub );
+	if( priv->dataset_is_loaded ){
+		ofa_tree_store_loading_simulate( store );
 
-	for( it=dataset ; it ; it=it->next ){
-		account = OFO_ACCOUNT( it->data );
-		insert_row( OFA_ACCOUNT_STORE( store ), account );
+	} else {
+		dataset = ofo_account_get_dataset( priv->hub );
+
+		for( it=dataset ; it ; it=it->next ){
+			account = OFO_ACCOUNT( it->data );
+			insert_row( OFA_ACCOUNT_STORE( store ), account );
+		}
+
+		priv->dataset_is_loaded = TRUE;
 	}
 }
 
@@ -395,6 +403,8 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 	g_free( secre );
 	g_free( sesol );
 	g_free( stamp );
+
+	ofa_istore_set_values( OFA_ISTORE( self ), iter, ( void * ) account );
 }
 
 /*

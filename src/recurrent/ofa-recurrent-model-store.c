@@ -64,6 +64,7 @@ static void     load_dataset( ofaRecurrentModelStore *self );
 static void     insert_row( ofaRecurrentModelStore *self, const ofoRecurrentModel *model );
 static void     set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter );
 static gboolean model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIter *iter );
+static void     remove_row_by_mnemo( ofaRecurrentModelStore *self, const gchar *mnemo );
 static void     hub_connect_to_signaling_system( ofaRecurrentModelStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self );
 static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRecurrentModelStore *self );
@@ -312,6 +313,16 @@ model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIte
 	return( FALSE );
 }
 
+static void
+remove_row_by_mnemo( ofaRecurrentModelStore *self, const gchar *mnemo )
+{
+	GtkTreeIter iter;
+
+	if( model_find_by_mnemo( self, mnemo, &iter )){
+		gtk_list_store_remove( GTK_LIST_STORE( self ), &iter );
+	}
+}
+
 /*
  * connect to the hub signaling system
  */
@@ -429,7 +440,6 @@ static void
 hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *self )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_store_hub_on_deleted_object";
-	GtkTreeIter iter;
 
 	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
@@ -438,11 +448,7 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaRecurrentModelStore *sel
 			( void * ) self );
 
 	if( OFO_IS_RECURRENT_MODEL( object )){
-		if( model_find_by_mnemo( self,
-				ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object )), &iter )){
-
-			gtk_list_store_remove( GTK_LIST_STORE( self ), &iter );
-		}
+		remove_row_by_mnemo( self, ofo_recurrent_model_get_mnemo( OFO_RECURRENT_MODEL( object )));
 	}
 }
 

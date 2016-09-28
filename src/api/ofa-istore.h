@@ -39,11 +39,21 @@
  *
  * - Provide a common method for loading a store dataset when the #ofaHub
  *   object of the application has been already set.
+ *
+ * - Provide some common methods to let plugins add columns to application
+ *   stores and associated treeviews.
+ *
+ * Signals defined here:
+ *
+ * - ofa-row-inserted: sent on the store when a new row has been
+ *   inserted; this is same as 'row-inserted' except that this later is
+ *   trapped by Gtk to insert new line in GtkTreeView..
  */
 
 #include <glib-object.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-tvbin.h"
 
 G_BEGIN_DECLS
 
@@ -93,27 +103,46 @@ typedef struct {
 /*
  * Interface-wide
  */
-GType  ofa_istore_get_type                  ( void );
+GType    ofa_istore_get_type                  ( void );
 
-guint  ofa_istore_get_interface_last_version( const ofaIStore *istore );
+guint    ofa_istore_get_interface_last_version( const ofaIStore *istore );
 
 /*
  * Implementation-wide
  */
-guint  ofa_istore_get_interface_version     ( GType type );
+guint    ofa_istore_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void   ofa_istore_init                      ( ofaIStore *istore );
+void     ofa_istore_init                      ( ofaIStore *istore );
 
-void   ofa_istore_load_dataset              ( ofaIStore *istore );
+/*
+ * ----- Load the dataset
+ */
+void     ofa_istore_load_dataset              ( ofaIStore *istore );
 
-void   ofa_istore_set_columns_type          ( ofaIStore *istore,
+/*
+ * ----- Manage ofaITreeAdder interface
+ */
+void     ofa_istore_set_column_types          ( ofaIStore *istore,
 													ofaHub *hub,
-													guint column_object,
 													guint columns_count,
 													GType *columns_type );
+
+void     ofa_istore_set_values                ( ofaIStore *istore,
+													GtkTreeIter *iter,
+													void *object );
+
+gboolean ofa_istore_sort                      ( ofaIStore *store,
+													GtkTreeModel *model,
+													GtkTreeIter *a,
+													GtkTreeIter *b,
+													gint column_id,
+													gint *cmp );
+
+void     ofa_istore_add_columns               ( ofaIStore *istore,
+													ofaTVBin *bin );
 
 G_END_DECLS
 

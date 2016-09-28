@@ -308,7 +308,7 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->account_bin = ofa_account_frame_bin_new();
+	priv->account_bin = ofa_account_frame_bin_new( priv->getter );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 0, 4, 0, 0 );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->account_bin ));
 	ofa_account_frame_bin_set_settings_key( priv->account_bin, priv->settings_prefix );
@@ -321,7 +321,7 @@ idialog_init( myIDialog *instance )
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_UPDATE );
 	ofa_account_frame_bin_add_action( priv->account_bin, ACCOUNT_ACTION_DELETE );
 
-	ofa_account_frame_bin_set_getter( priv->account_bin, priv->getter );
+	ofa_account_frame_bin_load_dataset( priv->account_bin );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }

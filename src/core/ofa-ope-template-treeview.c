@@ -35,7 +35,6 @@
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
-#include "api/ofa-itree-adder.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-ope-template-store.h"
@@ -434,8 +433,6 @@ setup_columns( ofaOpeTemplateTreeview *self )
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_NOTES_PNG,        "",         _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_USER,      _( "User" ),   _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_UPD_STAMP,         NULL,      _( "Last update timestamp" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_RECURRENT,     _( "R" ),      _( "Recurrent indicator" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), OPE_TEMPLATE_COL_VAT,           _( "V" ),      _( "VAT indicator" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), OPE_TEMPLATE_COL_LABEL );
 }
@@ -602,10 +599,12 @@ static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_ope_template_treeview_v_sort";
+	GtkTreeModel *child_model;
 	gint cmp;
 	gchar *mnemoa, *labela, *ledgera, *refa, *notesa, *usera, *stampa;
 	gchar *mnemob, *labelb, *ledgerb, *refb, *notesb, *userb, *stampb;
 	GdkPixbuf *pnga, *pngb;
+	gboolean handled;
 
 	gtk_tree_model_get( tmodel, a,
 			OPE_TEMPLATE_COL_MNEMO,     &mnemoa,
@@ -657,7 +656,16 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( stampa, stampb );
 			break;
 		default:
-			g_warning( "%s: unhandled column: %d", thisfn, column_id );
+			handled = FALSE;
+			if( GTK_IS_TREE_MODEL_FILTER( tmodel )){
+				child_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( tmodel ));
+				if( OFA_IS_ISTORE( child_model )){
+					handled = ofa_istore_sort( OFA_ISTORE( child_model ), tmodel, a, b, column_id, &cmp );
+				}
+			}
+			if( !handled ){
+				g_warning( "%s: unhandled column: %d", thisfn, column_id );
+			}
 			break;
 	}
 

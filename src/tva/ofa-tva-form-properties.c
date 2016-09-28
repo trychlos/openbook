@@ -45,6 +45,7 @@
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
+#include "api/ofo-ope-template.h"
 
 #include "tva/ofa-tva-form-properties.h"
 #include "tva/ofo-tva-form.h"
@@ -76,6 +77,7 @@ typedef struct {
 	 */
 	gchar         *mnemo;
 	gchar         *label;
+	GList         *orig_templates;
 }
 	ofaTVAFormPropertiesPrivate;
 
@@ -160,6 +162,7 @@ tva_form_properties_finalize( GObject *instance )
 
 	g_free( priv->mnemo );
 	g_free( priv->label );
+	g_list_free_full( priv->orig_templates, ( GDestroyNotify ) g_free );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_tva_form_properties_parent_class )->finalize( instance );
@@ -200,6 +203,7 @@ ofa_tva_form_properties_init( ofaTVAFormProperties *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->is_new = FALSE;
+	priv->orig_templates = NULL;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -612,6 +616,9 @@ set_detail_values( ofaTVAFormProperties *self, guint row )
 
 	cstr = ofo_tva_form_detail_get_template( priv->tva_form, idx );
 	if( my_strlen( cstr )){
+		priv->orig_templates = g_list_prepend( priv->orig_templates, g_strdup( cstr ));
+	}
+	if( my_strlen( cstr )){
 		entry = gtk_grid_get_child_at( GTK_GRID( priv->det_grid ), 1+COL_DET_TEMPLATE, row );
 		g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 		gtk_entry_set_text( GTK_ENTRY( entry ), cstr );
@@ -842,6 +849,8 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	guint rows_count, level;
 	gboolean ok;
 	ofaHub *hub;
+	GList *it;
+	ofoOpeTemplate *template_obj;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -890,6 +899,12 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( amount_check )), amount,
 					gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( template_check )), template );
 		}
+		/* add to orig_templates the new values */
+		if( my_strlen( template )){
+			if( !g_list_find_custom( priv->orig_templates, template, ( GCompareFunc ) my_collate )){
+				priv->orig_templates = g_list_prepend( priv->orig_templates, g_strdup( template ));
+			}
+		}
 	}
 
 	rows_count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->bool_grid ));
@@ -916,6 +931,15 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	}
 
 	g_free( prev_mnemo );
+
+	/* asks the template store to auto-update
+	 * targets all templates which were initially used + those added during the update */
+	for( it=priv->orig_templates ; it ; it=it->next ){
+		template_obj = ofo_ope_template_get_by_mnemo( hub, ( const gchar * ) it->data );
+		if( template_obj ){
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+		}
+	}
 
 	return( ok );
 }

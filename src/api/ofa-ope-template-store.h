@@ -88,8 +88,6 @@ typedef struct {
  * @OPE_TEMPLATE_COL_NOTES_PNG     : notes indicator                   Pixbuf       Yes
  * @OPE_TEMPLATE_COL_UPD_USER      : last update user                  String       Yes
  * @OPE_TEMPLATE_COL_UPD_STAMP     : last update timestamp             String       Yes
- * @OPE_TEMPLATE_COL_RECURRENT     : for Recurrent plugin              String       Yes
- * @OPE_TEMPLATE_COL_VAT           : for VAT plugin                    String       Yes
  * @OPE_TEMPLATE_COL_OBJECT        : #ofoOpeTemplate object            GObject       No
  */
 enum {
@@ -103,8 +101,6 @@ enum {
 	OPE_TEMPLATE_COL_NOTES_PNG,
 	OPE_TEMPLATE_COL_UPD_USER,
 	OPE_TEMPLATE_COL_UPD_STAMP,
-	OPE_TEMPLATE_COL_RECURRENT,
-	OPE_TEMPLATE_COL_VAT,
 	OPE_TEMPLATE_COL_OBJECT,
 	OPE_TEMPLATE_N_COLUMNS
 };

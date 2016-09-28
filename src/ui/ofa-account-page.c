@@ -138,7 +138,7 @@ page_v_setup_page( ofaPage *page )
 
 	priv = ofa_account_page_get_instance_private( OFA_ACCOUNT_PAGE( page ));
 
-	priv->account_bin = ofa_account_frame_bin_new();
+	priv->account_bin = ofa_account_frame_bin_new( OFA_IGETTER( page ));
 	my_utils_widget_set_margins( GTK_WIDGET( priv->account_bin ), 2, 2, 2, 0 );
 	gtk_grid_attach( GTK_GRID( page ), GTK_WIDGET( priv->account_bin ), 0, 0, 1, 1 );
 	ofa_account_frame_bin_set_settings_key( priv->account_bin, priv->settings_prefix );
@@ -154,7 +154,7 @@ page_v_setup_page( ofaPage *page )
 
 	g_signal_connect( priv->account_bin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
-	ofa_account_frame_bin_set_getter( priv->account_bin, OFA_IGETTER( page ));
+	ofa_account_frame_bin_load_dataset( priv->account_bin );
 }
 
 static GtkWidget *

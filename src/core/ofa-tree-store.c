@@ -40,6 +40,8 @@ typedef struct {
 static void   istore_iface_init( ofaIStoreInterface *iface );
 static guint  istore_get_interface_version( void );
 static void   istore_load_dataset( ofaIStore *istore );
+static void   loading_simulate_rec( ofaTreeStore *self, GtkTreeIter *iter );
+static void   on_row_inserted( GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, ofaTreeStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaTreeStore, ofa_tree_store, GTK_TYPE_TREE_STORE, 0,
 		G_ADD_PRIVATE( ofaTreeStore )
@@ -97,6 +99,7 @@ ofa_tree_store_init( ofaTreeStore *self )
 	priv->dispose_has_run = FALSE;
 
 	ofa_istore_init( OFA_ISTORE( self ));
+	g_signal_connect( self, "row-inserted", G_CALLBACK( on_row_inserted ), self );
 }
 
 static void
@@ -136,4 +139,53 @@ istore_load_dataset( ofaIStore *istore )
 	if( OFA_TREE_STORE_GET_CLASS( istore )->load_dataset ){
 		OFA_TREE_STORE_GET_CLASS( istore )->load_dataset( OFA_TREE_STORE( istore ));
 	}
+}
+
+/**
+ * ofa_tree_store_loading_simulate:
+ * @store: this #ofaTreeStore instance.
+ *
+ * Simulate the reload of the current dataset, just by sending
+ * 'ofa-row-inserted' messages on the store.
+ */
+void
+ofa_tree_store_loading_simulate( ofaTreeStore *store )
+{
+	ofaTreeStorePrivate *priv;
+	GtkTreeIter iter;
+
+	g_return_if_fail( store && OFA_IS_TREE_STORE( store ));
+
+	priv = ofa_tree_store_get_instance_private( store );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), &iter )){
+		loading_simulate_rec( store, &iter );
+	}
+}
+
+static void
+loading_simulate_rec( ofaTreeStore *self, GtkTreeIter *iter )
+{
+	GtkTreeIter child_iter;
+
+	while( TRUE ){
+		g_signal_emit_by_name( G_OBJECT( self ), "ofa-row-inserted", iter );
+		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
+			loading_simulate_rec( self, &child_iter );
+		}
+		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			break;
+		}
+	}
+}
+
+/*
+ * proxy of Gtk 'row-inserted' signal to 'ofa-row-inserted'
+ */
+static void
+on_row_inserted( GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, ofaTreeStore *self )
+{
+	g_signal_emit_by_name( G_OBJECT( self ), "ofa-row-inserted", iter );
 }
