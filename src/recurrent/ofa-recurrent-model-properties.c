@@ -64,6 +64,7 @@ typedef struct {
 	gboolean             is_writable;
 	ofoRecurrentModel   *recurrent_model;
 	gboolean             is_new;
+	gchar               *orig_template;
 
 	/* UI
 	 */
@@ -126,6 +127,7 @@ recurrent_model_properties_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_recurrent_model_properties_get_instance_private( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
 
+	g_free( priv->orig_template );
 	g_free( priv->mnemo );
 	g_free( priv->label );
 	g_free( priv->ope_template );
@@ -418,6 +420,7 @@ setup_data( ofaRecurrentModelProperties *self )
 
 	cstr = ofo_recurrent_model_get_ope_template( priv->recurrent_model );
 	gtk_entry_set_text( GTK_ENTRY( priv->ope_template_entry ), cstr ? cstr : "" );
+	priv->orig_template = g_strdup( cstr );
 
 	cper = ofo_recurrent_model_get_periodicity( priv->recurrent_model );
 	cdet = ofo_recurrent_model_get_periodicity_detail( priv->recurrent_model );
@@ -565,6 +568,7 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	gboolean ok;
 	ofaHub *hub;
 	const gchar *cstr;
+	ofoOpeTemplate *template_obj;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
@@ -591,13 +595,6 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 
 	my_utils_container_notes_get( GTK_WINDOW( self ), recurrent_model );
 
-	/*
-	g_debug( "prev_mnemo=%s, mnemo=%s, label=%s",
-			prev_mnemo,
-			ofo_recurrent_model_get_mnemo( priv->recurrent_model ),
-			ofo_recurrent_model_get_label( priv->recurrent_model ));
-			*/
-
 	if( priv->is_new ){
 		ok = ofo_recurrent_model_insert( priv->recurrent_model, hub );
 		if( !ok ){
@@ -611,6 +608,22 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	}
 
 	g_free( prev_mnemo );
+
+	/* if the template has changed, then send an update message to the
+	 * initial template to update the treeview
+	 */
+	if( my_strlen( priv->orig_template )){
+		template_obj = ofo_ope_template_get_by_mnemo( hub, priv->orig_template );
+		if( template_obj ){
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+		}
+	}
+	if( my_strlen( priv->ope_template ) && my_collate( priv->ope_template, priv->orig_template )){
+		template_obj = ofo_ope_template_get_by_mnemo( hub, priv->ope_template );
+		if( template_obj ){
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+		}
+	}
 
 	return( ok );
 }

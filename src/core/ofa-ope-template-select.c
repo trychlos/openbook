@@ -295,7 +295,7 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "bin-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->template_bin = ofa_ope_template_frame_bin_new();
+	priv->template_bin = ofa_ope_template_frame_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->template_bin ));
 	ofa_ope_template_frame_bin_set_settings_key( priv->template_bin, priv->settings_prefix );
 
@@ -307,7 +307,7 @@ idialog_init( myIDialog *instance )
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DUPLICATE );
 	ofa_ope_template_frame_bin_add_action( priv->template_bin, TEMPLATE_ACTION_DELETE );
 
-	ofa_ope_template_frame_bin_set_getter( priv->template_bin, priv->getter );
+	ofa_ope_template_frame_bin_load_dataset( priv->template_bin );
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }

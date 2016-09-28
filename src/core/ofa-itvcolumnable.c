@@ -317,6 +317,10 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	sColumn *scol;
 	GSimpleAction *action;
 
+	/*
+	g_debug( "column_id=%u, menu_label=%s", column_id, menu_label );
+	*/
+
 	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
 
 	sdata = get_instance_data( instance );

@@ -119,6 +119,7 @@ enum {
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
+static void       setup_getter( ofaAccountFrameBin *self, ofaIGetter *getter );
 static void       setup_bin( ofaAccountFrameBin *self );
 static GtkWidget *book_get_page_by_class( ofaAccountFrameBin *self, gint class_num, gboolean create );
 static GtkWidget *book_create_page( ofaAccountFrameBin *self, gint class );
@@ -142,9 +143,7 @@ static void       do_insert_account( ofaAccountFrameBin *self );
 static void       do_update_account( ofaAccountFrameBin *self, ofoAccount *account );
 static void       do_delete_account( ofaAccountFrameBin *self, ofoAccount *account );
 static gboolean   delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account );
-static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountFrameBin *self );
-static void       set_getter_hub( ofaAccountFrameBin *self );
-static void       set_getter_store( ofaAccountFrameBin *self );
+static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountFrameBin *self );
 static void       hub_connect_to_signaling_system( ofaAccountFrameBin *self );
 static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaAccountFrameBin *self );
 static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaAccountFrameBin *self );
@@ -326,15 +325,47 @@ ofa_account_frame_bin_class_init( ofaAccountFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaAccountFrameBin *
-ofa_account_frame_bin_new( void  )
+ofa_account_frame_bin_new( ofaIGetter *getter  )
 {
+	static const gchar *thisfn = "ofa_account_frame_bin_new";
 	ofaAccountFrameBin *self;
+
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_FRAME_BIN, NULL );
 
+	setup_getter( self, getter );
 	setup_bin( self );
 
 	return( self );
+}
+
+/*
+ * Record the getter
+ * Initialize private datas which depend of only getter
+ */
+static void
+setup_getter( ofaAccountFrameBin *self, ofaIGetter *getter )
+{
+	ofaAccountFrameBinPrivate *priv;
+	gulong handler;
+
+	priv = ofa_account_frame_bin_get_instance_private( self );
+
+	priv->getter = getter;
+
+	/* hub-related initialization */
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	hub_connect_to_signaling_system( self );
+
+	/* then initialize the store */
+	priv->store = ofa_account_store_new( priv->hub );
+	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -446,6 +477,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 	view = ofa_account_treeview_new( class_num );
 	ofa_account_treeview_set_settings_key( view, priv->settings_key );
 	ofa_account_treeview_setup_columns( view );
+	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));
 	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), priv->cell_fn, priv->cell_data );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 
@@ -1149,7 +1181,7 @@ delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account )
  * inserted row;
  */
 static void
-store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaAccountFrameBin *self )
+store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
 	gchar *number;
@@ -1193,67 +1225,29 @@ ofa_account_frame_bin_set_settings_key( ofaAccountFrameBin *bin, const gchar *ke
 }
 
 /**
- * ofa_account_frame_bin_set_getter:
+ * ofa_account_frame_bin_load_dataset:
  * @bin: this #ofaAccountFrameBin instance.
- * @getter: a permanent #ofaIGetter.
  *
- * Setup the getter.
- * This should be done as the last step of the initialization, because
- * this will load the store and initialize the displayed columns.
+ * Load the dataset.
  */
 void
-ofa_account_frame_bin_set_getter( ofaAccountFrameBin *bin, ofaIGetter *getter )
+ofa_account_frame_bin_load_dataset( ofaAccountFrameBin *bin )
 {
-	static const gchar *thisfn = "ofa_account_frame_bin_set_getter";
+	static const gchar *thisfn = "ofa_account_frame_bin_load_dataset";
 	ofaAccountFrameBinPrivate *priv;
 
-	g_debug( "%s: bin=%p, getter=%p", thisfn, ( void * ) bin, ( void * ) getter );
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	g_return_if_fail( bin && OFA_IS_ACCOUNT_FRAME_BIN( bin ));
-	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	priv = ofa_account_frame_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->getter = getter;
-
-	set_getter_hub( bin );
-	set_getter_store( bin );
-
-	book_expand_all( bin );
-	gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), 0 );
-}
-
-static void
-set_getter_hub( ofaAccountFrameBin *self )
-{
-	ofaAccountFrameBinPrivate *priv;
-
-	priv = ofa_account_frame_bin_get_instance_private( self );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
-
-	hub_connect_to_signaling_system( self );
-}
-
-static void
-set_getter_store( ofaAccountFrameBin *self )
-{
-	ofaAccountFrameBinPrivate *priv;
-	gulong handler;
-
-	priv = ofa_account_frame_bin_get_instance_private( self );
-
-	priv->store = ofa_account_store_new( priv->hub );
-
-	handler = g_signal_connect( priv->store, "row-inserted", G_CALLBACK( store_on_row_inserted ), self );
-	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
-
 	ofa_istore_load_dataset( OFA_ISTORE( priv->store ));
+	book_expand_all( bin );
+
+	gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), 0 );
 }
 
 static void

@@ -33,12 +33,21 @@
  *
  * The #ofaITreeAdder interface lets a plugin adds some columns to a
  * list/tree store and to the corresponding treeview.
+ *
+ * Column identification is dynamically computed by the interface based
+ * on the previous allocations, i.e. it takes into account the count of
+ * columns defined by the standard store, as well as the count of columns
+ * already added by other plugins.
+ *
+ * As a side effect, new columns in the store must always be defined
+ * before being able to add columns to the treeview.
  */
 
 #include <gtk/gtk.h>
 
 #include "api/ofa-hub-def.h"
 #include "api/ofa-istore.h"
+#include "api/ofa-tvbin.h"
 
 G_BEGIN_DECLS
 
@@ -76,7 +85,7 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	guint ( *get_interface_version )( void );
+	guint    ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
@@ -91,11 +100,27 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void  ( *add_types )            ( ofaITreeAdder *instance,
+	void     ( *add_types )            ( ofaITreeAdder *instance,
 											ofaIStore *store,
 											guint column_object,
 											TreeAdderTypeCb cb,
 											void *cb_data );
+	/**
+	 * get_column_types:
+	 * @instance: the #ofaITreeAdder instance.
+	 * @store: the target #ofaIStore.
+	 * @orig_cols_count: the current count of columns in the @store.
+	 * @add_cols: [out]: the count of added columns.
+	 *
+	 * Returns: an array which contains the GType's to be added to the
+	 * @store.
+	 *
+	 * Since: version 1.
+	 */
+	GType *  ( *get_column_types )     ( ofaITreeAdder *instance,
+											ofaIStore *store,
+											guint orig_cols_count,
+											guint *add_cols );
 
 	/**
 	 * set_values:
@@ -109,11 +134,34 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void  ( *set_values )           ( ofaITreeAdder *instance,
+	void     ( *set_values )           ( ofaITreeAdder *instance,
 											ofaIStore *store,
 											ofaHub *hub,
 											GtkTreeIter *iter,
 											void *object );
+
+	/**
+	 * sort:
+	 * @instance: the #ofaITreeAdder instance.
+	 * @store: the target #ofaIStore.
+	 * @hub: the #ofaHub object of the application.
+	 * @a: a row to be compared.
+	 * @b: another row to compare to @a.
+	 * @column_id: the index of the column to be compared.
+	 * @cmp: [out]: the result of the comparison.
+	 *
+	 * Returns: %TRUE if the column_id is managed here, %FALSE else.
+	 *
+	 * Since: version 1.
+	 */
+	gboolean ( *sort )                 ( ofaITreeAdder *instance,
+											ofaIStore *store,
+											ofaHub *hub,
+											GtkTreeModel *model,
+											GtkTreeIter *a,
+											GtkTreeIter *b,
+											gint column_id,
+											gint *cmp );
 
 	/**
 	 * add_columns:
@@ -125,9 +173,9 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void  ( *add_columns )          ( ofaITreeAdder *instance,
+	void     ( *add_columns )          ( ofaITreeAdder *instance,
 											ofaIStore *store,
-											GtkWidget *treeview );
+											ofaTVBin *bin );
 }
 	ofaITreeAdderInterface;
 
@@ -138,21 +186,6 @@ GType            ofa_itree_adder_get_type                  ( void );
 
 guint            ofa_itree_adder_get_interface_last_version( void );
 
-void             ofa_itree_adder_add_types                 ( ofaHub *hub,
-																	ofaIStore *store,
-																	guint column_object,
-																	TreeAdderTypeCb cb,
-																	void *cb_data );
-
-void             ofa_itree_adder_set_values                ( ofaHub *hub,
-																	ofaIStore *store,
-																	GtkTreeIter *iter,
-																	void *object );
-
-void             ofa_itree_adder_add_columns               ( ofaHub *hub,
-																	ofaIStore *store,
-																	GtkWidget *treeview );
-
 /*
  * Implementation-wide
  */
@@ -161,6 +194,29 @@ guint            ofa_itree_adder_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
+GType           *ofa_itree_adder_get_column_types          ( ofaHub *hub,
+																	ofaIStore *store,
+																	guint orig_cols_count,
+																	GType *orig_col_types,
+																	guint *cols_count );
+
+void             ofa_itree_adder_set_values                ( ofaHub *hub,
+																	ofaIStore *store,
+																	GtkTreeIter *iter,
+																	void *object );
+
+gboolean         ofa_itree_adder_sort                      ( ofaHub *hub,
+																	ofaIStore *store,
+																	GtkTreeModel *model,
+																	GtkTreeIter *a,
+																	GtkTreeIter *b,
+																	gint column_id,
+																	gint *cmp );
+
+void             ofa_itree_adder_add_columns               ( ofaHub *hub,
+																	ofaIStore *store,
+																	ofaTVBin *bin );
+
 G_END_DECLS
 
 #endif /* __OPENBOOK_API_OFA_ITREE_ADDER_H__ */

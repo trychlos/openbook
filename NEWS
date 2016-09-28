@@ -55,6 +55,7 @@
 
    - AccountSelect: close the window on account selection (todo #1187).
    - IPrintable: does not say "succesfully printed" when cancelled (todo #1188).
+   - ITreeAdder: fix columns adding (todo #1190).
    - LedgerClose: fix typo.
    - OpeTemplatePage: fix row activation.
    - OpeTemplateSelect: fix missing getter.

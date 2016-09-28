@@ -42,6 +42,7 @@ typedef struct {
 static void   istore_iface_init( ofaIStoreInterface *iface );
 static guint  istore_get_interface_version( void );
 static void   istore_load_dataset( ofaIStore *istore );
+static void   on_row_inserted( GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, ofaListStore *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaListStore, ofa_list_store, GTK_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaListStore )
@@ -99,6 +100,7 @@ ofa_list_store_init( ofaListStore *self )
 	priv->dispose_has_run = FALSE;
 
 	ofa_istore_init( OFA_ISTORE( self ));
+	g_signal_connect( self, "row-inserted", G_CALLBACK( on_row_inserted ), self );
 }
 
 static void
@@ -138,4 +140,43 @@ istore_load_dataset( ofaIStore *istore )
 	if( OFA_LIST_STORE_GET_CLASS( istore )->load_dataset ){
 		OFA_LIST_STORE_GET_CLASS( istore )->load_dataset( OFA_LIST_STORE( istore ));
 	}
+}
+
+/**
+ * ofa_list_store_loading_simulate:
+ * @store: this #ofaListStore instance.
+ *
+ * Simulate the reload of the current dataset, just by sending
+ * 'ofa-row-inserted' messages on the store.
+ */
+void
+ofa_list_store_loading_simulate( ofaListStore *store )
+{
+	ofaListStorePrivate *priv;
+	GtkTreeIter iter;
+
+	g_return_if_fail( store && OFA_IS_LIST_STORE( store ));
+
+	priv = ofa_list_store_get_instance_private( store );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), &iter )){
+		while( TRUE ){
+			g_signal_emit_by_name( G_OBJECT( store ), "ofa-row-inserted", &iter );
+
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &iter )){
+				break;
+			}
+		}
+	}
+}
+
+/*
+ * proxy of Gtk 'row-inserted' signal to 'ofa-row-inserted'
+ */
+static void
+on_row_inserted( GtkTreeModel *tree_model, GtkTreePath *path, GtkTreeIter *iter, ofaListStore *self )
+{
+	g_signal_emit_by_name( G_OBJECT( self ), "ofa-row-inserted", iter );
 }

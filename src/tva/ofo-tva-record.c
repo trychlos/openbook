@@ -1612,7 +1612,7 @@ isignal_hub_iface_init( ofaISignalHubInterface *iface )
 static void
 isignal_hub_connect( ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_tva_form_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_tva_record_isignal_hub_connect";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 

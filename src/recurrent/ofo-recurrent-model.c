@@ -154,6 +154,7 @@ static gboolean           hub_on_deletable_object( ofaHub *hub, ofoBase *object,
 static gboolean           hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
 static void               hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, void *empty );
 static gboolean           hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar *prev_id );
+static void               hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty );
 
 G_DEFINE_TYPE_EXTENDED( ofoRecurrentModel, ofo_recurrent_model, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoRecurrentModel )
@@ -291,7 +292,6 @@ ofo_recurrent_model_use_ope_template( ofaHub *hub, const gchar *ope_template )
 			ope_template );
 
 	ofa_idbconnect_query_int( ofa_hub_get_connect( hub ), query, &count, TRUE );
-	g_debug( "count=%d", count );
 
 	g_free( query );
 
@@ -1423,6 +1423,7 @@ isignal_hub_connect( ofaHub *hub )
 
 	g_signal_connect( hub, SIGNAL_HUB_DELETABLE, G_CALLBACK( hub_on_deletable_object ), NULL );
 	g_signal_connect( hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), NULL );
+	g_signal_connect( hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), NULL );
 }
 
 /*
@@ -1507,4 +1508,27 @@ hub_on_updated_ope_template_mnemo( ofaHub *hub, const gchar *mnemo, const gchar 
 	my_icollector_collection_free( ofa_hub_get_collector( hub ), OFO_TYPE_RECURRENT_MODEL );
 
 	return( ok );
+}
+
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
+static void
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty )
+{
+	static const gchar *thisfn = "ofo_recurrent_model_hub_on_deleted_object";
+	ofoOpeTemplate *template_obj;
+
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) empty );
+
+	if( OFO_IS_RECURRENT_MODEL( object )){
+		template_obj = ofo_ope_template_get_by_mnemo( hub, ofo_recurrent_model_get_ope_template( OFO_RECURRENT_MODEL( object )));
+		if( template_obj ){
+			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+		}
+	}
 }

@@ -37,8 +37,7 @@
 /* data associated to each implementor object
  */
 typedef struct {
-	guint  cols_count;
-	GType *cols_type;
+	ofaHub *hub;
 }
 	sIStore;
 
@@ -46,12 +45,20 @@ typedef struct {
 
 #define ISTORE_DATA                      "ofa-istore-data"
 
+/* signals defined here
+ */
+enum {
+	INSERT = 0,
+	N_SIGNALS
+};
+
+static gint  st_signals[ N_SIGNALS ]    = { 0 };
+
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
 static void  interface_base_init( ofaIStoreInterface *klass );
 static void  interface_base_finalize( ofaIStoreInterface *klass );
-static guint on_column_type_added( ofaIStore *store, GType type, sIStore *sdata );
 static void  on_store_finalized( sIStore *sdata, GObject *finalized_store );
 
 /**
@@ -111,6 +118,33 @@ interface_base_init( ofaIStoreInterface *klass )
 	if( st_initializations == 0 ){
 
 		g_debug( "%s: klass=%p (%s)", thisfn, ( void * ) klass, G_OBJECT_CLASS_NAME( klass ));
+
+		/**
+		 * ofaiStore::ofa-row-inserted:
+		 *
+		 * The signal is emitted on the store for each row insertion,
+		 * either because this row has actually been inserted, or because
+		 * the insertion is simulated.
+		 *
+		 * This may be trapped by frames which want create the treeview
+		 * 'on the fly'.
+		 *
+		 * Handler is of type:
+		 * 		void user_handler( ofaIStore    *store,
+		 * 							GtkTreeIter *iter,
+		 * 							gpointer     user_data );
+		 */
+		st_signals[ INSERT ] = g_signal_new_class_handler(
+					"ofa-row-inserted",
+					OFA_TYPE_ISTORE,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					1,
+					G_TYPE_POINTER );
 	}
 
 	st_initializations += 1;
@@ -184,6 +218,7 @@ ofa_istore_get_interface_version( GType type )
  * @istore: this #ofaIStore instance.
  *
  * Initialize a structure attached to the implementor #GObject.
+ *
  * This should be done as soon as possible in order to let the
  * implementation take benefit of the interface.
  */
@@ -203,8 +238,6 @@ ofa_istore_init( ofaIStore *istore )
 	}
 
 	sdata = g_new0( sIStore, 1 );
-	sdata->cols_count = 0;
-	sdata->cols_type = NULL;
 	g_object_set_data( G_OBJECT( istore ), ISTORE_DATA, sdata );
 	g_object_weak_ref( G_OBJECT( istore ), ( GWeakNotify ) on_store_finalized, sdata );
 }
@@ -234,81 +267,120 @@ ofa_istore_load_dataset( ofaIStore *istore )
 }
 
 /**
- * ofa_istore_set_columns_type:
+ * ofa_istore_set_column_types:
  * @store: this #ofaIStore instance.
  * @hub: the #ofaHub object of the application.
- * @column_object: the column number of the stored object.
  * @columns_count: the initial count of columns.
  * @columns_type: the initial GType's array.
  *
  * Initialize the underlying #GtkListStore / #GtkTreeStore with the
  * specified columns + the columns added by plugins.
+ *
+ * This method must be called once per instance.
  */
 void
-ofa_istore_set_columns_type( ofaIStore *store, ofaHub *hub, guint column_object, guint columns_count, GType *columns_type )
+ofa_istore_set_column_types( ofaIStore *store, ofaHub *hub, guint columns_count, GType *columns_type )
 {
-	static const gchar *thisfn = "ofa_istore_set_columns_type";
+	static const gchar *thisfn = "ofa_istore_set_column_types";
 	sIStore *sdata;
+	GType *final_array;
+	guint final_count;
 
-	g_debug( "%s: store=%p, hub=%p, columnn_object=%u, columns_count=%u, columns_type=%p",
-			thisfn, ( void * ) store, ( void * ) hub, column_object, columns_count, ( void * ) columns_type );
+	g_debug( "%s: store=%p, hub=%p, columns_count=%u, columns_type=%p",
+			thisfn, ( void * ) store, ( void * ) hub, columns_count, ( void * ) columns_type );
 
 	g_return_if_fail( store && OFA_IS_ISTORE( store ));
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
+	if( sdata ){
+		sdata->hub = hub;
 
-	sdata->cols_count = columns_count;
-	sdata->cols_type = g_new0( GType, 1+columns_count );
-	memcpy( sdata->cols_type, columns_type, sizeof( GType ) * columns_count );
+		final_array = ofa_itree_adder_get_column_types( hub, store, columns_count, columns_type, &final_count );
 
-	ofa_itree_adder_add_types( hub, store, column_object, ( TreeAdderTypeCb ) on_column_type_added, sdata );
+		if( GTK_IS_LIST_STORE( store )){
+			gtk_list_store_set_column_types( GTK_LIST_STORE( store ), final_count, final_array );
+		} else {
+			gtk_tree_store_set_column_types( GTK_TREE_STORE( store ), final_count, final_array );
+		}
 
-	if( GTK_IS_LIST_STORE( store )){
-		gtk_list_store_set_column_types(
-				GTK_LIST_STORE( store ), sdata->cols_count, sdata->cols_type );
-	} else {
-		gtk_tree_store_set_column_types(
-				GTK_TREE_STORE( store ), sdata->cols_count, sdata->cols_type );
+		g_free( final_array );
 	}
 }
 
-/*
- * starting with N columns, numbered from 0 to N-1
- * priv->types is an NULL-terminated array of N GType's, so is N+1 size
- * adding a GType means
- * N -> N+1
- * last numbered
+/**
+ * ofa_istore_set_values:
+ * @store: this #ofaIStore instance.
+ * @iter: the current #GtkTreeIter.
+ * @object: related user data.
+ *
+ * Let the plugins set its own row data.
  */
-static guint
-on_column_type_added( ofaIStore *store, GType type, sIStore *sdata )
+void
+ofa_istore_set_values( ofaIStore *store, GtkTreeIter *iter, void *object )
 {
-	GType *types;
-	guint i, count;
+	sIStore *sdata;
 
-	if( 0 ){
-		g_debug( "before" );
-		for( i=0 ; i<sdata->cols_count ; ++i ){
-			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
-		}
+	g_return_if_fail( store && OFA_IS_ISTORE( store ));
+
+	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
+	if( sdata ){
+		ofa_itree_adder_set_values( sdata->hub, store, iter, object );
+	}
+}
+
+/**
+ * ofa_istore_sort:
+ * @store: this #ofaIStore instance.
+ * @model: the model to be sorted (usually a filter model)
+ * @a: one of the #GtkTreeIter to be compared.
+ * @b: the second #GtkTreeIter to be compared.
+ * @column_id: the identifier of the column.
+ * @cmp: [out]: the result.
+ *
+ * Compare the two items.
+ *
+ * Returns: %TRUE if the @column_id is managed here, %FALSE else.
+ */
+gboolean
+ofa_istore_sort( ofaIStore *store, GtkTreeModel *model, GtkTreeIter *a, GtkTreeIter *b, gint column_id, gint *cmp )
+{
+	sIStore *sdata;
+
+	g_return_val_if_fail( store && OFA_IS_ISTORE( store ), FALSE );
+	g_return_val_if_fail( model && GTK_IS_TREE_MODEL( model ), FALSE );
+	g_return_val_if_fail( cmp, FALSE );
+
+	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
+	if( sdata ){
+		return( ofa_itree_adder_sort( sdata->hub, store, model, a, b, column_id, cmp ));
 	}
 
-	sdata->cols_count += 1;									/* new columns count */
-	count = sdata->cols_count;
-	types = g_new0( GType, count+1 );
-	memcpy( types, sdata->cols_type, sizeof( GType ) * ( count-1 ));
-	types[count-1] = type;
-	g_free( sdata->cols_type );
-	sdata->cols_type = types;
+	return( FALSE );
+}
 
-	if( 0 ){
-		g_debug( "after" );
-		for( i=0 ; i<sdata->cols_count ; ++i ){
-			g_debug( "i=%u, type=%ld", i, sdata->cols_type[i] );
-		}
+/**
+ * ofa_istore_add_columns:
+ * @store: this #ofaIStore instance.
+ * @bin: the #ofaTVBin which manages the treeview.
+ *
+ * Add #GtkTreeViewColumn columns to the @bin treeview.
+ */
+void
+ofa_istore_add_columns( ofaIStore *store, ofaTVBin *bin )
+{
+	static const gchar *thisfn = "ofa_istore_add_columns";
+	sIStore *sdata;
+
+	g_debug( "%s: store=%p, bin=%p", thisfn, ( void * ) store, ( void * ) bin );
+
+	g_return_if_fail( store && OFA_IS_ISTORE( store ));
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	sdata = ( sIStore * ) g_object_get_data( G_OBJECT( store ), ISTORE_DATA );
+	if( sdata ){
+		ofa_itree_adder_add_columns( sdata->hub, store, bin );
 	}
-
-	return( sdata->cols_count-1 );
 }
 
 static void

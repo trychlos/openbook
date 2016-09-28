@@ -45,6 +45,7 @@ typedef struct {
 	 */
 	ofaHub  *hub;
 	GList   *hub_handlers;
+	gboolean dataset_is_loaded;
 }
 	ofaOpeTemplateStorePrivate;
 
@@ -53,7 +54,6 @@ static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* ledger_locked, ref, ref_locked */
 		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
-		G_TYPE_STRING, G_TYPE_STRING,					/* recurrent_plugin, vat_plugin */
 		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
 };
 
@@ -129,6 +129,7 @@ ofa_ope_template_store_init( ofaOpeTemplateStore *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->hub_handlers = NULL;
+	priv->dataset_is_loaded = FALSE;
 }
 
 static void
@@ -183,8 +184,7 @@ ofa_ope_template_store_new( ofaHub *hub )
 		priv->hub = hub;
 
 		st_col_types[OPE_TEMPLATE_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
-		ofa_istore_set_columns_type(
-				OFA_ISTORE( store ), hub, OPE_TEMPLATE_COL_OBJECT, OPE_TEMPLATE_N_COLUMNS, st_col_types );
+		ofa_istore_set_column_types( OFA_ISTORE( store ), hub, OPE_TEMPLATE_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ),
@@ -236,11 +236,18 @@ list_store_v_load_dataset( ofaListStore *store )
 
 	priv = ofa_ope_template_store_get_instance_private( OFA_OPE_TEMPLATE_STORE( store ));
 
-	dataset = ofo_ope_template_get_dataset( priv->hub );
+	if( priv->dataset_is_loaded ){
+		ofa_list_store_loading_simulate( store );
 
-	for( it=dataset ; it ; it=it->next ){
-		ope = OFO_OPE_TEMPLATE( it->data );
-		insert_row( OFA_OPE_TEMPLATE_STORE( store ), ope );
+	} else {
+		dataset = ofo_ope_template_get_dataset( priv->hub );
+
+		for( it=dataset ; it ; it=it->next ){
+			ope = OFO_OPE_TEMPLATE( it->data );
+			insert_row( OFA_OPE_TEMPLATE_STORE( store ), ope );
+		}
+
+		priv->dataset_is_loaded = TRUE;
 	}
 }
 
@@ -264,13 +271,10 @@ static void
 set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_set_row";
-	ofaOpeTemplateStorePrivate *priv;
 	gchar *stamp;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
-
-	priv = ofa_ope_template_store_get_instance_private( self );
 
 	stamp  = my_utils_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
 
@@ -294,14 +298,12 @@ set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIt
 			OPE_TEMPLATE_COL_NOTES_PNG,     notes_png,
 			OPE_TEMPLATE_COL_UPD_USER,      ofo_ope_template_get_upd_user( ope ),
 			OPE_TEMPLATE_COL_UPD_STAMP,     stamp,
-			OPE_TEMPLATE_COL_RECURRENT,     "",
-			OPE_TEMPLATE_COL_VAT,           "",
 			-1 );
 
 	g_object_unref( notes_png );
 	g_free( stamp );
 
-	ofa_itree_adder_set_values( priv->hub, OFA_ISTORE( self ), iter, ( void * ) ope );
+	ofa_istore_set_values( OFA_ISTORE( self ), iter, ( void * ) ope );
 }
 
 /*

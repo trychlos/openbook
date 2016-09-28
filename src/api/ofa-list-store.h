@@ -77,7 +77,9 @@ typedef struct {
 }
 	ofaListStoreClass;
 
-GType   ofa_list_store_get_type    ( void ) G_GNUC_CONST;
+GType   ofa_list_store_get_type        ( void ) G_GNUC_CONST;
+
+void    ofa_list_store_loading_simulate( ofaListStore *store );
 
 G_END_DECLS
 

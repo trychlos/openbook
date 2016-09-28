@@ -95,6 +95,7 @@ enum {
 
 static guint        st_signals[ N_SIGNALS ] = { 0 };
 
+static void       setup_getter( ofaOpeTemplateFrameBin *self, ofaIGetter *getter );
 static void       setup_bin( ofaOpeTemplateFrameBin *self );
 static GtkWidget *book_get_page_by_ledger( ofaOpeTemplateFrameBin *self, const gchar *ledger, gboolean bcreate );
 static GtkWidget *book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger );
@@ -117,9 +118,7 @@ static void       do_delete_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTe
 static gboolean   delete_confirmed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *ope );
 static void       do_duplicate_ope_template( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
 static void       do_guided_input( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template );
-static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self );
-static void       set_getter_hub( ofaOpeTemplateFrameBin *self );
-static void       set_getter_store( ofaOpeTemplateFrameBin *self );
+static void       store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self );
 static void       hub_connect_to_signaling_system( ofaOpeTemplateFrameBin *self );
 static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
 static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaOpeTemplateFrameBin *self );
@@ -287,8 +286,8 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
  * ofa_ope_template_frame_bin_new:
  * @getter: a #ofaIGetter instance.
  *
- * Creates the structured content, i.e. The accounts notebook on the
- * left column, the buttons box on the right one.
+ * Creates the structured content, i.e. the operation templates notebook
+ * on the left column, the buttons box on the right one.
  *
  * +-----------------------------------------------------------------------+
  * | parent container:                                                     |
@@ -306,15 +305,47 @@ ofa_ope_template_frame_bin_class_init( ofaOpeTemplateFrameBinClass *klass )
  * +-----------------------------------------------------------------------+
  */
 ofaOpeTemplateFrameBin *
-ofa_ope_template_frame_bin_new( void )
+ofa_ope_template_frame_bin_new( ofaIGetter *getter )
 {
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_new";
 	ofaOpeTemplateFrameBin *self;
+
+	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_FRAME_BIN, NULL );
 
+	setup_getter( self, getter );
 	setup_bin( self );
 
 	return( self );
+}
+
+/*
+ * Record the getter
+ * Initialize private datas which depend of only getter
+ */
+static void
+setup_getter( ofaOpeTemplateFrameBin *self, ofaIGetter *getter )
+{
+	ofaOpeTemplateFrameBinPrivate *priv;
+	gulong handler;
+
+	priv = ofa_ope_template_frame_bin_get_instance_private( self );
+
+	priv->getter = getter;
+
+	/* hub-related initialization */
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	hub_connect_to_signaling_system( self );
+
+	/* then initialize the store */
+	priv->store = ofa_ope_template_store_new( priv->hub );
+	handler = g_signal_connect( priv->store, "ofa-row-inserted", G_CALLBACK( store_on_row_inserted ), self );
+	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
 }
 
 /*
@@ -438,6 +469,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 	view = ofa_ope_template_treeview_new( ledger );
 	ofa_ope_template_treeview_set_settings_key( view, priv->settings_key );
 	ofa_ope_template_treeview_setup_columns( view );
+	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 
 	g_signal_connect( view, "ofa-opechanged", G_CALLBACK( tview_on_selection_changed ), self );
@@ -977,8 +1009,9 @@ do_guided_input( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
  * is triggered by the store when a row is inserted
  */
 static void
-store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self )
+store_on_row_inserted( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaOpeTemplateFrameBin *self )
 {
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_store_on_row_inserted";
 	ofoOpeTemplate *ope;
 	const gchar *ledger;
 
@@ -986,7 +1019,11 @@ store_on_row_inserted( GtkTreeModel *tmodel, GtkTreePath *path, GtkTreeIter *ite
 	g_return_if_fail( ope && OFO_IS_OPE_TEMPLATE( ope ));
 	g_object_unref( ope );
 
-	//g_debug( "store_on_row_inserted: ope_template=%s", ofo_ope_template_get_mnemo( ope ));
+	if( 0 ){
+		g_debug( "%s: tmodel=%p, iter=%p, self=%p, ope_template=%s",
+				thisfn, ( void * ) tmodel, ( void * ) iter, ( void * ) self,
+				ofo_ope_template_get_mnemo( ope ));
+	}
 
 	ledger = ofo_ope_template_get_ledger( ope );
 	if( !book_get_page_by_ledger( self, ledger, TRUE )){
@@ -1020,61 +1057,26 @@ ofa_ope_template_frame_bin_set_settings_key( ofaOpeTemplateFrameBin *bin, const 
 }
 
 /**
- * ofa_ope_template_frame_bin_set_getter:
+ * ofa_ope_template_frame_bin_load_dataset:
  * @bin: this #ofaOpeTemplateFrameBin instance.
- * @getter: a permanent #ofaIGetter.
  *
- * Setup the getter.
- * This should be done as the last step of the initialization, because
- * this will load the store and initialize the displayed columns.
+ * Load the dataset.
  */
 void
-ofa_ope_template_frame_bin_set_getter( ofaOpeTemplateFrameBin *bin, ofaIGetter *getter )
+ofa_ope_template_frame_bin_load_dataset( ofaOpeTemplateFrameBin *bin )
 {
-	static const gchar *thisfn = "ofa_ope_template_frame_bin_set_getter";
+	static const gchar *thisfn = "ofa_ope_template_frame_bin_load_dataset";
 	ofaOpeTemplateFrameBinPrivate *priv;
+	GList *strlist, *it;
+	gchar *key;
 
-	g_debug( "%s: bin=%p, getter=%p", thisfn, ( void * ) bin, ( void * ) getter );
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
-	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->getter = getter;
-
-	set_getter_hub( bin );
-	set_getter_store( bin );
-
-	gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), 0 );
-}
-
-static void
-set_getter_hub( ofaOpeTemplateFrameBin *self )
-{
-	ofaOpeTemplateFrameBinPrivate *priv;
-
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
-
-	hub_connect_to_signaling_system( self );
-}
-
-static void
-set_getter_store( ofaOpeTemplateFrameBin *self )
-{
-	ofaOpeTemplateFrameBinPrivate *priv;
-	gulong handler;
-	GList *strlist, *it;
-	gchar *key;
-
-	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
 	/* create one page per ledger
 	 * if strlist is set, then create one page per ledger
@@ -1083,18 +1085,14 @@ set_getter_store( ofaOpeTemplateFrameBin *self )
 	key = g_strdup_printf( "%s-pages", priv->settings_key );
 	strlist = ofa_settings_user_get_string_list( key );
 	for( it=strlist ; it ; it=it->next ){
-		book_get_page_by_ledger( self, ( const gchar * ) it->data, FALSE );
+		book_get_page_by_ledger( bin, ( const gchar * ) it->data, FALSE );
 	}
 	ofa_settings_free_string_list( strlist );
 	g_free( key );
 
-	/* then load the store */
-	priv->store = ofa_ope_template_store_new( priv->hub );
-
-	handler = g_signal_connect( priv->store, "row-inserted", G_CALLBACK( store_on_row_inserted ), self );
-	priv->store_handlers = g_list_prepend( priv->store_handlers, ( gpointer ) handler );
-
 	ofa_istore_load_dataset( OFA_ISTORE( priv->store ));
+
+	gtk_notebook_set_current_page( GTK_NOTEBOOK( priv->notebook ), 0 );
 }
 
 static void
