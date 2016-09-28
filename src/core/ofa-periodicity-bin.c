@@ -270,7 +270,13 @@ periodicity_on_selection_changed( GtkComboBox *combo, ofaPeriodicityBin *self )
 	g_free( priv->detail_code );
 	priv->detail_code = NULL;
 
-	detail_populate( self );
+	if( !my_collate( priv->periodicity_code, PER_NEVER )){
+		gtk_widget_set_sensitive( priv->detail_combo, FALSE );
+
+	} else {
+		gtk_widget_set_sensitive( priv->detail_combo, TRUE );
+		detail_populate( self );
+	}
 
 	g_signal_emit_by_name( G_OBJECT( self ), "ofa-changed", priv->periodicity_code, priv->detail_code );
 }
@@ -381,7 +387,7 @@ ofa_periodicity_bin_get_selected( ofaPeriodicityBin *bin, gchar **periodicity, g
 			*msgerr = g_strdup( _( "Empty periodicity" ));
 		}
 	}
-	if( !my_strlen( priv->detail_code )){
+	if( !my_strlen( priv->detail_code ) && my_collate( priv->periodicity_code, PER_NEVER )){
 		if( valid ){
 			*valid = FALSE;
 		}

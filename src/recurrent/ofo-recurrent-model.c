@@ -559,7 +559,7 @@ ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label, const
 		}
 		return( FALSE );
 	}
-	if( !my_strlen( detail )){
+	if( !my_strlen( detail ) && my_collate( period, PER_NEVER )){
 		if( msgerr ){
 			*msgerr = g_strdup( _( "Empty periodicity detail" ));
 		}
