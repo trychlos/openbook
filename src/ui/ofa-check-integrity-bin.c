@@ -102,6 +102,8 @@ enum {
 	N_SIGNALS
 };
 
+#define SCROLLBAR_WIDTH                   16
+
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-check-integrity-bin.ui";
@@ -1070,7 +1072,7 @@ iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widg
 
 		frame = gtk_frame_new( NULL );
 		gtk_widget_set_hexpand( frame, TRUE );
-		my_utils_widget_set_margin_right( frame, 16 );
+		my_utils_widget_set_margin_right( frame, SCROLLBAR_WIDTH );
 		gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_IN );
 
 		if( widget ){
@@ -1078,9 +1080,9 @@ iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widg
 		}
 
 		sdata->grid = gtk_grid_new();
-		my_utils_widget_set_margins( sdata->grid, 4, 4, 12, 16 );
+		my_utils_widget_set_margins( sdata->grid, 2, 2, 8, 4 );
 		gtk_container_add( GTK_CONTAINER( frame ), sdata->grid );
-		gtk_grid_set_column_spacing( GTK_GRID( sdata->grid ), 12 );
+		gtk_grid_set_column_spacing( GTK_GRID( sdata->grid ), 4 );
 
 		gtk_grid_attach( GTK_GRID( priv->objects_grid ), frame, 0, priv->objects_row++, 1, 1 );
 

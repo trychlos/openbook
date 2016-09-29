@@ -533,25 +533,27 @@ check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress )
 		model = OFO_RECURRENT_MODEL( it->data );
 		mnemo = ofo_recurrent_model_get_mnemo( model );
 
-		/* operation template */
-		ope_mnemo = ofo_recurrent_model_get_ope_template( model );
-		if( !my_strlen( ope_mnemo )){
-			if( progress ){
-				str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
-				my_iprogress_set_text( progress, worker, str );
-				g_free( str );
-			}
-			errs += 1;
-		} else {
-			ope_object = ofo_ope_template_get_by_mnemo( hub, ope_mnemo );
-			if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
+		if( ofo_recurrent_model_get_is_enabled( model )){
+			/* operation template */
+			ope_mnemo = ofo_recurrent_model_get_ope_template( model );
+			if( !my_strlen( ope_mnemo )){
 				if( progress ){
-					str = g_strdup_printf(
-							_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
+					str = g_strdup_printf( _( "Recurrent model %s does not have an operation template" ), mnemo );
 					my_iprogress_set_text( progress, worker, str );
 					g_free( str );
 				}
 				errs += 1;
+			} else {
+				ope_object = ofo_ope_template_get_by_mnemo( hub, ope_mnemo );
+				if( !ope_object || !OFO_IS_OPE_TEMPLATE( ope_object )){
+					if( progress ){
+						str = g_strdup_printf(
+								_( "Recurrent model %s has operation template '%s' which doesn't exist" ), mnemo, ope_mnemo );
+						my_iprogress_set_text( progress, worker, str );
+						g_free( str );
+					}
+					errs += 1;
+				}
 			}
 		}
 

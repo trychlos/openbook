@@ -359,14 +359,6 @@
 1154 2016- 6-22 BUG: it appears that we may have some detail in OPE_TEMPLATES_DET
                 which do not have any line in OPE_TEMPLATES (VEREP2)
 
-1156 2016- 6-23 BUG: when validating a recurrent operation (whose amounts
-                were initially all null, and an amount being set before
-                validation
-                cf. todo_1156/trace
-                Note that after rerun we may see that some operation have
-                been generated but not recorded
-     2016- 6-23 not reproductible
-
 1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
                 generating any operation (and so without the need for
                 an operation date)
@@ -1520,6 +1512,15 @@
 1155 2016- 6-22 BUG: when saving a new recurrent model
                 cf. todo_1155/trace
      2016- 6-23 fixed
+
+1156 2016- 6-23 BUG: when validating a recurrent operation (whose amounts
+                were initially all null, and an amount being set before
+                validation
+                cf. todo_1156/trace
+                Note that after rerun we may see that some operation have
+                been generated but not recorded
+     2016- 6-23 not reproductible
+     2016- 9-29 cancelled
 
 1157 2016- 6-23 FEAT: add a Notes indicator in all reference pages
                 (as in AccountsChart)
