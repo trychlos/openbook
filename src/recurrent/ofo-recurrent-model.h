@@ -84,6 +84,7 @@ const GTimeVal    *ofo_recurrent_model_get_upd_stamp          ( const ofoRecurre
 const gchar       *ofo_recurrent_model_get_def_amount1        ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_def_amount2        ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_def_amount3        ( const ofoRecurrentModel *model );
+gboolean           ofo_recurrent_model_get_is_enabled         ( const ofoRecurrentModel *model );
 
 gboolean           ofo_recurrent_model_is_deletable           ( const ofoRecurrentModel *model );
 gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, const gchar *detail, gchar **msgerr );
@@ -97,6 +98,7 @@ void               ofo_recurrent_model_set_notes              ( ofoRecurrentMode
 void               ofo_recurrent_model_set_def_amount1        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_def_amount2        ( ofoRecurrentModel *model, const gchar *def_amount );
 void               ofo_recurrent_model_set_def_amount3        ( ofoRecurrentModel *model, const gchar *def_amount );
+void               ofo_recurrent_model_set_is_enabled         ( ofoRecurrentModel *model, gboolean is_enabled );
 
 gboolean           ofo_recurrent_model_insert                 ( ofoRecurrentModel *model, ofaHub *hub );
 gboolean           ofo_recurrent_model_update                 ( ofoRecurrentModel *model, const gchar *prev_mnemo );
