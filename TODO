@@ -384,41 +384,15 @@
                 opened ?)
 
 1166 2016- 6-28 FEAT: have a progress bar when validating more than one
-                recurrent operation
-
-1167 2016- 6-28 FEAT: BatPage: be able to sort: done
-     2016- 7-18 id. LedgerPage:                 done
-                id. OpeTemplatePage
-                id. RatePage
-                id. ClassPage:                  done
-                id. VAT form management
+                waiting recurrent operation + a confirmation dialog box
 
 1168 2016- 6-28 VAT Declaration: "invalid operation date" message should
                 be italic (same than real error, but the color)
 
-1169 2016- 6-30 when defining displayable columns for a treeview, choose
-                between enum (e.g. account) and bit array (e.g. currency,
-                ledger, rec_model, tva_form)
-                -> this should be an enum, so that the caller has to provide
-                an array, and thus may decide the order of the columns
-     2016- 7-11 currency: done
-     2016- 7-23 id. RecModel
-                id. TVAForm
-                id. Dossier
-                id. Exercice
-
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
-1175 2016- 7-11 BUG: RecurrentNew: amount modified in the first dialog are
-                not saved
-
-1177 2016- 7-11 RecurrentOperation: do not warns when no entry is generated
-                (but only display the info)
-
 1179 2016- 8- 2 obsolete itreeview-column and itreeview-display
-
-1180 2016- 8- 3 rename ofaPage::setup_buttons to ofaPage::setup_actions
 
 1181 2016- 8- 4 obsolete ofa_buttons_box_add_button_with_mnemonic
                 + BUTTON_DELETE/NEW/PROPERTIES
@@ -443,10 +417,6 @@
 
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
-
-1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
-                box which requests a confirmation for <n> operations
-                + progress bar
 
 1219
 
@@ -1576,6 +1546,26 @@
 1164 2016- 6-27 Open Freelance Accounting: should be renamed Open F. Accounting
      2016- 6-28 done
 
+1167 2016- 6-28 FEAT: BatPage: be able to sort: done
+     2016- 7-18 id. LedgerPage:                 done
+                id. OpeTemplatePage
+                id. RatePage
+                id. ClassPage:                  done
+                id. VAT form management
+     2016- 9-29 done with TVBin migration
+
+1169 2016- 6-30 when defining displayable columns for a treeview, choose
+                between enum (e.g. account) and bit array (e.g. currency,
+                ledger, rec_model, tva_form)
+                -> this should be an enum, so that the caller has to provide
+                an array, and thus may decide the order of the columns
+     2016- 7-11 currency: done
+     2016- 7-23 id. RecModel
+                id. TVAForm
+                id. Dossier
+                id. Exercice
+     2016- 9-29 done with TVBin migration
+
 1170 2016- 6- 7 BUG: import assistant: stream format: encoding format
                 does not get sensitive when toggled
      2016- 7-11 this is because the charmaps is empty
@@ -1593,12 +1583,23 @@
                 format has character encoding set, but empty
      2016- 7-11 duplicate of #1170
 
+1175 2016- 7-11 BUG: RecurrentNew: amount modified in the first dialog are
+                not saved
+     2016- 9-29 fixed when migration to TVBIN
+
 1176 2016- 7-11 BUG: Recurrent: validating operation is not recorded
      2016- 7-11 because of auto-increment, did not have numseq up to date
                 -> fixed
 
+1177 2016- 7-11 RecurrentOperation: do not warns when no entry is generated
+                (but only display the info)
+     2016- 9-29 done for all warnings displayed from the method
+
 1178 2016- 8- 2 rename ofaISortable to ofaITVSortable
      2016- 8- 4 done
+
+1180 2016- 8- 3 rename ofaPage::setup_buttons to ofaPage::setup_actions
+     2016- 8-29 obsoleted with ofaPage review
 
 1182 2016- 8- 4 General review:
                 makes use of ofaIActionable, ofaIContext, ofaISortable and
@@ -1677,6 +1678,11 @@
 
 1201 2016- 9-18 make OpeTemplateTreeview sortable
      2016- 9-21 done
+
+1202 2016- 9-18 when validating waiting recurrent operation, have a dialog
+                box which requests a confirmation for <n> operations
+                + progress bar
+     2016- 9-29 duplicate of #1166
 
 1203 2016- 9-18 modifying an operation template mnemo is not reverberated
                 in recurrent operation

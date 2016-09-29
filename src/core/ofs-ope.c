@@ -1396,7 +1396,7 @@ ofs_ope_generate_entries( const ofsOpe *ope )
 	gchar *message;
 
 	if( !ofs_ope_is_valid( ope, &message, NULL )){
-		g_warning( "%s: %s", thisfn, message );
+		g_info( "%s: %s", thisfn, message );
 		g_free( message );
 		return( NULL );
 	}
