@@ -73,21 +73,23 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                               Type     Displayable
- *                                                               -------  -----------
- * @REC_MODEL_COL_MNEMO             : mnemonic identifier        String       Yes
- * @REC_MODEL_COL_LABEL             : label                      String       Yes
- * @REC_MODEL_COL_OPE_TEMPLATE      : operation template         String       Yes
- * @REC_MODEL_COL_PERIODICITY       : periodicity                String       Yes
- * @REC_MODEL_COL_PERIODICITY_DETAIL: periodicity detail         String       Yes
- * @REC_MODEL_COL_DEF_AMOUNT1       : amount 1                   String       Yes
- * @REC_MODEL_COL_DEF_AMOUNT2       : amount 2                   String       Yes
- * @REC_MODEL_COL_DEF_AMOUNT3       : amount 3                   String       Yes
- * @REC_MODEL_COL_NOTES             : notes                      String       Yes
- * @REC_MODEL_COL_NOTES_PNG         : notes indicator            Pixbuf       Yes
- * @REC_MODEL_COL_UPD_USER          : last update user           String       Yes
- * @REC_MODEL_COL_UPD_STAMP         : last update timestamp      String       Yes
- * @REC_MODEL_COL_OBJECT            : #ofoRecurrentModel object  GObject       No
+ *                                                                  Type     Displayable
+ *                                                                  -------  -----------
+ * @REC_MODEL_COL_MNEMO             : mnemonic identifier           String       Yes
+ * @REC_MODEL_COL_LABEL             : label                         String       Yes
+ * @REC_MODEL_COL_OPE_TEMPLATE      : operation template            String       Yes
+ * @REC_MODEL_COL_PERIODICITY       : periodicity                   String       Yes
+ * @REC_MODEL_COL_PERIODICITY_DETAIL: periodicity detail            String       Yes
+ * @REC_MODEL_COL_DEF_AMOUNT1       : amount 1                      String       Yes
+ * @REC_MODEL_COL_DEF_AMOUNT2       : amount 2                      String       Yes
+ * @REC_MODEL_COL_DEF_AMOUNT3       : amount 3                      String       Yes
+ * @REC_MODEL_COL_ENABLED           : whether the model is enabled  String       Yes
+ * @REC_MODEL_COL_ENABLED_B         : whether the model is enabled  Bool          No
+ * @REC_MODEL_COL_NOTES             : notes                         String       Yes
+ * @REC_MODEL_COL_NOTES_PNG         : notes indicator               Pixbuf       Yes
+ * @REC_MODEL_COL_UPD_USER          : last update user              String       Yes
+ * @REC_MODEL_COL_UPD_STAMP         : last update timestamp         String       Yes
+ * @REC_MODEL_COL_OBJECT            : #ofoRecurrentModel object     GObject       No
  */
 enum {
 	REC_MODEL_COL_MNEMO = 0,
@@ -98,6 +100,8 @@ enum {
 	REC_MODEL_COL_DEF_AMOUNT1,
 	REC_MODEL_COL_DEF_AMOUNT2,
 	REC_MODEL_COL_DEF_AMOUNT3,
+	REC_MODEL_COL_ENABLED,
+	REC_MODEL_COL_ENABLED_B,
 	REC_MODEL_COL_NOTES,
 	REC_MODEL_COL_NOTES_PNG,
 	REC_MODEL_COL_UPD_USER,

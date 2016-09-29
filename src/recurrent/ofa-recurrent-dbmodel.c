@@ -69,6 +69,8 @@ static gboolean dbmodel_to_v3( sUpdate *update_data, guint version );
 static gulong   count_v3( sUpdate *update_data );
 static gboolean dbmodel_to_v4( sUpdate *update_data, guint version );
 static gulong   count_v4( sUpdate *update_data );
+static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
+static gulong   count_v5( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -82,6 +84,7 @@ static sMigration st_migrates[] = {
 		{ 2, dbmodel_to_v2, count_v2 },
 		{ 3, dbmodel_to_v3, count_v3 },
 		{ 4, dbmodel_to_v4, count_v4 },
+		{ 5, dbmodel_to_v5, count_v5 },
 		{ 0 }
 };
 
@@ -315,6 +318,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 	}
 
 	/* updated in v2 */
+	/* updated in v5 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_MODELS ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL UNIQUE COMMENT 'Recurrent operation identifier',"
@@ -448,6 +452,36 @@ dbmodel_to_v4( sUpdate *update_data, guint version )
 
 static gulong
 count_v4( sUpdate *update_data )
+{
+	return( 2 );
+}
+
+/*
+ * REC_T_MODEL: enable the model
+ */
+static gboolean
+dbmodel_to_v5( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v5";
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_MODELS "
+			"	ADD COLUMN REC_ENABLED        CHAR(1)                               COMMENT 'Whether the model is enabled'" )){
+		return( FALSE );
+	}
+
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS SET REC_ENABLED='Y'" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v5( sUpdate *update_data )
 {
 	return( 2 );
 }

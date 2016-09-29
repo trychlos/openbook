@@ -26,6 +26,8 @@
 #include <config.h>
 #endif
 
+#include <glib/gi18n.h>
+
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -51,6 +53,7 @@ static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ope_template, periodicity, detail */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* def_amount1,def_amount2,def_amount3 */
+		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* enabled_str, enabled_bool */
 		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoRecurrentModel itself */
@@ -247,10 +250,11 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 {
 	static const gchar *thisfn = "ofa_recurrent_model_store_set_row";
 	gchar *stamp;
-	const gchar *csper, *csdet, *csdef1, *csdef2, *csdef3;
+	const gchar *csper, *csdet, *csdef1, *csdef2, *csdef3, *cenabled;
 	const gchar *periodicity, *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
+	gboolean is_enabled;
 
 	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 	periodicity = ofo_recurrent_model_get_periodicity( model );
@@ -259,6 +263,8 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 	csdef1 = ofo_recurrent_model_get_def_amount1( model );
 	csdef2 = ofo_recurrent_model_get_def_amount2( model );
 	csdef3 = ofo_recurrent_model_get_def_amount3( model );
+	is_enabled = ofo_recurrent_model_get_is_enabled( model );
+	cenabled = is_enabled ? _( "Yes" ) : _( "No" );
 
 	notes = ofo_recurrent_model_get_notes( model );
 	error = NULL;
@@ -279,6 +285,8 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 			REC_MODEL_COL_DEF_AMOUNT1,        csdef1 ? csdef1 : "",
 			REC_MODEL_COL_DEF_AMOUNT2,        csdef2 ? csdef2 : "",
 			REC_MODEL_COL_DEF_AMOUNT3,        csdef3 ? csdef3 : "",
+			REC_MODEL_COL_ENABLED,            cenabled,
+			REC_MODEL_COL_ENABLED_B,          is_enabled,
 			REC_MODEL_COL_NOTES,              notes,
 			REC_MODEL_COL_NOTES_PNG,          notes_png,
 			REC_MODEL_COL_UPD_USER,           ofo_recurrent_model_get_upd_user( model ),

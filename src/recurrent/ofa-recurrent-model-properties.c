@@ -78,6 +78,7 @@ typedef struct {
 	GtkWidget           *def1_entry;
 	GtkWidget           *def2_entry;
 	GtkWidget           *def3_entry;
+	GtkWidget           *enabled_btn;
 
 	/* data
 	 */
@@ -87,6 +88,7 @@ typedef struct {
 	ofoOpeTemplate      *template_obj;
 	gchar               *periodicity;
 	gchar               *periodicity_detail;
+	gboolean             enabled;
 }
 	ofaRecurrentModelPropertiesPrivate;
 
@@ -103,8 +105,10 @@ static void     on_mnemo_changed( GtkEntry *entry, ofaRecurrentModelProperties *
 static void     on_label_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_ope_template_changed( GtkEntry *entry, ofaRecurrentModelProperties *self );
 static void     on_periodicity_changed( ofaPeriodicityBin *bin, const gchar *periodicity, const gchar *detail, ofaRecurrentModelProperties *self );
+static void     on_enabled_toggled( GtkToggleButton *button, ofaRecurrentModelProperties *self );
 static void     check_for_enable_dlg( ofaRecurrentModelProperties *self );
 static gboolean is_dialog_validable( ofaRecurrentModelProperties *self );
+static gboolean check_for_mnemo( ofaRecurrentModelProperties *self, gchar **msgerr );
 static gboolean do_update( ofaRecurrentModelProperties *self, gchar **msgerr );
 static void     set_msgerr( ofaRecurrentModelProperties *dialog, const gchar *msg );
 
@@ -334,7 +338,7 @@ static void
 init_page_properties( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
-	GtkWidget *entry, *prompt, *label, *parent, *combo;
+	GtkWidget *entry, *prompt, *label, *parent, *combo, *btn;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
@@ -402,6 +406,10 @@ init_page_properties( ofaRecurrentModelProperties *self )
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 	priv->def3_entry = entry;
 
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-enabled" );
+	g_return_if_fail( btn && GTK_IS_CHECK_BUTTON( btn ));
+	priv->enabled_btn = btn;
+	g_signal_connect( priv->enabled_btn, "toggled", G_CALLBACK( on_enabled_toggled ), self );
 }
 
 static void
@@ -409,6 +417,7 @@ setup_data( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
 	const gchar *cstr, *cper, *cdet;
+	gboolean is_enabled;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
@@ -434,6 +443,10 @@ setup_data( ofaRecurrentModelProperties *self )
 
 	cstr = ofo_recurrent_model_get_def_amount3( priv->recurrent_model );
 	gtk_entry_set_text( GTK_ENTRY( priv->def3_entry ), cstr ? cstr : "" );
+
+	is_enabled = ofo_recurrent_model_get_is_enabled( priv->recurrent_model );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ), is_enabled );
+	priv->enabled = is_enabled;
 }
 
 static void
@@ -499,6 +512,18 @@ on_periodicity_changed( ofaPeriodicityBin *bin, const gchar *periodicity, const 
 	check_for_enable_dlg( self );
 }
 
+static void
+on_enabled_toggled( GtkToggleButton *button, ofaRecurrentModelProperties *self )
+{
+	ofaRecurrentModelPropertiesPrivate *priv;
+
+	priv = ofa_recurrent_model_properties_get_instance_private( self );
+
+	priv->enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
+
+	check_for_enable_dlg( self );
+}
+
 /*
  * are we able to validate this recurrent model
  */
@@ -518,39 +543,70 @@ check_for_enable_dlg( ofaRecurrentModelProperties *self )
 
 /*
  * are we able to validate this recurrent model
+ *
+ * Note that we always accept to save the dialog if the record is disabled
  */
 static gboolean
 is_dialog_validable( ofaRecurrentModelProperties *self )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
-	gboolean ok, exists, subok;
+	gboolean ok;
 	gchar *msgerr;
+
+	priv = ofa_recurrent_model_properties_get_instance_private( self );
+
+	ok = check_for_mnemo( self, &msgerr );
+
+	/* other tests must only be satisfied if enabled */
+	if( ok && priv->enabled ){
+		ok = ofo_recurrent_model_is_valid_data(
+				priv->mnemo, priv->label, priv->ope_template,
+						priv->periodicity, priv->periodicity_detail, &msgerr );
+
+		if( ok && !priv->template_obj ){
+			ok = FALSE;
+			msgerr = g_strdup_printf( _( "Unknown operation template: %s" ), priv->ope_template );
+		}
+	}
+
+	set_msgerr( self, msgerr );
+	g_free( msgerr );
+
+	return( ok );
+}
+
+/*
+ * Check that mnemo is set and unique
+ * This test must be satisfied in all cases:
+ * - even if dossier is not writable
+ * - even if model is disabled
+ */
+static gboolean
+check_for_mnemo( ofaRecurrentModelProperties *self, gchar **msgerr )
+{
+	ofaRecurrentModelPropertiesPrivate *priv;
+	gboolean ok, exists, subok;
 	ofaHub *hub;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
-	msgerr = NULL;
+	ok = TRUE;
+	*msgerr = NULL;
 	hub = ofa_igetter_get_hub( priv->getter );
 
-	ok = ofo_recurrent_model_is_valid_data(
-			priv->mnemo, priv->label, priv->ope_template, priv->periodicity, priv->periodicity_detail, &msgerr );
-
-	if( ok && !priv->template_obj ){
+	if( !my_strlen( priv->mnemo )){
 		ok = FALSE;
-		msgerr = g_strdup_printf( _( "Unknown operation template: %s" ), priv->ope_template );
-	}
+		*msgerr = g_strdup( _( "Empty mnemonic" ));
 
-	if( ok ){
+	} else {
 		exists = ( ofo_recurrent_model_get_by_mnemo( hub, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
-						!g_utf8_collate( priv->mnemo, ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
+						!my_collate( priv->mnemo, ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
 		ok = !exists || subok;
 		if( !ok ){
-			msgerr = g_strdup( _( "Mnemonic is already defined" ));
+			*msgerr = g_strdup( _( "Mnemonic is already defined" ));
 		}
 	}
-	set_msgerr( self, msgerr );
-	g_free( msgerr );
 
 	return( ok );
 }
@@ -565,7 +621,7 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
 	gchar *prev_mnemo;
-	gboolean ok;
+	gboolean ok, is_enabled;
 	ofaHub *hub;
 	const gchar *cstr;
 	ofoOpeTemplate *template_obj;
@@ -592,6 +648,9 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->def3_entry ));
 	ofo_recurrent_model_set_def_amount3( priv->recurrent_model, cstr );
+
+	is_enabled = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->enabled_btn ));
+	ofo_recurrent_model_set_is_enabled( priv->recurrent_model, is_enabled );
 
 	my_utils_container_notes_get( GTK_WINDOW( self ), recurrent_model );
 

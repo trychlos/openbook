@@ -680,26 +680,29 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
-	per_main = ofo_recurrent_model_get_periodicity( model );
-	per_detail = ofo_recurrent_model_get_periodicity_detail( model );
-
 	sdata.self = self;
-	sdata.model = model;
-	sdata.template = ofo_ope_template_get_by_mnemo( priv->hub, ofo_recurrent_model_get_ope_template( model ));
 	sdata.opes = NULL;
 	sdata.already = 0;
 	sdata.messages = NULL;
 
-	g_debug( "%s: model=%s, periodicity=%s,%s",
-			thisfn, ofo_recurrent_model_get_label( model ), per_main, per_detail );
+	if( ofo_recurrent_model_get_is_enabled( model )){
 
-	ofa_periodicity_enum_dates_between(
-			per_main, per_detail,
-			begin_date, end_date,
-			( PeriodicityDatesCb ) generate_enum_dates_cb, &sdata );
+		sdata.model = model;
+		sdata.template = ofo_ope_template_get_by_mnemo( priv->hub, ofo_recurrent_model_get_ope_template( model ));
+		per_main = ofo_recurrent_model_get_periodicity( model );
+		per_detail = ofo_recurrent_model_get_periodicity_detail( model );
 
-	if( g_list_length( sdata.messages )){
-		*messages = g_list_concat( *messages, sdata.messages );
+		g_debug( "%s: model=%s, periodicity=%s,%s",
+				thisfn, ofo_recurrent_model_get_label( model ), per_main, per_detail );
+
+		ofa_periodicity_enum_dates_between(
+				per_main, per_detail,
+				begin_date, end_date,
+				( PeriodicityDatesCb ) generate_enum_dates_cb, &sdata );
+
+		if( g_list_length( sdata.messages )){
+			*messages = g_list_concat( *messages, sdata.messages );
+		}
 	}
 
 	return( sdata.opes );

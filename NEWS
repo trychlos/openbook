@@ -38,6 +38,7 @@
   
  New features and improvements:
 
+   - RecurrentOperation: DB Model v5.
    - Accelerators: define new keys in Dossier menu (todo #1204).
    - AccountSelect, OpeTemplateSelect: save settings before hiding the dialog.
    - BalanceRender: improve appearance of header notes (todo #1191).

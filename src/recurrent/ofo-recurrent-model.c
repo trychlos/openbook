@@ -61,6 +61,7 @@ enum {
 	REC_DEF_AMOUNT1,
 	REC_DEF_AMOUNT2,
 	REC_DEF_AMOUNT3,
+	REC_ENABLED,
 };
 
 /*
@@ -112,6 +113,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( REC_DEF_AMOUNT3 ),
+				OFA_TYPE_STRING,
+				TRUE,
+				FALSE },
+		{ OFA_BOX_CSV( REC_ENABLED ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -489,6 +494,24 @@ ofo_recurrent_model_get_def_amount3( const ofoRecurrentModel *model )
 }
 
 /**
+ * ofo_recurrent_model_get_is_enabled:
+ */
+gboolean
+ofo_recurrent_model_get_is_enabled( const ofoRecurrentModel *model )
+{
+	const gchar *cstr;
+	gboolean value;
+
+	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( model )->prot->dispose_has_run, FALSE );
+
+	cstr = ofa_box_get_string( OFO_BASE( model )->prot->fields, REC_ENABLED );
+	value = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
+
+	return( value );
+}
+
+/**
  * ofo_recurrent_model_is_deletable:
  * @model: the recurrent model.
  *
@@ -666,6 +689,18 @@ void
 ofo_recurrent_model_set_def_amount3( ofoRecurrentModel *model, const gchar *def_amount )
 {
 	ofo_base_setter( RECURRENT_MODEL, model, string, REC_DEF_AMOUNT3, def_amount );
+}
+
+/**
+ * ofo_recurrent_model_set_is_enabled:
+ */
+void
+ofo_recurrent_model_set_is_enabled( ofoRecurrentModel *model, gboolean is_enabled )
+{
+	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+	g_return_if_fail( !OFO_BASE( model )->prot->dispose_has_run );
+
+	ofa_box_set_string( OFO_BASE( model )->prot->fields, REC_ENABLED, is_enabled ? "Y":"N" );
 }
 
 /**
