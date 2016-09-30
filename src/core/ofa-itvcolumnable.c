@@ -73,7 +73,7 @@ static guint        st_signals[ N_SIGNALS ] = { 0 };
 
 static guint        st_initializations      = 0;	/* interface initialization count */
 
-static const gchar *st_action_prefix        = "action_";
+static const gchar *st_action_prefix        = "itvcolumnable_";
 
 static GType           register_type( void );
 static void            interface_base_init( ofaITVColumnableInterface *klass );
@@ -317,10 +317,6 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	sColumn *scol;
 	GSimpleAction *action;
 
-	/*
-	g_debug( "column_id=%u, menu_label=%s", column_id, menu_label );
-	*/
-
 	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
 
 	sdata = get_instance_data( instance );
@@ -340,11 +336,14 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	sdata->columns_list = g_list_append( sdata->columns_list, scol );
 
 	scol->id = column_id;
-	scol->group_name = get_actions_group_name( instance, sdata );	// <name>-itvcolumnable
-	scol->name = column_id_to_action_name( scol->id );				// action_<n>
+	scol->group_name = get_actions_group_name( instance, sdata );	// <name>
+	scol->name = column_id_to_action_name( scol->id );				// itvcolumnable_<n>
 	scol->label = g_strdup( menu_label ? menu_label : gtk_tree_view_column_get_title( column ));
 	scol->column = column;
 	scol->def_visible = FALSE;
+
+	g_debug( "column_id=%u, menu_label=%s, action_group=%s, action_name=%s",
+			column_id, menu_label, scol->group_name, scol->name );
 
 	/* define a new action and attach it to the action group
 	 * default visibility state is set */
@@ -371,6 +370,8 @@ on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnabl
 	sITVColumnable *sdata;
 	sColumn *scol;
 	GList *it;
+
+	g_debug( "%s: action_name=%s", thisfn, g_action_get_name( G_ACTION( action )));
 
 	/* set the action state as requested (which is just the default) */
 	g_simple_action_set_state( action, value);
@@ -723,7 +724,7 @@ get_actions_group_name( const ofaITVColumnable *instance, sITVColumnable *sdata 
 {
 	gchar *group;
 
-	group = g_strdup_printf( "%s-itvcolumnable", my_strlen( sdata->name ) ? sdata->name : G_OBJECT_TYPE_NAME( instance ));
+	group = g_strdup( my_strlen( sdata->name ) ? sdata->name : G_OBJECT_TYPE_NAME( instance ));
 
 	return( group );
 }
