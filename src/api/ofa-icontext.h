@@ -104,6 +104,8 @@ void       ofa_icontext_append_submenu            ( ofaIContext *instance,
 															const gchar *label,
 															GMenu *menu );
 
+GMenu     *ofa_icontext_get_menu                  ( ofaIContext *instance );
+
 void       ofa_icontext_set_menu                  ( ofaIContext *instance,
 															ofaIActionable *actionable,
 															GMenu *menu );

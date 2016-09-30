@@ -229,6 +229,24 @@ ofa_icontext_append_submenu( ofaIContext *instance, ofaIActionable *actionable, 
 }
 
 /**
+ * ofa_icontext_get_menu:
+ * @instance: this #ofaIContext instance.
+ *
+ * Returns: the current menu model.
+ */
+GMenu *
+ofa_icontext_get_menu( ofaIContext *instance )
+{
+	sIContext *sdata;
+
+	g_return_val_if_fail( instance && OFA_IS_ICONTEXT( instance ), NULL );
+
+	sdata = get_instance_data( instance );
+
+	return( sdata->menu );
+}
+
+/**
  * ofa_icontext_set_menu:
  * @instance: this #ofaIContext instance.
  * @actionable: the #ofaIActionable instance, which holds the @menu.
