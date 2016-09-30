@@ -268,7 +268,7 @@ ofa_itvsortable_sort_str_amount( const gchar *a, const gchar *b )
 gint
 ofa_itvsortable_sort_str_int( const gchar *a, const gchar *b )
 {
-	int inta, intb;
+	long inta, intb;
 
 	if( !my_strlen( a )){
 		if( !my_strlen( b )){
@@ -276,12 +276,12 @@ ofa_itvsortable_sort_str_int( const gchar *a, const gchar *b )
 		}
 		return( -1 );
 	}
-	inta = atoi( a );
+	inta = atol( a );
 
 	if( !my_strlen( b )){
 		return( 1 );
 	}
-	intb = atoi( b );
+	intb = atol( b );
 
 	return( inta < intb ? -1 : ( inta > intb ? 1 : 0 ));
 }
