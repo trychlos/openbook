@@ -81,7 +81,8 @@ typedef struct {
  * @BAL_COL_LABEL          : label                             String       Yes
  * @BAL_COL_CURRENCY       : currency (from bat)               String       Yes
  * @BAL_COL_AMOUNT         : amount                            String       Yes
- * @BAL_COL_ENTRY          : conciliated entry                 String       Yes
+ * @BAL_COL_CONCIL_ID      : conciliation id.                  String       Yes
+ * @BAL_COL_ENTRY          : conciliated entry/ies             String       Yes
  * @BAL_COL_USER           : conciliation user                 String       Yes
  * @BAL_COL_STAMP          : conciliation timestamp            String       Yes
  * @BAL_COL_OBJECT         : #ofoBatLine object                GObject       No
@@ -95,6 +96,7 @@ enum {
 	BAL_COL_LABEL,
 	BAL_COL_CURRENCY,
 	BAL_COL_AMOUNT,
+	BAL_COL_CONCIL_ID,
 	BAL_COL_ENTRY,
 	BAL_COL_USER,
 	BAL_COL_STAMP,
@@ -108,6 +110,8 @@ ofaBatlineTreeview *ofa_batline_treeview_new             ( void );
 
 void                ofa_batline_treeview_set_settings_key( ofaBatlineTreeview *view,
 																const gchar *key );
+
+void                ofa_batline_treeview_setup_columns   ( ofaBatlineTreeview *view );
 
 void                ofa_batline_treeview_set_store       ( ofaBatlineTreeview *view );
 

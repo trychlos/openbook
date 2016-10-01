@@ -31,7 +31,7 @@
  * @short_description: The EntryStore class description
  * @include: core/ofa-entry-store.h
  *
- * The #ofaEntryStore derived from #GtkListStore.
+ * The #ofaEntryStore derives from #ofaListStore.
  * Contrarily to other stores of the application, this one is not
  * permanent: it is created on the fly when needed, and released
  * after use.
@@ -72,7 +72,7 @@ typedef struct {
 	ofaEntryStoreClass;
 
 /**
- * The columns stored in the subjacent #GtkTreeStore.
+ * The columns stored in the subjacent #ofaListStore.
  *                                                             Type     Displayable
  *                                                             -------  -----------
  * @ENTRY_COL_DOPE          : operation date                    String      Yes

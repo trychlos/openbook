@@ -235,7 +235,6 @@ setup_treeview( ofaBatPropertiesBin *self )
 {
 	ofaBatPropertiesBinPrivate *priv;
 	GtkWidget *box;
-	GMenu *menu;
 
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
@@ -244,9 +243,29 @@ setup_treeview( ofaBatPropertiesBin *self )
 
 	priv->tview = ofa_batline_treeview_new();
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( priv->tview ));
+}
 
-	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
-	ofa_icontext_set_menu( OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ), menu );
+/**
+ * ofa_bat_properties_bin_set_settings_key:
+ * @view: this #ofaBatlineTreeview instance.
+ * @key: [allow-none]: the prefix of the settings key.
+ *
+ * Setup the setting key, or reset it to its default if %NULL.
+ */
+void
+ofa_bat_properties_bin_set_settings_key( ofaBatPropertiesBin *bin, const gchar *key )
+{
+	ofaBatPropertiesBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ));
+
+	priv = ofa_bat_properties_bin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	/* we do not manage any settings here, so directly pass it to
+	 * embedded classes */
+	ofa_batline_treeview_set_settings_key( priv->tview, key );
 }
 
 static void
@@ -355,29 +374,6 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat )
 
 	display_bat_properties( bin, bat );
 	ofa_batline_treeview_set_bat( priv->tview, bat );
-}
-
-/**
- * ofa_bat_properties_bin_set_settings_key:
- * @view: this #ofaBatlineTreeview instance.
- * @key: [allow-none]: the prefix of the settings key.
- *
- * Setup the setting key, or reset it to its default if %NULL.
- */
-void
-ofa_bat_properties_bin_set_settings_key( ofaBatPropertiesBin *bin, const gchar *key )
-{
-	ofaBatPropertiesBinPrivate *priv;
-
-	g_return_if_fail( bin && OFA_IS_BAT_PROPERTIES_BIN( bin ));
-
-	priv = ofa_bat_properties_bin_get_instance_private( bin );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* we do not manage any settings here, so directly pass it to
-	 * embedded classes */
-	ofa_batline_treeview_set_settings_key( priv->tview, key );
 }
 
 /**

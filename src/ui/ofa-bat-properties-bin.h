@@ -72,11 +72,11 @@ GType                ofa_bat_properties_bin_get_type            ( void ) G_GNUC_
 
 ofaBatPropertiesBin *ofa_bat_properties_bin_new                 ( void );
 
-void                 ofa_bat_properties_bin_set_bat             ( ofaBatPropertiesBin *bin,
-																		ofoBat *bat );
-
 void                 ofa_bat_properties_bin_set_settings_key    ( ofaBatPropertiesBin *bin,
 																		const gchar *key );
+
+void                 ofa_bat_properties_bin_set_bat             ( ofaBatPropertiesBin *bin,
+																		ofoBat *bat );
 
 ofaBatlineTreeview  *ofa_bat_properties_bin_get_batline_treeview( ofaBatPropertiesBin *bin );
 

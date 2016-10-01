@@ -73,24 +73,24 @@ static GType st_col_types[ENTRY_N_COLUMNS] = {
 	G_TYPE_BOOLEAN, G_TYPE_BOOLEAN						/* deffect_set, currency_set */
 };
 
-static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *store );
-static void     insert_row( ofaEntryStore *store, const ofoEntry *entry );
-static void     set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter );
-static void     set_row_concil( ofaEntryStore *store, ofoConcil *concil, GtkTreeIter *iter );
-static gboolean find_row_by_number( ofaEntryStore *store, ofxCounter number, GtkTreeIter *iter );
-static void     do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted );
-static void     hub_connect_to_signaling_system( ofaEntryStore *store );
-static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store );
-static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *store );
-static void     hub_do_update_account_number( ofaEntryStore *store, const gchar *prev, const gchar *number );
-static void     hub_do_update_currency_code( ofaEntryStore *store, const gchar *prev, const gchar *code );
-static void     hub_do_update_ledger_mnemo( ofaEntryStore *store, const gchar *prev, const gchar *mnemo );
-static void     hub_do_update_ope_template_mnemo( ofaEntryStore *store, const gchar *prev, const gchar *mnemo );
-static void     hub_on_updated_concil( ofaEntryStore *store, ofoConcil *concil );
-static void     hub_on_updated_entry( ofaEntryStore *store, ofoEntry *entry );
-static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store );
-static void     hub_on_deleted_concil( ofaEntryStore *store, ofoConcil *concil );
-static void     hub_on_deleted_entry( ofaEntryStore *store, ofoEntry *entry );
+static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *self );
+static void     insert_row( ofaEntryStore *self, const ofoEntry *entry );
+static void     set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter );
+static void     set_row_concil( ofaEntryStore *self, ofoConcil *concil, GtkTreeIter *iter );
+static gboolean find_row_by_number( ofaEntryStore *self, ofxCounter number, GtkTreeIter *iter );
+static void     do_update_concil( ofaEntryStore *self, ofoConcil *concil, gboolean is_deleted );
+static void     hub_connect_to_signaling_system( ofaEntryStore *self );
+static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self );
+static void     hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *self );
+static void     hub_do_update_account_number( ofaEntryStore *self, const gchar *prev, const gchar *number );
+static void     hub_do_update_currency_code( ofaEntryStore *self, const gchar *prev, const gchar *code );
+static void     hub_do_update_ledger_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo );
+static void     hub_do_update_ope_template_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo );
+static void     hub_on_updated_concil( ofaEntryStore *self, ofoConcil *concil );
+static void     hub_on_updated_entry( ofaEntryStore *self, ofoEntry *entry );
+static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self );
+static void     hub_on_deleted_concil( ofaEntryStore *self, ofoConcil *concil );
+static void     hub_on_deleted_entry( ofaEntryStore *self, ofoEntry *entry );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryStore, ofa_entry_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaEntryStore ))
@@ -199,7 +199,7 @@ ofa_entry_store_new( ofaHub *hub )
  * sorting the store per entry number ascending
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *store )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryStore *self )
 {
 	ofxCounter numa, numb;
 	gint cmp;
@@ -252,23 +252,23 @@ ofa_entry_store_load( ofaEntryStore *store, const gchar *account, const gchar *l
 }
 
 static void
-insert_row( ofaEntryStore *store, const ofoEntry *entry )
+insert_row( ofaEntryStore *self, const ofoEntry *entry )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert_with_values(
-			GTK_LIST_STORE( store ),
+			GTK_LIST_STORE( self ),
 			&iter,
 			-1,
 			ENTRY_COL_ENT_NUMBER_I, ofo_entry_get_number( entry ),
 			ENTRY_COL_OBJECT,       entry ,
 			-1 );
 
-	set_row_by_iter( store, entry, &iter );
+	set_row_by_iter( self, entry, &iter );
 }
 
 static void
-set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter )
+set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 {
 	ofaEntryStorePrivate *priv;
 	gchar *sdope, *sdeff, *sdeb, *scre, *sopenum, *ssetnum, *ssetstamp, *sentnum, *supdstamp;
@@ -278,7 +278,7 @@ set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter 
 	ofxCounter counter;
 	ofoConcil *concil;
 
-	priv = ofa_entry_store_get_instance_private( store );
+	priv = ofa_entry_store_get_instance_private( self );
 
 	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
 	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
@@ -314,7 +314,7 @@ set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter 
 
 
 	gtk_list_store_set(
-				GTK_LIST_STORE( store ),
+				GTK_LIST_STORE( self ),
 				iter,
 				ENTRY_COL_DOPE,          sdope,
 				ENTRY_COL_DEFFECT,       sdeff,
@@ -357,7 +357,7 @@ set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter 
 
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 	if( concil ){
-		set_row_concil( store, concil, iter );
+		set_row_concil( self, concil, iter );
 	}
 }
 
@@ -365,7 +365,7 @@ set_row_by_iter( ofaEntryStore *store, const ofoEntry *entry, GtkTreeIter *iter 
  * iter is on the list store
  */
 static void
-set_row_concil( ofaEntryStore *store, ofoConcil *concil, GtkTreeIter *iter )
+set_row_concil( ofaEntryStore *self, ofoConcil *concil, GtkTreeIter *iter )
 {
 	gchar *srappro, *snum;
 
@@ -377,7 +377,7 @@ set_row_concil( ofaEntryStore *store, ofoConcil *concil, GtkTreeIter *iter )
 				g_strdup( "" );
 
 	gtk_list_store_set(
-				GTK_LIST_STORE( store ),
+				GTK_LIST_STORE( self ),
 				iter,
 				ENTRY_COL_CONCIL_NUMBER, snum,
 				ENTRY_COL_CONCIL_DATE,   srappro,
@@ -401,20 +401,20 @@ set_row_concil( ofaEntryStore *store, ofoConcil *concil, GtkTreeIter *iter )
  * this exact match.
  */
 static gboolean
-find_row_by_number( ofaEntryStore *store, ofxCounter number, GtkTreeIter *iter )
+find_row_by_number( ofaEntryStore *self, ofxCounter number, GtkTreeIter *iter )
 {
 	ofxCounter row_number;
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), iter, ENTRY_COL_ENT_NUMBER_I, &row_number, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, ENTRY_COL_ENT_NUMBER_I, &row_number, -1 );
 			if( row_number == number ){
 				return( TRUE );
 			}
 			if( row_number > number ){
 				break;
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
 				break;
 			}
 		}
@@ -428,7 +428,7 @@ find_row_by_number( ofaEntryStore *store, ofxCounter number, GtkTreeIter *iter )
  * -> update the entry row if needed
  */
 static void
-do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted )
+do_update_concil( ofaEntryStore *self, ofoConcil *concil, gboolean is_deleted )
 {
 	GList *ids, *it;
 	ofsConcilId *sid;
@@ -438,8 +438,8 @@ do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted )
 	for( it=ids ; it ; it=it->next ){
 		sid = ( ofsConcilId * ) it->data;
 		if( !g_strcmp0( sid->type, CONCIL_TYPE_ENTRY ) &&
-				find_row_by_number( store, sid->other_id, &iter )){
-			set_row_concil( store, is_deleted ? NULL : concil, &iter );
+				find_row_by_number( self, sid->other_id, &iter )){
+			set_row_concil( self, is_deleted ? NULL : concil, &iter );
 		}
 	}
 }
@@ -448,20 +448,20 @@ do_update_concil( ofaEntryStore *store, ofoConcil *concil, gboolean is_deleted )
  * connect to the hub signaling system
  */
 static void
-hub_connect_to_signaling_system( ofaEntryStore *store )
+hub_connect_to_signaling_system( ofaEntryStore *self )
 {
 	ofaEntryStorePrivate *priv;
 	gulong handler;
 
-	priv = ofa_entry_store_get_instance_private( store );
+	priv = ofa_entry_store_get_instance_private( self );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), store );
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
 	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
 }
 
@@ -469,18 +469,18 @@ hub_connect_to_signaling_system( ofaEntryStore *store )
  * SIGNAL_HUB_NEW signal handler
  */
 static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store )
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self )
 {
 	static const gchar *thisfn = "ofa_entry_store_hub_on_new_object";
 
-	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
 			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) store );
+			( void * ) self );
 
 	if( OFO_IS_ENTRY( object )){
-		insert_row( store, OFO_ENTRY( object ));
+		insert_row( self, OFO_ENTRY( object ));
 	}
 }
 
@@ -488,54 +488,54 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store )
  * SIGNAL_HUB_UPDATED signal handler
  */
 static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *store )
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryStore *self )
 {
 	static const gchar *thisfn = "ofa_entry_store_hub_on_updated_object";
 
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p",
 			thisfn,
 			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			prev_id,
-			( void * ) store );
+			( void * ) self );
 
 	if( prev_id ){
 		if( OFO_IS_ACCOUNT( object )){
-			hub_do_update_account_number( store, prev_id, ofo_account_get_number( OFO_ACCOUNT( object )));
+			hub_do_update_account_number( self, prev_id, ofo_account_get_number( OFO_ACCOUNT( object )));
 
 		} else if( OFO_IS_CURRENCY( object )){
-			hub_do_update_currency_code( store, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
+			hub_do_update_currency_code( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
 
 		} else if( OFO_IS_LEDGER( object )){
-			hub_do_update_ledger_mnemo( store, prev_id, ofo_ledger_get_mnemo( OFO_LEDGER( object )));
+			hub_do_update_ledger_mnemo( self, prev_id, ofo_ledger_get_mnemo( OFO_LEDGER( object )));
 
 		} else if( OFO_IS_OPE_TEMPLATE( object )){
-			hub_do_update_ope_template_mnemo( store, prev_id, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
+			hub_do_update_ope_template_mnemo( self, prev_id, ofo_ope_template_get_mnemo( OFO_OPE_TEMPLATE( object )));
 		}
 	} else if( OFO_IS_CONCIL( object )){
-		hub_on_updated_concil( store, OFO_CONCIL( object ));
+		hub_on_updated_concil( self, OFO_CONCIL( object ));
 
 	} else if( OFO_IS_ENTRY( object )){
-		hub_on_updated_entry( store, OFO_ENTRY( object ));
+		hub_on_updated_entry( self, OFO_ENTRY( object ));
 	}
 }
 
 static void
-hub_do_update_account_number( ofaEntryStore *store, const gchar *prev, const gchar *number )
+hub_do_update_account_number( ofaEntryStore *self, const gchar *prev, const gchar *number )
 {
 	GtkTreeIter iter;
 	gchar *str;
 	gint cmp;
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), &iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), &iter, ENTRY_COL_ACCOUNT, &str, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, ENTRY_COL_ACCOUNT, &str, -1 );
 			cmp = g_utf8_collate( str, prev );
 			g_free( str );
 			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( store ), &iter, ENTRY_COL_ACCOUNT, number, -1 );
+				gtk_list_store_set( GTK_LIST_STORE( self ), &iter, ENTRY_COL_ACCOUNT, number, -1 );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
 				break;
 			}
 		}
@@ -543,21 +543,21 @@ hub_do_update_account_number( ofaEntryStore *store, const gchar *prev, const gch
 }
 
 static void
-hub_do_update_currency_code( ofaEntryStore *store, const gchar *prev, const gchar *code )
+hub_do_update_currency_code( ofaEntryStore *self, const gchar *prev, const gchar *code )
 {
 	GtkTreeIter iter;
 	gchar *str;
 	gint cmp;
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), &iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), &iter, ENTRY_COL_CURRENCY, &str, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, ENTRY_COL_CURRENCY, &str, -1 );
 			cmp = g_utf8_collate( str, prev );
 			g_free( str );
 			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( store ), &iter, ENTRY_COL_CURRENCY, code, -1 );
+				gtk_list_store_set( GTK_LIST_STORE( self ), &iter, ENTRY_COL_CURRENCY, code, -1 );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
 				break;
 			}
 		}
@@ -565,21 +565,21 @@ hub_do_update_currency_code( ofaEntryStore *store, const gchar *prev, const gcha
 }
 
 static void
-hub_do_update_ledger_mnemo( ofaEntryStore *store, const gchar *prev, const gchar *mnemo )
+hub_do_update_ledger_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo )
 {
 	GtkTreeIter iter;
 	gchar *str;
 	gint cmp;
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), &iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), &iter, ENTRY_COL_LEDGER, &str, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, ENTRY_COL_LEDGER, &str, -1 );
 			cmp = g_utf8_collate( str, prev );
 			g_free( str );
 			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( store ), &iter, ENTRY_COL_LEDGER, mnemo, -1 );
+				gtk_list_store_set( GTK_LIST_STORE( self ), &iter, ENTRY_COL_LEDGER, mnemo, -1 );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
 				break;
 			}
 		}
@@ -587,21 +587,21 @@ hub_do_update_ledger_mnemo( ofaEntryStore *store, const gchar *prev, const gchar
 }
 
 static void
-hub_do_update_ope_template_mnemo( ofaEntryStore *store, const gchar *prev, const gchar *mnemo )
+hub_do_update_ope_template_mnemo( ofaEntryStore *self, const gchar *prev, const gchar *mnemo )
 {
 	GtkTreeIter iter;
 	gchar *str;
 	gint cmp;
 
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( store ), &iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( store ), &iter, ENTRY_COL_OPE_TEMPLATE, &str, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, ENTRY_COL_OPE_TEMPLATE, &str, -1 );
 			cmp = g_utf8_collate( str, prev );
 			g_free( str );
 			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( store ), &iter, ENTRY_COL_OPE_TEMPLATE, mnemo, -1 );
+				gtk_list_store_set( GTK_LIST_STORE( self ), &iter, ENTRY_COL_OPE_TEMPLATE, mnemo, -1 );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( store ), &iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
 				break;
 			}
 		}
@@ -613,18 +613,18 @@ hub_do_update_ope_template_mnemo( ofaEntryStore *store, const gchar *prev, const
  * -> update the entry row if needed
  */
 static void
-hub_on_updated_concil( ofaEntryStore *store, ofoConcil *concil )
+hub_on_updated_concil( ofaEntryStore *self, ofoConcil *concil )
 {
-	do_update_concil( store, concil, FALSE );
+	do_update_concil( self, concil, FALSE );
 }
 
 static void
-hub_on_updated_entry( ofaEntryStore *store, ofoEntry *entry )
+hub_on_updated_entry( ofaEntryStore *self, ofoEntry *entry )
 {
 	GtkTreeIter iter;
 
-	if( find_row_by_number( store, ofo_entry_get_number( entry ), &iter )){
-		set_row_by_iter( store, entry, &iter );
+	if( find_row_by_number( self, ofo_entry_get_number( entry ), &iter )){
+		set_row_by_iter( self, entry, &iter );
 	}
 }
 
@@ -632,41 +632,41 @@ hub_on_updated_entry( ofaEntryStore *store, ofoEntry *entry )
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryStore *store )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryStore *self )
 {
 	static const gchar *thisfn = "ofa_entry_store_hub_on_deleted_object";
 
-	g_debug( "%s: hub=%p, object=%p (%s), store=%p",
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
 			thisfn,
 			( void * ) hub,
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) store );
+			( void * ) self );
 
 	if( OFO_IS_CONCIL( object )){
-		hub_on_deleted_concil( store, OFO_CONCIL( object ));
+		hub_on_deleted_concil( self, OFO_CONCIL( object ));
 
 	} else if( OFO_IS_ENTRY( object )){
-		hub_on_deleted_entry( store, OFO_ENTRY( object ));
+		hub_on_deleted_entry( self, OFO_ENTRY( object ));
 	}
 }
 
 static void
-hub_on_deleted_concil( ofaEntryStore *store, ofoConcil *concil )
+hub_on_deleted_concil( ofaEntryStore *self, ofoConcil *concil )
 {
-	do_update_concil( store, concil, TRUE );
+	do_update_concil( self, concil, TRUE );
 }
 
 static void
-hub_on_deleted_entry( ofaEntryStore *store, ofoEntry *entry )
+hub_on_deleted_entry( ofaEntryStore *self, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofa_entry_store_hub_on_deleted_entry";
 	ofaEntryStorePrivate *priv;
 	ofxCounter id;
 	ofoConcil *concil;
 
-	g_debug( "%s: store=%p, entry=%p", thisfn, ( void * ) store, ( void * ) entry );
+	g_debug( "%s: self=%p, entry=%p", thisfn, ( void * ) self, ( void * ) entry );
 
-	priv = ofa_entry_store_get_instance_private( store );
+	priv = ofa_entry_store_get_instance_private( self );
 
 	/* if entry was settled, then cancel all settlement group */
 	id = ofo_entry_get_settlement_number( entry );
