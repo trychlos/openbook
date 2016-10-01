@@ -238,8 +238,9 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_bat_properties_idialog_init";
 	ofaBatPropertiesPrivate *priv;
 	ofaHub *hub;
-	gchar *title;
+	gchar *title, *key;
 	GtkWidget *parent;
+	ofaBatlineTreeview *line_tview;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -259,7 +260,13 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	priv->bat_bin = ofa_bat_properties_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
-	ofa_bat_properties_bin_set_settings_key( priv->bat_bin, G_OBJECT_TYPE_NAME( instance ));
+
+	key = g_strdup_printf( "%s.BatLine", G_OBJECT_TYPE_NAME( instance ));
+	ofa_bat_properties_bin_set_settings_key( priv->bat_bin, key );
+	g_free( key );
+
+	line_tview = ofa_bat_properties_bin_get_batline_treeview( priv->bat_bin );
+	ofa_batline_treeview_setup_columns( line_tview );
 
 	ofa_bat_properties_bin_set_bat( priv->bat_bin, priv->bat );
 

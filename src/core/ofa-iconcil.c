@@ -326,7 +326,9 @@ ofa_iconcil_remove_concil( ofaIConcil *instance, ofoConcil *concil )
  * ofa_iconcil_get_instance_type:
  * @instance: a #ofaIConcil object.
  *
- * Returns: the type of the @instance.
+ * Returns: the type of the @instance:
+ * - 'E' for an entry,
+ * - 'B' for a BAT line.
  */
 const gchar *
 ofa_iconcil_get_instance_type( const ofaIConcil *instance )

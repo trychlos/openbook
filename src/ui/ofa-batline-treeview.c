@@ -35,6 +35,8 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-counter.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
@@ -72,7 +74,6 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void        setup_store( ofaBatlineTreeview *self );
 static void        setup_columns( ofaBatlineTreeview *self );
 static void        store_batline( ofaBatlineTreeview *self, ofoBatLine *line );
 static void        on_selection_changed( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -254,54 +255,7 @@ ofa_batline_treeview_new( void )
 	 */
 	g_signal_connect( view, "ofa-seldelete", G_CALLBACK( on_selection_delete ), NULL );
 
-	setup_store( view );
-	setup_columns( view );
-
 	return( view );
-}
-
-static void
-setup_store( ofaBatlineTreeview *self )
-{
-	static const gchar *thisfn = "ofa_batline_treeview_setup_store";
-	ofaBatlineTreeviewPrivate *priv;
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	priv = ofa_batline_treeview_get_instance_private( self );
-
-	priv->store = gtk_list_store_new(
-			BAL_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* bat_id, line_id, dope */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* deffect, ref, label */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* currency, amount, entry */
-			G_TYPE_STRING, G_TYPE_STRING,				 	/* user, stamp */
-			G_TYPE_OBJECT );								/* the ofoBatLine object itself */
-}
-
-/*
- * Defines the treeview columns
- */
-static void
-setup_columns( ofaBatlineTreeview *self )
-{
-	static const gchar *thisfn = "ofa_batline_treeview_setup_columns";
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAL_COL_BAT_ID,   _( "Bat Id." ),       NULL );
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAL_COL_LINE_ID,  _( "Line Id." ),      NULL );
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAL_COL_DEFFECT,  _( "Effect" ),    _( "Effect date" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAL_COL_DOPE,     _( "Operation" ), _( "Operation date" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_REF,      _( "Ref." ),      _( "Reference" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), BAL_COL_LABEL,    _( "Label" ),         NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_CURRENCY, _( "Currency" ),      NULL );
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAL_COL_AMOUNT,   _( "Amount" ),        NULL );
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_ENTRY,    _( "Entries" ),   _( "Concil. entries" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_USER,     _( "User" ),      _( "Concil. user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAL_COL_STAMP,        NULL ,        _( "Concil. timestamp" ));
-
-	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAL_COL_LABEL );
 }
 
 /**
@@ -334,11 +288,70 @@ ofa_batline_treeview_set_settings_key( ofaBatlineTreeview *view, const gchar *ke
 }
 
 /**
+ * ofa_batline_treeview_setup_columns:
+ * @view: this #ofaBatlineTreeview instance.
+ *
+ * Setup the treeview columns.
+ *
+ * This should be called only after the user settings prefix key has
+ * already been set by the caller.
+ */
+void
+ofa_batline_treeview_setup_columns( ofaBatlineTreeview *view )
+{
+	static const gchar *thisfn = "ofa_batline_treeview_setup_columns";
+	ofaBatlineTreeviewPrivate *priv;
+	GMenu *menu;
+
+	g_debug( "%s: view=%p", thisfn, ( void * ) view );
+
+	g_return_if_fail( view && OFA_IS_BATLINE_TREEVIEW( view ));
+
+	priv = ofa_batline_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	setup_columns( view );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( view ));
+	ofa_icontext_set_menu( OFA_ICONTEXT( view ), OFA_IACTIONABLE( view ), menu );
+}
+
+/*
+ * Defines the treeview columns
+ */
+static void
+setup_columns( ofaBatlineTreeview *self )
+{
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAL_COL_BAT_ID,    _( "Bat Id." ),             NULL );
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), BAL_COL_LINE_ID,   _( "Line Id." ),            NULL );
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAL_COL_DEFFECT,   _( "Effect" ),          _( "Effect date" ));
+	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), BAL_COL_DOPE,      _( "Operation" ),       _( "Operation date" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_REF,       _( "Ref." ),            _( "Reference" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), BAL_COL_LABEL,     _( "Label" ),               NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_CURRENCY,  _( "Currency" ),            NULL );
+	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), BAL_COL_AMOUNT,    _( "Amount" ),              NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_CONCIL_ID, _( "Concil. Id." ),     _( "Conciliation Id." ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_ENTRY,     _( "Concil. entries" ), _( "Conciliation entries" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), BAL_COL_USER,      _( "Concil. user" ),    _( "Conciliation user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), BAL_COL_STAMP,     _( "Concil. stamp" ),   _( "Conciliation timestamp" ));
+
+	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), BAL_COL_LABEL );
+	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( self ), BAL_COL_DEFFECT, GTK_SORT_DESCENDING );
+}
+
+/**
  * ofa_batline_treeview_set_store:
  * @view: this #ofaBatlineTreeview instance.
  *
  * Associates the treeview to the underlying (maybe empty) store, read
  * the settings and show the columns.
+ *
+ * This should be called only after the columns have already been
+ * defined by the caller.
+ *
+ * If the store is not explicitely defined, then it will be when setting
+ * the BAT data for the first time.
  */
 void
 ofa_batline_treeview_set_store( ofaBatlineTreeview *view )
@@ -351,9 +364,15 @@ ofa_batline_treeview_set_store( ofaBatlineTreeview *view )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
+	priv->store = gtk_list_store_new(
+			BAL_N_COLUMNS,
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* bat_id, line_id, dope */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* deffect, ref, label */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* currency, amount, concil_id */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* entry, upd_user, upd_stamp */
+			G_TYPE_OBJECT );								/* the ofoBatLine object itself */
 
-	ofa_itvsortable_set_default_sort( OFA_ITVSORTABLE( view ), BAL_COL_DEFFECT, GTK_SORT_DESCENDING );
+	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 }
 
 /**
@@ -377,7 +396,12 @@ ofa_batline_treeview_set_bat( ofaBatlineTreeview *view, ofoBat *bat )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	gtk_list_store_clear( priv->store );
+	if( !priv->store ){
+		ofa_batline_treeview_set_store( view );
+
+	} else {
+		gtk_list_store_clear( priv->store );
+	}
 
 	priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
@@ -400,7 +424,7 @@ static void
 store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 {
 	ofaBatlineTreeviewPrivate *priv;
-	gchar *sbatid, *slineid, *sdope, *sdeffect, *samount, *stamp;
+	gchar *sbatid, *slineid, *sdope, *sdeffect, *samount, *stamp,*sconcilid;
 	const gchar *cuser, *cur_code;
 	GtkTreeIter iter;
 	ofoConcil *concil;
@@ -422,9 +446,11 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 	}
 
 	samount = ofa_amount_to_str( ofo_bat_line_get_amount( line ), priv->currency );
+
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ));
 	snumbers = g_string_new( "" );
 	if( concil ){
+		sconcilid = g_strdup_printf( "%lu", ofo_concil_get_id( concil ));
 		cuser = ofo_concil_get_user( concil );
 		stamp = my_utils_stamp_to_str( ofo_concil_get_stamp( concil ), MY_STAMP_YYMDHMS );
 		ids = ofo_concil_get_ids( concil );
@@ -438,23 +464,25 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 			}
 		}
 	} else {
+		sconcilid = g_strdup( "" );
 		cuser = "";
 		stamp = g_strdup( "" );
 	}
 
 	gtk_list_store_insert_with_values( priv->store, &iter, -1,
-			BAL_COL_BAT_ID,   sbatid,
-			BAL_COL_LINE_ID,  slineid,
-			BAL_COL_DEFFECT,  sdeffect,
-			BAL_COL_DOPE,     sdope,
-			BAL_COL_REF,      ofo_bat_line_get_ref( line ),
-			BAL_COL_LABEL,    ofo_bat_line_get_label( line ),
-			BAL_COL_CURRENCY, priv->currency ? ofo_currency_get_code( priv->currency ) : "",
-			BAL_COL_AMOUNT,   samount,
-			BAL_COL_ENTRY,    snumbers->str,
-			BAL_COL_USER,     cuser,
-			BAL_COL_STAMP,    stamp,
-			BAL_COL_OBJECT,   line,
+			BAL_COL_BAT_ID,    sbatid,
+			BAL_COL_LINE_ID,   slineid,
+			BAL_COL_DEFFECT,   sdeffect,
+			BAL_COL_DOPE,      sdope,
+			BAL_COL_REF,       ofo_bat_line_get_ref( line ),
+			BAL_COL_LABEL,     ofo_bat_line_get_label( line ),
+			BAL_COL_CURRENCY,  priv->currency ? ofo_currency_get_code( priv->currency ) : "",
+			BAL_COL_AMOUNT,    samount,
+			BAL_COL_CONCIL_ID, sconcilid,
+			BAL_COL_ENTRY,     snumbers->str,
+			BAL_COL_USER,      cuser,
+			BAL_COL_STAMP,     stamp,
+			BAL_COL_OBJECT,    line,
 			-1 );
 
 	g_string_free( snumbers, TRUE );
@@ -531,35 +559,37 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_batline_treeview_v_sort";
 	gint cmp;
-	gchar *batida, *lineida, *deffecta, *dopea, *refa, *labela, *cura, *amounta, *entrya, *usera, *stampa;
-	gchar *batidb, *lineidb, *deffectb, *dopeb, *refb, *labelb, *curb, *amountb, *entryb, *userb, *stampb;
+	gchar *batida, *lineida, *deffecta, *dopea, *refa, *labela, *cura, *amounta, *entrya, *usera, *stampa, *sconcilida;
+	gchar *batidb, *lineidb, *deffectb, *dopeb, *refb, *labelb, *curb, *amountb, *entryb, *userb, *stampb, *sconcilidb;
 
 	gtk_tree_model_get( tmodel, a,
-			BAL_COL_BAT_ID,   &batida,
-			BAL_COL_LINE_ID,  &lineida,
-			BAL_COL_DEFFECT,  &deffecta,
-			BAL_COL_DOPE,     &dopea,
-			BAL_COL_REF,      &refa,
-			BAL_COL_LABEL,    &labela,
-			BAL_COL_CURRENCY, &cura,
-			BAL_COL_AMOUNT,   &amounta,
-			BAL_COL_ENTRY,    &entrya,
-			BAL_COL_USER,     &usera,
-			BAL_COL_STAMP,    &stampa,
+			BAL_COL_BAT_ID,    &batida,
+			BAL_COL_LINE_ID,   &lineida,
+			BAL_COL_DEFFECT,   &deffecta,
+			BAL_COL_DOPE,      &dopea,
+			BAL_COL_REF,       &refa,
+			BAL_COL_LABEL,     &labela,
+			BAL_COL_CURRENCY,  &cura,
+			BAL_COL_AMOUNT,    &amounta,
+			BAL_COL_CONCIL_ID, &sconcilida,
+			BAL_COL_ENTRY,     &entrya,
+			BAL_COL_USER,      &usera,
+			BAL_COL_STAMP,     &stampa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			BAL_COL_BAT_ID,   &batidb,
-			BAL_COL_LINE_ID,  &lineidb,
-			BAL_COL_DEFFECT,  &deffectb,
-			BAL_COL_DOPE,     &dopeb,
-			BAL_COL_REF,      &refb,
-			BAL_COL_LABEL,    &labelb,
-			BAL_COL_CURRENCY, &curb,
-			BAL_COL_AMOUNT,   &amountb,
-			BAL_COL_ENTRY,    &entryb,
-			BAL_COL_USER,     &userb,
-			BAL_COL_STAMP,    &stampb,
+			BAL_COL_BAT_ID,    &batidb,
+			BAL_COL_LINE_ID,   &lineidb,
+			BAL_COL_DEFFECT,   &deffectb,
+			BAL_COL_DOPE,      &dopeb,
+			BAL_COL_REF,       &refb,
+			BAL_COL_LABEL,     &labelb,
+			BAL_COL_CURRENCY,  &curb,
+			BAL_COL_AMOUNT,    &amountb,
+			BAL_COL_CONCIL_ID, &sconcilidb,
+			BAL_COL_ENTRY,     &entryb,
+			BAL_COL_USER,      &userb,
+			BAL_COL_STAMP,     &stampb,
 			-1 );
 
 	cmp = 0;
@@ -589,6 +619,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 		case BAL_COL_AMOUNT:
 			cmp = ofa_itvsortable_sort_str_amount( amounta, amountb );
 			break;
+		case BAL_COL_CONCIL_ID:
+			cmp = ofa_itvsortable_sort_str_int( sconcilida, sconcilidb );
+			break;
 		case BAL_COL_ENTRY:
 			cmp = my_collate( entrya, entryb );
 			break;
@@ -611,6 +644,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( labela );
 	g_free( cura );
 	g_free( amounta );
+	g_free( sconcilida );
 	g_free( entrya );
 	g_free( usera );
 	g_free( stampa );
@@ -623,6 +657,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( labelb );
 	g_free( curb );
 	g_free( amountb );
+	g_free( sconcilidb );
 	g_free( entryb );
 	g_free( userb );
 	g_free( stampb );

@@ -73,6 +73,8 @@
 #include "api/ofa-tree-store.h"
 #include "api/ofa-hub-def.h"
 
+#include "core/ofa-iconcil.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RECONCIL_STORE                ( ofa_reconcil_store_get_type())
@@ -156,15 +158,29 @@ enum {
 	RECONCIL_N_COLUMNS
 };
 
-GType             ofa_reconcil_store_get_type       ( void );
+GType             ofa_reconcil_store_get_type         ( void );
 
-ofaReconcilStore *ofa_reconcil_store_new            ( ofaHub *hub );
+ofaReconcilStore *ofa_reconcil_store_new              ( ofaHub *hub );
 
-ofxCounter        ofa_reconcil_store_load_by_account( ofaReconcilStore *store,
-															const gchar *account );
+ofxCounter        ofa_reconcil_store_load_by_account  ( ofaReconcilStore *store,
+															const gchar *account_id );
 
-ofxCounter        ofa_reconcil_store_load_by_bat    ( ofaReconcilStore *store,
-															ofxCounter bat );
+ofxCounter        ofa_reconcil_store_load_by_bat      ( ofaReconcilStore *store,
+															ofxCounter bat_id );
+
+void              ofa_reconcil_store_insert_row       ( ofaReconcilStore *store,
+															ofaIConcil *iconcil,
+															GtkTreeIter *parent_iter,
+															GtkTreeIter *iter );
+
+void              ofa_reconcil_store_insert_level_zero( ofaReconcilStore *store,
+															ofaIConcil *iconcil,
+															GtkTreeIter *iter );
+
+void              ofa_reconcil_store_set_concil_data  ( ofaReconcilStore *store,
+															ofxCounter concil_id,
+															const GDate *concil_date,
+															GtkTreeIter *iter );
 
 G_END_DECLS
 

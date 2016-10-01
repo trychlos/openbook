@@ -319,7 +319,7 @@ setup_properties( ofaBatSelect *self )
 	g_free( key );
 
 	line_tview = ofa_bat_properties_bin_get_batline_treeview( priv->bat_bin );
-	ofa_batline_treeview_set_store( line_tview );
+	ofa_batline_treeview_setup_columns( line_tview );
 }
 
 static void
