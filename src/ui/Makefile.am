@@ -220,6 +220,8 @@ openbook_SOURCES = \
 	ofa-reconcil-render.h								\
 	ofa-reconcil-store.c								\
 	ofa-reconcil-store.h								\
+	ofa-reconcil-treeview.c								\
+	ofa-reconcil-treeview.h								\
 	ofa-restore-assistant.c								\
 	ofa-restore-assistant.h								\
 	ofa-settlement-page.c								\
