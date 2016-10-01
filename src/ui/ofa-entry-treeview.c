@@ -267,7 +267,7 @@ ofa_entry_treeview_new( void )
 				NULL );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
-	 * a #ofoAccount object instead of just the raw GtkTreeSelection
+	 * a #ofoEntry object instead of just the raw GtkTreeSelection
 	 */
 	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
 	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
