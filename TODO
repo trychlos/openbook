@@ -404,9 +404,6 @@
 1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
                 vertically (+ review left and right margins)
 
-1195 2016- 9-14 ReconciliationPrint: add sum of debit and credit
-                + change color of bank line at end
-
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
@@ -1658,6 +1655,10 @@
      2016- 9-15 these already were the same fonts, probably appearing smaller
                 because reconsiliation draws on a landscape orientation
                 => use Sans Italic 5
+
+1195 2016- 9-14 ReconciliationPrint: add sum of debit and credit
+                + change color of bank line at end
+     2016-10- 3 done
 
 1197 2016- 9-15 Restore: at the end, the close button of the assistant is
                 left inactive
