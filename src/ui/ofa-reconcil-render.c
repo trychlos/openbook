@@ -65,7 +65,7 @@ typedef struct {
 	ofoAccount     *account;
 	ofoCurrency    *currency;
 	GDate           date;
-	gint            count;				/* count of entries in the dataset */
+	gint            count;					/* count of entries in the dataset */
 
 	/* print datas
 	 */
@@ -88,10 +88,12 @@ typedef struct {
 
 	/* runtime
 	 */
-	gint           line_num;			/* entry line number of the full report counted from 1 */
-	gint           batline_num;			/* bat line number of the full report counted from 1 */
-	GDate          global_deffect;
-	gdouble        account_solde;
+	gint            line_num;				/* entry line number of the full report counted from 1 */
+	gint            batline_num;			/* bat line number of the full report counted from 1 */
+	GDate           global_deffect;
+	gdouble         solde_debit;
+	gdouble         solde_credit;
+	gdouble         account_solde;
 }
 	ofaReconcilRenderPrivate;
 
@@ -127,6 +129,7 @@ static const gdouble st_body_vspace_rate    = 0.3;
 #define COLOR_DARK_CYAN                  0,      0.5156, 0.5156
 #define COLOR_DARK_GRAY                  0.251,  0.251,  0.251
 #define COLOR_GRAY                       0.6,    0.6,    0.6
+#define COLOR_MAROON                     0.4,    0.2,    0
 
 static GtkWidget         *page_v_get_top_focusable_widget( const ofaPage *page );
 static void               paned_page_v_init_view( ofaPanedPage *page );
@@ -437,6 +440,8 @@ irenderable_reset_runtime( ofaIRenderable *instance )
 	priv->line_num = 0;
 	priv->batline_num = 0;
 	priv->account_solde = 0;
+	priv->solde_debit = 0;
+	priv->solde_credit = 0;
 }
 
 static gboolean
@@ -657,8 +662,7 @@ static void
 irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 {
 	ofaReconcilRenderPrivate *priv;
-	static const gdouble st_vspace_rate = 0.25;
-	gdouble y, height;
+	gdouble y;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
@@ -666,13 +670,11 @@ irenderable_draw_group_header( ofaIRenderable *instance, GList *current )
 	ofa_irenderable_set_font( instance, st_bat_header_font );
 
 	y = ofa_irenderable_get_last_y( instance );
-	height = ofa_irenderable_get_line_height( instance );
-	y += height*st_vspace_rate;
 
 	ofa_irenderable_set_text(
 			instance, priv->body_effect_ltab, y, _( "Unconciliated bank transactions "), PANGO_ALIGN_LEFT );
 
-	y += height;
+	y += ofa_irenderable_get_line_height( instance );;
 	ofa_irenderable_set_last_y( instance, y );
 }
 
@@ -724,6 +726,7 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 		priv->account_solde += amount;
+		priv->solde_debit += amount;
 	}
 
 	amount = ofo_entry_get_credit( entry );
@@ -733,6 +736,7 @@ draw_line_entry( ofaIRenderable *instance, ofoEntry *entry )
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 		priv->account_solde -= amount;
+		priv->solde_credit += amount;
 	}
 
 	/* current solde */
@@ -785,12 +789,14 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 				priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 		priv->account_solde += amount;
+		priv->solde_debit += amount;
 	} else {
 		str = ofa_amount_to_str( -amount, priv->currency );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 		priv->account_solde += amount;
+		priv->solde_credit += amount;
 	}
 
 	/* current solde */
@@ -827,8 +833,31 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 	g_return_if_fail( my_date_is_valid( &priv->date ));
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
+
+	/* debit and credit totals
+	 */
 	y = ofa_irenderable_get_last_y( instance );
 	line_height = ofa_irenderable_get_line_height( instance );
+
+	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
+	ofa_irenderable_set_font( instance, st_body_font );
+
+	str = ofa_amount_to_str( priv->solde_debit, priv->currency );
+	ofa_irenderable_set_text( instance,
+			priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	str = ofa_amount_to_str( priv->solde_credit, priv->currency );
+	ofa_irenderable_set_text( instance,
+			priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
+	g_free( str );
+
+	/* reconciliated account solde
+	 */
+	y += line_height * ( 1+st_vspace_rate );
+
+	ofa_irenderable_set_color( instance, COLOR_DARK_CYAN );
+	ofa_irenderable_set_summary_font( instance );
 
 	sdate = get_render_date( OFA_RECONCIL_RENDER( instance ));
 	str_amount = account_solde_to_str( OFA_RECONCIL_RENDER( instance ), priv->account_solde );
@@ -843,6 +872,8 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 	g_free( str );
 
+	/* caution
+	 */
 	y += line_height * ( 1+st_vspace_rate );
 
 	ofa_irenderable_set_color( instance, COLOR_BLACK );
@@ -860,6 +891,8 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 					"by your bank, are present in your account extraction, but are not "
 					"found in your books." ), PANGO_ALIGN_LEFT );
 
+	/* BAT solde
+	 */
 	bat = ofo_bat_get_most_recent_for_account( hub, priv->account_number );
 	if( bat ){
 		ofa_irenderable_set_summary_font( instance );
@@ -894,6 +927,7 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 
 		y += height + line_height * st_vspace_rate;
 
+		ofa_irenderable_set_color( instance, COLOR_MAROON );
 		ofa_irenderable_set_text( instance, priv->body_solde_rtab, y, bat_str->str, PANGO_ALIGN_RIGHT );
 
 		g_string_free( bat_str, TRUE );
