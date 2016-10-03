@@ -257,7 +257,7 @@ void              ofa_tvbin_add_column_text_x     ( ofaTVBin *bin,
 
 GtkTreeSelection *ofa_tvbin_get_selection         ( ofaTVBin *bin );
 
-GtkWidget        *ofa_tvbin_get_treeview          ( ofaTVBin *bin );
+GtkWidget        *ofa_tvbin_get_tree_view         ( ofaTVBin *bin );
 
 GtkTreeModel     *ofa_tvbin_get_tree_model        ( ofaTVBin *bin );
 

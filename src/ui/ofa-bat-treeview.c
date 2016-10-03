@@ -473,7 +473,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 	priv = ofa_bat_treeview_get_instance_private( view );
 	g_return_if_fail( !priv->dispose_has_run );
 
-	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
 	if( treeview ){
 		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){

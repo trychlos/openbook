@@ -396,7 +396,7 @@ idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-dossier-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget(
-			GTK_LABEL( label ), ofa_tvbin_get_treeview( OFA_TVBIN( priv->dossier_tview )));
+			GTK_LABEL( label ), ofa_tvbin_get_tree_view( OFA_TVBIN( priv->dossier_tview )));
 	gtk_size_group_add_widget( group, label );
 }
 
