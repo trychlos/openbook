@@ -58,9 +58,13 @@ typedef struct {
 
 	/* loaded account
 	 */
-	gchar       *acc_number;
 	ofoAccount  *account;
 	ofoCurrency *currency;
+
+	/* updating from hub signaling system
+	 */
+	gchar       *acc_number;
+	gchar       *acc_currency;
 }
 	ofaReconcilStorePrivate;
 
@@ -91,7 +95,10 @@ static void     concil_set_row_with_data( ofaReconcilStore *self, ofxCounter id,
 static void     insert_with_remediation( ofaReconcilStore *self, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, gboolean parent_preferred );
 static void     move_children_rec( ofaReconcilStore *self, GtkTreeRowReference *target_ref, GtkTreeRowReference *source_ref );
 static gboolean search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIter *iter );
+static gboolean find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_date, ofoBase *row_object, gint *spread );
 static gboolean search_for_parent_by_concil( ofaReconcilStore *self, ofoConcil *concil, GtkTreeIter *iter );
+static gboolean search_for_entry_by_number( ofaReconcilStore *self, ofxCounter number, GtkTreeIter *iter );
+static gboolean search_for_entry_by_number_rec( ofaReconcilStore *self, ofxCounter number, GtkTreeIter *iter );
 static void     hub_connect_to_signaling_system( ofaReconcilStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilStore *self );
 static void     hub_do_new_entry( ofaReconcilStore *self, ofoEntry *entry );
@@ -123,6 +130,7 @@ reconcil_store_finalize( GObject *instance )
 	priv = ofa_reconcil_store_get_instance_private( OFA_RECONCIL_STORE( instance ));
 
 	g_free( priv->acc_number );
+	g_free( priv->acc_currency );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_reconcil_store_parent_class )->finalize( instance );
@@ -262,11 +270,17 @@ ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *accoun
 
 	/* keep some reference datas about this account */
 	priv->currency = NULL;
+
 	g_free( priv->acc_number );
-	priv->acc_number = g_strdup( account );
+	priv->acc_number = NULL;
+	g_free( priv->acc_currency );
+	priv->acc_currency = NULL;
+
 	priv->account = ofo_account_get_by_number( priv->hub, account );
 	if( priv->account ){
-		priv->currency = ofo_currency_get_by_code( priv->hub, ofo_account_get_currency( priv->account ));
+		priv->acc_number = g_strdup( account );
+		priv->acc_currency = g_strdup( ofo_account_get_currency( priv->account ));
+		priv->currency = ofo_currency_get_by_code( priv->hub, priv->acc_currency );
 	}
 
 	/* load the entries for this account */
@@ -539,6 +553,8 @@ bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *i
 	g_free( sdeff );
 	g_free( sdeb );
 	g_free( scre );
+
+	concil_set_row_by_iter( self, OFA_ICONCIL( batline ), iter );
 }
 
 static void
@@ -707,7 +723,10 @@ move_children_rec( ofaReconcilStore *self, GtkTreeRowReference *target_ref, GtkT
 /*
  * when inserting a not yet conciliated entry or batline,
  *  search for another unconciliated row at level 0 with compatible
- *  amount: it will be used as a parent of the being-inserted row
+ *  amount and date: it will be used as a parent of the being-inserted
+ *  row
+ *
+ * Search for the closest date so that entry.dope <= batline.deffect.
  */
 static gboolean
 search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIter *iter )
@@ -716,18 +735,26 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 	gboolean is_debug = FALSE;
 	gchar *obj_debit, *obj_credit, *row_debit, *row_credit;
 	ofoBase *row_object;
+	const GDate *obj_date;
+	GtkTreeIter closest_iter;
+	gint spread;
+	gboolean found;
 
 	g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), FALSE );
 
+	found = FALSE;
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		/* get amounts of the being-inserted object
 		 * entry: debit is positive, credit is negative
 		 * batline: debit is negative, credit is positive */
 		if( OFO_IS_ENTRY( object )){
 			entry_get_amount_strs( self, OFO_ENTRY( object ), &obj_debit, &obj_credit );
+			obj_date = ofo_entry_get_dope( OFO_ENTRY( object ));
 		} else {
 			bat_get_amount_strs( self, OFO_BAT_LINE( object ), &obj_debit, &obj_credit );
+			obj_date = ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
 		}
+		spread = G_MAXINT;
 		if( is_debug ){
 			g_debug( "%s: object debit=%s credit=%s", thisfn, obj_debit, obj_credit );
 		}
@@ -749,15 +776,70 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 						g_debug( "%s: row debit=%s credit=%s", thisfn, row_debit, row_credit );
 					}
 					if( !my_collate( obj_debit, row_credit ) && !my_collate( obj_credit, row_debit )){
+						if( find_closest_date( self, object, obj_date, row_object, &spread )){
+							closest_iter = *iter;
+						}
 						if( is_debug ){
 							g_debug( "%s: returning TRUE", thisfn );
 						}
-						return( TRUE );
+						found = TRUE;
 					}
 				}
 			}
 			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
 				break;
+			}
+		}
+	}
+
+	if( found ){
+		*iter = closest_iter;
+	}
+
+	return( found );
+}
+
+/*
+ * (object, row_object) = (entry, entry) or (batline, batline) => dates must be the same
+ * (object, row_object) = (entry, batline) => obj_date <= row_date
+ * (object, row_object) = (batline, entry) => obj_date >= row_date
+ */
+static gboolean
+find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_date, ofoBase *row_object, gint *spread )
+{
+	const GDate *row_date;
+	gint this_spread;
+
+	if( OFO_IS_ENTRY( object )){
+		if( OFO_IS_ENTRY( row_object )){
+			row_date = ofo_entry_get_dope( OFO_ENTRY( row_object ));
+			this_spread = g_date_days_between( obj_date, row_date );
+			if( this_spread == 0 ){
+				*spread = 0;
+				return( TRUE );
+			}
+		} else if( OFO_IS_BAT_LINE( row_object )){
+			row_date = ofo_bat_line_get_deffect( OFO_BAT_LINE( row_object ));
+			this_spread = g_date_days_between( obj_date, row_date );
+			if( this_spread >= 0 && this_spread < *spread ){
+				*spread = this_spread;
+				return( TRUE );
+			}
+		}
+	} else {
+		if( OFO_IS_ENTRY( row_object )){
+			row_date = ofo_entry_get_dope( OFO_ENTRY( row_object ));
+			this_spread = g_date_days_between( row_date, obj_date );
+			if( this_spread >= 0 && this_spread < *spread ){
+				*spread = this_spread;
+				return( TRUE );
+			}
+		} else {
+			row_date = ofo_bat_line_get_deffect( OFO_BAT_LINE( row_object ));
+			this_spread = g_date_days_between( obj_date, row_date );
+			if( this_spread == 0 ){
+				*spread = 0;
+				return( TRUE );
 			}
 		}
 	}
@@ -795,6 +877,47 @@ search_for_parent_by_concil( ofaReconcilStore *self, ofoConcil *concil, GtkTreeI
 	return( FALSE );
 }
 
+/*
+ * @iter: [out]: the found iter (if any)
+ *
+ * returns %TRUE if found
+ */
+static gboolean
+search_for_entry_by_number( ofaReconcilStore *self, ofxCounter number, GtkTreeIter *iter )
+{
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
+		if( search_for_entry_by_number_rec( self, number, iter )){
+			return( TRUE );
+		}
+	}
+	return( FALSE );
+}
+
+static gboolean
+search_for_entry_by_number_rec( ofaReconcilStore *self, ofxCounter number, GtkTreeIter *iter )
+{
+	ofxCounter row_id;
+	GtkTreeIter child_iter;
+
+	while( TRUE ){
+		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
+			if( search_for_entry_by_number_rec( self, number, &child_iter )){
+				*iter = child_iter;
+				return( TRUE );
+			}
+		}
+		gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, RECONCIL_COL_ENT_NUMBER_I, &row_id, -1 );
+		if( row_id == number ){
+			return( TRUE );
+		}
+		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			break;
+		}
+	}
+
+	return( FALSE );
+}
+
 /**
  * ofa_reconcil_store_insert_row:
  * @store: this #ofaReconcilStore instance.
@@ -818,7 +941,6 @@ ofa_reconcil_store_insert_row( ofaReconcilStore *store, ofaIConcil *iconcil, Gtk
 
 	g_return_if_fail( store && OFA_IS_RECONCIL_STORE( store ));
 	g_return_if_fail( iconcil && OFA_IS_ICONCIL( iconcil ));
-	g_return_if_fail( iter );
 
 	priv = ofa_reconcil_store_get_instance_private( store );
 
@@ -1023,30 +1145,23 @@ hub_do_update_ope_template_id( ofaReconcilStore *self, const gchar *prev_id, con
 static void
 hub_do_update_entry( ofaReconcilStore *self, ofoEntry *entry )
 {
-#if 0
 	ofaReconcilStorePrivate *priv;
-	const gchar *selected_account, *entry_account;
-	GtkTreeIter *iter;
+	const gchar *entry_account;
+	GtkTreeIter iter;
 
 	priv = ofa_reconcil_store_get_instance_private( self );
 
-	iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
+	if( search_for_entry_by_number( self, ofo_entry_get_number( entry ), &iter )){
+		/* if the entry was present in the store, it is easy to remediate it */
+		entry_set_row_by_iter( self, entry, &iter );
 
-	/* if the entry was present in the store, it is easy to remediate it */
-	if( iter ){
-		set_row_entry( self, priv->tstore, iter, entry );
-		gtk_tree_iter_free( iter );
-		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-
-	/* else, should it be present now ? */
 	} else {
-		selected_account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
+		/* else, should it be present now ? */
 		entry_account = ofo_entry_get_account( entry );
-		if( !g_utf8_collate( selected_account, entry_account )){
-			insert_entry( self, entry );
+		if( !my_collate( priv->acc_number, entry_account )){
+			entry_insert_row( self, entry, TRUE, NULL, NULL );
 		}
 	}
-#endif
 }
 
 /*
@@ -1071,31 +1186,23 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilStore *self )
 static void
 hub_do_delete_entry( ofaReconcilStore *self, ofoEntry *entry )
 {
-#if 0
-	ofaReconcilStorePrivate *priv;
-	GtkTreeIter *iter, child_iter;
+	GtkTreeIter iter, child_iter;
 	ofoBase *object;
 
-	priv = ofa_reconcil_store_get_instance_private( self );
-
-	iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
-	if( iter ){
-		while( gtk_tree_model_iter_children( priv->tstore, &child_iter, iter )){
-			gtk_tree_model_get( priv->tstore, &child_iter, COL_OBJECT, &object, -1 );
-			gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), &child_iter );
-			gtk_tree_store_insert( GTK_TREE_STORE( priv->tstore ), &child_iter, NULL, -1 );
+	if( search_for_entry_by_number( self, ofo_entry_get_number( entry ), &iter )){
+		while( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, &iter )){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &child_iter, RECONCIL_COL_OBJECT, &object, -1 );
+			gtk_tree_store_remove( GTK_TREE_STORE( self ), &child_iter );
 			if( OFO_IS_ENTRY( object )){
-				set_row_entry( self, priv->tstore, &child_iter, OFO_ENTRY( object ));
+				entry_insert_row( self, OFO_ENTRY( object ), TRUE, NULL, NULL );
 			} else {
-				set_row_batline( self, priv->tstore, &child_iter, OFO_BAT_LINE( object ));
+				bat_insert_row( self, OFO_BAT_LINE( object ), TRUE, NULL, NULL );
 			}
 			g_object_unref( object );
-			gtk_tree_iter_free( iter );
-			iter = search_for_entry_by_number( self, ofo_entry_get_number( entry ));
+			if( !search_for_entry_by_number( self, ofo_entry_get_number( entry ), &iter )){
+				g_return_if_reached();
+			}
 		}
-		gtk_tree_store_remove( GTK_TREE_STORE( priv->tstore ), iter );
-		gtk_tree_iter_free( iter );
-		set_reconciliated_balance( self );
+		gtk_tree_store_remove( GTK_TREE_STORE( self ), &iter );
 	}
-#endif
 }

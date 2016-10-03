@@ -299,6 +299,30 @@ ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil )
 }
 
 /**
+ * ofa_iconcil_clear_data:
+ * @instance: this #ofaIConcil instance.
+ *
+ * Clear the data attached to the @instance.
+ *
+ * This method does not update the DBMS.
+ *
+ * When unconciliating a conciliation group, it is expected that this
+ * method be called for each member of the group (the #ofaIConcil
+ * instance), and that the #ofo_concil_delete() be then called once
+ * for actualy deleting the conciliation group from the DBMS.
+ */
+void
+ofa_iconcil_clear_data( ofaIConcil *instance )
+{
+	sIConcil *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
+
+	sdata = get_iconcil_data( instance, FALSE );
+	sdata->concil = NULL;
+}
+
+/**
  * ofa_iconcil_remove_concil:
  * @instance:
  * @concil: [allow-none]:
@@ -309,12 +333,9 @@ ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil )
 void
 ofa_iconcil_remove_concil( ofaIConcil *instance, ofoConcil *concil )
 {
-	sIConcil *sdata;
-
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 
-	sdata = get_iconcil_data( instance, FALSE );
-	sdata->concil = NULL;
+	ofa_iconcil_clear_data( instance );
 
 	if( concil ){
 		g_return_if_fail( OFO_IS_CONCIL( concil ));

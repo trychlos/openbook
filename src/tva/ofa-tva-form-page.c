@@ -178,7 +178,7 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_tva_form_page_get_instance_private( OFA_TVA_FORM_PAGE( page ));
 
-	return( ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+	return( ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview )));
 }
 
 static GtkWidget *

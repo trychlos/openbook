@@ -62,6 +62,9 @@ typedef struct {
 }
 	ofaReconcilTreeviewPrivate;
 
+#define COLOR_BAT_CONCIL_FONT                "#008000"	/* middle green */
+#define COLOR_BAT_UNCONCIL_FONT              "#00ff00"	/* pure green */
+
 /* signals defined here
  */
 enum {
@@ -73,10 +76,19 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void      setup_columns( ofaReconcilTreeview *self );
+static void      setup_selection( ofaReconcilTreeview *self );
+static gboolean  on_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconcilTreeview *self );
+static void      get_hierarchy_concil_id_by_path( ofaReconcilTreeview *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *indice, ofxCounter *concil_id );
+static gboolean  on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconcilTreeview *self );
+static void      collapse_node( ofaReconcilTreeview *self, GtkWidget *widget );
+static void      collapse_node_by_iter( ofaReconcilTreeview *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void      expand_node( ofaReconcilTreeview *self, GtkWidget *widget );
+static void      expand_node_by_iter( ofaReconcilTreeview *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static void      on_selection_changed( ofaReconcilTreeview *self, GtkTreeSelection *selection, void *empty );
 static void      on_selection_activated( ofaReconcilTreeview *self, GtkTreeSelection *selection, void *empty );
 static void      get_and_send( ofaReconcilTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList    *get_selected_with_selection( ofaReconcilTreeview *self, GtkTreeSelection *selection );
+static void      on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilTreeview *self );
 static gboolean  tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gint      tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
@@ -214,6 +226,7 @@ ofaReconcilTreeview *
 ofa_reconcil_treeview_new( void )
 {
 	ofaReconcilTreeview *view;
+	GtkWidget *treeview;
 
 	view = g_object_new( OFA_TYPE_RECONCIL_TREEVIEW,
 				"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
@@ -225,6 +238,9 @@ ofa_reconcil_treeview_new( void )
 	 */
 	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
 	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );
+
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
+	g_signal_connect( treeview, "key-press-event", G_CALLBACK( on_key_pressed ), view );
 
 	return( view );
 }
@@ -273,6 +289,8 @@ ofa_reconcil_treeview_setup_columns( ofaReconcilTreeview *view )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	setup_columns( view );
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_func, view );
+	setup_selection( view );
 }
 
 /*
@@ -308,6 +326,193 @@ setup_columns( ofaReconcilTreeview *self )
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_TYPE,   _( "Concil.type" ), _( "Conciliation type" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), RECONCIL_COL_LABEL );
+}
+
+static void
+setup_selection( ofaReconcilTreeview *self )
+{
+	GtkTreeSelection *selection;
+
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( self ));
+	gtk_tree_selection_set_select_function( selection, ( GtkTreeSelectionFunc ) on_select_fn, self, NULL );
+}
+
+/*
+ * This function is called before any node is selected or unselected,
+ * giving some control over which nodes are selected. The select function
+ * should return TRUE if the state of the node may be toggled, and FALSE
+ * if the state of the node should be left unchanged.
+ *
+ * The accepted selection may involve:
+ * - at most one hierarchy, identified by the first-level indice,
+ * - at most one conciliation group,
+ * - plus any single unconciliated rows.
+ */
+static gboolean
+on_select_fn( GtkTreeSelection *selection, GtkTreeModel *tmodel, GtkTreePath *path, gboolean is_selected, ofaReconcilTreeview *self )
+{
+	GList *selected, *it;
+	gint selection_hierarchy, row_hierarchy;
+	ofxCounter selection_concil_id, row_concil_id;
+	GtkTreeIter iter;
+	GtkTreePath *row_path;
+
+	/* always accept unselecting the row */
+	if( is_selected ){
+		return( TRUE );
+	}
+
+	/* examine the current selection, getting the first not-null hierarchy
+	 * and the first not-null conciliation group */
+	selection_hierarchy = -1;
+	selection_concil_id = 0;
+	selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+	for( it=selected ; it ; it=it->next ){
+		row_path = ( GtkTreePath * ) it->data;
+		get_hierarchy_concil_id_by_path( self, tmodel, row_path, &row_hierarchy, &row_concil_id );
+		gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) it->data );
+		if( selection_hierarchy == -1 ){
+			selection_hierarchy = row_hierarchy;
+		}
+		if( selection_concil_id == 0 ){
+			selection_concil_id = row_concil_id;
+		}
+		if( selection_hierarchy >= 0 && selection_concil_id > 0 ){
+			break;
+		}
+	}
+	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+
+	/* examine current row */
+	get_hierarchy_concil_id_by_path( self, tmodel, path, &row_hierarchy, &row_concil_id );
+	if( row_hierarchy != -1 && selection_hierarchy != -1 && selection_hierarchy != row_hierarchy ){
+		return( FALSE );
+	}
+	if( row_concil_id != 0 && selection_concil_id != 0 && selection_concil_id != row_concil_id ){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * Giving the GtkTreePath of a row, identifies:
+ * - the hierarchy it belongs to (if any), the hierarchy being identified
+ *   by the first-level indice of the path;
+ * - the conciliation id (if any)
+ *
+ * If the row has no parent and no child, then this is a single row, and
+ * does not belong to a hierarchy.
+ *
+ * gtk_tree_path_get_indices_with_depth() returns the current indices
+ * of path. This is an array of integers, each representing a node in a
+ * tree. It also returns the number of elements in the array. The array
+ * should not be freed.
+ */
+static void
+get_hierarchy_concil_id_by_path( ofaReconcilTreeview *self, GtkTreeModel *tmodel, GtkTreePath *path, gint *hierarchy, ofxCounter *concil_id )
+{
+	GtkTreeIter iter, other_iter;
+	gint *path_indices;
+
+	*hierarchy = -1;
+
+	gtk_tree_model_get_iter( tmodel, &iter, path );
+	if( gtk_tree_model_iter_children( tmodel, &other_iter, &iter ) ||
+					gtk_tree_model_iter_parent( tmodel, &other_iter, &iter )){
+		path_indices = gtk_tree_path_get_indices( path );
+		*hierarchy = path_indices[0];
+	}
+	gtk_tree_model_get( tmodel, &iter, RECONCIL_COL_CONCIL_NUMBER_I, concil_id, -1 );
+}
+
+/*
+ * Returns :
+ * TRUE to stop other hub_handlers from being invoked for the event.
+ * FALSE to propagate the event further.
+ *
+ * Handles left and right arrows to expand/collapse nodes
+ */
+static gboolean
+on_key_pressed( GtkWidget *widget, GdkEventKey *event, ofaReconcilTreeview *self )
+{
+	if( event->state == 0 ){
+		if( event->keyval == GDK_KEY_Left ){
+			collapse_node( self, widget );
+		} else if( event->keyval == GDK_KEY_Right ){
+			expand_node( self, widget );
+		}
+	}
+
+	return( FALSE );
+}
+
+static void
+collapse_node( ofaReconcilTreeview *self, GtkWidget *widget )
+{
+	GtkTreeSelection *selection;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GList *selected;
+
+	if( GTK_IS_TREE_VIEW( widget )){
+		selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
+		selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+		if( g_list_length( selected ) == 1 &&
+				gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) selected->data )){
+			collapse_node_by_iter( self, GTK_TREE_VIEW( widget ), tmodel, &iter );
+		}
+		g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+	}
+}
+
+static void
+collapse_node_by_iter( ofaReconcilTreeview *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	GtkTreePath *path;
+	GtkTreeIter parent_iter;
+
+	if( gtk_tree_model_iter_has_child( tmodel, iter )){
+		path = gtk_tree_model_get_path( tmodel, iter );
+		gtk_tree_view_collapse_row( tview, path );
+		gtk_tree_path_free( path );
+
+	} else if( gtk_tree_model_iter_parent( tmodel, &parent_iter, iter )){
+		path = gtk_tree_model_get_path( tmodel, &parent_iter );
+		gtk_tree_view_collapse_row( tview, path );
+		gtk_tree_path_free( path );
+	}
+}
+
+static void
+expand_node( ofaReconcilTreeview *self, GtkWidget *widget )
+{
+	GtkTreeSelection *selection;
+	GList *selected;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+
+	if( GTK_IS_TREE_VIEW( widget )){
+		selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( widget ));
+		selected = gtk_tree_selection_get_selected_rows( selection, &tmodel );
+		if( g_list_length( selected ) == 1 &&
+				gtk_tree_model_get_iter( tmodel, &iter, ( GtkTreePath * ) selected->data )){
+			expand_node_by_iter( self, GTK_TREE_VIEW( widget ), tmodel, &iter );
+		}
+		g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+	}
+}
+
+static void
+expand_node_by_iter( ofaReconcilTreeview *self, GtkTreeView *tview, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	GtkTreePath *path;
+
+	if( gtk_tree_model_iter_has_child( tmodel, iter )){
+		path = gtk_tree_model_get_path( tmodel, iter );
+		gtk_tree_view_expand_row( tview, path, FALSE );
+		gtk_tree_path_free( path );
+	}
 }
 
 /**
@@ -417,6 +622,7 @@ get_selected_with_selection( ofaReconcilTreeview *self, GtkTreeSelection *select
 	return( selected_objects );
 }
 
+#if 0
 /**
  * ofa_reconcil_treeview_set_selected:
  * @view: this #ofaReconcilTreeview instance.
@@ -442,7 +648,7 @@ ofa_reconcil_treeview_set_selected( ofaReconcilTreeview *view, ofxCounter entry 
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
 	if( treeview ){
 		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){
@@ -459,97 +665,182 @@ ofa_reconcil_treeview_set_selected( ofaReconcilTreeview *view, ofxCounter entry 
 		}
 	}
 }
+#endif
 
-#if 0
+/*
+ * row       foreground  style   background
+ * --------  ----------  ------  ----------
+ * entry     normal      normal  normal
+ * bat line  BAT_COLOR   italic  normal
+ * proposal  normal      italic  BAT_BACKGROUND
+ *
+ * BAT lines are always displayed besides of their corresponding entry
+ */
+static void
+on_cell_data_func( GtkTreeViewColumn *tcolumn,
+						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+						ofaReconcilTreeview *self )
+{
+	GObject *object;
+	GdkRGBA color;
+	gint column_id;
+	ofoConcil *concil;
+
+	g_return_if_fail( cell && GTK_IS_CELL_RENDERER_TEXT( cell ));
+
+	gtk_tree_model_get( tmodel, iter, RECONCIL_COL_OBJECT, &object, -1 );
+	g_return_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )));
+	g_object_unref( object );
+
+	g_object_set( G_OBJECT( cell ),
+						"style-set",      FALSE,
+						"foreground-set", FALSE,
+						"background-set", FALSE,
+						NULL );
+
+	column_id = ofa_itvcolumnable_get_column_id( OFA_ITVCOLUMNABLE( self ), tcolumn );
+	concil =  ofa_iconcil_get_concil( OFA_ICONCIL( object ));
+
+	if( gtk_tree_model_iter_has_child( tmodel, iter )){
+		/* DEBUG */
+		if( 0 ){
+			gchar *id_str, *dval_str;
+			gtk_tree_model_get( tmodel, iter, RECONCIL_COL_CONCIL_NUMBER, &id_str, RECONCIL_COL_CONCIL_DATE, &dval_str, -1 );
+			g_debug( "on_cell_data_func: type=%s, id=%ld, column_id=%d, concil=%p, concil_id=%s, concil_dval=%s",
+					ofa_iconcil_get_instance_type( OFA_ICONCIL( object )),
+					ofa_iconcil_get_instance_id( OFA_ICONCIL( object )),
+					column_id, ( void * ) concil, id_str, dval_str );
+			g_free( id_str );
+			g_free( dval_str );
+		}
+		if( !concil && column_id == RECONCIL_COL_CONCIL_DATE ){
+			gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
+			g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
+	}
+
+	/* bat lines (normal if reconciliated, italic else */
+	if( OFO_IS_BAT_LINE( object )){
+		if( concil ){
+			gdk_rgba_parse( &color, COLOR_BAT_CONCIL_FONT );
+		} else {
+			gdk_rgba_parse( &color, COLOR_BAT_UNCONCIL_FONT );
+			g_object_set( G_OBJECT( cell ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
+		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );
+	}
+}
+
 /**
- * ofa_reconcil_treeview_cell_data_render:
+ * ofa_reconcil_treeview_default_expand:
  * @view: this #ofaReconcilTreeview instance.
- * @column: the #GtkTreeViewColumn treeview colum.
- * @renderer: a #GtkCellRenderer attached to the column.
- * @model: the #GtkTreeModel of the treeview.
- * @iter: the #GtkTreeIter which addresses the row.
  *
- * Paints the row.
+ * Initialize the default expansion state of the hierarchies.
  *
- * level 1: not displayed (should not appear)
- * level 2 and root: bold, colored background
- * level 3 and root: colored background
- * other root: italic
- *
- * Detail accounts who have no currency are red written.
+ * Default is to expand unreconciliated hierarchies, and to collapse
+ * reconciliated ones.
  */
 void
-ofa_reconcil_treeview_cell_data_render( ofaReconcilTreeview *view,
-				GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter )
+ofa_reconcil_treeview_default_expand( ofaReconcilTreeview *view )
 {
+	static const gchar *thisfn = "ofa_reconcil_treeview_default_expand";
 	ofaReconcilTreeviewPrivate *priv;
-	ofaReconcilStatus status;
-	GdkRGBA color;
-	gint err_level;
-	const gchar *color_str;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofxCounter concil_id;
+	GtkWidget *treeview;
+
+	g_debug( "%s: view=%p", thisfn, ( void * ) view );
 
 	g_return_if_fail( view && OFA_IS_RECONCIL_TREEVIEW( view ));
-	g_return_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ));
-	g_return_if_fail( renderer && GTK_IS_CELL_RENDERER_TEXT( renderer ));
-	g_return_if_fail( model && GTK_IS_TREE_MODEL( model ));
 
 	priv = ofa_reconcil_treeview_get_instance_private( view );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	err_level = get_row_errlevel( view, model, iter );
-	gtk_tree_model_get( model, iter, RECONCIL_COL_STATUS_I, &status, -1 );
+	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( view ));
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
 
-	g_object_set( G_OBJECT( renderer ),
-						"style-set",      FALSE,
-						"background-set", FALSE,
-						"foreground-set", FALSE,
-						NULL );
-
-	switch( status ){
-
-		case ENT_STATUS_PAST:
-			gdk_rgba_parse( &color, RGBA_PAST );
-			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-			break;
-
-		case ENT_STATUS_VALIDATED:
-			gdk_rgba_parse( &color, RGBA_VALIDATED );
-			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-			break;
-
-		case ENT_STATUS_DELETED:
-			gdk_rgba_parse( &color, RGBA_DELETED );
-			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
-			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
-			break;
-
-		case ENT_STATUS_ROUGH:
-			switch( err_level ){
-				case RECONCIL_ERR_ERROR:
-					color_str = RGBA_ERROR;
-					break;
-				case RECONCIL_ERR_WARNING:
-					color_str = RGBA_WARNING;
-					break;
-				default:
-					color_str = RGBA_NORMAL;
-					break;
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, RECONCIL_COL_CONCIL_NUMBER_I, &concil_id, -1 );
+			if( concil_id ){
+				collapse_node_by_iter( view, GTK_TREE_VIEW( treeview ), tmodel, &iter );
+			} else {
+				expand_node_by_iter( view, GTK_TREE_VIEW( treeview ), tmodel, &iter );
 			}
-			gdk_rgba_parse( &color, color_str );
-			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
-			break;
-
-		case ENT_STATUS_FUTURE:
-			gdk_rgba_parse( &color, RGBA_FUTURE );
-			g_object_set( G_OBJECT( renderer ), "background-rgba", &color, NULL );
-			break;
-
-		default:
-			break;
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
 	}
 }
-#endif
+
+/**
+ * ofa_reconcil_treeview_expand_all:
+ * @view: this #ofaReconcilTreeview instance.
+ *
+ * Expands all the hierarchies.
+ */
+void
+ofa_reconcil_treeview_expand_all( ofaReconcilTreeview *view )
+{
+	static const gchar *thisfn = "ofa_reconcil_treeview_expand_all";
+	ofaReconcilTreeviewPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	GtkWidget *treeview;
+
+	g_debug( "%s: view=%p", thisfn, ( void * ) view );
+
+	g_return_if_fail( view && OFA_IS_RECONCIL_TREEVIEW( view ));
+
+	priv = ofa_reconcil_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( view ));
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
+
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			expand_node_by_iter( view, GTK_TREE_VIEW( treeview ), tmodel, &iter );
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
+}
+
+/**
+ * ofa_reconcil_treeview_collapse_by_iter:
+ * @view: this #ofaReconcilTreeview instance.
+ * @iter: a #GtkTreeIter on the sort model.
+ *
+ * Collapses the node pointed to by @iter.
+ */
+void
+ofa_reconcil_treeview_collapse_by_iter( ofaReconcilTreeview *view, GtkTreeIter *iter )
+{
+	static const gchar *thisfn = "ofa_reconcil_treeview_collapse_by_iter";
+	ofaReconcilTreeviewPrivate *priv;
+	GtkWidget *treeview;
+	GtkTreeModel *tmodel;
+
+	g_debug( "%s: view=%p, iter=%p", thisfn, ( void * ) view, ( void * ) iter );
+
+	g_return_if_fail( view && OFA_IS_RECONCIL_TREEVIEW( view ));
+
+	priv = ofa_reconcil_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( view ));
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
+
+	collapse_node_by_iter( view, GTK_TREE_VIEW( treeview ), tmodel, iter );
+}
 
 static gboolean
 tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )

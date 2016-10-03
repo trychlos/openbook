@@ -345,7 +345,7 @@ setup_treeview( ofaLedgerClose *self )
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_tvbin_get_treeview( OFA_TVBIN( priv->tview )));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview )));
 
 	g_signal_connect( priv->tview, "ofa-ledchanged", G_CALLBACK( on_rows_selected ), self );
 	g_signal_connect( priv->tview, "ofa-ledactivated", G_CALLBACK( on_rows_activated ), self );

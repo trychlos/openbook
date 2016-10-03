@@ -126,6 +126,8 @@ void         ofa_iconcil_new_concil_ex             ( ofaIConcil *instance,
 void         ofa_iconcil_add_to_concil             ( ofaIConcil *instance,
 														ofoConcil *concil );
 
+void         ofa_iconcil_clear_data                ( ofaIConcil *instance );
+
 void         ofa_iconcil_remove_concil             ( ofaIConcil *instance,
 														ofoConcil *concil );
 

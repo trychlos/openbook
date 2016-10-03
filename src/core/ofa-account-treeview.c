@@ -362,7 +362,7 @@ setup_key_pressed_event( ofaAccountTreeview *self )
 {
 	GtkWidget *treeview;
 
-	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( self ));
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( self ));
 	g_signal_connect( treeview, "key-press-event", G_CALLBACK( tview_on_key_pressed ), self );
 }
 
@@ -579,7 +579,7 @@ ofa_account_treeview_set_selected( ofaAccountTreeview *view, const gchar *accoun
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
+	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
 	if( treeview ){
 		tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
 		if( gtk_tree_model_get_iter_first( tmodel, &iter )){

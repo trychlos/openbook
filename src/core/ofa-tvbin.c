@@ -1325,13 +1325,13 @@ ofa_tvbin_get_selection( ofaTVBin *bin )
 }
 
 /*
- * ofa_tvbin_get_treeview:
+ * ofa_tvbin_get_tree_view:
  * @bin: this #ofaTVBin instance.
  *
  * Returns: the current #GtkTreeView.
  */
 GtkWidget *
-ofa_tvbin_get_treeview( ofaTVBin *bin )
+ofa_tvbin_get_tree_view( ofaTVBin *bin )
 {
 	ofaTVBinPrivate *priv;
 

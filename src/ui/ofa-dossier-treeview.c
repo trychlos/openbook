@@ -455,7 +455,7 @@ ofa_dossier_treeview_set_selected( ofaDossierTreeview *view, const gchar *dname 
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( my_strlen( dname )){
-		treeview = ofa_tvbin_get_treeview( OFA_TVBIN( view ));
+		treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
 		g_return_if_fail( treeview && GTK_IS_TREE_VIEW( treeview ));
 		model = gtk_tree_view_get_model( GTK_TREE_VIEW( treeview ));
 		if( gtk_tree_model_get_iter_first( model, &iter )){

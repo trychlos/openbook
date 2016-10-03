@@ -91,9 +91,17 @@ void                 ofa_reconcil_treeview_set_filter_func   ( ofaReconcilTreevi
 																	GtkTreeModelFilterVisibleFunc filter_fn,
 																	void *filter_data );
 
-/* to be reviewed */
+void                 ofa_reconcil_treeview_default_expand    ( ofaReconcilTreeview *view );
+
+void                 ofa_reconcil_treeview_expand_all        ( ofaReconcilTreeview *view );
+
+void                 ofa_reconcil_treeview_collapse_by_iter  ( ofaReconcilTreeview *view,
+																	GtkTreeIter *iter );
+
+#if 0
 void                 ofa_reconcil_treeview_set_selected      ( ofaReconcilTreeview *view,
 																	ofxCounter entry );
+#endif
 
 G_END_DECLS
 

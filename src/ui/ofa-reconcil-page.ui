@@ -93,29 +93,6 @@
           </packing>
         </child>
         <child>
-          <object class="GtkScrolledWindow" id="scrolledwindow1">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="shadow_type">in</property>
-            <child>
-              <object class="GtkTreeView" id="treeview">
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
-                <child internal-child="selection">
-                  <object class="GtkTreeSelection"/>
-                </child>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="left_attach">0</property>
-            <property name="top_attach">1</property>
-            <property name="width">5</property>
-          </packing>
-        </child>
-        <child>
           <object class="GtkLabel" id="select-debit">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
@@ -174,6 +151,21 @@
           <packing>
             <property name="left_attach">4</property>
             <property name="top_attach">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkBox" id="treeview-parent">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="orientation">vertical</property>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="left_attach">0</property>
+            <property name="top_attach">1</property>
+            <property name="width">5</property>
           </packing>
         </child>
         <child>
@@ -283,62 +275,9 @@
                     <property name="hexpand">True</property>
                   </object>
                   <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkLabel" id="entries-label">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">_Entries filter :</property>
-                    <property name="use_underline">True</property>
-                    <property name="xalign">1</property>
-                  </object>
-                  <packing>
                     <property name="left_attach">0</property>
-                    <property name="top_attach">1</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkGrid" id="f2-columns">
-                    <property name="visible">True</property>
-                    <property name="can_focus">False</property>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
                     <property name="top_attach">0</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
             </child>
@@ -346,7 +285,7 @@
               <object class="GtkLabel" id="label4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="label" translatable="yes"> Display </property>
+                <property name="label" translatable="yes"> Entries filter </property>
                 <property name="use_markup">True</property>
               </object>
             </child>
@@ -433,23 +372,80 @@
             <property name="label_xalign">0</property>
             <property name="shadow_type">in</property>
             <child>
-              <object class="GtkGrid" id="grid7">
+              <object class="GtkGrid" id="grid41">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">8</property>
+                <property name="margin_left">2</property>
                 <property name="margin_right">2</property>
                 <property name="margin_top">2</property>
                 <property name="margin_bottom">2</property>
                 <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
-                  <object class="GtkButton" id="assist-select">
-                    <property name="label" translatable="yes">_Select...</property>
+                  <object class="GtkGrid" id="grid411">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Select a previously imported Bank Account Transactions list.</property>
-                    <property name="use_underline">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="margin_left">6</property>
+                    <property name="margin_right">6</property>
+                    <property name="row_spacing">2</property>
+                    <property name="column_spacing">8</property>
+                    <child>
+                      <object class="GtkButton" id="bat-clear">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                        <property name="receives_default">True</property>
+                        <property name="tooltip_text" translatable="yes">Clear the displayed Bank Account Transaction lines.</property>
+                        <property name="halign">end</property>
+                        <property name="image">image2</property>
+                        <property name="use_underline">True</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkGrid" id="grid4111">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="hexpand">True</property>
+                        <property name="row_spacing">2</property>
+                        <property name="column_spacing">8</property>
+                        <property name="column_homogeneous">True</property>
+                        <child>
+                          <object class="GtkButton" id="bat-import">
+                            <property name="label" translatable="yes">_Import...</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Import an new Bank Account Transactions list to be used in the reconciliation.</property>
+                            <property name="use_underline">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">1</property>
+                            <property name="top_attach">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkButton" id="bat-select">
+                            <property name="label" translatable="yes">_Select...</property>
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="receives_default">True</property>
+                            <property name="tooltip_text" translatable="yes">Select a previously imported Bank Account Transactions list.</property>
+                            <property name="use_underline">True</property>
+                          </object>
+                          <packing>
+                            <property name="left_attach">0</property>
+                            <property name="top_attach">0</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
@@ -457,57 +453,18 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkButton" id="assist-import">
-                    <property name="label" translatable="yes">_Import...</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Import an new Bank Account Transactions list to be used in the reconciliation.</property>
-                    <property name="use_underline">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">1</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkButton" id="assist-clear">
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="tooltip_text" translatable="yes">Clear the displayed Bank Account Transaction lines.</property>
-                    <property name="image">image2</property>
-                    <property name="use_underline">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">2</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-                <child>
-                  <object class="GtkGrid" id="grid8">
+                  <object class="GtkGrid" id="grid412">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="row_spacing">2</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="assist-name">
+                      <object class="GtkGrid" id="grid4122">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="ellipsize">start</property>
-                        <property name="max_width_chars">24</property>
-                        <property name="xalign">0</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">0</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkGrid" id="grid9">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
+                        <property name="halign">end</property>
                         <child>
-                          <object class="GtkLabel" id="assist-count1">
+                          <object class="GtkLabel" id="bat-count1">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="halign">end</property>
@@ -519,9 +476,10 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="assist-count2">
+                          <object class="GtkLabel" id="bat-count2">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="tooltip_text" translatable="yes">Unconciliated BAT lines.</property>
                             <property name="halign">end</property>
                             <property name="xalign">0</property>
                           </object>
@@ -531,9 +489,10 @@
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkLabel" id="assist-count3">
+                          <object class="GtkLabel" id="bat-count3">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="tooltip_text" translatable="yes">Total BAT lines count.</property>
                             <property name="halign">end</property>
                             <property name="xalign">0</property>
                           </object>
@@ -548,15 +507,26 @@
                         <property name="top_attach">0</property>
                       </packing>
                     </child>
+                    <child>
+                      <object class="GtkLabel" id="bat-name">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="halign">end</property>
+                        <property name="hexpand">True</property>
+                        <property name="ellipsize">start</property>
+                        <property name="max_width_chars">24</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">0</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
                   </object>
                   <packing>
                     <property name="left_attach">0</property>
                     <property name="top_attach">1</property>
-                    <property name="width">4</property>
                   </packing>
-                </child>
-                <child>
-                  <placeholder/>
                 </child>
               </object>
             </child>
@@ -644,7 +614,20 @@
                   </packing>
                 </child>
                 <child>
-                  <placeholder/>
+                  <object class="GtkButton" id="expand-btn">
+                    <property name="label" translatable="yes">_Expand</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <property name="events">GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK | GDK_LEAVE_NOTIFY_MASK | GDK_STRUCTURE_MASK</property>
+                    <property name="tooltip_text" translatable="yes">Expand unconciliated groups.
+When clicked with &lt;Ctrl&gt; key, then expand all.</property>
+                    <property name="use_underline">True</property>
+                  </object>
+                  <packing>
+                    <property name="left_attach">1</property>
+                    <property name="top_attach">1</property>
+                  </packing>
                 </child>
                 <child>
                   <placeholder/>
@@ -682,12 +665,7 @@
       </object>
     </child>
   </object>
-  <object class="GtkSizeGroup" id="f2-sizegroup">
-    <widgets>
-      <widget name="f2-columns"/>
-      <widget name="entries-filter"/>
-    </widgets>
-  </object>
+  <object class="GtkSizeGroup" id="f2-sizegroup"/>
   <object class="GtkImage" id="image2">
     <property name="visible">True</property>
     <property name="can_focus">False</property>
