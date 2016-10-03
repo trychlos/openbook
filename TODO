@@ -399,8 +399,6 @@
 
 1192 2016- 9-14 FEAT: export the balance for a period
 
-1193 2016- 9-14 BalancePrint: "Solde balance" header becomes "Period solde"
-
 1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
                 vertically (+ review left and right margins)
 
@@ -1655,6 +1653,9 @@
      2016- 9-15 these already were the same fonts, probably appearing smaller
                 because reconsiliation draws on a landscape orientation
                 => use Sans Italic 5
+
+1193 2016- 9-14 BalancePrint: "Solde balance" header becomes "Period solde"
+     2016-10- 3 done
 
 1195 2016- 9-14 ReconciliationPrint: add sum of debit and credit
                 + change color of bank line at end
