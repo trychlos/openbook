@@ -645,7 +645,7 @@ irenderable_draw_page_header_columns( ofaIRenderable *instance, gint page_num )
 			priv->body_debit_period_rtab, y, _( "Period balance" ), PANGO_ALIGN_CENTER );
 
 	ofa_irenderable_set_text( instance,
-			priv->body_debit_solde_rtab, y, _( "Solde balance" ), PANGO_ALIGN_CENTER );
+			priv->body_debit_solde_rtab, y, _( "Period solde" ), PANGO_ALIGN_CENTER );
 
 	y += hline;
 
