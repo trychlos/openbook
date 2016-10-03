@@ -75,6 +75,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void        setup_columns( ofaBatlineTreeview *self );
+static void        setup_store( ofaBatlineTreeview *view );
 static void        store_batline( ofaBatlineTreeview *self, ofoBatLine *line );
 static void        on_selection_changed( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        on_selection_activated( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -341,41 +342,6 @@ setup_columns( ofaBatlineTreeview *self )
 }
 
 /**
- * ofa_batline_treeview_set_store:
- * @view: this #ofaBatlineTreeview instance.
- *
- * Associates the treeview to the underlying (maybe empty) store, read
- * the settings and show the columns.
- *
- * This should be called only after the columns have already been
- * defined by the caller.
- *
- * If the store is not explicitely defined, then it will be when setting
- * the BAT data for the first time.
- */
-void
-ofa_batline_treeview_set_store( ofaBatlineTreeview *view )
-{
-	ofaBatlineTreeviewPrivate *priv;
-
-	g_return_if_fail( view && OFA_IS_BATLINE_TREEVIEW( view ));
-
-	priv = ofa_batline_treeview_get_instance_private( view );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->store = gtk_list_store_new(
-			BAL_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* bat_id, line_id, dope */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* deffect, ref, label */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* currency, amount, concil_id */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* entry, upd_user, upd_stamp */
-			G_TYPE_OBJECT );								/* the ofoBatLine object itself */
-
-	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
-}
-
-/**
  * ofa_batline_treeview_set_bat:
  * @view: this #ofaBatlineTreeview instance.
  * @bat: the #ofoBat object to be displayed.
@@ -397,7 +363,7 @@ ofa_batline_treeview_set_bat( ofaBatlineTreeview *view, ofoBat *bat )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( !priv->store ){
-		ofa_batline_treeview_set_store( view );
+		setup_store( view );
 
 	} else {
 		gtk_list_store_clear( priv->store );
@@ -418,6 +384,41 @@ ofa_batline_treeview_set_bat( ofaBatlineTreeview *view, ofoBat *bat )
 	}
 
 	ofo_bat_line_free_dataset( dataset );
+}
+
+/*
+ * setup_store:
+ * @view: this #ofaBatlineTreeview instance.
+ *
+ * Associates the treeview to the underlying (maybe empty) store, read
+ * the settings and show the columns.
+ *
+ * This should be called only after the columns have already been
+ * defined by the caller.
+ *
+ * If the store is not explicitely defined, then it will be when setting
+ * the BAT data for the first time.
+ */
+static void
+setup_store( ofaBatlineTreeview *view )
+{
+	ofaBatlineTreeviewPrivate *priv;
+
+	g_return_if_fail( view && OFA_IS_BATLINE_TREEVIEW( view ));
+
+	priv = ofa_batline_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->store = gtk_list_store_new(
+			BAL_N_COLUMNS,
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* bat_id, line_id, dope */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* deffect, ref, label */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* currency, amount, concil_id */
+			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, 	/* entry, upd_user, upd_stamp */
+			G_TYPE_OBJECT );								/* the ofoBatLine object itself */
+
+	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 }
 
 static void

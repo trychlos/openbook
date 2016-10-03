@@ -113,8 +113,6 @@ void                ofa_batline_treeview_set_settings_key( ofaBatlineTreeview *v
 
 void                ofa_batline_treeview_setup_columns   ( ofaBatlineTreeview *view );
 
-void                ofa_batline_treeview_set_store       ( ofaBatlineTreeview *view );
-
 void                ofa_batline_treeview_set_bat         ( ofaBatlineTreeview *view,
 																ofoBat *bat );
 
