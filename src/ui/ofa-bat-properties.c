@@ -49,6 +49,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	gchar               *settings_prefix;
 
 	/* internals
 	 */
@@ -82,6 +83,7 @@ static void
 bat_properties_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_bat_properties_finalize";
+	ofaBatPropertiesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -89,6 +91,9 @@ bat_properties_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_BAT_PROPERTIES( instance ));
 
 	/* free data members here */
+	priv = ofa_bat_properties_get_instance_private( OFA_BAT_PROPERTIES( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_bat_properties_parent_class )->finalize( instance );
@@ -129,6 +134,7 @@ ofa_bat_properties_init( ofaBatProperties *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->is_new = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -261,7 +267,7 @@ idialog_init( myIDialog *instance )
 	priv->bat_bin = ofa_bat_properties_bin_new();
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
 
-	key = g_strdup_printf( "%s.BatLine", G_OBJECT_TYPE_NAME( instance ));
+	key = g_strdup_printf( "%s-BatLine", priv->settings_prefix );
 	ofa_bat_properties_bin_set_settings_key( priv->bat_bin, key );
 	g_free( key );
 

@@ -314,7 +314,7 @@ setup_properties( ofaBatSelect *self )
 	my_utils_widget_set_margins( GTK_WIDGET( priv->bat_bin ), 0, 0, 2, 0 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
 
-	key = g_strdup_printf( "%s.BatLine", G_OBJECT_TYPE_NAME( self ));
+	key = g_strdup_printf( "%s-BatLine", priv->settings_prefix );
 	ofa_bat_properties_bin_set_settings_key( priv->bat_bin, key );
 	g_free( key );
 

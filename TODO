@@ -410,8 +410,6 @@
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
-1219 2016- 9-30 BatlineTreeview: unable to modify columns visibility !?
-
 1220
 
 -----------------------------------------------------------------------
@@ -1750,6 +1748,9 @@
 
 1218 2016- 9-26 virtual functions: <base_class>_v_<method_name>
      2016- 9-26 done
+
+1219 2016- 9-30 BatlineTreeview: unable to modify columns visibility !?
+     2016-10- 3 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
