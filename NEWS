@@ -43,6 +43,7 @@
    - AccountSelect, OpeTemplateSelect: save settings before hiding the dialog.
    - BalanceRender: improve appearance of header notes (todo #1191).
    - BalanceRender: improve columns titles (todo #1193).
+   - DossierTreeview: disable columns depending of the filter (todo #1185).
    - OpeTemplate: make the treeview sortable (todo #1200).
    - Reconciliation: improve display and automated proposals.
    - ReconciliationRender: add debit and credit soldes, change back summary color (todo #1195).
