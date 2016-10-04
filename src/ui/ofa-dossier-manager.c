@@ -345,10 +345,25 @@ on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *per
 {
 	ofaDossierManagerPrivate *priv;
 	gboolean ok, is_opened;
+	ofaHub *hub;
+	const ofaIDBConnect *connect;
+	ofaIDBMeta *dossier_meta;
+	ofaIDBPeriod *dossier_period;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	is_opened = FALSE;
+	hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	connect = ofa_hub_get_connect( hub );
+	if( connect ){
+		g_return_if_fail( OFA_IS_IDBCONNECT( connect ));
+		dossier_meta = ofa_idbconnect_get_meta( connect );
+		dossier_period = ofa_idbconnect_get_period( connect );
+	}
+
+	is_opened = ( connect && meta == dossier_meta && period == dossier_period );
+
 	ok = ( meta && period && !is_opened );
 
 	if( priv->open_action ){

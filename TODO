@@ -389,9 +389,6 @@
 1181 2016- 8- 4 obsolete ofa_buttons_box_add_button_with_mnemonic
                 + BUTTON_DELETE/NEW/PROPERTIES
 
-1183 2016- 8-23 DossierManager: disable Open action when the dossier is
-                already opened.
-
 1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
 
 1192 2016- 9-14 FEAT: export the balance for a period
@@ -1614,6 +1611,10 @@
                 - RecurrentRun: Treeview, Store, New, Page
                 - TVAForm: Treeview, Store, Page
                 - TVARecord: Treeview, Store, Page
+
+1183 2016- 8-23 DossierManager: disable Open action when the dossier is
+                already opened.
+     2016-10- 4 fixed
 
 1185 2016- 8-23 DossierTreeview: some columns have no sense depending of
                 the filter (do not allow to display them)
