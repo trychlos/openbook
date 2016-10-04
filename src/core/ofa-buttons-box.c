@@ -174,42 +174,6 @@ ofa_buttons_box_add_spacer( ofaButtonsBox *box )
 }
 
 /**
- * ofa_buttons_box_add_button_with_mnemonic:
- * @box: this #ofaButtonsBox object.
- * @mnemonic: the mnemonic to be set on the new button.
- * @callback: [allow-none]: the handler of the "clicked" signal.
- * @user_data: user data to be provided to the @callback function.
- *
- * Packs a button in the specified @box.
- * The new button sensitivity defaults to %FALSE.
- *
- * Returns: the newly created button, or %NULL.
- */
-GtkWidget *
-ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box, const gchar *mnemonic, GCallback cb, void *user_data )
-{
-	ofaButtonsBoxPrivate *priv;
-	GtkWidget *button;
-
-	g_return_val_if_fail( box && OFA_IS_BUTTONS_BOX( box ), NULL );
-	g_return_val_if_fail( my_strlen( mnemonic ), NULL );
-
-	priv = ofa_buttons_box_get_instance_private( box );
-
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
-
-	button = gtk_button_new_with_mnemonic( mnemonic );
-	ofa_buttons_box_append_button( box, button );
-
-	gtk_widget_set_sensitive( button, FALSE );
-	if( cb ){
-		g_signal_connect( button, "clicked", cb, user_data );
-	}
-
-	return( button );
-}
-
-/**
  * ofa_buttons_box_append_button:
  * @box: this #ofaButtonsBox object.
  * @button: the button to append.
