@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.19.0 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <template class="ofaExerciceCloseAssistant" parent="GtkAssistant">
@@ -39,13 +39,13 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       <object class="GtkGrid" id="grid1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
+        <property name="row_spacing">2</property>
         <property name="column_spacing">4</property>
         <child>
           <object class="GtkGrid" id="grid11">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <property name="column_spacing">4</property>
             <child>
               <object class="GtkFrame" id="frame111">
@@ -57,11 +57,11 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                   <object class="GtkGrid" id="grid111">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">12</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
-                    <property name="row_spacing">3</property>
+                    <property name="margin_left">8</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
                     <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkLabel" id="p1-closing-begin-prompt">
@@ -162,11 +162,11 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
                   <object class="GtkGrid" id="grid112">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">12</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
-                    <property name="row_spacing">3</property>
+                    <property name="margin_left">8</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
                     <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkLabel" id="p1-next-begin-prompt">
@@ -287,7 +287,7 @@ Nothing is irreversible until you click on the 'Apply' button on the last page.<
       <object class="GtkGrid" id="grid2">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
+        <property name="row_spacing">2</property>
         <child>
           <object class="GtkLabel" id="label21">
             <property name="visible">True</property>
@@ -465,7 +465,7 @@ Or just click on 'Apply' button.</property>
       <object class="GtkGrid" id="grid6">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
+        <property name="row_spacing">2</property>
         <property name="column_spacing">4</property>
         <child>
           <object class="GtkScrolledWindow" id="scrolledwindow1">
