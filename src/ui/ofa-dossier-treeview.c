@@ -501,6 +501,19 @@ ofa_dossier_treeview_set_show_all( ofaDossierTreeview *view, gboolean show_all )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->show_all = show_all;
+
+	if( show_all ){
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_PERNAME, TRUE );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_END,     TRUE );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_BEGIN,   TRUE );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_STATUS,  TRUE );
+	} else {
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_PERNAME, FALSE );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_END,     FALSE );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_BEGIN,   FALSE );
+		ofa_itvcolumnable_enable_column( OFA_ITVCOLUMNABLE( view ), DOSSIER_COL_STATUS,  FALSE );
+	}
+
 	ofa_tvbin_refilter( OFA_TVBIN( view ));
 }
 
