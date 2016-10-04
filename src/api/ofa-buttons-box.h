@@ -72,23 +72,11 @@ typedef struct {
 }
 	ofaButtonsBoxClass;
 
-/* Some standard button mnemonics are defined here
- *  as an effort to get them homogeneous
- */
-#define BUTTON_DELETE                   _( "_Delete..." )
-#define BUTTON_NEW                      _( "_New..." )
-#define BUTTON_PROPERTIES               _( "_Properties..." )
-
 GType          ofa_buttons_box_get_type                ( void ) G_GNUC_CONST;
 
 ofaButtonsBox *ofa_buttons_box_new                     ( void );
 
 void           ofa_buttons_box_add_spacer              ( ofaButtonsBox *box );
-
-GtkWidget     *ofa_buttons_box_add_button_with_mnemonic( ofaButtonsBox *box,
-																const gchar *mnemonic,
-																GCallback cb,
-																void *user_data );
 
 void           ofa_buttons_box_append_button           ( ofaButtonsBox *box,
 																GtkWidget *button );
