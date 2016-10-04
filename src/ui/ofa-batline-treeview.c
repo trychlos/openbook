@@ -314,8 +314,13 @@ ofa_batline_treeview_setup_columns( ofaBatlineTreeview *view )
 
 	setup_columns( view );
 
-	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( view ));
+	menu = g_menu_new();
 	ofa_icontext_set_menu( OFA_ICONTEXT( view ), OFA_IACTIONABLE( view ), menu );
+	g_object_unref( menu );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( view ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( view ), OFA_IACTIONABLE( view ), OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 }
 
 /*
