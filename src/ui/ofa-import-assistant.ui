@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.19.0 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <template class="ofaImportAssistant" parent="GtkAssistant">
@@ -44,7 +44,7 @@ Press Continue.</property>
       <object class="GtkGrid" id="p2-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
+        <property name="row_spacing">2</property>
         <child>
           <object class="GtkFrame" id="frame21">
             <property name="visible">True</property>
@@ -56,12 +56,12 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid21">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="hexpand">False</property>
-                <property name="row_spacing">3</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="p2-furi">
@@ -135,10 +135,10 @@ Press Continue.</property>
               <object class="GtkGrid" id="p2-datatype-parent">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="hexpand">False</property>
                 <property name="column_spacing">4</property>
                 <child>
@@ -198,9 +198,11 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid32">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
-                <property name="row_spacing">3</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="label321">
@@ -273,12 +275,12 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid31">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="hexpand">False</property>
-                <property name="row_spacing">3</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="p3-furi">
@@ -385,10 +387,12 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid41">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="hexpand">False</property>
-                <property name="row_spacing">3</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="p4-furi">
@@ -507,11 +511,11 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid42">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
-                <property name="row_spacing">3</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkCheckButton" id="p4-empty">
@@ -604,7 +608,7 @@ Press Continue.</property>
       <object class="GtkGrid" id="p5-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
+        <property name="row_spacing">2</property>
         <child>
           <object class="GtkBox" id="p5-settings-parent">
             <property name="visible">True</property>
@@ -630,12 +634,12 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid51">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="hexpand">False</property>
-                <property name="row_spacing">3</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="p5-furi">
@@ -836,7 +840,7 @@ Press Continue.</property>
       <object class="GtkGrid" id="p6-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
+        <property name="row_spacing">2</property>
         <property name="column_spacing">4</property>
         <child>
           <object class="GtkLabel" id="p6-source-label">
@@ -1086,7 +1090,7 @@ Press Continue.</property>
           <object class="GtkGrid" id="grid71">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <child>
               <object class="GtkLabel" id="label711">
                 <property name="visible">True</property>
@@ -1125,7 +1129,7 @@ Press Continue.</property>
           <object class="GtkGrid" id="grid72">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <child>
               <object class="GtkLabel" id="label721">
                 <property name="visible">True</property>

@@ -2,13 +2,6 @@
 <!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
-  <object class="GtkSizeGroup" id="btn-sizegroup">
-    <widgets>
-      <widget name="reset-btn"/>
-      <widget name="validate-btn"/>
-      <widget name="select-btn"/>
-    </widgets>
-  </object>
   <object class="GtkWindow" id="ofaGuidedExView1">
     <property name="can_focus">False</property>
     <child>
@@ -162,5 +155,12 @@
         </child>
       </object>
     </child>
+  </object>
+  <object class="GtkSizeGroup" id="btn-sizegroup">
+    <widgets>
+      <widget name="reset-btn"/>
+      <widget name="validate-btn"/>
+      <widget name="select-btn"/>
+    </widgets>
   </object>
 </interface>
