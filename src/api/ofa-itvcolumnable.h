@@ -142,6 +142,10 @@ GMenu *ofa_itvcolumnable_get_menu                  ( ofaITVColumnable *instance 
 void   ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
 															gint column_id );
 
+void   ofa_itvcolumnable_enable_column             ( ofaITVColumnable *instance,
+															gint column_id,
+															gboolean enable );
+
 void   ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance );
 
 void   ofa_itvcolumnable_propagate_visible_columns ( ofaITVColumnable *instance,

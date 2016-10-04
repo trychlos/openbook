@@ -538,6 +538,36 @@ ofa_itvcolumnable_set_default_column( ofaITVColumnable *instance, gint column_id
 }
 
 /**
+ * ofa_itvcolumnable_enable_column:
+ * @instance: the #ofaITVColumnable instance.
+ * @column_id: the identifier of the #GtkTreeViewColumn column.
+ * @enable: whether this column should be activatable.
+ *
+ * Determines if a column can be made visible.
+ */
+void
+ofa_itvcolumnable_enable_column( ofaITVColumnable *instance, gint column_id, gboolean enable )
+{
+	sITVColumnable *sdata;
+	sColumn *scol;
+	GActionGroup *action_group;
+
+	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
+
+	sdata = get_instance_data( instance );
+	scol = get_column_data_by_id( instance, sdata, column_id );
+
+	/* make the column not visible when disabled */
+	if( !enable ){
+		action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( instance ), scol->group_name );
+		g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( FALSE ));
+	}
+
+	/* enable/disable the action */
+	g_simple_action_set_enabled( scol->action, enable );
+}
+
+/**
  * ofa_itvcolumnable_show_columns:
  * @instance: the #ofaITVColumnable instance.
  *

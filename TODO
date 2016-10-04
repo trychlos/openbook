@@ -394,9 +394,6 @@
 
 1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
 
-1185 2016- 8-23 DossierTreeview: some columns have no sense depending of
-                the filter (do not allow to display them)
-
 1192 2016- 9-14 FEAT: export the balance for a period
 
 1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
@@ -1617,6 +1614,10 @@
                 - RecurrentRun: Treeview, Store, New, Page
                 - TVAForm: Treeview, Store, Page
                 - TVARecord: Treeview, Store, Page
+
+1185 2016- 8-23 DossierTreeview: some columns have no sense depending of
+                the filter (do not allow to display them)
+     2016-10- 4 fixed
 
 1186 2016- 8-31 ofaListStore: should it be obsoleted because useless ?
                 Rationale is that list stores are only a particular case
