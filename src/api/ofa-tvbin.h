@@ -274,11 +274,6 @@ void              ofa_tvbin_set_cell_edited_func  ( ofaTVBin *bin,
 														GCallback fn_cell,
 														void *fn_data );
 
-void              ofa_tvbin_init_editable_column  ( ofaTVBin *bin,
-														gint column_id,
-														GCallback fn_init,
-														void *fn_data );
-
 void              ofa_tvbin_set_store             ( ofaTVBin *bin,
 														GtkTreeModel *store );
 
