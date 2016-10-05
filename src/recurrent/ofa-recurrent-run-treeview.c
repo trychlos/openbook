@@ -69,7 +69,6 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void     setup_columns( ofaRecurrentRunTreeview *self );
 static void     on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self );
-static void     on_cell_editable_init( gint column_id, GtkCellRenderer *renderer, ofaRecurrentRunTreeview *self );
 static void     on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecurrentRunTreeview *self );
 static void     on_selection_changed( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     on_selection_activated( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -340,10 +339,6 @@ setup_columns( ofaRecurrentRunTreeview *self )
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3,   _( "Amount n° 3" ),  NULL);
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), REC_RUN_COL_LABEL );
-
-	ofa_tvbin_init_editable_column( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT1, G_CALLBACK( on_cell_editable_init ), self );
-	ofa_tvbin_init_editable_column( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT2, G_CALLBACK( on_cell_editable_init ), self );
-	ofa_tvbin_init_editable_column( OFA_TVBIN( self ), REC_RUN_COL_AMOUNT3, G_CALLBACK( on_cell_editable_init ), self );
 }
 
 /*
@@ -399,21 +394,6 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 			break;
 		default:
 			break;
-	}
-}
-
-static void
-on_cell_editable_init( gint column_id, GtkCellRenderer *renderer, ofaRecurrentRunTreeview *self )
-{
-	static const gchar *thisfn = "ofa_recurrent_run_treeview_on_cell_editable_init";
-
-	g_debug( "%s: column_id=%d, renderer=%p, self=%p",
-			thisfn, column_id, ( void * ) renderer, ( void * ) self );
-
-	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
-		my_double_renderer_init( renderer,
-				g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-				ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
 	}
 }
 
