@@ -339,7 +339,6 @@
                 <property name="margin_left">4</property>
                 <property name="margin_right">4</property>
                 <property name="row_spacing">2</property>
-                <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="bot-debit">
                     <property name="visible">True</property>
@@ -368,6 +367,7 @@
                   <object class="GtkLabel" id="bot-currency">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="margin_left">4</property>
                     <property name="xalign">1</property>
                   </object>
                   <packing>

@@ -59,6 +59,11 @@ typedef struct {
 	 */
 	GtkTreeModelFilterVisibleFunc filter_fn;
 	void                         *filter_data;
+
+	/* twin columns
+	 */
+	GtkTreeViewColumn            *debit_column;
+	GtkTreeViewColumn            *credit_column;
 }
 	ofaEntryTreeviewPrivate;
 
@@ -359,6 +364,7 @@ setup_columns( ofaEntryTreeview *self )
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), ENTRY_COL_STATUS,        _( "Status" ),      _( "Status" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ENTRY_COL_LABEL );
+	ofa_itvcolumnable_twins_group_new( OFA_ITVCOLUMNABLE( self ), "amount", ENTRY_COL_DEBIT, ENTRY_COL_CREDIT, -1 );
 }
 
 /**

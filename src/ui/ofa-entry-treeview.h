@@ -46,6 +46,9 @@
  * As the treeview may allow multiple selection, both signals provide
  * a list of selected objects. It is up to the user of this class to
  * decide whether an action may apply or not on a multiple selection.
+ *
+ * Twin groups:
+ * - 'amount': the DEBIT and CREDIT columns are defined as twins.
  */
 
 #include "api/ofa-tvbin.h"

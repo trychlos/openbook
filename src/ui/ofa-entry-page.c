@@ -798,32 +798,17 @@ setup_footer( ofaEntryPage *self )
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bot-debit" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	ofa_itvcolumnable_twins_group_add_widget( OFA_ITVCOLUMNABLE( priv->tview ), "amount", widget );
 	priv->bottom_debit = widget;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bot-credit" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	ofa_itvcolumnable_twins_group_add_widget( OFA_ITVCOLUMNABLE( priv->tview ), "amount", widget );
 	priv->bottom_credit = widget;
 
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bot-currency" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
 	priv->bottom_currency = widget;
-
-#if 0
-	/* try to have debit/credit columns the same size than debit/credit
-	 * balances - but does not work */
-	GtkSizeGroup *group;
-	GtkTreeViewColumn *column;
-	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
-	gtk_size_group_add_widget( group, priv->bottom_debit );
-	gtk_size_group_add_widget( group, priv->bottom_credit );
-	column = ofa_itvcolumnable_get_column( OFA_ITVCOLUMNABLE( priv->tview ), ENTRY_COL_DEBIT );
-	widget = gtk_tree_view_column_get_button( column );
-	gtk_size_group_add_widget( group, widget );
-	column = ofa_itvcolumnable_get_column( OFA_ITVCOLUMNABLE( priv->tview ), ENTRY_COL_CREDIT );
-	widget = gtk_tree_view_column_get_button( column );
-	gtk_size_group_add_widget( group, widget );
-	g_object_unref( group );
-#endif
 }
 
 static void

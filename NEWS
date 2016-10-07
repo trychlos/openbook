@@ -45,7 +45,8 @@
    - BalanceRender: improve columns titles (todo #1193).
    - DossierManager: disable open/delete actions on opened dossier (todo #1183).
    - DossierTreeview: disable columns depending of the filter (todo #1185).
-   - EntryPage: takes advantage of ofaITVColumnable and companion interfaces (todo #1182). 
+   - EntryPage: takes advantage of ofaITVColumnable and companion interfaces (todo #1182).
+   - ITVColumnable: define twins column groups. 
    - OpeTemplate: make the treeview sortable (todo #1200).
    - Reconciliation: improve display and automated proposals.
    - ReconciliationRender: add debit and credit soldes, change back summary color (todo #1195).

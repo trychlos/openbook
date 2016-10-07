@@ -60,6 +60,10 @@
  * is used to defined actions which toggle the visibility state of each
  * column.
  *
+ * Signals:
+ * - 'ofa-toggled': the visibility of a column changes.
+ * - 'ofa-twinwidth': the width of a twin group column has changed.
+ *
  * In Openbook, most of the implementation is assured by the #ofaTVBin
  * base class, which also implements #ofaIFilterable and #ofaISortable
  * interfaces.
@@ -155,6 +159,14 @@ void               ofa_itvcolumnable_propagate_visible_columns ( ofaITVColumnabl
 																		GList *pages_list );
 
 void               ofa_itvcolumnable_write_columns_settings    ( ofaITVColumnable *instance );
+
+gboolean           ofa_itvcolumnable_twins_group_new           ( ofaITVColumnable *instance,
+																		const gchar *name,
+																		... );
+
+gboolean           ofa_itvcolumnable_twins_group_add_widget    ( ofaITVColumnable *instance,
+																		const gchar *name,
+																		GtkWidget *widget );
 
 G_END_DECLS
 
