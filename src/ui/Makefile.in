@@ -162,8 +162,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-exercice-close-assistant.$(OBJEXT) \
 	ofa-exercice-store.$(OBJEXT) ofa-export-assistant.$(OBJEXT) \
 	ofa-guided-ex.$(OBJEXT) ofa-iaccount-filter.$(OBJEXT) \
-	ofa-import-assistant.$(OBJEXT) ofa-itreeview-column.$(OBJEXT) \
-	ofa-itreeview-display.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
+	ofa-import-assistant.$(OBJEXT) ofa-ledger-book-bin.$(OBJEXT) \
 	ofa-ledger-book-render.$(OBJEXT) ofa-ledger-close.$(OBJEXT) \
 	ofa-ledger-page.$(OBJEXT) ofa-ledger-properties.$(OBJEXT) \
 	ofa-ledger-summary-bin.$(OBJEXT) \
@@ -591,10 +590,6 @@ openbook_SOURCES = \
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-itreeview-column.c								\
-	ofa-itreeview-column.h								\
-	ofa-itreeview-display.c								\
-	ofa-itreeview-display.h								\
 	ofa-ledger-book-bin.c								\
 	ofa-ledger-book-bin.h								\
 	ofa-ledger-book-render.c							\
@@ -825,8 +820,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-guided-ex.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-iaccount-filter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-import-assistant.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itreeview-column.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-itreeview-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ledger-close.Po@am__quote@
