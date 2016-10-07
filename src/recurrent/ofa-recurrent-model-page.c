@@ -237,7 +237,6 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
-	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
 	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
@@ -247,6 +246,7 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
+	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
 
 	/* update action */
 	priv->update_action = g_simple_action_new( "update", NULL );
@@ -300,7 +300,6 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 
 	/* view operations - always enabled */
 	priv->view_opes_action = g_simple_action_new( "viewopes", NULL );
-	g_simple_action_set_enabled( priv->view_opes_action, TRUE );
 	g_signal_connect( priv->view_opes_action, "activate", G_CALLBACK( action_on_view_opes_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_opes_action ),
@@ -310,6 +309,7 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->view_opes_action ),
 					_( "_View operations..." )));
+	g_simple_action_set_enabled( priv->view_opes_action, TRUE );
 }
 
 static void

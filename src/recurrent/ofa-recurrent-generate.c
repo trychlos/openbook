@@ -430,7 +430,7 @@ init_actions( ofaRecurrentGenerate *self )
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	priv->reset_action = g_simple_action_new( "reset", NULL );
-	g_simple_action_set_enabled( priv->reset_action, FALSE );
+	g_signal_connect( priv->reset_action, "activate", G_CALLBACK( action_on_reset_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->reset_action ),
 			_( "Clear the operations" ));
@@ -438,10 +438,10 @@ init_actions( ofaRecurrentGenerate *self )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->reset_action ));
-	g_signal_connect( priv->reset_action, "activate", G_CALLBACK( action_on_reset_activated ), self );
+	g_simple_action_set_enabled( priv->reset_action, FALSE );
 
 	priv->generate_action = g_simple_action_new( "generate", NULL );
-	g_simple_action_set_enabled( priv->generate_action, FALSE );
+	g_signal_connect( priv->generate_action, "activate", G_CALLBACK( action_on_generate_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->generate_action ),
 			_( "Generate operations" ));
@@ -449,7 +449,7 @@ init_actions( ofaRecurrentGenerate *self )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->generate_action ));
-	g_signal_connect( priv->generate_action, "activate", G_CALLBACK( action_on_generate_activated ), self );
+	g_simple_action_set_enabled( priv->generate_action, FALSE );
 
 	/* setup the context menu */
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );

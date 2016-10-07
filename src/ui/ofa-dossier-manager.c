@@ -283,7 +283,6 @@ idialog_init_actions( ofaDossierManager *self )
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
-	g_simple_action_set_enabled( priv->new_action, TRUE );
 	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->new_action ),
@@ -293,10 +292,10 @@ idialog_init_actions( ofaDossierManager *self )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
+	g_simple_action_set_enabled( priv->new_action, TRUE );
 
 	/* open action */
 	priv->open_action = g_simple_action_new( "open", NULL );
-	g_simple_action_set_enabled( priv->new_action, TRUE );
 	g_signal_connect( priv->open_action, "activate", G_CALLBACK( action_on_open_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->open_action ),
@@ -306,6 +305,7 @@ idialog_init_actions( ofaDossierManager *self )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->open_action ),
 					_( "_Open..." )));
+	g_simple_action_set_enabled( priv->new_action, TRUE );
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
@@ -319,6 +319,7 @@ idialog_init_actions( ofaDossierManager *self )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
+	g_simple_action_set_enabled( priv->new_action, TRUE );
 }
 
 static void
