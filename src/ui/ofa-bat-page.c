@@ -214,7 +214,6 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 
 	/* new action is present, but always disabled here (see import) */
 	priv->new_action = g_simple_action_new( "new", NULL );
-	g_simple_action_set_enabled( priv->new_action, FALSE );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 			OFA_IACTIONABLE_NEW_ITEM );
@@ -223,6 +222,7 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_BTN ));
+	g_simple_action_set_enabled( priv->new_action, FALSE );
 
 	/* update action */
 	priv->update_action = g_simple_action_new( "update", NULL );
@@ -252,7 +252,6 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 
 	/* import action */
 	priv->import_action = g_simple_action_new( "import", NULL );
-	g_simple_action_set_enabled( priv->import_action, priv->is_writable );
 	g_signal_connect( priv->import_action, "activate", G_CALLBACK( action_on_import_activated ), page );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->import_action ),
@@ -262,6 +261,7 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->import_action ),
 					OFA_IACTIONABLE_IMPORT_BTN ));
+	g_simple_action_set_enabled( priv->import_action, priv->is_writable );
 }
 
 static void

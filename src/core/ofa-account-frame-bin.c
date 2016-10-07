@@ -858,6 +858,7 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 
 		case ACCOUNT_ACTION_NEW:
 			priv->new_action = g_simple_action_new( "new", NULL );
+			g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), bin );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
 					OFA_IACTIONABLE_NEW_ITEM );
@@ -866,12 +867,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->new_action ),
 							OFA_IACTIONABLE_NEW_BTN ));
-			g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), bin );
 			g_simple_action_set_enabled( priv->new_action, priv->is_writable );
 			break;
 
 		case ACCOUNT_ACTION_UPDATE:
 			priv->update_action = g_simple_action_new( "update", NULL );
+			g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), bin );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
 					priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
@@ -880,12 +881,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->update_action ),
 							OFA_IACTIONABLE_PROPERTIES_BTN ));
-			g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), bin );
 			g_simple_action_set_enabled( priv->update_action, FALSE );
 			break;
 
 		case ACCOUNT_ACTION_DELETE:
 			priv->delete_action = g_simple_action_new( "delete", NULL );
+			g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), bin );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_ITEM );
@@ -894,12 +895,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->delete_action ),
 							OFA_IACTIONABLE_DELETE_BTN ));
-			g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), bin );
 			g_simple_action_set_enabled( priv->delete_action, FALSE );
 			break;
 
 		case ACCOUNT_ACTION_VIEW_ENTRIES:
 			priv->view_entries_action = g_simple_action_new( "view-entries", NULL );
+			g_signal_connect( priv->view_entries_action, "activate", G_CALLBACK( action_on_view_entries_activated ), bin );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->view_entries_action ),
 					_( "View entries" ));
@@ -908,12 +909,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->view_entries_action ),
 							_( "_View entries..." )));
-			g_signal_connect( priv->view_entries_action, "activate", G_CALLBACK( action_on_view_entries_activated ), bin );
 			g_simple_action_set_enabled( priv->view_entries_action, FALSE );
 			break;
 
 		case ACCOUNT_ACTION_SETTLEMENT:
 			priv->settlement_action = g_simple_action_new( "settlement", NULL );
+			g_signal_connect( priv->settlement_action, "activate", G_CALLBACK( action_on_settlement_activated ), bin );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->settlement_action ),
 					_( "Settlement page" ));
@@ -922,12 +923,12 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->settlement_action ),
 							_( "Settlement..." )));
-			g_signal_connect( priv->settlement_action, "activate", G_CALLBACK( action_on_settlement_activated ), bin );
 			g_simple_action_set_enabled( priv->settlement_action, FALSE );
 			break;
 
 		case ACCOUNT_ACTION_RECONCILIATION:
 			priv->reconciliation_action = g_simple_action_new( "reconciliation", NULL );
+			g_signal_connect( priv->reconciliation_action, "activate", G_CALLBACK( action_on_reconciliation_activated ), bin );
 			ofa_iactionable_set_menu_item(
 					OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->reconciliation_action ),
 					_( "Reconciliation page" ));
@@ -936,7 +937,6 @@ ofa_account_frame_bin_add_action( ofaAccountFrameBin *bin, ofeAccountAction id )
 					ofa_iactionable_new_button(
 							OFA_IACTIONABLE( bin ), priv->settings_key, G_ACTION( priv->reconciliation_action ),
 							_( "_Reconciliation..." )));
-			g_signal_connect( priv->reconciliation_action, "activate", G_CALLBACK( action_on_reconciliation_activated ), bin );
 			g_simple_action_set_enabled( priv->reconciliation_action, FALSE );
 			break;
 

@@ -295,7 +295,7 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
 	priv->cancel_action = g_simple_action_new( "cancel", NULL );
-	g_simple_action_set_enabled( priv->cancel_action, FALSE );
+	g_signal_connect( priv->cancel_action, "activate", G_CALLBACK( action_on_cancel_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->cancel_action ),
 			_( "Cancel..." ));
@@ -303,10 +303,10 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->cancel_action ));
-	g_signal_connect( priv->cancel_action, "activate", G_CALLBACK( action_on_cancel_activated ), self );
+	g_simple_action_set_enabled( priv->cancel_action, FALSE );
 
 	priv->waiting_action = g_simple_action_new( "waiting", NULL );
-	g_simple_action_set_enabled( priv->waiting_action, FALSE );
+	g_signal_connect( priv->waiting_action, "activate", G_CALLBACK( action_on_wait_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->waiting_action ),
 			_( "Wait..." ));
@@ -314,10 +314,10 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->waiting_action ));
-	g_signal_connect( priv->waiting_action, "activate", G_CALLBACK( action_on_wait_activated ), self );
+	g_simple_action_set_enabled( priv->waiting_action, FALSE );
 
 	priv->validate_action = g_simple_action_new( "validate", NULL );
-	g_simple_action_set_enabled( priv->validate_action, FALSE );
+	g_signal_connect( priv->validate_action, "activate", G_CALLBACK( action_on_validate_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->validate_action ),
 			_( "Validate..." ));
@@ -325,7 +325,7 @@ setup_actions( ofaRecurrentRunPage *self, GtkContainer *parent )
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), btn, priv->settings_prefix, G_ACTION( priv->validate_action ));
-	g_signal_connect( priv->validate_action, "activate", G_CALLBACK( action_on_validate_activated ), self );
+	g_simple_action_set_enabled( priv->validate_action, FALSE );
 }
 
 static void
