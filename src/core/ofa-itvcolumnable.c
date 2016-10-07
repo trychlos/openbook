@@ -371,8 +371,6 @@ on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnabl
 	sColumn *scol;
 	GList *it;
 
-	g_debug( "%s: action_name=%s", thisfn, g_action_get_name( G_ACTION( action )));
-
 	/* set the action state as requested (which is just the default) */
 	g_simple_action_set_state( action, value);
 
@@ -383,7 +381,8 @@ on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnabl
 	if( scol->column ){
 		visible = g_variant_get_boolean( value );
 		gtk_tree_view_column_set_visible( scol->column, visible );
-		g_debug( "%s: column=%s, visible=%s", thisfn, scol->label, visible ? "True":"False" );
+		g_debug( "%s: action_name=%s, column=%s, visible=%s",
+				thisfn, g_action_get_name( G_ACTION( action )), scol->label, visible ? "True":"False" );
 		g_signal_emit_by_name( instance, "ofa-toggled", scol->id, visible );
 		sdata->visible_count += ( visible ? 1 : -1 );
 		//g_debug( "%s: visible_count=%d", thisfn, sdata->visible_count );
@@ -408,6 +407,27 @@ on_action_changed_state( GSimpleAction *action, GVariant *value, ofaITVColumnabl
 			}
 		}
 	}
+}
+
+/**
+ * ofa_itvcolumnable_get_column:
+ * @instance: this #ofaITVColumnable instance.
+ * @column_id: the #GtkTreeViewColumn column identifier.
+ *
+ * Returns: the #GtkTreeViewColumn @column.
+ */
+GtkTreeViewColumn *
+ofa_itvcolumnable_get_column( ofaITVColumnable *instance, gint column_id )
+{
+	sITVColumnable *sdata;
+	sColumn *scol;
+
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ), NULL );
+
+	sdata = get_instance_data( instance );
+	scol = get_column_data_by_id( instance, sdata, column_id );
+
+	return( scol->column );
 }
 
 /**

@@ -49,6 +49,7 @@ src/ui/ofa-dossier-new-mini.ui
 src/ui/ofa-dossier-open.ui
 src/ui/ofa-dossier-properties.ui
 src/ui/ofa-entry-page.ui
+src/ui/ofa-entry-properties.ui
 src/ui/ofa-exercice-close-assistant.ui
 src/ui/ofa-export-assistant.ui
 src/ui/ofa-guided-ex.ui

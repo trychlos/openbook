@@ -679,4 +679,6 @@ hub_on_deleted_entry( ofaEntryStore *self, ofoEntry *entry )
 	if( concil ){
 		ofa_iconcil_remove_concil( OFA_ICONCIL( entry ), concil );
 	}
+
+	hub_on_updated_entry( self, entry );
 }
