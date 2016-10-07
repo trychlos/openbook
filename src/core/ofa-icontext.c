@@ -292,7 +292,9 @@ ofa_icontext_set_menu( ofaIContext *instance, ofaIActionable *actionable, GMenu 
 static gboolean
 on_popup_menu( ofaIContext *instance, sIContext *sdata )
 {
-	g_debug( "ofa_icontext_on_popup_menu" );
+	static const gchar *thisfn = "ofa_icontext_on_popup_menu";
+
+	g_debug( "%s: instance=%p, sdata=%p", thisfn, ( void * ) instance, ( void * ) sdata );
 
 	do_popup_menu( instance, sdata, 0, gtk_get_current_event_time());
 
@@ -306,11 +308,15 @@ on_popup_menu( ofaIContext *instance, sIContext *sdata )
 static gboolean
 on_button_pressed( ofaIContext *instance, GdkEventButton *event, sIContext *sdata )
 {
+	static const gchar *thisfn = "ofa_icontext_on_button_pressed";
 	gboolean stop = FALSE;
 
 	/* Ignore double-clicks and triple-clicks */
 	if( gdk_event_triggers_context_menu(( GdkEvent * ) event ) &&
 			event->type == GDK_BUTTON_PRESS && event->button == GDK_BUTTON_SECONDARY ){
+
+		g_debug( "%s: instance=%p, event=%p, sdata=%p",
+				thisfn, ( void * ) instance, ( void * ) event, ( void * ) sdata );
 
 		do_popup_menu( instance, sdata, event->button, event->time );
 

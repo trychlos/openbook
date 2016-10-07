@@ -39,8 +39,11 @@
 #include "api/ofa-counter.h"
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-iactionable.h"
+#include "api/ofa-icontext.h"
 #include "api/ofa-idate-filter.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
@@ -56,42 +59,14 @@
 #include "api/ofs-currency.h"
 
 #include "core/ofa-account-select.h"
+#include "core/ofa-entry-store.h"
 #include "core/ofa-iconcil.h"
 #include "core/ofa-ledger-combo.h"
 #include "core/ofa-ledger-store.h"
 
 #include "ui/ofa-entry-page.h"
-#include "ui/ofa-itreeview-column.h"
-#include "ui/ofa-itreeview-display.h"
-
-/* columns in the entries store
- * must declared before the private data in order to be able to
- * dimension the renderers array
- */
-enum {
-	ENT_COL_DOPE = 0,
-	ENT_COL_DEFF,
-	ENT_COL_NUMBER,						/* entry number */
-	ENT_COL_REF,
-	ENT_COL_LEDGER,
-	ENT_COL_ACCOUNT,
-	ENT_COL_LABEL,
-	ENT_COL_SETTLE,
-	ENT_COL_DRECONCIL,
-	ENT_COL_DEBIT,
-	ENT_COL_CREDIT,
-	ENT_COL_CURRENCY,
-	ENT_COL_STATUS,
-	ENT_COL_OPE_TEMPLATE,
-				/*  below columns are not visible */
-	ENT_COL_OBJECT,
-	ENT_COL_MSGERR,
-	ENT_COL_MSGWARN,
-	ENT_COL_DOPE_SET,					/* operation date set by the user */
-	ENT_COL_DEFF_SET,					/* effect date set by the user */
-	ENT_COL_CURRENCY_SET,				/* currency set by the user */
-	ENT_N_COLUMNS
-};
+#include "ui/ofa-entry-properties.h"
+#include "ui/ofa-entry-treeview.h"
 
 /* priv instance data
  */
@@ -101,27 +76,25 @@ typedef struct {
 	 */
 	ofaHub              *hub;
 	GList               *hub_handlers;
-	ofoDossier          *dossier;		/* dossier */
+	ofoDossier          *dossier;					/* dossier */
+	gboolean             is_writable;
 	const GDate         *dossier_opening;
 	gboolean             initializing;
-
-	/* UI
-	 */
-	GtkContainer        *top_box;		/* reparented from dialog */
+	gchar               *settings_prefix;
 
 	/* frame 1: general selection
 	 */
-	GtkToggleButton     *ledger_btn;
+	GtkWidget           *ledger_btn;
 	ofaLedgerCombo      *ledger_combo;
 	GtkWidget           *ledger_parent;
 	gchar               *jou_mnemo;
 
-	GtkToggleButton     *account_btn;
-	GtkEntry            *account_entry;
+	GtkWidget           *account_btn;
+	GtkWidget           *account_entry;
 	gchar               *acc_number;
 	gboolean             acc_valid;
 
-	GtkLabel            *f1_label;
+	GtkWidget           *f1_label;
 
 	/* frame 2: effect dates layout
 	 */
@@ -129,35 +102,39 @@ typedef struct {
 
 	/* frame 3: entry status
 	 */
-	gboolean             display_past;
-	gboolean             display_rough;
-	gboolean             display_validated;
-	gboolean             display_deleted;
-	gboolean             display_future;
-
-	/* frame 4: visible columns
-	 */
+	GtkWidget           *past_btn;
+	GtkWidget           *rough_btn;
+	GtkWidget           *validated_btn;
+	GtkWidget           *deleted_btn;
+	GtkWidget           *future_btn;
 
 	/* frame 5: edition switch
 	 */
-	GtkSwitch           *edit_switch;
+	GtkWidget           *edit_switch;
 
 	/* entries list view
 	 */
-	GtkCellRenderer     *renderers[ENT_N_COLUMNS];
-	GtkTreeView         *entries_tview;
-	GtkTreeModel        *tfilter;		/* GtkTreeModelFilter stacked on the GtkListStore */
-	GtkTreeModel        *tsort;			/* GtkTreeModelSort stacked on the GtkTreeModelFilter */
-	GtkTreeModel        *tstore;
-	GtkTreeViewColumn   *sort_column;
+	ofaEntryTreeview    *tview;
+	ofaEntryStore       *store;
 
-	/* runtime data used while editing a single row
+	/* actions
 	 */
+	GSimpleAction       *new_action;
+	GSimpleAction       *delete_action;
 
 	/* footer
 	 */
-	GtkLabel            *comment;
+	GtkWidget           *comment;
+	GtkWidget           *bottom_paned;
+	GtkWidget           *bottom_balance;
+	GtkWidget           *bottom_debit;
+	GtkWidget           *bottom_credit;
+	GtkWidget           *bottom_currency;
 	GList               *balances;
+
+	/* the current row
+	 */
+	gboolean             editable_row;
 }
 	ofaEntryPagePrivate;
 
@@ -166,22 +143,14 @@ typedef struct {
  */
 #define DATA_COLUMN_ID                  "ofa-data-column-id"
 
-/* a pointer to the boolean xxx_visible is set against the check
- * buttons - so that we are able to have only one callback */
-#define DATA_PRIV_VISIBLE               "ofa-data-priv-visible"
+/* a pointer to the entry status ENT_STATUS_xxx that this check button
+ * toggles - so that we are able to have only one callback
+ */
+#define STATUS_BTN_DATA                 "ofa-data-priv-visible"
 
 /* set against status toggle buttons in order to be able to set
  * the user prefs */
 #define DATA_ROW_STATUS                 "ofa-data-row-status"
-
-/* it appears that Gtk+ displays a counter intuitive sort indicator:
- * when asking for ascending sort, Gtk+ displays a 'v' indicator
- * while we would prefer the '^' version -
- * we are defining the inverse indicator, and we are going to sort
- * in reverse order to have our own illusion
- */
-#define OFA_SORT_ASCENDING              GTK_SORT_DESCENDING
-#define OFA_SORT_DESCENDING             GTK_SORT_ASCENDING
 
 /* when editing an entry, we may have two levels of errors:
  * fatal error: the entry is not valid and cannot be saved
@@ -209,130 +178,82 @@ enum {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
 static const gchar *st_ui_id            = "EntryPageWindow";
-
-static const gchar *st_pref_selection   = "EntryPageSelection";
-static const gchar *st_pref_ledger      = "EntryPageLedger";
-static const gchar *st_pref_account     = "EntryPageAccount";
 static const gchar *st_pref_effect      = "EntryPageEffectDates";
-static const gchar *st_pref_status      = "EntryPageStatus";
-static const gchar *st_pref_columns     = "EntryPageColumns";
-static const gchar *st_pref_sort_c      = "EntryPageSortC";
-static const gchar *st_pref_sort_s      = "EntryPageSortS";
 
 #define SEL_LEDGER                      "Ledger"
 #define SEL_ACCOUNT                     "Account"
 
-static const ofsTreeviewColumnId st_treeview_column_ids[] = {
-		{ ENT_COL_DOPE,         ITVC_DOPE },
-		{ ENT_COL_DEFF,         ITVC_DEFFECT },
-		{ ENT_COL_NUMBER,       ITVC_ENT_ID },
-		{ ENT_COL_REF,          ITVC_ENT_REF },
-		{ ENT_COL_LEDGER,       ITVC_LED_ID },
-		{ ENT_COL_ACCOUNT,      ITVC_ACC_ID },
-		{ ENT_COL_LABEL,        ITVC_ENT_LABEL },
-		{ ENT_COL_OPE_TEMPLATE, ITVC_OPE_TEMPLATE },
-		{ ENT_COL_SETTLE,       ITVC_STLMT_NUMBER },
-		{ ENT_COL_DRECONCIL,    ITVC_CONCIL_DATE },
-		{ ENT_COL_DEBIT,        ITVC_DEBIT },
-		{ ENT_COL_CREDIT,       ITVC_CREDIT },
-		{ ENT_COL_CURRENCY,     ITVC_CUR_ID },
-		{ ENT_COL_STATUS,       ITVC_ENT_STATUS },
-		{ -1 }
-};
-
-static void            itreeview_column_iface_init( ofaITreeviewColumnInterface *iface );
-static guint           itreeview_column_get_interface_version( const ofaITreeviewColumn *instance );
-static void            itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface );
-static guint           itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance );
-static gchar          *itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id );
-static gboolean        itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id );
-static void            page_v_setup_page( ofaPage *page );
-static void            reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent );
-static void            setup_gen_selection( ofaEntryPage *self );
-static void            setup_ledger_selection( ofaEntryPage *self );
-static void            setup_account_selection( ofaEntryPage *self );
-static void            setup_dates_selection( ofaEntryPage *self );
-static void            setup_status_selection( ofaEntryPage *self );
-static void            setup_display_selection( ofaEntryPage *self );
-static void            setup_edit_switch( ofaEntryPage *self );
-static GtkTreeView    *setup_entries_treeview( ofaEntryPage *self );
-static gint            on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryPage *self );
-static gint            cmp_strings( ofaEntryPage *self, const gchar *stra, const gchar *strb );
-static gint            cmp_amounts( ofaEntryPage *self, const gchar *stra, const gchar *strb );
-static gint            cmp_counters( ofaEntryPage *self, const gchar *stra, const gchar *strb );
-static void            on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self );
-static void            setup_footer( ofaEntryPage *self );
-static GtkWidget      *page_v_get_top_focusable_widget( const ofaPage *page );
-static void            on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self );
-static void            on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self );
-static gboolean        display_entries_from_ledger( ofaEntryPage *self );
-static void            on_account_changed( GtkEntry *entry, ofaEntryPage *self );
-static gboolean        on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaEntryPage *self );
-static void            on_account_select( GtkButton *button, ofaEntryPage *self );
-static gboolean        display_entries_from_account( ofaEntryPage *self );
-static void            on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaEntryPage *self );
-static void            refresh_display( ofaEntryPage *self );
-static void            display_entries( ofaEntryPage *self, GList *entries );
-static void            display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter );
-static void            display_entry_concil( ofaEntryPage *self, ofoConcil *concil, GtkTreeIter *iter );
-static void            compute_balances( ofaEntryPage *self );
-static GtkWidget      *reset_balances_widgets( ofaEntryPage *self );
-static void            display_balance( ofsCurrency *pc, ofaEntryPage *self );
-static void            set_balance_currency_label_position( ofaEntryPage *self );
-static void            set_balance_currency_label_margin( GtkWidget *widget, ofaEntryPage *self );
-static gboolean        is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
-static void            on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self );
-static void            on_entry_status_toggled( GtkToggleButton *button, ofaEntryPage *self );
-static void            on_column_toggled( ofaEntryPage *self, gint column_id, gboolean visible, void *empty );
-static void            on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self );
-static void            set_renderers_editable( ofaEntryPage *self, gboolean editable );
-static void            on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaEntryPage *self );
-static gint            get_data_set_indicator( ofaEntryPage *self, gint column_id );
-static void            set_data_set_indicator( ofaEntryPage *self, gint column_id, GtkTreeIter *iter );
-static void            on_row_selected( GtkTreeSelection *select, ofaEntryPage *self );
-static void            check_row_for_valid( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_valid_label( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter );
-static void            check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter );
-static gboolean        check_row_for_cross_currency( ofaEntryPage *self, GtkTreeIter *iter );
-static void            reset_error_msg( ofaEntryPage *self, GtkTreeIter *iter );
-static void            set_error_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *str );
-/*static void           set_warning_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *str );*/
-static void            display_error_msg( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gboolean        save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void            remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
-static void            remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
-static gboolean        find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter );
-static void            hub_connect_to_signaling_system( ofaEntryPage *self );
-static void            hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
-static void            do_new_entry( ofaEntryPage *self, ofoEntry *entry );
-static void            hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
-static void            do_update_account_number( ofaEntryPage *self, const gchar *prev, const gchar *number );
-static void            do_update_ledger_mnemo( ofaEntryPage *self, const gchar *prev, const gchar *mnemo );
-static void            do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *code );
-static void            do_update_concil( ofaEntryPage *self, ofoConcil *concil, gboolean is_deleted );
-static void            do_update_entry( ofaEntryPage *self, ofoEntry *entry );
-static void            hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
-static void            do_on_deleted_concil( ofaEntryPage *self, ofoConcil *concil );
-static void            do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry );
-static gboolean        on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaEntryPage *self );
-static ofaEntryStatus  get_row_status( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static GDate          *get_row_deffect( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date );
-static gint            get_row_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static void            insert_new_row( ofaEntryPage *self );
-static void            delete_row( ofaEntryPage *self );
-static gboolean        ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry );
+static void       page_v_setup_page( ofaPage *page );
+static void       setup_gen_selection( ofaEntryPage *self );
+static void       setup_account_selection( ofaEntryPage *self );
+static void       setup_ledger_selection( ofaEntryPage *self );
+static void       setup_dates_filter( ofaEntryPage *self );
+static void       setup_status_filter( ofaEntryPage *self );
+static void       setup_edit_switch( ofaEntryPage *self );
+static void       setup_treeview( ofaEntryPage *self );
+static gboolean   tview_is_visible_row( GtkTreeModel *tfilter, GtkTreeIter *iter, ofaEntryPage *self );
+static void       tview_on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self );
+static void       tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
+static void       tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEntryPage *self );
+static void       tview_on_row_insert( ofaTVBin *bin, ofaEntryPage *self );
+static void       tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self );
+static void       setup_footer( ofaEntryPage *self );
+static void       setup_actions( ofaEntryPage *self );
+static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
+static void       gen_selection_on_toggled( GtkToggleButton *button, ofaEntryPage *self );
+static void       ledger_on_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self );
+static gboolean   ledger_display_from( ofaEntryPage *self );
+static void       account_on_changed( GtkEntry *entry, ofaEntryPage *self );
+static gboolean   account_on_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaEntryPage *self );
+static void       account_do_select( ofaEntryPage *self );
+static gboolean   account_display_from( ofaEntryPage *self );
+static void       effect_filter_on_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaEntryPage *self );
+static void       status_on_toggled( GtkToggleButton *button, ofaEntryPage *self );
+static void       edit_on_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self );
+static void       edit_set_cells_editable( ofaEntryPage *self, GtkTreeSelection *selection, gboolean editable );
+static void       edit_on_cell_edited( GtkCellRendererText *cell, gchar *path, gchar *text, ofaEntryPage *self );
+static gint       edit_get_column_set_id( ofaEntryPage *self, gint column_id );
+static void       edit_set_column_set_indicator( ofaEntryPage *self, gint column_id, GtkTreeIter *store_iter );
+static void       refresh_display( ofaEntryPage *self );
+static void       balances_compute( ofaEntryPage *self );
+static void       balance_display( ofsCurrency *pc, ofaEntryPage *self );
+static void       check_row_for_valid( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_valid_label( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter );
+static void       check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter );
+static gboolean   check_row_for_cross_currency( ofaEntryPage *self, GtkTreeIter *iter );
+static void       reset_error_msg( ofaEntryPage *self, GtkTreeIter *iter );
+static void       set_error_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *str );
+/*static void       set_warning_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *str );*/
+static gboolean   save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void       remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_account, ofxAmount prev_debit, ofxAmount prev_credit );
+static void       remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
+static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
+static void       insert_new_row( ofaEntryPage *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
+static void       delete_row( ofaEntryPage *self, GtkTreeSelection *selection );
+static gboolean   delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry );
+static gboolean   row_is_editable( ofaEntryPage *self, GtkTreeSelection *selection );
+static void       row_display_message( ofaEntryPage *self, GtkTreeSelection *selection );
+static gint       row_get_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static void       read_settings( ofaEntryPage *self );
+static void       read_settings_selection( ofaEntryPage *self );
+static void       read_settings_status( ofaEntryPage *self );
+static void       write_settings_selection( ofaEntryPage *self );
+static void       write_settings_status( ofaEntryPage *self );
+static void       hub_connect_to_signaling_system( ofaEntryPage *self );
+static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
+static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
+static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryPage, ofa_entry_page, OFA_TYPE_PAGE, 0,
-		G_ADD_PRIVATE( ofaEntryPage )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_COLUMN, itreeview_column_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITREEVIEW_DISPLAY, itreeview_display_iface_init ))
+		G_ADD_PRIVATE( ofaEntryPage ))
 
 static void
 entry_page_finalize( GObject *instance )
@@ -348,6 +269,7 @@ entry_page_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->jou_mnemo );
 	g_free( priv->acc_number );
 	ofs_currency_list_free( &priv->balances );
@@ -369,6 +291,12 @@ entry_page_dispose( GObject *instance )
 		priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
 
 		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
+
+		g_clear_object( &priv->new_action );
+		g_clear_object( &priv->delete_action );
+
+		/* save the bottom paned position */
+		write_settings_selection( OFA_ENTRY_PAGE( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -388,6 +316,8 @@ ofa_entry_page_init( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+
 	/* prevent the entries dataset to be loaded during initialization */
 	priv->initializing = TRUE;
 }
@@ -406,66 +336,11 @@ ofa_entry_page_class_init( ofaEntryPageClass *klass )
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 }
 
-/*
- * ofaITreeviewColumn interface management
- */
-static void
-itreeview_column_iface_init( ofaITreeviewColumnInterface *iface )
-{
-	static const gchar *thisfn = "ofa_entry_page_itreeview_column_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = itreeview_column_get_interface_version;
-}
-
-static guint
-itreeview_column_get_interface_version( const ofaITreeviewColumn *instance )
-{
-	return( 1 );
-}
-
-/*
- * ofaITreeviewDisplay interface management
- */
-static void
-itreeview_display_iface_init( ofaITreeviewDisplayInterface *iface )
-{
-	static const gchar *thisfn = "ofa_entry_page_itreeview_display_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = itreeview_display_get_interface_version;
-	iface->get_label = itreeview_display_get_label;
-	iface->get_def_visible = itreeview_display_get_def_visible;
-}
-
-static guint
-itreeview_display_get_interface_version( const ofaITreeviewDisplay *instance )
-{
-	return( 1 );
-}
-
-static gchar *
-itreeview_display_get_label( const ofaITreeviewDisplay *instance, guint column_id )
-{
-	return( ofa_itreeview_column_get_menu_label(
-					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
-}
-
-static gboolean
-itreeview_display_get_def_visible( const ofaITreeviewDisplay *instance, guint column_id )
-{
-	return( ofa_itreeview_column_get_def_visible(
-					OFA_ITREEVIEW_COLUMN( instance ), column_id, st_treeview_column_ids ));
-}
-
 static void
 page_v_setup_page( ofaPage *page )
 {
 	static const gchar *thisfn = "ofa_entry_page_v_setup_page";
 	ofaEntryPagePrivate *priv;
-	GtkWidget *frame;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
@@ -476,120 +351,57 @@ page_v_setup_page( ofaPage *page )
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 	priv->dossier_opening = ofo_dossier_get_exe_begin( priv->dossier );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
-	frame = gtk_frame_new( NULL );
-	gtk_frame_set_shadow_type( GTK_FRAME( frame ), GTK_SHADOW_NONE );
-	reparent_from_dialog( OFA_ENTRY_PAGE( page ), GTK_CONTAINER( frame ));
-	gtk_container_add( GTK_CONTAINER( page ), frame );
+	my_utils_container_attach_from_resource( GTK_CONTAINER( page ), st_resource_ui, st_ui_id, "px-box" );
 
+	setup_gen_selection( OFA_ENTRY_PAGE( page ));
 	setup_ledger_selection( OFA_ENTRY_PAGE( page ));
 	setup_account_selection( OFA_ENTRY_PAGE( page ));
-	setup_dates_selection( OFA_ENTRY_PAGE( page ));
-	setup_status_selection( OFA_ENTRY_PAGE( page ));
+	setup_dates_filter( OFA_ENTRY_PAGE( page ));
+	setup_status_filter( OFA_ENTRY_PAGE( page ));
 	setup_edit_switch( OFA_ENTRY_PAGE( page ));
-
-	priv->entries_tview = setup_entries_treeview( OFA_ENTRY_PAGE( page ));
-
-	setup_display_selection( OFA_ENTRY_PAGE( page ));
+	setup_treeview( OFA_ENTRY_PAGE( page ));
 	setup_footer( OFA_ENTRY_PAGE( page ));
+	setup_actions( OFA_ENTRY_PAGE( page ));
 
-	/* must be done at the end so that on_gen_selection_toggled doesn't
-	 * complain */
-	setup_gen_selection( OFA_ENTRY_PAGE( page ));
+	read_settings( OFA_ENTRY_PAGE( page ));
 
 	/* connect to dossier signaling system */
 	hub_connect_to_signaling_system( OFA_ENTRY_PAGE( page ));
 
 	/* allow the entry dataset to be loaded */
+	g_debug( "%s: end of initialization phase", thisfn );
 	priv->initializing = FALSE;
 
-	/* simulate a toggle message from gen_selection */
-	if( gtk_toggle_button_get_active( priv->ledger_btn )){
-		on_gen_selection_toggled( priv->ledger_btn, OFA_ENTRY_PAGE( page ));
+	/* trigger the general selection toggle */
+	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->account_btn ))){
+		gen_selection_on_toggled(  GTK_TOGGLE_BUTTON( priv->account_btn ), OFA_ENTRY_PAGE( page ));
 	} else {
-		on_gen_selection_toggled( priv->account_btn, OFA_ENTRY_PAGE( page ));
+		gen_selection_on_toggled(  GTK_TOGGLE_BUTTON( priv->ledger_btn ), OFA_ENTRY_PAGE( page ));
 	}
 }
 
-static void
-reparent_from_dialog( ofaEntryPage *self, GtkContainer *parent )
-{
-	ofaEntryPagePrivate *priv;
-	GtkWidget *box;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	/* load our dialog */
-	box = my_utils_container_attach_from_resource( GTK_CONTAINER( parent ), st_resource_ui, st_ui_id, "px-box" );
-	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
-
-	priv->top_box = GTK_CONTAINER( box );
-}
-
+/*
+ * toggle between ledger and account as major filter
+ */
 static void
 setup_gen_selection( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_setup_gen_selection";
 	ofaEntryPagePrivate *priv;
-	gchar *text;
 	GtkWidget *btn;
-	GtkToggleButton *toggle;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	btn = my_utils_container_get_child_by_name( priv->top_box, "f1-btn-ledger" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f1-btn-ledger" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
-	g_signal_connect( btn, "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
-	priv->ledger_btn = GTK_TOGGLE_BUTTON( btn );
-	g_debug( "%s: ledger_btn=%p", thisfn, ( void * ) priv->ledger_btn );
+	g_signal_connect( btn, "toggled", G_CALLBACK( gen_selection_on_toggled ), self );
+	priv->ledger_btn = btn;
 
-	btn = my_utils_container_get_child_by_name( priv->top_box, "f1-btn-account" );
+	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f1-btn-account" );
 	g_return_if_fail( btn && GTK_IS_RADIO_BUTTON( btn ));
-	g_signal_connect( btn, "toggled", G_CALLBACK( on_gen_selection_toggled ), self );
-	priv->account_btn =  GTK_TOGGLE_BUTTON( btn );
-	g_debug( "%s: account_btn=%p", thisfn, ( void * ) priv->account_btn );
-
-	/* init from the settings */
-	text = ofa_settings_user_get_string( st_pref_selection );
-	if( !my_collate( text, SEL_ACCOUNT )){
-		toggle = priv->account_btn;
-	/* default to select by ledger */
-	} else {
-		toggle = priv->ledger_btn;
-	}
-
-	gtk_toggle_button_set_active( toggle, TRUE );
-	/*on_gen_selection_toggled( toggle, self );*/
-
-	g_free( text );
-}
-
-static void
-setup_ledger_selection( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gchar *initial_mnemo;
-	static const gint st_ledger_cols[] = {
-			LEDGER_COL_LABEL,
-			-1 };
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	initial_mnemo = ofa_settings_user_get_string( st_pref_ledger );
-
-	priv->ledger_combo = ofa_ledger_combo_new();
-
-	priv->ledger_parent = my_utils_container_get_child_by_name( priv->top_box, "f1-ledger-parent" );
-	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
-	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
-	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
-	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
-
-	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
-
-	ofa_ledger_combo_set_selected( priv->ledger_combo, initial_mnemo);
-
-	g_free( initial_mnemo );
+	g_signal_connect( btn, "toggled", G_CALLBACK( gen_selection_on_toggled ), self );
+	priv->account_btn =  btn;
 }
 
 static void
@@ -597,31 +409,42 @@ setup_account_selection( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWidget *widget;
-	gchar *text;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-account-entry" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f1-account-entry" );
 	g_return_if_fail( widget && GTK_IS_ENTRY( widget ));
-	g_signal_connect( widget, "changed", G_CALLBACK( on_account_changed ), self );
-	priv->account_entry = GTK_ENTRY( widget );
+	g_signal_connect( widget, "changed", G_CALLBACK( account_on_changed ), self );
+	priv->account_entry = widget;
 	ofa_account_editable_init( GTK_EDITABLE( widget ), OFA_IGETTER( self ), ACCOUNT_ALLOW_DETAIL );
 
-	g_signal_connect( widget, "key-press-event", G_CALLBACK( on_account_entry_key_pressed ), self );
+	g_signal_connect( widget, "key-press-event", G_CALLBACK( account_on_entry_key_pressed ), self );
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f1-label" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f1-label" );
 	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	priv->f1_label = GTK_LABEL( widget );
-
-	text = ofa_settings_user_get_string( st_pref_account );
-	if( my_strlen( text )){
-		gtk_entry_set_text( priv->account_entry, text );
-	}
-	g_free( text );
+	priv->f1_label = widget;
 }
 
 static void
-setup_dates_selection( ofaEntryPage *self )
+setup_ledger_selection( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	static const gint st_ledger_cols[] = { LEDGER_COL_LABEL, -1 };
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f1-ledger-parent" );
+	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
+	priv->ledger_combo = ofa_ledger_combo_new();
+	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
+	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
+	ofa_ledger_combo_set_hub( priv->ledger_combo, priv->hub );
+
+	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( ledger_on_changed ), self );
+}
+
+static void
+setup_dates_filter( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWidget *container;
@@ -631,103 +454,53 @@ setup_dates_selection( ofaEntryPage *self )
 	priv->effect_filter = ofa_date_filter_hv_bin_new();
 	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( priv->effect_filter ), st_pref_effect );
 	g_signal_connect(
-			priv->effect_filter, "ofa-focus-out", G_CALLBACK( on_effect_filter_changed ), self );
+			priv->effect_filter, "ofa-focus-out", G_CALLBACK( effect_filter_on_changed ), self );
 
-	container = my_utils_container_get_child_by_name( priv->top_box, "effect-date-filter" );
+	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "effect-date-filter" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->effect_filter ));
 }
 
 static void
-setup_status_selection( ofaEntryPage *self )
+setup_status_filter( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_setup_status_selection";
+	static const gchar *thisfn = "ofa_entry_page_setup_status_filter";
 	ofaEntryPagePrivate *priv;
 	GtkWidget *button;
-	gboolean bpast, brough, bvalid, bdeleted, bfuture;
-	GList *prefs, *it;
-	const gchar *cstr;
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	prefs = ofa_settings_user_get_string_list( st_pref_status );
-	it = prefs;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	bpast = my_utils_boolean_from_str( cstr );
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	brough = my_utils_boolean_from_str( cstr );
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	bvalid = my_utils_boolean_from_str( cstr );
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	bdeleted = my_utils_boolean_from_str( cstr );
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	bfuture = my_utils_boolean_from_str( cstr );
-	ofa_settings_free_string_list( prefs );
-
-	if( !bpast && !brough && !bvalid && !bdeleted && !bfuture ){
-		brough = TRUE;
-	}
-
-	button = my_utils_container_get_child_by_name( priv->top_box, "f3-past" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-past" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_entry_status_toggled), self );
-	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_past );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bpast );
+	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_PAST ));
+	priv->past_btn = button;
 
-	button = my_utils_container_get_child_by_name( priv->top_box, "f3-rough" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-rough" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_entry_status_toggled), self );
-	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_rough );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), brough );
+	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_ROUGH ));
+	priv->rough_btn = button;
 
-	button = my_utils_container_get_child_by_name( priv->top_box, "f3-validated" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-validated" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_entry_status_toggled), self );
-	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_validated );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bvalid );
+	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_VALIDATED ));
+	priv->validated_btn = button;
 
-	button = my_utils_container_get_child_by_name( priv->top_box, "f3-deleted" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-deleted" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_entry_status_toggled), self );
-	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_deleted );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bdeleted );
+	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_DELETED ));
+	priv->deleted_btn = button;
 
-	button = my_utils_container_get_child_by_name( priv->top_box, "f3-future" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f3-future" );
 	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_entry_status_toggled), self );
-	g_object_set_data( G_OBJECT( button ), DATA_PRIV_VISIBLE, &priv->display_future );
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( button ), bfuture );
-}
-
-/*
- * This attach a menu button to the UI.
- * The corresponding actions must have been previously defined.
- * So this function must be called after entries treeview setup.
- */
-static void
-setup_display_selection( ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_setup_display_selection";
-	ofaEntryPagePrivate *priv;
-	GtkWidget *parent;
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	/* get the parent of the convenience GtkBin */
-	parent = my_utils_container_get_child_by_name( priv->top_box, "f5-ecb-parent" );
-	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-
-	ofa_itreeview_display_attach_menu_button( OFA_ITREEVIEW_DISPLAY( self ), GTK_CONTAINER( parent ));
-	g_signal_connect( self, "ofa-toggled", G_CALLBACK( on_column_toggled ), NULL );
-	ofa_itreeview_display_init_visible( OFA_ITREEVIEW_DISPLAY( self ), st_pref_columns );
+	g_signal_connect( button, "toggled", G_CALLBACK( status_on_toggled), self );
+	g_object_set_data( G_OBJECT( button ), STATUS_BTN_DATA, GINT_TO_POINTER( ENT_STATUS_FUTURE ));
+	priv->future_btn = button;
 }
 
 static void
@@ -741,1183 +514,56 @@ setup_edit_switch( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	widget = my_utils_container_get_child_by_name( priv->top_box, "f5-edition-switch" );
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "f5-edition-switch" );
 	g_return_if_fail( widget && GTK_IS_SWITCH( widget ));
-	g_signal_connect( widget, "notify::active", G_CALLBACK( on_edit_switched ), self );
-	priv->edit_switch = GTK_SWITCH( widget );
+	g_signal_connect( widget, "notify::active", G_CALLBACK( edit_on_switched ), self );
+	priv->edit_switch = widget;
 
 	g_object_set( G_OBJECT( widget ), "active", FALSE, NULL );
 }
 
-/*
- * - renderers are stored in an array in order to be able to switch them
- *   editable or not
- * - the column id is set as a data against the cell renderer in order
- *   to be able to identify the edited cell renderer in on_cell_edited()
- *   method
- * - the column id is set as a data against the column in order to be
- *   able to switch their visibility state in on_cell_data_func() method
- *
- *   As we want both filter and sort the view, we have to stack a
- *   GtkTreeModelSort onto the GtkTreeModelFilter, itself being stacked
- *   onto the GtkTreeModel of the GtkListStore
- */
-static GtkTreeView *
-setup_entries_treeview( ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_setup_entries_treeview";
-	ofaEntryPagePrivate *priv;
-	GtkTreeView *tview;
-	GtkCellRenderer *text_cell;
-	GtkTreeViewColumn *column;
-	GtkTreeSelection *select;
-	gint column_id;
-	gint sort_id, sort_sens;
-	GtkTreeViewColumn *sort_column;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	tview = ( GtkTreeView * ) my_utils_container_get_child_by_name( priv->top_box, "p1-entries" );
-	g_return_val_if_fail( tview && GTK_IS_TREE_VIEW( tview ), NULL );
-
-	priv->tstore = GTK_TREE_MODEL( gtk_list_store_new(
-			ENT_N_COLUMNS,
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* dope, deff, number */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ref, ledger, account */
-			G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, settlement, dreconcil */
-			G_TYPE_STRING,									/* debit */
-			G_TYPE_STRING,	G_TYPE_STRING, G_TYPE_STRING,	/* credit, currency, status */
-			G_TYPE_STRING,									/* ope template */
-			/* below columns are not visible */
-			G_TYPE_OBJECT,									/* the entry itself */
-			G_TYPE_STRING, G_TYPE_STRING,					/* error msg, warning msg */
-			G_TYPE_BOOLEAN, G_TYPE_BOOLEAN, G_TYPE_BOOLEAN	/* dope_set, deff_set, currency_set */
-			));
-
-	priv->tfilter = gtk_tree_model_filter_new( priv->tstore, NULL );
-	g_object_unref( priv->tstore );
-	gtk_tree_model_filter_set_visible_func(
-			GTK_TREE_MODEL_FILTER( priv->tfilter ),
-			( GtkTreeModelFilterVisibleFunc ) is_visible_row,
-			self,
-			NULL );
-
-	priv->tsort = gtk_tree_model_sort_new_with_model( priv->tfilter );
-	g_object_unref( priv->tfilter );
-
-	gtk_tree_view_set_model( tview, priv->tsort );
-	g_object_unref( priv->tsort );
-
-	g_debug( "%s: self=%p, view=%p, tstore=%p, tfilter=%p, tsort=%p",
-			thisfn, ( void * ) self, ( void * ) tview,
-					( void * ) priv->tstore, ( void * ) priv->tfilter, ( void * ) priv->tsort );
-
-	/* default is to sort by ascending operation date
-	 */
-	sort_column = NULL;
-	sort_id = ofa_settings_user_get_uint( st_pref_sort_c );
-	if( sort_id < 0 ){
-		sort_id = ENT_COL_DOPE;
-	}
-	sort_sens = ofa_settings_user_get_uint( st_pref_sort_s );
-	if( sort_sens < 0 ){
-		sort_sens = OFA_SORT_ASCENDING;
-	}
-
-	/* operation date
-	 */
-	column_id = ENT_COL_DOPE;
-	text_cell = gtk_cell_renderer_text_new();
-	my_date_renderer_init( text_cell );
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Operation" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* effect date
-	 */
-	column_id = ENT_COL_DEFF;
-	text_cell = gtk_cell_renderer_text_new();
-	my_date_renderer_init( text_cell );
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Effect" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* piece's reference
-	 */
-	column_id = ENT_COL_REF;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Piece" ),
-			text_cell, "text", column_id,
-			NULL );
-	/*gtk_tree_view_column_set_expand( column, TRUE );*/
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* ledger
-	 */
-	column_id = ENT_COL_LEDGER;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Ledger" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* account
-	 */
-	column_id = ENT_COL_ACCOUNT;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Account" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* label
-	 */
-	column_id = ENT_COL_LABEL;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set( G_OBJECT( text_cell ), "ellipsize", PANGO_ELLIPSIZE_END, NULL );
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Label" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_expand( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-
-	/* operation template
-	 */
-	column_id = ENT_COL_OPE_TEMPLATE;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Model" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* settlement number
-	 */
-	column_id = ENT_COL_SETTLE;
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_alignment( text_cell, 1.0, 0.5 );
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Stlmt." ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* reconciliation date
-	 */
-	column_id = ENT_COL_DRECONCIL;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Rec." ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* debit
-	 */
-	column_id = ENT_COL_DEBIT;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	my_double_renderer_init( text_cell,
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Debit" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_min_width( column, 110 );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-
-	/* credit
-	 */
-	column_id = ENT_COL_CREDIT;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	my_double_renderer_init( text_cell,
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), -1 );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Credit" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_alignment( column, 1.0 );
-	gtk_tree_view_column_set_min_width( column, 110 );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-
-	/* currency
-	 */
-	column_id = ENT_COL_CURRENCY;
-	text_cell = gtk_cell_renderer_text_new();
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Cur." ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_min_width( column, 32 );	/* "EUR" width */
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	/* entry status
-	 */
-	column_id = ENT_COL_STATUS;
-	text_cell = gtk_cell_renderer_text_new();
-	gtk_cell_renderer_set_alignment( text_cell, 0.5, 0.5 );
-	priv->renderers[column_id] = text_cell;
-	g_object_set_data( G_OBJECT( text_cell ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	g_signal_connect( text_cell, "edited", G_CALLBACK( on_cell_edited ), self );
-	column = gtk_tree_view_column_new_with_attributes(
-			_( "Sta" ),
-			text_cell, "text", column_id,
-			NULL );
-	gtk_tree_view_column_set_resizable( column, TRUE );
-	gtk_tree_view_column_set_alignment( column, 0.5 );
-	gtk_tree_view_append_column( tview, column );
-	g_object_set_data( G_OBJECT( column ), DATA_COLUMN_ID, GINT_TO_POINTER( column_id ));
-	gtk_tree_view_column_set_cell_data_func( column, text_cell, ( GtkTreeCellDataFunc ) on_cell_data_func, self, NULL );
-	gtk_tree_view_column_set_sort_column_id( column, column_id );
-	g_signal_connect( column, "clicked", G_CALLBACK( on_header_clicked ), self );
-	gtk_tree_sortable_set_sort_func(
-			GTK_TREE_SORTABLE( priv->tsort ), column_id, ( GtkTreeIterCompareFunc ) on_sort_model, self, NULL );
-	if( sort_id == column_id ){
-		sort_column = column;
-	}
-	ofa_itreeview_display_add_column( OFA_ITREEVIEW_DISPLAY( self ), column, column_id );
-
-	select = gtk_tree_view_get_selection( tview );
-	gtk_tree_selection_set_mode( select, GTK_SELECTION_BROWSE );
-	g_signal_connect( select, "changed", G_CALLBACK( on_row_selected ), self );
-
-	/* default is to sort by ascending operation date
-	 */
-	g_return_val_if_fail( sort_column && GTK_IS_TREE_VIEW_COLUMN( sort_column ), NULL );
-	gtk_tree_view_column_set_sort_indicator( sort_column, TRUE );
-	priv->sort_column = sort_column;
-	gtk_tree_sortable_set_sort_column_id(
-			GTK_TREE_SORTABLE( priv->tsort ), sort_id, sort_sens );
-
-	g_signal_connect( tview, "key-press-event", G_CALLBACK( on_tview_key_pressed_event ), self );
-
-	return( tview );
-}
-
-/*
- * sorting the treeview
- *
- * actually sort the content of the store, as the entry itself is only
- * updated when it is about to be saved -
- * the difference is small, but actually exists
- */
-static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_on_sort_model";
-	ofaEntryPagePrivate *priv;
-	gint cmp, sort_column_id;
-	ofxCounter numa, numb;
-	GtkSortType sort_order;
-	gchar *sdopea, *sdeffa, *srefa,
-			*slabela, *sleda, *sacca, *sdeba, *screa, *scura, *sstlmta, *sdcona, *sstaa,
-			*smodela;
-	gchar *sdopeb, *sdeffb, *srefb,
-			*slabelb, *sledb, *saccb, *sdebb, *screb, *scurb, *sstlmtb, *sdconb, *sstab,
-			*smodelb;
-
-	gtk_tree_model_get( tmodel, a,
-			ENT_COL_DOPE,         &sdopea,
-			ENT_COL_DEFF,         &sdeffa,
-			ENT_COL_NUMBER,       &numa,
-			ENT_COL_REF,          &srefa,
-			ENT_COL_LABEL,        &slabela,
-			ENT_COL_LEDGER,       &sleda,
-			ENT_COL_ACCOUNT,      &sacca,
-			ENT_COL_DEBIT,        &sdeba,
-			ENT_COL_CREDIT,       &screa,
-			ENT_COL_CURRENCY,     &scura,
-			ENT_COL_SETTLE,       &sstlmta,
-			ENT_COL_DRECONCIL,    &sdcona,
-			ENT_COL_OPE_TEMPLATE, &smodela,
-			ENT_COL_STATUS,       &sstaa,
-			-1 );
-
-	gtk_tree_model_get( tmodel, b,
-			ENT_COL_DOPE,         &sdopeb,
-			ENT_COL_DEFF,         &sdeffb,
-			ENT_COL_NUMBER,       &numb,
-			ENT_COL_REF,          &srefb,
-			ENT_COL_LABEL,        &slabelb,
-			ENT_COL_LEDGER,       &sledb,
-			ENT_COL_ACCOUNT,      &saccb,
-			ENT_COL_DEBIT,        &sdebb,
-			ENT_COL_CREDIT,       &screb,
-			ENT_COL_CURRENCY,     &scurb,
-			ENT_COL_SETTLE,       &sstlmtb,
-			ENT_COL_DRECONCIL,    &sdconb,
-			ENT_COL_OPE_TEMPLATE, &smodelb,
-			ENT_COL_STATUS,       &sstab,
-			-1 );
-
-	cmp = 0;
-	priv = ofa_entry_page_get_instance_private( self );
-
-	gtk_tree_sortable_get_sort_column_id(
-			GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
-
-	switch( sort_column_id ){
-		case ENT_COL_DOPE:
-			cmp = my_date_compare_by_str( sdopea, sdopeb, ofa_prefs_date_display());
-			break;
-		case ENT_COL_DEFF:
-			cmp = my_date_compare_by_str( sdeffa, sdeffb, ofa_prefs_date_display());
-			break;
-		case ENT_COL_NUMBER:
-			cmp = ( numa < numb ? -1 : ( numa > numb ? 1 : 0 ));
-			break;
-		case ENT_COL_REF:
-			cmp = cmp_strings( self, srefa, srefb );
-			break;
-		case ENT_COL_LABEL:
-			cmp = cmp_strings( self, slabela, slabelb );
-			break;
-		case ENT_COL_LEDGER:
-			cmp = cmp_strings( self, sleda, sledb );
-			break;
-		case ENT_COL_ACCOUNT:
-			cmp = cmp_strings( self, sacca, saccb );
-			break;
-		case ENT_COL_DEBIT:
-			cmp = cmp_amounts( self, sdeba, sdebb );
-			break;
-		case ENT_COL_CREDIT:
-			cmp = cmp_amounts( self, screa, screb );
-			break;
-		case ENT_COL_CURRENCY:
-			cmp = cmp_strings( self, scura, scurb );
-			break;
-		case ENT_COL_SETTLE:
-			cmp = cmp_counters( self, sstlmta, sstlmtb );
-			break;
-		case ENT_COL_DRECONCIL:
-			cmp = my_date_compare_by_str( sdcona, sdconb, ofa_prefs_date_display());
-			break;
-		case ENT_COL_OPE_TEMPLATE:
-			cmp = cmp_strings( self, smodela, smodelb );
-			break;
-		case ENT_COL_STATUS:
-			cmp = cmp_strings( self, sstaa, sstab );
-			break;
-		default:
-			g_warning( "%s: unhandled column: %d", thisfn, sort_column_id );
-			break;
-	}
-
-	g_free( sdopea );
-	g_free( sdopeb );
-	g_free( sdeffa );
-	g_free( sdeffb );
-	g_free( srefa );
-	g_free( srefb );
-	g_free( slabela );
-	g_free( slabelb );
-	g_free( sleda );
-	g_free( sledb );
-	g_free( sacca );
-	g_free( saccb );
-	g_free( sdeba );
-	g_free( screa );
-	g_free( sdebb );
-	g_free( screb );
-	g_free( scura );
-	g_free( scurb );
-	g_free( sstlmta );
-	g_free( sstlmtb );
-	g_free( sdcona );
-	g_free( sdconb );
-	g_free( sstaa );
-	g_free( sstab );
-
-	/* return -1 if a > b, so that the order indicator points to the smallest:
-	 * ^: means from smallest to greatest (ascending order)
-	 * v: means from greatest to smallest (descending order)
-	 */
-	return( -cmp );
-}
-
-static gint
-cmp_strings( ofaEntryPage *self, const gchar *stra, const gchar *strb )
-{
-	return( my_collate( stra, strb ));
-}
-
-static gint
-cmp_amounts( ofaEntryPage *self, const gchar *stra, const gchar *strb )
-{
-	ofxAmount a, b;
-
-	if( stra && strb ){
-		a = ofa_amount_from_str( stra );
-		b = ofa_amount_from_str( strb );
-
-		return( a < b ? -1 : ( a > b ? 1 : 0 ));
-	}
-
-	return( my_collate( stra, strb ));
-}
-
-static gint
-cmp_counters( ofaEntryPage *self, const gchar *stra, const gchar *strb )
-{
-	ofxCounter a, b;
-
-	if( stra && strb ){
-		a = atol( stra );
-		b = atol( strb );
-
-		return( a < b ? -1 : ( a > b ? 1 : 0 ));
-	}
-
-	return( my_collate( stra, strb ));
-}
-
-/*
- * Gtk+ changes automatically the sort order
- * we reset yet the sort column id
- *
- * as a side effect of our inversion of indicators, clicking on a new
- * header makes the sort order descending as the default
- */
 static void
-on_header_clicked( GtkTreeViewColumn *column, ofaEntryPage *self )
+setup_treeview( ofaEntryPage *self )
 {
-	static const gchar *thisfn = "ofa_entry_page_on_header_clicked";
 	ofaEntryPagePrivate *priv;
-	gint sort_column_id, new_column_id;
-	GtkSortType sort_order;
+	GtkWidget *parent;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	gtk_tree_view_column_set_sort_indicator( priv->sort_column, FALSE );
-	gtk_tree_view_column_set_sort_indicator( column, TRUE );
-	priv->sort_column = column;
-
-	gtk_tree_sortable_get_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), &sort_column_id, &sort_order );
-
-	g_debug( "%s: current sort_column_id=%u, sort_order=%s",
-			thisfn, sort_column_id,
-			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
-
-	new_column_id = gtk_tree_view_column_get_sort_column_id( column );
-
-	gtk_tree_sortable_set_sort_column_id( GTK_TREE_SORTABLE( priv->tsort ), new_column_id, sort_order );
-
-	g_debug( "%s: setting new_column_id=%u, new_sort_order=%s",
-			thisfn, new_column_id,
-			sort_order == OFA_SORT_ASCENDING ? "OFA_SORT_ASCENDING":"OFA_SORT_DESCENDING" );
-
-	ofa_settings_user_set_uint( st_pref_sort_c, new_column_id );
-	ofa_settings_user_set_uint( st_pref_sort_s, sort_order );
-}
-
-static void
-setup_footer( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GtkWidget *widget;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	widget = my_utils_container_get_child_by_name( priv->top_box, "pt-comment" );
-	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
-	priv->comment = GTK_LABEL( widget );
-}
-
-static GtkWidget *
-page_v_get_top_focusable_widget( const ofaPage *page )
-{
-	ofaEntryPagePrivate *priv;
-
-	g_return_val_if_fail( page && OFA_IS_ENTRY_PAGE( page ), NULL );
-
-	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( page ));
-
-	return( GTK_WIDGET( priv->entries_tview ));
-}
-
-/*
- * toggle between display per ledger or display per account
- */
-static void
-on_gen_selection_toggled( GtkToggleButton *button, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gboolean is_active;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	is_active = gtk_toggle_button_get_active( button );
-
-	/* debug */
-	if( 0 ){
-		g_debug( "on_gen_selection_toggled: button=%p, is_active=%s",
-				( void * ) button, is_active ? "True":"False" );
-	}
-
-	if( button == priv->ledger_btn ){
-		/* update the frames sensitivity */
-		gtk_widget_set_sensitive( priv->ledger_parent, is_active );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_entry ), !is_active );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), !is_active );
-
-		/* update the default visibility of the columns */
-		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_LEDGER, !is_active );
-		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_ACCOUNT, is_active );
-
-		/* and display the entries */
-		if( is_active ){
-			ofa_settings_user_set_string( st_pref_selection, SEL_LEDGER );
-			g_idle_add(( GSourceFunc ) display_entries_from_ledger, self );
-		}
-
-	} else {
-		/* update the frames sensitivity */
-		gtk_widget_set_sensitive( priv->ledger_parent, !is_active );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->account_entry ), is_active );
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->f1_label ), is_active );
-
-		/* update the default visibility of the columns */
-		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_LEDGER, is_active );
-		ofa_itreeview_display_set_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_ACCOUNT, !is_active );
-
-		/* and display the entries */
-		if( is_active ){
-			ofa_settings_user_set_string( st_pref_selection, SEL_ACCOUNT );
-			g_idle_add(( GSourceFunc ) display_entries_from_account, self );
-		}
-	}
-}
-
-/*
- * ofaLedgerCombo signal handler
- */
-static void
-on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	g_free( priv->jou_mnemo );
-	priv->jou_mnemo = g_strdup( mnemo );
-	ofa_settings_user_set_string( st_pref_ledger, mnemo );
-
-	g_idle_add(( GSourceFunc ) display_entries_from_ledger, self );
-}
-
-static gboolean
-display_entries_from_ledger( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GList *entries;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	if( priv->jou_mnemo && !priv->initializing ){
-
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), FALSE );
-
-		entries = ofo_entry_get_dataset_by_ledger( priv->hub, priv->jou_mnemo );
-		display_entries( self, entries );
-		ofo_entry_free_dataset( entries );
-
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), TRUE );
-	}
-
-	return( G_SOURCE_REMOVE );
-}
-
-static void
-on_account_changed( GtkEntry *entry, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	ofoAccount *account;
-	gchar *str;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	priv->acc_valid = FALSE;
-	g_free( priv->acc_number );
-	priv->acc_number = g_strdup( gtk_entry_get_text( entry ));
-
-	account = ofo_account_get_by_number( priv->hub, priv->acc_number );
-
-	if( account && !ofo_account_is_root( account )){
-		str = g_strdup_printf( "%s: %s", _( "Account" ), ofo_account_get_label( account ));
-		gtk_label_set_text( priv->f1_label, str );
-		g_free( str );
-		ofa_settings_user_set_string( st_pref_account, priv->acc_number );
-		priv->acc_valid = TRUE;
-		g_idle_add(( GSourceFunc ) display_entries_from_account, self );
-
-	} else {
-		gtk_label_set_text( priv->f1_label, "" );
-		ofa_settings_user_set_string( st_pref_account, "" );
-	}
-
-}
-
-/*
- * if account is invalid, and Tab is pressed, then directly opens the
- * AccountSelect dialogbox
- */
-static gboolean
-on_account_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gboolean stop;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	stop = FALSE;
-
-	/* a row may be inserted any where */
-	if( event->keyval == GDK_KEY_Tab && !priv->acc_valid ){
-		on_account_select( NULL, self );
-		stop = TRUE;
-	}
-
-	return( stop );
-}
-
-/*
- * button may be NULL when called from above on_account_entry_key_pressed()
- */
-static void
-on_account_select( GtkButton *button, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gchar *acc_number;
-	GtkWindow *toplevel;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( button ));
-
-	acc_number = ofa_account_select_run(
-							OFA_IGETTER( self ), toplevel,
-							gtk_entry_get_text( priv->account_entry ),
-							ACCOUNT_ALLOW_DETAIL );
-	if( acc_number ){
-		gtk_entry_set_text( priv->account_entry, acc_number );
-		g_free( acc_number );
-	}
-}
-
-static gboolean
-display_entries_from_account( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GList *entries;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	if( priv->acc_number && !priv->initializing ){
-
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), FALSE );
-
-		entries = ofo_entry_get_dataset_by_account( priv->hub, priv->acc_number );
-		display_entries( self, entries );
-		ofo_entry_free_dataset( entries );
-
-		gtk_widget_set_sensitive( GTK_WIDGET( priv->entries_tview ), TRUE );
-	}
-
-	return( G_SOURCE_REMOVE );
-}
-
-static void
-on_effect_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaEntryPage *self )
-{
-	refresh_display( self );
-}
-
-static void
-refresh_display( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	if( priv->tfilter ){
-		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-		compute_balances( self );
-	}
-}
-
-/*
- * the hash is used to store the balance per currency
- */
-static void
-display_entries( ofaEntryPage *self, GList *entries )
-{
-	static const gchar *thisfn = "ofa_entry_page_display_entries";
-	ofaEntryPagePrivate *priv;
-	GtkTreeIter iter;
-	GList *iset;
-
-	g_debug( "%s: self=%p, entries=%p", thisfn, ( void * ) self, ( void * ) entries );
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	if( priv->tstore ){
-
-		gtk_list_store_clear( GTK_LIST_STORE( priv->tstore ));
-
-		for( iset=entries ; iset ; iset=iset->next ){
-			gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
-			display_entry( self, OFO_ENTRY( iset->data ), &iter );
-			gtk_widget_queue_draw( GTK_WIDGET( priv->entries_tview ));
-		}
-
-		compute_balances( self );
-	}
-}
-
-/*
- * iter is on the list store
- */
-static void
-display_entry( ofaEntryPage *self, ofoEntry *entry, GtkTreeIter *iter )
-{
-	ofaEntryPagePrivate *priv;
-	gchar *sdope, *sdeff, *sdeb, *scre, *ssettle;
-	ofxCounter counter;
-	ofxAmount amount;
-	ofoConcil *concil;
-	const gchar *cstr, *cref, *cur_code;
-	ofoCurrency *cur_obj;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
-
-	cur_code = ofo_entry_get_currency( entry );
-	g_return_if_fail( my_strlen( cur_code ));
-
-	cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
-	g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
-
-	amount = ofo_entry_get_debit( entry );
-	sdeb = amount ? ofa_amount_to_str( amount, cur_obj ) : g_strdup( "" );
-	amount = ofo_entry_get_credit( entry );
-	scre = amount ? ofa_amount_to_str( amount, cur_obj ) : g_strdup( "" );
-
-	counter = ofo_entry_get_settlement_number( entry );
-	ssettle = counter ? ofa_counter_to_str( counter ) : g_strdup( "" );
-	cstr = ofo_entry_get_ref( entry );
-	cref = cstr ? cstr : "";
-
-	gtk_list_store_set(
-				GTK_LIST_STORE( priv->tstore ),
-				iter,
-				ENT_COL_DOPE,         sdope,
-				ENT_COL_DEFF,         sdeff,
-				ENT_COL_NUMBER,       ofo_entry_get_number( entry ),
-				ENT_COL_REF,          cref,
-				ENT_COL_LABEL,        ofo_entry_get_label( entry ),
-				ENT_COL_LEDGER,       ofo_entry_get_ledger( entry ),
-				ENT_COL_ACCOUNT,      ofo_entry_get_account( entry ),
-				ENT_COL_DEBIT,        sdeb,
-				ENT_COL_CREDIT,       scre,
-				ENT_COL_CURRENCY,     cur_code,
-				ENT_COL_SETTLE,       ssettle,
-				ENT_COL_DRECONCIL,    "",
-				ENT_COL_OPE_TEMPLATE, ofo_entry_get_ope_template( entry ),
-				ENT_COL_STATUS,       ofo_entry_get_abr_status( entry ),
-				ENT_COL_OBJECT,       entry,
-				ENT_COL_MSGERR,       "",
-				ENT_COL_MSGWARN,      "",
-				ENT_COL_DOPE_SET,     FALSE,
-				ENT_COL_DEFF_SET,     FALSE,
-				ENT_COL_CURRENCY_SET, FALSE,
-				-1 );
-
-	g_free( ssettle );
-	g_free( scre );
-	g_free( sdeb );
-	g_free( sdeff );
-	g_free( sdope );
-
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
-	if( concil ){
-		display_entry_concil( self, concil, iter );
-	}
-}
-
-/*
- * iter is on the list store
- */
-static void
-display_entry_concil( ofaEntryPage *self, ofoConcil *concil, GtkTreeIter *iter )
-{
-	ofaEntryPagePrivate *priv;
-	gchar *srappro;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	srappro = concil ?
-				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display()) :
-				g_strdup( "" );
-
-	gtk_list_store_set(
-				GTK_LIST_STORE( priv->tstore ),
-				iter,
-				ENT_COL_DRECONCIL,    srappro,
-				-1 );
-
-	g_free( srappro );
-}
-
-/*
- * we parse the debit/credit strings rather than using the ofoEntry
- * doubles, so that this same function may be used when modifying a
- * row
- *
- * This same function is used, initially when displaying the entries
- * dataset, and then each time we modify the display filter
- */
-static void
-compute_balances( ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_compute_balances";
-	ofaEntryPagePrivate *priv;
-	GtkWidget *box;
-	GtkTreeIter iter;
-	gchar *sdeb, *scre, *dev_code;
-
-	g_debug( "%s: self=%p", thisfn, ( void * ) self );
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	ofs_currency_list_free( &priv->balances );
-
-	if( gtk_tree_model_get_iter_first( priv->tsort, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get(
-					priv->tsort,
-					&iter,
-					ENT_COL_DEBIT,    &sdeb,
-					ENT_COL_CREDIT,   &scre,
-					ENT_COL_CURRENCY, &dev_code,
-					-1 );
-
-			if( my_strlen( dev_code ) && ( my_strlen( sdeb ) || my_strlen( scre ))){
-				ofs_currency_add_by_code(
-						&priv->balances, priv->hub, dev_code,
-						ofa_amount_from_str( sdeb ), ofa_amount_from_str( scre ));
-			}
-
-			g_free( sdeb );
-			g_free( scre );
-			g_free( dev_code );
-
-			if( !gtk_tree_model_iter_next( priv->tsort, &iter )){
-				break;
-			}
-		}
-	}
-
-	box = reset_balances_widgets( self );
-	g_list_foreach( priv->balances, ( GFunc ) display_balance, self );
-	set_balance_currency_label_position( self );
-	gtk_widget_show_all( box );
-}
-
-static GtkWidget *
-reset_balances_widgets( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GtkWidget *box;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	box = my_utils_container_get_child_by_name( priv->top_box, "pt-box" );
-	g_return_val_if_fail( box && GTK_IS_BOX( box ), NULL );
-	gtk_container_foreach( GTK_CONTAINER( box ), ( GtkCallback ) gtk_widget_destroy, NULL );
-
-	return( box );
-}
-
-static void
-display_balance( ofsCurrency *pc, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GtkWidget *box, *row, *label;
-	gchar *str;
-	gboolean egal;
-
-	if( !ofs_currency_is_zero( pc )){
-
-		priv = ofa_entry_page_get_instance_private( self );
-
-		box = my_utils_container_get_child_by_name( priv->top_box, "pt-box" );
-		g_return_if_fail( box && GTK_IS_BOX( box ));
-
-		row = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
-		gtk_box_pack_start( GTK_BOX( box ), row, FALSE, FALSE, 0 );
-
-		egal = ofs_currency_is_balanced( pc );
-		//g_debug( "display_balance: ldebit=%lf lcredit=%lf egal=%s", pc->debit, pc->credit, egal ? "True":"False" );
-
-		label = gtk_label_new( ofo_currency_get_code( pc->currency ));
-		my_style_add( label, egal ? "labelbalance" : "labelwarning" );
-		my_utils_widget_set_xalign( label, 0 );
-		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
-
-		label = gtk_label_new( NULL );
-		my_style_add( label, egal ? "labelbalance" : "labelwarning" );
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = ofa_amount_to_str( pc->credit, pc->currency );
-		gtk_label_set_text( GTK_LABEL( label ), str );
-		g_free( str );
-		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
-
-		label = gtk_label_new( NULL );
-		my_style_add( label, egal ? "labelbalance" : "labelwarning" );
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_label_set_width_chars( GTK_LABEL( label ), 12 );
-		str = ofa_amount_to_str( pc->debit, pc->currency );
-		gtk_label_set_text( GTK_LABEL( label ), str );
-		g_free( str );
-		gtk_box_pack_end( GTK_BOX( row ), label, FALSE, FALSE, 4 );
-	}
-}
-
-static void
-set_balance_currency_label_position( ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	GtkWidget *box;
-
-	priv = ofa_entry_page_get_instance_private( self );
-	g_return_if_fail( !priv->initializing );
-
-	box = my_utils_container_get_child_by_name( priv->top_box, "pt-box" );
-	g_return_if_fail( box && GTK_IS_BOX( box ));
-	gtk_container_foreach( GTK_CONTAINER( box ), ( GtkCallback ) set_balance_currency_label_margin, self );
-}
-
-static void
-set_balance_currency_label_margin( GtkWidget *widget, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gint margin;
-	GtkWidget *bar;
-
-	/* this returns 0 :( */
-	/*width = gtk_tree_view_column_get_width( priv->currency_column );
-	g_debug( "display_balance: width=%d", width );*/
-	/* 30 is less of 1 char, 40 is more of 1/2 char */
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	margin = 0;
-	margin += ofa_itreeview_display_get_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_CURRENCY ) ? 25 : 0;
-	margin += ofa_itreeview_display_get_visible( OFA_ITREEVIEW_DISPLAY( self ), ENT_COL_STATUS ) ? 48 : 0;
-
-	/* this doesn't work as expected: the scroll bar is always rendered
-	 * as visible */
-	if( priv->entries_tview ){
-		bar = gtk_scrolled_window_get_vscrollbar(
-						GTK_SCROLLED_WINDOW(
-								gtk_widget_get_parent( GTK_WIDGET( priv->entries_tview ))));
-		if( bar && gtk_widget_get_visible( bar )){
-			margin += 12;
-			g_debug( "set_balance_currency_label_margin: set margin+12" );
-		}
-	}
-
-	if( GTK_IS_BOX( widget )){
-		my_utils_widget_set_margin_right( widget, margin );
-	}
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "entries-parent" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+
+	priv->tview = ofa_entry_treeview_new();
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
+	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
+	ofa_entry_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	ofa_entry_treeview_setup_columns( priv->tview );
+	ofa_entry_treeview_set_filter_func( priv->tview, ( GtkTreeModelFilterVisibleFunc ) tview_is_visible_row, self );
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( priv->tview ), ( GtkTreeCellDataFunc ) tview_on_cell_data_func, self );
+	ofa_tvbin_set_cell_edited_func( OFA_TVBIN( priv->tview ), G_CALLBACK( edit_on_cell_edited ), self );
+
+	/* we keep the ofaTVBin message as we need model and iter */
+	g_signal_connect( priv->tview, "ofa-selchanged", G_CALLBACK( tview_on_row_selected ), self );
+	g_signal_connect( priv->tview, "ofa-entactivated", G_CALLBACK( tview_on_row_activated ), self );
+	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( tview_on_row_insert ), self );
+	g_signal_connect( priv->tview, "ofa-seldelete", G_CALLBACK( tview_on_row_delete ), self );
+
+	priv->store = ofa_entry_store_new( priv->hub );
+	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 }
 
 /*
  * a row is visible if it is consistant with the selected modes:
+ * - general type selection
  * - status of the entry
  * - effect date layout
  */
 static gboolean
-is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
+tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	gboolean visible, ok;
-	gchar *account, *ledger;
+	gchar *account, *ledger, *sdate;
 	ofoEntry *entry;
 	ofaEntryStatus status;
 	GDate deffect;
@@ -1927,71 +573,69 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
 
 	visible = TRUE;
 
-	if( priv->entries_tview ){
-		gtk_tree_model_get( tmodel, iter,
-				ENT_COL_LEDGER,  &ledger,
-				ENT_COL_ACCOUNT, &account,
-				ENT_COL_OBJECT,  &entry,
-				-1 );
+	gtk_tree_model_get( tmodel, iter,
+			ENTRY_COL_LEDGER,   &ledger,
+			ENTRY_COL_ACCOUNT,  &account,
+			ENTRY_COL_DEFFECT,  &sdate,
+			ENTRY_COL_STATUS_I, &status,
+			ENTRY_COL_OBJECT,   &entry,
+			-1 );
 
-		if( entry && OFO_IS_ENTRY( entry )){
-			g_object_unref( entry );
+	if( entry && OFO_IS_ENTRY( entry )){
+		g_object_unref( entry );
 
-			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ))){
-				if( !ledger || g_utf8_collate( priv->jou_mnemo, ledger )){
-					visible = FALSE;
-				}
-			} else if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->account_btn ))){
-				if( !account || g_utf8_collate( priv->acc_number, account )){
-					visible = FALSE;
-				}
+		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ))){
+			if( !ledger || my_collate( priv->jou_mnemo, ledger )){
+				visible = FALSE;
 			}
-
-			if( visible ){
-				status = get_row_status( self, tmodel, iter );
-				/*g_debug( "is_visible_row: label=%s", ofo_entry_get_label( entry ));*/
-
-				switch( status ){
-					case ENT_STATUS_PAST:
-						visible &= priv->display_past;
-						break;
-					case ENT_STATUS_ROUGH:
-						visible &= priv->display_rough;
-						break;
-					case ENT_STATUS_VALIDATED:
-						visible &= priv->display_validated;
-						break;
-					case ENT_STATUS_DELETED:
-						visible &= priv->display_deleted;
-						break;
-					case ENT_STATUS_FUTURE:
-						visible &= priv->display_future;
-						break;
-				}
-			}
-
-			get_row_deffect( self, tmodel, iter, &deffect );
-			if( visible ){
-				effect_filter = ofa_idate_filter_get_date(
-						OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
-				ok = !my_date_is_valid( effect_filter ) ||
-						!my_date_is_valid( &deffect ) ||
-						my_date_compare( effect_filter, &deffect ) <= 0;
-				visible &= ok;
-			}
-			if( visible ){
-				effect_filter = ofa_idate_filter_get_date(
-						OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_TO );
-				ok = !my_date_is_valid( effect_filter ) ||
-						!my_date_is_valid( &deffect ) ||
-						my_date_compare( effect_filter, &deffect ) >= 0;
-				visible &= ok;
+		} else if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->account_btn ))){
+			if( !account || my_collate( priv->acc_number, account )){
+				visible = FALSE;
 			}
 		}
 
-		g_free( account );
-		g_free( ledger );
+		if( visible ){
+			switch( status ){
+				case ENT_STATUS_PAST:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->past_btn ));;
+					break;
+				case ENT_STATUS_ROUGH:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->rough_btn ));;
+					break;
+				case ENT_STATUS_VALIDATED:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_btn ));
+					break;
+				case ENT_STATUS_DELETED:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->deleted_btn ));
+					break;
+				case ENT_STATUS_FUTURE:
+					visible &= gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->future_btn ));
+					break;
+			}
+		}
+
+		if( visible ){
+			my_date_set_from_str( &deffect, sdate, ofa_prefs_date_display());
+			effect_filter = ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
+			ok = !my_date_is_valid( effect_filter ) ||
+					!my_date_is_valid( &deffect ) ||
+					my_date_compare( effect_filter, &deffect ) <= 0;
+			visible &= ok;
+		}
+		if( visible ){
+			effect_filter = ofa_idate_filter_get_date(
+					OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_TO );
+			ok = !my_date_is_valid( effect_filter ) ||
+					!my_date_is_valid( &deffect ) ||
+					my_date_compare( effect_filter, &deffect ) >= 0;
+			visible &= ok;
+		}
 	}
+
+	g_free( sdate );
+	g_free( account );
+	g_free( ledger );
 
 	return( visible );
 }
@@ -2006,19 +650,22 @@ is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *self )
  * validated entries are on light yellow background
  */
 static void
-on_cell_data_func( GtkTreeViewColumn *tcolumn,
-						GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
+tview_on_cell_data_func( GtkTreeViewColumn *tcolumn,
+						GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter,
 						ofaEntryPage *self )
 {
+	ofaEntryPagePrivate *priv;
 	ofaEntryStatus status;
 	GdkRGBA color;
 	gint err_level;
 	const gchar *color_str;
 
-	g_return_if_fail( GTK_IS_CELL_RENDERER_TEXT( cell ));
+	g_return_if_fail( cell && GTK_IS_CELL_RENDERER( cell ));
 
-	err_level = get_row_errlevel( self, tmodel, iter );
-	status = get_row_status( self, tmodel, iter );
+	priv = ofa_entry_page_get_instance_private( self );
+
+	err_level = row_get_errlevel( self, tmodel, iter );
+	gtk_tree_model_get( tmodel, iter, ENTRY_COL_STATUS_I, &status, -1 );
 
 	g_object_set( G_OBJECT( cell ),
 						"style-set",      FALSE,
@@ -2068,28 +715,546 @@ on_cell_data_func( GtkTreeViewColumn *tcolumn,
 		default:
 			break;
 	}
+
+	/* is the cell editable ? */
+	g_object_set( G_OBJECT( cell ), "editable-set", TRUE, "editable", priv->editable_row, NULL );
+}
+
+/*
+ * selection mode is GTK_SELECTION_BROWSE
+ */
+static void
+tview_on_row_selected( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gboolean editable;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( !priv->initializing ){
+		editable = row_is_editable( self, selection );
+		gtk_widget_set_sensitive( priv->edit_switch, editable );
+		edit_set_cells_editable( self, selection, editable );
+		row_display_message( self, selection );
+	}
+}
+
+static void
+tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEntryPage *self )
+{
+	ofoEntry *entry;
+	GtkWindow *toplevel;
+
+	entry = ( ofoEntry * ) selected->data;
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_entry_properties_run( OFA_IGETTER( self ), toplevel, entry, FALSE );
+}
+
+static void
+tview_on_row_insert( ofaTVBin *bin, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( gtk_switch_get_active( GTK_SWITCH( priv->edit_switch ))){
+		insert_new_row( self );
+	}
+}
+
+static void
+tview_on_row_delete( ofaTVBin *bin, GtkTreeSelection *selection, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( priv->is_writable && gtk_switch_get_active( GTK_SWITCH( priv->edit_switch ))){
+		delete_row( self, selection );
+	}
+}
+
+static void
+setup_footer( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWidget *widget;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "pt-comment" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->comment = widget;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bottom-paned" );
+	g_return_if_fail( widget && GTK_IS_PANED( widget ));
+	priv->bottom_paned = widget;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bot-balance" );
+	g_return_if_fail( widget && GTK_IS_GRID( widget ));
+	priv->bottom_balance = widget;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bot-debit" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->bottom_debit = widget;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bot-credit" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->bottom_credit = widget;
+
+	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "bot-currency" );
+	g_return_if_fail( widget && GTK_IS_LABEL( widget ));
+	priv->bottom_currency = widget;
+
+#if 0
+	/* try to have debit/credit columns the same size than debit/credit
+	 * balances - but does not work */
+	GtkSizeGroup *group;
+	GtkTreeViewColumn *column;
+	group = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
+	gtk_size_group_add_widget( group, priv->bottom_debit );
+	gtk_size_group_add_widget( group, priv->bottom_credit );
+	column = ofa_itvcolumnable_get_column( OFA_ITVCOLUMNABLE( priv->tview ), ENTRY_COL_DEBIT );
+	widget = gtk_tree_view_column_get_button( column );
+	gtk_size_group_add_widget( group, widget );
+	column = ofa_itvcolumnable_get_column( OFA_ITVCOLUMNABLE( priv->tview ), ENTRY_COL_CREDIT );
+	widget = gtk_tree_view_column_get_button( column );
+	gtk_size_group_add_widget( group, widget );
+	g_object_unref( group );
+#endif
+}
+
+static void
+setup_actions( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GMenu *menu;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	/* new action */
+	priv->new_action = g_simple_action_new( "new", NULL );
+	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->new_action ),
+			_( "New..." ));
+	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
+
+	/* delete action */
+	priv->delete_action = g_simple_action_new( "delete", NULL );
+	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
+			_( "Delete" ));
+	g_simple_action_set_enabled( priv->delete_action, priv->is_writable );
+
+	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
+	ofa_icontext_set_menu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( self ),
+			menu );
+
+	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
+	ofa_icontext_append_submenu(
+			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
+			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
+}
+
+static GtkWidget *
+page_v_get_top_focusable_widget( const ofaPage *page )
+{
+	ofaEntryPagePrivate *priv;
+
+	g_return_val_if_fail( page && OFA_IS_ENTRY_PAGE( page ), NULL );
+
+	priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( page ));
+
+	return( ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview )));
+}
+
+/*
+ * toggle between display per ledger or display per account
+ */
+static void
+gen_selection_on_toggled( GtkToggleButton *button, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gboolean is_active;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( !priv->initializing ){
+		is_active = gtk_toggle_button_get_active( button );
+
+		if( button == GTK_TOGGLE_BUTTON( priv->account_btn )){
+			/* update the frames sensitivity */
+			gtk_widget_set_sensitive( priv->ledger_parent, !is_active );
+			gtk_widget_set_sensitive( priv->account_entry, is_active );
+			gtk_widget_set_sensitive( priv->f1_label, is_active );
+
+			/* and display the entries */
+			if( is_active ){
+				write_settings_selection( self );
+				g_idle_add(( GSourceFunc ) account_display_from, self );
+			}
+		} else {
+			/* update the frames sensitivity */
+			gtk_widget_set_sensitive( priv->ledger_parent, is_active );
+			gtk_widget_set_sensitive( priv->account_entry, !is_active );
+			gtk_widget_set_sensitive( priv->f1_label, !is_active );
+
+			/* and display the entries */
+			if( is_active ){
+				write_settings_selection( self );
+				g_idle_add(( GSourceFunc ) ledger_display_from, self );
+			}
+		}
+	}
+}
+
+/*
+ * ofaLedgerCombo signal handler
+ */
+static void
+ledger_on_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	g_free( priv->jou_mnemo );
+	priv->jou_mnemo = g_strdup( mnemo );
+	g_debug( "ledger_on_changed: mnemo=%s", mnemo );
+
+	if( !priv->initializing ){
+		write_settings_selection( self );
+		if( my_strlen( priv->jou_mnemo )){
+			g_idle_add(( GSourceFunc ) ledger_display_from, self );
+		}
+	}
+}
+
+/*
+ * executed in an idle loop
+ */
+static gboolean
+ledger_display_from( ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_ledger_display_from";
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	g_debug( "%s: self=%p, ledger=%s", thisfn, ( void * ) self, priv->jou_mnemo );
+
+	ofa_entry_store_load( priv->store, NULL, priv->jou_mnemo );
+	balances_compute( self );
+
+	return( G_SOURCE_REMOVE );
+}
+
+static void
+account_on_changed( GtkEntry *entry, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	ofoAccount *account;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	priv->acc_valid = FALSE;
+	g_free( priv->acc_number );
+	priv->acc_number = g_strdup( gtk_entry_get_text( entry ));
+
+	account = ofo_account_get_by_number( priv->hub, priv->acc_number );
+
+	if( account && !ofo_account_is_root( account )){
+		gtk_label_set_text( GTK_LABEL( priv->f1_label ), ofo_account_get_label( account ));
+		priv->acc_valid = TRUE;
+
+	} else {
+		gtk_label_set_text( GTK_LABEL( priv->f1_label ), "" );
+	}
+
+	if( !priv->initializing ){
+		write_settings_selection( self );
+		if( my_strlen( priv->acc_number )){
+			g_idle_add(( GSourceFunc ) account_display_from, self );
+		}
+	}
+}
+
+/*
+ * if account is invalid, and Tab is pressed, then directly opens the
+ * AccountSelect dialogbox
+ */
+static gboolean
+account_on_entry_key_pressed( GtkWidget *entry, GdkEventKey *event, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gboolean stop;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	stop = FALSE;
+
+	/* a row may be inserted any where */
+	if( event->keyval == GDK_KEY_Tab && !priv->acc_valid ){
+		account_do_select( self );
+		stop = TRUE;
+	}
+
+	return( stop );
+}
+
+/*
+ * button may be NULL when called from above account_on_entry_key_pressed()
+ */
+static void
+account_do_select( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *acc_number;
+	GtkWindow *toplevel;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+
+	acc_number = ofa_account_select_run(
+							OFA_IGETTER( self ), toplevel,
+							gtk_entry_get_text( GTK_ENTRY( priv->account_entry )),
+							ACCOUNT_ALLOW_DETAIL );
+
+	if( acc_number ){
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), acc_number );
+		g_free( acc_number );
+	}
+}
+
+static gboolean
+account_display_from( ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_account_display_from";
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	g_debug( "%s: self=%p, account=%s", thisfn, ( void * ) self, priv->acc_number );
+
+	ofa_entry_store_load( priv->store, priv->acc_number, NULL );
+	balances_compute( self );
+
+	return( G_SOURCE_REMOVE );
+}
+
+static void
+effect_filter_on_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( !priv->initializing ){
+		refresh_display( self );
+	}
+}
+
+/*
+ * display entries based on their status (past, rough, validated,
+ *  deleted or future)
+ */
+static void
+status_on_toggled( GtkToggleButton *button, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( !priv->initializing ){
+		write_settings_status( self );
+		refresh_display( self );
+	}
+}
+
+/*
+ * a callback for the 'notify' GObject signal
+ *
+ * The notify signal is emitted on an object when one of its properties
+ * has been changed. Note that getting this signal doesn't guarantee
+ * that the value of the property has actually changed, it may also be
+ * emitted when the setter for the property is called to reinstate the
+ * previous value.
+ *
+ * VERY DANGEROUS: all columns are editable here
+ */
+static void
+edit_on_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GtkTreeSelection *selection;
+	gboolean editable;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
+	editable = row_is_editable( self, selection );
+	edit_set_cells_editable( self, selection, editable );
+}
+
+/*
+ * Reset the editability status of the row when:
+ * - the selection changes
+ * - the edit switch is toggled
+ *
+ * @editable: whether the row (+dossier) is intrinsically editable.
+ */
+static void
+edit_set_cells_editable( ofaEntryPage *self, GtkTreeSelection *selection, gboolean editable )
+{
+	ofaEntryPagePrivate *priv;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	priv->editable_row = editable && gtk_switch_get_active( GTK_SWITCH( priv->edit_switch ));
+
+	g_simple_action_set_enabled( priv->new_action, priv->editable_row );
+	g_simple_action_set_enabled( priv->delete_action, priv->editable_row );
+	g_debug( "edit_set_cells_editable: editable_row=%s", priv->editable_row ? "True":"False" );
+	gboolean st = g_action_get_enabled( G_ACTION( priv->new_action ));
+	g_debug( "edit_set_cells_editable: action_status=%s", st ? "True":"False" );
+}
+
+static void
+edit_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_edit_on_cell_edited";
+	ofaEntryPagePrivate *priv;
+	gint column_id;
+	GtkTreeModel *sort_model, *filter_model;
+	GtkTreePath *sort_path;
+	GtkTreeIter sort_iter, filter_iter, store_iter;
+	gchar *str;
+	gdouble amount;
+	ofoEntry *entry;
+
+	g_debug( "%s: cell=%p, path=%s, text=%s, self=%p",
+			thisfn, ( void * ) cell, path_str, text, ( void * ) self );
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	sort_model = ofa_tvbin_get_tree_model( OFA_TVBIN( priv->tview ));
+	filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
+	sort_path = gtk_tree_path_new_from_string( path_str );
+
+	if( gtk_tree_model_get_iter( sort_model, &sort_iter, sort_path )){
+
+		gtk_tree_model_sort_convert_iter_to_child_iter(
+				GTK_TREE_MODEL_SORT( sort_model ), &filter_iter, &sort_iter );
+		gtk_tree_model_filter_convert_iter_to_child_iter(
+				GTK_TREE_MODEL_FILTER( filter_model), &store_iter, &filter_iter );
+
+		column_id = ofa_itvcolumnable_get_column_id_renderer( OFA_ITVCOLUMNABLE( priv->tview ), GTK_CELL_RENDERER( cell ));
+		edit_set_column_set_indicator( self, column_id, &store_iter );
+
+		/* also set the operation date so that it will not get modified
+		 * when checking the effect date - only for already recorded
+		 * entries as we are so sure that the operation date was valid */
+		gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), &store_iter, ENTRY_COL_OBJECT, &entry, -1 );
+		if( entry ){
+			g_object_unref( entry );
+			if( ofo_entry_get_number( entry ) > 0 ){
+				edit_set_column_set_indicator( self, ENTRY_COL_DOPE, &store_iter );
+			}
+		}
+
+		/* reformat amounts before storing them */
+		if( column_id == ENTRY_COL_DEBIT || column_id == ENTRY_COL_CREDIT ){
+			amount = ofa_amount_from_str( text );
+			str = ofa_amount_to_str( amount, NULL );
+		} else {
+			str = g_strdup( text );
+		}
+		gtk_list_store_set( GTK_LIST_STORE( priv->store ), &store_iter, column_id, str, -1 );
+		g_free( str );
+
+		check_row_for_valid( self, &store_iter );
+		balances_compute( self );
+
+		if( row_get_errlevel( self, GTK_TREE_MODEL( priv->store ), &store_iter ) == ENT_ERR_NONE ){
+			save_entry( self, GTK_TREE_MODEL( priv->store ), &store_iter );
+		}
+	}
+	gtk_tree_path_free( sort_path );
+}
+
+/*
+ * a data has been edited by the user: set the corresponding flag (if
+ * any) so that we do not try later to reset a default value
+ */
+static gint
+edit_get_column_set_id( ofaEntryPage *self, gint column_id )
+{
+	gint column_set_id;
+
+	column_set_id = 0;
+
+	switch( column_id ){
+		case ENTRY_COL_DOPE:
+			column_set_id = ENTRY_COL_DOPE_SET;
+			break;
+		case ENTRY_COL_DEFFECT:
+			column_set_id = ENTRY_COL_DEFFECT_SET;
+			break;
+		case ENTRY_COL_CURRENCY:
+			column_set_id = ENTRY_COL_CURRENCY_SET;
+			break;
+		default:
+			break;
+	}
+
+	return( column_set_id );
+}
+
+/*
+ * a data has been edited by the user: set the corresponding flag (if
+ * any) so that we do not try later to reset a default value
+ */
+static void
+edit_set_column_set_indicator( ofaEntryPage *self, gint column_id, GtkTreeIter *store_iter )
+{
+	ofaEntryPagePrivate *priv;
+	gint column_set_id;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	column_set_id = edit_get_column_set_id( self, column_id );
+	if( column_set_id > 0 ){
+		gtk_list_store_set( GTK_LIST_STORE( priv->store ), store_iter, column_set_id, TRUE, -1 );
+	}
 }
 
 /**
  * ofa_entry_page_display_entries:
- *
- * @begin: [allow-none]:
- * @end: [allow-none]:
+ * @page: this #ofaEntryPage instance.
+ * @type: the #ofoBase GType of the @id (i.e. either OFO_TYPE_ACCOUNT
+ *  or OFO_TYPE_LEDGER).
+ * @id: the identifier.
+ * @begin: [allow-none]: the beginning date of the effect filter.
+ * @end: [allow-none]: the ending date of the effect filter.
  */
 void
-ofa_entry_page_display_entries( ofaEntryPage *self, GType type, const gchar *id, const GDate *begin, const GDate *end )
+ofa_entry_page_display_entries( ofaEntryPage *page, GType type, const gchar *id, const GDate *begin, const GDate *end )
 {
 	static const gchar *thisfn = "ofa_entry_page_display_entries";
 	ofaEntryPagePrivate *priv;
 
-	g_return_if_fail( self && OFA_IS_ENTRY_PAGE( self ));
+	g_return_if_fail( page && OFA_IS_ENTRY_PAGE( page ));
 	g_return_if_fail( my_strlen( id ));
-	g_return_if_fail( !OFA_PAGE( self )->prot->dispose_has_run );
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
 
-	g_debug( "%s: self=%p, type=%lu, id=%s, begin=%p, end=%p",
-			thisfn, ( void * ) self, type, id, ( void * ) begin, ( void * ) end );
+	g_debug( "%s: page=%p, type=%lu, id=%s, begin=%p, end=%p",
+			thisfn, ( void * ) page, type, id, ( void * ) begin, ( void * ) end );
 
-	priv = ofa_entry_page_get_instance_private( self );
+	priv = ofa_entry_page_get_instance_private( page );
 
 	/* start by setting the from/to dates as these changes do not
 	 * automatically trigger a display refresh */
@@ -2102,7 +1267,7 @@ ofa_entry_page_display_entries( ofaEntryPage *self, GType type, const gchar *id,
 	 * will automativally trigger a display refresh */
 	if( type == OFO_TYPE_ACCOUNT ){
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_btn ), TRUE );
-		gtk_entry_set_text( priv->account_entry, id );
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), id );
 
 	} else if( type == OFO_TYPE_LEDGER ){
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
@@ -2110,221 +1275,100 @@ ofa_entry_page_display_entries( ofaEntryPage *self, GType type, const gchar *id,
 	}
 }
 
-/*
- * a display column has been toggled
- */
 static void
-on_column_toggled( ofaEntryPage *self, gint column_id, gboolean visible, void *empty )
+refresh_display( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	if( !priv->initializing ){
-		set_balance_currency_label_position( self );
-		gtk_widget_queue_draw( GTK_WIDGET( priv->entries_tview ));
-	}
+	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+	balances_compute( self );
 }
 
 /*
- * display entries based on their status (past, rough, validated,
- *  deleted or future)
- */
-static void
-on_entry_status_toggled( GtkToggleButton *button, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gboolean *visible_flag;
-	gchar *prefs;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	visible_flag = ( gboolean * ) g_object_get_data( G_OBJECT( button ), DATA_PRIV_VISIBLE );
-	*visible_flag = gtk_toggle_button_get_active( button );
-	refresh_display( self );
-
-	prefs = g_strdup_printf( "%s;%s;%s;%s;%s;",
-					priv->display_past ? "True":"False",
-					priv->display_rough ? "True":"False",
-					priv->display_validated ? "True":"False",
-					priv->display_deleted ? "True":"False",
-					priv->display_future ? "True":"False" );
-	ofa_settings_user_set_string( st_pref_status, prefs );
-	g_free( prefs );
-}
-
-/*
- * a callback for the 'notify' GObject signal
+ * we parse the debit/credit strings rather than using the ofoEntry
+ * doubles, so that this same function may be used when modifying a
+ * row
  *
- * The notify signal is emitted on an object when one of its properties
- * has been changed. Note that getting this signal doesn't guarantee
- * that the value of the property has actually changed, it may also be
- * emitted when the setter for the property is called to reinstate the
- * previous value.
+ * This same function is used, initially when displaying the entries
+ * dataset, and then each time we modify the display filter
  */
 static void
-on_edit_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self )
+balances_compute( ofaEntryPage *self )
 {
-	gboolean is_active;
-
-	g_object_get( G_OBJECT( switch_btn ), "active", &is_active, NULL );
-	set_renderers_editable( self, is_active );
-}
-
-/*
- * reconciliation date and status are never editable
- */
-static void
-set_renderers_editable( ofaEntryPage *self, gboolean editable )
-{
-	ofaEntryPagePrivate *priv;
-	gint i;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	for( i=0 ; i<ENT_N_COLUMNS ; ++i ){
-		if( priv->renderers[i] &&
-				i != ENT_COL_SETTLE && i != ENT_COL_DRECONCIL && i != ENT_COL_STATUS ){
-			g_object_set( G_OBJECT( priv->renderers[i] ), "editable", editable, NULL );
-		}
-	}
-}
-
-static void
-on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_on_cell_edited";
-	ofaEntryPagePrivate *priv;
-	gint column_id;
-	GtkTreePath *path;
-	GtkTreeIter sort_iter, filter_iter, iter;
-	gchar *str;
-	gdouble amount;
-	ofoEntry *entry;
-
-	g_debug( "%s: cell=%p, path=%s, text=%s, self=%p",
-			thisfn, ( void * ) cell, path_str, text, ( void * ) self );
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	if( priv->tsort ){
-		path = gtk_tree_path_new_from_string( path_str );
-		if( gtk_tree_model_get_iter( priv->tsort, &sort_iter, path )){
-
-			gtk_tree_model_sort_convert_iter_to_child_iter(
-					GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
-			gtk_tree_model_filter_convert_iter_to_child_iter(
-					GTK_TREE_MODEL_FILTER( priv->tfilter), &iter, &filter_iter );
-
-			column_id = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( cell ), DATA_COLUMN_ID ));
-			set_data_set_indicator( self, column_id, &iter );
-
-			/* also set the operation date so that it will not get modified
-			 * when checking the effect date - only for already recorded
-			 * entries as we are so sure that the operation date was valid */
-			gtk_tree_model_get( priv->tstore, &iter, ENT_COL_OBJECT, &entry, -1 );
-			if( entry ){
-				g_object_unref( entry );
-				if( ofo_entry_get_number( entry ) > 0 ){
-					set_data_set_indicator( self, ENT_COL_DOPE, &iter );
-				}
-			}
-
-			/* reformat amounts before storing them */
-			if( column_id == ENT_COL_DEBIT || column_id == ENT_COL_CREDIT ){
-				amount = ofa_amount_from_str( text );
-				str = ofa_amount_to_str( amount, NULL );
-			} else {
-				str = g_strdup( text );
-			}
-			gtk_list_store_set(
-					GTK_LIST_STORE( priv->tstore ), &iter, column_id, str, -1 );
-			g_free( str );
-
-			check_row_for_valid( self, &iter );
-			compute_balances( self );
-
-			if( get_row_errlevel( self, priv->tstore, &iter ) == ENT_ERR_NONE ){
-				save_entry( self, priv->tstore, &iter );
-			}
-		}
-		gtk_tree_path_free( path );
-	}
-}
-
-/*
- * a data has been edited by the user: set the corresponding flag (if
- * any) so that we do not try later to reset a default value
- */
-static gint
-get_data_set_indicator( ofaEntryPage *self, gint column_id )
-{
-	gint column_data;
-
-	column_data = 0;
-
-	switch( column_id ){
-		case ENT_COL_DOPE:
-			column_data = ENT_COL_DOPE_SET;
-			break;
-		case ENT_COL_DEFF:
-			column_data = ENT_COL_DEFF_SET;
-			break;
-		case ENT_COL_CURRENCY:
-			column_data = ENT_COL_CURRENCY_SET;
-			break;
-		default:
-			break;
-	}
-
-	return( column_data );
-}
-
-/*
- * a data has been edited by the user: set the corresponding flag (if
- * any) so that we do not try later to reset a default value
- */
-static void
-set_data_set_indicator( ofaEntryPage *self, gint column_id, GtkTreeIter *iter )
-{
-	ofaEntryPagePrivate *priv;
-	gint column_data;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	column_data = get_data_set_indicator( self, column_id );
-
-	if( column_data > 0 ){
-		gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter, column_data, TRUE, -1 );
-	}
-}
-
-static void
-on_row_selected( GtkTreeSelection *select, ofaEntryPage *self )
-{
+	static const gchar *thisfn = "ofa_entry_page_balances_compute";
 	ofaEntryPagePrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	ofoEntry *entry;
-	gboolean is_editable, is_active;
+	gchar *sdeb, *scre, *dev_code;
+
+	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	if( gtk_tree_selection_get_selected( select, &tmodel, &iter )){
-		gtk_tree_model_get( tmodel, &iter, ENT_COL_OBJECT, &entry, -1 );
-		if( entry ){
-			g_object_unref( entry );
+	ofs_currency_list_free( &priv->balances );
+	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( priv->tview ));
+
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get(
+					tmodel,
+					&iter,
+					ENTRY_COL_DEBIT,    &sdeb,
+					ENTRY_COL_CREDIT,   &scre,
+					ENTRY_COL_CURRENCY, &dev_code,
+					-1 );
+
+			if( my_strlen( dev_code ) && ( my_strlen( sdeb ) || my_strlen( scre ))){
+				ofs_currency_add_by_code(
+						&priv->balances, priv->hub, dev_code,
+						ofa_amount_from_str( sdeb ), ofa_amount_from_str( scre ));
+			}
+
+			g_free( sdeb );
+			g_free( scre );
+			g_free( dev_code );
+
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
 		}
+	}
 
-		is_editable = entry ? ofo_entry_is_editable( entry ): FALSE;
-		is_editable &= ofa_hub_dossier_is_writable( priv->hub );
+	g_list_foreach( priv->balances, ( GFunc ) balance_display, self );
+	gtk_widget_show_all( priv->bottom_balance );
+}
 
-		gtk_widget_set_sensitive(  GTK_WIDGET( priv->edit_switch ), is_editable );
-		g_object_get( G_OBJECT( priv->edit_switch ), "active", &is_active, NULL );
-		set_renderers_editable( self, is_editable && is_active );
+static void
+balance_display( ofsCurrency *pc, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *str;
+	const gchar *cstyle;
 
-		/* reset the field or re-display an eventual error message */
-		display_error_msg( self, priv->tsort, &iter );
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( !ofs_currency_is_zero( pc )){
+		cstyle = ofs_currency_is_balanced( pc ) ? "labelbalance" : "labelwarning";
+
+		my_style_add( priv->bottom_debit, cstyle );
+		str = ofa_amount_to_str( pc->debit, pc->currency );
+		gtk_label_set_text( GTK_LABEL( priv->bottom_debit ), str );
+		g_free( str );
+
+		my_style_add( priv->bottom_credit, cstyle );
+		str = ofa_amount_to_str( pc->credit, pc->currency );
+		gtk_label_set_text( GTK_LABEL( priv->bottom_credit ), str );
+		g_free( str );
+
+		my_style_add( priv->bottom_currency, cstyle );
+		gtk_label_set_text( GTK_LABEL( priv->bottom_currency ), ofo_currency_get_code( pc->currency ));
+
+	} else {
+		gtk_label_set_text( GTK_LABEL( priv->bottom_debit ), "" );
+		gtk_label_set_text( GTK_LABEL( priv->bottom_credit ), "" );
+		gtk_label_set_text( GTK_LABEL( priv->bottom_currency ), "" );
 	}
 }
 
@@ -2360,7 +1404,7 @@ check_row_for_valid( ofaEntryPage *self, GtkTreeIter *iter )
 
 	/* check ledger, deffect, dope in sequence in order to be able to
 	 * safely reinit error message after having set default effect date */
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_MSGERR, &prev_msg, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_MSGERR, &prev_msg, -1 );
 	v_ledger = check_row_for_valid_ledger( self, iter );
 	v_deffect = check_row_for_valid_deffect( self, iter );
 	v_dope = check_row_for_valid_dope( self, iter );
@@ -2377,7 +1421,7 @@ check_row_for_valid( ofaEntryPage *self, GtkTreeIter *iter )
 		check_row_for_cross_deffect( self, iter );
 	}
 
-	display_error_msg( self, priv->tstore, iter );
+	row_display_message( self, ofa_tvbin_get_selection( OFA_TVBIN( priv->tview )));
 }
 
 static gboolean
@@ -2391,7 +1435,7 @@ check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DOPE, &sdope, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DOPE, &sdope, -1 );
 
 	if( my_strlen( sdope )){
 		my_date_set_from_str( &date, sdope, ofa_prefs_date_display());
@@ -2429,7 +1473,7 @@ check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 
 	is_valid = FALSE;
 
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DEFF, &sdeffect, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DEFFECT, &sdeffect, -1 );
 
 	if( my_strlen( sdeffect )){
 		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display());
@@ -2448,11 +1492,11 @@ check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	/* if effect date is valid, and operation date has not been set by
 	 * the user, then set default operation date to effect date */
 	if( is_valid ){
-		dope_data = get_data_set_indicator( self, ENT_COL_DOPE );
-		gtk_tree_model_get( priv->tstore, iter, dope_data, &dope_set, -1 );
+		dope_data = edit_get_column_set_id( self, ENTRY_COL_DOPE );
+		gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, dope_data, &dope_set, -1 );
 		if( !dope_set ){
 			gtk_list_store_set(
-					GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_DOPE, sdeffect, -1 );
+					GTK_LIST_STORE( GTK_TREE_MODEL( priv->store ) ), iter, ENTRY_COL_DOPE, sdeffect, -1 );
 		}
 	}
 
@@ -2471,7 +1515,7 @@ check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_LEDGER, &str, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_LEDGER, &str, -1 );
 
 	if( my_strlen( str )){
 		if( ofo_ledger_get_by_mnemo( priv->hub, str )){
@@ -2503,8 +1547,8 @@ check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter,
-			ENT_COL_ACCOUNT, &acc_number, ENT_COL_CURRENCY, &cur_code, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter,
+			ENTRY_COL_ACCOUNT, &acc_number, ENTRY_COL_CURRENCY, &cur_code, -1 );
 
 	if( my_strlen( acc_number )){
 		account = ofo_account_get_by_number( priv->hub, acc_number );
@@ -2530,11 +1574,11 @@ check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter )
 	/* if account is valid, and currency code has not yet
 	 * been set by the user, then setup the default currency */
 	if( is_valid ){
-		cur_data = get_data_set_indicator( self, ENT_COL_CURRENCY );
-		gtk_tree_model_get( priv->tstore, iter, cur_data, &cur_set, -1 );
+		cur_data = edit_get_column_set_id( self, ENTRY_COL_CURRENCY );
+		gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, cur_data, &cur_set, -1 );
 		if( !cur_set ){
-			gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter,
-					ENT_COL_CURRENCY, ofo_account_get_currency( account ), -1 );
+			gtk_list_store_set( GTK_LIST_STORE( priv->store ), iter,
+					ENTRY_COL_CURRENCY, ofo_account_get_currency( account ), -1 );
 		}
 	}
 
@@ -2551,7 +1595,7 @@ check_row_for_valid_label( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_LABEL, &str, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_LABEL, &str, -1 );
 
 	if( my_strlen( str )){
 		is_valid = TRUE;
@@ -2573,7 +1617,7 @@ check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_CURRENCY, &code, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_CURRENCY, &code, -1 );
 
 	if( my_strlen( code )){
 		if( ofo_currency_get_by_code( priv->hub, code )){
@@ -2603,7 +1647,7 @@ check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_DEBIT, &sdeb, ENT_COL_CREDIT, &scre, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DEBIT, &sdeb, ENTRY_COL_CREDIT, &scre, -1 );
 
 	if( my_strlen( sdeb ) || my_strlen( scre )){
 		debit = ofa_amount_from_str( sdeb );
@@ -2640,10 +1684,10 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	gtk_tree_model_get( priv->tstore, iter,
-				ENT_COL_DOPE,   &sdope,
-				ENT_COL_DEFF,   &sdeffect,
-				ENT_COL_LEDGER, &mnemo,
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter,
+				ENTRY_COL_DOPE,    &sdope,
+				ENTRY_COL_DEFFECT, &sdeffect,
+				ENTRY_COL_LEDGER,  &mnemo,
 				-1 );
 
 	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
@@ -2702,12 +1746,12 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 
 	set = FALSE;
 
-	deff_data = get_data_set_indicator( self, ENT_COL_DEFF );
-	gtk_tree_model_get( priv->tstore, iter, deff_data, &deff_set, -1 );
+	deff_data = edit_get_column_set_id( self, ENTRY_COL_DEFFECT );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, deff_data, &deff_set, -1 );
 	if( !deff_set ){
-		gtk_tree_model_get( priv->tstore, iter,
-					ENT_COL_DOPE,   &sdope,
-					ENT_COL_LEDGER, &mnemo,
+		gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter,
+					ENTRY_COL_DOPE,   &sdope,
+					ENTRY_COL_LEDGER, &mnemo,
 					-1 );
 
 		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
@@ -2723,7 +1767,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 		}
 
 		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_display());
-		gtk_list_store_set( GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_DEFF, sdeff, -1 );
+		gtk_list_store_set( GTK_LIST_STORE( priv->store ), iter, ENTRY_COL_DEFFECT, sdeff, -1 );
 		g_free( sdeff );
 
 		g_free( sdope );
@@ -2751,7 +1795,7 @@ check_row_for_cross_currency( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	is_valid = FALSE;
-	gtk_tree_model_get( priv->tstore, iter, ENT_COL_ACCOUNT, &number, ENT_COL_CURRENCY, &code, -1 );
+	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_ACCOUNT, &number, ENTRY_COL_CURRENCY, &code, -1 );
 
 	g_return_val_if_fail( my_strlen( number ), FALSE );
 	account = ofo_account_get_by_number( priv->hub, number );
@@ -2791,7 +1835,7 @@ reset_error_msg( ofaEntryPage *self, GtkTreeIter *iter )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	gtk_list_store_set(
-			GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_MSGERR, "", ENT_COL_MSGWARN, "", -1 );
+			GTK_LIST_STORE( priv->store ), iter, ENTRY_COL_MSGERR, "", ENTRY_COL_MSGWARN, "", -1 );
 }
 
 /*
@@ -2807,7 +1851,7 @@ set_error_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *msg )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	gtk_list_store_set(
-			GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_MSGERR, msg, -1 );
+			GTK_LIST_STORE( priv->store ), iter, ENTRY_COL_MSGERR, msg, -1 );
 }
 
 /*
@@ -2824,40 +1868,9 @@ set_warning_msg( ofaEntryPage *self, GtkTreeIter *iter, const gchar *msg )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	gtk_list_store_set(
-			GTK_LIST_STORE( priv->tstore ), iter, ENT_COL_MSGWARN, msg, -1 );
+			GTK_LIST_STORE( priv->tstore ), iter, ENTRY_COL_MSGWARN, msg, -1 );
 }
 #endif
-
-static void
-display_error_msg( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
-{
-	ofaEntryPagePrivate *priv;
-	gchar *msgerr, *msgwarn;
-	const gchar *color_str, *text;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	gtk_tree_model_get( tmodel, iter, ENT_COL_MSGERR, &msgerr, ENT_COL_MSGWARN, &msgwarn, -1 );
-
-	if( my_strlen( msgerr )){
-		text = msgerr;
-		color_str = "labelerror";
-
-	} else if( my_strlen( msgwarn )){
-		text = msgwarn;
-		color_str = "labelwarning";
-
-	} else {
-		text = "";
-		color_str = "labelnormal";
-	}
-
-	gtk_label_set_text( priv->comment, text );
-	my_style_add( GTK_WIDGET( priv->comment ), color_str );
-
-	g_free( msgerr );
-	g_free( msgwarn );
-}
 
 /*
  * save a modified or new entry
@@ -2885,17 +1898,17 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	gtk_tree_model_get(
 			tmodel,
 			iter,
-			ENT_COL_DOPE,     &sdope,
-			ENT_COL_DEFF,     &sdeff,
-			ENT_COL_NUMBER,   &number,
-			ENT_COL_REF,      &ref,
-			ENT_COL_LABEL,    &label,
-			ENT_COL_LEDGER,   &ledger,
-			ENT_COL_ACCOUNT,  &account,
-			ENT_COL_DEBIT,    &sdeb,
-			ENT_COL_CREDIT,   &scre,
-			ENT_COL_CURRENCY, &currency,
-			ENT_COL_OBJECT,   &entry,
+			ENTRY_COL_DOPE,         &sdope,
+			ENTRY_COL_DEFFECT,      &sdeff,
+			ENTRY_COL_ENT_NUMBER_I, &number,
+			ENTRY_COL_REF,          &ref,
+			ENTRY_COL_LABEL,        &label,
+			ENTRY_COL_LEDGER,       &ledger,
+			ENTRY_COL_ACCOUNT,      &account,
+			ENTRY_COL_DEBIT,        &sdeb,
+			ENTRY_COL_CREDIT,       &scre,
+			ENTRY_COL_CURRENCY,     &currency,
+			ENTRY_COL_OBJECT,       &entry,
 			-1 );
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	/*g_debug( "save_entry: ref_count=%d", G_OBJECT( entry )->ref_count );*/
@@ -2934,7 +1947,7 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		remediate_entry_ledger( self, entry, prev_ledger, prev_debit, prev_credit );
 	}
 
-	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
+	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 
 	g_free( prev_account );
 	g_free( prev_ledger );
@@ -3099,371 +2112,10 @@ remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_l
 	}
 }
 
-/*
- * Returns: a GtkTreeIter on GtkListStore treemodel
- */
-static gboolean
-find_entry_by_number( ofaEntryPage *self, ofxCounter number, GtkTreeIter *iter )
-{
-	ofaEntryPagePrivate *priv;
-	gint tnumber;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	if( gtk_tree_model_get_iter_first( priv->tstore, iter )){
-		while( TRUE ){
-			gtk_tree_model_get( priv->tstore, iter, ENT_COL_NUMBER, &tnumber, -1 );
-			if( tnumber == number ){
-				return( TRUE );
-			}
-			if( !gtk_tree_model_iter_next( priv->tstore, iter )){
-				return( FALSE );
-			}
-		}
-	}
-	return( FALSE );
-}
-
 static void
-hub_connect_to_signaling_system( ofaEntryPage *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
 {
-	ofaEntryPagePrivate *priv;
-	gulong handler;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-
-	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
-	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
-}
-
-/*
- * SIGNAL_HUB_NEW signal handler
- */
-static void
-hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_hub_on_new_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_ENTRY( object )){
-		do_new_entry( self, OFO_ENTRY( object ));
-	}
-}
-
-/*
- * A new entry has been inserted in another page
- * update our dataset if the entry should be part of it
- */
-static void
-do_new_entry( ofaEntryPage *self, ofoEntry *entry )
-{
-	ofaEntryPagePrivate *priv;
-	GtkTreeIter iter;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	/* if "by ledger" is selected and this is the ledger of the entry
-	 * or (by account is selected) the required account is those of the
-	 * entry */
-	if(( gtk_toggle_button_get_active( priv->ledger_btn ) &&
-			!my_collate( priv->jou_mnemo, ofo_entry_get_ledger( entry ))) ||
-				!my_collate( priv->acc_number, ofo_entry_get_account( entry ))){
-
-		gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &iter, -1 );
-		display_entry( self, entry, &iter );
-		compute_balances( self );
-	}
-}
-
-/*
- * SIGNAL_HUB_UPDATED signal handler
- */
-static void
-hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_hub_on_updated_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			prev_id,
-			( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	if( prev_id ){
-		if( OFO_IS_ACCOUNT( object )){
-			do_update_account_number( self, prev_id, ofo_account_get_number( OFO_ACCOUNT( object )));
-
-		} else if( OFO_IS_LEDGER( object )){
-			do_update_ledger_mnemo( self, prev_id, ofo_ledger_get_mnemo( OFO_LEDGER( object )));
-
-		} else if( OFO_IS_CURRENCY( object )){
-			do_update_currency_code( self, prev_id, ofo_currency_get_code( OFO_CURRENCY( object )));
-		}
-	} else if( OFO_IS_CONCIL( object )){
-		do_update_concil( self, OFO_CONCIL( object ), FALSE );
-
-	} else if( OFO_IS_ENTRY( object )){
-		do_update_entry( self, OFO_ENTRY( object ));
-	}
-}
-
-static void
-do_update_account_number( ofaEntryPage *self, const gchar *prev, const gchar *number )
-{
-	ofaEntryPagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *str;
-	gint cmp;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, ENT_COL_ACCOUNT, &str, -1 );
-			cmp = g_utf8_collate( str, prev );
-			g_free( str );
-			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, ENT_COL_ACCOUNT, number, -1 );
-			}
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
-			}
-		}
-	}
-}
-
-static void
-do_update_ledger_mnemo( ofaEntryPage *self, const gchar *prev, const gchar *mnemo )
-{
-	ofaEntryPagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *str;
-	gint cmp;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, ENT_COL_LEDGER, &str, -1 );
-			cmp = g_utf8_collate( str, prev );
-			g_free( str );
-			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, ENT_COL_LEDGER, mnemo, -1 );
-			}
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
-			}
-		}
-	}
-}
-
-static void
-do_update_currency_code( ofaEntryPage *self, const gchar *prev, const gchar *code )
-{
-	ofaEntryPagePrivate *priv;
-	GtkTreeModel *tmodel;
-	GtkTreeIter iter;
-	gchar *str;
-	gint cmp;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
-		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, ENT_COL_CURRENCY, &str, -1 );
-			cmp = g_utf8_collate( str, prev );
-			g_free( str );
-			if( cmp == 0 ){
-				gtk_list_store_set( GTK_LIST_STORE( tmodel ), &iter, ENT_COL_CURRENCY, code, -1 );
-			}
-			if( !gtk_tree_model_iter_next( tmodel, &iter )){
-				break;
-			}
-		}
-	}
-}
-
-/*
- * a conciliation group is updated
- * -> update the entry row if needed
- */
-static void
-do_update_concil( ofaEntryPage *self, ofoConcil *concil, gboolean is_deleted )
-{
-	ofaEntryPagePrivate *priv;
-	GList *ids, *it;
-	ofsConcilId *sid;
-	GtkTreeIter iter;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	ids = ofo_concil_get_ids( concil );
-	for( it=ids ; it ; it=it->next ){
-		sid = ( ofsConcilId * ) it->data;
-		if( !g_strcmp0( sid->type, CONCIL_TYPE_ENTRY ) &&
-				find_entry_by_number( self, sid->other_id, &iter )){
-			display_entry_concil( self, is_deleted ? NULL : concil, &iter );
-		}
-	}
-	gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-}
-
-static void
-do_update_entry( ofaEntryPage *self, ofoEntry *entry )
-{
-	ofaEntryPagePrivate *priv;
-	GtkTreeIter iter;
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	if( find_entry_by_number( self, ofo_entry_get_number( entry ), &iter )){
-		display_entry( self, entry, &iter );
-		gtk_tree_model_filter_refilter( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-	}
-}
-
-/*
- * SIGNAL_HUB_DELETED signal handler
- */
-static void
-hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
-{
-	static const gchar *thisfn = "ofa_entry_page_hub_on_deleted_object";
-
-	g_debug( "%s: hub=%p, object=%p (%s), user_data=%p",
-			thisfn,
-			( void * ) hub,
-			( void * ) object, G_OBJECT_TYPE_NAME( object ),
-			( void * ) self );
-
-	if( OFO_IS_CONCIL( object )){
-		do_on_deleted_concil( self, OFO_CONCIL( object ));
-
-	} else if( OFO_IS_ENTRY( object )){
-		do_on_deleted_entry( self, OFO_ENTRY( object ));
-	}
-}
-
-static void
-do_on_deleted_concil( ofaEntryPage *self, ofoConcil *concil )
-{
-	do_update_concil( self, concil, TRUE );
-}
-
-static void
-do_on_deleted_entry( ofaEntryPage *self, ofoEntry *entry )
-{
-	static const gchar *thisfn = "ofa_entry_page_on_deleted_entry";
-	ofaEntryPagePrivate *priv;
-	ofxCounter id;
-	ofoConcil *concil;
-
-	g_debug( "%s: self=%p, entry=%p", thisfn, ( void * ) self, ( void * ) entry );
-
-	priv = ofa_entry_page_get_instance_private( self );
-
-	/* if entry was settled, then cancel all settlement group */
-	id = ofo_entry_get_settlement_number( entry );
-	if( id > 0 ){
-		ofo_entry_unsettle_by_number( priv->hub, id );
-	}
-
-	/* if entry was conciliated, then remove all conciliation group */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
-	if( concil ){
-		ofa_iconcil_remove_concil( OFA_ICONCIL( entry ), concil );
-	}
-}
-
-static gboolean
-on_tview_key_pressed_event( GtkWidget *widget, GdkEventKey *event, ofaEntryPage *self )
-{
-	ofaEntryPagePrivate *priv;
-	gboolean stop;
-
-	priv = ofa_entry_page_get_instance_private( self );
-	stop = FALSE;
-
-	/* a row may be inserted any where */
-	if( event->keyval == GDK_KEY_Insert || event->keyval == GDK_KEY_KP_Insert ){
-		insert_new_row( self );
-		stop = TRUE;
-
-	/* a row may be deleted only if it is editable */
-	} else if( gtk_switch_get_active( priv->edit_switch )){
-		if( event->keyval == GDK_KEY_Delete || event->keyval == GDK_KEY_KP_Delete ){
-			delete_row( self );
-			stop = TRUE;
-		}
-	}
-
-	return( stop );
-}
-
-static ofaEntryStatus
-get_row_status( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
-{
-	gchar *str;
-	ofaEntryStatus status;
-
-	gtk_tree_model_get( tmodel, iter, ENT_COL_STATUS, &str, -1 );
-	status = ofo_entry_get_status_from_abr( str );
-	g_free( str );
-
-	return( status );
-}
-
-static GDate *
-get_row_deffect( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter, GDate *date )
-{
-	gchar *sdate;
-
-	gtk_tree_model_get( tmodel, iter, ENT_COL_DEFF, &sdate, -1 );
-	my_date_set_from_str( date, sdate, ofa_prefs_date_display());
-	g_free( sdate );
-
-	return( date );
-}
-
-static gint
-get_row_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
-{
-	gchar *msgerr, *msgwarn;
-	gint err_level;
-
-	gtk_tree_model_get( tmodel, iter, ENT_COL_MSGERR, &msgerr, ENT_COL_MSGWARN, &msgwarn, -1 );
-
-	if( my_strlen( msgerr )){
-		err_level = ENT_ERR_ERROR;
-
-	} else if( my_strlen( msgwarn )){
-		err_level = ENT_ERR_WARNING;
-
-	} else {
-		err_level = ENT_ERR_NONE;
-	}
-
-	g_free( msgerr );
-	g_free( msgwarn );
-
-	return( err_level );
+	insert_new_row( self );
 }
 
 /*
@@ -3473,95 +2125,82 @@ static void
 insert_new_row( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeIter sort_iter, filter_iter, new_iter;
 	ofoEntry *entry;
-	ofoAccount *account_object;
-	GtkTreePath *path;
-	GtkTreeViewColumn *column;
+	GtkWindow *toplevel;
 
 	priv = ofa_entry_page_get_instance_private( self );
-
-	/* insert a new row at the end of the list
-	 * there is no sens in inserting an empty row in a sorted list */
-	gtk_list_store_insert( GTK_LIST_STORE( priv->tstore ), &new_iter, -1 );
 
 	/* set default values that we are able to guess */
 	entry = ofo_entry_new();
 
-	if( gtk_toggle_button_get_active( priv->ledger_btn )){
+	if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ))){
 		if( my_strlen( priv->jou_mnemo )){
 			ofo_entry_set_ledger( entry, priv->jou_mnemo );
 		}
-	} else {
-		if( my_strlen( priv->acc_number )){
-			ofo_entry_set_account( entry, priv->acc_number );
-			account_object = ofo_account_get_by_number( priv->hub, priv->acc_number );
-			ofo_entry_set_currency( entry, ofo_account_get_currency( account_object ));
-		}
+	} else if( my_strlen( priv->acc_number )){
+		ofo_entry_set_account( entry, priv->acc_number );
 	}
 
-	display_entry( self, entry, &new_iter );
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_entry_properties_run( OFA_IGETTER( self ), toplevel, entry, priv->editable_row );
+
+#if 0
+	GtkTreeIter new_iter;
+
+	/* insert a new row at the end of the list
+	 * there is no sens in trying to insert an empty row at a given
+	 * position of a sorted list */
+	gtk_list_store_insert_with_values(
+			GTK_LIST_STORE( priv->store ), &new_iter, -1, ENTRY_COL_OBJECT, entry, -1 );
+	//g_signal_emit_by_name( priv->hub, SIGNAL_HUB_NEW, entry );
 	g_object_unref( entry );
 
 	/* set the selection and the cursor on this new line */
-	gtk_tree_model_filter_convert_child_iter_to_iter(
-			GTK_TREE_MODEL_FILTER( priv->tfilter ), &filter_iter, &new_iter );
-	gtk_tree_model_sort_convert_child_iter_to_iter(
-			GTK_TREE_MODEL_SORT( priv->tsort ), &sort_iter, &filter_iter );
-
-	select = gtk_tree_view_get_selection( priv->entries_tview );
-	gtk_tree_selection_select_iter( select, &sort_iter );
-
-	path = gtk_tree_model_get_path( priv->tsort, &sort_iter );
-	column = gtk_tree_view_get_column( priv->entries_tview, 0 );
-	gtk_tree_view_set_cursor( priv->entries_tview, path, column, TRUE );
-	gtk_tree_path_free( path );
+	ofa_tvbin_select_row( OFA_TVBIN( priv->tview ), &new_iter );
 
 	/* force the edition on this line */
-	gtk_switch_set_active( priv->edit_switch, TRUE );
+	gtk_switch_set_active( GTK_SWITCH( priv->edit_switch ), TRUE );
+#endif
 }
 
 static void
-delete_row( ofaEntryPage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
-	GtkTreeSelection *select;
-	GtkTreeModel *tmodel;
-	GtkTreeIter sort_iter, filter_iter, iter;
-	ofoEntry *entry;
+	GtkTreeSelection *selection;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	select = gtk_tree_view_get_selection( priv->entries_tview );
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
+	delete_row( self, selection );
+}
 
-	if( gtk_tree_selection_get_selected( select, NULL, &sort_iter )){
-		gtk_tree_model_get(
-				priv->tsort,
-				&sort_iter,
-				ENT_COL_OBJECT,   &entry,
-				-1 );
+/*
+ * editable switch and dossier have been checked before
+ * but not sure if selected entry is editable
+ */
+static void
+delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
+{
+	GtkTreeModel *tmodel;
+	GtkTreeIter sort_iter;
+	ofoEntry *entry;
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &sort_iter )){
+		gtk_tree_model_get( tmodel, &sort_iter, ENTRY_COL_OBJECT, &entry, -1 );
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
-		if( get_row_status( self, priv->tsort, &sort_iter) == ENT_STATUS_ROUGH ){
-			if( ask_for_delete_confirmed( self, entry )){
-
-				gtk_tree_model_sort_convert_iter_to_child_iter(
-						GTK_TREE_MODEL_SORT( priv->tsort ), &filter_iter, &sort_iter );
-				gtk_tree_model_filter_convert_iter_to_child_iter(
-						GTK_TREE_MODEL_FILTER( priv->tfilter ), &iter, &filter_iter );
-				tmodel = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( priv->tfilter ));
-				gtk_list_store_remove( GTK_LIST_STORE( tmodel ), &iter );
-				ofo_entry_delete( entry );
-				compute_balances( self );
-			}
+		if( ofo_entry_is_editable( entry ) && delete_ask_for_confirm( self, entry )){
+			ofo_entry_delete( entry );
+			balances_compute( self );
 		}
+
 		g_object_unref( entry );
 	}
 }
 
 static gboolean
-ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry )
+delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry )
 {
 	GString *msg;
 	gboolean ok;
@@ -3599,4 +2238,347 @@ ask_for_delete_confirmed( ofaEntryPage *page, ofoEntry *entry )
 	}
 
 	return( ok );
+}
+
+/*
+ * Is the row (+dossier) intrinsically editable (no matter the position
+ *  of the 'Edit' switch) ?
+ */
+static gboolean
+row_is_editable( ofaEntryPage *self, GtkTreeSelection *selection )
+{
+	ofaEntryPagePrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	ofoEntry *entry;
+	gboolean editable;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	editable = FALSE;
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+
+		gtk_tree_model_get( tmodel, &iter, ENTRY_COL_OBJECT, &entry, -1 );
+		g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
+		g_object_unref( entry );
+
+		editable = ofo_entry_is_editable( entry );
+		editable &= priv->is_writable;
+	}
+
+	return( editable );
+}
+
+static void
+row_display_message( ofaEntryPage *self, GtkTreeSelection *selection )
+{
+	ofaEntryPagePrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gchar *msgerr, *msgwarn;
+	const gchar *color_str, *text;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
+
+		gtk_tree_model_get( tmodel, &iter, ENTRY_COL_MSGERR, &msgerr, ENTRY_COL_MSGWARN, &msgwarn, -1 );
+
+		if( my_strlen( msgerr )){
+			text = msgerr;
+			color_str = "labelerror";
+
+		} else if( my_strlen( msgwarn )){
+			text = msgwarn;
+			color_str = "labelwarning";
+
+		} else {
+			text = "";
+			color_str = "labelnormal";
+		}
+
+		gtk_label_set_text( GTK_LABEL( priv->comment ), text );
+		my_style_add( priv->comment, color_str );
+
+		g_free( msgerr );
+		g_free( msgwarn );
+	}
+}
+
+static gint
+row_get_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
+{
+	gchar *msgerr, *msgwarn;
+	gint err_level;
+
+	gtk_tree_model_get( tmodel, iter, ENTRY_COL_MSGERR, &msgerr, ENTRY_COL_MSGWARN, &msgwarn, -1 );
+
+	if( my_strlen( msgerr )){
+		err_level = ENT_ERR_ERROR;
+
+	} else if( my_strlen( msgwarn )){
+		err_level = ENT_ERR_WARNING;
+
+	} else {
+		err_level = ENT_ERR_NONE;
+	}
+
+	g_free( msgerr );
+	g_free( msgwarn );
+
+	return( err_level );
+}
+
+/*
+ * User settings are read during initialization phase,
+ * so do not trigger any action.
+ */
+static void
+read_settings( ofaEntryPage *self )
+{
+	read_settings_selection( self );
+	read_settings_status( self );
+}
+
+/*
+ * <key>-selection = gen_type; gen_account; gen_ledger; bottom_paned;
+ */
+static void
+read_settings_selection( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *settings_key;
+	GList *slist, *it;
+	const gchar *cstr;
+	gint pos;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	settings_key = g_strdup_printf( "%s-selection", priv->settings_prefix );
+	slist = ofa_settings_user_get_string_list( settings_key );
+
+	it = slist ? slist : NULL;
+	cstr = it ? it->data : NULL;
+	if( !my_collate( cstr, SEL_ACCOUNT )){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->account_btn ), TRUE );
+	} else {
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->ledger_btn ), TRUE );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		ofa_ledger_combo_set_selected( priv->ledger_combo, cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		pos = atoi( cstr );
+		if( pos < 150 ){
+			pos = 150;
+		}
+		gtk_paned_set_position( GTK_PANED( priv->bottom_paned ), pos );
+	}
+
+	ofa_settings_free_string_list( slist );
+	g_free( settings_key );
+}
+
+/*
+ * <key>-status = past; rough; valid; deleted; future;
+ */
+static void
+read_settings_status( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *settings_key;
+	GList *slist, *it;
+	const gchar *cstr;
+	gboolean bval;
+	gint count_bvalues;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	settings_key = g_strdup_printf( "%s-status", priv->settings_prefix );
+	slist = ofa_settings_user_get_string_list( settings_key );
+	count_bvalues = 0;
+
+	it = slist ? slist : NULL;
+	cstr = it ? it->data : NULL;
+	bval = my_utils_boolean_from_str( cstr );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->past_btn ), bval );
+	count_bvalues += bval ? 1 : 0;
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	bval = my_utils_boolean_from_str( cstr );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->rough_btn ), bval );
+	count_bvalues += bval ? 1 : 0;
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	bval = my_utils_boolean_from_str( cstr );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->validated_btn ), bval );
+	count_bvalues += bval ? 1 : 0;
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	bval = my_utils_boolean_from_str( cstr );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->deleted_btn ), bval );
+	count_bvalues += bval ? 1 : 0;
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	bval = my_utils_boolean_from_str( cstr );
+	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->future_btn ), bval );
+	count_bvalues += bval ? 1 : 0;
+
+	if( count_bvalues == 0 ){
+		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->rough_btn ), TRUE );
+	}
+
+	ofa_settings_free_string_list( slist );
+	g_free( settings_key );
+}
+
+static void
+write_settings_selection( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *settings_key, *str;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;%s;%s;%d;",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->account_btn )) ? SEL_ACCOUNT : SEL_LEDGER,
+			my_strlen( priv->acc_number ) ? priv->acc_number : "",
+			my_strlen( priv->jou_mnemo ) ? priv->jou_mnemo : "",
+			gtk_paned_get_position( GTK_PANED( priv->bottom_paned )));
+
+	settings_key = g_strdup_printf( "%s-selection", priv->settings_prefix );
+	ofa_settings_user_set_string( settings_key, str );
+
+	g_free( str );
+	g_free( settings_key );
+}
+
+static void
+write_settings_status( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *settings_key, *str;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->past_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->rough_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->deleted_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->future_btn )) ? "True":"False" );
+
+	settings_key = g_strdup_printf( "%s-status", priv->settings_prefix );
+	ofa_settings_user_set_string( settings_key, str );
+
+	g_free( str );
+	g_free( settings_key );
+}
+
+static void
+hub_connect_to_signaling_system( ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	gulong handler;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_NEW, G_CALLBACK( hub_on_new_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_UPDATED, G_CALLBACK( hub_on_updated_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+
+	handler = g_signal_connect( priv->hub, SIGNAL_HUB_DELETED, G_CALLBACK( hub_on_deleted_object ), self );
+	priv->hub_handlers = g_list_prepend( priv->hub_handlers, ( gpointer ) handler );
+}
+
+/*
+ * SIGNAL_HUB_NEW signal handler
+ */
+static void
+hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_hub_on_new_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), self=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_ENTRY( object )){
+		refresh_display( self );
+	}
+}
+
+/*
+ * SIGNAL_HUB_UPDATED signal handler
+ */
+static void
+hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_hub_on_updated_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), prev_id=%s, self=%p (%s)",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			prev_id,
+			( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	if( OFO_IS_ACCOUNT( object )){
+		refresh_display( self );
+
+	} else if( OFO_IS_LEDGER( object )){
+		refresh_display( self );
+
+	} else if( OFO_IS_CURRENCY( object )){
+		refresh_display( self );
+
+	} else if( OFO_IS_CONCIL( object )){
+		refresh_display( self );
+
+	} else if( OFO_IS_ENTRY( object )){
+		refresh_display( self );
+	}
+}
+
+/*
+ * SIGNAL_HUB_DELETED signal handler
+ */
+static void
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self )
+{
+	static const gchar *thisfn = "ofa_entry_page_hub_on_deleted_object";
+
+	g_debug( "%s: hub=%p, object=%p (%s), user_data=%p",
+			thisfn,
+			( void * ) hub,
+			( void * ) object, G_OBJECT_TYPE_NAME( object ),
+			( void * ) self );
+
+	if( OFO_IS_CONCIL( object )){
+		refresh_display( self );
+
+	} else if( OFO_IS_ENTRY( object )){
+		refresh_display( self );
+	}
 }

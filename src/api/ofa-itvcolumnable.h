@@ -106,52 +106,55 @@ typedef struct {
 /*
  * Interface-wide
  */
-GType  ofa_itvcolumnable_get_type                  ( void );
+GType              ofa_itvcolumnable_get_type                  ( void );
 
-guint  ofa_itvcolumnable_get_interface_last_version( void );
+guint              ofa_itvcolumnable_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint  ofa_itvcolumnable_get_interface_version     ( GType type );
+guint              ofa_itvcolumnable_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void   ofa_itvcolumnable_set_name                  ( ofaITVColumnable *instance,
-															const gchar *name );
+void               ofa_itvcolumnable_set_name                  ( ofaITVColumnable *instance,
+																		const gchar *name );
 
-void   ofa_itvcolumnable_set_treeview              ( ofaITVColumnable *instance,
-															GtkTreeView *treeview );
+void               ofa_itvcolumnable_set_treeview              ( ofaITVColumnable *instance,
+																		GtkTreeView *treeview );
 
-void   ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
-															GtkTreeViewColumn *column,
-															gint column_id,
-															const gchar *menu_label );
+void               ofa_itvcolumnable_add_column                ( ofaITVColumnable *instance,
+																		GtkTreeViewColumn *column,
+																		gint column_id,
+																		const gchar *menu_label );
 
-gint   ofa_itvcolumnable_get_column_id             ( ofaITVColumnable *instance,
-															GtkTreeViewColumn *column );
+GtkTreeViewColumn *ofa_itvcolumnable_get_column                ( ofaITVColumnable *instance,
+																		gint column_id );
 
-gint   ofa_itvcolumnable_get_column_id_renderer    ( ofaITVColumnable *instance,
-															GtkCellRenderer *renderer );
+gint               ofa_itvcolumnable_get_column_id             ( ofaITVColumnable *instance,
+																		GtkTreeViewColumn *column );
 
-guint  ofa_itvcolumnable_get_columns_count         ( ofaITVColumnable *instance );
+gint               ofa_itvcolumnable_get_column_id_renderer    ( ofaITVColumnable *instance,
+																		GtkCellRenderer *renderer );
 
-GMenu *ofa_itvcolumnable_get_menu                  ( ofaITVColumnable *instance );
+guint              ofa_itvcolumnable_get_columns_count         ( ofaITVColumnable *instance );
 
-void   ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
-															gint column_id );
+GMenu             *ofa_itvcolumnable_get_menu                  ( ofaITVColumnable *instance );
 
-void   ofa_itvcolumnable_enable_column             ( ofaITVColumnable *instance,
-															gint column_id,
-															gboolean enable );
+void               ofa_itvcolumnable_set_default_column        ( ofaITVColumnable *instance,
+																		gint column_id );
 
-void   ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance );
+void               ofa_itvcolumnable_enable_column             ( ofaITVColumnable *instance,
+																		gint column_id,
+																		gboolean enable );
 
-void   ofa_itvcolumnable_propagate_visible_columns ( ofaITVColumnable *instance,
-															GList *pages_list );
+void               ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance );
 
-void   ofa_itvcolumnable_write_columns_settings    ( ofaITVColumnable *instance );
+void               ofa_itvcolumnable_propagate_visible_columns ( ofaITVColumnable *instance,
+																		GList *pages_list );
+
+void               ofa_itvcolumnable_write_columns_settings    ( ofaITVColumnable *instance );
 
 G_END_DECLS
 
