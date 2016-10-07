@@ -398,7 +398,12 @@
 
 1220 2016-10- 4 ofa_idate_filter_set_prefs() -> ofa_idate_filter_set_settings_key()
 
-1221
+1221 2016-10- 7 EntryPage: actions are always disabled
+
+1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
+                not grayed (but should)
+
+1223
 
 -----------------------------------------------------------------------
  DONE
