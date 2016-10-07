@@ -66,8 +66,6 @@
 
 #include "ui/ofa-bat-select.h"
 #include "ui/ofa-bat-utils.h"
-#include "ui/ofa-itreeview-column.h"
-#include "ui/ofa-itreeview-display.h"
 #include "ui/ofa-reconcil-page.h"
 #include "ui/ofa-reconcil-render.h"
 #include "ui/ofa-reconcil-store.h"

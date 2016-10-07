@@ -81,6 +81,7 @@
    - EntryListview, EntryStore: new classes.
    - myIActionMap, myAccelGroup: simplify code and review interface.
    - All collections: are no more sorted (todo #1208).
+   - ITreeviewColumn, ITreeviewDisplay: obsoleted interfaces (todo #1179).
    - Object classes: review xxx_use_yyy() usage (todo #1207).
    - ofaActionPage: new ofaPage-derived class.
    - ofa_buttons_box_add_button_with_mnemonic(): obsoleted method (todo #1181).

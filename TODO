@@ -384,8 +384,6 @@
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
-1179 2016- 8- 2 obsolete itreeview-column and itreeview-display
-
 1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
 
 1192 2016- 9-14 FEAT: export the balance for a period
@@ -1591,6 +1589,9 @@
 
 1178 2016- 8- 2 rename ofaISortable to ofaITVSortable
      2016- 8- 4 done
+
+1179 2016- 8- 2 obsolete itreeview-column and itreeview-display
+     2016-10- 7 done
 
 1180 2016- 8- 3 rename ofaPage::setup_buttons to ofaPage::setup_actions
      2016- 8-29 obsoleted with ofaPage review

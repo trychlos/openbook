@@ -171,10 +171,6 @@ openbook_SOURCES = \
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
-	ofa-itreeview-column.c								\
-	ofa-itreeview-column.h								\
-	ofa-itreeview-display.c								\
-	ofa-itreeview-display.h								\
 	ofa-ledger-book-bin.c								\
 	ofa-ledger-book-bin.h								\
 	ofa-ledger-book-render.c							\
