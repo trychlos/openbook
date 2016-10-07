@@ -425,7 +425,7 @@ get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selection, const gchar *
  *
  * Returns: the list of selected objects, which may be %NULL.
  *
- * The returned list should be ofa_recurrent_model_treeview_free_selected()
+ * The returned list should be ofa_entry_treeview_free_selected()
  * by the caller.
  */
 GList *

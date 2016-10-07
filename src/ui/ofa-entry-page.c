@@ -120,6 +120,7 @@ typedef struct {
 	/* actions
 	 */
 	GSimpleAction       *new_action;
+	GSimpleAction       *update_action;
 	GSimpleAction       *delete_action;
 
 	/* footer
@@ -236,6 +237,8 @@ static void       remediate_entry_account( ofaEntryPage *self, ofoEntry *entry, 
 static void       remediate_entry_ledger( ofaEntryPage *self, ofoEntry *entry, const gchar *prev_ledger, ofxAmount prev_debit, ofxAmount prev_credit );
 static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       insert_new_row( ofaEntryPage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
+static void       do_update( ofaEntryPage *self, ofoEntry *entry );
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self );
 static void       delete_row( ofaEntryPage *self, GtkTreeSelection *selection );
 static gboolean   delete_ask_for_confirm( ofaEntryPage *page, ofoEntry *entry );
@@ -293,6 +296,7 @@ entry_page_dispose( GObject *instance )
 		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 
 		g_clear_object( &priv->new_action );
+		g_clear_object( &priv->update_action );
 		g_clear_object( &priv->delete_action );
 
 		/* save the bottom paned position */
@@ -743,11 +747,9 @@ static void
 tview_on_row_activated( ofaTVBin *bin, GList *selected, ofaEntryPage *self )
 {
 	ofoEntry *entry;
-	GtkWindow *toplevel;
 
 	entry = ( ofoEntry * ) selected->data;
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_entry_properties_run( OFA_IGETTER( self ), toplevel, entry, FALSE );
+	do_update( self, entry );
 }
 
 static void
@@ -838,15 +840,23 @@ setup_actions( ofaEntryPage *self )
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->new_action ),
 			_( "New..." ));
-	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
+	g_simple_action_set_enabled( priv->new_action, FALSE );
+
+	/* update action */
+	priv->update_action = g_simple_action_new( "update", NULL );
+	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), self );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->update_action ),
+			_( "View/edit properties..." ));
+	g_simple_action_set_enabled( priv->update_action, FALSE );
 
 	/* delete action */
 	priv->delete_action = g_simple_action_new( "delete", NULL );
 	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->delete_action ),
-			_( "Delete" ));
-	g_simple_action_set_enabled( priv->delete_action, priv->is_writable );
+			_( "Delete..." ));
+	g_simple_action_set_enabled( priv->delete_action, FALSE );
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( self ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -1110,17 +1120,37 @@ edit_on_switched( GtkSwitch *switch_btn, GParamSpec *pspec, ofaEntryPage *self )
 static void
 edit_set_cells_editable( ofaEntryPage *self, GtkTreeSelection *selection, gboolean editable )
 {
+	static const gchar *thisfn = "ofa_entry_page_edit_set_cells_editable";
 	ofaEntryPagePrivate *priv;
+	gboolean is_active;
+	gboolean new_enabled, update_enabled, delete_enabled;
+	gint count;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	priv->editable_row = editable && gtk_switch_get_active( GTK_SWITCH( priv->edit_switch ));
+	count = gtk_tree_selection_count_selected_rows( selection );
+	is_active = gtk_switch_get_active( GTK_SWITCH( priv->edit_switch ));
+	priv->editable_row = editable && is_active;
 
-	g_simple_action_set_enabled( priv->new_action, priv->editable_row );
-	g_simple_action_set_enabled( priv->delete_action, priv->editable_row );
-	g_debug( "edit_set_cells_editable: editable_row=%s", priv->editable_row ? "True":"False" );
-	gboolean st = g_action_get_enabled( G_ACTION( priv->new_action ));
-	g_debug( "edit_set_cells_editable: action_status=%s", st ? "True":"False" );
+	/* new: if dossier is writable and edition is on */
+	new_enabled = priv->is_writable && is_active;
+	g_simple_action_set_enabled( priv->new_action, new_enabled );
+
+	/* edit/view: if count > 0 */
+	update_enabled = ( count > 0 );
+	g_simple_action_set_enabled( priv->update_action, update_enabled );
+
+	/* delete: if dossier is writable and edition is on and row is editable and count > 0 */
+	delete_enabled = priv->editable_row && count > 0;
+	g_simple_action_set_enabled( priv->delete_action, delete_enabled );
+
+	if( 1 ){
+		g_debug( "%s: new_enabled=%s, update_enabled=%s, delete_enabled=%s",
+				thisfn, new_enabled ? "True":"False",
+				update_enabled ? "True":"False", delete_enabled ? "True":"False" );
+		gboolean stat = g_action_get_enabled( G_ACTION( priv->update_action ));
+		g_debug( "edit_set_cells_editable: update_action_status=%s", stat ? "True":"False" );
+	}
 }
 
 static void
@@ -2126,7 +2156,6 @@ insert_new_row( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	ofoEntry *entry;
-	GtkWindow *toplevel;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
@@ -2141,8 +2170,7 @@ insert_new_row( ofaEntryPage *self )
 		ofo_entry_set_account( entry, priv->acc_number );
 	}
 
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_entry_properties_run( OFA_IGETTER( self ), toplevel, entry, priv->editable_row );
+	do_update( self, entry );
 
 #if 0
 	GtkTreeIter new_iter;
@@ -2161,6 +2189,35 @@ insert_new_row( ofaEntryPage *self )
 	/* force the edition on this line */
 	gtk_switch_set_active( GTK_SWITCH( priv->edit_switch ), TRUE );
 #endif
+}
+
+static void
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaEntryPage *self )
+{
+	ofaEntryPagePrivate *priv;
+	GList *selected;
+	ofoEntry *entry;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	selected = ofa_entry_treeview_get_selected( priv->tview );
+	entry = ( ofoEntry * ) selected->data;
+	do_update( self, entry );
+	ofa_entry_treeview_free_selected( selected );
+}
+
+static void
+do_update( ofaEntryPage *self, ofoEntry *entry )
+{
+	ofaEntryPagePrivate *priv;
+	GtkWindow *toplevel;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	if( entry ){
+		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+		ofa_entry_properties_run( OFA_IGETTER( self ), toplevel, entry, priv->editable_row );
+	}
 }
 
 static void
