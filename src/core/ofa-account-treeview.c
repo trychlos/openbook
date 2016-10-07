@@ -464,6 +464,15 @@ setup_columns( ofaAccountTreeview *self )
 	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), ACCOUNT_COL_EXE_SOLDE,     _( "Solde" ),    _( "Exercice solde" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), ACCOUNT_COL_LABEL );
+
+	ofa_itvcolumnable_twins_group_new(
+			OFA_ITVCOLUMNABLE( self ), "val", ACCOUNT_COL_VAL_DEBIT, ACCOUNT_COL_VAL_CREDIT, -1 );
+	ofa_itvcolumnable_twins_group_new(
+			OFA_ITVCOLUMNABLE( self ), "rough", ACCOUNT_COL_ROUGH_DEBIT, ACCOUNT_COL_ROUGH_CREDIT, -1 );
+	ofa_itvcolumnable_twins_group_new(
+			OFA_ITVCOLUMNABLE( self ), "fut", ACCOUNT_COL_FUT_DEBIT, ACCOUNT_COL_FUT_CREDIT, -1 );
+	ofa_itvcolumnable_twins_group_new(
+			OFA_ITVCOLUMNABLE( self ), "exe", ACCOUNT_COL_EXE_DEBIT, ACCOUNT_COL_EXE_CREDIT, ACCOUNT_COL_EXE_SOLDE, -1 );
 }
 
 static void

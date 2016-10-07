@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdarg.h>
 #include <stdlib.h>
 
 #include "my/my-utils.h"
@@ -42,10 +43,11 @@
 #define ITVCOLUMNABLE_DATA          "ofa-itvcolumnable-data"
 
 typedef struct {
-	gchar              *name;
-	GList              *columns_list;
-	GtkTreeView        *treeview;
-	gint                visible_count;
+	gchar             *name;
+	GList             *columns_list;
+	GtkTreeView       *treeview;
+	gint               visible_count;
+	GHashTable        *twins;
 }
 	sITVColumnable;
 
@@ -62,10 +64,32 @@ typedef struct {
 }
 	sColumn;
 
+/* the description of a twin group
+ * this is the structure attached to the 'twins' hash, indexed by name
+ */
+typedef struct {
+	ofaITVColumnable  *instance;
+	gchar             *name;
+	gint               width;
+	GList             *columns;
+	GList             *widgets;
+}
+	sTwinGroup;
+
+/* the data attached to each column of a twin group
+ */
+typedef struct {
+	gint               col_id;
+	GtkTreeViewColumn *column;
+	gint               x;
+}
+	sTwinColumn;
+
 /* signals defined here
  */
 enum {
 	TOGGLED = 0,
+	WIDTH,
 	N_SIGNALS
 };
 
@@ -82,9 +106,9 @@ static void            on_action_changed_state( GSimpleAction *action, GVariant 
 static gint            get_column_id( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeViewColumn *column );
 static void            do_propagate_visible_columns( ofaITVColumnable *source, sITVColumnable *sdata, ofaITVColumnable *target );
 static void            itvcolumnable_clear_all( ofaITVColumnable *instance );
-static sITVColumnable *get_instance_data( const ofaITVColumnable *instance );
-static void            on_instance_finalized( sITVColumnable *sdata, void *instance );
-static void            free_column( sColumn *scol );
+static gboolean        twins_group_init( ofaITVColumnable *self, sITVColumnable *sdata, const gchar *name, GList *col_ids );
+static void            tvcolumn_on_width_changed( GtkTreeViewColumn *column, GParamSpec *spec, sTwinGroup *twgroup );
+static void            tvcolumn_on_xoffset_changed( GtkTreeViewColumn *column, GParamSpec *spec, sTwinGroup *twgroup );
 static gchar          *get_actions_group_name( const ofaITVColumnable *instance, sITVColumnable *sdata );
 static sColumn        *get_column_data_by_id( const ofaITVColumnable *instance, sITVColumnable *sdata, gint id );
 static sColumn        *get_column_data_by_ptr( const ofaITVColumnable *instance, sITVColumnable *sdata, GtkTreeViewColumn *column );
@@ -93,6 +117,11 @@ static gchar          *column_id_to_action_name( gint id );
 static gint            action_name_to_column_id( const gchar *name );
 static gint            read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
 static void            write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata );
+static sITVColumnable *get_instance_data( const ofaITVColumnable *instance );
+static void            on_instance_finalized( sITVColumnable *sdata, void *instance );
+static void            free_column( sColumn *scol );
+static void            free_twin_group( sTwinGroup *twgroup );
+static void            free_twin_column( sTwinColumn *twcol );
 
 /**
  * ofa_itvcolumnable_get_type:
@@ -177,6 +206,33 @@ interface_base_init( ofaITVColumnableInterface *klass )
 					G_TYPE_NONE,
 					2,
 					G_TYPE_INT, G_TYPE_BOOLEAN );
+
+		/**
+		 * ofaITVColumnable::ofa-twinwidth:
+		 *
+		 * This signal is sent when a twin-group column's width has changed.
+		 * @column_id: the column identifier of the changed column.
+		 * @name: the name of the twin group the column belongs to.
+		 * @new_width: the new width of the column.
+		 *
+		 * Handler is of type:
+		 * void ( *handler )( ofaITVColumnable *instance,
+		 * 						gint            column_id,
+		 * 						const gchar    *name,
+		 * 						gint            new_width,
+		 * 						gpointer        user_data );
+		 */
+		st_signals[ WIDTH ] = g_signal_new_class_handler(
+					"ofa-twinwidth",
+					OFA_TYPE_ITVCOLUMNABLE,
+					G_SIGNAL_RUN_LAST,
+					NULL,
+					NULL,								/* accumulator */
+					NULL,								/* accumulator data */
+					NULL,
+					G_TYPE_NONE,
+					2,
+					G_TYPE_INT, G_TYPE_STRING, G_TYPE_INT );
 	}
 
 	st_initializations += 1;
@@ -722,51 +778,181 @@ ofa_itvcolumnable_write_columns_settings( ofaITVColumnable *instance )
 	write_settings( instance, sdata );
 }
 
-/*
- * returns the sITVColumnable data structure attached to the instance
+/**
+ * ofa_itvcolumnable_twins_group_new:
+ * @instance: the #ofaITVColumnable instance.
+ * @name: the name of this twins group.
+ *
+ * Define a new twins group with @name identifier, and set the specified
+ * columns as twins.
+ *
+ * Inside of a twins group:
+ * - all columns keep the same width.
+ *
+ * Other widgets may later be added to this twins group, and wil share
+ * the same width-keeper feature.
+ *
+ * The column identifiers must be specified as a -1 terminated list.
+ *
+ * Returns: %TRUE if the twins group has been successfully defined.
  */
-static sITVColumnable *
-get_instance_data( const ofaITVColumnable *instance )
+gboolean
+ofa_itvcolumnable_twins_group_new( ofaITVColumnable *instance, const gchar *name, ... )
 {
+	static const gchar *thisfn = "ofa_itvcolumnable_twins_group_new";
 	sITVColumnable *sdata;
+	GList *ids;
+	va_list ap;
+	gint col_id;
+	gboolean ok;
 
-	sdata = ( sITVColumnable * ) g_object_get_data( G_OBJECT( instance ), ITVCOLUMNABLE_DATA );
+	g_debug( "%s: instance=%p (%s), name=%s",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), name );
 
-	if( !sdata ){
-		sdata = g_new0( sITVColumnable, 1 );
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ), FALSE );
+	g_return_val_if_fail( my_strlen( name ), FALSE );
 
-		sdata->name = NULL;
-		sdata->columns_list = NULL;
-		sdata->treeview = NULL;
-		sdata->visible_count = 0;
+	sdata = get_instance_data( instance );
 
-		g_object_set_data( G_OBJECT( instance ), ITVCOLUMNABLE_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+	if( g_hash_table_lookup( sdata->twins, name )){
+		g_warning( "%s: trying to double-defined the '%s' twins group", thisfn, name );
+		return( FALSE );
 	}
 
-	return( sdata );
+	ids = NULL;
+	va_start( ap, name );
+	while( TRUE ){
+		col_id = va_arg( ap, gint );
+		if( col_id == -1 ){
+			break;
+		}
+		ids = g_list_prepend( ids, GINT_TO_POINTER( col_id ));
+	}
+	va_end( ap );
+	ok = twins_group_init( instance, sdata, name, ids );
+	g_debug( "%s: group=%s defined with count=%d columns", thisfn, name, g_list_length( ids ));
+	g_list_free( ids );
+
+	return( ok );
+}
+
+static gboolean
+twins_group_init( ofaITVColumnable *self, sITVColumnable *sdata, const gchar *name, GList *col_ids )
+{
+	sTwinGroup *twgroup;
+	sTwinColumn *twcol;
+	GList *it;
+	gint column_id, width;
+	GtkTreeViewColumn *column;
+
+	twgroup = g_new0( sTwinGroup, 1 );
+	twgroup->instance = self;
+	twgroup->name = g_strdup( name );
+	twgroup->columns = NULL;
+	twgroup->widgets = NULL;
+	twgroup->width = 0;
+
+	for( it=col_ids ; it ; it=it->next ){
+		column_id = GPOINTER_TO_INT( it->data );
+		column = ofa_itvcolumnable_get_column( self, column_id );
+		g_return_val_if_fail( column && GTK_IS_TREE_VIEW_COLUMN( column ), FALSE );
+
+		g_signal_connect( column, "notify::width", G_CALLBACK( tvcolumn_on_width_changed ), twgroup );
+		g_signal_connect( column, "notify::x-offset", G_CALLBACK( tvcolumn_on_xoffset_changed ), twgroup );
+
+		twcol = g_new0( sTwinColumn, 1 );
+		twcol->col_id = column_id;
+		twcol->column = column;
+		twcol->x = gtk_tree_view_column_get_x_offset( column );
+		twgroup->columns = g_list_prepend( twgroup->columns, twcol );
+
+		width = gtk_tree_view_column_get_width( column );
+		if( twgroup->width < width ){
+			twgroup->width = width;
+		}
+	}
+
+	g_hash_table_insert( sdata->twins, g_strdup( name ), twgroup );
+
+	return( TRUE );
 }
 
 static void
-on_instance_finalized( sITVColumnable *sdata, void *instance )
+tvcolumn_on_width_changed( GtkTreeViewColumn *column, GParamSpec *spec, sTwinGroup *twgroup )
 {
-	static const gchar *thisfn = "ofa_itvcolumnable_on_instance_finalized";
+	static const gchar *thisfn = "ofa_itvcolumnable_tvolumn_on_width_changed";
+	GList *it;
+	gint new_width, col_id;
+	sTwinColumn *twcol;
+	GtkWidget *widget;
 
-	g_debug( "%s: sdata=%p, instance=%p", thisfn, ( void * ) sdata, ( void * ) instance );
-
-	g_list_free_full( sdata->columns_list, ( GDestroyNotify ) free_column );
-
-	g_object_unref( sdata->treeview );
-	g_free( sdata->name );
-	g_free( sdata );
+	col_id = -1;
+	new_width = gtk_tree_view_column_get_width( column );
+	if( new_width != twgroup->width ){
+		for( it=twgroup->columns ; it ; it=it->next ){
+			twcol = ( sTwinColumn * ) it->data;
+			if( twcol->column != column ){
+				gtk_tree_view_column_set_fixed_width( twcol->column, new_width );
+			} else {
+				col_id = twcol->col_id;
+			}
+		}
+		g_debug( "%s: col_id=%d, name=%s, width=%d", thisfn, col_id, twgroup->name, new_width );
+		for( it=twgroup->widgets ; it ; it=it->next ){
+			widget = ( GtkWidget * ) it->data;
+			if( GTK_IS_WIDGET( widget )){
+				g_debug( "gtk_widget_set_size_request for widget=%p, width=%d", widget, new_width );
+				gtk_widget_set_size_request( widget, new_width, -1 );
+			}
+		}
+		if( twgroup->instance ){
+			g_signal_emit_by_name( twgroup->instance, "ofa-twinwidth", col_id, twgroup->name, new_width );
+		}
+		twgroup->width = new_width;
+	}
 }
 
 static void
-free_column( sColumn *scol )
+tvcolumn_on_xoffset_changed( GtkTreeViewColumn *column, GParamSpec *spec, sTwinGroup *group )
 {
-	g_free( scol->group_name );
-	g_free( scol->name );
-	g_free( scol );
+	//g_debug( "tvcolumn_on_xoffset_changed: column=%p", column );
+}
+
+/**
+ * ofa_itvcolumnable_twins_group_add_widget:
+ * @instance: the #ofaITVColumnable instance.
+ * @name: the name of this twins group.
+ * @widget: a #GtkWidget to be added to the previously defined @name group.
+ *
+ * Returns: %TRUE if the @widget has been successfully added to the @name
+ * group.
+ */
+gboolean
+ofa_itvcolumnable_twins_group_add_widget( ofaITVColumnable *instance, const gchar *name, GtkWidget *widget )
+{
+	static const gchar *thisfn = "ofa_itvcolumnable_twins_group_add_widget";
+	sITVColumnable *sdata;
+	sTwinGroup *twgroup;
+
+	g_debug( "%s: instance=%p (%s), name=%s, widget=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), name,
+			( void * ) widget, G_OBJECT_TYPE_NAME( widget ));
+
+	g_return_val_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ), FALSE );
+	g_return_val_if_fail( my_strlen( name ), FALSE );
+	g_return_val_if_fail( widget && GTK_IS_WIDGET( widget ), FALSE );
+
+	sdata = get_instance_data( instance );
+	twgroup = g_hash_table_lookup( sdata->twins, name );
+
+	if( !twgroup ){
+		g_warning( "%s: trying to add a widget to undefined '%s' twins group", thisfn, name );
+		return( FALSE );
+	}
+
+	twgroup->widgets = g_list_prepend( twgroup->widgets, widget );
+
+	return( TRUE );
 }
 
 static gchar *
@@ -921,4 +1107,68 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 		g_free( settings_key );
 		g_string_free( str, TRUE );
 	}
+}
+
+/*
+ * returns the sITVColumnable data structure attached to the instance
+ */
+static sITVColumnable *
+get_instance_data( const ofaITVColumnable *instance )
+{
+	sITVColumnable *sdata;
+
+	sdata = ( sITVColumnable * ) g_object_get_data( G_OBJECT( instance ), ITVCOLUMNABLE_DATA );
+
+	if( !sdata ){
+		sdata = g_new0( sITVColumnable, 1 );
+
+		sdata->name = NULL;
+		sdata->columns_list = NULL;
+		sdata->treeview = NULL;
+		sdata->visible_count = 0;
+		sdata->twins = g_hash_table_new_full( g_str_hash, g_str_equal, g_free, ( GDestroyNotify ) free_twin_group );
+
+		g_object_set_data( G_OBJECT( instance ), ITVCOLUMNABLE_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( instance ), ( GWeakNotify ) on_instance_finalized, sdata );
+	}
+
+	return( sdata );
+}
+
+static void
+on_instance_finalized( sITVColumnable *sdata, void *instance )
+{
+	static const gchar *thisfn = "ofa_itvcolumnable_on_instance_finalized";
+
+	g_debug( "%s: sdata=%p, instance=%p", thisfn, ( void * ) sdata, ( void * ) instance );
+
+	g_list_free_full( sdata->columns_list, ( GDestroyNotify ) free_column );
+	g_hash_table_remove_all( sdata->twins );
+	g_hash_table_unref( sdata->twins );
+	g_object_unref( sdata->treeview );
+	g_free( sdata->name );
+	g_free( sdata );
+}
+
+static void
+free_column( sColumn *scol )
+{
+	g_free( scol->group_name );
+	g_free( scol->name );
+	g_free( scol );
+}
+
+static void
+free_twin_group( sTwinGroup *twgroup )
+{
+	g_free( twgroup->name );
+	g_list_free_full( twgroup->columns, ( GDestroyNotify ) free_twin_column );
+	g_list_free( twgroup->widgets );
+	g_free( twgroup );
+}
+
+static void
+free_twin_column( sTwinColumn *twcolumn )
+{
+	g_free( twcolumn );
 }

@@ -326,6 +326,7 @@ setup_columns( ofaReconcilTreeview *self )
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), RECONCIL_COL_CONCIL_TYPE,   _( "Concil.type" ), _( "Conciliation type" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), RECONCIL_COL_LABEL );
+	ofa_itvcolumnable_twins_group_new( OFA_ITVCOLUMNABLE( self ), "amount", RECONCIL_COL_DEBIT, RECONCIL_COL_CREDIT, -1 );
 }
 
 static void
