@@ -398,9 +398,6 @@
 
 1221 2016-10- 7 EntryPage: actions are always disabled but shouldn't)
 
-1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
-                not grayed (but should)
-
 1223
 
 -----------------------------------------------------------------------
@@ -1764,6 +1761,10 @@
 
 1219 2016- 9-30 BatlineTreeview: unable to modify columns visibility !?
      2016-10- 3 fixed
+
+1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
+                not grayed (but should)
+     2016-10- 8 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
