@@ -1019,6 +1019,9 @@ do_update( ofaDossierProperties *self, gchar **msgerr )
 		*msgerr = g_strdup( _( "Unable to update the dossier" ));
 		return( FALSE );
 	}
+	if( ofa_hub_dossier_remediate_settings( priv->hub )){
+		g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
+	}
 
 	if( count > 0 ){
 		display_progress_init( self );

@@ -45,6 +45,7 @@
 
  Bug fixes:
 
+   - DossierSettings: update main window title when remediated (todo #1165).
    - ofoRecurrentModel: insert/update the DBMS with 'enabled' property.
 
  Other changes:

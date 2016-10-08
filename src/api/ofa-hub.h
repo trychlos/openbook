@@ -136,7 +136,7 @@ gboolean                ofa_hub_dossier_is_writable       ( ofaHub *hub );
 
 ofaDossierPrefs        *ofa_hub_dossier_get_prefs         ( ofaHub *hub );
 
-void                    ofa_hub_dossier_remediate_settings( ofaHub *hub );
+gboolean                ofa_hub_dossier_remediate_settings( ofaHub *hub );
 
 ofaIImporter           *ofa_hub_get_willing_to            ( ofaHub *hub,
 																const gchar *uri,

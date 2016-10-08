@@ -879,6 +879,7 @@ menubar_setup( ofaMainWindow *window, myIActionMap *map )
 static void
 set_window_title( ofaMainWindow *self, gboolean with_dossier )
 {
+	static const gchar *thisfn = "ofa_main_window_set_window_title";
 	ofaMainWindowPrivate *priv;
 	ofaHub *hub;
 	ofoDossier *dossier;
@@ -886,6 +887,9 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 	gchar *title, *dos_name, *period_label, *period_name;
+
+	g_debug( "%s: self=%p, with_dossier=%s",
+			thisfn, ( void * ) self, with_dossier ? "True":"False" );
 
 	priv = ofa_main_window_get_instance_private( self );
 

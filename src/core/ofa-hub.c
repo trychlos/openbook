@@ -95,7 +95,7 @@ static guint    icollector_get_interface_version( void );
 static void     connect_signaling_system_to( ofaHub *hub, GType type );
 static gboolean on_deletable_default_handler( ofaHub *hub, GObject *object );
 static void     dossier_do_close( ofaHub *hub );
-static void     check_db_vs_settings( ofaHub *hub );
+static gboolean check_db_vs_settings( ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
@@ -981,19 +981,21 @@ ofa_hub_dossier_get_prefs( ofaHub *hub )
  * are synchronized with the same data recorded in the database:
  * - opened or closed exercice,
  * - begin and end dates of the exercice.
+ *
+ * Returns: %TRUE if the dossier settings have actually been remediated.
  */
-void
+gboolean
 ofa_hub_dossier_remediate_settings( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	priv = ofa_hub_get_instance_private( hub );
 
-	g_return_if_fail( !priv->dispose_has_run );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	check_db_vs_settings( hub );
+	return( check_db_vs_settings( hub ));
 }
 
 /* when opening the dossier, make sure the settings are up to date
@@ -1005,18 +1007,19 @@ ofa_hub_dossier_remediate_settings( ofaHub *hub )
  * controlled, while the dossier settings may easily be tweaked by the
  * user.
  */
-static void
+static gboolean
 check_db_vs_settings( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_hub_check_db_vs_settings";
 	ofoDossier *dossier;
-	gboolean db_current, settings_current;
+	gboolean db_current, settings_current, remediated;
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
 	const ofaIDBConnect *cnx;
 	ofaIDBPeriod *period;
 	ofaIDBMeta *meta;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
+	remediated = FALSE;
 	dossier = ofa_hub_get_dossier( hub );
 	cnx = ofa_hub_get_connect( hub );
 
@@ -1054,9 +1057,13 @@ check_db_vs_settings( ofaHub *hub )
 		meta = ofa_idbconnect_get_meta( cnx );
 		ofa_idbmeta_update_period( meta, period, db_current, db_begin, db_end );
 		g_object_unref( meta );
+
+		remediated = TRUE;
 	}
 
 	g_object_unref( period );
+
+	return( remediated );
 }
 
 /**
