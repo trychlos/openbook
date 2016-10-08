@@ -64,18 +64,22 @@ typedef struct {
 	ofoAccountClass;
 
 /**
+ * ofeAccountAllowed:
  * When editing/selecting an account, specify which type of account if
  * allowed to be selected
- * Note that closed account are never allowed, unless explicitely specified.
+ * Note that this NOT a bitmask, but the set of selectionable properties:
+ * @ACCOUNT_ALLOW_DETAIL: all non closed detail accounts.
+ * @ACCOUNT_ALLOW_SETTLEABLE: all non closed settleable accounts.
+ * @ACCOUNT_ALLOW_RECONCILIABLE: all non closed reconciliable accounts.
+ * @ACCOUNT_ALLOW_FORWARDABLE: all non closed forwardable accounts.
+ * @ACCOUNT_ALLOW_ALL: all non closed accounts.
  */
 typedef enum {
-	ACCOUNT_ALLOW_ROOT          = 1 << 0,
-	ACCOUNT_ALLOW_DETAIL        = 1 << 1,
-	ACCOUNT_ALLOW_SETTLEABLE    = 1 << 2,
-	ACCOUNT_ALLOW_RECONCILIABLE = 1 << 3,
-	ACCOUNT_ALLOW_FORWARDABLE   = 1 << 4,
-	ACCOUNT_ALLOW_CLOSED        = 1 << 5,
-	ACCOUNT_ALLOW_ALL = ACCOUNT_ALLOW_ROOT | ACCOUNT_ALLOW_DETAIL
+	ACCOUNT_ALLOW_DETAIL = 1,
+	ACCOUNT_ALLOW_SETTLEABLE,
+	ACCOUNT_ALLOW_RECONCILIABLE,
+	ACCOUNT_ALLOW_FORWARDABLE,
+	ACCOUNT_ALLOW_ALL,
 }
 	ofeAccountAllowed;
 
@@ -122,7 +126,7 @@ gdouble         ofo_account_get_global_solde        ( const ofoAccount *account 
 gboolean        ofo_account_has_children            ( const ofoAccount *account );
 GList          *ofo_account_get_children            ( const ofoAccount *account );
 gboolean        ofo_account_is_child_of             ( const ofoAccount *account, const gchar *candidate );
-gboolean        ofo_account_is_allowed              ( const ofoAccount *account, gint allowables );
+gboolean        ofo_account_is_allowed              ( const ofoAccount *account, gint allowed );
 
 gboolean        ofo_account_archive_balances        ( ofoAccount *account, const GDate *date );
 

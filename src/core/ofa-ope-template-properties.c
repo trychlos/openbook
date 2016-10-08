@@ -595,7 +595,7 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
 	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
-	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_DETAIL );
+	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_ALL );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_account_changed ), self );
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),

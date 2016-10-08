@@ -350,6 +350,13 @@ on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn,
 	g_return_if_fail( account && OFO_IS_ACCOUNT( account ));
 	g_object_unref( account );
 
+	/*
+	g_debug( "account=%s, allowed=%d, ok=%s",
+			ofo_account_get_number( account),
+			priv->allowed,
+			ofo_account_is_allowed( account, priv->allowed ) ? "True":"False" );
+			*/
+
 	if( GTK_IS_CELL_RENDERER_TEXT( cell ) && !ofo_account_is_allowed( account, priv->allowed )){
 		gdk_rgba_parse( &color, "#b0b0b0" );
 		g_object_set( G_OBJECT( cell ), "foreground-rgba", &color, NULL );

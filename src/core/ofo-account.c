@@ -1050,48 +1050,42 @@ ofo_account_is_child_of( const ofoAccount *account, const gchar *candidate )
 
 /**
  * ofo_account_is_allowed:
- * @account:
- * @allowables:
+ * @account: this #ofoAccount instance.
+ * @allowed: the type of allowed account.
  *
- * Returns: %TRUE if the @account is allowed regarding the specifications
- * if @allowables.
+ * Returns %TRUE if the @account is of the specified @allowed type.
  */
 gboolean
-ofo_account_is_allowed( const ofoAccount *account, gint allowables )
+ofo_account_is_allowed( const ofoAccount *account, gint allowed )
 {
-	gboolean ok = FALSE;
-
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 
-	if( !ofo_account_is_closed( account ) || ( allowables & ACCOUNT_ALLOW_CLOSED )){
-
-		if( !ok && ( allowables & ACCOUNT_ALLOW_ALL )){
-			ok = TRUE;
-		}
-		if( !ok && ( allowables & ACCOUNT_ALLOW_ROOT )){
-			if( ofo_account_is_root( account )){
-				ok = TRUE;
-			}
-		}
-		if( !ok && ( allowables & ACCOUNT_ALLOW_DETAIL )){
-			if( !ofo_account_is_root( account )){
-				ok = TRUE;
-			}
-		}
-		if( !ok && ( allowables & ACCOUNT_ALLOW_SETTLEABLE )){
-			if( ofo_account_is_settleable( account )){
-				ok = TRUE;
-			}
-		}
-		if( !ok && ( allowables & ACCOUNT_ALLOW_RECONCILIABLE )){
-			if( ofo_account_is_reconciliable( account )){
-				ok = TRUE;
-			}
-		}
+	if( ofo_account_is_closed( account )){
+		return( FALSE );
 	}
 
-	return( ok );
+	if( allowed == ACCOUNT_ALLOW_ALL ){
+		return( TRUE );
+	}
+
+	if( allowed == ACCOUNT_ALLOW_DETAIL ){
+		return( !ofo_account_is_root( account ));
+	}
+
+	if( allowed == ACCOUNT_ALLOW_SETTLEABLE ){
+		return( ofo_account_is_settleable( account ));
+	}
+
+	if( allowed == ACCOUNT_ALLOW_RECONCILIABLE ){
+		return( ofo_account_is_reconciliable( account ));
+	}
+
+	if( allowed == ACCOUNT_ALLOW_FORWARDABLE ){
+		return( ofo_account_is_forwardable( account ));
+	}
+
+	return( FALSE );
 }
 
 /**
