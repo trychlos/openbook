@@ -375,9 +375,6 @@
                 end of the exercice are set (but only when the dossier is
                 opened ?)
 
-1166 2016- 6-28 FEAT: have a progress bar when validating more than one
-                waiting recurrent operation + a confirmation dialog box
-
 1168 2016- 6-28 VAT Declaration: "invalid operation date" message should
                 be italic (same than real error, but the color)
 
@@ -390,13 +387,16 @@
 
 1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
                 vertically (+ review left and right margins)
+     2016-10- 6 margins reviewed.
 
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
-1221 2016-10- 7 EntryPage: actions are always disabled but shouldn't)
+1221 2016-10- 7 EntryPage: context actions are always disabled but shouldn't)
 
-1223
+1223 2016-10- 8 have a daily periodicity (for test use case)
+
+1224
 
 -----------------------------------------------------------------------
  DONE
@@ -1532,6 +1532,10 @@
 
 1164 2016- 6-27 Open Freelance Accounting: should be renamed Open F. Accounting
      2016- 6-28 done
+
+1166 2016- 6-28 FEAT: have a progress bar when validating more than one
+                waiting recurrent operation + a confirmation dialog box
+     2016-10- 8 done
 
 1167 2016- 6-28 FEAT: BatPage: be able to sort: done
      2016- 7-18 id. LedgerPage:                 done

@@ -30,6 +30,8 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-iprogress.h"
+#include "my/my-progress-bar.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -75,20 +77,28 @@ typedef struct {
 	GSimpleAction           *cancel_action;
 	GSimpleAction           *waiting_action;
 	GSimpleAction           *validate_action;
+
+	/* update status input
+	 */
+	guint                    update_ope_count;
+	guint                    update_entry_count;
+	GSourceFunc              update_cb;
+	const gchar             *update_old_status;
+	const gchar             *update_new_status;
+	gboolean                 update_with_progress;
+	const void              *update_worker;
+	const gchar             *update_title;
+
+	/* update status run
+	 */
+	GtkWidget               *update_dialog;
+	myProgressBar           *update_bar;
+	GtkWidget               *update_close_btn;
+	ofoRecurrentRun         *update_recrun;
 }
 	ofaRecurrentRunPagePrivate;
 
-/* counters used when validating a waiting operation
- */
-typedef struct {
-	guint ope_count;
-	guint entry_count;
-}
-	sCount;
-
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-run-page.ui";
-
-typedef void ( *RecurrentValidCb )( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, guint *count );
 
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
@@ -105,13 +115,19 @@ static void       tview_examine_selected( ofaRecurrentRunPage *self, GList *sele
 static void       action_on_cancel_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
 static void       action_on_wait_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
 static void       action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self );
-static void       action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, RecurrentValidCb cb, void *user_data );
-static void       action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *obj, sCount *counts );
+static gboolean   action_user_confirm( ofaRecurrentRunPage *self );
+static gboolean   action_update_status( ofaRecurrentRunPage *self );
+static gboolean   action_on_object_validated( ofaRecurrentRunPage *self );
 static void       get_settings( ofaRecurrentRunPage *self );
 static void       set_settings( ofaRecurrentRunPage *self );
+static void       iprogress_iface_init( myIProgressInterface *iface );
+static void       iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
+static void       iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
+static void       iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunPage, ofa_recurrent_run_page, OFA_TYPE_PANED_PAGE, 0,
-		G_ADD_PRIVATE( ofaRecurrentRunPage ))
+		G_ADD_PRIVATE( ofaRecurrentRunPage )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IPROGRESS, iprogress_iface_init ))
 
 static void
 recurrent_run_page_finalize( GObject *instance )
@@ -456,35 +472,114 @@ tview_examine_selected( ofaRecurrentRunPage *self, GList *selected, guint *cance
 	}
 }
 
+/*
+ * cancel waiting operations
+ */
 static void
 action_on_cancel_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
 {
-	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_CANCELLED, NULL, NULL );
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	priv->update_ope_count = 0;
+	priv->update_entry_count = 0;
+	priv->update_old_status = REC_STATUS_WAITING;
+	priv->update_new_status = REC_STATUS_CANCELLED;
+	priv->update_cb = NULL;
+	priv->update_with_progress = FALSE;
+	priv->update_title = NULL;
+
+	g_idle_add(( GSourceFunc ) action_update_status, self );
 }
 
+/*
+ * uncancel operations, making them waiting back
+ */
 static void
 action_on_wait_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
 {
-	action_update_status( self, REC_STATUS_CANCELLED, REC_STATUS_WAITING, NULL, NULL );
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	priv->update_ope_count = 0;
+	priv->update_entry_count = 0;
+	priv->update_old_status = REC_STATUS_CANCELLED;
+	priv->update_new_status = REC_STATUS_WAITING;
+	priv->update_cb = NULL;
+	priv->update_with_progress = FALSE;
+	priv->update_title = NULL;
+
+	g_idle_add(( GSourceFunc ) action_update_status, self );
 }
 
 static void
 action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentRunPage *self )
 {
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	if( action_user_confirm( self )){
+		priv->update_ope_count = 0;
+		priv->update_entry_count = 0;
+		priv->update_old_status = REC_STATUS_WAITING;
+		priv->update_new_status = REC_STATUS_VALIDATED;
+		priv->update_cb = ( GSourceFunc ) action_on_object_validated;
+		priv->update_with_progress = TRUE;
+		priv->update_title = _( " Validating operations " );
+		priv->update_worker = priv->update_new_status;
+		my_iprogress_start_work( MY_IPROGRESS( self ), priv->update_worker, NULL );
+
+		g_idle_add(( GSourceFunc ) action_update_status, self );
+	}
+}
+
+/*
+ * a user confirmation before validating operations
+ */
+static gboolean
+action_user_confirm( ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	GList *selected;
+	gint count;
+	gchar *msg;
+	gboolean ok;
+
+	priv = ofa_recurrent_run_page_get_instance_private( self );
+
+	selected = ofa_recurrent_run_treeview_get_selected( priv->tview );
+	count = g_list_length( selected );
+	ofa_recurrent_run_treeview_free_selected( selected );
+
+	msg = g_strdup_printf( _( "About to validate %d waiting operation(s).\n"
+								"Are you sure ?" ),
+			count );
+
+	ok = my_utils_dialog_question( msg, _( "_Validate" ));
+
+	g_free( msg );
+
+	return( ok );
+}
+
+#if 0
+static void
+action_user_result( ofaRecurrentRunPage *self )
+{
+	ofaRecurrentRunPagePrivate *priv;
 	gchar *str;
 	GtkWindow *toplevel;
-	sCount counts;
 
-	memset( &counts, '\0', sizeof( counts ));
-	counts.ope_count = 0;
-	counts.entry_count = 0;
+	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	action_update_status( self, REC_STATUS_WAITING, REC_STATUS_VALIDATED, ( RecurrentValidCb ) action_on_object_validated, &counts );
-
-	if( counts.ope_count == 0 ){
+	if( priv->update_ope_count == 0 ){
 		str = g_strdup( _( "No created operation" ));
 	} else {
-		str = g_strdup_printf( _( "%u generated operations (%u inserted entries)" ), counts.ope_count, counts.entry_count );
+		str = g_strdup_printf( _( "%u generated operations (%u inserted entries)" ),
+				priv->update_ope_count, priv->update_entry_count );
 	}
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
@@ -492,37 +587,56 @@ action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 
 	g_free( str );
 }
+#endif
 
-static void
-action_update_status( ofaRecurrentRunPage *self, const gchar *allowed_status, const gchar *new_status, RecurrentValidCb cb, void *user_data )
+/*
+ * if this a validation and concerns more than one waiting operation,
+ * then display a progress bar
+ */
+static gboolean
+action_update_status( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	GList *selected, *it;
 	const gchar *cur_status;
 	ofoRecurrentRun *run_obj;
+	gint count, i;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
 	selected = ofa_recurrent_run_treeview_get_selected( priv->tview );
+	count = g_list_length( selected );
+	i = 0;
 
 	for( it=selected ; it ; it=it->next ){
 		run_obj = OFO_RECURRENT_RUN( it->data );
-		g_return_if_fail( run_obj && OFO_IS_RECURRENT_RUN( run_obj ));
+		g_return_val_if_fail( run_obj && OFO_IS_RECURRENT_RUN( run_obj ), G_SOURCE_REMOVE );
 
 		cur_status = ofo_recurrent_run_get_status( run_obj );
-		if( !my_collate( cur_status, allowed_status )){
-			ofo_recurrent_run_set_status( run_obj, new_status );
-			if( ofo_recurrent_run_update( run_obj ) && cb ){
-				( *cb )( self, run_obj, user_data );
+		if( !my_collate( cur_status, priv->update_old_status )){
+			ofo_recurrent_run_set_status( run_obj, priv->update_new_status );
+			if( ofo_recurrent_run_update( run_obj ) && priv->update_cb ){
+				priv->update_recrun = run_obj;
+				//g_idle_add(( GSourceFunc ) priv->update_cb, self );
+				( *priv->update_cb )( self );
+			}
+			if( priv->update_with_progress ){
+				my_iprogress_pulse( MY_IPROGRESS( self ), priv->update_worker, ++i, count );
 			}
 		}
 	}
 
 	ofa_recurrent_run_treeview_free_selected( selected );
+	if( priv->update_with_progress ){
+		my_iprogress_set_ok( MY_IPROGRESS( self ), priv->update_worker, NULL, 0 );
+	}
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
 }
 
-static void
-action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, sCount *counts )
+static gboolean
+action_on_object_validated( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	const gchar *rec_id, *tmpl_id, *ledger_id;
@@ -541,41 +655,41 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
 	dossier = ofa_hub_get_dossier( priv->hub );
-	g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
+	g_return_val_if_fail( dossier && OFO_IS_DOSSIER( dossier ), G_SOURCE_REMOVE );
 
-	rec_id = ofo_recurrent_run_get_mnemo( recrun );
+	rec_id = ofo_recurrent_run_get_mnemo( priv->update_recrun );
 	model = ofo_recurrent_model_get_by_mnemo( priv->hub, rec_id );
-	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
+	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), G_SOURCE_REMOVE );
 
 	tmpl_id = ofo_recurrent_model_get_ope_template( model );
 	template_obj = ofo_ope_template_get_by_mnemo( priv->hub, tmpl_id );
-	g_return_if_fail( template_obj && OFO_IS_OPE_TEMPLATE( template_obj ));
+	g_return_val_if_fail( template_obj && OFO_IS_OPE_TEMPLATE( template_obj ), G_SOURCE_REMOVE );
 
 	ledger_id = ofo_ope_template_get_ledger( template_obj );
 	ledger_obj = ofo_ledger_get_by_mnemo( priv->hub, ledger_id );
-	g_return_if_fail( ledger_obj && OFO_IS_LEDGER( ledger_obj ));
+	g_return_val_if_fail( ledger_obj && OFO_IS_LEDGER( ledger_obj ), G_SOURCE_REMOVE );
 
 	ope = ofs_ope_new( template_obj );
-	my_date_set_from_date( &ope->dope, ofo_recurrent_run_get_date( recrun ));
+	my_date_set_from_date( &ope->dope, ofo_recurrent_run_get_date( priv->update_recrun ));
 	ope->dope_user_set = TRUE;
 	ofo_dossier_get_min_deffect( dossier, ledger_obj, &dmin );
 	my_date_set_from_date( &ope->deffect, my_date_compare( &ope->dope, &dmin ) >= 0 ? &ope->dope : &dmin );
 
 	csdef = ofo_recurrent_model_get_def_amount1( model );
 	if( my_strlen( csdef )){
-		amount = ofo_recurrent_run_get_amount1( recrun );
+		amount = ofo_recurrent_run_get_amount1( priv->update_recrun );
 		ofs_ope_set_amount( ope, csdef, amount );
 	}
 
 	csdef = ofo_recurrent_model_get_def_amount2( model );
 	if( my_strlen( csdef )){
-		amount = ofo_recurrent_run_get_amount2( recrun );
+		amount = ofo_recurrent_run_get_amount2( priv->update_recrun );
 		ofs_ope_set_amount( ope, csdef, amount );
 	}
 
 	csdef = ofo_recurrent_model_get_def_amount3( model );
 	if( my_strlen( csdef )){
-		amount = ofo_recurrent_run_get_amount3( recrun );
+		amount = ofo_recurrent_run_get_amount3( priv->update_recrun );
 		ofs_ope_set_amount( ope, csdef, amount );
 	}
 
@@ -583,14 +697,17 @@ action_on_object_validated( ofaRecurrentRunPage *self, ofoRecurrentRun *recrun, 
 	entries = ofs_ope_generate_entries( ope );
 
 	ope_number = ofo_dossier_get_next_ope( dossier );
-	counts->ope_count += 1;
+	priv->update_ope_count += 1;
 
 	for( it=entries ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
 		ofo_entry_set_ope_number( entry, ope_number );
 		ofo_entry_insert( entry, priv->hub );
-		counts->entry_count += 1;
+		priv->update_entry_count += 1;
 	}
+
+	/* do not continue and remove from idle callbacks list */
+	return( G_SOURCE_REMOVE );
 }
 
 /*
@@ -669,4 +786,80 @@ set_settings( ofaRecurrentRunPage *self )
 
 	g_free( str );
 	g_free( settings_key );
+}
+
+/*
+ * myIProgress interface management
+ */
+static void
+iprogress_iface_init( myIProgressInterface *iface )
+{
+	static const gchar *thisfn = "ofa_check_integrity_bin_iprogress_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->start_work = iprogress_start_work;
+	iface->pulse = iprogress_pulse;
+	iface->set_ok = iprogress_set_ok;
+}
+
+/*
+ * @widget: ignored
+ */
+static void
+iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	GtkWidget *content;
+
+	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( instance ));
+
+	priv->update_dialog = gtk_dialog_new_with_buttons(
+			priv->update_title,
+			my_utils_widget_get_toplevel( GTK_WIDGET( instance )),
+			0,
+			_( "_Close" ), GTK_RESPONSE_CLOSE,
+			NULL );
+
+	gtk_container_set_border_width( GTK_CONTAINER( priv->update_dialog ), 4 );
+
+	content = gtk_dialog_get_content_area( GTK_DIALOG( priv->update_dialog ));
+	priv->update_bar = my_progress_bar_new();
+	my_utils_widget_set_margins( GTK_WIDGET( priv->update_bar ), 8, 8, 12, 12 );
+	gtk_container_add( GTK_CONTAINER( content ), GTK_WIDGET( priv->update_bar ));
+
+	g_signal_connect_swapped( priv->update_dialog, "response", G_CALLBACK( gtk_widget_destroy ), priv->update_dialog );
+
+	priv->update_close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( priv->update_dialog ), GTK_RESPONSE_CLOSE );
+	g_return_if_fail( priv->update_close_btn && GTK_IS_BUTTON( priv->update_close_btn ));
+	gtk_widget_set_sensitive( priv->update_close_btn, FALSE );
+
+	gtk_widget_show_all( priv->update_dialog );
+}
+
+static void
+iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total )
+{
+	ofaRecurrentRunPagePrivate *priv;
+	gdouble progress;
+	gchar *str;
+
+	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( instance ));
+
+	progress = total ? ( gdouble ) count / ( gdouble ) total : 0;
+	g_signal_emit_by_name( priv->update_bar, "my-double", progress );
+
+	str = g_strdup_printf( "%lu/%lu", count, total );
+	g_signal_emit_by_name( priv->update_bar, "my-text", str );
+	g_free( str );
+}
+
+static void
+iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count )
+{
+	ofaRecurrentRunPagePrivate *priv;
+
+	priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( instance ));
+
+	gtk_widget_set_sensitive( priv->update_close_btn, TRUE );
 }
