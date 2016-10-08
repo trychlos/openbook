@@ -1129,6 +1129,7 @@ iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong
 
 		str = g_strdup_printf( "%lu/%lu", count, total );
 		g_signal_emit_by_name( sdata->bar, "my-text", str );
+		g_free( str );
 	}
 }
 
