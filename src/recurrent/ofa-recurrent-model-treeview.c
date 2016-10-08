@@ -67,6 +67,7 @@ enum {
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static void      setup_columns( ofaRecurrentModelTreeview *self );
+static void      on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, ofaRecurrentModelTreeview *self );
 static void      on_selection_changed( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
 static void      on_selection_activated( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
 static void      on_selection_delete( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
@@ -296,6 +297,7 @@ ofa_recurrent_model_treeview_setup_columns( ofaRecurrentModelTreeview *view )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	setup_columns( view );
+	ofa_tvbin_set_cell_data_func( OFA_TVBIN( view ), ( GtkTreeCellDataFunc ) on_cell_data_fn, view );
 }
 
 /*
@@ -323,6 +325,34 @@ setup_columns( ofaRecurrentModelTreeview *self )
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), REC_MODEL_COL_UPD_STAMP,              NULL,        _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), REC_MODEL_COL_LABEL );
+}
+
+/*
+ * gray+italic disabled items
+ */
+static void
+on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentModelTreeview *self )
+{
+	ofoRecurrentModel *recmodel;
+	GdkRGBA color;
+
+	if( GTK_IS_CELL_RENDERER_TEXT( renderer )){
+
+		gtk_tree_model_get( tmodel, iter, REC_MODEL_COL_OBJECT, &recmodel, -1 );
+		g_return_if_fail( recmodel && OFO_IS_RECURRENT_MODEL( recmodel ));
+		g_object_unref( recmodel );
+
+		g_object_set( G_OBJECT( renderer ),
+				"style-set",      FALSE,
+				"foreground-set", FALSE,
+				NULL );
+
+		if( !ofo_recurrent_model_get_is_enabled( recmodel )){
+			gdk_rgba_parse( &color, "#808080" );
+			g_object_set( G_OBJECT( renderer ), "foreground-rgba", &color, NULL );
+			g_object_set( G_OBJECT( renderer ), "style", PANGO_STYLE_ITALIC, NULL );
+		}
+	}
 }
 
 /**

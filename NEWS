@@ -39,6 +39,7 @@
   
  New features and improvements:
 
+   - ofaRecurrentModel: display grayed+italic disabled models.
    - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166). 
 
  Bug fixes:
