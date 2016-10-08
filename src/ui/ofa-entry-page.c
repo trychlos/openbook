@@ -179,7 +179,6 @@ enum {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-page.ui";
 static const gchar *st_ui_id            = "EntryPageWindow";
-static const gchar *st_pref_effect      = "EntryPageEffectDates";
 
 #define SEL_LEDGER                      "Ledger"
 #define SEL_ACCOUNT                     "Account"
@@ -452,13 +451,15 @@ setup_dates_filter( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	GtkWidget *container;
+	gchar *settings_key;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
 	priv->effect_filter = ofa_date_filter_hv_bin_new();
-	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( priv->effect_filter ), st_pref_effect );
-	g_signal_connect(
-			priv->effect_filter, "ofa-focus-out", G_CALLBACK( effect_filter_on_changed ), self );
+	settings_key = g_strdup_printf( "%s-effect", priv->settings_prefix );
+	ofa_idate_filter_set_settings_key( OFA_IDATE_FILTER( priv->effect_filter ), settings_key );
+	g_free( settings_key );
+	g_signal_connect( priv->effect_filter, "ofa-focus-out", G_CALLBACK( effect_filter_on_changed ), self );
 
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "effect-date-filter" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));

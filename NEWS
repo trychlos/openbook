@@ -48,6 +48,7 @@
  Other changes:
 
    - ofaIAccountFilter: remove ofa_iaccount_filter_set_prefs() unused method.
+   - ofaIDateFilter: ofa_idate_filter_set_prefs() renamed to ofa_idate_filter_set_settings_key() (todo #1220).
 
 -----------------------------------------------------------------------
  Version 0.60

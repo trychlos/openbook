@@ -206,7 +206,6 @@ enum {
 	ACTIV_UNCONCILIATE
 };
 
-static const gchar *st_effect_dates          = "ofaReconcilPage-dates";
 static const gchar *st_resource_ui           = "/org/trychlos/openbook/ui/ofa-reconcil-page.ui";
 static const gchar *st_resource_light_green  = "/org/trychlos/openbook/ui/light-green-14.png";
 static const gchar *st_resource_light_yellow = "/org/trychlos/openbook/ui/light-yellow-14.png";
@@ -1068,18 +1067,19 @@ setup_date_filter( ofaReconcilPage *self, GtkContainer *parent )
 {
 	ofaReconcilPagePrivate *priv;
 	GtkWidget *filter_parent;
+	gchar *settings_key;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	priv->effect_filter = ofa_date_filter_hv_bin_new();
-	ofa_idate_filter_set_prefs( OFA_IDATE_FILTER( priv->effect_filter ), st_effect_dates );
+	settings_key = g_strdup_printf( "%s-effect", priv->settings_prefix );
+	ofa_idate_filter_set_settings_key( OFA_IDATE_FILTER( priv->effect_filter ), settings_key );
+	g_free( settings_key );
+	g_signal_connect( priv->effect_filter, "ofa-focus-out", G_CALLBACK( effect_dates_filter_on_changed ), self );
 
 	filter_parent = my_utils_container_get_child_by_name( parent, "effect-date-filter" );
 	g_return_if_fail( filter_parent && GTK_IS_CONTAINER( filter_parent ));
 	gtk_container_add( GTK_CONTAINER( filter_parent ), GTK_WIDGET( priv->effect_filter ));
-
-	g_signal_connect(
-			priv->effect_filter, "ofa-focus-out", G_CALLBACK( effect_dates_filter_on_changed ), self );
 }
 
 static void

@@ -41,7 +41,7 @@
 typedef struct {
 	gchar        *ui_resource;
 	gboolean      mandatory;
-	gchar        *prefs_key;
+	gchar        *settings_key;
 	GtkSizeGroup *group0;
 
 	GtkWidget    *from_entry;
@@ -320,7 +320,7 @@ on_widget_finalized( ofaIDateFilter *filter, void *finalized_widget )
 
 	g_clear_object( &sdata->group0 );
 	g_free( sdata->ui_resource );
-	g_free( sdata->prefs_key );
+	g_free( sdata->settings_key );
 	g_free( sdata );
 
 	g_object_set_data( G_OBJECT( filter ), IDATE_FILTER_DATA, NULL );
@@ -502,15 +502,15 @@ on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *dat
 }
 
 /**
- * ofa_idate_filter_set_prefs:
- * @filter:
- * @prefs_key: the settings key where date are stored as a string list
- *  of SQL-formatted dates.
+ * ofa_idate_filter_set_settings_key:
+ * @filter: this #ofaIDateFilter instance.
+ * @settings_key: the user settings key;
+ *  dates are stored as a string list of SQL-formatted dates.
  *
- * Load the settings from user preferences.
+ * Setup the settings key, and load the settings from user preferences.
  */
 void
-ofa_idate_filter_set_prefs( ofaIDateFilter *filter, const gchar *prefs_key )
+ofa_idate_filter_set_settings_key( ofaIDateFilter *filter, const gchar *settings_key )
 {
 	sIDateFilter *sdata;
 
@@ -518,8 +518,8 @@ ofa_idate_filter_set_prefs( ofaIDateFilter *filter, const gchar *prefs_key )
 
 	sdata = get_idate_filter_data( filter );
 
-	g_free( sdata->prefs_key );
-	sdata->prefs_key = g_strdup( prefs_key );
+	g_free( sdata->settings_key );
+	sdata->settings_key = g_strdup( settings_key );
 
 	load_settings( filter, sdata );
 }
@@ -736,7 +736,7 @@ load_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 	GList *slist, *it;
 	const gchar *cstr;
 
-	slist = ofa_settings_user_get_string_list( sdata->prefs_key );
+	slist = ofa_settings_user_get_string_list( sdata->settings_key );
 	if( slist ){
 		it = slist ? slist : NULL;
 		cstr = it ? it->data : NULL;
@@ -761,14 +761,14 @@ set_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 {
 	gchar *sfrom, *sto, *str;
 
-	if( my_strlen( sdata->prefs_key )){
+	if( my_strlen( sdata->settings_key )){
 
 		sfrom = my_date_to_str( &sdata->from_date, MY_DATE_SQL );
 		sto = my_date_to_str( &sdata->to_date, MY_DATE_SQL );
 
 		str = g_strdup_printf( "%s;%s;", sfrom, sto );
 
-		ofa_settings_user_set_string( sdata->prefs_key, str );
+		ofa_settings_user_set_string( sdata->settings_key, str );
 
 		g_free( str );
 		g_free( sfrom );

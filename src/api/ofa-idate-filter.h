@@ -123,8 +123,8 @@ void         ofa_idate_filter_add_widget                ( ofaIDateFilter *filter
 																GtkWidget *widget,
 																gint where );
 
-void         ofa_idate_filter_set_prefs                 ( ofaIDateFilter *filter,
-																const gchar *prefs_key );
+void         ofa_idate_filter_set_settings_key          ( ofaIDateFilter *filter,
+																const gchar *settings_key );
 
 const GDate *ofa_idate_filter_get_date                  ( ofaIDateFilter *filter,
 																gint who );
