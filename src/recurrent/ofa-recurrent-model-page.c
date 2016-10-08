@@ -352,6 +352,8 @@ on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModel
 	ofaRecurrentModelPagePrivate *priv;
 	gboolean is_model;
 	ofoRecurrentModel *model;
+	gint count_enabled;
+	GList *it;
 
 	priv = ofa_recurrent_model_page_get_instance_private( self );
 
@@ -363,10 +365,18 @@ on_row_selected( ofaRecurrentModelTreeview *view, GList *list, ofaRecurrentModel
 		is_model = model && OFO_IS_RECURRENT_MODEL( model );
 	}
 
+	count_enabled = 0;
+	for( it=list ; it ; it=it->next ){
+		model = ( ofoRecurrentModel * ) it->data;
+		if( ofo_recurrent_model_get_is_enabled( model )){
+			count_enabled += 1;
+		}
+	}
+
 	g_simple_action_set_enabled( priv->update_action, is_model );
 	g_simple_action_set_enabled( priv->duplicate_action, priv->is_writable && is_model );
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, model ));
-	g_simple_action_set_enabled( priv->generate_action, priv->is_writable && g_list_length( list ) > 0 );
+	g_simple_action_set_enabled( priv->generate_action, priv->is_writable && count_enabled > 0 );
 }
 
 /*
