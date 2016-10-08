@@ -57,6 +57,7 @@
                   <object class="GtkViewport" id="viewport1">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="shadow_type">none</property>
                     <child>
                       <object class="GtkTreeView" id="collection-treeview">
                         <property name="visible">True</property>
@@ -91,6 +92,7 @@
                   <object class="GtkViewport" id="viewport2">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="shadow_type">none</property>
                     <child>
                       <object class="GtkTreeView" id="single-treeview">
                         <property name="visible">True</property>
