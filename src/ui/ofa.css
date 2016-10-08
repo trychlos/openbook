@@ -56,25 +56,12 @@ label.labelnormal {
 	font-style: normal;
 }
 
-GtkLabel.labelnormal {
-	color: #000000;				/* black */
-	font-style: normal;
-}
-
 label.labelwarning {
 	color: #ff8000;				/* orange */
-}
-
-GtkLabel.labelwarning {
-	color: #ff8000;				/* orange */
-}
-
-label.labelerror {
-	color: #ff0000;				/* error: red italic */
 	font-style: italic;
 }
 
-GtkLabel.labelerror {
+label.labelerror {
 	color: #ff0000;				/* error: red italic */
 	font-style: italic;
 }
@@ -83,15 +70,7 @@ label.labelhelp {
 	color: #808080;				/* entering help: middle gray */
 }
 
-GtkLabel.labelhelp {
-	color: #808080;				/* entering help: middle gray */
-}
-
 label.labelinvalid {
-	color: #808080;
-}
-
-GtkLabel.labelinvalid {
 	color: #808080;
 }
 
@@ -99,23 +78,11 @@ label.labelinfo {
 	color: #0000ff;				/* blue */
 }
 
-GtkLabel.labelinfo {
-	color: #0000ff;				/* blue */
-}
-
 label.labelbalance {
 	color: #0000ff;
 }
 
-GtkLabel.labelbalance {
-	color: #0000ff;
-}
-
 label.labelbatunconcil {
-	color: #00ff00;
-}
-
-GtkLabel.labelbatunconcil {
 	color: #00ff00;
 }
 

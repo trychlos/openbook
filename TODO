@@ -375,9 +375,6 @@
                 end of the exercice are set (but only when the dossier is
                 opened ?)
 
-1168 2016- 6-28 VAT Declaration: "invalid operation date" message should
-                be italic (same than real error, but the color)
-
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
@@ -1544,6 +1541,10 @@
                 id. ClassPage:                  done
                 id. VAT form management
      2016- 9-29 done with TVBin migration
+
+1168 2016- 6-28 VAT Declaration: "invalid operation date" message should
+                be italic (same than real error, but the color)
+     2016-10- 8 done
 
 1169 2016- 6-30 when defining displayable columns for a treeview, choose
                 between enum (e.g. account) and bit array (e.g. currency,

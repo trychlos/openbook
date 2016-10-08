@@ -159,6 +159,7 @@ static gchar           *eval_code( ofsFormulaHelper *helper );
 static void             on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
 static gboolean         do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr );
 static void             set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
+static void             set_msgwarn( ofaTVARecordProperties *self, const gchar *msg );
 
 static const sEvalDef st_formula_fns[] = {
 		{ "ACCOUNT", 1, 2, eval_account },
@@ -739,6 +740,12 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 				priv->compute_btn,
 				priv->is_writable && is_valid && is_computable );
 
+		/* until here, messages were errors */
+		set_msgerr( self, msgerr );
+		g_free( msgerr );
+		msgerr = NULL;
+
+		/* beginning from this, messages should be treated as warnings */
 		if( is_computable ){
 			is_validable = ofo_tva_record_is_validable(
 					priv->mnemo, &priv->begin_date, &priv->end_date, &priv->dope_date, &msgerr );
@@ -748,13 +755,13 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 				priv->validate_btn,
 				priv->is_writable && is_valid && is_validable );
 
+		set_msgwarn( self, msgerr );
+		g_free( msgerr );
+
 	} else {
 		gtk_widget_set_sensitive( priv->compute_btn, FALSE );
 		gtk_widget_set_sensitive( priv->validate_btn, FALSE );
 	}
-
-	set_msgerr( self, msgerr );
-	g_free( msgerr );
 }
 
 /*
@@ -1299,8 +1306,26 @@ set_msgerr( ofaTVARecordProperties *self, const gchar *msg )
 	if( !priv->msg_label ){
 		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
-		my_style_add( priv->msg_label, "labelerror");
 	}
 
+	my_style_remove( priv->msg_label, "labelwarning");
+	my_style_add( priv->msg_label, "labelerror");
+	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
+}
+
+static void
+set_msgwarn( ofaTVARecordProperties *self, const gchar *msg )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	if( !priv->msg_label ){
+		priv->msg_label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
+		g_return_if_fail( priv->msg_label && GTK_IS_LABEL( priv->msg_label ));
+	}
+
+	my_style_remove( priv->msg_label, "labelerror");
+	my_style_add( priv->msg_label, "labelwarning");
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }
