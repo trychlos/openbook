@@ -47,7 +47,7 @@
 
  Other changes:
 
-   - 
+   - ofaIAccountFilter: remove ofa_iaccount_filter_set_prefs() unused method.
 
 -----------------------------------------------------------------------
  Version 0.60

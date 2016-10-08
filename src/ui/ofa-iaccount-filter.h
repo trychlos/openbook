@@ -96,9 +96,6 @@ void         ofa_iaccount_filter_setup_bin                 ( ofaIAccountFilter *
 																ofaIGetter *getter,
 																const gchar *resource_name );
 
-void         ofa_iaccount_filter_set_prefs                 ( ofaIAccountFilter *filter,
-																const gchar *prefs_key );
-
 const gchar *ofa_iaccount_filter_get_account               ( const ofaIAccountFilter *filter,
 																gint who );
 

@@ -47,7 +47,6 @@ typedef struct {
 	gchar               *resource_name;
 	ofaHub              *hub;
 	ofoDossier          *dossier;
-	gchar               *prefs_key;
 	GtkSizeGroup        *group0;
 
 	GtkWidget           *from_prompt;
@@ -82,16 +81,14 @@ static guint st_initializations = 0;	/* interface initialization count */
 static GType            register_type( void );
 static void             interface_base_init( ofaIAccountFilterInterface *klass );
 static void             interface_base_finalize( ofaIAccountFilterInterface *klass );
-static sIAccountFilter *get_iaccount_filter_data( const ofaIAccountFilter *filter );
-static void             on_widget_finalized( ofaIAccountFilter *iaccount_filter, void *finalized_widget );
 static void             setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata );
 static void             on_from_changed( GtkEntry *entry, ofaIAccountFilter *filter );
 static void             on_to_changed( GtkEntry *entry, ofaIAccountFilter *filter );
 static void             on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
 static void             on_all_accounts_toggled( GtkToggleButton *button, ofaIAccountFilter *filter );
 static gboolean         is_account_valid( const ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata );
-static void             load_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
-static void             set_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata );
+static sIAccountFilter *get_iaccount_filter_data( const ofaIAccountFilter *filter );
+static void             on_widget_finalized( ofaIAccountFilter *iaccount_filter, void *finalized_widget );
 
 /**
  * ofa_iaccount_filter_get_type:
@@ -256,50 +253,6 @@ ofa_iaccount_filter_setup_bin( ofaIAccountFilter *filter, ofaIGetter *getter, co
 	setup_composite( filter, sdata );
 }
 
-static sIAccountFilter *
-get_iaccount_filter_data( const ofaIAccountFilter *filter )
-{
-	sIAccountFilter *sdata;
-
-	sdata = ( sIAccountFilter * ) g_object_get_data( G_OBJECT( filter ), IACCOUNT_FILTER_DATA );
-
-	if( !sdata ){
-		sdata = g_new0( sIAccountFilter, 1 );
-		g_object_set_data( G_OBJECT( filter ), IACCOUNT_FILTER_DATA, sdata );
-		g_object_weak_ref( G_OBJECT( filter ), ( GWeakNotify ) on_widget_finalized, ( gpointer ) filter );
-	}
-
-	return( sdata );
-}
-
-/*
- * called on ofaDateFilterBin composite widget finalization
- */
-static void
-on_widget_finalized( ofaIAccountFilter *filter, void *finalized_widget )
-{
-	static const gchar *thisfn = "ofa_iaccount_filter_on_widget_finalized";
-	sIAccountFilter *sdata;
-
-	g_debug( "%s: filter=%p (%s), ref_count=%d, finalized_widget=%p",
-			thisfn,
-			( void * ) filter, G_OBJECT_TYPE_NAME( filter ), G_OBJECT( filter )->ref_count,
-			( void * ) finalized_widget );
-
-	g_return_if_fail( filter && OFA_IS_IACCOUNT_FILTER( filter ));
-
-	sdata = get_iaccount_filter_data( filter );
-
-	g_clear_object( &sdata->group0 );
-	g_free( sdata->resource_name );
-	g_free( sdata->prefs_key );
-	g_free( sdata->from_account );
-	g_free( sdata->to_account );
-	g_free( sdata );
-
-	g_object_set_data( G_OBJECT( filter ), IACCOUNT_FILTER_DATA, NULL );
-}
-
 static void
 setup_composite( ofaIAccountFilter *filter, sIAccountFilter *sdata )
 {
@@ -387,7 +340,6 @@ static void
 on_account_changed( ofaIAccountFilter *filter, gint who, GtkEntry *entry, GtkWidget *label, gchar **account, sIAccountFilter *sdata )
 {
 	is_account_valid( filter, who, entry, label, account, sdata );
-	set_settings( filter, sdata );
 	g_signal_emit_by_name( filter, "ofa-changed" );
 }
 
@@ -407,30 +359,7 @@ on_all_accounts_toggled( GtkToggleButton *button, ofaIAccountFilter *filter )
 	gtk_widget_set_sensitive( sdata->to_entry, !sdata->all_accounts );
 	gtk_widget_set_sensitive( sdata->to_label, !sdata->all_accounts );
 
-	set_settings( filter, sdata );
 	g_signal_emit_by_name( filter, "ofa-changed" );
-}
-
-/**
- * ofa_iaccount_filter_set_prefs:
- * @filter:
- * @prefs_key: the settings key where accounts are stored as a string list
- *
- * Load the settings from user preferences.
- */
-void
-ofa_iaccount_filter_set_prefs( ofaIAccountFilter *filter, const gchar *prefs_key )
-{
-	sIAccountFilter *sdata;
-
-	g_return_if_fail( filter && OFA_IS_IACCOUNT_FILTER( filter ));
-
-	sdata = get_iaccount_filter_data( filter );
-
-	g_free( sdata->prefs_key );
-	sdata->prefs_key = g_strdup( prefs_key );
-
-	load_settings( filter, sdata );
 }
 
 /**
@@ -647,56 +576,45 @@ ofa_iaccount_filter_get_from_prompt( const ofaIAccountFilter *filter )
 	return( my_utils_container_get_child_by_name( GTK_CONTAINER( filter ), "from-prompt" ));
 }
 
-/*
- * settings are: from;to;all_accounts;
- */
-static void
-load_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata )
+static sIAccountFilter *
+get_iaccount_filter_data( const ofaIAccountFilter *filter )
 {
-	GList *slist, *it;
-	const gchar *cstr;
-	gboolean all_accounts;
+	sIAccountFilter *sdata;
 
-	slist = ofa_settings_user_get_string_list( sdata->prefs_key );
-	if( slist ){
-		it = slist ? slist : NULL;
-		cstr = it ? it->data : NULL;
-		if( my_strlen( cstr )){
-			gtk_entry_set_text( GTK_ENTRY( sdata->from_entry ), cstr );
-		}
+	sdata = ( sIAccountFilter * ) g_object_get_data( G_OBJECT( filter ), IACCOUNT_FILTER_DATA );
 
-		it = it ? it->next : NULL;
-		cstr = it ? it->data : NULL;
-		if( my_strlen( cstr )){
-			gtk_entry_set_text( GTK_ENTRY( sdata->to_entry ), cstr );
-		}
-
-		it = it ? it->next : NULL;
-		cstr = it ? it->data : NULL;
-		if( my_strlen( cstr )){
-			all_accounts = my_utils_boolean_from_str( cstr );
-			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( sdata->all_btn ), all_accounts );
-			on_all_accounts_toggled( GTK_TOGGLE_BUTTON( sdata->all_btn ), filter );
-		}
-
-		ofa_settings_free_string_list( slist );
+	if( !sdata ){
+		sdata = g_new0( sIAccountFilter, 1 );
+		g_object_set_data( G_OBJECT( filter ), IACCOUNT_FILTER_DATA, sdata );
+		g_object_weak_ref( G_OBJECT( filter ), ( GWeakNotify ) on_widget_finalized, ( gpointer ) filter );
 	}
+
+	return( sdata );
 }
 
+/*
+ * called on ofaDateFilterBin composite widget finalization
+ */
 static void
-set_settings( ofaIAccountFilter *filter, sIAccountFilter *sdata )
+on_widget_finalized( ofaIAccountFilter *filter, void *finalized_widget )
 {
-	gchar *str;
+	static const gchar *thisfn = "ofa_iaccount_filter_on_widget_finalized";
+	sIAccountFilter *sdata;
 
-	if( my_strlen( sdata->prefs_key )){
+	g_debug( "%s: filter=%p (%s), ref_count=%d, finalized_widget=%p",
+			thisfn,
+			( void * ) filter, G_OBJECT_TYPE_NAME( filter ), G_OBJECT( filter )->ref_count,
+			( void * ) finalized_widget );
 
-		str = g_strdup_printf( "%s;%s;%s;",
-				gtk_entry_get_text( GTK_ENTRY( sdata->from_entry )),
-				gtk_entry_get_text( GTK_ENTRY( sdata->to_entry )),
-				sdata->all_accounts ? "True":"False" );
+	g_return_if_fail( filter && OFA_IS_IACCOUNT_FILTER( filter ));
 
-		ofa_settings_user_set_string( sdata->prefs_key, str );
+	sdata = get_iaccount_filter_data( filter );
 
-		g_free( str );
-	}
+	g_clear_object( &sdata->group0 );
+	g_free( sdata->resource_name );
+	g_free( sdata->from_account );
+	g_free( sdata->to_account );
+	g_free( sdata );
+
+	g_object_set_data( G_OBJECT( filter ), IACCOUNT_FILTER_DATA, NULL );
 }
