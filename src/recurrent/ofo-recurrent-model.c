@@ -763,6 +763,7 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 			"	(REC_MNEMO,REC_LABEL,REC_OPE_TEMPLATE,"
 			"	 REC_PERIOD,REC_PERIOD_DETAIL,"
 			"	 REC_DEF_AMOUNT1,REC_DEF_AMOUNT2,REC_DEF_AMOUNT3,"
+			"	 REC_ENABLED,"
 			"	 REC_NOTES,REC_UPD_USER, REC_UPD_STAMP) VALUES ('%s',",
 			ofo_recurrent_model_get_mnemo( model ));
 
@@ -809,6 +810,8 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
+
+	query = g_string_append( query, ofo_recurrent_model_get_is_enabled( model ) ? "'Y',":"'N'," );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -940,6 +943,9 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	} else {
 		query = g_string_append( query, "REC_DEF_AMOUNT3=NULL," );
 	}
+
+	query = g_string_append( query, "REC_ENABLED=" );
+	query = g_string_append( query, ofo_recurrent_model_get_is_enabled( model ) ? "'Y',":"'N'," );
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "REC_NOTES='%s',", notes );

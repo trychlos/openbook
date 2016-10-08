@@ -43,7 +43,7 @@
 
  Bug fixes:
 
-   - 
+   - ofoRecurrentModel: insert/update the DBMS with 'enabled' property.
 
  Other changes:
 
