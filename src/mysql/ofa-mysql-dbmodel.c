@@ -117,6 +117,8 @@ static gboolean dbmodel_v31( ofaMysqlDBModel *self, gint version );
 static gulong   count_v31( ofaMysqlDBModel *self );
 static gboolean dbmodel_v32( ofaMysqlDBModel *self, gint version );
 static gulong   count_v32( ofaMysqlDBModel *self );
+static gboolean dbmodel_v33( ofaMysqlDBModel *self, gint version );
+static gulong   count_v33( ofaMysqlDBModel *self );
 
 static sMigration st_migrates[] = {
 		{ 20, dbmodel_v20, count_v20 },
@@ -132,6 +134,7 @@ static sMigration st_migrates[] = {
 		{ 30, dbmodel_v30, count_v30 },
 		{ 31, dbmodel_v31, count_v31 },
 		{ 32, dbmodel_v32, count_v32 },
+		{ 33, dbmodel_v33, count_v33 },
 		{ 0 }
 };
 
@@ -1743,8 +1746,7 @@ count_v31( ofaMysqlDBModel *self )
 /*
  * ofa_ddl_update_dbmodel_v32:
  *
- * - ofoDossier: have previous exercice end date.
- * - ofoAccountsArchive: new accounts archives table
+ * - ofoEntries: add ope_number
  */
 static gboolean
 dbmodel_v32( ofaMysqlDBModel *self, gint version )
@@ -1768,6 +1770,43 @@ dbmodel_v32( ofaMysqlDBModel *self, gint version )
  */
 static gulong
 count_v32( ofaMysqlDBModel *self )
+{
+	return( 1 );
+}
+
+/*
+ * ofa_ddl_update_dbmodel_v33:
+ *
+ * - ofoLedger: add archive table
+ */
+static gboolean
+dbmodel_v33( ofaMysqlDBModel *self, gint version )
+{
+	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v33";
+
+	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
+
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_ARC ("
+			"	LED_MNEMO           VARCHAR(64)    BINARY NOT NULL   COMMENT 'Ledger identifier',"
+			"	LED_ARC_CURRENCY    VARCHAR(3)                       COMMENT 'ISO 3A identifier of the currency',"
+			"	LED_ARC_DATE        DATE                  NOT NULL   COMMENT 'Archive effect date',"
+			"	LED_ARC_DEBIT       DECIMAL(20,5)                    COMMENT 'Archived debit',"
+			"	LED_ARC_CREDIT      DECIMAL(20,5)                    COMMENT 'Archived credit',"
+			"	UNIQUE (LED_MNEMO,LED_CURRENCY,LED_ARC_DATE)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+/*
+ * returns the count of queries in the dbmodel_vxx
+ * to be used as the progression indicator
+ */
+static gulong
+count_v33( ofaMysqlDBModel *self )
 {
 	return( 1 );
 }
