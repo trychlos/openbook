@@ -114,5 +114,6 @@ api_include_HEADERS = \
 	ofs-account-balance.h								\
 	ofs-concil-id.h										\
 	ofs-currency.h										\
+	ofs-ledger-balance.h								\
 	ofs-ope.h											\
 	$(NULL)

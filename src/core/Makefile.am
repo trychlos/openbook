@@ -186,6 +186,7 @@ libofa_core_la_SOURCES = \
 	ofs-account-balance.c								\
 	ofs-concil-id.c										\
 	ofs-currency.c										\
+	ofs-ledger-balance.c								\
 	ofs-ope.c											\
 	$(NULL)
 
