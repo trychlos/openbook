@@ -678,6 +678,32 @@ ofa_itvcolumnable_show_columns( ofaITVColumnable *instance )
 }
 
 /**
+ * ofa_itvcolumnable_show_columns_all:
+ * @instance: the #ofaITVColumnable instance.
+ *
+ * Make all columns visible.
+ */
+void
+ofa_itvcolumnable_show_columns_all( ofaITVColumnable *instance )
+{
+	sITVColumnable *sdata;
+	GList *it;
+	sColumn *scol;
+	GActionGroup *action_group;
+
+	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
+
+	sdata = get_instance_data( instance );
+	sdata->visible_count = 0;
+
+	for( it=sdata->columns_list ; it ; it=it->next ){
+		scol = ( sColumn * ) it->data;
+		action_group = ofa_iactionable_get_action_group( OFA_IACTIONABLE( instance ), scol->group_name );
+		g_action_group_change_action_state( action_group, scol->name, g_variant_new_boolean( TRUE ));
+	}
+}
+
+/**
  * ofa_itvcolumnable_propagate_visible_columns:
  * @instance: the #ofaITVColumnable instance.
  * @pages_list: a list of other #ofaITVColumnable pages.

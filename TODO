@@ -368,13 +368,13 @@
 
 1162 2016- 6-23 FEAT: archive ledger balances besides of account balances
 
-1163 2016- 6-23 FEAT: AccountProperty/Balances/ArchivedBalances: have a
-                button to change the sort order
-
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
 1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
+     2016-10- 9 Review layout with: the content area + the last update line
+                + the separator + the error message between the separator
+                and the action area
 
 1192 2016- 9-14 FEAT: export the balance for a period
 
@@ -1522,6 +1522,10 @@
 1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances are not
                 properly sorted
      2016- 6-23 should have taken a screenshot -> cancelled
+
+1163 2016- 6-23 FEAT: AccountProperty/Balances/ArchivedBalances: have a
+                button to change the sort order
+     2016-10-9 done
 
 1164 2016- 6-27 Open Freelance Accounting: should be renamed Open F. Accounting
      2016- 6-28 done

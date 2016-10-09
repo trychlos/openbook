@@ -45,6 +45,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
+#include "core/ofa-account-arc-treeview.h"
 #include "core/ofa-account-properties.h"
 #include "core/ofa-currency-combo.h"
 
@@ -119,7 +120,6 @@ static void      init_ui( ofaAccountProperties *dialog );
 static void      remove_balances_page( ofaAccountProperties *self );
 static void      init_balances_page( ofaAccountProperties *self );
 static void      set_current_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur, GtkSizeGroup *sg_amount, GtkSizeGroup *sg_cur );
-static void      set_archived_amount( ofaAccountProperties *self, guint i, GtkGrid *grid );
 static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
 static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self );
@@ -513,8 +513,8 @@ static void
 init_balances_page( ofaAccountProperties *self )
 {
 	ofaAccountPropertiesPrivate *priv;
-	guint count, i;
-	GtkWidget *grid, *label;
+	GtkWidget *parent, *label;
+	ofaAccountArcTreeview *tview;
 
 	priv = ofa_account_properties_get_instance_private( self );
 
@@ -574,14 +574,10 @@ init_balances_page( ofaAccountProperties *self )
 			ofo_account_get_futur_credit( priv->account ),
 			"p2-futur-credit", "p2-fut-credit-cur", priv->p2_group3, priv->p2_group4 );
 
-	count = ofo_account_archive_get_count( priv->account );
-
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
-	g_return_if_fail( grid && GTK_IS_GRID( grid ));
-
-	for( i=0 ; i<count ; ++i ){
-		set_archived_amount( self, i, GTK_GRID( grid ));
-	}
+	tview = ofa_account_arc_treeview_new( priv->account );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( tview ));
 }
 
 static void
@@ -603,54 +599,6 @@ set_current_amount( ofaAccountProperties *self,
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname_cur );
 	gtk_label_set_text( GTK_LABEL( label ), priv->cur_symbol );
 	gtk_size_group_add_widget( sg_cur, label );
-}
-
-static void
-set_archived_amount( ofaAccountProperties *self, guint i, GtkGrid *grid )
-{
-	ofaAccountPropertiesPrivate *priv;
-	GtkWidget *label;
-	gchar *str;
-	guint col;
-
-	priv = ofa_account_properties_get_instance_private( self );
-
-	col = 0;
-
-	str = my_date_to_str( ofo_account_archive_get_date( priv->account, i ), ofa_prefs_date_display());
-	label = gtk_label_new( str );
-	gtk_grid_attach( grid, label, col++, i, 1, 1 );
-	g_free( str );
-	gtk_size_group_add_widget( priv->p2_group0, label );
-
-	str = ofa_amount_to_str( ofo_account_archive_get_debit( priv->account, i ), priv->cur_object );
-	label = gtk_label_new( str );
-	gtk_widget_set_hexpand( label, TRUE );
-	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
-	gtk_grid_attach( grid, label, col++, i, 1, 1 );
-	g_free( str );
-	gtk_size_group_add_widget( priv->p2_group1, label );
-
-	label = gtk_label_new( priv->cur_symbol );
-	gtk_grid_attach( grid, label, col++, i, 1, 1 );
-	gtk_size_group_add_widget( priv->p2_group2, label );
-
-	str = ofa_amount_to_str( ofo_account_archive_get_credit( priv->account, i ), priv->cur_object );
-	label = gtk_label_new( str );
-	gtk_widget_set_hexpand( label, TRUE );
-	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
-	gtk_grid_attach( grid, label, col++, i, 1, 1 );
-	g_free( str );
-	gtk_size_group_add_widget( priv->p2_group3, label );
-
-	label = gtk_label_new( priv->cur_symbol );
-	gtk_grid_attach( grid, label, col++, i, 1, 1 );
-	gtk_size_group_add_widget( priv->p2_group4, label );
-
-	/* last column is just  placeholder */
-	label = gtk_label_new( "" );
-	gtk_label_set_width_chars( GTK_LABEL( label ), 1 );
-	gtk_grid_attach( grid, label, col++, i, 1, 1 );
 }
 
 static void
@@ -706,10 +654,6 @@ on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountPrope
 	if( priv->cur_object && OFO_IS_CURRENCY( priv->cur_object )){
 		priv->cur_digits = ofo_currency_get_digits( priv->cur_object );
 		priv->cur_symbol = ofo_currency_get_symbol( priv->cur_object );
-	}
-
-	if( priv->balances_displayed ){
-		init_balances_page( self );
 	}
 
 	check_for_enable_dlg( self );

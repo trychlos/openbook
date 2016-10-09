@@ -61,6 +61,10 @@ nodist_libofa_core_la_SOURCES = \
 	$(NULL)
 
 libofa_core_la_SOURCES = \
+	ofa-account-arc-store.c								\
+	ofa-account-arc-store.h								\
+	ofa-account-arc-treeview.c							\
+	ofa-account-arc-treeview.h							\
 	ofa-account-editable.c								\
 	ofa-account-frame-bin.c								\
 	ofa-account-frame-bin.h								\

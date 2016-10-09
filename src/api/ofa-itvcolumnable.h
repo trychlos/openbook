@@ -155,6 +155,8 @@ void               ofa_itvcolumnable_enable_column             ( ofaITVColumnabl
 
 void               ofa_itvcolumnable_show_columns              ( ofaITVColumnable *instance );
 
+void               ofa_itvcolumnable_show_columns_all          ( ofaITVColumnable *instance );
+
 void               ofa_itvcolumnable_propagate_visible_columns ( ofaITVColumnable *instance,
 																		GList *pages_list );
 
