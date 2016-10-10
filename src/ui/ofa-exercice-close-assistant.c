@@ -1572,6 +1572,25 @@ p6_cleanup( ofaExerciceCloseAssistant *self )
 		g_free( query );
 	}
 
+	/* cleanup archived ledgers balances of the previous exercice
+	 */
+	if( ok ){
+		query = g_strdup( "DROP TABLE IF EXISTS ARCHIVE_T_LEDGERS_ARC" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "CREATE TABLE ARCHIVE_T_LEDGERS_ARC "
+					"SELECT * FROM OFA_T_LEDGERS_ARC" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+	if( ok ){
+		query = g_strdup( "DELETE FROM OFA_T_LEDGERS_ARC" );
+		ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+		g_free( query );
+	}
+
 	/* archive deleted (non-reported) entries
 	 * i.e. those which are tight to an unsettleable or an unreconcilable
 	 * account, or are not settled, or are not reconciliated
