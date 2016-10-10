@@ -543,7 +543,7 @@ is_dialog_validable( ofaLedgerClose *self, GList *selected )
 		}
 	}
 
-	/* check that each selecter ledger is not yet closed for this date */
+	/* check that each selected ledger is not yet closed for this date */
 	if( ok ){
 		priv->count = 0;
 		priv->uncloseable = 0;
