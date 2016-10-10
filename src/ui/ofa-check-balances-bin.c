@@ -635,7 +635,7 @@ cmp_lists( ofaCheckBalancesBin *self, GList *list_a, GList *list_b )
 	GList *it;
 	ofsCurrency *sbal_a, *sbal_b;
 
-	if( 1 ){
+	if( 0 ){
 		g_debug( "list_a" );
 		ofs_currency_list_dump( list_a );
 		g_debug( "list_b" );
