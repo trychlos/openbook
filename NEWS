@@ -47,6 +47,7 @@
  Bug fixes:
 
    - DossierSettings: update main window title when remediated (todo #1165).
+   - ofoAccount: now considers the beginning of the exercice when archiving (todo #1226).
    - ofoRecurrentModel: insert/update the DBMS with 'enabled' property.
 
  Other changes:

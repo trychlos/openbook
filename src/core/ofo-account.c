@@ -1114,11 +1114,13 @@ ofo_account_archive_balances( ofoAccount *account, const GDate *date )
 	GList *list;
 	ofsAccountBalance *sbal;
 	const gchar *acc_id;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
+	hub = ofo_base_get_hub( OFO_BASE( account ));
 	my_date_clear( &from_date );
 	last_index = get_last_archive_index( account );
 	if( last_index >= 0 ){
@@ -1127,10 +1129,13 @@ ofo_account_archive_balances( ofoAccount *account, const GDate *date )
 			g_date_add_days( &from_date, 1 );
 		}
 	}
+	if( !my_date_is_valid( &from_date )){
+		dossier = ofa_hub_get_dossier( hub );
+		my_date_set_from_date( &from_date, ofo_dossier_get_exe_begin( dossier ));
+	}
 
 	/* get balance of entries between two dates */
 	acc_id = ofo_account_get_number( account );
-	hub = ofo_base_get_hub( OFO_BASE( account ));
 	list = ofo_entry_get_dataset_balance( hub, acc_id, acc_id, &from_date, date );
 	sbal = list ? ( ofsAccountBalance * ) list->data : NULL;
 	debit = sbal ? sbal->debit : 0;
