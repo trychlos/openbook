@@ -424,6 +424,8 @@ do_close( ofaPeriodClose *self )
 
 	priv = ofa_period_close_get_instance_private( self );
 
+	/* close all ledgers, archiving their balance if asked for
+	 */
 	do_archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn ));
 	ofa_ledger_close_do_close_all( priv->getter, GTK_WINDOW( self ), &priv->closing, do_archive );
 
@@ -432,6 +434,9 @@ do_close( ofaPeriodClose *self )
 	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
 	ofo_dossier_update( dossier );
 
+	/* as all ledgers have been closed, it is possible to also archive
+	 * accounts balances (if asked for)
+	 */
 	do_archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn ));
 	if( do_archive ){
 		count = 0;
