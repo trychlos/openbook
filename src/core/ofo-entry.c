@@ -54,6 +54,7 @@
 #include "api/ofo-ope-template.h"
 #include "api/ofs-account-balance.h"
 #include "api/ofs-currency.h"
+#include "api/ofs-ledger-balance.h"
 
 #include "core/ofa-iconcil.h"
 
@@ -549,6 +550,88 @@ ofo_entry_get_dataset_balance( ofaHub *hub,
 			sbal->credit = my_double_set_from_sql(( const gchar * ) icol->data );
 			g_debug( "%s: account=%s, debit=%lf, credit=%lf",
 					thisfn, sbal->account, sbal->debit, sbal->credit );
+			dataset = g_list_prepend( dataset, sbal );
+		}
+		ofa_idbconnect_free_results( result );
+	}
+	g_string_free( query, TRUE );
+
+	return( g_list_reverse( dataset ));
+}
+
+/**
+ * ofo_entry_get_ledger_balance:
+ * @hub: the current #ofaHub object.
+ * @ledger: the #ofoLedger mnemonic identifier.
+ * @from_date: the starting effect date.
+ * @to_date: the ending effect date.
+ *
+ * Returns the balances for non-deleted entries for the given
+ * ledger, between the specified effect dates, as a GList of newly
+ * allocated #ofsLedgerBalance structures, that the user should
+ * #ofs_ledger_balance_list_free().
+ *
+ * The returned dataset is ordered by ascending currency.
+ */
+GList *
+ofo_entry_get_ledger_balance( ofaHub *hub, const gchar *ledger, const GDate *from_date, const GDate *to_date )
+{
+	static const gchar *thisfn = "ofo_entry_get_ledger_balance";
+	GList *dataset;
+	GString *query;
+	gboolean first;
+	gchar *str;
+	GSList *result, *irow, *icol;
+	ofsLedgerBalance *sbal;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	query = g_string_new(
+				"SELECT ENT_LEDGER,ENT_CURRENCY,SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
+				"FROM OFA_T_ENTRIES WHERE " );
+	first = FALSE;
+	dataset = NULL;
+	if( my_strlen( ledger )){
+		g_string_append_printf( query, "ENT_LEDGER='%s' ", ledger );
+		first = TRUE;
+	}
+	if( my_date_is_valid( from_date )){
+		if( first ){
+			query = g_string_append( query, "AND " );
+		}
+		str = my_date_to_str( from_date, MY_DATE_SQL );
+		g_string_append_printf( query, "ENT_DEFFECT>='%s' ", str );
+		g_free( str );
+		first = TRUE;
+	}
+	if( my_date_is_valid( to_date )){
+		if( first ){
+			query = g_string_append( query, "AND " );
+		}
+		str = my_date_to_str( to_date, MY_DATE_SQL );
+		g_string_append_printf( query, "ENT_DEFFECT<='%s' ", str );
+		g_free( str );
+		first = TRUE;
+	}
+	if( first ){
+		query = g_string_append( query, "AND " );
+	}
+	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
+	query = g_string_append( query, "GROUP BY ENT_LEDGER,ENT_CURRENCY ORDER BY ENT_LEDGER,ENT_CURRENCY ASC " );
+
+	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query->str, &result, TRUE )){
+		for( irow=result ; irow ; irow=irow->next ){
+			sbal = g_new0( ofsLedgerBalance, 1 );
+			icol = ( GSList * ) irow->data;
+			sbal->ledger = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			sbal->currency = g_strdup(( const gchar * ) icol->data );
+			icol = icol->next;
+			sbal->debit = my_double_set_from_sql(( const gchar * ) icol->data );
+			icol = icol->next;
+			sbal->credit = my_double_set_from_sql(( const gchar * ) icol->data );
+			g_debug( "%s: account=%s, currency=%s, debit=%lf, credit=%lf",
+					thisfn, sbal->ledger, sbal->currency, sbal->debit, sbal->credit );
 			dataset = g_list_prepend( dataset, sbal );
 		}
 		ofa_idbconnect_free_results( result );

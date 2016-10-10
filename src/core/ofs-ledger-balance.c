@@ -26,92 +26,39 @@
 #include <config.h>
 #endif
 
-#include <math.h>
-
-#include <my/my-utils.h>
+#include "my/my-utils.h"
 
 #include "api/ofo-ledger.h"
 #include "api/ofs-ledger-balance.h"
 
-static gint ledger_balance_cmp( const ofsLedgerBalance *a, const ofsLedgerBalance *b );
 static void ledger_balance_free( ofsLedgerBalance *balance );
 
 /**
- * ofs_ledger_balance_list_add:
- * @list: [in][out]: the list of balances.
- * @ledger: the #ofoLedger balance.
+ * ofs_ledger_balance_find_currency:
+ * @list: a list of #ofsLedgerBalance.
+ * @ledger: [allow-none]: a #ofoLedger identifier.
+ * @currency: [allow-none]: a #ofoCurrency identifier.
  *
- * Add to the @list an empty #ofsLedgerBalance structure for each
- * registered currency.
+ * Returns: the #ofsLedgerBalance structure which holds this @ledger
+ * (if specified), and this @currency (if specified).
  */
-void
-ofs_ledger_balance_list_add( GList **list, ofoLedger *ledger )
+ofsLedgerBalance *
+ofs_ledger_balance_find_currency( GList *list, const gchar *ledger, const gchar *currency )
 {
-	ofsLedgerBalance *balance;
-	GList *currencies, *it;
-	const gchar *mnemo, *currency;
+	ofsLedgerBalance *sbal;
+	GList *it;
+	gboolean ok_ledger, ok_currency;
 
-	mnemo = ofo_ledger_get_mnemo( ledger );
-	currencies = ofo_ledger_get_currencies( ledger );
-
-	for( it=currencies ; it ; it=it->next ){
-		currency = ( const gchar * ) it->data;
-		balance = g_new0( ofsLedgerBalance, 1 );
-		balance->ledger = g_strdup( mnemo );
-		balance->currency = g_strdup( currency );
-		balance->debit = 0;
-		balance->credit = 0;
-		*list = g_list_insert_sorted( *list, balance, ( GCompareFunc ) ledger_balance_cmp );
-	}
-
-	g_list_free( currencies );
-}
-
-static gint
-ledger_balance_cmp( const ofsLedgerBalance *a, const ofsLedgerBalance *b )
-{
-	gint cmp;
-
-	cmp = my_collate( a->ledger, b->ledger );
-	if( cmp == 0 ){
-		cmp = my_collate( a->currency, b->currency );
-	}
-
-	return( cmp );
-}
-
-/**
- * ofs_ledger_balance_list_find::
- * @list: a list of #ofsLedgerBalance structures.
- * @mnemo: a ledger identifier.
- * @currency: [allow-none]: a currency identifier.
- *
- * Returns: %TRUE if the specified @mnemo[+@currency] is already
- * registered in the @list.
- */
-gboolean
-ofs_ledger_balance_list_find( const GList *dataset, const gchar *mnemo, const gchar *currency )
-{
-	const GList *it;
-	ofsLedgerBalance *balance;
-	gint cmp;
-
-	g_return_val_if_fail( my_strlen( mnemo ), FALSE );
-
-	for( it=dataset ; it ; it=it->next ){
-		balance = ( ofsLedgerBalance * ) it->data;
-		cmp = my_collate( mnemo, balance->ledger );
-		if( cmp == 0 ){
-			if( !my_strlen( currency ) || !my_collate( currency, balance->currency )){
-				return( TRUE );
-			}
-		}
-		if( cmp < 0 ){
-			return( FALSE );
+	for( it=list ; it ; it=it->next ){
+		sbal = ( ofsLedgerBalance * ) it->data;
+		ok_ledger = ( !my_strlen( ledger ) || !my_collate( ledger, sbal->ledger ));
+		ok_currency = ( !my_strlen( currency ) || !my_collate( currency, sbal->currency ));
+		if( ok_ledger && ok_currency ){
+			return( sbal );
 		}
 	}
 
-	return( FALSE );
+	return( NULL );
 }
 
 /**

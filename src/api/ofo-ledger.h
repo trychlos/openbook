@@ -101,6 +101,14 @@ gboolean        ofo_ledger_has_entries         ( const ofoLedger *ledger );
 gboolean        ofo_ledger_is_deletable        ( const ofoLedger *ledger );
 gboolean        ofo_ledger_is_valid_data       ( const gchar *mnemo, const gchar *label, gchar **msgerr );
 
+gboolean        ofo_ledger_archive_balances    ( ofoLedger *ledger, const GDate *date );
+
+//guint           ofo_ledger_archive_get_count   ( ofoLedger *ledger );
+//const gchar    *ofo_ledger_archive_get_currency( ofoLedger *ledger, guint idx );
+//const GDate    *ofo_ledger_archive_get_date    ( ofoLedger *ledger, guint idx );
+ofxAmount       ofo_ledger_archive_get_debit   ( ofoLedger *ledger, const gchar *currency, const GDate *date );
+ofxAmount       ofo_ledger_archive_get_credit  ( ofoLedger *ledger, const gchar *currency, const GDate *date );
+
 void            ofo_ledger_set_mnemo           ( ofoLedger *ledger, const gchar *number );
 void            ofo_ledger_set_label           ( ofoLedger *ledger, const gchar *label );
 void            ofo_ledger_set_notes           ( ofoLedger *ledger, const gchar *notes );

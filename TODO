@@ -389,7 +389,12 @@
 
 1223 2016-10- 8 have a daily periodicity (for test use case)
 
-1224
+1224 2016-10- 9 review ofsAccountBalance API (removing not used)
+
+1225 2016-10- 9 review ofo_entry_get_dataset_xxx (maybe some consolidation
+                is possible)
+
+1226
 
 -----------------------------------------------------------------------
  DONE

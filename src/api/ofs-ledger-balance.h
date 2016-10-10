@@ -30,7 +30,7 @@
  * @short_description: #ofsLedgerBalance structure definition.
  * @include: openbook/ofs-ledger-balance.h
  *
- * This structure holds the balance for a ledger.
+ * This structure holds the balance per currency for a ledger.
  */
 
 #include "api/ofo-ledger-def.h"
@@ -48,11 +48,11 @@ typedef struct {
 }
 	ofsLedgerBalance;
 
-void     ofs_ledger_balance_list_add ( GList **list, ofoLedger *ledger );
+ofsLedgerBalance *ofs_ledger_balance_find_currency( GList *list,
+															const gchar *ledger,
+															const gchar *currency );
 
-gboolean ofs_ledger_balance_list_find( const GList *list, const gchar *mnemo, const gchar *currency );
-
-void     ofs_ledger_balance_list_free( GList **list );
+void              ofs_ledger_balance_list_free    ( GList **list );
 
 G_END_DECLS
 
