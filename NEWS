@@ -43,6 +43,7 @@
    - ofaRecurrentModel: display grayed+italic disabled models.
    - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166). 
    - ofaTVARecordProperties: distinguish between error and warning messages (todo #1168).
+   - ofoLedger: archive ledger balances (todo #1162).
 
  Bug fixes:
 

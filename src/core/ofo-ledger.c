@@ -910,8 +910,8 @@ ofo_ledger_is_valid_data( const gchar *mnemo, const gchar *label, gchar **msgerr
  * If we have a last archive, then the new archive balance is the
  * previous balance + the balance of entries between the two dates.
  *
- * If we do not have a last archive, then we get all entries until the
- * asked date.
+ * If we do not have a last archive, then we get all entries from the
+ * beginning of the exercice until the asked date.
  */
 gboolean
 ofo_ledger_archive_balances( ofoLedger *ledger, const GDate *date )
@@ -923,16 +923,23 @@ ofo_ledger_archive_balances( ofoLedger *ledger, const GDate *date )
 	GList *list, *it, *currencies;
 	ofsLedgerBalance *sbal;
 	const gchar *led_id, *cur_id;
+	ofoDossier *dossier;
 
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, FALSE );
 
 	ok = TRUE;
+	hub = ofo_base_get_hub( OFO_BASE( ledger ));
+
 	my_date_clear( &from_date );
 	get_last_archive_date( ledger, &last_date );
 	if( my_date_is_valid( &last_date )){
 		my_date_set_from_date( &from_date, &last_date );
 		g_date_add_days( &from_date, 1 );
+
+	} else {
+		dossier = ofa_hub_get_dossier( hub );
+		my_date_set_from_date( &from_date, ofo_dossier_get_exe_begin( dossier ));
 	}
 
 	/* renew currencies soldes for this ledger
@@ -943,7 +950,6 @@ ofo_ledger_archive_balances( ofoLedger *ledger, const GDate *date )
 	 * list may be empty
 	 */
 	led_id = ofo_ledger_get_mnemo( ledger );
-	hub = ofo_base_get_hub( OFO_BASE( ledger ));
 	list = ofo_entry_get_ledger_balance( hub, led_id, &from_date, date );
 	currencies = ofo_ledger_get_currencies( ledger );
 
@@ -1056,7 +1062,7 @@ ledger_archive_get_date( ofoLedger *ledger, guint idx )
 	ofoLedgerPrivate *priv;
 	GList *nth;
 
-	g_return_val_if_fail( ledger && OFO_IS_ACCOUNT( ledger ), NULL );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, NULL );
 
 	priv = ofo_ledger_get_instance_private( ledger );
@@ -1083,7 +1089,7 @@ ofo_ledger_archive_get_debit( ofoLedger *ledger, const gchar *currency, const GD
 	gint idx;
 	GList *nth;
 
-	g_return_val_if_fail( ledger && OFO_IS_ACCOUNT( ledger ), 0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
 	g_return_val_if_fail( my_strlen( currency ), 0 );
 	g_return_val_if_fail( my_date_is_valid( date ), 0 );
 	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
@@ -1115,7 +1121,7 @@ ofo_ledger_archive_get_credit( ofoLedger *ledger, const gchar *currency, const G
 	gint idx;
 	GList *nth;
 
-	g_return_val_if_fail( ledger && OFO_IS_ACCOUNT( ledger ), 0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
 	g_return_val_if_fail( my_strlen( currency ), 0 );
 	g_return_val_if_fail( my_date_is_valid( date ), 0 );
 	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );

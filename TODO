@@ -366,8 +366,6 @@
 1160 2016- 6-23 FEAT: when closing a period and archiving accounts, have
                 a progress bar on archiving
 
-1162 2016- 6-23 FEAT: archive ledger balances besides of account balances
-
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
@@ -394,7 +392,15 @@
 1225 2016-10- 9 review ofo_entry_get_dataset_xxx (maybe some consolidation
                 is possible)
 
-1226
+1226 2016-10-10 BUG in account_archive_balance:
+                it wrongly considers also entries before the beginning of the
+                exercice when computing the first balance of the exercice;
+                this error is then left as-is at each new archive operation
+                + have to remediate production db
+
+1227 2016-10-10 display ledger balances
+
+1228
 
 -----------------------------------------------------------------------
  DONE
@@ -1527,6 +1533,9 @@
 1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances are not
                 properly sorted
      2016- 6-23 should have taken a screenshot -> cancelled
+
+1162 2016- 6-23 FEAT: archive ledger balances besides of account balances
+     2016-10-10 done
 
 1163 2016- 6-23 FEAT: AccountProperty/Balances/ArchivedBalances: have a
                 button to change the sort order

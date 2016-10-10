@@ -62,6 +62,7 @@ typedef struct {
 	 */
 	GtkWidget          *closing_date;
 	GtkWidget          *accounts_btn;
+	GtkWidget          *ledgers_btn;
 	GtkWidget          *do_close_btn;
 	GtkWidget          *message_label;
 }
@@ -80,7 +81,7 @@ static void      check_for_enable_dlg( ofaPeriodClose *self );
 static gboolean  is_dialog_validable( ofaPeriodClose *self );
 static void      on_ok_clicked( GtkButton *button, ofaPeriodClose *self );
 static gboolean  do_close( ofaPeriodClose *self );
-static void      load_settings( ofaPeriodClose *self );
+static void      get_settings( ofaPeriodClose *self );
 static void      set_settings( ofaPeriodClose *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPeriodClose, ofa_period_close, GTK_TYPE_DIALOG, 0,
@@ -225,7 +226,7 @@ idialog_init( myIDialog *instance )
 	setup_date( OFA_PERIOD_CLOSE( instance ));
 	setup_others( OFA_PERIOD_CLOSE( instance ));
 
-	load_settings( OFA_PERIOD_CLOSE( instance ));
+	get_settings( OFA_PERIOD_CLOSE( instance ));
 }
 
 static void
@@ -281,6 +282,9 @@ setup_others( ofaPeriodClose *self )
 
 	priv->accounts_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-accounts" );
 	g_return_if_fail( priv->accounts_btn && GTK_IS_CHECK_BUTTON( priv->accounts_btn ));
+
+	priv->ledgers_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-ledgers" );
+	g_return_if_fail( priv->ledgers_btn && GTK_IS_CHECK_BUTTON( priv->ledgers_btn ));
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -420,7 +424,8 @@ do_close( ofaPeriodClose *self )
 
 	priv = ofa_period_close_get_instance_private( self );
 
-	ofa_ledger_close_do_close_all( priv->getter, GTK_WINDOW( self ), &priv->closing );
+	do_archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn ));
+	ofa_ledger_close_do_close_all( priv->getter, GTK_WINDOW( self ), &priv->closing, do_archive );
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
@@ -447,10 +452,10 @@ do_close( ofaPeriodClose *self )
 
 /*
  * settings: a string list:
- * save_accounts;
+ * save_accounts; archive_ledgers;
  */
 static void
-load_settings( ofaPeriodClose *self )
+get_settings( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
 	GList *list, *it;
@@ -467,6 +472,13 @@ load_settings( ofaPeriodClose *self )
 				GTK_TOGGLE_BUTTON( priv->accounts_btn ), my_utils_boolean_from_str( cstr ));
 	}
 
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		gtk_toggle_button_set_active(
+				GTK_TOGGLE_BUTTON( priv->ledgers_btn ), my_utils_boolean_from_str( cstr ));
+	}
+
 	ofa_settings_free_string_list( list );
 }
 
@@ -475,12 +487,12 @@ set_settings( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
 	gchar *str;
-	gboolean active;
 
 	priv = ofa_period_close_get_instance_private( self );
 
-	active = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn ));
-	str = g_strdup_printf( "%s;", active ? "True":"False" );
+	str = g_strdup_printf( "%s;%s;",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn )) ? "True":"False",
+			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn )) ? "True":"False" );
 
 	ofa_settings_user_set_string( st_settings, str );
 

@@ -70,7 +70,8 @@ void     ofa_ledger_close_run         ( ofaIGetter *getter,
 
 void     ofa_ledger_close_do_close_all( ofaIGetter *getter,
 											GtkWindow *parent,
-											const GDate *closing_date );
+											const GDate *closing_date,
+											gboolean with_archive );
 
 G_END_DECLS
 

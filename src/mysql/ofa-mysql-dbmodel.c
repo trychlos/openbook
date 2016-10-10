@@ -1793,7 +1793,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 			"	LED_ARC_DATE        DATE                  NOT NULL   COMMENT 'Archive effect date',"
 			"	LED_ARC_DEBIT       DECIMAL(20,5)                    COMMENT 'Archived debit',"
 			"	LED_ARC_CREDIT      DECIMAL(20,5)                    COMMENT 'Archived credit',"
-			"	UNIQUE (LED_MNEMO,LED_CURRENCY,LED_ARC_DATE)"
+			"	UNIQUE (LED_MNEMO,LED_ARC_CURRENCY,LED_ARC_DATE)"
 			") CHARACTER SET utf8" )){
 		return( FALSE );
 	}
