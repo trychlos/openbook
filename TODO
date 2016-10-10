@@ -386,6 +386,8 @@
 1221 2016-10- 7 EntryPage: context actions are always disabled but shouldn't)
 
 1223 2016-10- 8 have a daily periodicity (for test use case)
+     2016-10-10 or (better): transform the hardcoded class to tables with
+                per-dossier (and suitable defaults) values
 
 1224 2016-10- 9 review ofsAccountBalance API (removing not used)
 
@@ -397,10 +399,16 @@
                 exercice when computing the first balance of the exercice;
                 this error is then left as-is at each new archive operation
                 + have to remediate production db
+     2016-10-10 an analog bug affects entries whose effect date is the same
+                that the begin of the exercice: ledgers should be closed after
+                having entered opening entries
+     2016-10-10 fix the ofo_account_archive_balance() bug.
 
 1227 2016-10-10 display ledger balances
 
-1228
+1228 2016-10-10 Entry: have a role: exercice_open / exercice_close / normal
+
+1229
 
 -----------------------------------------------------------------------
  DONE

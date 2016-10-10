@@ -221,9 +221,9 @@ static ofoAccount  *account_find_by_number( GList *set, const gchar *number );
 static const gchar *account_get_string_ex( const ofoAccount *account, gint data_id );
 static void         account_get_children( const ofoAccount *account, sChildren *child_str );
 static void         account_iter_children( const ofoAccount *account, sChildren *child_str );
-static gboolean     do_add_archive_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
-static void         do_add_archive_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
-static gint         get_last_archive_index( ofoAccount *account );
+static gboolean     archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
+static void         archive_do_add_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit );
+static gint         archive_get_last_index( ofoAccount *account, const GDate *requested );
 static void         account_set_upd_user( ofoAccount *account, const gchar *user );
 static void         account_set_upd_stamp( ofoAccount *account, const GTimeVal *stamp );
 static gboolean     account_do_insert( ofoAccount *account, const ofaIDBConnect *connect );
@@ -1091,20 +1091,26 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowed )
 /**
  * ofo_account_archive_balances:
  * @account: this #ofoAccount object.
- * @date: the archived date.
+ * @archive_date: the archived date.
  *
  * Archiving an account balance is only relevant when user is sure that
  * no more entries will be set on this account (e.g. because the user
  * has closed the period).
  *
- * If we have a last archive, then the new archive balance is the
- * previous balance + the balance of entries between the two dates.
+ * Archived_solde_at_@archive_date =
+ *   archived_solde_at_previous_date (resp. at_exercice_beginning) +
+ *   validated_entries_between_previous_date_and_@archive_date.
  *
- * If we do not have a last archive, then we get all entries until the
- * asked date.
+ * In order for the archived balance to be worthy, it is so of the
+ * biggest interest to have validated all entries until @archive_date,
+ * so that no rough entry is left. This is to the caller to take care
+ * of that.
+ *
+ * If no previous archived date is found, the we consider the entries
+ * since the beginning of the exercice.
  */
 gboolean
-ofo_account_archive_balances( ofoAccount *account, const GDate *date )
+ofo_account_archive_balances( ofoAccount *account, const GDate *archive_date )
 {
 	gboolean ok;
 	ofaHub *hub;
@@ -1120,23 +1126,29 @@ ofo_account_archive_balances( ofoAccount *account, const GDate *date )
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
 	g_return_val_if_fail( !ofo_account_is_root( account ), FALSE );
 
+	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
 	my_date_clear( &from_date );
-	last_index = get_last_archive_index( account );
+	last_index = archive_get_last_index( account, archive_date );
+
 	if( last_index >= 0 ){
 		my_date_set_from_date( &from_date, ofo_account_archive_get_date( account, last_index ));
-		if( my_date_is_valid( &from_date )){
-			g_date_add_days( &from_date, 1 );
-		}
-	}
-	if( !my_date_is_valid( &from_date )){
+		g_return_val_if_fail( my_date_is_valid( &from_date ), FALSE );
+		g_date_add_days( &from_date, 1 );
+
+	} else {
 		dossier = ofa_hub_get_dossier( hub );
 		my_date_set_from_date( &from_date, ofo_dossier_get_exe_begin( dossier ));
+		/* if beginning date of the exercice is not set, then we will
+		 * consider all found entries */
 	}
 
-	/* get balance of entries between two dates */
+	/* Get balance of entries between two dates
+	 * ofoEntry considers all rough+validated entries, and returns
+	 *   one line for this account
+	 * It is up to the caller to take care of having no rough entries left here */
 	acc_id = ofo_account_get_number( account );
-	list = ofo_entry_get_dataset_balance( hub, acc_id, acc_id, &from_date, date );
+	list = ofo_entry_get_dataset_balance( hub, acc_id, acc_id, &from_date, archive_date );
 	sbal = list ? ( ofsAccountBalance * ) list->data : NULL;
 	debit = sbal ? sbal->debit : 0;
 	credit = sbal ? sbal->credit : 0;
@@ -1148,17 +1160,16 @@ ofo_account_archive_balances( ofoAccount *account, const GDate *date )
 		credit += ofo_account_archive_get_credit( account, last_index );
 	}
 
-	ok = do_add_archive_dbms( account, date, debit, credit );
-
-	if( ok ){
-		do_add_archive_list( account, date, debit, credit );
+	if( archive_do_add_dbms( account, archive_date, debit, credit )){
+		archive_do_add_list( account, archive_date, debit, credit );
+		ok = TRUE;
 	}
 
 	return( ok );
 }
 
 static gboolean
-do_add_archive_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
+archive_do_add_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
 {
 	ofaHub *hub;
 	const gchar *cur_code;
@@ -1197,7 +1208,7 @@ do_add_archive_dbms( ofoAccount *account, const GDate *date, ofxAmount debit, of
 }
 
 static void
-do_add_archive_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
+archive_do_add_list( ofoAccount *account, const GDate *date, ofxAmount debit, ofxAmount credit )
 {
 	ofoAccountPrivate *priv;
 	GList *fields;
@@ -1311,25 +1322,26 @@ ofo_account_archive_get_credit( ofoAccount *account, guint idx )
 }
 
 /*
- * Returns the index in archives list of the most recent archive,
- * or -1 if list is empty.
+ * Returns the index in archives list of the most recent archive before
+ * the @requested date, or -1 if not found.
  */
 static gint
-get_last_archive_index( ofoAccount *account )
+archive_get_last_index( ofoAccount *account, const GDate *requested )
 {
 	ofoAccountPrivate *priv;
 	GDate max_date;
 	const GDate *it_date;
-	gint i, found;
+	gint count, i, found;
 
 	priv = ofo_account_get_instance_private( account );
 
 	found = -1;
+	count = g_list_length( priv->archives );
 	my_date_clear( &max_date );
 
-	for( i=0 ; i<g_list_length( priv->archives ) ; ++i ){
+	for( i=0 ; i<count ; ++i ){
 		it_date = ofo_account_archive_get_date( account, i );
-		if( my_date_compare_ex( &max_date, it_date, TRUE ) < 0 ){
+		if( my_date_compare( it_date, requested ) < 0 && my_date_compare_ex( &max_date, it_date, TRUE ) < 0 ){
 			my_date_set_from_date( &max_date, it_date );
 			found = i;
 		}
