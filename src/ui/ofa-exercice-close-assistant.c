@@ -439,6 +439,9 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 	priv->close_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IEXECLOSE );
 }
 
+/*
+ * check for closing parms
+ */
 static void
 p1_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widget )
 {

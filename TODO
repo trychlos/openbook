@@ -384,6 +384,7 @@
                 background
 
 1221 2016-10- 7 EntryPage: context actions are always disabled but shouldn't)
+     2016-10-11 maybe same that #1234 ?
 
 1223 2016-10- 8 have a daily periodicity (for test use case)
      2016-10-10 or (better): transform the hardcoded class to tables with
@@ -411,9 +412,6 @@
 
 1229 2016-10-10 OpeTemplateSelect: initial selection is not set
 
-1230 2016-10-10 ExerciceCloseAssistant: check that closing and opening
-                templates are valid (able to generate valid entries)
-
 1231 2016-10-11 Feature question: should we reset the last closed date
                 of the ledgers when closing an exercice ?
                 For now, they are now reset. On the new exercice, ledgers
@@ -426,7 +424,11 @@
                 closing operations.
                 For now, it is closed at the first day of the exercice.
 
-1234
+1234 2016-10-11 RestoreAssistant: the New button is enabled, but not the
+                corresponding menu item
+                (maybe same that #1221 ?)
+
+1235
 
 -----------------------------------------------------------------------
  DONE
@@ -1816,6 +1818,10 @@
 1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
                 not grayed (but should)
      2016-10- 8 fixed
+
+1230 2016-10-10 ExerciceCloseAssistant: check that closing and opening
+                templates are valid (able to generate valid entries)
+     2016-10-11 done
 
 1233 2016-10-11 RestoreAssistant: Button 'ne_w'
      2016-10-11 fixed

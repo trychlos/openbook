@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-date.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-account-editable.h"
@@ -38,6 +39,8 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ope-template.h"
+#include "api/ofs-currency.h"
+#include "api/ofs-ope.h"
 
 #include "core/ofa-currency-combo.h"
 #include "core/ofa-ope-template-select.h"
@@ -58,6 +61,7 @@ typedef struct {
 	GtkWidget      *forward;
 	ofoDossier     *dossier;
 	GSList         *currencies;			/* used currencies, from entries */
+	gchar          *detail_account;
 
 	/* the closing operations
 	 */
@@ -116,6 +120,7 @@ static gint     find_currency_row( ofaClosingParmsBin *self, const gchar *curren
 static GObject *get_currency_combo_at( ofaClosingParmsBin *self, gint row );
 static void     check_bin( ofaClosingParmsBin *bin );
 static gboolean check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg );
+static gchar   *get_detail_account( ofaClosingParmsBin *self );
 static gboolean check_for_accounts( ofaClosingParmsBin *self, gchar **msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaClosingParmsBin, ofa_closing_parms_bin, GTK_TYPE_BIN, 0,
@@ -125,6 +130,7 @@ static void
 closing_parms_bin_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_closing_parms_bin_finalize";
+	ofaClosingParmsBinPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -132,6 +138,9 @@ closing_parms_bin_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_CLOSING_PARMS_BIN( instance ));
 
 	/* free data members here */
+	priv = ofa_closing_parms_bin_get_instance_private( OFA_CLOSING_PARMS_BIN( instance ));
+
+	g_free( priv->detail_account );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_closing_parms_bin_parent_class )->finalize( instance );
@@ -171,6 +180,7 @@ ofa_closing_parms_bin_init( ofaClosingParmsBin *self )
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->detail_account = NULL;
 }
 
 static void
@@ -648,14 +658,21 @@ ofa_closing_parms_bin_is_valid( ofaClosingParmsBin *bin, gchar **msg )
 
 /*
  * operation template must exist
+ * and be autonomous: be able to generate valid entries
  */
 static gboolean
 check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 {
 	ofaClosingParmsBinPrivate *priv;
 	const gchar *cstr;
-	ofoOpeTemplate *ope;
+	ofoOpeTemplate *template;
 	ofaHub *hub;
+	ofsOpe *ope;
+	GDate date;
+	ofsOpeDetail *detail;
+	GList *currencies;
+	gboolean ok;
+	gchar *message;
 
 	priv = ofa_closing_parms_bin_get_instance_private( self );
 
@@ -668,16 +685,62 @@ check_for_ope( ofaClosingParmsBin *self, GtkWidget *entry, gchar **msg )
 		}
 		return( FALSE );
 	}
-	ope = ofo_ope_template_get_by_mnemo( hub, cstr );
-	if( !ope ){
+	template = ofo_ope_template_get_by_mnemo( hub, cstr );
+	if( !template ){
 		if( msg ){
 			*msg = g_strdup_printf( _( "Operation template not found: %s" ), cstr );
 		}
 		return( FALSE );
 	}
-	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( ope ), FALSE );
+	g_return_val_if_fail( OFO_IS_OPE_TEMPLATE( template ), FALSE );
 
-	return( TRUE );
+	/* check that the ope.template is able to generate valid entries */
+	ope = ofs_ope_new( template );
+	my_date_set_now( &date );
+	my_date_set_from_date( &ope->dope, &date );
+	ope->dope_user_set = TRUE;
+	detail = ( ofsOpeDetail * ) ope->detail->data;
+	detail->account = get_detail_account( self );
+	detail->account_user_set = TRUE;
+	detail->debit = 100.0;
+	detail->debit_user_set = TRUE;
+
+	ofs_ope_apply_template( ope );
+
+	ok = ofs_ope_is_valid( ope, &message, &currencies );
+	if( !ok ){
+		g_free( message );
+		*msg = g_strdup_printf( _( "%s operation template is not valid" ), cstr );
+	}
+	ofs_currency_list_free( &currencies );
+	ofs_ope_free( ope );
+
+	return( ok );
+}
+
+static gchar *
+get_detail_account( ofaClosingParmsBin *self )
+{
+	ofaClosingParmsBinPrivate *priv;
+	ofaHub *hub;
+	GList *dataset, *it;
+	ofoAccount *account;
+
+	priv = ofa_closing_parms_bin_get_instance_private( self );
+
+	if( !priv->detail_account ){
+		hub = ofa_igetter_get_hub( priv->getter );
+		dataset = ofo_account_get_dataset( hub );
+		for( it=dataset ; it ; it=it->next ){
+			account = OFO_ACCOUNT( it->data );
+			if( !ofo_account_is_root( account )){
+				priv->detail_account = g_strdup( ofo_account_get_number( account ));
+				break;
+			}
+		}
+	}
+
+	return( g_strdup( priv->detail_account ));
 }
 
 static gboolean
