@@ -702,6 +702,10 @@ do_close_ledgers( sClose *sclose )
 	gtk_grid_set_column_spacing( GTK_GRID( sclose->grid ), 4 );
 	gtk_container_add( GTK_CONTAINER( content ), sclose->grid );
 
+	/* make sure the ledgers will be displayed in alpha order */
+	sclose->ledgers = g_list_sort( sclose->ledgers, ( GCompareFunc ) my_collate );
+	sclose->ledgers = g_list_reverse( sclose->ledgers );
+
 	sclose->count = 0;
 	for( it=sclose->ledgers ; it ; it=it->next ){
 		close_prepare_grid( sclose, ( ofoLedger * ) it->data );

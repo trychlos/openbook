@@ -43,6 +43,7 @@
    - ofaAccountProperties: let the user sort the archived soldes (todo #1163).
    - ofaClosingParmsBin: check that operation templates are able to generate valid entries (todo #1230).
    - ofaExerciceCloseAssistant: only close the RAN ledger, do not archive accounts balances.
+   - ofaLedgerClose: display ledgers in alphabetical order.
    - ofaLedgerProperties: display ledger balances (todo #1227).
    - ofaRecurrentModel: display grayed+italic disabled models.
    - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166).
