@@ -41,6 +41,7 @@
 
    - Core DB model v 33
    - ofaAccountProperties: let the user sort the archived soldes (todo #1163).
+   - ofaExerciceCloseAssistant: only close the RAN ledger, do not archive accounts balances.
    - ofaRecurrentModel: display grayed+italic disabled models.
    - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166). 
    - ofaTVARecordProperties: distinguish between error and warning messages (todo #1168).

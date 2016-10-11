@@ -104,6 +104,13 @@
  *          reconciliated
  *        - reset accounts and ledgers rough and validated balances to zero
  *        - insert prepared forward entries and validates them
+ *        - close the opening ledger, archiving its balances
+ *
+ * There is no sense, when opening the new exercice, to try to archive
+ * accounts soldes at this opening date, because this would imply to
+ * also close all ledgers at this date.
+ * Only the opening ledger is closed, and its balances are archived.
+ * All opening entries are none theless registered in this opening ledger.
  */
 
 #include <gtk/gtk.h>

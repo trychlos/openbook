@@ -1801,45 +1801,53 @@ p6_forward( ofaExerciceCloseAssistant *self )
 }
 
 /*
- * archive begin of exercice accounts balance
+ * close the opening ledger
  *
  * open=rough+validated+future whose effect date is less or equal the
  * beginning of the exercice, but at this time we only have:
  * - past entries (unreconciliated or unsettled from previous exercice)
  * - forward entries (which are in 'validated' status)
  * - entries which were future in the previous exercice and are still future
+ *
+ * Do not archive accounts solde unless we decide to close *all* ledgers
+ * at the date of the beginning of the new exercice.
+ * But close the ledger attached to the opening template, and archive its
+ * balance.
  */
 static gboolean
 p6_open( ofaExerciceCloseAssistant *self )
 {
-	static const gchar *thisfn = "ofa_exercice_close_assistant_p6_open";
 	ofaExerciceCloseAssistantPrivate *priv;
-	myProgressBar *bar;
-	guint count, i;
-	GList *accounts, *it;
-	ofoAccount *account;
+	const gchar *for_ope, *led_mnemo;
+	ofoOpeTemplate *for_template;
+	ofoLedger *for_ledger;
 	const GDate *begin_next;
+	gboolean ok;
+	GtkWidget *label;
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	accounts = ofo_account_get_dataset( priv->hub );
-	count = g_list_length( accounts );
-	i = 0;
-	bar = get_new_bar( self, "p6-open" );
-	gtk_widget_show_all( priv->p6_page );
+	for_ope = ofo_dossier_get_forward_ope( priv->dossier );
+	for_template = ofo_ope_template_get_by_mnemo( priv->hub, for_ope );
+	led_mnemo = ofo_ope_template_get_ledger( for_template );
+	for_ledger = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
 
-	for( it=accounts ; it ; it=it->next ){
-		account = OFO_ACCOUNT( it->data );
-		if( !ofo_account_is_root( account )){
-			ofo_account_archive_balances( account, begin_next );
-		}
-		update_bar( bar, &i, count, thisfn );
-	}
+	ok = ofo_ledger_close( for_ledger, begin_next ) &&
+			ofo_ledger_archive_balances( for_ledger, begin_next );
 
-	gtk_widget_show_all( GTK_WIDGET( bar ));
-	g_idle_add(( GSourceFunc ) p6_future, self );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( priv->p6_page ), "p6-open" );
+	g_return_val_if_fail( label && GTK_IS_LABEL( label ), FALSE );
+	gtk_label_set_text( GTK_LABEL( label ), ok ? _( "Done" ) : _( "Error" ));
+
+	if( ok ){
+		g_idle_add(( GSourceFunc ) p6_future, self );
+
+	} else {
+		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_SUMMARY );
+		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
+	}
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );

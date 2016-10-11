@@ -511,7 +511,7 @@ Or just click on 'Apply' button.</property>
                       <object class="GtkLabel" id="label63">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Closing ledgers :</property>
+                        <property name="label" translatable="yes">Closing all ledgers :</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
@@ -559,7 +559,7 @@ Or just click on 'Apply' button.</property>
                       <object class="GtkLabel" id="label67">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Saving opening accounts balances :</property>
+                        <property name="label" translatable="yes">Closing opening ledger, archiving its balances :</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
@@ -658,10 +658,10 @@ Or just click on 'Apply' button.</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkBox" id="p6-open">
+                      <object class="GtkLabel" id="p6-open">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
+                        <property name="xalign">0</property>
                         <child>
                           <placeholder/>
                         </child>
