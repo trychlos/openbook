@@ -71,7 +71,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-accou
 
 static ofaAccountSelect *account_select_new( ofaIGetter *getter, GtkWindow *parent );
 static void              iwindow_iface_init( myIWindowInterface *iface );
-static gboolean          iwindow_is_destroy_allowed( const myIWindow *instance );
 static void              idialog_iface_init( myIDialogInterface *iface );
 static void              idialog_init( myIDialog *instance );
 static void              on_treeview_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRenderer *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaAccountSelect *self );
@@ -82,6 +81,7 @@ static void              check_for_enable_dlg_with_account( ofaAccountSelect *se
 static gboolean          is_selection_valid( ofaAccountSelect *self, ofoAccount *account );
 static gboolean          idialog_quit_on_ok( myIDialog *instance );
 static gboolean          do_select( ofaAccountSelect *self );
+static void              write_settings( ofaAccountSelect *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountSelect, ofa_account_select, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaAccountSelect )
@@ -232,7 +232,8 @@ ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *aske
 
 	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
 		selected_id = g_strdup( priv->account_number );
-		my_iwindow_close( MY_IWINDOW( dialog ));
+		write_settings( dialog );
+		gtk_widget_hide( GTK_WIDGET( dialog ));
 	}
 
 	return( selected_id );
@@ -247,34 +248,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_account_select_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->is_destroy_allowed = iwindow_is_destroy_allowed;
-}
-
-/*
- * ofaAccountSelect is not destroyed at end, but only hidden.
- *
- * This is a good time to save the settings
- */
-static gboolean
-iwindow_is_destroy_allowed( const myIWindow *instance )
-{
-	ofaAccountSelectPrivate *priv;
-	GtkWidget *current_page;
-	GList *pages_list;
-
-	priv = ofa_account_select_get_instance_private( OFA_ACCOUNT_SELECT( instance ));
-
-	/* save the settings before hiding */
-	current_page = ofa_account_frame_bin_get_current_page( priv->account_bin );
-	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( current_page ));
-
-	/* propagate the visible columns to other pages of the book */
-	pages_list = ofa_account_frame_bin_get_pages_list( priv->account_bin );
-	ofa_itvcolumnable_propagate_visible_columns( OFA_ITVCOLUMNABLE( current_page ), pages_list );
-	g_list_free( pages_list );
-
-	return( FALSE );
 }
 
 /*
@@ -437,4 +410,23 @@ do_select( ofaAccountSelect *self )
 	}
 
 	return( ok );
+}
+
+static void
+write_settings( ofaAccountSelect *self )
+{
+	ofaAccountSelectPrivate *priv;
+	GtkWidget *current_page;
+	GList *pages_list;
+
+	priv = ofa_account_select_get_instance_private( self );
+
+	/* save the settings before hiding */
+	current_page = ofa_account_frame_bin_get_current_page( priv->account_bin );
+	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( current_page ));
+
+	/* propagate the visible columns to other pages of the book */
+	pages_list = ofa_account_frame_bin_get_pages_list( priv->account_bin );
+	ofa_itvcolumnable_propagate_visible_columns( OFA_ITVCOLUMNABLE( current_page ), pages_list );
+	g_list_free( pages_list );
 }

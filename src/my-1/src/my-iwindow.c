@@ -590,7 +590,16 @@ on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance )
 }
 
 /*
- * this closes the GtkWindow without any user confirmation
+ * This closes the GtkWindow without any user confirmation.
+ *
+ * Openbook actually manages three ways of closing a window:
+ * - closing and destroying it (the most common);
+ * - hiding it (eg. ofaAccountSelect, ofaOpeTemplateSelect);
+ * - doing nothing (eg. ofaExerciceCloseAssistant, ofaRestoreAssistant).
+ *
+ * The #is_destroy_allowed() method only manages the first and last
+ * items. Hding a window must be explicitely done in the actual
+ * application code.
  */
 static void
 do_close( myIWindow *instance )
@@ -606,9 +615,6 @@ do_close( myIWindow *instance )
 	if( is_destroy_allowed( instance )){
 		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_destroy( GTK_WIDGET( instance ));
-
-	} else {
-		gtk_widget_hide( GTK_WIDGET( instance ));
 	}
 }
 

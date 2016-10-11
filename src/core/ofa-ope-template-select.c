@@ -66,7 +66,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-t
 
 static ofaOpeTemplateSelect *ope_template_select_new( ofaIGetter *getter, GtkWindow *parent );
 static void                  iwindow_iface_init( myIWindowInterface *iface );
-static gboolean              iwindow_is_destroy_allowed( const myIWindow *instance );
 static void                  idialog_iface_init( myIDialogInterface *iface );
 static void                  idialog_init( myIDialog *instance );
 static void                  on_ope_template_changed( ofaOpeTemplateFrameBin *piece, const gchar *mnemo, ofaOpeTemplateSelect *self );
@@ -74,6 +73,7 @@ static void                  on_ope_template_activated( ofaOpeTemplateFrameBin *
 static void                  check_for_enable_dlg( ofaOpeTemplateSelect *self );
 static gboolean              idialog_quit_on_ok( myIDialog *instance );
 static gboolean              do_select( ofaOpeTemplateSelect *self );
+static void                  write_settings( ofaOpeTemplateSelect *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateSelect, ofa_ope_template_select, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateSelect )
@@ -221,7 +221,8 @@ ofa_ope_template_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar 
 
 	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
 		selected_mnemo = g_strdup( priv->ope_mnemo );
-		my_iwindow_close( MY_IWINDOW( dialog ));
+		write_settings( dialog );
+		gtk_widget_hide( GTK_WIDGET( dialog ));
 	}
 
 	return( selected_mnemo );
@@ -236,32 +237,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_ope_template_select_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->is_destroy_allowed = iwindow_is_destroy_allowed;
-}
-
-/*
- * ofaOpeTemplateSelect is not destroyed at end, but only hidden.
- */
-static gboolean
-iwindow_is_destroy_allowed( const myIWindow *instance )
-{
-	ofaOpeTemplateSelectPrivate *priv;
-	GtkWidget *current_page;
-	GList *pages_list;
-
-	priv = ofa_ope_template_select_get_instance_private( OFA_OPE_TEMPLATE_SELECT( instance ));
-
-	/* save the settings before hiding */
-	current_page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
-	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( current_page ));
-
-	/* propagate the visible columns to other pages of the book */
-	pages_list = ofa_ope_template_frame_bin_get_pages_list( priv->template_bin );
-	ofa_itvcolumnable_propagate_visible_columns( OFA_ITVCOLUMNABLE( current_page ), pages_list );
-	g_list_free( pages_list );
-
-	return( FALSE );
 }
 
 /*
@@ -360,4 +335,23 @@ do_select( ofaOpeTemplateSelect *self )
 	}
 
 	return( TRUE );
+}
+
+static void
+write_settings( ofaOpeTemplateSelect *self )
+{
+	ofaOpeTemplateSelectPrivate *priv;
+	GtkWidget *current_page;
+	GList *pages_list;
+
+	priv = ofa_ope_template_select_get_instance_private( self );
+
+	/* save the settings before hiding */
+	current_page = ofa_ope_template_frame_bin_get_current_page( priv->template_bin );
+	ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( current_page ));
+
+	/* propagate the visible columns to other pages of the book */
+	pages_list = ofa_ope_template_frame_bin_get_pages_list( priv->template_bin );
+	ofa_itvcolumnable_propagate_visible_columns( OFA_ITVCOLUMNABLE( current_page ), pages_list );
+	g_list_free( pages_list );
 }
