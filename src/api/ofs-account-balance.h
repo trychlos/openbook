@@ -48,10 +48,6 @@ typedef struct {
 }
 	ofsAccountBalance;
 
-void     ofs_account_balance_list_add ( GList **list, const ofoAccount *account );
-
-gboolean ofs_account_balance_list_find( const GList *list, const gchar *number );
-
 void     ofs_account_balance_list_free( GList **list );
 
 G_END_DECLS

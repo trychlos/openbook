@@ -390,8 +390,6 @@
      2016-10-10 or (better): transform the hardcoded class to tables with
                 per-dossier (and suitable defaults) values
 
-1224 2016-10- 9 review ofsAccountBalance API (removing not used)
-
 1225 2016-10- 9 review ofo_entry_get_dataset_xxx (maybe some consolidation
                 is possible)
 
@@ -1804,6 +1802,9 @@
 1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
                 not grayed (but should)
      2016-10- 8 fixed
+
+1224 2016-10- 9 review ofsAccountBalance API (removing not used)
+     2016-10-11 done
 
 1226 2016-10-10 BUG in account_archive_balance:
                 it wrongly considers also entries before the beginning of the
