@@ -54,10 +54,10 @@ static GType st_col_types[LEDGER_ARC_N_COLUMNS] = {
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* #ofoLedger, #ofoCurrency */
 };
 
-static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerArcStore *self );
-static void     load_dataset( ofaLedgerArcStore *self, ofoLedger *ledger );
-static void     insert_row( ofaLedgerArcStore *self, ofoLedger *ledger, gint i );
-static void     set_row_by_iter( ofaLedgerArcStore *self, ofoLedger *ledger, gint i, GtkTreeIter *iter );
+static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerArcStore *self );
+static void load_dataset( ofaLedgerArcStore *self, ofoLedger *ledger );
+static void insert_row( ofaLedgerArcStore *self, ofoLedger *ledger, gint i );
+static void set_row_by_iter( ofaLedgerArcStore *self, ofoLedger *ledger, gint i, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerArcStore, ofa_ledger_arc_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaLedgerArcStore ))

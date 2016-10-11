@@ -30,7 +30,7 @@
  * @short_description: #ofaAccountArcTreeview class definition.
  * @include: ui/ofa-account-arc-treeview.h
  *
- * Manage a treeview with a sorted list of archive soldes.
+ * Manage a treeview with a sorted list of archived soldes.
  *
  * The class does not manage the selection.
  */

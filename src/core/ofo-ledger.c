@@ -1038,7 +1038,7 @@ ofo_ledger_archive_get_count( ofoLedger *ledger )
 {
 	ofoLedgerPrivate *priv;
 
-	g_return_val_if_fail( ledger && OFO_IS_ACCOUNT( ledger ), 0 );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), 0 );
 	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, 0 );
 
 	priv = ofo_ledger_get_instance_private( ledger );

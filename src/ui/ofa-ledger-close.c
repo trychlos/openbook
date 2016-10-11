@@ -168,6 +168,8 @@ ledger_close_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		set_settings( OFA_LEDGER_CLOSE( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -489,10 +491,6 @@ check_for_enable_dlg( ofaLedgerClose *self, GList *selected )
 	ok = is_dialog_validable( self, selected );
 
 	gtk_widget_set_sensitive( priv->do_close_btn, ok );
-
-	if( ok ){
-		set_settings( self );
-	}
 
 	return( ok );
 }

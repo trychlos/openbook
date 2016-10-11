@@ -218,64 +218,14 @@
                         <property name="label_xalign">0</property>
                         <property name="shadow_type">in</property>
                         <child>
-                          <object class="GtkGrid" id="p2-grid">
+                          <object class="GtkBox" id="p2-archives">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="margin_left">8</property>
                             <property name="margin_right">2</property>
                             <property name="margin_top">2</property>
                             <property name="margin_bottom">2</property>
-                            <property name="hexpand">True</property>
-                            <property name="row_spacing">2</property>
-                            <property name="column_spacing">4</property>
-                            <child>
-                              <object class="GtkLabel" id="label211">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="hexpand">True</property>
-                                <property name="label" translatable="yes">Debit</property>
-                                <property name="width_chars">12</property>
-                                <property name="xalign">1</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">2</property>
-                                <property name="top_attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="label212">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="hexpand">True</property>
-                                <property name="label" translatable="yes">Credit</property>
-                                <property name="width_chars">12</property>
-                                <property name="xalign">1</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">4</property>
-                                <property name="top_attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel" id="label4">
-                                <property name="visible">True</property>
-                                <property name="can_focus">False</property>
-                                <property name="width_chars">1</property>
-                              </object>
-                              <packing>
-                                <property name="left_attach">6</property>
-                                <property name="top_attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
+                            <property name="orientation">vertical</property>
                             <child>
                               <placeholder/>
                             </child>
@@ -285,7 +235,7 @@
                           <object class="GtkLabel" id="label21">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes"> Balances by currency </property>
+                            <property name="label" translatable="yes"> Archived balances </property>
                             <property name="use_markup">True</property>
                           </object>
                         </child>

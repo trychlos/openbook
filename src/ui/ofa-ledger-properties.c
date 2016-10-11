@@ -43,6 +43,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 
+#include "ui/ofa-ledger-arc-treeview.h"
 #include "ui/ofa-ledger-properties.h"
 
 /* private instance data
@@ -354,166 +355,15 @@ static void
 init_balances_page( ofaLedgerProperties *self )
 {
 	ofaLedgerPropertiesPrivate *priv;
-	GtkWidget *grid, *label;
-	GList *currencies, *it;
-	const gchar *code, *symbol;
-	ofoCurrency *currency;
-	gint i, count;
-	gchar *str;
-	ofxAmount amount, tot_debit, tot_credit;
-	ofaHub *hub;
+	ofaLedgerArcTreeview *tview;
+	GtkWidget *parent;
 
 	priv = ofa_ledger_properties_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-
-	grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-grid" );
-	g_return_if_fail( grid && GTK_IS_GRID( grid ));
-
-	currencies = ofo_ledger_get_currencies( priv->ledger );
-	count = g_list_length( currencies );
-	/* 5 lines by currency */
-	gtk_grid_insert_row( GTK_GRID( grid ), 4*count );
-
-	for( i=0, it=currencies ; it ; ++i, it=it->next ){
-		code = ( const gchar * ) it->data;
-		currency = ofo_currency_get_by_code( hub, code );
-		g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
-
-		symbol = ofo_currency_get_symbol( currency );
-		tot_debit = 0;
-		tot_credit = 0;
-
-		str = g_strdup_printf( _( "%s balance" ), code );
-		label = gtk_label_new( str );
-		g_free( str );
-		my_style_add( label, "labelinfo" );
-		my_utils_widget_set_xalign( label, 0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 0, 5*i+1, 2, 1 );
-
-		label = gtk_label_new( "" );
-		gtk_label_set_width_chars( GTK_LABEL( label ), 4 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 0, 5*i+2, 1, 1 );
-
-		label = gtk_label_new( _( "Validated balance :" ));
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+2, 1, 1 );
-
-		amount = ofo_ledger_get_val_debit( priv->ledger, code );
-		str = ofa_amount_to_str( amount, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		tot_debit += amount;
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 2, 5*i+2, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+2, 1, 1 );
-
-		amount = ofo_ledger_get_val_credit( priv->ledger, code );
-		str = ofa_amount_to_str( amount, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		tot_credit += amount;
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 4, 5*i+2, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		gtk_grid_attach( GTK_GRID( grid ), label, 5, 5*i+2, 1, 1 );
-
-		label = gtk_label_new( "" );
-		gtk_label_set_width_chars( GTK_LABEL( label ), 4 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 0, 5*i+3, 1, 1 );
-
-		label = gtk_label_new( _( "Rough balance :" ));
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+3, 1, 1 );
-
-		amount = ofo_ledger_get_rough_debit( priv->ledger, code );
-		str = ofa_amount_to_str( amount, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		tot_debit += amount;
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 2, 5*i+3, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+3, 1, 1 );
-
-		amount = ofo_ledger_get_rough_credit( priv->ledger, code );
-		str = ofa_amount_to_str( amount, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		tot_credit += amount;
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 4, 5*i+3, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		gtk_grid_attach( GTK_GRID( grid ), label, 5, 5*i+3, 1, 1 );
-
-		label = gtk_label_new( "" );
-		gtk_label_set_width_chars( GTK_LABEL( label ), 4 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 0, 5*i+4, 1, 1 );
-
-		label = gtk_label_new( _( "Future balance :" ));
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+4, 1, 1 );
-
-		amount = ofo_ledger_get_futur_debit( priv->ledger, code );
-		str = ofa_amount_to_str( amount, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		tot_debit += amount;
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 2, 5*i+4, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+4, 1, 1 );
-
-		amount = ofo_ledger_get_futur_credit( priv->ledger, code );
-		str = ofa_amount_to_str( amount, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		tot_credit += amount;
-		my_utils_widget_set_xalign( label, 1.0 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 4, 5*i+4, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		gtk_grid_attach( GTK_GRID( grid ), label, 5, 5*i+4, 1, 1 );
-
-		label = gtk_label_new( "" );
-		gtk_label_set_width_chars( GTK_LABEL( label ), 4 );
-		gtk_grid_attach( GTK_GRID( grid ), label, 0, 5*i+5, 1, 1 );
-
-		str = g_strdup_printf( _( "Total %s :" ), code );
-		label = gtk_label_new( str );
-		g_free( str );
-		my_utils_widget_set_xalign( label, 1.0 );
-		my_style_add( label, "labelinfo" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 1, 5*i+5, 1, 1 );
-
-		str = ofa_amount_to_str( tot_debit, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		my_utils_widget_set_xalign( label, 1.0 );
-		my_style_add( label, "labelinfo" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 2, 5*i+5, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		my_style_add( label, "labelinfo" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 3, 5*i+5, 1, 1 );
-
-		str = ofa_amount_to_str( tot_credit, currency );
-		label = gtk_label_new( str );
-		g_free( str );
-		my_utils_widget_set_xalign( label, 1.0 );
-		my_style_add( label, "labelinfo" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 4, 5*i+5, 1, 1 );
-
-		label = gtk_label_new( symbol );
-		my_style_add( label, "labelinfo" );
-		gtk_grid_attach( GTK_GRID( grid ), label, 5, 5*i+5, 1, 1 );
-	}
+	tview = ofa_ledger_arc_treeview_new( priv->ledger );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
+	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
+	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( tview ));
 }
 
 static void

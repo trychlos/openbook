@@ -173,6 +173,8 @@ openbook_SOURCES = \
 	ofa-import-assistant.h								\
 	ofa-ledger-arc-store.c								\
 	ofa-ledger-arc-store.h								\
+	ofa-ledger-arc-treeview.c							\
+	ofa-ledger-arc-treeview.h							\
 	ofa-ledger-book-bin.c								\
 	ofa-ledger-book-bin.h								\
 	ofa-ledger-book-render.c							\

@@ -395,8 +395,6 @@
 1225 2016-10- 9 review ofo_entry_get_dataset_xxx (maybe some consolidation
                 is possible)
 
-1227 2016-10-10 display ledger balances
-
 1228 2016-10-10 Entry: have a role: exercice_open / exercice_close / normal
                 (may be useful when computing solde of an account)
 
@@ -1817,6 +1815,9 @@
                 having entered opening entries
      2016-10-10 fix the ofo_account_archive_balance() bug
      2016-10-11 remediated in core db model v33
+
+1227 2016-10-10 display ledger balances
+     2016-10-11 done
 
 1229 2016-10-10 OpeTemplateSelect: initial selection is not set
      2016-10-11 fixed
