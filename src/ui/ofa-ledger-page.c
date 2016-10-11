@@ -463,7 +463,6 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLed
 	ofaLedgerPagePrivate *priv;
 	GList *list;
 	ofaPage *page;
-	const gchar *mnemo;
 	ofoLedger *ledger;
 	ofaIThemeManager *manager;
 
@@ -474,8 +473,7 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLed
 	list = ofa_ledger_treeview_get_selected( priv->tview );
 	g_return_if_fail( list && list->data );
 
-	mnemo = ( const gchar * ) list->data;
-	ledger = ofo_ledger_get_by_mnemo( priv->hub, mnemo );
+	ledger = OFO_LEDGER( list->data );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
 	ofa_ledger_treeview_free_selected( list );
