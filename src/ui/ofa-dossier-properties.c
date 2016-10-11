@@ -937,6 +937,9 @@ set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec )
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
+	my_style_remove( priv->msgerr, MSG_ERROR );
+	my_style_remove( priv->msgerr, MSG_WARNING );
+
 	if( priv->msgerr ){
 		gtk_label_set_text( GTK_LABEL( priv->msgerr ), msg );
 		my_style_add( priv->msgerr, spec );
