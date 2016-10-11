@@ -426,8 +426,6 @@
                 closing operations.
                 For now, it is closed at the first day of the exercice.
 
-1233 2016-10-11 RestoreAssistant: Button 'ne_w'
-
 1234
 
 -----------------------------------------------------------------------
@@ -1818,6 +1816,9 @@
 1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
                 not grayed (but should)
      2016-10- 8 fixed
+
+1233 2016-10-11 RestoreAssistant: Button 'ne_w'
+     2016-10-11 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

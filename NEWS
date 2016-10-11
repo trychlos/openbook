@@ -43,7 +43,8 @@
    - ofaAccountProperties: let the user sort the archived soldes (todo #1163).
    - ofaExerciceCloseAssistant: only close the RAN ledger, do not archive accounts balances.
    - ofaRecurrentModel: display grayed+italic disabled models.
-   - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166). 
+   - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166).
+   - ofaRestoreAssistant: change the 'New' button mnemonic to distinguish it from 'Next' (todo #1233). 
    - ofaTVARecordProperties: distinguish between error and warning messages (todo #1168).
    - ofoLedger: archive ledger balances (todo #1162).
 

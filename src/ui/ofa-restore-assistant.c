@@ -666,7 +666,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			buttons_box,
 			ofa_iactionable_new_button(
 					OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->p2_new_action ),
-					OFA_IACTIONABLE_NEW_BTN ));
+					_( "Ne_w..." )));
 	g_simple_action_set_enabled( priv->p2_new_action, TRUE );
 
 	/* contextual menu */
