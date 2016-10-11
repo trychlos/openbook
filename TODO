@@ -410,8 +410,6 @@
 1228 2016-10-10 Entry: have a role: exercice_open / exercice_close / normal
                 (may be useful when computing solde of an account)
 
-1229 2016-10-10 OpeTemplateSelect: initial selection is not set
-
 1231 2016-10-11 Feature question: should we reset the last closed date
                 of the ledgers when closing an exercice ?
                 For now, they are now reset. On the new exercice, ledgers
@@ -1818,6 +1816,9 @@
 1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
                 not grayed (but should)
      2016-10- 8 fixed
+
+1229 2016-10-10 OpeTemplateSelect: initial selection is not set
+     2016-10-11 fixed
 
 1230 2016-10-10 ExerciceCloseAssistant: check that closing and opening
                 templates are valid (able to generate valid entries)

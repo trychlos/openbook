@@ -55,6 +55,7 @@
    - myIWindow: do nothing is destroy is not allowed.
    - ofoAccount: now considers the beginning of the exercice when archiving (todo #1226).
    - ofaLedgerPage: fix view entries.
+   - ofaOpeTemplateSelect: fix initial selection (todo #1229).
    - ofoRecurrentModel: insert/update the DBMS with 'enabled' property.
 
  Caution:

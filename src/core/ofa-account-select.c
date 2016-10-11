@@ -221,14 +221,13 @@ ofa_account_select_run( ofaIGetter *getter, GtkWindow *parent, const gchar *aske
 	dialog = account_select_new( getter, parent );
 	priv = ofa_account_select_get_instance_private( dialog );
 
-	ofa_account_frame_bin_set_selected( priv->account_bin, asked_number );
-	check_for_enable_dlg( dialog );
-
 	g_free( priv->account_number );
 	priv->account_number = NULL;
 	priv->allowed = allowed;
 
 	selected_id = NULL;
+	ofa_account_frame_bin_set_selected( priv->account_bin, asked_number );
+	check_for_enable_dlg( dialog );
 
 	if( my_idialog_run( MY_IDIALOG( dialog )) == GTK_RESPONSE_OK ){
 		selected_id = g_strdup( priv->account_number );

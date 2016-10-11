@@ -622,8 +622,10 @@ ofa_ope_template_frame_bin_set_selected( ofaOpeTemplateFrameBin *bin, const gcha
 	ofaOpeTemplateFrameBinPrivate *priv;
 	GtkWidget *page_w;
 	gint page_n;
+	ofoOpeTemplate *template;
+	const gchar *ledger;
 
-	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
+	g_debug( "%s: bin=%p, mnemo=%s", thisfn, ( void * ) bin, mnemo );
 
 	g_return_if_fail( bin && OFA_IS_OPE_TEMPLATE_FRAME_BIN( bin ));
 
@@ -632,7 +634,16 @@ ofa_ope_template_frame_bin_set_selected( ofaOpeTemplateFrameBin *bin, const gcha
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( my_strlen( mnemo )){
-		page_w = book_get_page_by_ledger( bin, mnemo, FALSE );
+		template = ofo_ope_template_get_by_mnemo( priv->hub, mnemo );
+		if( !template ){
+			return;
+		}
+		ledger = ofo_ope_template_get_ledger( template );
+		if( !my_strlen( ledger )){
+			return;
+		}
+		page_w = book_get_page_by_ledger( bin, ledger, FALSE );
+		/* asked page does not exist */
 		if( !page_w ){
 			return;
 		}
