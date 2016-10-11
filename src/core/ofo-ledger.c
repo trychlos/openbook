@@ -203,7 +203,6 @@ static GList     *ledger_add_balance_future( ofoLedger *ledger, const gchar *cur
 static GList     *ledger_add_to_balance( ofoLedger *ledger, const gchar *currency, gint debit_id, ofxAmount debit, gint credit_id, ofxAmount credit );
 static gboolean   do_add_archive_dbms( ofoLedger *ledger, const gchar *currency, const GDate *date, ofxAmount debit, ofxAmount credit );
 static void       do_add_archive_list( ofoLedger *ledger, const gchar *currency, const GDate *date, ofxAmount debit, ofxAmount credit );
-static const GDate *ledger_archive_get_date( ofoLedger *ledger, guint idx );
 static gint       get_archive_index( ofoLedger *ledger, const gchar *currency, const GDate *date );
 static void       get_last_archive_date( ofoLedger *ledger, GDate *date );
 static void       ledger_set_upd_user( ofoLedger *ledger, const gchar *upd_user );
@@ -1028,7 +1027,6 @@ do_add_archive_list( ofoLedger *ledger, const gchar *currency, const GDate *date
 	priv->archives = g_list_append( priv->archives, fields );
 }
 
-#if 0
 /**
  * ofo_ledger_archive_get_count:
  * @ledger: the #ofoLedger ledger.
@@ -1047,17 +1045,42 @@ ofo_ledger_archive_get_count( ofoLedger *ledger )
 
 	return( g_list_length( priv->archives ));
 }
-#endif
 
 /**
- * ofo_ledger_archive_get_date:
+ * ofo_ledger_archive_get_currency:
+ * @ledger: the #ofoLedger ledger.
+ * @idx: the desired index, counted from zero.
+ *
+ * Returns: the currency iso code of the balance.
+ */
+const gchar *
+ofo_ledger_archive_get_currency( ofoLedger *ledger, guint idx )
+{
+	ofoLedgerPrivate *priv;
+	GList *nth;
+
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+	g_return_val_if_fail( !OFO_BASE( ledger )->prot->dispose_has_run, NULL );
+
+	priv = ofo_ledger_get_instance_private( ledger );
+
+	nth = g_list_nth( priv->archives, idx );
+	if( nth ){
+		return( ofa_box_get_string( nth->data, LED_ARC_CURRENCY ));
+	}
+
+	return( NULL );
+}
+
+/**
+ * ofo_ofo_ledger_archive_get_date:
  * @ledger: the #ofoLedger ledger.
  * @idx: the desired index, counted from zero.
  *
  * Returns: the effect date of the balance.
  */
-static const GDate *
-ledger_archive_get_date( ofoLedger *ledger, guint idx )
+const GDate *
+ofo_ledger_archive_get_date( ofoLedger *ledger, guint idx )
 {
 	ofoLedgerPrivate *priv;
 	GList *nth;
@@ -1178,7 +1201,7 @@ get_last_archive_date( ofoLedger *ledger, GDate *date )
 	count = g_list_length( priv->archives );
 
 	for( i=0 ; i<count ; ++i ){
-		it_date = ledger_archive_get_date( ledger, i );
+		it_date = ofo_ledger_archive_get_date( ledger, i );
 		if( my_date_compare_ex( date, it_date, TRUE ) < 0 ){
 			my_date_set_from_date( date, it_date );
 		}
@@ -1804,9 +1827,15 @@ icollectionable_load_collection( void *user_data )
 	for( it=dataset ; it ; it=it->next ){
 		ledger = OFO_LEDGER( it->data );
 		priv = ofo_ledger_get_instance_private( ledger );
+		/* ledger per currency */
 		from = g_strdup_printf(
 					"OFA_T_LEDGERS_CUR WHERE LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ));
 		priv->balances = ofo_base_load_rows( st_balance_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
+		g_free( from );
+		/* ledger archives */
+		from = g_strdup_printf(
+					"OFA_T_LEDGERS_ARC WHERE LED_MNEMO='%s'", ofo_ledger_get_mnemo( ledger ));
+		priv->archives = ofo_base_load_rows( st_archive_defs, ofa_hub_get_connect( OFA_HUB( user_data )), from );
 		g_free( from );
 	}
 

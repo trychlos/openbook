@@ -171,6 +171,8 @@ openbook_SOURCES = \
 	ofa-iaccount-filter.h								\
 	ofa-import-assistant.c								\
 	ofa-import-assistant.h								\
+	ofa-ledger-arc-store.c								\
+	ofa-ledger-arc-store.h								\
 	ofa-ledger-book-bin.c								\
 	ofa-ledger-book-bin.h								\
 	ofa-ledger-book-render.c							\

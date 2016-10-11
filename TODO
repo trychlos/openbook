@@ -395,16 +395,6 @@
 1225 2016-10- 9 review ofo_entry_get_dataset_xxx (maybe some consolidation
                 is possible)
 
-1226 2016-10-10 BUG in account_archive_balance:
-                it wrongly considers also entries before the beginning of the
-                exercice when computing the first balance of the exercice;
-                this error is then left as-is at each new archive operation
-                + have to remediate production db
-     2016-10-10 an analog bug affects entries whose effect date is the same
-                that the begin of the exercice: ledgers should be closed after
-                having entered opening entries
-     2016-10-10 fix the ofo_account_archive_balance() bug.
-
 1227 2016-10-10 display ledger balances
 
 1228 2016-10-10 Entry: have a role: exercice_open / exercice_close / normal
@@ -1816,6 +1806,17 @@
 1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
                 not grayed (but should)
      2016-10- 8 fixed
+
+1226 2016-10-10 BUG in account_archive_balance:
+                it wrongly considers also entries before the beginning of the
+                exercice when computing the first balance of the exercice;
+                this error is then left as-is at each new archive operation
+                + have to remediate production db
+     2016-10-10 an analog bug affects entries whose effect date is the same
+                that the begin of the exercice: ledgers should be closed after
+                having entered opening entries
+     2016-10-10 fix the ofo_account_archive_balance() bug
+     2016-10-11 remediated in core db model v33
 
 1229 2016-10-10 OpeTemplateSelect: initial selection is not set
      2016-10-11 fixed
