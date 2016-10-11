@@ -1112,6 +1112,26 @@ ofo_account_is_allowed( const ofoAccount *account, gint allowed )
 gboolean
 ofo_account_archive_balances( ofoAccount *account, const GDate *archive_date )
 {
+	ofoDossier *dossier;
+	const GDate *exe_begin;
+
+	dossier = ofa_hub_get_dossier( ofo_base_get_hub( OFO_BASE( account )));
+	exe_begin = ofo_dossier_get_exe_begin( dossier );
+
+	return( ofo_account_archive_balances_ex( account, exe_begin, archive_date ));
+}
+
+/**
+ * ofo_account_archive_balances:
+ * @account: this #ofoAccount object.
+ * @exe_begin: the beginning of the exercice.
+ * @archive_date: the archived date.
+ *
+ * Archive accounts balances.
+ */
+gboolean
+ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, const GDate *archive_date )
+{
 	gboolean ok;
 	ofaHub *hub;
 	ofxAmount debit, credit;
@@ -1120,7 +1140,6 @@ ofo_account_archive_balances( ofoAccount *account, const GDate *archive_date )
 	GList *list;
 	ofsAccountBalance *sbal;
 	const gchar *acc_id;
-	ofoDossier *dossier;
 
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( account )->prot->dispose_has_run, FALSE );
@@ -1137,8 +1156,7 @@ ofo_account_archive_balances( ofoAccount *account, const GDate *archive_date )
 		g_date_add_days( &from_date, 1 );
 
 	} else {
-		dossier = ofa_hub_get_dossier( hub );
-		my_date_set_from_date( &from_date, ofo_dossier_get_exe_begin( dossier ));
+		my_date_set_from_date( &from_date, exe_begin );
 		/* if beginning date of the exercice is not set, then we will
 		 * consider all found entries */
 	}

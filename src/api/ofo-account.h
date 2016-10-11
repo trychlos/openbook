@@ -129,6 +129,7 @@ gboolean        ofo_account_is_child_of             ( const ofoAccount *account,
 gboolean        ofo_account_is_allowed              ( const ofoAccount *account, gint allowed );
 
 gboolean        ofo_account_archive_balances        ( ofoAccount *account, const GDate *date );
+gboolean        ofo_account_archive_balances_ex     ( ofoAccount *account, const GDate *exe_begin, const GDate *date );
 
 guint           ofo_account_archive_get_count       ( ofoAccount *account );
 const GDate    *ofo_account_archive_get_date        ( ofoAccount *account, guint idx );

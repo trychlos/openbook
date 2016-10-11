@@ -42,6 +42,7 @@
 #include "api/ofa-iimporter.h"
 #include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
+#include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -62,6 +63,11 @@ typedef struct {
 	 */
 	gulong               total;
 	gulong               current;
+
+	/* when upgrading to v33
+	 */
+	GList               *v33_accounts;
+	GList               *v33_dates;
 }
 	ofaMysqlDBModelPrivate;
 
@@ -191,6 +197,8 @@ ofa_mysql_dbmodel_init( ofaMysqlDBModel *self )
 	priv = ofa_mysql_dbmodel_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->v33_accounts = NULL;
+	priv->v33_dates = NULL;
 }
 
 static void
@@ -634,8 +642,8 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"
 			"	 DOS_STATUS,DOS_FORW_OPE,DOS_SLD_OPE) "
-			"	VALUES (1,'%s',%u,'EUR','%s','%s','%s')",
-			dossier_name, DOSSIER_EXERCICE_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
+			"	VALUES (%u,'%s',%u,'EUR','%s','%s','%s')",
+			DOSSIER_ROW_ID, dossier_name, DOSSIER_EXERCICE_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
 	ok = exec_query( self, query );
 	g_free( query );
 	g_free( dossier_name );
@@ -1777,15 +1785,106 @@ count_v32( ofaMysqlDBModel *self )
 /*
  * ofa_ddl_update_dbmodel_v33:
  *
+ * - ofoAccountArc: remediate archives balances.
  * - ofoLedger: add archive table
  */
 static gboolean
 dbmodel_v33( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v33";
+	ofaMysqlDBModelPrivate *priv;
+	gchar *query;
+	GSList *result, *irow, *icol;
+	const gchar *cstr;
+	GList *ita, *itd;
+	ofoAccount *account;
+	GDate begin, date;
+	gboolean ok;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
+	priv = ofa_mysql_dbmodel_get_instance_private( self );
+
+	/* 1 - get dossier begin exercice */
+	query = g_strdup_printf( "SELECT DOS_EXE_BEGIN FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
+	ok = ofa_idbconnect_query_ex( priv->connect, query, &result, TRUE );
+	priv->current += 1;
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+	irow = ( GSList * ) result->data;
+	cstr = ( const gchar * )(( irow && irow->data ) ? irow->data : NULL );
+	my_date_set_from_sql( &begin, cstr );
+	ofa_idbconnect_free_results( result );
+
+	/* 2 - get accounts list */
+	ok = ofa_idbconnect_query_ex( priv->connect,
+			"SELECT DISTINCT(ACC_NUMBER) FROM OFA_T_ACCOUNTS_ARC ORDER BY ACC_NUMBER DESC", &result, TRUE );
+	priv->current += 1;
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+	if( !ok ){
+		return( FALSE );
+	}
+	for( irow=result ; irow ; irow=irow->next ){
+		/* read reconciliated bat lines */
+		icol = ( GSList * ) irow->data;
+		cstr = ( const gchar * ) icol->data;
+		priv->v33_accounts = g_list_prepend( priv->v33_accounts, g_strdup( cstr ));
+	}
+	ofa_idbconnect_free_results( result );
+
+	/* 3 - get dates count, maybe including the first day of the exercice */
+	ok = ofa_idbconnect_query_ex( priv->connect,
+			"SELECT DISTINCT(ACC_ARC_DATE) FROM OFA_T_ACCOUNTS_ARC ORDER BY ACC_ARC_DATE DESC", &result, TRUE );
+	priv->current += 1;
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+	if( !ok ){
+		return( FALSE );
+	}
+	for( irow=result ; irow ; irow=irow->next ){
+		/* read reconciliated bat lines */
+		icol = ( GSList * ) irow->data;
+		cstr = ( const gchar * ) icol->data;
+		priv->v33_dates = g_list_prepend( priv->v33_dates, g_strdup( cstr ));
+	}
+	ofa_idbconnect_free_results( result );
+
+	/* update the total count, adding one pulse for each couple */
+	priv->total += g_list_length( priv->v33_accounts ) * g_list_length( priv->v33_dates );
+
+	/* 4 - empty the table */
+	if( !exec_query( self, "DELETE FROM OFA_T_ACCOUNTS_ARC" )){
+		return( FALSE );
+	}
+
+	/* for each account and date, recompute the soldes
+	 * but for the first day of the exercice */
+	for( ita=priv->v33_accounts ; ita ; ita=ita->next ){
+		cstr = ( const gchar * ) ita->data;
+		account = ofo_account_get_by_number( priv->hub, cstr );
+		if( account ){
+			if( ofo_account_is_root( account )){
+				priv->current += g_list_length( priv->v33_dates );
+				my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+			} else {
+				for( itd=priv->v33_dates ; itd ; itd=itd->next ){
+					cstr = ( const gchar * ) itd->data;
+					my_date_set_from_sql( &date, cstr );
+					if( !my_date_is_valid( &begin ) || my_date_compare( &begin, &date ) != 0 ){
+						ofo_account_archive_balances_ex( account, &begin, &date );
+					}
+					priv->current += 1;
+					my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+				}
+			}
+		}
+	}
+	g_list_free_full( priv->v33_accounts, ( GDestroyNotify ) g_free );
+	g_list_free_full( priv->v33_dates, ( GDestroyNotify ) g_free );
+
+	/* 5 - create LedgersArc table */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_LEDGERS_ARC ("
 			"	LED_MNEMO           VARCHAR(64)    BINARY NOT NULL   COMMENT 'Ledger identifier',"
@@ -1798,6 +1897,10 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* make sure that we end up at 100% */
+	priv->current = priv->total;
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+
 	return( TRUE );
 }
 
@@ -1808,5 +1911,5 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v33( ofaMysqlDBModel *self )
 {
-	return( 1 );
+	return( 5 );
 }

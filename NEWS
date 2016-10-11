@@ -55,6 +55,14 @@
    - ofaLedgerPage: fix view entries.
    - ofoRecurrentModel: insert/update the DBMS with 'enabled' property.
 
+ Caution:
+ 
+     Bug #1226 may in particular appear in financial accounts where it is
+     frequent to have entries from previous exercices (because non conciliated)
+     this creates a balistic error which continue through all the exercice.
+
+     This bug is identified and fixed in v0.61 (Core DB model v33).
+
  Other changes:
 
    - ofaIAccountFilter: remove ofa_iaccount_filter_set_prefs() unused method.
