@@ -328,7 +328,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
-	dataset = ofo_entry_get_dataset_for_print_balance(
+	dataset = ofo_entry_get_dataset_account_balance(
 						hub,
 						priv->all_accounts ? NULL : priv->from_account,
 						priv->all_accounts ? NULL : priv->to_account,

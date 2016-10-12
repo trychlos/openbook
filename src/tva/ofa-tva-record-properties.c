@@ -1002,7 +1002,7 @@ eval_account( ofsFormulaHelper *helper )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 
-	dataset = ofo_entry_get_dataset_balance(
+	dataset = ofo_entry_get_dataset_account_balance(
 					hub, cbegin, cend, &priv->begin_date, &priv->end_date );
 	amount = 0;
 	for( it=dataset ; it ; it=it->next ){

@@ -949,7 +949,7 @@ ofo_ledger_archive_balances( ofoLedger *ledger, const GDate *date )
 	 * list may be empty
 	 */
 	led_id = ofo_ledger_get_mnemo( ledger );
-	list = ofo_entry_get_ledger_balance( hub, led_id, &from_date, date );
+	list = ofo_entry_get_dataset_ledger_balance( hub, led_id, &from_date, date );
 	currencies = ofo_ledger_get_currencies( ledger );
 
 	for( it=currencies ; it ; it=it->next ){

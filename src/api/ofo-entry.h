@@ -95,25 +95,17 @@ ofoEntry       *ofo_entry_new                        ( void );
 
 void            ofo_entry_dump                       ( const ofoEntry *entry );
 
-GList          *ofo_entry_get_dataset_by_account     ( ofaHub *hub,
-															const gchar *account );
-GList          *ofo_entry_get_dataset_by_ledger      ( ofaHub *hub,
-															const gchar *ledger );
-GList          *ofo_entry_get_dataset_for_print_balance
-                                                     ( ofaHub *hub,
+GList          *ofo_entry_get_dataset_account_balance( ofaHub *hub,
 															const gchar *from_account, const gchar *to_account,
 															const GDate *from_date, const GDate *to_date );
-GList          *ofo_entry_get_dataset_balance        ( ofaHub *hub,
-															const gchar *from_account, const gchar *to_account,
-															const GDate *from_date, const GDate *to_date );
-GList          *ofo_entry_get_ledger_balance         ( ofaHub *hub,
+GList          *ofo_entry_get_dataset_ledger_balance ( ofaHub *hub,
 															const gchar *ledger,
 															const GDate *from_date, const GDate *to_date );
-GList          *ofo_entry_get_dataset_for_print_general_books
+GList          *ofo_entry_get_dataset_for_print_by_account
                                                      ( ofaHub *hub,
 															const gchar *from_account, const gchar *to_account,
 															const GDate *from_date, const GDate *to_date );
-GList          *ofo_entry_get_dataset_for_print_ledgers
+GList          *ofo_entry_get_dataset_for_print_by_ledger
                                                      ( ofaHub *hub,
 															const GSList *mnemos,
 															const GDate *from_date, const GDate *to_date );

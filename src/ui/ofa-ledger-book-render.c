@@ -343,7 +343,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
-	dataset = ofo_entry_get_dataset_for_print_ledgers(
+	dataset = ofo_entry_get_dataset_for_print_by_ledger(
 						hub, mnemos,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
 						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );

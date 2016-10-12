@@ -1166,7 +1166,7 @@ ofo_account_archive_balances_ex( ofoAccount *account, const GDate *exe_begin, co
 	 *   one line for this account
 	 * It is up to the caller to take care of having no rough entries left here */
 	acc_id = ofo_account_get_number( account );
-	list = ofo_entry_get_dataset_balance( hub, acc_id, acc_id, &from_date, archive_date );
+	list = ofo_entry_get_dataset_account_balance( hub, acc_id, acc_id, &from_date, archive_date );
 	sbal = list ? ( ofsAccountBalance * ) list->data : NULL;
 	debit = sbal ? sbal->debit : 0;
 	credit = sbal ? sbal->credit : 0;

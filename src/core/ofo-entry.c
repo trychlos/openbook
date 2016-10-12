@@ -305,169 +305,7 @@ ofo_entry_class_init( ofoEntryClass *klass )
 }
 
 /**
- * ofo_entry_get_dataset_by_account:
- * @hub: the current #ofaHub object.
- * @account: the searched account number.
- *
- * Returns all entries either for the specified @account (if any),
- * or for all accounts.
- *
- * The returned dataset is sorted by ascending account/dope/deffect/number.
- */
-GList *
-ofo_entry_get_dataset_by_account( ofaHub *hub, const gchar *account )
-{
-	static const gchar *thisfn = "ofo_entry_get_dataset_by_account";
-	GString *where;
-	GList *dataset;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	where = g_string_new( "" );
-
-	if( my_strlen( account )){
-		g_string_append_printf( where, "ENT_ACCOUNT='%s' ", account );
-	}
-
-	dataset = entry_load_dataset( hub, where->str,
-			"ORDER BY ENT_ACCOUNT ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC");
-
-	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
-
-	g_string_free( where, TRUE );
-
-	return( dataset );
-}
-
-/**
- * ofo_entry_get_dataset_by_ledger:
- * @hub: the current #ofaHub object.
- * @ledger: the ledger.
- *
- * Returns all entries either for the specified @ledger (if any),
- * or for all ledgers.
- *
- * The returned dataset is sorted by ascending ledger/dope/deffect/number.
- */
-GList *ofo_entry_get_dataset_by_ledger( ofaHub *hub, const gchar *ledger )
-{
-	static const gchar *thisfn = "ofo_entry_get_dataset_by_ledger";
-	GString *where;
-	GList *dataset;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	where = g_string_new( "" );
-
-	if( my_strlen( ledger )){
-		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
-	}
-
-	dataset = entry_load_dataset( hub, where->str,
-			"ORDER BY ENT_LEDGER ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC");
-
-	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
-
-	g_string_free( where, TRUE );
-
-	return( dataset );
-}
-
-/**
- * ofo_entry_get_dataset_for_print_balance:
- * @hub: the current #ofaHub object.
- * @from_account: the starting account.
- * @to_account: the ending account.
- * @from_date: the starting effect date.
- * @to_date: the ending effect date.
- *
- * Returns the dataset of non-deleted entries for the given accounts,
- * between the specified effect dates, as a GList of newly allocated
- * #ofsAccountBalance structures, that the user should
- * #ofs_account_balance_list_free().
- *
- * The returned dataset is ordered by ascending account.
- */
-GList *
-ofo_entry_get_dataset_for_print_balance( ofaHub *hub,
-											const gchar *from_account, const gchar *to_account,
-											const GDate *from_date, const GDate *to_date )
-{
-	static const gchar *thisfn = "ofo_entry_get_dataset_for_print_balance";
-	GList *dataset;
-	GString *query;
-	gboolean first;
-	gchar *str;
-	GSList *result, *irow, *icol;
-	ofsAccountBalance *sbal;
-
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
-
-	query = g_string_new(
-				"SELECT ENT_ACCOUNT,ENT_CURRENCY,SUM(ENT_DEBIT),SUM(ENT_CREDIT) "
-				"FROM OFA_T_ENTRIES WHERE " );
-	first = FALSE;
-	dataset = NULL;
-
-	if( my_strlen( from_account )){
-		g_string_append_printf( query, "ENT_ACCOUNT>='%s' ", from_account );
-		first = TRUE;
-	}
-	if( my_strlen( to_account )){
-		if( first ){
-			query = g_string_append( query, "AND " );
-		}
-		g_string_append_printf( query, "ENT_ACCOUNT<='%s' ", to_account );
-		first = TRUE;
-	}
-	if( my_date_is_valid( from_date )){
-		if( first ){
-			query = g_string_append( query, "AND " );
-		}
-		str = my_date_to_str( from_date, MY_DATE_SQL );
-		g_string_append_printf( query, "ENT_DEFFECT>='%s' ", str );
-		g_free( str );
-		first = TRUE;
-	}
-	if( my_date_is_valid( to_date )){
-		if( first ){
-			query = g_string_append( query, "AND " );
-		}
-		str = my_date_to_str( to_date, MY_DATE_SQL );
-		g_string_append_printf( query, "ENT_DEFFECT<='%s' ", str );
-		g_free( str );
-		first = TRUE;
-	}
-	if( first ){
-		query = g_string_append( query, "AND " );
-	}
-	g_string_append_printf( query, "ENT_STATUS!=%u ", ENT_STATUS_DELETED );
-	query = g_string_append( query, "GROUP BY ENT_ACCOUNT ORDER BY ENT_ACCOUNT ASC " );
-
-	if( ofa_idbconnect_query_ex( ofa_hub_get_connect( hub ), query->str, &result, TRUE )){
-		for( irow=result ; irow ; irow=irow->next ){
-			sbal = g_new0( ofsAccountBalance, 1 );
-			icol = ( GSList * ) irow->data;
-			sbal->account = g_strdup(( const gchar * ) icol->data );
-			icol = icol->next;
-			sbal->currency = g_strdup(( const gchar * ) icol->data );
-			icol = icol->next;
-			sbal->debit = my_double_set_from_sql(( const gchar * ) icol->data );
-			icol = icol->next;
-			sbal->credit = my_double_set_from_sql(( const gchar * ) icol->data );
-			g_debug( "%s: account=%s, debit=%lf, credit=%lf",
-					thisfn, sbal->account, sbal->debit, sbal->credit );
-			dataset = g_list_prepend( dataset, sbal );
-		}
-		ofa_idbconnect_free_results( result );
-	}
-	g_string_free( query, TRUE );
-
-	return( g_list_reverse( dataset ));
-}
-
-/**
- * ofo_entry_get_dataset_balance:
+ * ofo_entry_get_dataset_account_balance:
  * @hub: the current #ofaHub object.
  * @from_account: the starting account.
  * @to_account: the ending account.
@@ -482,11 +320,11 @@ ofo_entry_get_dataset_for_print_balance( ofaHub *hub,
  * The returned dataset is ordered by ascending account.
  */
 GList *
-ofo_entry_get_dataset_balance( ofaHub *hub,
+ofo_entry_get_dataset_account_balance( ofaHub *hub,
 											const gchar *from_account, const gchar *to_account,
 											const GDate *from_date, const GDate *to_date )
 {
-	static const gchar *thisfn = "ofo_entry_get_dataset_balance";
+	static const gchar *thisfn = "ofo_entry_get_dataset_account_balance";
 	GList *dataset;
 	GString *query;
 	gboolean first;
@@ -560,7 +398,7 @@ ofo_entry_get_dataset_balance( ofaHub *hub,
 }
 
 /**
- * ofo_entry_get_ledger_balance:
+ * ofo_entry_get_dataset_ledger_balance:
  * @hub: the current #ofaHub object.
  * @ledger: the #ofoLedger mnemonic identifier.
  * @from_date: the starting effect date.
@@ -574,9 +412,9 @@ ofo_entry_get_dataset_balance( ofaHub *hub,
  * The returned dataset is ordered by ascending currency.
  */
 GList *
-ofo_entry_get_ledger_balance( ofaHub *hub, const gchar *ledger, const GDate *from_date, const GDate *to_date )
+ofo_entry_get_dataset_ledger_balance( ofaHub *hub, const gchar *ledger, const GDate *from_date, const GDate *to_date )
 {
-	static const gchar *thisfn = "ofo_entry_get_ledger_balance";
+	static const gchar *thisfn = "ofo_entry_get_dataset_ledger_balance";
 	GList *dataset;
 	GString *query;
 	gboolean first;
@@ -642,7 +480,7 @@ ofo_entry_get_ledger_balance( ofaHub *hub, const gchar *ledger, const GDate *fro
 }
 
 /**
- * ofo_entry_get_dataset_for_print_general_books:
+ * ofo_entry_get_dataset_for_print_by_account:
  * @hub: the current #ofaHub object.
  * @from_account: the starting account.
  * @to_account: the ending account.
@@ -656,7 +494,7 @@ ofo_entry_get_ledger_balance( ofaHub *hub, const gchar *ledger, const GDate *fro
  * The returned dataset is ordered by ascending account/dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_general_books( ofaHub *hub,
+ofo_entry_get_dataset_for_print_by_account( ofaHub *hub,
 												const gchar *from_account, const gchar *to_account,
 												const GDate *from_date, const GDate *to_date )
 {
@@ -714,7 +552,7 @@ ofo_entry_get_dataset_for_print_general_books( ofaHub *hub,
 }
 
 /**
- * ofo_entry_get_dataset_for_print_ledgers:
+ * ofo_entry_get_dataset_for_print_by_ledger:
  * @hub: the current #ofaHub object.
  * @mnemos: a list of requested ledger mnemos.
  * @from_date: the starting effect date.
@@ -727,7 +565,7 @@ ofo_entry_get_dataset_for_print_general_books( ofaHub *hub,
  * The returned dataset is ordered by ascending ledger/dope/deffect/number.
  */
 GList *
-ofo_entry_get_dataset_for_print_ledgers( ofaHub *hub,
+ofo_entry_get_dataset_for_print_by_ledger( ofaHub *hub,
 												const GSList *mnemos,
 												const GDate *from_date, const GDate *to_date )
 {
@@ -883,7 +721,7 @@ effect_in_exercice( ofaHub *hub )
  * @account: [allow-none]: the searched account.
  * @ledger: [allow-none]: the searched ledger.
  *
- * Returns all entries for the specified @account or @ledger.?
+ * Returns *all* entries for the specified @account and/or @ledger.
  */
 GList *
 ofo_entry_get_dataset_for_store( ofaHub *hub, const gchar *account, const gchar *ledger )
@@ -906,8 +744,7 @@ ofo_entry_get_dataset_for_store( ofaHub *hub, const gchar *account, const gchar 
 		g_string_append_printf( where, "ENT_LEDGER='%s' ", ledger );
 	}
 
-	dataset = entry_load_dataset( hub, where->str,
-			"ORDER BY ENT_ACCOUNT ASC,ENT_DOPE ASC,ENT_DEFFECT ASC,ENT_NUMBER ASC");
+	dataset = entry_load_dataset( hub, where->str, "ORDER BY ENT_NUMBER ASC");
 
 	g_debug( "%s: count=%d", thisfn, g_list_length( dataset ));
 

@@ -742,7 +742,7 @@ check_entries_run( ofaCheckIntegrityBin *self )
 	}
 
 	priv->entries_errs = 0;
-	entries = ofo_entry_get_dataset_by_account( priv->hub, NULL );
+	entries = ofo_entry_get_dataset_for_store( priv->hub, NULL, NULL );
 	count = g_list_length( entries );
 
 	if( count == 0 ){

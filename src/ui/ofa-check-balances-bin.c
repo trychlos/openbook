@@ -318,7 +318,7 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 	priv->entries_list = NULL;
 	dbegin = ofo_dossier_get_exe_begin( dossier );
 	//g_debug( "check_entries_balance_run: dbegin=%s", my_date_to_str( dbegin, MY_DATE_SQL ));
-	entries = ofo_entry_get_dataset_for_print_general_books( priv->hub, NULL, NULL, dbegin, NULL );
+	entries = ofo_entry_get_dataset_for_print_by_account( priv->hub, NULL, NULL, dbegin, NULL );
 	count = g_list_length( entries );
 
 	if( count == 0 ){

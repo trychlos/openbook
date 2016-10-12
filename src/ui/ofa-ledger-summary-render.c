@@ -478,7 +478,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	mnemos_list = g_slist_prepend( NULL, ( gpointer ) cledmnemo );
 
 	/* take the entries for this ledger */
-	entries = ofo_entry_get_dataset_for_print_ledgers(
+	entries = ofo_entry_get_dataset_for_print_by_ledger(
 						hub, mnemos_list,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
 						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
