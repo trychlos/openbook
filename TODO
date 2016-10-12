@@ -350,9 +350,6 @@
                 + review all prints for identifiers which have been
                 expanded
 
-1151 2016- 6-21 ViewEntries columns: add Settlement and Reconciliation
-                indicators (S/R)
-
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
@@ -406,7 +403,10 @@
                 corresponding menu item
                 (maybe same that #1221 ?)
 
-1235
+1235 2016-10-12 begining of the exercice cannot be modified anymore after
+                the first exercice operation
+
+1236
 
 -----------------------------------------------------------------------
  DONE
@@ -1500,6 +1500,10 @@
 
 1148 2016- 6- 8 SettlementPage: column header is Settlement Number
      2016- 6-27 fixed
+
+1151 2016- 6-21 ViewEntries columns: add Settlement and Reconciliation
+                indicators (S/R)
+     2016-10-12 obsoleted with EntryTreeview
 
 1152 2016- 6-21 BUG: GuidedInput: does not take into account the selected
                 ledger
