@@ -45,6 +45,7 @@
    - ofaExerciceCloseAssistant: only close the RAN ledger, do not archive accounts balances.
    - ofaLedgerClose: display ledgers in alphabetical order.
    - ofaLedgerProperties: display ledger balances (todo #1227).
+   - ofaPeriodClose: have a progress bar when archiving accounts (todo #1160).
    - ofaRecurrentModel: display grayed+italic disabled models.
    - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166).
    - ofaRestoreAssistant: change the 'New' button mnemonic to distinguish it from 'Next' (todo #1233). 

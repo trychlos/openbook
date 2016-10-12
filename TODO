@@ -363,9 +363,6 @@
                 generating any operation (and so without the need for
                 an operation date)
 
-1160 2016- 6-23 FEAT: when closing a period and archiving accounts, have
-                a progress bar on archiving
-
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
@@ -1538,6 +1535,10 @@
                 of entries on the period declaration
                 => have a BALANCE() function for the current balance.
      2016- 6-23 done
+
+1160 2016- 6-23 FEAT: when closing a period and archiving accounts, have
+                a progress bar on archiving
+     2016-10-12 done
 
 1161 2016- 6-23 BUG: AccountProperty/Balances/ArchivedBalances are not
                 properly sorted

@@ -690,14 +690,12 @@ do_close_ledgers( sClose *sclose )
 
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	//my_utils_widget_set_margins( button, 4, 4, 0, 8 );
 	gtk_widget_set_sensitive( button, FALSE );
 
 	content = gtk_dialog_get_content_area( GTK_DIALOG( dialog ));
 	g_return_if_fail( content && GTK_IS_CONTAINER( content ));
 
 	sclose->grid = gtk_grid_new();
-	//my_utils_widget_set_margin_left( grid, 8 );
 	gtk_grid_set_row_spacing( GTK_GRID( sclose->grid ), 2 );
 	gtk_grid_set_column_spacing( GTK_GRID( sclose->grid ), 4 );
 	gtk_container_add( GTK_CONTAINER( content ), sclose->grid );

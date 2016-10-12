@@ -57,6 +57,7 @@ typedef struct {
 	ofaIGetter         *getter;
 	GDate               prev_closing;
 	GDate               closing;
+	gchar              *settings_prefix;
 
 	/* UI
 	 */
@@ -69,7 +70,6 @@ typedef struct {
 	ofaPeriodClosePrivate;
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-period-close.ui";
-static const gchar  *st_settings        = "PeriodClose";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static void      idialog_iface_init( myIDialogInterface *iface );
@@ -93,6 +93,7 @@ static void
 period_close_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_period_close_finalize";
+	ofaPeriodClosePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -100,6 +101,9 @@ period_close_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_PERIOD_CLOSE( instance ));
 
 	/* free data members here */
+	priv = ofa_period_close_get_instance_private( OFA_PERIOD_CLOSE( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_period_close_parent_class )->finalize( instance );
@@ -119,6 +123,8 @@ period_close_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		set_settings( OFA_PERIOD_CLOSE( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -139,6 +145,8 @@ ofa_period_close_init( ofaPeriodClose *self )
 	priv = ofa_period_close_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
+
 	my_date_clear( &priv->closing );
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -403,7 +411,6 @@ on_ok_clicked( GtkButton *button, ofaPeriodClose *self )
 
 	} else if( do_close( self )){
 		gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
-		set_settings( self );
 		close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( self ), GTK_RESPONSE_CANCEL );
 		g_return_if_fail( close_btn && GTK_IS_BUTTON( close_btn ));
 		gtk_button_set_label( GTK_BUTTON( close_btn ), _( "_Close" ));
@@ -419,45 +426,85 @@ do_close( ofaPeriodClose *self )
 	ofoDossier *dossier;
 	gboolean do_archive;
 	GList *dataset, *it;
-	guint count;
-	gchar *msg;
+	guint count, length, total;
+	gchar *text;
+	GtkWidget *dialog, *button, *content, *grid, *label;
+	myProgressBar *bar;
+	gdouble progress;
 
 	priv = ofa_period_close_get_instance_private( self );
+	hub = ofa_igetter_get_hub( priv->getter );
 
 	/* close all ledgers, archiving their balance if asked for
 	 */
 	do_archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn ));
 	ofa_ledger_close_do_close_all( priv->getter, GTK_WINDOW( self ), &priv->closing, do_archive );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
-	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
-	ofo_dossier_update( dossier );
-
 	/* as all ledgers have been closed, it is possible to also archive
 	 * accounts balances (if asked for)
 	 */
 	do_archive = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn ));
+
 	if( do_archive ){
+		/* create the dialog */
+		dialog = gtk_dialog_new_with_buttons(
+						_( "Archiving account balances" ),
+						GTK_WINDOW( self ),
+						GTK_DIALOG_MODAL,
+						_( "_Close" ), GTK_RESPONSE_OK,
+						NULL );
+		gtk_container_set_border_width( GTK_CONTAINER( dialog ), 4 );
+		button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
+		g_return_val_if_fail( button && GTK_IS_BUTTON( button ), FALSE );
+		gtk_widget_set_sensitive( button, FALSE );
+		content = gtk_dialog_get_content_area( GTK_DIALOG( dialog ));
+		g_return_val_if_fail( content && GTK_IS_CONTAINER( content ), FALSE );
+		grid = gtk_grid_new();
+		my_utils_widget_set_margins( grid, 2, 8, 8, 8 );
+		gtk_container_add( GTK_CONTAINER( content ), grid );
+		bar = my_progress_bar_new();
+		gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( bar ), 0, 0, 1, 1 );
+		gtk_grid_set_row_spacing( GTK_GRID( grid ), 4 );
+		gtk_widget_show_all( dialog );
+
+		/* run */
 		count = 0;
+		total = 0;
 		dataset = ofo_account_get_dataset( hub );
+		length = g_list_length( dataset );
 		for( it=dataset ; it ; it=it->next ){
 			if( !ofo_account_is_root( OFO_ACCOUNT( it->data ))){
 				count += 1;
 				ofo_account_archive_balances( OFO_ACCOUNT( it->data ), &priv->closing );
 			}
+			total += 1;
+			text = g_strdup_printf( "%u/%u", total, length );
+			g_signal_emit_by_name( bar, "my-text", text );
+			g_free( text );
+			progress = ( gdouble ) total / ( gdouble ) length;
+			g_signal_emit_by_name( bar, "my-double", progress );
 		}
-		msg = g_strdup_printf( _( "%u accounts successfully archived" ), count );
-		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, msg );
-		g_free( msg );
+		text = g_strdup_printf( _( "%u detail accounts successfully archived." ), count );
+		label = gtk_label_new( text );
+		gtk_grid_attach( GTK_GRID( grid ), label, 0, 1, 1, 1 );
+		g_free( text );
+		gtk_widget_show_all( dialog );
+
+		gtk_widget_set_sensitive( button, TRUE );
+		gtk_dialog_run( GTK_DIALOG( dialog ));
+		gtk_widget_destroy( dialog );
 	}
+
+	dossier = ofa_hub_get_dossier( hub );
+	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
+	ofo_dossier_update( dossier );
 
 	return( TRUE );
 }
 
 /*
  * settings: a string list:
- * save_accounts; archive_ledgers;
+ * archive_accounts; archive_ledgers;
  */
 static void
 get_settings( ofaPeriodClose *self )
@@ -465,10 +512,12 @@ get_settings( ofaPeriodClose *self )
 	ofaPeriodClosePrivate *priv;
 	GList *list, *it;
 	const gchar *cstr;
+	gchar *settings_key;
 
 	priv = ofa_period_close_get_instance_private( self );
 
-	list = ofa_settings_user_get_string_list( st_settings );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	list = ofa_settings_user_get_string_list( settings_key );
 
 	it = list;
 	cstr = it ? it->data : NULL;
@@ -485,13 +534,14 @@ get_settings( ofaPeriodClose *self )
 	}
 
 	ofa_settings_free_string_list( list );
+	g_free( settings_key );
 }
 
 static void
 set_settings( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
-	gchar *str;
+	gchar *str, *settings_key;
 
 	priv = ofa_period_close_get_instance_private( self );
 
@@ -499,7 +549,9 @@ set_settings( ofaPeriodClose *self )
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn )) ? "True":"False" );
 
-	ofa_settings_user_set_string( st_settings, str );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	ofa_settings_user_set_string( settings_key, str );
 
 	g_free( str );
+	g_free( settings_key );
 }
