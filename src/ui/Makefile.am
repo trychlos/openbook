@@ -204,6 +204,8 @@ openbook_SOURCES = \
 	ofa-misc-collector-ui.h								\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
+	ofa-paimean-page.c									\
+	ofa-paimean-page.h									\
 	ofa-paimean-store.c									\
 	ofa-paimean-store.h									\
 	ofa-paimean-treeview.c								\

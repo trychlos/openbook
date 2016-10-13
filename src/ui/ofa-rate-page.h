@@ -30,7 +30,7 @@
  * @short_description: #ofaRatePage class definition.
  * @include: ui/ofa-taux-set.h
  *
- * Display the chart of accounts, letting the user edit it.
+ * Display the registered rates, letting the user edit it.
  */
 
 #include "api/ofa-action-page.h"
