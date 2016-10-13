@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.19.0 -->
+<!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.10"/>
   <template class="ofaExportAssistant" parent="GtkAssistant">
@@ -16,6 +16,7 @@ Press Continue.</property>
         <property name="page_type">intro</property>
         <property name="title" translatable="yes">Introduction</property>
         <property name="complete">True</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -26,10 +27,6 @@ Press Continue.</property>
           <object class="GtkGrid" id="p1-parent">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">12</property>
-            <property name="margin_right">4</property>
-            <property name="margin_top">4</property>
-            <property name="margin_bottom">4</property>
             <child>
               <placeholder/>
             </child>
@@ -66,6 +63,7 @@ Press Continue.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Selection of the data to export</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -76,39 +74,8 @@ Press Continue.</property>
           <object class="GtkGrid" id="grid2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">12</property>
-            <property name="margin_right">4</property>
-            <property name="margin_top">4</property>
-            <property name="margin_bottom">4</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <property name="column_spacing">4</property>
-            <child>
-              <object class="GtkGrid" id="grid21">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="row_spacing">3</property>
-                <property name="column_spacing">4</property>
-                <child>
-                  <object class="GtkButton" id="p2-new-btn">
-                    <property name="label" translatable="yes">New _profile...</property>
-                    <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <property name="receives_default">True</property>
-                    <property name="halign">start</property>
-                    <property name="margin_top">12</property>
-                    <property name="use_underline">True</property>
-                  </object>
-                  <packing>
-                    <property name="left_attach">0</property>
-                    <property name="top_attach">0</property>
-                  </packing>
-                </child>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">1</property>
-              </packing>
-            </child>
             <child>
               <object class="GtkBox" id="p2-settings-parent">
                 <property name="visible">True</property>
@@ -145,10 +112,11 @@ Press Continue.</property>
                   <object class="GtkGrid" id="grid22">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">12</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">8</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
+                    <property name="row_spacing">2</property>
                     <property name="column_spacing">4</property>
                     <child>
                       <object class="GtkLabel" id="p2-label221">
@@ -189,6 +157,19 @@ Press Continue.</property>
                 <property name="width">2</property>
               </packing>
             </child>
+            <child>
+              <object class="GtkButton" id="p2-new-btn">
+                <property name="label" translatable="yes">New _profile...</property>
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="receives_default">True</property>
+                <property name="use_underline">True</property>
+              </object>
+              <packing>
+                <property name="left_attach">1</property>
+                <property name="top_attach">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="left_attach">0</property>
@@ -198,6 +179,7 @@ Press Continue.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Selection of the export format</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -208,7 +190,7 @@ Press Continue.</property>
           <object class="GtkGrid" id="grid3">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <child>
               <object class="GtkFileChooserWidget" id="p3-filechooser">
                 <property name="visible">True</property>
@@ -233,10 +215,10 @@ Press Continue.</property>
                   <object class="GtkGrid" id="grid31">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="margin_left">12</property>
-                    <property name="margin_right">4</property>
-                    <property name="margin_top">4</property>
-                    <property name="margin_bottom">4</property>
+                    <property name="margin_left">8</property>
+                    <property name="margin_right">2</property>
+                    <property name="margin_top">2</property>
+                    <property name="margin_bottom">2</property>
                     <property name="row_spacing">3</property>
                     <property name="column_spacing">4</property>
                     <child>
@@ -309,13 +291,14 @@ Press Continue.</property>
       </object>
       <packing>
         <property name="title" translatable="yes">Selection of the output file</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
       <object class="GtkGrid" id="p4-grid">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="row_spacing">3</property>
+        <property name="row_spacing">2</property>
         <property name="column_spacing">4</property>
         <child>
           <object class="GtkLabel" id="p4-data">
@@ -414,6 +397,7 @@ Press Continue.</property>
         <property name="page_type">confirm</property>
         <property name="title" translatable="yes">Summary of the informations</property>
         <property name="complete">True</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child>
@@ -442,7 +426,7 @@ Press Continue.</property>
           <object class="GtkGrid" id="grid51">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <child>
               <object class="GtkBox" id="p5-bar-parent">
                 <property name="visible">True</property>
@@ -481,6 +465,7 @@ Press Continue.</property>
       <packing>
         <property name="page_type">summary</property>
         <property name="title" translatable="yes">Result of export</property>
+        <property name="has_padding">False</property>
       </packing>
     </child>
     <child internal-child="action_area">
@@ -490,6 +475,7 @@ Press Continue.</property>
         <property name="spacing">6</property>
       </object>
       <packing>
+        <property name="has_padding">False</property>
       </packing>
     </child>
   </template>

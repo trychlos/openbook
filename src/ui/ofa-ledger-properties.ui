@@ -55,7 +55,7 @@
           <object class="GtkGrid" id="grid1">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="row_spacing">3</property>
+            <property name="row_spacing">2</property>
             <property name="column_spacing">4</property>
             <child>
               <object class="GtkNotebook" id="notebook1">
@@ -311,7 +311,7 @@
               <object class="GtkGrid" id="grid4">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="row_spacing">3</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="label05">
