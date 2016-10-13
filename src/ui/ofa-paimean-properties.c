@@ -69,11 +69,14 @@ typedef struct {
 	GtkWidget     *label_entry;
 	GtkWidget     *alone_btn;
 	GtkWidget     *account_entry;
+	GtkWidget     *account_label;
 	GtkWidget     *ok_btn;
 	GtkWidget     *msg_label;
 }
 	ofaPaimeanPropertiesPrivate;
 
+static const gchar *st_style_error      = "labelerror";
+static const gchar *st_style_warning    = "labelwarning";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-paimean-properties.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
@@ -90,7 +93,7 @@ static void      on_account_changed( GtkEntry *entry, ofaPaimeanProperties *self
 static void      check_for_enable_dlg( ofaPaimeanProperties *self );
 static gboolean  is_dialog_validable( ofaPaimeanProperties *self );
 static gboolean  do_update( ofaPaimeanProperties *self, gchar **msgerr );
-static void      set_msgerr( ofaPaimeanProperties *self, const gchar *msg );
+static void      set_msgerr( ofaPaimeanProperties *self, const gchar *msg, const gchar *style );
 
 G_DEFINE_TYPE_EXTENDED( ofaPaimeanProperties, ofa_paimean_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPaimeanProperties )
@@ -347,6 +350,7 @@ init_properties( ofaPaimeanProperties *self )
 	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_ALL );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_account_changed ), self );
 	priv->account_entry = entry;
+	priv->account_label = label;
 }
 
 static void
@@ -401,6 +405,17 @@ on_alone_toggled( GtkToggleButton *button, ofaPaimeanProperties *self )
 static void
 on_account_changed( GtkEntry *entry, ofaPaimeanProperties *self )
 {
+	ofaPaimeanPropertiesPrivate *priv;
+	const gchar *number, *label;
+	ofoAccount *account;
+
+	priv = ofa_paimean_properties_get_instance_private( self );
+
+	number = gtk_entry_get_text( entry );
+	account = my_strlen( number ) ? ofo_account_get_by_number( priv->hub, number ) : NULL;
+	label = account ? ofo_account_get_label( account ) : "";
+	gtk_label_set_text( GTK_LABEL( priv->account_label ), label );
+
 	check_for_enable_dlg( self );
 }
 
@@ -423,10 +438,11 @@ static gboolean
 is_dialog_validable( ofaPaimeanProperties *self )
 {
 	ofaPaimeanPropertiesPrivate *priv;
-	const gchar *code;
+	const gchar *code, *number;
 	gchar *msgerr;
 	gboolean ok;
 	ofoPaimean *exists;
+	ofoAccount *account;
 
 	priv = ofa_paimean_properties_get_instance_private( self );
 
@@ -443,8 +459,28 @@ is_dialog_validable( ofaPaimeanProperties *self )
 		}
 	}
 
-	set_msgerr( self, msgerr );
+	set_msgerr( self, msgerr, st_style_error );
 	g_free( msgerr );
+
+	/* if not error, check if the account exists (and is a detail account)
+	 * but does not prevent to save */
+	if( ok ){
+		number = gtk_entry_get_text( GTK_ENTRY( priv->account_entry ));
+		account = my_strlen( number ) ? ofo_account_get_by_number( priv->hub, number ) : NULL;
+		if( !account ){
+			msgerr = g_strdup( _( "Account does not exist" ));
+
+		} else if( ofo_account_is_closed( account )){
+			msgerr = g_strdup_printf( _( "Account %s is closed" ), number );
+
+		} else if( ofo_account_is_root( account )){
+			msgerr = g_strdup_printf( _( "Account %s is a root account" ), number );
+		}
+		if( msgerr ){
+			set_msgerr( self, msgerr, st_style_warning );
+			g_free( msgerr );
+		}
+	}
 
 	return( ok );
 }
@@ -468,7 +504,7 @@ do_update( ofaPaimeanProperties *self, gchar **msgerr )
 	prev_code = g_strdup( ofo_paimean_get_code( priv->paimean ));
 
 	ofo_paimean_set_code( priv->paimean, gtk_entry_get_text( GTK_ENTRY( priv->code_entry )));
-	ofo_paimean_set_label( priv->paimean, gtk_entry_get_text( GTK_ENTRY( priv->code_entry )));
+	ofo_paimean_set_label( priv->paimean, gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
 	ofo_paimean_set_must_alone( priv->paimean, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->alone_btn )));
 	ofo_paimean_set_account( priv->paimean, gtk_entry_get_text( GTK_ENTRY( priv->account_entry )));
 	my_utils_container_notes_get( self, paimean );
@@ -491,7 +527,7 @@ do_update( ofaPaimeanProperties *self, gchar **msgerr )
 }
 
 static void
-set_msgerr( ofaPaimeanProperties *self, const gchar *msg )
+set_msgerr( ofaPaimeanProperties *self, const gchar *msg, const gchar *style )
 {
 	ofaPaimeanPropertiesPrivate *priv;
 	GtkWidget *label;
@@ -501,9 +537,12 @@ set_msgerr( ofaPaimeanProperties *self, const gchar *msg )
 	if( !priv->msg_label ){
 		label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "px-msgerr" );
 		g_return_if_fail( label && GTK_IS_LABEL( label ));
-		my_style_add( label, "labelerror" );
 		priv->msg_label = label;
 	}
 
+	my_style_remove( priv->msg_label, st_style_error );
+	my_style_remove( priv->msg_label, st_style_warning );
+
+	my_style_add( priv->msg_label, style );
 	gtk_label_set_text( GTK_LABEL( priv->msg_label ), msg ? msg : "" );
 }

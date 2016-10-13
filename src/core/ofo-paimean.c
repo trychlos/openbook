@@ -588,7 +588,7 @@ paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBCo
 
 	g_string_append_printf( query,
 			"	PAM_UPD_USER='%s',PAM_UPD_STAMP='%s'"
-			"	WHERE PAM_MNEMO='%s'",
+			"	WHERE PAM_CODE='%s'",
 					userid, stamp_str, prev_code );
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){

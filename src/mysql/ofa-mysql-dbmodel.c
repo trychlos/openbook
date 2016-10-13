@@ -1901,14 +1901,14 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	/* 6 - create Means of Paiement table */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_PAIMEANS ("
-			"	PAM_MNEMO           VARCHAR(64)    BINARY NOT NULL   COMMENT 'Paiement mean identifier',"
+			"	PAM_CODE            VARCHAR(64)    BINARY NOT NULL   COMMENT 'Paiement mean identifier',"
 			"	PAM_LABEL           VARCHAR(256)                     COMMENT 'Paiement mean label',"
 			"	PAM_MUST_ALONE      CHAR(1)               NOT NULL   COMMENT 'Whether this mean of paiment must be alone',"
 			"	PAM_ACCOUNT         VARCHAR(64)                      COMMENT 'Corresponding account',"
 			"	PAM_NOTES           VARCHAR(4096)                    COMMENT 'Notes',"
 			"	PAM_UPD_USER        VARCHAR(64)                      COMMENT 'Last update user',"
 			"	PAM_UPD_STAMP       TIMESTAMP                        COMMENT 'Last update timestamp',"
-			"	UNIQUE (PAM_MNEMO)"
+			"	UNIQUE (PAM_CODE)"
 			") CHARACTER SET utf8" )){
 		return( FALSE );
 	}
