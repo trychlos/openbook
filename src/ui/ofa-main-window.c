@@ -75,6 +75,7 @@
 #include "ui/ofa-ledger-summary-render.h"
 #include "ui/ofa-main-window.h"
 #include "ui/ofa-ope-template-page.h"
+#include "ui/ofa-paimean-page.h"
 #include "ui/ofa-period-close.h"
 #include "ui/ofa-rate-page.h"
 #include "ui/ofa-reconcil-render.h"
@@ -143,6 +144,7 @@ static void on_ref_ope_templates     ( GSimpleAction *action, GVariant *paramete
 static void on_ref_currencies        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_rates             ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_classes           ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
+static void on_ref_paimeans          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_ref_batfiles          ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_check_balances        ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_check_integrity       ( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -171,6 +173,7 @@ static const GActionEntry st_dos_entries[] = {
 		{ "currencies",             on_ref_currencies,         NULL, NULL, NULL },
 		{ "rates",                  on_ref_rates,              NULL, NULL, NULL },
 		{ "classes",                on_ref_classes,            NULL, NULL, NULL },
+		{ "paimeans",               on_ref_paimeans,           NULL, NULL, NULL },
 		{ "batfiles",               on_ref_batfiles,           NULL, NULL, NULL },
 		{ "chkbal",                 on_check_balances,         NULL, NULL, NULL },
 		{ "integrity",              on_check_integrity,        NULL, NULL, NULL },
@@ -1566,6 +1569,19 @@ on_ref_classes( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
 	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_CLASS_PAGE );
+}
+
+static void
+on_ref_paimeans( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "ofa_main_window_on_ref_paimeans";
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
+
+	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_PAIMEAN_PAGE );
 }
 
 static void

@@ -171,6 +171,10 @@
           <attribute name="action">win.rates</attribute>
         </item>
         <item>
+          <attribute name="label" translatable="yes">_Means of paiement...</attribute>
+          <attribute name="action">win.paimeans</attribute>
+        </item>
+        <item>
           <attribute name="label" translatable="yes">Account c_lasses...</attribute>
           <attribute name="action">win.classes</attribute>
         </item>
