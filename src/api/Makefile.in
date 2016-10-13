@@ -465,6 +465,7 @@ api_include_HEADERS = \
 	ofo-ledger-def.h									\
 	ofo-ope-template.h									\
 	ofo-ope-template-def.h								\
+	ofo-paimeans.h										\
 	ofo-rate.h											\
 	ofo-rate-def.h										\
 	\

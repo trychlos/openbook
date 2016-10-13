@@ -40,6 +40,7 @@
  New features and improvements:
 
    - Core DB model v 33
+   - Recurrent DB model v 6
    - ofaAccountProperties: let the user sort the archived soldes (todo #1163).
    - ofaClosingParmsBin: check that operation templates are able to generate valid entries (todo #1230).
    - ofaExerciceCloseAssistant: only close the RAN ledger, do not archive accounts balances.
