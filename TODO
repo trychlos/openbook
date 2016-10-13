@@ -91,27 +91,11 @@
 
  325 2014-10-12 DossierManage Properties: to be written
 
- 333 2014-10-18 ViewEntries, Reconciliation: two main pages which display
-                a GtkTreeView with debit/credit amount columns:
-                homogeneize the display (frame), define a footer bar,
-                updating the right decalage as far as columns are 
-                displayed
-
  334 2014-10-18 homogeneize styles:
                 e.g. displaying validated entries in ofaViewEntries or
                 validated balances if AccountProperties should have the
                 same font/background
                 + may be useful to use styles ?
-
- 335 2014-10-18 some columns are displayed in several pages/dialogs,
-                and should have the same display properties (e.g.
-                piece reference, label, debit/credit, etc.) -> the 
-                treeview setup should be factorized
-
- 336 2014-10-18 all treeview columns in main pages should be resizeable
-                (autoresize on double click is automatically handled)
-                and the current width should be kept in settings
-     2015- 1-22 no GtkTreeViewColumn primitive for setting a width ??
 
  442 2014-11-13 AccountsBook: add a notes indicator
      2014-12-19 started with svn #4348
@@ -126,11 +110,6 @@
  462 2014-11-26 move ofoBat/ofoBatLine to ofaBoxed
      2015- 1- 5 really only required when ofoBat/ofoBatLine will implement
                 the ofaIExportable interface - so it is not urgent
-
- 494 2014-12- 4 ExeClosing: have a dossier option to have only one  
-                centralisation entry when balancing the accounts, or
-                have one entry per account
-     2014-12- 7 maybe in a next version...
 
  513 2014-12- 9 whether balancing accounts are settleable or 
                 reconciliable (and shouldn't) has to be checked when 
@@ -169,7 +148,8 @@
 
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
-     2016- 4-20 see also #886
+     2016- 4-20 see also #886.
+     2016-10-12 + purge reconciliation groups (wich is actually the #886)
 
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
@@ -192,9 +172,6 @@
 
  714 2015- 3-11 associate an account with a piece ref
                 (e.g. ESP->531, CCP->51441, and so on)
-
- 720 2015- 3-13 FEAT Reconciliation: when declining a proposition,
-                     should search for the next
 
  733 2015- 3-15 FEAT be able to search for an entry
 
@@ -260,10 +237,6 @@
                        a new dossier
                      - administrative credentials
 
- 886 2015-11- 7 FEAT ExerciceClosing: purge reconciliation groups when
-                     both bat files and entries are purged
-     2016- 4-20 see also #601
-
  909 2015-11-26 ARCH SIGNAL_DOSSIER_EXE_DATE_CHANGED: change to same
                      signal (exe_dates_changed) sent on main window so
                      that it may automatically update window title
@@ -317,8 +290,6 @@
 1053 2016- 3-26 CODE review the menu distribution
 
 1073 2016- 4-14 ofaIDBConnect::restore: returns an error message
-
-1074 2016- 4-14 may have external commands to backup/restore ?
 
 1075 2016- 4-14 have a message bar
      2016- 4-20 describe a use case
@@ -395,8 +366,8 @@
 
 1232 2016-10-11 Feature question: should the opening ledger be closed
                 with a date at the end of the exercice ? This would
-                prevent any new entry to be registered after exercice
-                closing operations.
+                prevent any new entry to be registered after (previous)
+                exercice closing operations.
                 For now, it is closed at the first day of the exercice.
 
 1234 2016-10-11 RestoreAssistant: the New button is enabled, but not the
@@ -406,7 +377,9 @@
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
 
-1236
+1236 2016-10-13 clean up dossier settings to have most informations in dbms
+
+1237
 
 -----------------------------------------------------------------------
  DONE
@@ -453,6 +426,25 @@
                    + ofo_account_get_balance( account_id, date );
      2016- 1-18 done
 
+ 333 2014-10-18 ViewEntries, Reconciliation: two main pages which display
+                a GtkTreeView with debit/credit amount columns:
+                homogeneize the display (frame), define a footer bar,
+                updating the right decalage as far as columns are 
+                displayed
+     2016-10-12 done with ITVColumnable interface in v0.61
+
+ 335 2014-10-18 some columns are displayed in several pages/dialogs,
+                and should have the same display properties (e.g.
+                piece reference, label, debit/credit, etc.) -> the 
+                treeview setup should be factorized
+     2016-10-12 done with ofaITVColumnable interface in v0.61
+
+ 336 2014-10-18 all treeview columns in main pages should be resizeable
+                (autoresize on double click is automatically handled)
+                and the current width should be kept in settings
+     2015- 1-22 no GtkTreeViewColumn primitive for setting a width ??
+     2016-10-12 done with ofaITVColumnable interface in v0.61
+
  429 2014-11-11 implement print preview inside of Openbook
      2016- 1-16 done long ago with IRenderable interface
 
@@ -480,6 +472,14 @@
 
  472 2014-11-29 set dialogs readonly if not current exercice
      2015- 2- 5 done for properties
+
+ 494 2014-12- 4 ExeClosing: have a dossier option to have only one  
+                centralisation entry when balancing the accounts, or
+                have one entry per account
+     2014-12- 7 maybe in a next version...
+     2016-10-12 we have for now one operation (two entries) by account
+                this is very reasonable
+                -> cancelled
 
  519 2014-12-11 ExportAssistant: the list of exportables should be
                 dynamically computed from the list of classes which
@@ -577,6 +577,10 @@
                 already set a BAT file, new propositions are not 
                 expanded
      2016- 3-11 fixed
+
+ 720 2015- 3-13 FEAT Reconciliation: when declining a proposition,
+                     should search for the next
+     2016-10-12 done with v0.61
 
  729 2015- 3-14 FEAT PrintLedgers: have an option to print a summary
      2016- 1-25      new ofaLedgerSummaryRender print
@@ -686,6 +690,11 @@
                      Use case: be able to delete the whole operation
                      when the user wants to delete an entry
      2016- 3-29 Column is created (though not used for now)
+
+ 886 2015-11- 7 FEAT ExerciceClosing: purge reconciliation groups when
+                     both bat files and entries are purged
+     2016- 4-20 see also #601
+     201--10-12 cancelled as duplicate of (updated) #601
 
  915 2015-12- 4 ARCH a class object (say e.g. ofoClass) should
                      implement the ofaIExportable/ofaIImportable
@@ -1242,6 +1251,9 @@
                 + check that begining date of next exercice cannot be
                   modified when previous_end is set (have a DOS_PREVEXE_END)
      2016- 4-13 done
+
+1074 2016- 4-14 may have external commands to backup/restore ?
+     2016-10-12 this is already the case - cancelled
 
 1076 2016- 4-14 BUG  ExerciceClose: solde entries does not have right label
      2016- 4-14 this was a formula syntax error - fixed

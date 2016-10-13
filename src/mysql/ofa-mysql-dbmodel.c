@@ -1787,6 +1787,7 @@ count_v32( ofaMysqlDBModel *self )
  *
  * - ofoAccountArc: remediate archives balances.
  * - ofoLedger: add archive table
+ * - OFA_T_PMEANS : new table for means of paiement
  */
 static gboolean
 dbmodel_v33( ofaMysqlDBModel *self, gint version )
@@ -1897,6 +1898,20 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 6 - create Means of Paiement table */
+	if( !exec_query( self,
+			"CREATE TABLE IF NOT EXISTS OFA_T_PAIMEANS ("
+			"	PAM_MNEMO           VARCHAR(64)    BINARY NOT NULL   COMMENT 'Paiement mean identifier',"
+			"	PAM_LABEL           VARCHAR(256)                     COMMENT 'Paiement mean label',"
+			"	PAM_ACCOUNT         VARCHAR(64)                      COMMENT 'Corresponding account',"
+			"	PAM_NOTES           VARCHAR(4096)                    COMMENT 'Notes',"
+			"	PAM_UPD_USER        VARCHAR(64)                      COMMENT 'Last update user',"
+			"	PAM_UPD_STAMP       TIMESTAMP                        COMMENT 'Last update timestamp',"
+			"	UNIQUE (PAM_MNEMO)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
 	/* make sure that we end up at 100% */
 	priv->current = priv->total;
 	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
@@ -1911,5 +1926,5 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v33( ofaMysqlDBModel *self )
 {
-	return( 5 );
+	return( 6 );
 }

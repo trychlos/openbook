@@ -71,6 +71,8 @@ static gboolean dbmodel_to_v4( sUpdate *update_data, guint version );
 static gulong   count_v4( sUpdate *update_data );
 static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
 static gulong   count_v5( sUpdate *update_data );
+static gboolean dbmodel_to_v6( sUpdate *update_data, guint version );
+static gulong   count_v6( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -85,6 +87,7 @@ static sMigration st_migrates[] = {
 		{ 3, dbmodel_to_v3, count_v3 },
 		{ 4, dbmodel_to_v4, count_v4 },
 		{ 5, dbmodel_to_v5, count_v5 },
+		{ 6, dbmodel_to_v6, count_v6 },
 		{ 0 }
 };
 
@@ -319,6 +322,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 
 	/* updated in v2 */
 	/* updated in v5 */
+	/* altered in v6 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_MODELS ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL UNIQUE COMMENT 'Recurrent operation identifier',"
@@ -457,7 +461,7 @@ count_v4( sUpdate *update_data )
 }
 
 /*
- * REC_T_MODEL: enable the model
+ * REC_T_MODEL: enable/disable the model
  */
 static gboolean
 dbmodel_to_v5( sUpdate *update_data, guint version )
@@ -484,6 +488,195 @@ static gulong
 count_v5( sUpdate *update_data )
 {
 	return( 2 );
+}
+
+/*
+ * REC_T_PERIODS: configure the periodicity per table
+ */
+static gboolean
+dbmodel_to_v6( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v6";
+	gchar *user, *query;
+	gboolean ok;
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	user = ofa_idbconnect_get_account( update_data->connect );
+
+	/* 1 - create Periodicity table */
+	if( !exec_query( update_data,
+			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS ("
+			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
+			"	REC_PER_LABEL       VARCHAR(256)                     COMMENT 'Periodicity label',"
+			"	REC_PER_HAVE_DETAIL CHAR(1)                          COMMENT 'Whether have detail',"
+			"	REC_PER_ADD_TYPE    CHAR(1)                          COMMENT 'Increment type',"
+			"	REC_PER_ADD_COUNT   INTEGER                          COMMENT 'Increment count',"
+			"	REC_PER_NOTES       VARCHAR(4096)                    COMMENT 'Notes',"
+			"	REC_PER_UPD_USER    VARCHAR(64)                      COMMENT 'Last update user',"
+			"	REC_PER_UPD_STAMP   TIMESTAMP                        COMMENT 'Last update timestamp',"
+			"	UNIQUE (REC_PER_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 2 - create Periodicity Details table */
+	if( !exec_query( update_data,
+			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS_DET ("
+			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
+			"	REC_PER_DET_ID      VARCHAR(16)                      COMMENT 'Periodicity detail identifier',"
+			"	REC_PER_DET_LABEL   VARCHAR(256)                     COMMENT 'Periodicity detail label',"
+			"	UNIQUE (REC_PER_ID, REC_PER_DET_ID)"
+			") CHARACTER SET utf8" )){
+		return( FALSE );
+	}
+
+	/* 3 - update Models description */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_MODELS "
+			"	MODIFY COLUMN REC_PERIOD         VARCHAR(16)         COMMENT 'Recurrent model periodicity',"
+			"	MODIFY COLUMN REC_PERIOD_DETAIL  VARCHAR(16)         COMMENT 'Recurrent model periodicity detail'")){
+		return( FALSE );
+	}
+
+	/* 4 - initialize periodicity
+	 * values are those used in the code for now - they cannot be anything */
+	query = g_strdup_printf(
+			"INSERT IGNORE INTO REC_T_PERIODS "
+			"		(REC_PER_ID,REC_PER_LABEL,REC_PER_HAVE_DETAIL,REC_PER_ADD_TYPE,REC_PER_ADD_COUNT,REC_PER_UPD_USER) "
+			"		VALUES "
+			"	('0N','Never','N',NULL,NULL,'%s'),"
+			"	('3W','Weekly','Y','D',7,'%s'),"
+			"	('6M','Monthly','Y','M',1,'%s')", user, user, user );
+	ok = exec_query( update_data, query );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+
+	/* 5 - initialize periodicity details */
+	if( !exec_query( update_data,
+			"INSERT IGNORE INTO REC_T_PERIODS_DET (REC_PER_ID,REC_PER_DET_ID,REC_PER_DET_LABEL) VALUES "
+			"	('3W','0MON','Monday'),"
+			"	('3W','1TUE','Tuesday'),"
+			"	('3W','2WED','Wednesday'),"
+			"	('3W','3THU','Thursday'),"
+			"	('3W','4FRI','Friday'),"
+			"	('3W','5SAT','Saturday'),"
+			"	('3W','6SUN','Sunday'),"
+			"	('6M','01','1'),"
+			"	('6M','02','2'),"
+			"	('6M','03','3'),"
+			"	('6M','04','4'),"
+			"	('6M','05','5'),"
+			"	('6M','06','6'),"
+			"	('6M','07','7'),"
+			"	('6M','08','8'),"
+			"	('6M','09','9'),"
+			"	('6M','10','10'),"
+			"	('6M','11','11'),"
+			"	('6M','12','12'),"
+			"	('6M','13','13'),"
+			"	('6M','14','14'),"
+			"	('6M','15','15'),"
+			"	('6M','16','16'),"
+			"	('6M','17','17'),"
+			"	('6M','18','18'),"
+			"	('6M','19','19'),"
+			"	('6M','20','20'),"
+			"	('6M','21','21'),"
+			"	('6M','22','22'),"
+			"	('6M','23','23'),"
+			"	('6M','24','24'),"
+			"	('6M','25','25'),"
+			"	('6M','26','26'),"
+			"	('6M','27','27'),"
+			"	('6M','28','28'),"
+			"	('6M','29','29'),"
+			"	('6M','30','30'),"
+			"	('6M','31','31')" )){
+		return( FALSE );
+	}
+
+	/* 6 - update current models periodicity */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD='0N' WHERE REC_PERIOD='N'" )){
+		return( FALSE );
+	}
+
+	/* 7 - update current models periodicity */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD='3W' WHERE REC_PERIOD='W'" )){
+		return( FALSE );
+	}
+
+	/* 8 - update current models periodicity */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+		"		SET REC_PERIOD='6M' WHERE REC_PERIOD='M'" )){
+		return( FALSE );
+	}
+
+	/* 9 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL='0MON' WHERE REC_PERIOD_DETAIL='MON'" )){
+		return( FALSE );
+	}
+
+	/* 10 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL='1TUE' WHERE REC_PERIOD_DETAIL='TUE'" )){
+		return( FALSE );
+	}
+
+	/* 11 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL='2WED' WHERE REC_PERIOD_DETAIL='WED'" )){
+		return( FALSE );
+	}
+
+	/* 12 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL='3THU' WHERE REC_PERIOD_DETAIL='THU'" )){
+		return( FALSE );
+	}
+
+	/* 13 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL='4FRI' WHERE REC_PERIOD_DETAIL='FRI'" )){
+		return( FALSE );
+	}
+
+	/* 14 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL='5SAT' WHERE REC_PERIOD_DETAIL='SAT'" )){
+		return( FALSE );
+	}
+
+	/* 15 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL='6SUN' WHERE REC_PERIOD_DETAIL='SUN'" )){
+		return( FALSE );
+	}
+
+	g_free( user );
+
+	return( TRUE );
+}
+
+static gulong
+count_v6( sUpdate *update_data )
+{
+	return( 15 );
 }
 
 static gulong
