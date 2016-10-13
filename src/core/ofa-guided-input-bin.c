@@ -57,7 +57,7 @@
 /* private instance data
  */
 typedef struct {
-	gboolean              dispose_has_run;
+	gboolean        dispose_has_run;
 
 	/* input parameters at initialization time
 	 */

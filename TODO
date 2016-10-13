@@ -172,6 +172,11 @@
 
  714 2015- 3-11 associate an account with a piece ref
                 (e.g. ESP->531, CCP->51441, and so on)
+     2016-10-13 have mean of paiment in a table + an associated account
+                but how to associate this account with a particular row
+                of an ope.template ?
+                -> this is not a paimean-attribute as this depend of the
+                   current ope.template
 
  733 2015- 3-15 FEAT be able to search for an entry
 
