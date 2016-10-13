@@ -76,6 +76,7 @@
    - ofaIDateFilter: ofa_idate_filter_set_prefs() renamed to ofa_idate_filter_set_settings_key() (todo #1220).
    - ofaLedgerArcTreeview, ofaLedgerArcStore: new classes.
    - ofoEntry: review ofo_entry_get_dataset_xxx() methods (todo #1225).
+   - ofoPaimean, ofaPaimeanStore: new classes (todo #714).
    - ofsAccountBalance: remove unused API (todo #1224).
 
 -----------------------------------------------------------------------

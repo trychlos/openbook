@@ -173,12 +173,12 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-misc-audit-item.$(OBJEXT) ofa-misc-audit-ui.$(OBJEXT) \
 	ofa-misc-collector-item.$(OBJEXT) \
 	ofa-misc-collector-ui.$(OBJEXT) \
-	ofa-ope-template-page.$(OBJEXT) ofa-period-close.$(OBJEXT) \
-	ofa-plugin-manager.$(OBJEXT) ofa-rate-page.$(OBJEXT) \
-	ofa-rate-properties.$(OBJEXT) ofa-rate-treeview.$(OBJEXT) \
-	ofa-reconcil-bin.$(OBJEXT) ofa-reconcil-page.$(OBJEXT) \
-	ofa-reconcil-render.$(OBJEXT) ofa-reconcil-store.$(OBJEXT) \
-	ofa-reconcil-treeview.$(OBJEXT) \
+	ofa-ope-template-page.$(OBJEXT) ofa-paimean-store.$(OBJEXT) \
+	ofa-period-close.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
+	ofa-rate-page.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
+	ofa-rate-treeview.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
+	ofa-reconcil-page.$(OBJEXT) ofa-reconcil-render.$(OBJEXT) \
+	ofa-reconcil-store.$(OBJEXT) ofa-reconcil-treeview.$(OBJEXT) \
 	ofa-restore-assistant.$(OBJEXT) ofa-settlement-page.$(OBJEXT) \
 	ofa-user-credentials-bin.$(OBJEXT)
 am__objects_1 = resources.$(OBJEXT)
@@ -625,6 +625,8 @@ openbook_SOURCES = \
 	ofa-misc-collector-ui.h								\
 	ofa-ope-template-page.c								\
 	ofa-ope-template-page.h								\
+	ofa-paimean-store.c									\
+	ofa-paimean-store.h									\
 	ofa-period-close.c									\
 	ofa-period-close.h									\
 	ofa-plugin-manager.c								\
@@ -842,6 +844,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-ui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-ope-template-page.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-paimean-store.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-period-close.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-plugin-manager.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@

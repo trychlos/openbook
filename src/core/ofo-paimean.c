@@ -45,7 +45,7 @@
 #include "api/ofa-stream-format.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
-#include "api/ofo-paimeans.h"
+#include "api/ofo-paimean.h"
 
 /* priv instance data
  */
@@ -101,17 +101,17 @@ static const ofsBoxDef st_boxed_defs[] = {
 typedef struct {
 	void *empty;						/* so that gcc -pedantic is happy */
 }
-	ofoPaimeansPrivate;
+	ofoPaimeanPrivate;
 
-static ofoPaimeans *paimeans_find_by_code( GList *set, const gchar *code );
-static void         paimeans_set_upd_user( ofoPaimeans *paimeans, const gchar *user );
-static void         paimeans_set_upd_stamp( ofoPaimeans *paimeans, const GTimeVal *stamp );
-static gboolean     paimeans_do_insert( ofoPaimeans *paimeans, const ofaIDBConnect *connect );
-static gboolean     paimeans_insert_main( ofoPaimeans *paimeans, const ofaIDBConnect *connect );
-static gboolean     paimeans_do_update( ofoPaimeans *paimeans, const gchar *prev_code, const ofaIDBConnect *connect );
-static gboolean     paimeans_update_main( ofoPaimeans *paimeans, const gchar *prev_code, const ofaIDBConnect *connect );
-static gboolean     paimeans_do_delete( ofoPaimeans *paimeans, const ofaIDBConnect *connect );
-static gint         paimeans_cmp_by_code( const ofoPaimeans *a, const gchar *code );
+static ofoPaimean *paimean_find_by_code( GList *set, const gchar *code );
+static void         paimean_set_upd_user( ofoPaimean *paimean, const gchar *user );
+static void         paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *stamp );
+static gboolean     paimean_do_insert( ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gboolean     paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gboolean     paimean_do_update( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect );
+static gboolean     paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect );
+static gboolean     paimean_do_delete( ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gint         paimean_cmp_by_code( const ofoPaimean *a, const gchar *code );
 static void         icollectionable_iface_init( myICollectionableInterface *iface );
 static guint        icollectionable_get_interface_version( void );
 static GList       *icollectionable_load_collection( void *user_data );
@@ -124,42 +124,42 @@ static guint        iimportable_get_interface_version( void );
 static gchar       *iimportable_get_label( const ofaIImportable *instance );
 static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
-static ofoPaimeans *iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
+static ofoPaimean *iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
 static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
-static gboolean     paimeans_get_exists( const ofoPaimeans *paimeans, const ofaIDBConnect *connect );
-static gboolean     paimeans_drop_content( const ofaIDBConnect *connect );
+static gboolean     paimean_get_exists( const ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gboolean     paimean_drop_content( const ofaIDBConnect *connect );
 static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
 static void         isignal_hub_connect( ofaHub *hub );
 
-G_DEFINE_TYPE_EXTENDED( ofoPaimeans, ofo_paimeans, OFO_TYPE_BASE, 0,
-		G_ADD_PRIVATE( ofoPaimeans )
+G_DEFINE_TYPE_EXTENDED( ofoPaimean, ofo_paimean, OFO_TYPE_BASE, 0,
+		G_ADD_PRIVATE( ofoPaimean )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_ICOLLECTIONABLE, icollectionable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IEXPORTABLE, iexportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IIMPORTABLE, iimportable_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_ISIGNAL_HUB, isignal_hub_iface_init ))
 
 static void
-paimeans_finalize( GObject *instance )
+paimean_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofo_paimeans_finalize";
+	static const gchar *thisfn = "ofo_paimean_finalize";
 
 	g_debug( "%s: instance=%p (%s): %s - %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			ofa_box_get_string( OFO_BASE( instance )->prot->fields, PAM_CODE ),
 			ofa_box_get_string( OFO_BASE( instance )->prot->fields, PAM_LABEL ));
 
-	g_return_if_fail( instance && OFO_IS_PAIMEANS( instance ));
+	g_return_if_fail( instance && OFO_IS_PAIMEAN( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofo_paimeans_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofo_paimean_parent_class )->finalize( instance );
 }
 
 static void
-paimeans_dispose( GObject *instance )
+paimean_dispose( GObject *instance )
 {
-	g_return_if_fail( instance && OFO_IS_PAIMEANS( instance ));
+	g_return_if_fail( instance && OFO_IS_PAIMEAN( instance ));
 
 	if( !OFO_BASE( instance )->prot->dispose_has_run ){
 
@@ -167,190 +167,190 @@ paimeans_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofo_paimeans_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofo_paimean_parent_class )->dispose( instance );
 }
 
 static void
-ofo_paimeans_init( ofoPaimeans *self )
+ofo_paimean_init( ofoPaimean *self )
 {
-	static const gchar *thisfn = "ofo_paimeans_init";
+	static const gchar *thisfn = "ofo_paimean_init";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
-ofo_paimeans_class_init( ofoPaimeansClass *klass )
+ofo_paimean_class_init( ofoPaimeanClass *klass )
 {
-	static const gchar *thisfn = "ofo_paimeans_class_init";
+	static const gchar *thisfn = "ofo_paimean_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = paimeans_dispose;
-	G_OBJECT_CLASS( klass )->finalize = paimeans_finalize;
+	G_OBJECT_CLASS( klass )->dispose = paimean_dispose;
+	G_OBJECT_CLASS( klass )->finalize = paimean_finalize;
 }
 
 /**
- * ofo_paimeans_get_dataset:
+ * ofo_paimean_get_dataset:
  * @hub: the current #ofaHub object.
  *
- * Returns: the full #ofoPaimeans dataset.
+ * Returns: the full #ofoPaimean dataset.
  *
  * The returned list is owned by the @hub collector, and should not
  * be released by the caller.
  */
 GList *
-ofo_paimeans_get_dataset( ofaHub *hub )
+ofo_paimean_get_dataset( ofaHub *hub )
 {
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_PAIMEANS, hub ));
+	return( my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_PAIMEAN, hub ));
 }
 
 /**
- * ofo_paimeans_get_by_code:
+ * ofo_paimean_get_by_code:
  *
- * Returns: the searched paimeans, or %NULL.
+ * Returns: the searched paimean, or %NULL.
  *
- * The returned object is owned by the #ofoPaimeans class, and should
+ * The returned object is owned by the #ofoPaimean class, and should
  * not be unreffed by the caller.
  */
-ofoPaimeans *
-ofo_paimeans_get_by_code( ofaHub *hub, const gchar *code )
+ofoPaimean *
+ofo_paimean_get_by_code( ofaHub *hub, const gchar *code )
 {
 	GList *dataset;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( my_strlen( code ), NULL );
 
-	dataset = ofo_paimeans_get_dataset( hub );
+	dataset = ofo_paimean_get_dataset( hub );
 
-	return( paimeans_find_by_code( dataset, code ));
+	return( paimean_find_by_code( dataset, code ));
 }
 
-static ofoPaimeans *
-paimeans_find_by_code( GList *set, const gchar *code )
+static ofoPaimean *
+paimean_find_by_code( GList *set, const gchar *code )
 {
 	GList *found;
 
 	found = g_list_find_custom(
-				set, code, ( GCompareFunc ) paimeans_cmp_by_code );
+				set, code, ( GCompareFunc ) paimean_cmp_by_code );
 	if( found ){
-		return( OFO_PAIMEANS( found->data ));
+		return( OFO_PAIMEAN( found->data ));
 	}
 
 	return( NULL );
 }
 
 /**
- * ofo_paimeans_new:
+ * ofo_paimean_new:
  */
-ofoPaimeans *
-ofo_paimeans_new( void )
+ofoPaimean *
+ofo_paimean_new( void )
 {
-	ofoPaimeans *paimeans;
+	ofoPaimean *paimean;
 
-	paimeans = g_object_new( OFO_TYPE_PAIMEANS, NULL );
-	OFO_BASE( paimeans )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
+	paimean = g_object_new( OFO_TYPE_PAIMEAN, NULL );
+	OFO_BASE( paimean )->prot->fields = ofo_base_init_fields_list( st_boxed_defs );
 
-	return( paimeans );
+	return( paimean );
 }
 
 /**
- * ofo_paimeans_get_code:
- */
-const gchar *
-ofo_paimeans_get_code( const ofoPaimeans *paimeans )
-{
-	ofo_base_getter( PAIMEANS, paimeans, string, NULL, PAM_CODE );
-}
-
-/**
- * ofo_paimeans_get_label:
+ * ofo_paimean_get_code:
  */
 const gchar *
-ofo_paimeans_get_label( const ofoPaimeans *paimeans )
+ofo_paimean_get_code( const ofoPaimean *paimean )
 {
-	ofo_base_getter( PAIMEANS, paimeans, string, NULL, PAM_LABEL );
+	ofo_base_getter( PAIMEAN, paimean, string, NULL, PAM_CODE );
 }
 
 /**
- * ofo_paimeans_get_must_alone:
+ * ofo_paimean_get_label:
+ */
+const gchar *
+ofo_paimean_get_label( const ofoPaimean *paimean )
+{
+	ofo_base_getter( PAIMEAN, paimean, string, NULL, PAM_LABEL );
+}
+
+/**
+ * ofo_paimean_get_must_alone:
  */
 gboolean
-ofo_paimeans_get_must_alone( const ofoPaimeans *paimeans )
+ofo_paimean_get_must_alone( const ofoPaimean *paimean )
 {
 	const gchar *cstr;
 
-	g_return_val_if_fail( paimeans && OFO_IS_PAIMEANS( paimeans ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( paimeans )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
 
-	cstr = ofa_box_get_string( OFO_BASE( paimeans )->prot->fields, PAM_MUST_ALONE );
+	cstr = ofa_box_get_string( OFO_BASE( paimean )->prot->fields, PAM_MUST_ALONE );
 
 	return( !my_collate( cstr, "Y" ));
 }
 
 /**
- * ofo_paimeans_get_account:
+ * ofo_paimean_get_account:
  */
 const gchar *
-ofo_paimeans_get_account( const ofoPaimeans *paimeans )
+ofo_paimean_get_account( const ofoPaimean *paimean )
 {
-	ofo_base_getter( PAIMEANS, paimeans, string, NULL, PAM_ACCOUNT );
+	ofo_base_getter( PAIMEAN, paimean, string, NULL, PAM_ACCOUNT );
 }
 
 /**
- * ofo_paimeans_get_notes:
+ * ofo_paimean_get_notes:
  */
 const gchar *
-ofo_paimeans_get_notes( const ofoPaimeans *paimeans )
+ofo_paimean_get_notes( const ofoPaimean *paimean )
 {
-	ofo_base_getter( PAIMEANS, paimeans, string, NULL, PAM_NOTES );
+	ofo_base_getter( PAIMEAN, paimean, string, NULL, PAM_NOTES );
 }
 
 /**
- * ofo_paimeans_get_upd_user:
+ * ofo_paimean_get_upd_user:
  */
 const gchar *
-ofo_paimeans_get_upd_user( const ofoPaimeans *paimeans )
+ofo_paimean_get_upd_user( const ofoPaimean *paimean )
 {
-	ofo_base_getter( PAIMEANS, paimeans, string, NULL, PAM_UPD_USER );
+	ofo_base_getter( PAIMEAN, paimean, string, NULL, PAM_UPD_USER );
 }
 
 /**
- * ofo_paimeans_get_upd_stamp:
+ * ofo_paimean_get_upd_stamp:
  */
 const GTimeVal *
-ofo_paimeans_get_upd_stamp( const ofoPaimeans *paimeans )
+ofo_paimean_get_upd_stamp( const ofoPaimean *paimean )
 {
-	ofo_base_getter( PAIMEANS, paimeans, timestamp, NULL, PAM_UPD_STAMP );
+	ofo_base_getter( PAIMEAN, paimean, timestamp, NULL, PAM_UPD_STAMP );
 }
 
 /**
- * ofo_paimeans_is_deletable:
- * @paimeans: the paimeans
+ * ofo_paimean_is_deletable:
+ * @paimean: the paimean
  *
- * There is no hard reference set to this #ofoPaimeans class.
+ * There is no hard reference set to this #ofoPaimean class.
  * Entries and ope.templates which reference one of these means of
  * paiement will continue to just work, just losing the benefit of
  * account pre-setting.
  *
- * Returns: %TRUE if the paimeans is deletable.
+ * Returns: %TRUE if the paimean is deletable.
  */
 gboolean
-ofo_paimeans_is_deletable( const ofoPaimeans *paimeans )
+ofo_paimean_is_deletable( const ofoPaimean *paimean )
 {
 	return( TRUE );
 }
 
 /**
- * ofo_paimeans_is_valid_data:
+ * ofo_paimean_is_valid_data:
  *
  * Note that we only check for the intrinsec validity of the provided
  * data. This does NOT check for an possible duplicate code or so.
  */
 gboolean
-ofo_paimeans_is_valid_data( const gchar *code, gchar **msgerr )
+ofo_paimean_is_valid_data( const gchar *code, gchar **msgerr )
 {
 	if( msgerr ){
 		*msgerr = NULL;
@@ -365,93 +365,93 @@ ofo_paimeans_is_valid_data( const gchar *code, gchar **msgerr )
 }
 
 /**
- * ofo_paimeans_set_code:
+ * ofo_paimean_set_code:
  */
 void
-ofo_paimeans_set_code( ofoPaimeans *paimeans, const gchar *code )
+ofo_paimean_set_code( ofoPaimean *paimean, const gchar *code )
 {
-	ofo_base_setter( PAIMEANS, paimeans, string, PAM_CODE, code );
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_CODE, code );
 }
 
 /**
- * ofo_paimeans_set_label:
+ * ofo_paimean_set_label:
  */
 void
-ofo_paimeans_set_label( ofoPaimeans *paimeans, const gchar *label )
+ofo_paimean_set_label( ofoPaimean *paimean, const gchar *label )
 {
-	ofo_base_setter( PAIMEANS, paimeans, string, PAM_LABEL, label );
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_LABEL, label );
 }
 
 /**
- * ofo_paimeans_set_must_alone:
+ * ofo_paimean_set_must_alone:
  */
 void
-ofo_paimeans_set_must_alone( ofoPaimeans *paimeans, gboolean alone )
+ofo_paimean_set_must_alone( ofoPaimean *paimean, gboolean alone )
 {
-	ofo_base_setter( PAIMEANS, paimeans, string, PAM_MUST_ALONE, alone ? "Y":"N" );
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_MUST_ALONE, alone ? "Y":"N" );
 }
 
 /**
- * ofo_paimeans_set_account:
+ * ofo_paimean_set_account:
  */
 void
-ofo_paimeans_set_account( ofoPaimeans *paimeans, const gchar *account )
+ofo_paimean_set_account( ofoPaimean *paimean, const gchar *account )
 {
-	ofo_base_setter( PAIMEANS, paimeans, string, PAM_ACCOUNT, account );
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_ACCOUNT, account );
 }
 
 /**
- * ofo_paimeans_set_notes:
+ * ofo_paimean_set_notes:
  */
 void
-ofo_paimeans_set_notes( ofoPaimeans *paimeans, const gchar *notes )
+ofo_paimean_set_notes( ofoPaimean *paimean, const gchar *notes )
 {
-	ofo_base_setter( PAIMEANS, paimeans, string, PAM_NOTES, notes );
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_NOTES, notes );
 }
 
 /*
- * ofo_paimeans_set_upd_user:
+ * ofo_paimean_set_upd_user:
  */
 static void
-paimeans_set_upd_user( ofoPaimeans *paimeans, const gchar *upd_user )
+paimean_set_upd_user( ofoPaimean *paimean, const gchar *upd_user )
 {
-	ofo_base_setter( PAIMEANS, paimeans, string, PAM_UPD_USER, upd_user );
+	ofo_base_setter( PAIMEAN, paimean, string, PAM_UPD_USER, upd_user );
 }
 
 /*
- * ofo_paimeans_set_upd_stamp:
+ * ofo_paimean_set_upd_stamp:
  */
 static void
-paimeans_set_upd_stamp( ofoPaimeans *paimeans, const GTimeVal *upd_stamp )
+paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *upd_stamp )
 {
-	ofo_base_setter( PAIMEANS, paimeans, timestamp, PAM_UPD_STAMP, upd_stamp );
+	ofo_base_setter( PAIMEAN, paimean, timestamp, PAM_UPD_STAMP, upd_stamp );
 }
 
 /**
- * ofo_paimeans_insert:
+ * ofo_paimean_insert:
  *
- * First creation of a new #ofoPaimeans.
+ * First creation of a new #ofoPaimean.
  */
 gboolean
-ofo_paimeans_insert( ofoPaimeans *paimeans, ofaHub *hub )
+ofo_paimean_insert( ofoPaimean *paimean, ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_paimeans_insert";
+	static const gchar *thisfn = "ofo_paimean_insert";
 	gboolean ok;
 
-	g_debug( "%s: paimeans=%p, hub=%p",
-			thisfn, ( void * ) paimeans, ( void * ) hub );
+	g_debug( "%s: paimean=%p, hub=%p",
+			thisfn, ( void * ) paimean, ( void * ) hub );
 
-	g_return_val_if_fail( paimeans && OFO_IS_PAIMEANS( paimeans ), FALSE );
+	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( paimeans )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
 
 	ok = FALSE;
 
-	if( paimeans_do_insert( paimeans, ofa_hub_get_connect( hub ))){
-		ofo_base_set_hub( OFO_BASE( paimeans ), hub );
+	if( paimean_do_insert( paimean, ofa_hub_get_connect( hub ))){
+		ofo_base_set_hub( OFO_BASE( paimean ), hub );
 		my_icollector_collection_add_object(
-				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( paimeans ), NULL, hub );
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, paimeans );
+				ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( paimean ), NULL, hub );
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_NEW, paimean );
 		ok = TRUE;
 	}
 
@@ -459,13 +459,13 @@ ofo_paimeans_insert( ofoPaimeans *paimeans, ofaHub *hub )
 }
 
 static gboolean
-paimeans_do_insert( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
+paimean_do_insert( ofoPaimean *paimean, const ofaIDBConnect *connect )
 {
-	return( paimeans_insert_main( paimeans, connect ));
+	return( paimean_insert_main( paimean, connect ));
 }
 
 static gboolean
-paimeans_insert_main( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
+paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect )
 {
 	GString *query;
 	gchar *label, *notes, *userid;
@@ -473,13 +473,13 @@ paimeans_insert_main( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
 	gchar *stamp_str;
 	GTimeVal stamp;
 
-	g_return_val_if_fail( paimeans && OFO_IS_PAIMEANS( paimeans ), FALSE );
+	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_sql( ofo_paimeans_get_label( paimeans ));
-	notes = my_utils_quote_sql( ofo_paimeans_get_notes( paimeans ));
+	label = my_utils_quote_sql( ofo_paimean_get_label( paimean ));
+	notes = my_utils_quote_sql( ofo_paimean_get_notes( paimean ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
@@ -489,10 +489,10 @@ paimeans_insert_main( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
 			"	(PAM_CODE,PAM_LABEL,PAM_MUST_ALONE,PAM_ACCOUNT,"
 			"	PAM_NOTES,PAM_UPD_USER, PAM_UPD_STAMP)"
 			"	VALUES ('%s','%s','%s','%s',",
-			ofo_paimeans_get_code( paimeans ),
+			ofo_paimean_get_code( paimean ),
 			label,
-			ofo_paimeans_get_must_alone( paimeans ) ? "Y":"N",
-			ofo_paimeans_get_account( paimeans ));
+			ofo_paimean_get_must_alone( paimean ) ? "Y":"N",
+			ofo_paimean_get_account( paimean ));
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -504,8 +504,8 @@ paimeans_insert_main( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
-		paimeans_set_upd_user( paimeans, userid );
-		paimeans_set_upd_stamp( paimeans, &stamp );
+		paimean_set_upd_user( paimean, userid );
+		paimean_set_upd_stamp( paimean, &stamp );
 		ok = TRUE;
 	}
 
@@ -519,29 +519,29 @@ paimeans_insert_main( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
 }
 
 /**
- * ofo_paimeans_update:
+ * ofo_paimean_update:
  *
  * Only update here the main properties.
  */
 gboolean
-ofo_paimeans_update( ofoPaimeans *paimeans, const gchar *prev_code )
+ofo_paimean_update( ofoPaimean *paimean, const gchar *prev_code )
 {
-	static const gchar *thisfn = "ofo_paimeans_update";
+	static const gchar *thisfn = "ofo_paimean_update";
 	ofaHub *hub;
 	gboolean ok;
 
-	g_debug( "%s: paimeans=%p, prev_code=%s",
-			thisfn, ( void * ) paimeans, prev_code );
+	g_debug( "%s: paimean=%p, prev_code=%s",
+			thisfn, ( void * ) paimean, prev_code );
 
-	g_return_val_if_fail( paimeans && OFO_IS_PAIMEANS( paimeans ), FALSE );
+	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
 	g_return_val_if_fail( my_strlen( prev_code ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( paimeans )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( paimeans ));
+	hub = ofo_base_get_hub( OFO_BASE( paimean ));
 	ok = FALSE;
 
-	if( paimeans_do_update( paimeans, prev_code, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, paimeans, prev_code );
+	if( paimean_do_update( paimean, prev_code, ofa_hub_get_connect( hub ))){
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, paimean, prev_code );
 		ok = TRUE;
 	}
 
@@ -549,13 +549,13 @@ ofo_paimeans_update( ofoPaimeans *paimeans, const gchar *prev_code )
 }
 
 static gboolean
-paimeans_do_update( ofoPaimeans *paimeans, const gchar *prev_code, const ofaIDBConnect *connect )
+paimean_do_update( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect )
 {
-	return( paimeans_update_main( paimeans, prev_code, connect ));
+	return( paimean_update_main( paimean, prev_code, connect ));
 }
 
 static gboolean
-paimeans_update_main( ofoPaimeans *paimeans, const gchar *prev_code, const ofaIDBConnect *connect )
+paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect )
 {
 	GString *query;
 	gchar *label, *notes, *userid;
@@ -563,22 +563,22 @@ paimeans_update_main( ofoPaimeans *paimeans, const gchar *prev_code, const ofaID
 	gchar *stamp_str;
 	GTimeVal stamp;
 
-	g_return_val_if_fail( paimeans && OFO_IS_PAIMEANS( paimeans ), FALSE );
+	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	ok = FALSE;
 	userid = ofa_idbconnect_get_account( connect );
-	label = my_utils_quote_sql( ofo_paimeans_get_label( paimeans ));
-	notes = my_utils_quote_sql( ofo_paimeans_get_notes( paimeans ));
+	label = my_utils_quote_sql( ofo_paimean_get_label( paimean ));
+	notes = my_utils_quote_sql( ofo_paimean_get_notes( paimean ));
 	my_utils_stamp_set_now( &stamp );
 	stamp_str = my_utils_stamp_to_str( &stamp, MY_STAMP_YYMDHMS );
 
 	query = g_string_new( "UPDATE OFA_T_PAIMEANS SET " );
 
-	g_string_append_printf( query, "PAM_CODE='%s',", ofo_paimeans_get_code( paimeans ));
+	g_string_append_printf( query, "PAM_CODE='%s',", ofo_paimean_get_code( paimean ));
 	g_string_append_printf( query, "PAM_LABEL='%s',", label );
-	g_string_append_printf( query, "PAM_MUST_ALONE='%s',", ofo_paimeans_get_must_alone( paimeans ) ? "Y":"N" );
-	g_string_append_printf( query, "PAM_ACCOUNT='%s',", ofo_paimeans_get_account( paimeans ));
+	g_string_append_printf( query, "PAM_MUST_ALONE='%s',", ofo_paimean_get_must_alone( paimean ) ? "Y":"N" );
+	g_string_append_printf( query, "PAM_ACCOUNT='%s',", ofo_paimean_get_account( paimean ));
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "PAM_NOTES='%s',", notes );
@@ -593,8 +593,8 @@ paimeans_update_main( ofoPaimeans *paimeans, const gchar *prev_code, const ofaID
 
 	if( ofa_idbconnect_query( connect, query->str, TRUE )){
 
-		paimeans_set_upd_user( paimeans, userid );
-		paimeans_set_upd_stamp( paimeans, &stamp );
+		paimean_set_upd_user( paimean, userid );
+		paimean_set_upd_stamp( paimean, &stamp );
 		ok = TRUE;
 	}
 
@@ -608,28 +608,28 @@ paimeans_update_main( ofoPaimeans *paimeans, const gchar *prev_code, const ofaID
 }
 
 /**
- * ofo_paimeans_delete:
+ * ofo_paimean_delete:
  */
 gboolean
-ofo_paimeans_delete( ofoPaimeans *paimeans )
+ofo_paimean_delete( ofoPaimean *paimean )
 {
-	static const gchar *thisfn = "ofo_paimeans_delete";
+	static const gchar *thisfn = "ofo_paimean_delete";
 	ofaHub *hub;
 	gboolean ok;
 
-	g_debug( "%s: paimeans=%p", thisfn, ( void * ) paimeans );
+	g_debug( "%s: paimean=%p", thisfn, ( void * ) paimean );
 
-	g_return_val_if_fail( paimeans && OFO_IS_PAIMEANS( paimeans ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( paimeans )->prot->dispose_has_run, FALSE );
+	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
 
-	hub = ofo_base_get_hub( OFO_BASE( paimeans ));
+	hub = ofo_base_get_hub( OFO_BASE( paimean ));
 	ok = FALSE;
 
-	if( paimeans_do_delete( paimeans, ofa_hub_get_connect( hub ))){
-		g_object_ref( paimeans );
-		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( paimeans ));
-		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, paimeans );
-		g_object_unref( paimeans );
+	if( paimean_do_delete( paimean, ofa_hub_get_connect( hub ))){
+		g_object_ref( paimean );
+		my_icollector_collection_remove_object( ofa_hub_get_collector( hub ), MY_ICOLLECTIONABLE( paimean ));
+		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_DELETED, paimean );
+		g_object_unref( paimean );
 		ok = TRUE;
 	}
 
@@ -637,14 +637,14 @@ ofo_paimeans_delete( ofoPaimeans *paimeans )
 }
 
 static gboolean
-paimeans_do_delete( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
+paimean_do_delete( ofoPaimean *paimean, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	gchar *query;
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_PAIMEANS WHERE PAM_CODE='%s'",
-					ofo_paimeans_get_code( paimeans ));
+					ofo_paimean_get_code( paimean ));
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 
@@ -654,9 +654,9 @@ paimeans_do_delete( ofoPaimeans *paimeans, const ofaIDBConnect *connect )
 }
 
 static gint
-paimeans_cmp_by_code( const ofoPaimeans *a, const gchar *code )
+paimean_cmp_by_code( const ofoPaimean *a, const gchar *code )
 {
-	return( my_collate( ofo_paimeans_get_code( a ), code ));
+	return( my_collate( ofo_paimean_get_code( a ), code ));
 }
 
 /*
@@ -665,7 +665,7 @@ paimeans_cmp_by_code( const ofoPaimeans *a, const gchar *code )
 static void
 icollectionable_iface_init( myICollectionableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_paimeans_icollectionable_iface_init";
+	static const gchar *thisfn = "ofo_paimean_icollectionable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -689,7 +689,7 @@ icollectionable_load_collection( void *user_data )
 	dataset = ofo_base_load_dataset(
 					st_boxed_defs,
 					"OFA_T_PAIMEANS",
-					OFO_TYPE_PAIMEANS,
+					OFO_TYPE_PAIMEAN,
 					OFA_HUB( user_data ));
 
 	return( dataset );
@@ -701,7 +701,7 @@ icollectionable_load_collection( void *user_data )
 static void
 iexportable_iface_init( ofaIExportableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_paimeans_iexportable_iface_init";
+	static const gchar *thisfn = "ofo_paimean_iexportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -737,7 +737,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 	gboolean ok, with_headers;
 	gulong count;
 
-	dataset = ofo_paimeans_get_dataset( hub );
+	dataset = ofo_paimean_get_dataset( hub );
 	with_headers = ofa_stream_format_get_with_headers( settings );
 
 	count = ( gulong ) g_list_length( dataset );
@@ -773,7 +773,7 @@ iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHu
 static void
 iimportable_iface_init( ofaIImportableInterface *iface )
 {
-	static const gchar *thisfn = "ofo_paimeans_iimportable_iface_init";
+	static const gchar *thisfn = "ofo_paimean_iimportable_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -795,11 +795,11 @@ iimportable_get_label( const ofaIImportable *instance )
 }
 
 /*
- * ofo_paimeans_iimportable_import:
+ * ofo_paimean_iimportable_import:
  *
  * Receives a GSList of lines, where data are GSList of fields.
  * Fields must be:
- * - paimeans code
+ * - paimean code
  * - label
  * - must_alone
  * - account (opt)
@@ -826,8 +826,8 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 		iimportable_import_insert( importer, parms, dataset );
 
 		if( parms->insert_errs == 0 ){
-			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_PAIMEANS );
-			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_PAIMEANS );
+			my_icollector_collection_free( ofa_hub_get_collector( parms->hub ), OFO_TYPE_PAIMEAN );
+			g_signal_emit_by_name( G_OBJECT( parms->hub ), SIGNAL_HUB_RELOAD, OFO_TYPE_PAIMEAN );
 
 		} else {
 			ofa_idbconnect_table_restore( ofa_hub_get_connect( parms->hub ), bck_table, "OFA_T_PAIMEANS" );
@@ -837,7 +837,7 @@ iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lin
 	}
 
 	if( dataset ){
-		ofo_paimeans_free_dataset( dataset );
+		ofo_paimean_free_dataset( dataset );
 	}
 
 	return( parms->parse_errs+parms->insert_errs );
@@ -853,7 +853,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	GSList *itl, *fields;
 	guint numline, total;
 	gchar *str;
-	ofoPaimeans *paimeans;
+	ofoPaimean *paimean;
 
 	numline = 0;
 	dataset = NULL;
@@ -869,10 +869,10 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 		numline += 1;
 		fields = ( GSList * ) itl->data;
-		paimeans = iimportable_import_parse_main( importer, parms, numline, fields );
+		paimean = iimportable_import_parse_main( importer, parms, numline, fields );
 
-		if( paimeans ){
-			dataset = g_list_prepend( dataset, paimeans );
+		if( paimean ){
+			dataset = g_list_prepend( dataset, paimean );
 			parms->parsed_count += 1;
 			ofa_iimporter_progress_pulse( importer, parms, ( gulong ) parms->parsed_count, ( gulong ) total );
 		} else {
@@ -886,44 +886,44 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	return( dataset );
 }
 
-static ofoPaimeans *
+static ofoPaimean *
 iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields )
 {
 	const gchar *cstr;
 	GSList *itf;
 	gchar *splitted;
-	ofoPaimeans *paimeans;
+	ofoPaimean *paimean;
 
-	paimeans = ofo_paimeans_new();
+	paimean = ofo_paimean_new();
 
-	/* paimeans code */
+	/* paimean code */
 	itf = fields ? fields->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( !my_strlen( cstr )){
 		ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty mean of paiement identifier" ));
 		parms->parse_errs += 1;
-		g_object_unref( paimeans );
+		g_object_unref( paimean );
 		return( NULL );
 	}
-	ofo_paimeans_set_code( paimeans, cstr );
+	ofo_paimean_set_code( paimean, cstr );
 
-	/* paimeans label */
+	/* paimean label */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_paimeans_set_label( paimeans, cstr );
+		ofo_paimean_set_label( paimean, cstr );
 	}
 
 	/* whether must be alone */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofo_paimeans_set_must_alone( paimeans, my_utils_boolean_from_str( cstr ));
+	ofo_paimean_set_must_alone( paimean, my_utils_boolean_from_str( cstr ));
 
-	/* paimeans account */
+	/* paimean account */
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	if( my_strlen( cstr )){
-		ofo_paimeans_set_account( paimeans, cstr );
+		ofo_paimean_set_account( paimean, cstr );
 	}
 
 	/* notes
@@ -931,10 +931,10 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	itf = itf ? itf->next : NULL;
 	cstr = itf ? ( const gchar * ) itf->data : NULL;
 	splitted = my_utils_import_multi_lines( cstr );
-	ofo_paimeans_set_notes( paimeans, splitted );
+	ofo_paimean_set_notes( paimean, splitted );
 	g_free( splitted );
 
-	return( paimeans );
+	return( paimean );
 }
 
 /*
@@ -949,14 +949,14 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 	gboolean insert;
 	guint total;
 	gchar *str;
-	ofoPaimeans *paimeans;
+	ofoPaimean *paimean;
 
 	total = g_list_length( dataset );
 	connect = ofa_hub_get_connect( parms->hub );
 	ofa_iimporter_progress_start( importer, parms );
 
 	if( parms->empty && total > 0 ){
-		paimeans_drop_content( connect );
+		paimean_drop_content( connect );
 	}
 
 	for( it=dataset ; it ; it=it->next ){
@@ -967,16 +967,16 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 
 		str = NULL;
 		insert = TRUE;
-		paimeans = OFO_PAIMEANS( it->data );
+		paimean = OFO_PAIMEAN( it->data );
 
-		if( paimeans_get_exists( paimeans, connect )){
+		if( paimean_get_exists( paimean, connect )){
 			parms->duplicate_count += 1;
-			code = ofo_paimeans_get_code( paimeans );
+			code = ofo_paimean_get_code( paimean );
 
 			switch( parms->mode ){
 				case OFA_IDUPLICATE_REPLACE:
 					str = g_strdup_printf( _( "%s: duplicate mean of paiement, replacing previous one" ), code );
-					paimeans_do_delete( paimeans, connect );
+					paimean_do_delete( paimean, connect );
 					break;
 				case OFA_IDUPLICATE_IGNORE:
 					str = g_strdup_printf( _( "%s: duplicate mean of paiement, ignored (skipped)" ), code );
@@ -996,7 +996,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 		}
 
 		if( insert ){
-			if( paimeans_do_insert( paimeans, connect )){
+			if( paimean_do_insert( paimean, connect )){
 				parms->inserted_count += 1;
 			} else {
 				parms->insert_errs += 1;
@@ -1008,22 +1008,22 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 }
 
 static gboolean
-paimeans_get_exists( const ofoPaimeans *paimeans, const ofaIDBConnect *connect )
+paimean_get_exists( const ofoPaimean *paimean, const ofaIDBConnect *connect )
 {
-	const gchar *paimeans_id;
+	const gchar *paimean_id;
 	gint count;
 	gchar *str;
 
 	count = 0;
-	paimeans_id = ofo_paimeans_get_code( paimeans );
-	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_PAIMEANS WHERE PAM_COUNT='%s'", paimeans_id );
+	paimean_id = ofo_paimean_get_code( paimean );
+	str = g_strdup_printf( "SELECT COUNT(*) FROM OFA_T_PAIMEANS WHERE PAM_COUNT='%s'", paimean_id );
 	ofa_idbconnect_query_int( connect, str, &count, FALSE );
 
 	return( count > 0 );
 }
 
 static gboolean
-paimeans_drop_content( const ofaIDBConnect *connect )
+paimean_drop_content( const ofaIDBConnect *connect )
 {
 	return( ofa_idbconnect_query( connect, "DELETE FROM OFA_T_PAIMEANS", TRUE ));
 }
@@ -1034,7 +1034,7 @@ paimeans_drop_content( const ofaIDBConnect *connect )
 static void
 isignal_hub_iface_init( ofaISignalHubInterface *iface )
 {
-	static const gchar *thisfn = "ofo_paimeans_isignal_hub_iface_init";
+	static const gchar *thisfn = "ofo_paimean_isignal_hub_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -1044,7 +1044,7 @@ isignal_hub_iface_init( ofaISignalHubInterface *iface )
 static void
 isignal_hub_connect( ofaHub *hub )
 {
-	static const gchar *thisfn = "ofo_paimeans_isignal_hub_connect";
+	static const gchar *thisfn = "ofo_paimean_isignal_hub_connect";
 
 	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
 

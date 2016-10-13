@@ -181,7 +181,7 @@ libofa_core_la_SOURCES = \
 	ofo-entry.c											\
 	ofo-ledger.c										\
 	ofo-ope-template.c									\
-	ofo-paimeans.c										\
+	ofo-paimean.c										\
 	ofo-rate.c											\
 	\
 	ofs-account-balance.c								\
