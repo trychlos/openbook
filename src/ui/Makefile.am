@@ -206,6 +206,8 @@ openbook_SOURCES = \
 	ofa-ope-template-page.h								\
 	ofa-paimean-store.c									\
 	ofa-paimean-store.h									\
+	ofa-paimean-treeview.c								\
+	ofa-paimean-treeview.h								\
 	ofa-period-close.c									\
 	ofa-period-close.h									\
 	ofa-plugin-manager.c								\
