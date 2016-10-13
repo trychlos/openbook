@@ -60,6 +60,7 @@ src/ui/ofa-ledger-properties.ui
 src/ui/ofa-ledger-summary-bin.ui
 src/ui/ofa-misc-audit-ui.ui
 src/ui/ofa-misc-collector-ui.ui
+src/ui/ofa-paimean-properties.ui
 src/ui/ofa-period-close.ui
 src/ui/ofa-plugin-manager.ui
 src/ui/ofa-rate-properties.ui

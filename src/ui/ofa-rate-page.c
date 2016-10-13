@@ -40,11 +40,11 @@
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
-#include "api/ofo-paimean.h"
+#include "api/ofo-rate.h"
 
-#include "ui/ofa-paimean-page.h"
-// include "ui/ofa-paimean-properties.h"
-#include "ui/ofa-paimean-treeview.h"
+#include "ui/ofa-rate-page.h"
+#include "ui/ofa-rate-properties.h"
+#include "ui/ofa-rate-treeview.h"
 
 /* private instance data
  */
@@ -58,7 +58,7 @@ typedef struct {
 
 	/* UI
 	 */
-	ofaPaimeanTreeview *tview;
+	ofaRateTreeview *tview;
 
 	/* actions
 	 */
@@ -66,56 +66,56 @@ typedef struct {
 	GSimpleAction   *update_action;
 	GSimpleAction   *delete_action;
 }
-	ofaPaimeanPagePrivate;
+	ofaRatePagePrivate;
 
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget *action_page_v_setup_view( ofaActionPage *page );
 static void       action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
 static void       action_page_v_init_view( ofaActionPage *page );
-static void       on_row_selected( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self );
-static void       on_row_activated( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self );
-static void       on_delete_key( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self );
-static void       on_insert_key( ofaPaimeanTreeview *tview, ofaPaimeanPage *self );
-static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self );
-static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self );
-static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self );
-static gboolean   check_for_deletability( ofaPaimeanPage *self, ofoPaimean *class );
-static void       delete_with_confirm( ofaPaimeanPage *self, ofoPaimean *class );
+static void       on_row_selected( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self );
+static void       on_row_activated( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self );
+static void       on_delete_key( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self );
+static void       on_insert_key( ofaRateTreeview *tview, ofaRatePage *self );
+static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self );
+static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self );
+static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self );
+static gboolean   check_for_deletability( ofaRatePage *self, ofoRate *class );
+static void       delete_with_confirm( ofaRatePage *self, ofoRate *class );
 
-G_DEFINE_TYPE_EXTENDED( ofaPaimeanPage, ofa_paimean_page, OFA_TYPE_ACTION_PAGE, 0,
-		G_ADD_PRIVATE( ofaPaimeanPage ))
+G_DEFINE_TYPE_EXTENDED( ofaRatePage, ofa_rate_page, OFA_TYPE_ACTION_PAGE, 0,
+		G_ADD_PRIVATE( ofaRatePage ))
 
 static void
-paimean_page_finalize( GObject *instance )
+rate_page_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_paimean_page_finalize";
-	ofaPaimeanPagePrivate *priv;
+	static const gchar *thisfn = "ofa_rate_page_finalize";
+	ofaRatePagePrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_PAIMEAN_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_RATE_PAGE( instance ));
 
 	/* free data members here */
-	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( instance ));
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( instance ));
 
 	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_paimean_page_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_rate_page_parent_class )->finalize( instance );
 }
 
 static void
-paimean_page_dispose( GObject *instance )
+rate_page_dispose( GObject *instance )
 {
-	ofaPaimeanPagePrivate *priv;
+	ofaRatePagePrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_PAIMEAN_PAGE( instance ));
+	g_return_if_fail( instance && OFA_IS_RATE_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( instance ));
+		priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( instance ));
 
 		g_object_unref( priv->new_action );
 		g_object_unref( priv->update_action );
@@ -123,34 +123,34 @@ paimean_page_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_paimean_page_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_rate_page_parent_class )->dispose( instance );
 }
 
 static void
-ofa_paimean_page_init( ofaPaimeanPage *self )
+ofa_rate_page_init( ofaRatePage *self )
 {
-	static const gchar *thisfn = "ofa_paimean_page_init";
-	ofaPaimeanPagePrivate *priv;
+	static const gchar *thisfn = "ofa_rate_page_init";
+	ofaRatePagePrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_PAIMEAN_PAGE( self ));
+	g_return_if_fail( self && OFA_IS_RATE_PAGE( self ));
 
-	priv = ofa_paimean_page_get_instance_private( self );
+	priv = ofa_rate_page_get_instance_private( self );
 
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
-ofa_paimean_page_class_init( ofaPaimeanPageClass *klass )
+ofa_rate_page_class_init( ofaRatePageClass *klass )
 {
-	static const gchar *thisfn = "ofa_paimean_page_class_init";
+	static const gchar *thisfn = "ofa_rate_page_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = paimean_page_dispose;
-	G_OBJECT_CLASS( klass )->finalize = paimean_page_finalize;
+	G_OBJECT_CLASS( klass )->dispose = rate_page_dispose;
+	G_OBJECT_CLASS( klass )->finalize = rate_page_finalize;
 
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
@@ -162,11 +162,11 @@ ofa_paimean_page_class_init( ofaPaimeanPageClass *klass )
 static GtkWidget *
 page_v_get_top_focusable_widget( const ofaPage *page )
 {
-	ofaPaimeanPagePrivate *priv;
+	ofaRatePagePrivate *priv;
 
-	g_return_val_if_fail( page && OFA_IS_PAIMEAN_PAGE( page ), NULL );
+	g_return_val_if_fail( page && OFA_IS_RATE_PAGE( page ), NULL );
 
-	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	return( ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview )));
 }
@@ -174,28 +174,28 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 static GtkWidget *
 action_page_v_setup_view( ofaActionPage *page )
 {
-	static const gchar *thisfn = "ofa_paimean_page_v_setup_view";
-	ofaPaimeanPagePrivate *priv;
+	static const gchar *thisfn = "ofa_rate_page_v_setup_view";
+	ofaRatePagePrivate *priv;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
-	priv->tview = ofa_paimean_treeview_new();
-	ofa_paimean_treeview_set_settings_key( priv->tview, priv->settings_prefix );
-	ofa_paimean_treeview_setup_columns( priv->tview );
+	priv->tview = ofa_rate_treeview_new();
+	ofa_rate_treeview_set_settings_key( priv->tview, priv->settings_prefix );
+	ofa_rate_treeview_setup_columns( priv->tview );
 
 	/* ofaTVBin signals */
 	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
 
-	/* ofaPaimeanTreeview signals */
-	g_signal_connect( priv->tview, "ofa-pamchanged", G_CALLBACK( on_row_selected ), page );
-	g_signal_connect( priv->tview, "ofa-pamactivated", G_CALLBACK( on_row_activated ), page );
-	g_signal_connect( priv->tview, "ofa-pamdelete", G_CALLBACK( on_delete_key ), page );
+	/* ofaRateTreeview signals */
+	g_signal_connect( priv->tview, "ofa-ratchanged", G_CALLBACK( on_row_selected ), page );
+	g_signal_connect( priv->tview, "ofa-ratactivated", G_CALLBACK( on_row_activated ), page );
+	g_signal_connect( priv->tview, "ofa-ratdelete", G_CALLBACK( on_delete_key ), page );
 
 	return( GTK_WIDGET( priv->tview ));
 }
@@ -203,9 +203,9 @@ action_page_v_setup_view( ofaActionPage *page )
 static void
 action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 {
-	ofaPaimeanPagePrivate *priv;
+	ofaRatePagePrivate *priv;
 
-	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	/* new action */
 	priv->new_action = g_simple_action_new( "new", NULL );
@@ -248,13 +248,13 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 static void
 action_page_v_init_view( ofaActionPage *page )
 {
-	static const gchar *thisfn = "ofa_paimean_page_v_init_view";
-	ofaPaimeanPagePrivate *priv;
+	static const gchar *thisfn = "ofa_rate_page_v_init_view";
+	ofaRatePagePrivate *priv;
 	GMenu *menu;
 
 	g_debug( "%s: page=%p", thisfn, ( void * ) page );
 
-	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
+	priv = ofa_rate_page_get_instance_private( OFA_RATE_PAGE( page ));
 
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
 	ofa_icontext_set_menu(
@@ -269,38 +269,38 @@ action_page_v_init_view( ofaActionPage *page )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	ofa_paimean_treeview_set_hub( priv->tview, priv->hub );
+	ofa_rate_treeview_set_hub( priv->tview, priv->hub );
 }
 
 /*
- * Signal sent by ofaPaimeanTreeview on selection change
+ * Signal sent by ofaRateTreeview on selection change
  *
  * Other actions do not depend of the selection:
  * - new: enabled when dossier is writable.
  */
 static void
-on_row_selected( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self )
+on_row_selected( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self )
 {
-	ofaPaimeanPagePrivate *priv;
-	gboolean is_paimean;
+	ofaRatePagePrivate *priv;
+	gboolean is_rate;
 
-	priv = ofa_paimean_page_get_instance_private( self );
+	priv = ofa_rate_page_get_instance_private( self );
 
-	is_paimean = paimean && OFO_IS_PAIMEAN( paimean );
+	is_rate = rate && OFO_IS_RATE( rate );
 
-	g_simple_action_set_enabled( priv->update_action, is_paimean );
-	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, paimean ));
+	g_simple_action_set_enabled( priv->update_action, is_rate );
+	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, rate ));
 }
 
 /*
- * signal sent by ofaPaimeanTreeview on selection activation
+ * signal sent by ofaRateTreeview on selection activation
  */
 static void
-on_row_activated( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self )
+on_row_activated( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self )
 {
-	ofaPaimeanPagePrivate *priv;
+	ofaRatePagePrivate *priv;
 
-	priv = ofa_paimean_page_get_instance_private( self );
+	priv = ofa_rate_page_get_instance_private( self );
 
 	g_action_activate( G_ACTION( priv->update_action ), NULL );
 }
@@ -312,11 +312,11 @@ on_row_activated( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage
  * If this is the case, just silently ignore the key.
  */
 static void
-on_insert_key( ofaPaimeanTreeview *tview, ofaPaimeanPage *self )
+on_insert_key( ofaRateTreeview *tview, ofaRatePage *self )
 {
-	ofaPaimeanPagePrivate *priv;
+	ofaRatePagePrivate *priv;
 
-	priv = ofa_paimean_page_get_instance_private( self );
+	priv = ofa_rate_page_get_instance_private( self );
 
 	if( priv->is_writable ){
 		g_action_activate( G_ACTION( priv->new_action ), NULL );
@@ -324,93 +324,89 @@ on_insert_key( ofaPaimeanTreeview *tview, ofaPaimeanPage *self )
 }
 
 /*
- * signal sent by ofaPaimeanTreeview on Delete key
+ * signal sent by ofaRateTreeview on Delete key
  *
  * Note that the key may be pressed, even if the button
  * is disabled. So have to check all prerequisite conditions.
  * If the current row is not deletable, just silently ignore the key.
  */
 static void
-on_delete_key( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self )
+on_delete_key( ofaRateTreeview *tview, ofoRate *rate, ofaRatePage *self )
 {
-	if( check_for_deletability( self, paimean )){
-		delete_with_confirm( self, paimean );
+	if( check_for_deletability( self, rate )){
+		delete_with_confirm( self, rate );
 	}
 }
 
 static void
-action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self )
+action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self )
 {
-#if 0
-	ofoPaimean *paimean;
+	ofoRate *rate;
 	GtkWindow *toplevel;
 
-	paimean = ofo_paimean_new();
+	rate = ofo_rate_new();
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
-#endif
+	ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
 }
 
 static void
-action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self )
+action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self )
 {
-#if 0
-	ofaPaimeanPagePrivate *priv;
-	ofoPaimean *paimean;
+	ofaRatePagePrivate *priv;
+	ofoRate *rate;
 	GtkWindow *toplevel;
 
-	priv = ofa_paimean_page_get_instance_private( self );
+	priv = ofa_rate_page_get_instance_private( self );
 
-	paimean = ofa_paimean_treeview_get_selected( priv->tview );
-	g_return_if_fail( paimean && OFO_IS_PAIMEAN( paimean ));
+	rate = ofa_rate_treeview_get_selected( priv->tview );
+	g_return_if_fail( rate && OFO_IS_RATE( rate ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
-#endif
+	ofa_rate_properties_run( OFA_IGETTER( self ), toplevel, rate );
 }
 
 static void
-action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self )
+action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaRatePage *self )
 {
-	ofaPaimeanPagePrivate *priv;
-	ofoPaimean *paimean;
+	ofaRatePagePrivate *priv;
+	ofoRate *rate;
 
-	priv = ofa_paimean_page_get_instance_private( self );
+	priv = ofa_rate_page_get_instance_private( self );
 
-	paimean = ofa_paimean_treeview_get_selected( priv->tview );
-	g_return_if_fail( paimean && OFO_IS_PAIMEAN( paimean ));
+	rate = ofa_rate_treeview_get_selected( priv->tview );
+	g_return_if_fail( rate && OFO_IS_RATE( rate ));
 
-	delete_with_confirm( self, paimean );
+	delete_with_confirm( self, rate );
 }
 
 static gboolean
-check_for_deletability( ofaPaimeanPage *self, ofoPaimean *paimean )
+check_for_deletability( ofaRatePage *self, ofoRate *rate )
 {
-	ofaPaimeanPagePrivate *priv;
-	gboolean is_paimean;
+	ofaRatePagePrivate *priv;
+	gboolean is_rate;
 
-	priv = ofa_paimean_page_get_instance_private( self );
+	priv = ofa_rate_page_get_instance_private( self );
 
-	is_paimean = paimean && OFO_IS_PAIMEAN( paimean );
+	is_rate = rate && OFO_IS_RATE( rate );
 
-	return( is_paimean && priv->is_writable && ofo_paimean_is_deletable( paimean ));
+	return( is_rate && priv->is_writable && ofo_rate_is_deletable( rate ));
 }
 
 static void
-delete_with_confirm( ofaPaimeanPage *self, ofoPaimean *paimean )
+delete_with_confirm( ofaRatePage *self, ofoRate *rate )
 {
 	gchar *msg;
 	gboolean delete_ok;
 
-	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' mean of paiement ?" ),
-			ofo_paimean_get_code( paimean ),
-			ofo_paimean_get_label( paimean ));
+	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' rate ?" ),
+			ofo_rate_get_mnemo( rate ),
+			ofo_rate_get_label( rate ));
 
 	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
 
 	g_free( msg );
 
 	if( delete_ok ){
-		ofo_paimean_delete( paimean );
+		ofo_rate_delete( rate );
 	}
 }

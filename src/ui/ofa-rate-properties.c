@@ -278,7 +278,7 @@ idialog_iface_init( myIDialogInterface *iface )
 static void
 idialog_init( myIDialog *instance )
 {
-	static const gchar *thisfn = "ofa_rate_properties_get_instance_private";
+	static const gchar *thisfn = "ofa_rate_properties_idialog_init";
 	ofaRatePropertiesPrivate *priv;
 	ofaHub *hub;
 	gint count, idx;

@@ -206,6 +206,8 @@ openbook_SOURCES = \
 	ofa-ope-template-page.h								\
 	ofa-paimean-page.c									\
 	ofa-paimean-page.h									\
+	ofa-paimean-properties.c							\
+	ofa-paimean-properties.h							\
 	ofa-paimean-store.c									\
 	ofa-paimean-store.h									\
 	ofa-paimean-treeview.c								\
