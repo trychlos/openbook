@@ -77,6 +77,7 @@ api_include_HEADERS = \
 	ofa-page.h											\
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
+	ofa-paimean-editable.h								\
 	ofa-periodicity.h									\
 	ofa-periodicity-bin.h								\
 	ofa-portfolio-collection.h							\

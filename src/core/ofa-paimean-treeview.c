@@ -431,6 +431,47 @@ ofoPaimean *paimean;
 	return( paimean );
 }
 
+/**
+ * ofa_paimean_treeview_set_selected:
+ * @view: this #ofaPaimeanTreeview instance.
+ * @code: [allow-none]: the identifier to be selected.
+ *
+ * Select @code identifier's row.
+ */
+void
+ofa_paimean_treeview_set_selected( ofaPaimeanTreeview *view, const gchar *code )
+{
+	static const gchar *thisfn = "ofa_paimean_treeview_set_selected";
+	ofaPaimeanTreeviewPrivate *priv;
+	GtkTreeModel *tmodel;
+	GtkTreeIter iter;
+	gchar *row_code;
+	gint cmp;
+
+	g_debug( "%s: view=%p", thisfn, ( void * ) view );
+
+	g_return_if_fail( view && OFA_IS_PAIMEAN_TREEVIEW( view ));
+
+	priv = ofa_paimean_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	tmodel = ofa_tvbin_get_tree_model( OFA_TVBIN( view ));
+	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
+		while( TRUE ){
+			gtk_tree_model_get( tmodel, &iter, PAM_COL_CODE, &row_code, -1 );
+			cmp = my_collate( row_code, code );
+			g_free( row_code );
+			if( cmp == 0 ){
+				ofa_tvbin_select_row( OFA_TVBIN( view ), &iter );
+			}
+			if( !gtk_tree_model_iter_next( tmodel, &iter )){
+				break;
+			}
+		}
+	}
+}
+
 static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {

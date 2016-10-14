@@ -152,8 +152,13 @@ libofa_core_la_SOURCES = \
 	ofa-ope-template-treeview.h							\
 	ofa-open-prefs-bin.c								\
 	ofa-open-prefs-bin.h								\
+	ofa-paimean-editable.c								\
+	ofa-paimean-frame-bin.c								\
+	ofa-paimean-frame-bin.h								\
 	ofa-paimean-properties.c							\
 	ofa-paimean-properties.h							\
+	ofa-paimean-select.c								\
+	ofa-paimean-select.h								\
 	ofa-paimean-store.c									\
 	ofa-paimean-store.h									\
 	ofa-paimean-treeview.c								\

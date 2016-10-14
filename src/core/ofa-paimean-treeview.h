@@ -83,6 +83,9 @@ void                ofa_paimean_treeview_set_hub         ( ofaPaimeanTreeview *v
 
 ofoPaimean         *ofa_paimean_treeview_get_selected    ( ofaPaimeanTreeview *view );
 
+void                ofa_paimean_treeview_set_selected    ( ofaPaimeanTreeview *view,
+																const gchar *code );
+
 G_END_DECLS
 
 #endif /* __OFA_PAIMEAN_TREEVIEW_H__ */

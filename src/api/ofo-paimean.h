@@ -60,6 +60,10 @@ typedef struct {
 }
 	ofoPaimeanClass;
 
+/* data max length */
+#define PAM_NUMBER_WIDTH                10
+#define PAM_NUMBER_MAX_LENGTH           64
+
 GType           ofo_paimean_get_type          ( void ) G_GNUC_CONST;
 
 GList          *ofo_paimean_get_dataset       ( ofaHub *hub );

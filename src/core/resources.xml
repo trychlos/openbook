@@ -15,6 +15,7 @@
     <file>ofa-ope-template-select.ui</file>
     <file>ofa-open-prefs-bin.ui</file>
     <file>ofa-paimean-properties.ui</file>
+    <file>ofa-paimean-select.ui</file>
     <file>ofa-preferences.ui</file>
     <file>ofa-render-page.ui</file>
     <file>ofa-stream-format-bin.ui</file>
@@ -24,6 +25,7 @@
     <file>notes.png</file>
     <file>ofa-account-editable-icon-16.png</file>
     <file>ofa-guided-input-bin-green-checkmark.png</file>
+    <file>ofa-paimean-editable-icon-16.png</file>
     <file>ofa-ope-template-editable-icon-16.png</file>
   </gresource>
 </gresources>

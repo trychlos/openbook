@@ -13,6 +13,7 @@ src/core/ofa-ope-template-properties.ui
 src/core/ofa-ope-template-select.ui
 src/core/ofa-open-prefs-bin.ui
 src/core/ofa-paimean-properties.ui
+src/core/ofa-paimean-select.ui
 src/core/ofa-preferences.ui
 src/core/ofa-render-page.ui
 src/core/ofa-stream-format-bin.ui
