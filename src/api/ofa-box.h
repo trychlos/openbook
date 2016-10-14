@@ -131,6 +131,8 @@ gchar           *ofa_box_csv_get_line_ex      ( const GList *fields_list,
 													ofaStreamFormat *format,
 													CSVExportFunc cb, void *user_data );
 
+gboolean         ofa_box_is_set               ( const GList *fields_list, gint id );
+
 gconstpointer    ofa_box_get_value            ( const GList *fields_list, gint id );
 
 #define          ofa_box_get_amount(F,I)      (GPOINTER_TO_AMOUNT(ofa_box_get_value((F),(I))))

@@ -162,6 +162,7 @@ const gchar    *ofo_ope_template_get_ledger               ( const ofoOpeTemplate
 gboolean        ofo_ope_template_get_ledger_locked        ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_ref                  ( const ofoOpeTemplate *model );
 gboolean        ofo_ope_template_get_ref_locked           ( const ofoOpeTemplate *model );
+gint            ofo_ope_template_get_pam_row              ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_notes                ( const ofoOpeTemplate *model );
 const gchar    *ofo_ope_template_get_upd_user             ( const ofoOpeTemplate *model );
 const GTimeVal *ofo_ope_template_get_upd_stamp            ( const ofoOpeTemplate *model );
@@ -175,6 +176,7 @@ void            ofo_ope_template_set_ledger               ( ofoOpeTemplate *mode
 void            ofo_ope_template_set_ledger_locked        ( ofoOpeTemplate *model, gboolean ledger_locked );
 void            ofo_ope_template_set_ref                  ( ofoOpeTemplate *model, const gchar *ref );
 void            ofo_ope_template_set_ref_locked           ( ofoOpeTemplate *model, gboolean ref_locked );
+void            ofo_ope_template_set_pam_row              ( ofoOpeTemplate *model, gint row );
 void            ofo_ope_template_set_notes                ( ofoOpeTemplate *model, const gchar *notes );
 
 void            ofo_ope_template_add_detail               ( ofoOpeTemplate *model,

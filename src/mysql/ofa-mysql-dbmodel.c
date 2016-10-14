@@ -727,6 +727,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* n° 12 */
 	/* locked indicators are remediated in v27 */
 	/* Identifiers and labels are resized in v28 */
+	/* add row of mean of paiement in v33 */
 	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS OFA_T_OPE_TEMPLATES ("
 			"	OTE_MNEMO      VARCHAR(6) BINARY NOT NULL UNIQUE     COMMENT 'Operation template mnemonic',"
@@ -1913,6 +1914,13 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 7 - alter ope-templates */
+	if( !exec_query( self,
+			"ALTER TABLE OFA_T_OPE_TEMPLATES "
+			"	ADD COLUMN OTE_PAM_ROW  INTEGER                      COMMENT 'Row modified by mean of paiement'" )){
+		return( FALSE );
+	}
+
 	/* make sure that we end up at 100% */
 	priv->current = priv->total;
 	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
@@ -1927,5 +1935,5 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v33( ofaMysqlDBModel *self )
 {
-	return( 6 );
+	return( 7 );
 }

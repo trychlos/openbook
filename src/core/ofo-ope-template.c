@@ -60,6 +60,7 @@ enum {
 	OTE_LED_LOCKED,
 	OTE_REF,
 	OTE_REF_LOCKED,
+	OTE_PAM_ROW,
 	OTE_NOTES,
 	OTE_UPD_USER,
 	OTE_UPD_STAMP,
@@ -72,7 +73,7 @@ enum {
 	OTE_DET_DEBIT,
 	OTE_DET_DEBIT_LOCKED,
 	OTE_DET_CREDIT,
-	OTE_DET_CREDIT_LOCKED
+	OTE_DET_CREDIT_LOCKED,
 };
 
 /*
@@ -117,6 +118,10 @@ static const ofsBoxDef st_boxed_defs[] = {
 				FALSE },
 		{ OFA_BOX_CSV( OTE_UPD_STAMP ),
 				OFA_TYPE_TIMESTAMP,
+				FALSE,
+				TRUE },
+		{ OFA_BOX_CSV( OTE_PAM_ROW ),
+				OFA_TYPE_INTEGER,
 				FALSE,
 				TRUE },
 		{ 0 }
@@ -530,6 +535,18 @@ ofo_ope_template_get_ref_locked( const ofoOpeTemplate *model )
 }
 
 /**
+ * ofo_ope_template_get_pam_row:
+ *
+ * Returns: the row index, starting with zero, of the account which is
+ * driven by the mean of paiement.
+ */
+gint
+ofo_ope_template_get_pam_row( const ofoOpeTemplate *model )
+{
+	ofo_base_getter( OPE_TEMPLATE, model, int, -1, OTE_PAM_ROW );
+}
+
+/**
  * ofo_ope_template_get_notes:
  */
 const gchar *
@@ -674,6 +691,15 @@ void
 ofo_ope_template_set_ref_locked( ofoOpeTemplate *model, gboolean ref_locked )
 {
 	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_REF_LOCKED, ref_locked ? "Y":"N" );
+}
+
+/**
+ * ofo_ope_template_set_pam_row:
+ */
+void
+ofo_ope_template_set_pam_row( ofoOpeTemplate *model, gint row )
+{
+	ofo_base_setter( OPE_TEMPLATE, model, int, OTE_PAM_ROW, row );
 }
 
 /**
@@ -1064,6 +1090,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	gchar *label, *notes, *ref, *userid;
 	gchar *stamp_str;
 	GTimeVal stamp;
+	gint row;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
@@ -1076,7 +1103,7 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 
 	g_string_append_printf( query,
 			"	(OTE_MNEMO,OTE_LABEL,OTE_LED_MNEMO,OTE_LED_LOCKED,"
-			"	OTE_REF,OTE_REF_LOCKED,OTE_NOTES,"
+			"	OTE_REF,OTE_REF_LOCKED,OTE_PAM_ROW,OTE_NOTES,"
 			"	OTE_UPD_USER, OTE_UPD_STAMP) VALUES ('%s','%s','%s','%s',",
 			ofo_ope_template_get_mnemo( model ),
 			label,
@@ -1090,6 +1117,13 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	}
 
 	g_string_append_printf( query, "'%s',", ofo_ope_template_get_ref_locked( model ) ? "Y":"N" );
+
+	row = ofo_ope_template_get_pam_row( model );
+	if( row >= 0 ){
+		g_string_append_printf( query, "%d,", row );
+	} else {
+		query = g_string_append( query, "NULL," );
+	}
 
 	if( my_strlen( notes )){
 		g_string_append_printf( query, "'%s',", notes );
@@ -1276,6 +1310,7 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 	const gchar *new_mnemo;
 	gchar *stamp_str;
 	GTimeVal stamp;
+	gint row;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_ope_template_get_label( model ));
@@ -1303,10 +1338,11 @@ model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gc
 
 	g_string_append_printf( query, "OTE_REF_LOCKED='%s',", ofo_ope_template_get_ref_locked( model ) ? "Y":"N" );
 
-	if( my_strlen( notes )){
-		g_string_append_printf( query, "OTE_NOTES='%s',", notes );
+	row = ofo_ope_template_get_pam_row( model );
+	if( row >= 0 ){
+		g_string_append_printf( query, "OTE_PAM_ROW=%d,", row );
 	} else {
-		query = g_string_append( query, "OTE_NOTES=NULL," );
+		query = g_string_append( query, "OTE_PAM_ROW=NULL," );
 	}
 
 	g_string_append_printf( query,

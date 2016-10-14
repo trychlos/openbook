@@ -73,7 +73,7 @@ typedef struct {
  * @C: the class radical (e.g. 'ACCOUNT')
  * @V: the variable name (e.g. 'account')
  * @T: the type of required data (e.g. 'amount')
- * @R: the returned data in case of an error (e.g. '0')
+ * @R: the returned data if %NULL or an error occured (e.g. '0')
  * @I: the identifier of the required field (e.g. 'ACC_DEB_AMOUNT')
  *
  * A convenience macro to get the value of an identified field from an
@@ -82,6 +82,7 @@ typedef struct {
 #define ofo_base_getter(C,V,T,R,I)			\
 		g_return_val_if_fail((V) && OFO_IS_ ## C(V),(R)); \
 		g_return_val_if_fail( !OFO_BASE(V)->prot->dispose_has_run, (R)); \
+		if( !ofa_box_is_set( OFO_BASE(V)->prot->fields,(I))) return(R); \
 		return(ofa_box_get_ ## T(OFO_BASE(V)->prot->fields,(I)))
 
 /**

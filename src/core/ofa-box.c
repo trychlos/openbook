@@ -861,6 +861,33 @@ set_decimal_point( gchar *str, gchar decimal_sep )
 }
 
 /**
+ * ofa_box_is_set:
+ * @fields_list: the list of elementary datas of the record
+ * @id: the identifier of the searched for elementary data
+ *
+ * Returns: %TRUE if the attached value is set.
+ */
+gboolean
+ofa_box_is_set( const GList *fields_list, gint id )
+{
+	const GList *it;
+	ofsBoxData *box_data;
+
+	for( it=fields_list ; it ; it=it->next ){
+		box_data = ( ofsBoxData * ) it->data;
+		g_return_val_if_fail( box_data, FALSE );
+		g_return_val_if_fail( box_data->def, FALSE );
+		g_return_val_if_fail( box_data->def->id, FALSE );
+
+		if( box_data->def->id == id ){
+			return( !box_data->is_null );
+		}
+	}
+
+	return( FALSE );
+}
+
+/**
  * ofa_box_get_value:
  * @fields_list: the list of elementary datas of the record
  * @id: the identifier of the searched for elementary data

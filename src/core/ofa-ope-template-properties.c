@@ -52,6 +52,7 @@
  * each line of the grid is :
  * - button 'Add' or line number
  * - comment
+ * - pam target
  * - account entry
  * - account locked
  * - label entry
@@ -103,6 +104,7 @@ typedef struct {
  */
 enum {
 	DET_COL_COMMENT = 0,
+	DET_COL_PAM,
 	DET_COL_ACCOUNT,
 	DET_COL_ACCOUNT_LOCKED,
 	DET_COL_LABEL,
@@ -140,6 +142,7 @@ static void      on_label_changed( GtkEntry *entry, ofaOpeTemplateProperties *se
 static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaOpeTemplateProperties *self );
 static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
 static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaOpeTemplateProperties *self );
+static void      on_pam_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self );
 static void      on_account_changed( GtkEntry *entry, ofaOpeTemplateProperties *self );
 static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self );
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
@@ -591,6 +594,16 @@ setup_detail_widgets( ofaOpeTemplateProperties *self, guint row )
 			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
 			GTK_WIDGET( entry ), 1+DET_COL_COMMENT, row, 1, 1 );
 
+	/* mean of paiement target */
+	toggle = gtk_check_button_new();
+	my_utils_widget_set_margin_left( toggle, DETAIL_SPACE );
+	gtk_widget_set_sensitive( toggle, priv->is_writable );
+	gtk_widget_set_halign( toggle, GTK_ALIGN_CENTER );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_pam_toggled ), self );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
+			toggle, 1+DET_COL_PAM, row, 1, 1 );
+
 	/* account identifier */
 	entry = GTK_ENTRY( gtk_entry_new());
 	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
@@ -670,12 +683,17 @@ set_detail_values( ofaOpeTemplateProperties *self, guint row )
 	GtkEntry *entry;
 	GtkToggleButton *toggle;
 	const gchar *str;
+	gint pam_row;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_COMMENT, row ));
 	str = ofo_ope_template_get_detail_comment( priv->ope_template, row-1 );
 	gtk_entry_set_text( entry, str ? str : "" );
+
+	pam_row = ofo_ope_template_get_pam_row( priv->ope_template );
+	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, row ));
+	gtk_toggle_button_set_active( toggle, 1+pam_row == row );
 
 	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT, row ));
 	str = ofo_ope_template_get_detail_account( priv->ope_template, row-1 );
@@ -769,6 +787,30 @@ on_ref_locked_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
 	/* doesn't change the validable status of the dialog */
 }
 
+/*
+ * at most one row may be the target of a mean of paiement
+ */
+static void
+on_pam_toggled( GtkToggleButton *btn, ofaOpeTemplateProperties *self )
+{
+	ofaOpeTemplatePropertiesPrivate *priv;
+	gint count, i;
+	GtkWidget *row_btn;
+
+	priv = ofa_ope_template_properties_get_instance_private( self );
+
+	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
+
+	if( gtk_toggle_button_get_active( btn )){
+		for( i=1 ; i<=count ; ++i ){
+			row_btn = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
+			if( row_btn != GTK_WIDGET( btn )){
+				gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( row_btn ), FALSE );
+			}
+		}
+	}
+}
+
 static void
 on_account_changed( GtkEntry *entry, ofaOpeTemplateProperties *self )
 {
@@ -824,6 +866,8 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	gboolean ok;
 	gchar *msgerr;
 	ofaHub *hub;
+	guint i, count, pam_count;
+	GtkWidget *toggle;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
@@ -831,12 +875,31 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 
 	ok = ofo_ope_template_is_valid_data( priv->mnemo, priv->label, priv->ledger, &msgerr );
+
 	if( ok ){
 		exists = ofo_ope_template_get_by_mnemo( hub, priv->mnemo );
 		ok = !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ope_template_get_mnemo( priv->ope_template )));
 		if( !ok ){
 			msgerr = g_strdup_printf( _( "Operation template '%s' already exists" ), priv->mnemo );
+		}
+	}
+
+	/* make sure that we have at most one mean of paiement target */
+	if( ok && priv->details_grid ){
+		count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
+		pam_count = 0;
+		for( i=1 ; i<=count ; ++i ){
+			get_detail_list( self, i );
+			/* get target of mean of paiment */
+			toggle = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
+			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( toggle ))){
+				pam_count += 1;
+			}
+		}
+		if( pam_count > 1 ){
+			msgerr = g_strdup( "PROGRAM ERROR: more than one mean of paiement target" );
+			ok = FALSE;
 		}
 	}
 
@@ -852,8 +915,10 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 	ofaOpeTemplatePropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	guint i, count;
+	gint pam_row;
 	gboolean ok;
 	ofaHub *hub;
+	GtkWidget *toggle;
 
 	priv = ofa_ope_template_properties_get_instance_private( self );
 
@@ -875,9 +940,16 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 
 	ofo_ope_template_free_detail_all( priv->ope_template );
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
+	pam_row = -1;
 	for( i=1 ; i<=count ; ++i ){
 		get_detail_list( self, i );
+		/* get target of mean of paiment */
+		toggle = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
+		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( toggle ))){
+			pam_row = i-1;
+		}
 	}
+	ofo_ope_template_set_pam_row( priv->ope_template, pam_row );
 
 	if( !prev_mnemo ){
 		ok = ofo_ope_template_insert( priv->ope_template, hub );

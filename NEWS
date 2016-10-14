@@ -58,6 +58,7 @@
    - DossierSettings: update main window title when remediated (todo #1165).
    - myIWindow: do nothing is destroy is not allowed.
    - ofoAccount: now considers the beginning of the exercice when archiving (todo #1226).
+   - ofoBase: ofo_base_getter() returns default value if box is unset.
    - ofaLedgerPage: fix view entries.
    - ofaOpeTemplateSelect: fix initial selection (todo #1229).
    - ofoRecurrentModel: insert/update the DBMS with 'enabled' property.
