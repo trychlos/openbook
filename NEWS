@@ -79,6 +79,7 @@
    - ofoEntry: review ofo_entry_get_dataset_xxx() methods (todo #1225).
    - ofaPaimeanPage: new class (todo #714).
    - ofaPaimeanProperties: new class (todo #714).
+   - ofaPaimeanSelect: new class (todo #714).
    - ofaPaimeanStore: new class (todo #714).
    - ofaPaimeanTreeview: new class (todo #714).
    - ofoPaimean: new class (todo #714).
