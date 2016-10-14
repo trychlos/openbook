@@ -42,9 +42,10 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-paimean.h"
 
+#include "core/ofa-paimean-properties.h"
+#include "core/ofa-paimean-treeview.h"
+
 #include "ui/ofa-paimean-page.h"
-#include "ui/ofa-paimean-properties.h"
-#include "ui/ofa-paimean-treeview.h"
 
 /* private instance data
  */
@@ -52,9 +53,9 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub          *hub;
-	gboolean         is_writable;
-	gchar           *settings_prefix;
+	ofaHub             *hub;
+	gboolean            is_writable;
+	gchar              *settings_prefix;
 
 	/* UI
 	 */
@@ -62,9 +63,9 @@ typedef struct {
 
 	/* actions
 	 */
-	GSimpleAction   *new_action;
-	GSimpleAction   *update_action;
-	GSimpleAction   *delete_action;
+	GSimpleAction      *new_action;
+	GSimpleAction      *update_action;
+	GSimpleAction      *delete_action;
 }
 	ofaPaimeanPagePrivate;
 

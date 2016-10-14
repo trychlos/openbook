@@ -5,8 +5,6 @@ src/core/ofa-admin-credentials-bin.ui
 src/core/ofa-date-filter-hv-bin.ui
 src/core/ofa-dbms-root-bin.ui
 src/core/ofa-dossier-delete-prefs-bin.ui
-src/core/ofa-stream-format-bin.ui
-src/core/ofa-stream-format-disp.ui
 src/core/ofa-guided-input.ui
 src/core/ofa-guided-input-bin.ui
 src/core/ofa-idbmodel.ui
@@ -14,8 +12,11 @@ src/core/ofa-ope-template-help.ui
 src/core/ofa-ope-template-properties.ui
 src/core/ofa-ope-template-select.ui
 src/core/ofa-open-prefs-bin.ui
+src/core/ofa-paimean-properties.ui
 src/core/ofa-preferences.ui
 src/core/ofa-render-page.ui
+src/core/ofa-stream-format-bin.ui
+src/core/ofa-stream-format-disp.ui
 src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui
 src/mysql/ofa-mysql-prefs-bin.ui
@@ -60,7 +61,6 @@ src/ui/ofa-ledger-properties.ui
 src/ui/ofa-ledger-summary-bin.ui
 src/ui/ofa-misc-audit-ui.ui
 src/ui/ofa-misc-collector-ui.ui
-src/ui/ofa-paimean-properties.ui
 src/ui/ofa-period-close.ui
 src/ui/ofa-plugin-manager.ui
 src/ui/ofa-rate-properties.ui

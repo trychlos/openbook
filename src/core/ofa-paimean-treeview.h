@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_paimean_treeview
  * @short_description: #ofaPaimeanTreeview class definition.
- * @include: ui/ofa-paimean-treeview.h
+ * @include: core/ofa-paimean-treeview.h
  *
  * Manage a treeview with the list of the means of paiement.
  *

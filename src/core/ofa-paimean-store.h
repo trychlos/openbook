@@ -29,7 +29,7 @@
  * SECTION: paimean_store
  * @title: ofaPaimeanStore
  * @short_description: The PaimeanStore class definition
- * @include: ui/ofa-paimean-store.h
+ * @include: core/ofa-paimean-store.h
  *
  * The #ofaPaimeanStore derived from #ofaListStore, which itself
  * derives from #GtkListStore. It is populated with all the paimeans
@@ -76,7 +76,6 @@ typedef struct {
  *                                                         -------  -----------
  * @PAM_COL_CODE       : mnemonic identifier               String       Yes
  * @PAM_COL_LABEL      : label                             String       Yes
- * @PAM_COL_MUST_ALONE : whether must be alone             String       Yes
  * @PAM_COL_ACCOUNT    : account                           String       Yes
  * @PAM_COL_NOTES      : notes                             String       Yes
  * @PAM_COL_NOTES_PNG  : notes indicator                   Pixbuf       Yes
@@ -87,7 +86,6 @@ typedef struct {
 enum {
 	PAM_COL_CODE = 0,
 	PAM_COL_LABEL,
-	PAM_COL_MUST_ALONE,
 	PAM_COL_ACCOUNT,
 	PAM_COL_NOTES,
 	PAM_COL_NOTES_PNG,

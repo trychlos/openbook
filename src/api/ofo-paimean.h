@@ -71,7 +71,6 @@ ofoPaimean     *ofo_paimean_new               ( void );
 
 const gchar    *ofo_paimean_get_code          ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_label         ( const ofoPaimean *paimean );
-gboolean        ofo_paimean_get_must_alone    ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_account       ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_notes         ( const ofoPaimean *paimean );
 const gchar    *ofo_paimean_get_upd_user      ( const ofoPaimean *paimean );
@@ -82,7 +81,6 @@ gboolean        ofo_paimean_is_valid_data     ( const gchar *code, gchar **msger
 
 void            ofo_paimean_set_code          ( ofoPaimean *paimean, const gchar *code );
 void            ofo_paimean_set_label         ( ofoPaimean *paimean, const gchar *label );
-void            ofo_paimean_set_must_alone    ( ofoPaimean *paimean, gboolean alone );
 void            ofo_paimean_set_account       ( ofoPaimean *paimean, const gchar *account );
 void            ofo_paimean_set_notes         ( ofoPaimean *paimean, const gchar *notes );
 

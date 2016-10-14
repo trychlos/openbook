@@ -52,7 +52,6 @@
 enum {
 	PAM_CODE = 1,
 	PAM_LABEL,
-	PAM_MUST_ALONE,
 	PAM_ACCOUNT,
 	PAM_NOTES,
 	PAM_UPD_USER,
@@ -72,10 +71,6 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,					/* importable */
 				FALSE },				/* export zero as empty */
 		{ OFA_BOX_CSV( PAM_LABEL ),
-				OFA_TYPE_STRING,
-				TRUE,
-				FALSE },
-		{ OFA_BOX_CSV( PAM_MUST_ALONE ),
 				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
@@ -104,32 +99,32 @@ typedef struct {
 	ofoPaimeanPrivate;
 
 static ofoPaimean *paimean_find_by_code( GList *set, const gchar *code );
-static void         paimean_set_upd_user( ofoPaimean *paimean, const gchar *user );
-static void         paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *stamp );
-static gboolean     paimean_do_insert( ofoPaimean *paimean, const ofaIDBConnect *connect );
-static gboolean     paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect );
-static gboolean     paimean_do_update( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect );
-static gboolean     paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect );
-static gboolean     paimean_do_delete( ofoPaimean *paimean, const ofaIDBConnect *connect );
-static gint         paimean_cmp_by_code( const ofoPaimean *a, const gchar *code );
-static void         icollectionable_iface_init( myICollectionableInterface *iface );
-static guint        icollectionable_get_interface_version( void );
-static GList       *icollectionable_load_collection( void *user_data );
-static void         iexportable_iface_init( ofaIExportableInterface *iface );
-static guint        iexportable_get_interface_version( void );
-static gchar       *iexportable_get_label( const ofaIExportable *instance );
-static gboolean     iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
-static void         iimportable_iface_init( ofaIImportableInterface *iface );
-static guint        iimportable_get_interface_version( void );
-static gchar       *iimportable_get_label( const ofaIImportable *instance );
-static guint        iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
-static GList       *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static void        paimean_set_upd_user( ofoPaimean *paimean, const gchar *user );
+static void        paimean_set_upd_stamp( ofoPaimean *paimean, const GTimeVal *stamp );
+static gboolean    paimean_do_insert( ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gboolean    paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gboolean    paimean_do_update( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect );
+static gboolean    paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBConnect *connect );
+static gboolean    paimean_do_delete( ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gint        paimean_cmp_by_code( const ofoPaimean *a, const gchar *code );
+static void        icollectionable_iface_init( myICollectionableInterface *iface );
+static guint       icollectionable_get_interface_version( void );
+static GList      *icollectionable_load_collection( void *user_data );
+static void        iexportable_iface_init( ofaIExportableInterface *iface );
+static guint       iexportable_get_interface_version( void );
+static gchar      *iexportable_get_label( const ofaIExportable *instance );
+static gboolean    iexportable_export( ofaIExportable *exportable, ofaStreamFormat *settings, ofaHub *hub );
+static void        iimportable_iface_init( ofaIImportableInterface *iface );
+static guint       iimportable_get_interface_version( void );
+static gchar      *iimportable_get_label( const ofaIImportable *instance );
+static guint       iimportable_import( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
+static GList      *iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSList *lines );
 static ofoPaimean *iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, guint numline, GSList *fields );
-static void         iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
-static gboolean     paimean_get_exists( const ofoPaimean *paimean, const ofaIDBConnect *connect );
-static gboolean     paimean_drop_content( const ofaIDBConnect *connect );
-static void         isignal_hub_iface_init( ofaISignalHubInterface *iface );
-static void         isignal_hub_connect( ofaHub *hub );
+static void        iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GList *dataset );
+static gboolean    paimean_get_exists( const ofoPaimean *paimean, const ofaIDBConnect *connect );
+static gboolean    paimean_drop_content( const ofaIDBConnect *connect );
+static void        isignal_hub_iface_init( ofaISignalHubInterface *iface );
+static void        isignal_hub_connect( ofaHub *hub );
 
 G_DEFINE_TYPE_EXTENDED( ofoPaimean, ofo_paimean, OFO_TYPE_BASE, 0,
 		G_ADD_PRIVATE( ofoPaimean )
@@ -275,22 +270,6 @@ ofo_paimean_get_label( const ofoPaimean *paimean )
 }
 
 /**
- * ofo_paimean_get_must_alone:
- */
-gboolean
-ofo_paimean_get_must_alone( const ofoPaimean *paimean )
-{
-	const gchar *cstr;
-
-	g_return_val_if_fail( paimean && OFO_IS_PAIMEAN( paimean ), FALSE );
-	g_return_val_if_fail( !OFO_BASE( paimean )->prot->dispose_has_run, FALSE );
-
-	cstr = ofa_box_get_string( OFO_BASE( paimean )->prot->fields, PAM_MUST_ALONE );
-
-	return( !my_collate( cstr, "Y" ));
-}
-
-/**
  * ofo_paimean_get_account:
  */
 const gchar *
@@ -380,15 +359,6 @@ void
 ofo_paimean_set_label( ofoPaimean *paimean, const gchar *label )
 {
 	ofo_base_setter( PAIMEAN, paimean, string, PAM_LABEL, label );
-}
-
-/**
- * ofo_paimean_set_must_alone:
- */
-void
-ofo_paimean_set_must_alone( ofoPaimean *paimean, gboolean alone )
-{
-	ofo_base_setter( PAIMEAN, paimean, string, PAM_MUST_ALONE, alone ? "Y":"N" );
 }
 
 /**
@@ -486,12 +456,11 @@ paimean_insert_main( ofoPaimean *paimean, const ofaIDBConnect *connect )
 	query = g_string_new( "INSERT INTO OFA_T_PAIMEANS" );
 
 	g_string_append_printf( query,
-			"	(PAM_CODE,PAM_LABEL,PAM_MUST_ALONE,PAM_ACCOUNT,"
+			"	(PAM_CODE,PAM_LABEL,PAM_ACCOUNT,"
 			"	PAM_NOTES,PAM_UPD_USER, PAM_UPD_STAMP)"
-			"	VALUES ('%s','%s','%s','%s',",
+			"	VALUES ('%s','%s','%s',",
 			ofo_paimean_get_code( paimean ),
 			label,
-			ofo_paimean_get_must_alone( paimean ) ? "Y":"N",
 			ofo_paimean_get_account( paimean ));
 
 	if( my_strlen( notes )){
@@ -577,7 +546,6 @@ paimean_update_main( ofoPaimean *paimean, const gchar *prev_code, const ofaIDBCo
 
 	g_string_append_printf( query, "PAM_CODE='%s',", ofo_paimean_get_code( paimean ));
 	g_string_append_printf( query, "PAM_LABEL='%s',", label );
-	g_string_append_printf( query, "PAM_MUST_ALONE='%s',", ofo_paimean_get_must_alone( paimean ) ? "Y":"N" );
 	g_string_append_printf( query, "PAM_ACCOUNT='%s',", ofo_paimean_get_account( paimean ));
 
 	if( my_strlen( notes )){
@@ -801,7 +769,6 @@ iimportable_get_label( const ofaIImportable *instance )
  * Fields must be:
  * - paimean code
  * - label
- * - must_alone
  * - account (opt)
  * - notes (opt)
  *
@@ -913,11 +880,6 @@ iimportable_import_parse_main( ofaIImporter *importer, ofsImporterParms *parms, 
 	if( my_strlen( cstr )){
 		ofo_paimean_set_label( paimean, cstr );
 	}
-
-	/* whether must be alone */
-	itf = itf ? itf->next : NULL;
-	cstr = itf ? ( const gchar * ) itf->data : NULL;
-	ofo_paimean_set_must_alone( paimean, my_utils_boolean_from_str( cstr ));
 
 	/* paimean account */
 	itf = itf ? itf->next : NULL;

@@ -33,7 +33,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofo-paimean.h"
 
-#include "ofa-paimean-store.h"
+#include "core/ofa-paimean-store.h"
 
 /* private instance data
  */
@@ -48,7 +48,7 @@ typedef struct {
 	ofaPaimeanStorePrivate;
 
 static GType st_col_types[PAM_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* code, label, alone */
+		G_TYPE_STRING, G_TYPE_STRING,					/* code, label */
 		G_TYPE_STRING, G_TYPE_STRING,					/* account, notes */
 		0, G_TYPE_STRING, G_TYPE_STRING,				/* notes_png, upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoPaimean itself */
@@ -264,7 +264,6 @@ set_row_by_iter( ofaPaimeanStore *self, const ofoPaimean *paimean, GtkTreeIter *
 			iter,
 			PAM_COL_CODE,       ofo_paimean_get_code( paimean ),
 			PAM_COL_LABEL,      label ? label : "",
-			PAM_COL_MUST_ALONE, ofo_paimean_get_must_alone( paimean ) ? _( "Yes" ):_( "No" ),
 			PAM_COL_ACCOUNT,    account ? account : "",
 			PAM_COL_NOTES,      notes,
 			PAM_COL_NOTES_PNG,  notes_png,

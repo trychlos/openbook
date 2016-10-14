@@ -35,8 +35,8 @@
 #include "api/ofa-itvsortable.h"
 #include "api/ofo-paimean.h"
 
-#include "ui/ofa-paimean-store.h"
-#include "ui/ofa-paimean-treeview.h"
+#include "core/ofa-paimean-store.h"
+#include "core/ofa-paimean-treeview.h"
 
 /* private instance data
  */
@@ -303,7 +303,6 @@ setup_columns( ofaPaimeanTreeview *self )
 
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_CODE,       _( "Code" ),        NULL );
 	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), PAM_COL_LABEL,      _( "Label" ),       NULL );
-	ofa_tvbin_add_column_text_c ( OFA_TVBIN( self ), PAM_COL_MUST_ALONE, _( "Alone" ),       NULL );
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PAM_COL_ACCOUNT,    _( "Account" ),     NULL );
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PAM_COL_NOTES,      _( "Notes" ),       NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), PAM_COL_NOTES_PNG,     "",          _( "Notes indicator" ));
@@ -437,14 +436,13 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_paimean_treeview_v_sort";
 	gint cmp;
-	gchar *codea, *labela, *alonea, *accounta, *notesa, *updusera, *updstampa;
-	gchar *codeb, *labelb, *aloneb, *accountb, *notesb, *upduserb, *updstampb;
+	gchar *codea, *labela, *accounta, *notesa, *updusera, *updstampa;
+	gchar *codeb, *labelb, *accountb, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
 
 	gtk_tree_model_get( tmodel, a,
 			PAM_COL_CODE,       &codea,
 			PAM_COL_LABEL,      &labela,
-			PAM_COL_MUST_ALONE, &alonea,
 			PAM_COL_ACCOUNT,    &accounta,
 			PAM_COL_NOTES,      &notesa,
 			PAM_COL_NOTES_PNG,  &pnga,
@@ -455,7 +453,6 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	gtk_tree_model_get( tmodel, b,
 			PAM_COL_CODE,       &codeb,
 			PAM_COL_LABEL,      &labelb,
-			PAM_COL_MUST_ALONE, &aloneb,
 			PAM_COL_ACCOUNT,    &accountb,
 			PAM_COL_NOTES,      &notesb,
 			PAM_COL_NOTES_PNG,  &pngb,
@@ -471,9 +468,6 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			break;
 		case PAM_COL_LABEL:
 			cmp = my_collate( labela, labelb );
-			break;
-		case PAM_COL_MUST_ALONE:
-			cmp = my_collate( alonea, aloneb );
 			break;
 		case PAM_COL_ACCOUNT:
 			cmp = my_collate( accounta, accountb );
@@ -497,7 +491,6 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	g_free( codea );
 	g_free( labela );
-	g_free( alonea );
 	g_free( accounta );
 	g_free( notesa );
 	g_free( updusera );
@@ -506,7 +499,6 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	g_free( codeb );
 	g_free( labelb );
-	g_free( aloneb );
 	g_free( accountb );
 	g_free( notesb );
 	g_free( upduserb );

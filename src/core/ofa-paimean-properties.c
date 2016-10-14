@@ -45,7 +45,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-paimean.h"
 
-#include "ui/ofa-paimean-properties.h"
+#include "core/ofa-paimean-properties.h"
 
 /* private instance data
  */
@@ -67,7 +67,6 @@ typedef struct {
 	 */
 	GtkWidget     *code_entry;
 	GtkWidget     *label_entry;
-	GtkWidget     *alone_btn;
 	GtkWidget     *account_entry;
 	GtkWidget     *account_label;
 	GtkWidget     *ok_btn;
@@ -77,7 +76,7 @@ typedef struct {
 
 static const gchar *st_style_error      = "labelerror";
 static const gchar *st_style_warning    = "labelwarning";
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-paimean-properties.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-paimean-properties.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
@@ -88,7 +87,6 @@ static void      init_properties( ofaPaimeanProperties *self );
 static void      set_properties( ofaPaimeanProperties *self );
 static void      on_code_changed( GtkEntry *entry, ofaPaimeanProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaPaimeanProperties *self );
-static void      on_alone_toggled( GtkToggleButton *toggled, ofaPaimeanProperties *self );
 static void      on_account_changed( GtkEntry *entry, ofaPaimeanProperties *self );
 static void      check_for_enable_dlg( ofaPaimeanProperties *self );
 static gboolean  is_dialog_validable( ofaPaimeanProperties *self );
@@ -311,7 +309,7 @@ static void
 init_properties( ofaPaimeanProperties *self )
 {
 	ofaPaimeanPropertiesPrivate *priv;
-	GtkWidget *prompt, *entry, *label, *button;
+	GtkWidget *prompt, *entry, *label;
 
 	priv = ofa_paimean_properties_get_instance_private( self );
 
@@ -332,12 +330,6 @@ init_properties( ofaPaimeanProperties *self )
 	gtk_label_set_mnemonic_widget( GTK_LABEL( prompt ), entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
 	priv->label_entry = entry;
-
-	/* must be alone */
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-alone-btn" );
-	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_alone_toggled ), self );
-	priv->alone_btn = button;
 
 	/* account */
 	prompt = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-account-prompt" );
@@ -373,10 +365,6 @@ set_properties( ofaPaimeanProperties *self )
 		gtk_entry_set_text( GTK_ENTRY( priv->label_entry ), cstr );
 	}
 
-	/* must be alone */
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->alone_btn ), ofo_paimean_get_must_alone( priv->paimean ));
-
 	/* account */
 	cstr = ofo_paimean_get_account( priv->paimean );
 	if( my_strlen( cstr )){
@@ -392,12 +380,6 @@ on_code_changed( GtkEntry *entry, ofaPaimeanProperties *self )
 
 static void
 on_label_changed( GtkEntry *entry, ofaPaimeanProperties *self )
-{
-	check_for_enable_dlg( self );
-}
-
-static void
-on_alone_toggled( GtkToggleButton *button, ofaPaimeanProperties *self )
 {
 	check_for_enable_dlg( self );
 }
@@ -505,7 +487,6 @@ do_update( ofaPaimeanProperties *self, gchar **msgerr )
 
 	ofo_paimean_set_code( priv->paimean, gtk_entry_get_text( GTK_ENTRY( priv->code_entry )));
 	ofo_paimean_set_label( priv->paimean, gtk_entry_get_text( GTK_ENTRY( priv->label_entry )));
-	ofo_paimean_set_must_alone( priv->paimean, gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->alone_btn )));
 	ofo_paimean_set_account( priv->paimean, gtk_entry_get_text( GTK_ENTRY( priv->account_entry )));
 	my_utils_container_notes_get( self, paimean );
 

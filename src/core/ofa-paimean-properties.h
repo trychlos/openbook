@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_paimean_properties
  * @short_description: #ofaPaimeanProperties class definition.
- * @include: ui/ofa-paimean-properties.h
+ * @include: core/ofa-paimean-properties.h
  *
  * Update the #ofoPaimean properties.
  *
