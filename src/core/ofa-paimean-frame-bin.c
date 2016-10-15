@@ -521,12 +521,15 @@ on_delete_key( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanFrameBi
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanFrameBin *self )
 {
+	ofaPaimeanFrameBinPrivate *priv;
 	ofoPaimean *paimean;
 	GtkWindow *toplevel;
 
+	priv = ofa_paimean_frame_bin_get_instance_private( self );
+
 	paimean = ofo_paimean_new();
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
+	ofa_paimean_properties_run( priv->getter, toplevel, paimean );
 }
 
 static void
@@ -542,7 +545,7 @@ action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanFr
 	g_return_if_fail( paimean && OFO_IS_PAIMEAN( paimean ));
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
+	ofa_paimean_properties_run( priv->getter, toplevel, paimean );
 }
 
 static void

@@ -33,7 +33,7 @@
  * Update the #ofoPaimean properties.
  *
  * Development rules:
- * - type:       non-modal dialog
+ * - type:       modal/non-modal depending of the caller.
  * - settings:   yes
  * - current:    yes
  */

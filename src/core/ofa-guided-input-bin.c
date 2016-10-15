@@ -38,6 +38,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-paimean-editable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -482,6 +483,7 @@ setup_dialog( ofaGuidedInputBin *self )
 	g_signal_connect( widget, "changed", G_CALLBACK( on_piece_changed ), self );
 	gtk_widget_set_sensitive( widget, FALSE );
 	priv->ref_entry = widget;
+	ofa_paimean_editable_init( GTK_EDITABLE( priv->ref_entry ), priv->getter );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-piece-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

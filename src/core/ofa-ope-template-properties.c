@@ -37,6 +37,7 @@
 #include "api/ofa-account-editable.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
+#include "api/ofa-paimean-editable.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-account.h"
@@ -495,6 +496,7 @@ init_ref( ofaOpeTemplateProperties *self )
 
 	priv->ref_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-entry" );
 	g_return_if_fail( priv->ref_entry && GTK_IS_ENTRY( priv->ref_entry ));
+	ofa_paimean_editable_init( GTK_EDITABLE( priv->ref_entry ), priv->getter );
 
 	if( priv->ref ){
 		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), priv->ref );

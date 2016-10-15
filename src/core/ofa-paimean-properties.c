@@ -196,8 +196,8 @@ ofa_paimean_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoPaimean *p
 	priv->getter = getter;
 	priv->paimean = paimean;
 
-	/* after this call, @self may be invalid */
-	my_iwindow_present( MY_IWINDOW( self ));
+	/* run modal or non-modal depending of the parent */
+	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
 }
 
 /*
