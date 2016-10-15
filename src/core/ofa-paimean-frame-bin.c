@@ -400,6 +400,26 @@ init_view( ofaPaimeanFrameBin *self )
 }
 
 /**
+ * ofa_paimean_frame_bin_get_tree_view:
+ * @bin: this #ofaPaimeanFrameBin instance.
+ *
+ * Returns: the #GtkTreeView.
+ */
+GtkWidget *
+ofa_paimean_frame_bin_get_tree_view( ofaPaimeanFrameBin *bin )
+{
+	ofaPaimeanFrameBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_PAIMEAN_FRAME_BIN( bin ), NULL );
+
+	priv = ofa_paimean_frame_bin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->tview ? ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview )) : NULL );
+}
+
+/**
  * ofa_paimean_frame_bin_get_selected:
  * @bin:
  *

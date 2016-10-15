@@ -42,8 +42,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-paimean.h"
 
-#include "core/ofa-paimean-properties.h"
-#include "core/ofa-paimean-treeview.h"
+#include "core/ofa-paimean-frame-bin.h"
 
 #include "ui/ofa-paimean-page.h"
 
@@ -53,35 +52,16 @@ typedef struct {
 
 	/* internals
 	 */
-	ofaHub             *hub;
-	gboolean            is_writable;
 	gchar              *settings_prefix;
 
 	/* UI
 	 */
-	ofaPaimeanTreeview *tview;
-
-	/* actions
-	 */
-	GSimpleAction      *new_action;
-	GSimpleAction      *update_action;
-	GSimpleAction      *delete_action;
+	ofaPaimeanFrameBin *fbin;
 }
 	ofaPaimeanPagePrivate;
 
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget *action_page_v_setup_view( ofaActionPage *page );
-static void       action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
-static void       action_page_v_init_view( ofaActionPage *page );
-static void       on_row_selected( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self );
-static void       on_row_activated( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self );
-static void       on_delete_key( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self );
-static void       on_insert_key( ofaPaimeanTreeview *tview, ofaPaimeanPage *self );
-static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self );
-static void       action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self );
-static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self );
-static gboolean   check_for_deletability( ofaPaimeanPage *self, ofoPaimean *class );
-static void       delete_with_confirm( ofaPaimeanPage *self, ofoPaimean *class );
 
 G_DEFINE_TYPE_EXTENDED( ofaPaimeanPage, ofa_paimean_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaPaimeanPage ))
@@ -109,18 +89,11 @@ paimean_page_finalize( GObject *instance )
 static void
 paimean_page_dispose( GObject *instance )
 {
-	ofaPaimeanPagePrivate *priv;
-
 	g_return_if_fail( instance && OFA_IS_PAIMEAN_PAGE( instance ));
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
 		/* unref object members here */
-		priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( instance ));
-
-		g_object_unref( priv->new_action );
-		g_object_unref( priv->update_action );
-		g_object_unref( priv->delete_action );
 	}
 
 	/* chain up to the parent class */
@@ -156,8 +129,6 @@ ofa_paimean_page_class_init( ofaPaimeanPageClass *klass )
 	OFA_PAGE_CLASS( klass )->get_top_focusable_widget = page_v_get_top_focusable_widget;
 
 	OFA_ACTION_PAGE_CLASS( klass )->setup_view = action_page_v_setup_view;
-	OFA_ACTION_PAGE_CLASS( klass )->setup_actions = action_page_v_setup_actions;
-	OFA_ACTION_PAGE_CLASS( klass )->init_view = action_page_v_init_view;
 }
 
 static GtkWidget *
@@ -169,7 +140,7 @@ page_v_get_top_focusable_widget( const ofaPage *page )
 
 	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
 
-	return( ofa_tvbin_get_tree_view( OFA_TVBIN( priv->tview )));
+	return( priv->fbin ? ofa_paimean_frame_bin_get_tree_view( priv->fbin ) : NULL );
 }
 
 static GtkWidget *
@@ -182,232 +153,7 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
 
-	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
-	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	priv->fbin = ofa_paimean_frame_bin_new( OFA_IGETTER( page ), priv->settings_prefix );
 
-	priv->tview = ofa_paimean_treeview_new();
-	ofa_paimean_treeview_set_settings_key( priv->tview, priv->settings_prefix );
-	ofa_paimean_treeview_setup_columns( priv->tview );
-
-	/* ofaTVBin signals */
-	g_signal_connect( priv->tview, "ofa-insert", G_CALLBACK( on_insert_key ), page );
-
-	/* ofaPaimeanTreeview signals */
-	g_signal_connect( priv->tview, "ofa-pamchanged", G_CALLBACK( on_row_selected ), page );
-	g_signal_connect( priv->tview, "ofa-pamactivated", G_CALLBACK( on_row_activated ), page );
-	g_signal_connect( priv->tview, "ofa-pamdelete", G_CALLBACK( on_delete_key ), page );
-
-	return( GTK_WIDGET( priv->tview ));
-}
-
-static void
-action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
-{
-	ofaPaimeanPagePrivate *priv;
-
-	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
-
-	/* new action */
-	priv->new_action = g_simple_action_new( "new", NULL );
-	g_signal_connect( priv->new_action, "activate", G_CALLBACK( action_on_new_activated ), page );
-	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
-			OFA_IACTIONABLE_NEW_ITEM );
-	ofa_buttons_box_append_button(
-			buttons_box,
-			ofa_iactionable_new_button(
-					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->new_action ),
-					OFA_IACTIONABLE_NEW_BTN ));
-	g_simple_action_set_enabled( priv->new_action, priv->is_writable );
-
-	/* update action */
-	priv->update_action = g_simple_action_new( "update", NULL );
-	g_signal_connect( priv->update_action, "activate", G_CALLBACK( action_on_update_activated ), page );
-	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
-			priv->is_writable ? OFA_IACTIONABLE_PROPERTIES_ITEM_EDIT : OFA_IACTIONABLE_PROPERTIES_ITEM_DISPLAY );
-	ofa_buttons_box_append_button(
-			buttons_box,
-			ofa_iactionable_new_button(
-					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->update_action ),
-					OFA_IACTIONABLE_PROPERTIES_BTN ));
-
-	/* delete action */
-	priv->delete_action = g_simple_action_new( "delete", NULL );
-	g_signal_connect( priv->delete_action, "activate", G_CALLBACK( action_on_delete_activated ), page );
-	ofa_iactionable_set_menu_item(
-			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
-			OFA_IACTIONABLE_DELETE_ITEM );
-	ofa_buttons_box_append_button(
-			buttons_box,
-			ofa_iactionable_new_button(
-					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
-					OFA_IACTIONABLE_DELETE_BTN ));
-}
-
-static void
-action_page_v_init_view( ofaActionPage *page )
-{
-	static const gchar *thisfn = "ofa_paimean_page_v_init_view";
-	ofaPaimeanPagePrivate *priv;
-	GMenu *menu;
-
-	g_debug( "%s: page=%p", thisfn, ( void * ) page );
-
-	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
-
-	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
-	ofa_icontext_set_menu(
-			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
-			menu );
-
-	menu = ofa_itvcolumnable_get_menu( OFA_ITVCOLUMNABLE( priv->tview ));
-	ofa_icontext_append_submenu(
-			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
-			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
-
-	/* install the store at the very end of the initialization
-	 * (i.e. after treeview creation, signals connection, actions and
-	 *  menus definition) */
-	ofa_paimean_treeview_set_hub( priv->tview, priv->hub );
-}
-
-/*
- * Signal sent by ofaPaimeanTreeview on selection change
- *
- * Other actions do not depend of the selection:
- * - new: enabled when dossier is writable.
- */
-static void
-on_row_selected( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self )
-{
-	ofaPaimeanPagePrivate *priv;
-	gboolean is_paimean;
-
-	priv = ofa_paimean_page_get_instance_private( self );
-
-	is_paimean = paimean && OFO_IS_PAIMEAN( paimean );
-
-	g_simple_action_set_enabled( priv->update_action, is_paimean );
-	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, paimean ));
-}
-
-/*
- * signal sent by ofaPaimeanTreeview on selection activation
- */
-static void
-on_row_activated( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self )
-{
-	ofaPaimeanPagePrivate *priv;
-
-	priv = ofa_paimean_page_get_instance_private( self );
-
-	g_action_activate( G_ACTION( priv->update_action ), NULL );
-}
-
-/*
- * signal sent by ofaTVBin on Insert key
- *
- * Note that the key may be pressend even if dossier is not writable.
- * If this is the case, just silently ignore the key.
- */
-static void
-on_insert_key( ofaPaimeanTreeview *tview, ofaPaimeanPage *self )
-{
-	ofaPaimeanPagePrivate *priv;
-
-	priv = ofa_paimean_page_get_instance_private( self );
-
-	if( priv->is_writable ){
-		g_action_activate( G_ACTION( priv->new_action ), NULL );
-	}
-}
-
-/*
- * signal sent by ofaPaimeanTreeview on Delete key
- *
- * Note that the key may be pressed, even if the button
- * is disabled. So have to check all prerequisite conditions.
- * If the current row is not deletable, just silently ignore the key.
- */
-static void
-on_delete_key( ofaPaimeanTreeview *tview, ofoPaimean *paimean, ofaPaimeanPage *self )
-{
-	if( check_for_deletability( self, paimean )){
-		delete_with_confirm( self, paimean );
-	}
-}
-
-static void
-action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self )
-{
-	ofoPaimean *paimean;
-	GtkWindow *toplevel;
-
-	paimean = ofo_paimean_new();
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
-}
-
-static void
-action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self )
-{
-	ofaPaimeanPagePrivate *priv;
-	ofoPaimean *paimean;
-	GtkWindow *toplevel;
-
-	priv = ofa_paimean_page_get_instance_private( self );
-
-	paimean = ofa_paimean_treeview_get_selected( priv->tview );
-	g_return_if_fail( paimean && OFO_IS_PAIMEAN( paimean ));
-
-	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
-}
-
-static void
-action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaPaimeanPage *self )
-{
-	ofaPaimeanPagePrivate *priv;
-	ofoPaimean *paimean;
-
-	priv = ofa_paimean_page_get_instance_private( self );
-
-	paimean = ofa_paimean_treeview_get_selected( priv->tview );
-	g_return_if_fail( paimean && OFO_IS_PAIMEAN( paimean ));
-
-	delete_with_confirm( self, paimean );
-}
-
-static gboolean
-check_for_deletability( ofaPaimeanPage *self, ofoPaimean *paimean )
-{
-	ofaPaimeanPagePrivate *priv;
-	gboolean is_paimean;
-
-	priv = ofa_paimean_page_get_instance_private( self );
-
-	is_paimean = paimean && OFO_IS_PAIMEAN( paimean );
-
-	return( is_paimean && priv->is_writable && ofo_paimean_is_deletable( paimean ));
-}
-
-static void
-delete_with_confirm( ofaPaimeanPage *self, ofoPaimean *paimean )
-{
-	gchar *msg;
-	gboolean delete_ok;
-
-	msg = g_strdup_printf( _( "Are you sure you want delete the '%s - %s' mean of paiement ?" ),
-			ofo_paimean_get_code( paimean ),
-			ofo_paimean_get_label( paimean ));
-
-	delete_ok = my_utils_dialog_question( msg, _( "_Delete" ));
-
-	g_free( msg );
-
-	if( delete_ok ){
-		ofo_paimean_delete( paimean );
-	}
+	return( GTK_WIDGET( priv->fbin ));
 }

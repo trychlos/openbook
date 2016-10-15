@@ -69,14 +69,16 @@ typedef struct {
 }
 	ofaPaimeanFrameBinClass;
 
-GType               ofa_paimean_frame_bin_get_type    ( void ) G_GNUC_CONST;
+GType               ofa_paimean_frame_bin_get_type     ( void ) G_GNUC_CONST;
 
-ofaPaimeanFrameBin *ofa_paimean_frame_bin_new         ( ofaIGetter *getter,
+ofaPaimeanFrameBin *ofa_paimean_frame_bin_new          ( ofaIGetter *getter,
 																const gchar *key );
 
-ofoPaimean         *ofa_paimean_frame_bin_get_selected( ofaPaimeanFrameBin *bin );
+GtkWidget          *ofa_paimean_frame_bin_get_tree_view( ofaPaimeanFrameBin *bin );
 
-void                ofa_paimean_frame_bin_set_selected( ofaPaimeanFrameBin *bin,
+ofoPaimean         *ofa_paimean_frame_bin_get_selected ( ofaPaimeanFrameBin *bin );
+
+void                ofa_paimean_frame_bin_set_selected ( ofaPaimeanFrameBin *bin,
 																const gchar *code );
 
 G_END_DECLS

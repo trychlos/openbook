@@ -753,6 +753,31 @@ my_utils_str_in_list( const gchar *str, const GList *list )
 }
 
 /**
+ * my_utils_str_first_word:
+ * @string: the string to be searched for.
+ *
+ * Returns: The first word in the @string string, as a newly allocated
+ * string which should be g_free() by the caller.
+ */
+gchar *
+my_utils_str_first_word( const gchar *string )
+{
+	gchar *new_str;
+	GRegex *regex;
+
+	new_str = NULL;
+
+	if( string ){
+		regex = g_regex_new( "^\\s*(\\w+).*$", 0, 0, NULL );
+		new_str = g_regex_replace( regex, string, -1, 0, "\\1", 0, NULL );
+		g_regex_unref( regex );
+	}
+	/*g_debug( "my_utils_str_first_word: in.str=%s, out.str=%s", string, new_str );*/
+
+	return( new_str );
+}
+
+/**
  * my_utils_str_remove_str_delim:
  * @string:
  * @fieldsep:

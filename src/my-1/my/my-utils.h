@@ -73,6 +73,7 @@ gboolean      my_utils_boolean_from_str               ( const gchar *str );
 gchar        *my_utils_char_replace                   ( const gchar *string, gchar old_ch, gchar new_ch );
 
 gboolean      my_utils_str_in_list                    ( const gchar *str, const GList *list );
+gchar        *my_utils_str_first_word                 ( const gchar *string );
 gchar        *my_utils_str_remove_str_delim           ( const gchar *string, gchar fieldsep, gchar strdelim );
 gchar        *my_utils_str_remove_suffix              ( const gchar *string, const gchar *suffix );
 gchar        *my_utils_str_remove_underlines          ( const gchar *string );

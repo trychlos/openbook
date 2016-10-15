@@ -901,17 +901,49 @@ static void
 on_piece_changed( GtkEditable *editable, ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
-	const gchar *content;
+	const gchar *content, *account;
+	gchar *word;
+	gint pam_row;
+	ofoPaimean *paimean;
+	GtkWidget *entry;
+	gboolean checked;
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
+	checked = FALSE;
 	content = gtk_entry_get_text( GTK_ENTRY( editable ));
 
 	g_free( priv->ope->ref );
 	priv->ope->ref = g_strdup( content );
 	priv->ope->ref_user_set = TRUE;
 
-	check_for_enable_dlg( self );
+	/* if the first word of the piece's reference is a registered mean
+	 * of paiement, maybe the account of a predefined row has to be set
+	 */
+	if( my_strlen( content )){
+		pam_row = ofo_ope_template_get_pam_row( priv->model );
+		if( pam_row >= 0 ){
+			word = my_utils_str_first_word( content );
+			paimean = ofo_paimean_get_by_code( priv->hub, word );
+			if( paimean ){
+				account = ofo_paimean_get_account( paimean );
+				if( my_strlen( account )){
+					entry = gtk_grid_get_child_at( priv->entries_grid, OPE_COL_ACCOUNT, pam_row+1 );
+					if( entry ){
+						priv->focused_row = pam_row+1;
+						priv->focused_column = OPE_COL_ACCOUNT;
+						gtk_entry_set_text( GTK_ENTRY( entry ), account );
+						checked = TRUE;
+					}
+				}
+			}
+			g_free( word );
+		}
+	}
+
+	if( !checked ){
+		check_for_enable_dlg( self );
+	}
 }
 
 /*
