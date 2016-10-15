@@ -211,7 +211,6 @@ static void         error_acc_currency( const gchar *currency, ofoAccount *accou
 static void         error_amounts( ofxAmount debit, ofxAmount credit );
 static gboolean     entry_do_update( ofoEntry *entry, ofaHub *hub );
 static gboolean     do_update_settlement( ofoEntry *entry, const ofaIDBConnect *connect, ofxCounter number );
-static gboolean     do_delete_entry( ofoEntry *entry, const ofaIDBConnect *connect );
 static void         iconcil_iface_init( ofaIConcilInterface *iface );
 static guint        iconcil_get_interface_version( void );
 static ofxCounter   iconcil_get_object_id( const ofaIConcil *instance );
@@ -2238,42 +2237,18 @@ gboolean
 ofo_entry_delete( ofoEntry *entry )
 {
 	ofaHub *hub;
-	gboolean ok;
 
 	g_return_val_if_fail( entry && OFO_IS_ENTRY( entry ), FALSE );
 	g_return_val_if_fail( !OFO_BASE( entry )->prot->dispose_has_run, FALSE );
 
-	ok = FALSE;
 	hub = ofo_base_get_hub( OFO_BASE( entry ));
 
-	if( do_delete_entry( entry, ofa_hub_get_connect( hub ))){
-		g_signal_emit_by_name(
-				hub, SIGNAL_HUB_DELETED, entry );
-		g_signal_emit_by_name(
-				hub, SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
-		ok = TRUE;
-	}
+	g_signal_emit_by_name(
+			hub, SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_DELETED );
+	g_signal_emit_by_name(
+			hub, SIGNAL_HUB_DELETED, entry );
 
-	return( ok );
-}
-
-static gboolean
-do_delete_entry( ofoEntry *entry, const ofaIDBConnect *connect )
-{
-	gchar *query;
-	gboolean ok;
-
-	query = g_strdup_printf(
-				"UPDATE OFA_T_ENTRIES SET "
-				"	ENT_STATUS=%d WHERE ENT_NUMBER=%ld",
-						ENT_STATUS_DELETED, ofo_entry_get_number( entry ));
-
-	ok = ofa_idbconnect_query( connect, query, TRUE );
-
-	g_free( query );
-
-	return( ok );
-
+	return( TRUE );
 }
 
 /*
@@ -3410,7 +3385,7 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
  * SIGNAL_HUB_UPDATED signal handler
  *
  * we try to report in recorded entries the modifications which may
- * happen on one of the externe identifiers - but only for the current
+ * happen on one of the external identifiers - but only for the current
  * exercice
  *
  * Nonetheless, this is never a good idea to modify an identifier which

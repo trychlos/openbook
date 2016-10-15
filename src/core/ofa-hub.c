@@ -425,7 +425,8 @@ ofa_hub_class_init( ofaHubClass *klass )
 	 * ofaHub::hub-status-change:
 	 *
 	 * This signal is sent of the @hub to ask an antry to change its
-	 * status.
+	 * status. This is an ACTION signal.
+	 *
 	 * The #ofoEntry class signal handler will update the @entry with
 	 * its new @new_status status, and update the database accordingly.
 	 * Other signal handlers may, e.g. update balances, progression
