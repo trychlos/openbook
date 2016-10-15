@@ -44,6 +44,7 @@
    - ofaAccountProperties: let the user sort the archived soldes (todo #1163).
    - ofaClosingParmsBin: check that operation templates are able to generate valid entries (todo #1230).
    - ofaExerciceCloseAssistant: only close the RAN ledger, do not archive accounts balances.
+   - ofaGuidedInput: let the account be changed on mean of paiement selection (todo #714).
    - ofaLedgerClose: display ledgers in alphabetical order.
    - ofaLedgerProperties: display ledger balances (todo #1227).
    - ofaPeriodClose: have a progress bar when archiving accounts (todo #1160).

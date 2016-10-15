@@ -1795,7 +1795,7 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v33";
 	ofaMysqlDBModelPrivate *priv;
-	gchar *query;
+	gchar *query, *user;
 	GSList *result, *irow, *icol;
 	const gchar *cstr;
 	GList *ita, *itd;
@@ -1806,6 +1806,8 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
 	priv = ofa_mysql_dbmodel_get_instance_private( self );
+
+	user = ofa_idbconnect_get_account( priv->connect );
 
 	/* 1 - get dossier begin exercice */
 	query = g_strdup_printf( "SELECT DOS_EXE_BEGIN FROM OFA_T_DOSSIER WHERE DOS_ID=%u", DOSSIER_ROW_ID );
@@ -1920,9 +1922,22 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 8 - insert default values */
+	query = g_strdup_printf(
+			"INSERT IGNORE INTO OFA_T_PAIMEANS (PAM_CODE,PAM_LABEL,PAM_UPD_USER) VALUES "
+			"	('VC','Visa card','%s'),"
+			"	('CH','Cheque','%s')", user, user );
+	ok = exec_query( self, query );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+
 	/* make sure that we end up at 100% */
 	priv->current = priv->total;
 	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
+
+	g_free( user );
 
 	return( TRUE );
 }
@@ -1934,5 +1949,5 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v33( ofaMysqlDBModel *self )
 {
-	return( 7 );
+	return( 8 );
 }

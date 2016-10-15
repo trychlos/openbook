@@ -170,14 +170,6 @@
                 it would be easier that row-activate on templates page
                 opens the guided input rather that the properties)
 
- 714 2015- 3-11 associate an account with a piece ref
-                (e.g. ESP->531, CCP->51441, and so on)
-     2016-10-13 have mean of paiment in a table + an associated account
-                but how to associate this account with a particular row
-                of an ope.template ?
-                -> this is not a paimean-attribute as this depend of the
-                   current ope.template
-
  733 2015- 3-15 FEAT be able to search for an entry
 
  758 2015- 3-21 FEAT warns when deleting a settled or reconciliated
@@ -573,6 +565,15 @@
                 would prevent the user to have to first select the digits
                 to be changed
      2016- 6- 7 is now a user preference
+
+ 714 2015- 3-11 associate an account with a piece ref
+                (e.g. ESP->531, CCP->51441, and so on)
+     2016-10-13 have mean of paiment in a table + an associated account
+                but how to associate this account with a particular row
+                of an ope.template ?
+                -> this is not a paimean-attribute as this depend of the
+                   current ope.template
+     2016-10-15 done
 
  717 2015- 3-11 AccountsChart: doesn't display '0,00' (but at least one)
      2015- 3-12 are we sure we want this ?
