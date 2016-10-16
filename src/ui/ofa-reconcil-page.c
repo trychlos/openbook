@@ -157,9 +157,6 @@ typedef struct {
 }
 	ofaReconcilPagePrivate;
 
-/* set against the COL_DRECONCIL column to be used in on_cell_data_func() */
-#define DATA_COLUMN_ID      "ofa-data-column-id"
-
 /* columns in the combo box which let us select which type of entries
  * are displayed
  */
@@ -423,9 +420,6 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	view = setup_view2( OFA_RECONCIL_PAGE( page ));
 	gtk_paned_pack2( paned, view, FALSE, FALSE );
-
-	/* connect to dossier signaling system */
-	hub_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 }
 
 static GtkWidget *
@@ -1270,6 +1264,10 @@ paned_page_v_init_view( ofaPanedPage *page )
 	/* install an empty store before reading the settings */
 	priv->store = ofa_reconcil_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
+
+	/* makes sure to connect to dossier signaling system *after*
+	 * the store itself */
+	hub_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 
 	get_settings( OFA_RECONCIL_PAGE( page ));
 }
@@ -3033,6 +3031,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 
 	if( OFO_IS_BAT_LINE( object ) || OFO_IS_ENTRY( object )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+		ofa_reconcil_treeview_default_expand( priv->tview );
 		set_reconciliated_balance( self );
 	}
 }
@@ -3057,6 +3056,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 
 	if( OFO_IS_BAT_LINE( object ) || OFO_IS_ENTRY( object )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+		ofa_reconcil_treeview_default_expand( priv->tview );
 		set_reconciliated_balance( self );
 	}
 }
@@ -3080,6 +3080,7 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 
 	if( OFO_IS_BAT_LINE( object ) || OFO_IS_ENTRY( object )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
+		ofa_reconcil_treeview_default_expand( priv->tview );
 		set_reconciliated_balance( self );
 	}
 }
