@@ -84,6 +84,7 @@ typedef struct {
  * @OPE_TEMPLATE_COL_LEDGER_LOCKED : is ledger locked                  Bool          No
  * @OPE_TEMPLATE_COL_REF           : piece reference                   String       Yes
  * @OPE_TEMPLATE_COL_REF_LOCKED    : is reference locked               Bool          No
+ * @OPE_TEMPLATE_COL_PAM_ROW       : row index of pam target           String       Yes
  * @OPE_TEMPLATE_COL_NOTES         : notes                             String       Yes
  * @OPE_TEMPLATE_COL_NOTES_PNG     : notes indicator                   Pixbuf       Yes
  * @OPE_TEMPLATE_COL_UPD_USER      : last update user                  String       Yes
@@ -97,6 +98,7 @@ enum {
 	OPE_TEMPLATE_COL_LEDGER_LOCKED,
 	OPE_TEMPLATE_COL_REF,
 	OPE_TEMPLATE_COL_REF_LOCKED,
+	OPE_TEMPLATE_COL_PAM_ROW,
 	OPE_TEMPLATE_COL_NOTES,
 	OPE_TEMPLATE_COL_NOTES_PNG,
 	OPE_TEMPLATE_COL_UPD_USER,

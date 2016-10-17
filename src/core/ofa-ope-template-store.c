@@ -52,6 +52,7 @@ typedef struct {
 static GType st_col_types[OPE_TEMPLATE_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ledger */
 		G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_BOOLEAN,	/* ledger_locked, ref, ref_locked */
+		G_TYPE_STRING,									/* pam_row */
 		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
 		G_TYPE_STRING,									/* upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoOpeTemplate itself */
@@ -271,12 +272,16 @@ static void
 set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_ope_template_store_set_row";
-	gchar *stamp;
+	gint pamrow;
+	gchar *stamp, *spamrow;
 	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 
 	stamp  = my_utils_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
+
+	pamrow = ofo_ope_template_get_pam_row( ope );
+	spamrow = pamrow ? g_strdup_printf( "%d", pamrow ) : g_strdup( "" );
 
 	notes = ofo_ope_template_get_notes( ope );
 	error = NULL;
@@ -294,6 +299,7 @@ set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIt
 			OPE_TEMPLATE_COL_LEDGER_LOCKED, ofo_ope_template_get_ledger_locked( ope ),
 			OPE_TEMPLATE_COL_REF,           ofo_ope_template_get_ref( ope ),
 			OPE_TEMPLATE_COL_REF_LOCKED,    ofo_ope_template_get_ref_locked( ope ),
+			OPE_TEMPLATE_COL_PAM_ROW,       spamrow,
 			OPE_TEMPLATE_COL_NOTES,         notes,
 			OPE_TEMPLATE_COL_NOTES_PNG,     notes_png,
 			OPE_TEMPLATE_COL_UPD_USER,      ofo_ope_template_get_upd_user( ope ),
@@ -301,6 +307,7 @@ set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIt
 			-1 );
 
 	g_object_unref( notes_png );
+	g_free( spamrow );
 	g_free( stamp );
 
 	ofa_istore_set_values( OFA_ISTORE( self ), iter, ( void * ) ope );
