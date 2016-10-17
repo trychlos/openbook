@@ -314,7 +314,10 @@ ofa_iconcil_add_to_concil( ofaIConcil *instance, ofoConcil *concil )
 void
 ofa_iconcil_clear_data( ofaIConcil *instance )
 {
+	static const gchar *thisfn = "ofa_iconcil_clear_data";
 	sIConcil *sdata;
+
+	g_debug( "%s: type=%s, id=%ld", thisfn, iconcil_get_type( instance ), iconcil_get_id( instance ));
 
 	g_return_if_fail( instance && OFA_IS_ICONCIL( instance ));
 

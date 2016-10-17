@@ -766,7 +766,8 @@ static gboolean
 search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIter *parent_iter, ofxCounter exclude )
 {
 	static const gchar *thisfn = "ofa_reconcil_store_search_for_parent_by_amount";
-	gboolean spread_set, is_debug = TRUE;
+	gboolean is_debug = FALSE;
+	gboolean spread_set;
 	gchar *obj_debit, *obj_credit, *row_debit, *row_credit;
 	ofoBase *row_object;
 	const GDate *obj_date;

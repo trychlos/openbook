@@ -830,6 +830,7 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
  * - plus any single rows.
  *
  * examine the current selection, gathering the required indicators:
+ * @selected: a GList of selected GtkTreePath's
  * @scur: the total of debits and credits, plus the currency
  * @concil_rows: the count of conciliated rows
  * @unconcil_rows: count of unconciliated rows
@@ -2338,6 +2339,7 @@ action_on_unreconciliate_activated( GSimpleAction *action, GVariant *empty, ofaR
 
 	tview_expand_selection( self );
 	do_unconciliate( self );
+	ofa_reconcil_treeview_default_expand( priv->tview );
 	tview_on_selection_changed(
 			OFA_TVBIN( priv->tview ), ofa_tvbin_get_selection( OFA_TVBIN( priv->tview )), self );
 }
@@ -2403,11 +2405,6 @@ do_unconciliate( ofaReconcilPage *self )
 		g_return_if_reached();
 	}
 
-	/* remove the conciliation group from the database */
-	concil = ofo_concil_get_by_id( priv->hub, concil_id );
-	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
-	ofo_concil_delete( concil );
-
 	/* get a store ref to the parent of the conciliation hierarchy */
 	if( !gtk_tree_model_iter_parent( sort_model, &parent_iter, &iter )){
 		parent_iter = iter;
@@ -2417,6 +2414,11 @@ do_unconciliate( ofaReconcilPage *self )
 
 	/* at this time, we can release the selection */
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+
+	/* and remove the conciliation group from the database */
+	concil = ofo_concil_get_by_id( priv->hub, concil_id );
+	g_return_if_fail( concil && OFO_IS_CONCIL( concil ));
+	ofo_concil_delete( concil );
 
 	/* get store refs of the whole conciliation hierarchy
 	 * nb: parent_ref is returned prepended to the list, so do not free it separately */
