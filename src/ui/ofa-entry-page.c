@@ -2234,6 +2234,8 @@ delete_row( ofaEntryPage *self, GtkTreeSelection *selection )
 		g_return_if_fail( entry && OFO_IS_ENTRY( entry ));
 
 		if( ofo_entry_is_editable( entry ) && delete_ask_for_confirm( self, entry )){
+			/* cleaning up settlement and conciliation is handled by
+			 *  #ofoEntry class itself  */
 			ofo_entry_delete( entry );
 			balances_compute( self );
 		}
