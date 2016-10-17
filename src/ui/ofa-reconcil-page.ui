@@ -183,6 +183,12 @@
       </object>
     </child>
   </object>
+  <object class="GtkSizeGroup" id="f2-sizegroup"/>
+  <object class="GtkImage" id="image2">
+    <property name="visible">True</property>
+    <property name="can_focus">False</property>
+    <property name="stock">gtk-clear</property>
+  </object>
   <object class="GtkWindow" id="ReconciliationView2">
     <property name="can_focus">False</property>
     <child>
@@ -567,6 +573,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <property name="tooltip_text" translatable="yes">Reconciliate selected group of lines.
+When clicked with &lt;Ctrl&gt; key, then does not check for the balance of amounts.</property>
                     <property name="use_underline">True</property>
                   </object>
                   <packing>
@@ -664,11 +672,5 @@ When clicked with &lt;Ctrl&gt; key, then expand all.</property>
         </child>
       </object>
     </child>
-  </object>
-  <object class="GtkSizeGroup" id="f2-sizegroup"/>
-  <object class="GtkImage" id="image2">
-    <property name="visible">True</property>
-    <property name="can_focus">False</property>
-    <property name="stock">gtk-clear</property>
   </object>
 </interface>

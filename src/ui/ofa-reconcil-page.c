@@ -265,6 +265,8 @@ static void                 do_reconciliate( ofaReconcilPage *self );
 static gboolean             do_reconciliate_user_confirm( ofaReconcilPage *self, ofxAmount debit, ofxAmount credit );
 static GDate               *do_reconciliate_get_concil_date( ofaReconcilPage *self, GList *selected, GDate *date );
 static ofoConcil           *do_reconciliate_get_concil_group( ofaReconcilPage *self, GList *selected );
+static gboolean             reconciliate_on_pressed( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self );
+static gboolean             reconciliate_on_released( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self );
 static void                 action_on_decline_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
 static void                 do_decline( ofaReconcilPage *self );
 static void                 action_on_unreconciliate_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
@@ -1191,6 +1193,9 @@ setup_actions( ofaReconcilPage *self, GtkContainer *parent )
 	ofa_iactionable_set_button(
 			OFA_IACTIONABLE( self ), button, priv->settings_prefix, G_ACTION( priv->reconciliate_action ));
 
+	g_signal_connect( button, "button-press-event", G_CALLBACK( reconciliate_on_pressed ), self );
+	g_signal_connect( button, "button-release-event", G_CALLBACK( reconciliate_on_released ), self );
+
 	/* decline action */
 	priv->decline_action = g_simple_action_new( "decline", NULL );
 	g_signal_connect( priv->decline_action, "activate", G_CALLBACK( action_on_decline_activated ), self );
@@ -1918,6 +1923,9 @@ action_on_reconciliate_activated( GSimpleAction *action, GVariant *empty, ofaRec
 	do_reconciliate( self );
 	tview_on_selection_changed(
 			OFA_TVBIN( priv->tview ), ofa_tvbin_get_selection( OFA_TVBIN( priv->tview )), self );
+
+	priv->ctrl_on_pressed = FALSE;
+	priv->ctrl_on_released = FALSE;
 }
 
 /*
@@ -1970,8 +1978,9 @@ do_reconciliate( ofaReconcilPage *self )
 	get_tree_models( self, &sort_model, &filter_model );
 	store_refs = selected_to_store_refs( self, sort_model, filter_model, GTK_TREE_MODEL( priv->store ), selected );
 
-	/* ask for a user confirmation when amounts are not balanced */
-	if( !ofs_currency_is_balanced( &scur )){
+	/* ask for a user confirmation when amounts are not balanced
+	 *  (and Ctrl key is not pressed) */
+	if(( !priv->ctrl_on_pressed || !priv->ctrl_on_released ) && !ofs_currency_is_balanced( &scur )){
 		if( !do_reconciliate_user_confirm( self, scur.debit, scur.credit )){
 			return;
 		}
@@ -2223,6 +2232,36 @@ do_reconciliate_get_concil_group( ofaReconcilPage *self, GList *selected )
 	}
 
 	return( concil );
+}
+
+static gboolean
+reconciliate_on_pressed( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GdkModifierType modifiers;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	modifiers = gtk_accelerator_get_default_mod_mask();
+
+	priv->ctrl_on_pressed = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+
+	return( FALSE );
+}
+
+static gboolean
+reconciliate_on_released( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GdkModifierType modifiers;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	modifiers = gtk_accelerator_get_default_mod_mask();
+
+	priv->ctrl_on_released = ((( GdkEventButton * ) event )->state & modifiers ) == GDK_CONTROL_MASK;
+
+	return( FALSE );
 }
 
 /*
