@@ -1365,6 +1365,13 @@ balance_display( ofsCurrency *pc, ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
+	my_style_remove( priv->bottom_debit, "labelbalance" );
+	my_style_remove( priv->bottom_debit, "labelwarning" );
+	my_style_remove( priv->bottom_credit, "labelbalance" );
+	my_style_remove( priv->bottom_credit, "labelwarning" );
+	my_style_remove( priv->bottom_currency, "labelbalance" );
+	my_style_remove( priv->bottom_currency, "labelwarning" );
+
 	if( !ofs_currency_is_zero( pc )){
 		cstyle = ofs_currency_is_balanced( pc ) ? "labelbalance" : "labelwarning";
 
