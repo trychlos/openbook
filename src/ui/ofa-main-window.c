@@ -222,6 +222,7 @@ static sThemeInit st_theme_defs[] = {
 		{ N_( "Ledgers book" ),          ofa_ledger_book_render_get_type },
 		{ N_( "Ledgers" ),               ofa_ledger_page_get_type },
 		{ N_( "Ledgers summary" ),       ofa_ledger_summary_render_get_type },
+		{ N_( "Means of paiement" ),     ofa_paimean_page_get_type },
 		{ N_( "Operation templates" ),   ofa_ope_template_page_get_type },
 		{ N_( "Rates" ),                 ofa_rate_page_get_type },
 		{ N_( "Reconciliation" ),        ofa_reconcil_page_get_type },
