@@ -189,8 +189,8 @@ static void            ope_template_set_upd_user( ofoOpeTemplate *model, const g
 static void            ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp );
 static gboolean        model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *connect );
 static gboolean        model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect );
-static gboolean        model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *connect );
-static gboolean        model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *connect );
+static gboolean        model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
+static gboolean        model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean        model_insert_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, gint rang, GList *details );
 static gboolean        model_do_update( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
 static gboolean        model_update_main( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo );
@@ -1114,7 +1114,7 @@ static gboolean
 model_do_insert( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 {
 	return( model_insert_main( model, connect ) &&
-			model_insert_details_ex( model, connect ));
+			model_insert_details_ex( model, connect, NULL ));
 }
 
 static gboolean
@@ -1184,14 +1184,14 @@ model_insert_main( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 }
 
 static gboolean
-model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *connect )
+model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo )
 {
 	gchar *query;
 	gboolean ok;
 
 	query = g_strdup_printf(
 			"DELETE FROM OFA_T_OPE_TEMPLATES_DET WHERE OTE_MNEMO='%s'",
-			ofo_ope_template_get_mnemo( model ));
+			my_strlen( prev_mnemo ) ? prev_mnemo : ofo_ope_template_get_mnemo( model ));
 
 	ok = ofa_idbconnect_query( connect, query, TRUE );
 
@@ -1201,7 +1201,7 @@ model_delete_details( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 }
 
 static gboolean
-model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *connect )
+model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo )
 {
 	ofoOpeTemplatePrivate *priv;
 	gboolean ok;
@@ -1211,7 +1211,7 @@ model_insert_details_ex( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 	ok = FALSE;
 	priv = ofo_ope_template_get_instance_private( model );
 
-	if( model_delete_details( model, connect )){
+	if( model_delete_details( model, connect, prev_mnemo )){
 		ok = TRUE;
 		for( idet=priv->details, rang=1 ; idet ; idet=idet->next, rang+=1 ){
 			if( !model_insert_details( model, connect, rang, idet->data )){
@@ -1333,7 +1333,7 @@ static gboolean
 model_do_update( ofoOpeTemplate *model, const ofaIDBConnect *connect, const gchar *prev_mnemo )
 {
 	return( model_update_main( model, connect, prev_mnemo ) &&
-			model_insert_details_ex( model, connect ));
+			model_insert_details_ex( model, connect, prev_mnemo ));
 }
 
 static gboolean
@@ -1446,7 +1446,7 @@ model_do_delete( ofoOpeTemplate *model, const ofaIDBConnect *connect )
 
 	g_free( query );
 
-	ok &= model_delete_details( model, connect );
+	ok &= model_delete_details( model, connect, NULL );
 
 	return( ok );
 }

@@ -1933,6 +1933,13 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 		return( FALSE );
 	}
 
+	/* 9 - remediate bug #1154 */
+	if( !exec_query( self,
+			"DELETE FROM OFA_T_OPE_TEMPLATES_DET "
+			"	WHERE OTE_MNEMO NOT IN (SELECT DISTINCT(OTE_MNEMO) FROM OFA_T_OPE_TEMPLATES)" )){
+		return( FALSE );
+	}
+
 	/* make sure that we end up at 100% */
 	priv->current = priv->total;
 	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
@@ -1949,5 +1956,5 @@ dbmodel_v33( ofaMysqlDBModel *self, gint version )
 static gulong
 count_v33( ofaMysqlDBModel *self )
 {
-	return( 8 );
+	return( 9 );
 }

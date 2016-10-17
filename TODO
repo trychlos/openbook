@@ -316,9 +316,6 @@
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
-1154 2016- 6-22 BUG: it appears that we may have some detail in OPE_TEMPLATES_DET
-                which do not have any line in OPE_TEMPLATES (VEREP2)
-
 1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
                 generating any operation (and so without the need for
                 an operation date)
@@ -1528,6 +1525,11 @@
 1152 2016- 6-21 BUG: GuidedInput: does not take into account the selected
                 ledger
      2016- 6-27 fixed
+
+1154 2016- 6-22 BUG: it appears that we may have some detail in OPE_TEMPLATES_DET
+                which do not have any line in OPE_TEMPLATES (VEREP2)
+     2016-10-17 fixed
+                and also remediated in Core DB Model v33
 
 1155 2016- 6-22 BUG: when saving a new recurrent model
                 cf. todo_1155/trace

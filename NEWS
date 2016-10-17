@@ -64,6 +64,7 @@
    - ofoBase: ofo_base_getter() returns default value if box is unset.
    - ofaLedgerPage: fix view entries.
    - ofaOpeTemplateSelect: fix initial selection (todo #1229).
+   - ofoOpeTemplate: prevent orphan children when updating the mnemonic (todo #1154).
    - ofoRecurrentModel: insert/update the DBMS with 'enabled' property.
 
  Caution:
