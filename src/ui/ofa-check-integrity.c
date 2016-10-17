@@ -222,6 +222,7 @@ on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self 
 	priv = ofa_check_integrity_get_instance_private( self );
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
+	gtk_widget_grab_focus( priv->close_btn );
 }
 
 /**

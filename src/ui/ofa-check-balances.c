@@ -220,6 +220,7 @@ on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self )
 	priv = ofa_check_balances_get_instance_private( self );
 
 	gtk_widget_set_sensitive( priv->close_btn, TRUE );
+	gtk_widget_grab_focus( priv->close_btn );
 }
 
 /**

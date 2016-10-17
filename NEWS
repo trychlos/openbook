@@ -42,12 +42,14 @@
    - Core DB model v 33
    - Recurrent DB model v 6
    - ofaAccountProperties: let the user sort the archived soldes (todo #1163).
+   - ofaCheckBalances, ofaCheckIntegrity: make the [Close] button the default.
    - ofaClosingParmsBin: check that operation templates are able to generate valid entries (todo #1230).
    - ofaExerciceCloseAssistant: only close the RAN ledger, do not archive accounts balances.
    - ofaGuidedInput: let the account be changed on mean of paiement selection (todo #714).
    - ofaLedgerClose: display ledgers in alphabetical order.
    - ofaLedgerProperties: display ledger balances (todo #1227).
    - ofaPeriodClose: have a progress bar when archiving accounts (todo #1160).
+   - ofaReconcilPage: do not check for balanced amounts on Ctrl+Reconciliate.
    - ofaRecurrentModel: display grayed+italic disabled models.
    - ofaRecurrentRun: user confirm validation and display a progress bar (todo #1166).
    - ofaRestoreAssistant: change the 'New' button mnemonic to distinguish it from 'Next' (todo #1233). 
