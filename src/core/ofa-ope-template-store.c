@@ -281,7 +281,7 @@ set_row_by_iter( ofaOpeTemplateStore *self, const ofoOpeTemplate *ope, GtkTreeIt
 	stamp  = my_utils_stamp_to_str( ofo_ope_template_get_upd_stamp( ope ), MY_STAMP_DMYYHM );
 
 	pamrow = ofo_ope_template_get_pam_row( ope );
-	spamrow = pamrow ? g_strdup_printf( "%d", pamrow ) : g_strdup( "" );
+	spamrow = pamrow >= 0 ? g_strdup_printf( "%d", pamrow ) : g_strdup( "" );
 
 	notes = ofo_ope_template_get_notes( ope );
 	error = NULL;
