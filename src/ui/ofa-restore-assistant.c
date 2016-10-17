@@ -1245,6 +1245,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
 
 	priv = ofa_restore_assistant_get_instance_private( self );
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 	if( !p6_restore_confirmed( self )){
 		if( priv->p2_is_new_dossier ){
@@ -1255,6 +1256,8 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 				_( "The restore operation has been cancelled by the user." ));
 
 	} else {
+		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), FALSE );
+
 		/* prevent the window manager to close this assistant */
 		priv->is_destroy_allowed = FALSE;
 		ofa_hub_dossier_close( ofa_igetter_get_hub( priv->getter ));
@@ -1329,6 +1332,8 @@ p6_do_restore( ofaRestoreAssistant *self )
 
 	if( ok ){
 		g_idle_add(( GSourceFunc ) p6_do_open, self );
+	} else {
+		my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 	}
 
 	return( G_SOURCE_REMOVE );
@@ -1358,6 +1363,8 @@ p6_do_open( ofaRestoreAssistant *self )
 
 		g_debug( "%s: return from ofa_dossier_open_run", thisfn );
 	}
+
+	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 	return( G_SOURCE_REMOVE );
 }
