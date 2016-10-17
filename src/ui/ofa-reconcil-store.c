@@ -84,21 +84,23 @@ static GType st_col_types[RECONCIL_N_COLUMNS] = {
 };
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaReconcilStore *self );
-static void     entry_insert_row( ofaReconcilStore *self, const ofoEntry *entry, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter );
+static void     entry_insert_row( ofaReconcilStore *self, const ofoEntry *entry, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, ofxCounter exclude );
 static void     entry_get_amount_strs( ofaReconcilStore *self, const ofoEntry *entry, gchar **sdebit, gchar **scredit );
 static void     entry_set_row_by_iter( ofaReconcilStore *store, const ofoEntry *entry, GtkTreeIter *iter );
-static void     bat_insert_row( ofaReconcilStore *self, ofoBatLine *batline, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter );
+static void     bat_insert_row( ofaReconcilStore *self, ofoBatLine *batline, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, ofxCounter exclude );
 static void     bat_get_amount_strs( ofaReconcilStore *self, ofoBatLine *batline, gchar **sdebit, gchar **scredit );
 static void     bat_set_row_by_iter( ofaReconcilStore *self, ofoBatLine *batline, GtkTreeIter *iter );
 static void     concil_set_row_by_iter( ofaReconcilStore *self, ofaIConcil *iconcil, GtkTreeIter *iter );
 static void     concil_set_row_with_data( ofaReconcilStore *self, ofxCounter id, const GDate *date, GtkTreeIter *iter );
 static void     insert_with_remediation( ofaReconcilStore *self, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, gboolean parent_preferred );
 static void     move_children_rec( ofaReconcilStore *self, GtkTreeRowReference *target_ref, GtkTreeRowReference *source_ref );
-static gboolean search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIter *iter );
-static gboolean find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_date, ofoBase *row_object, gint *spread );
-static gboolean search_for_parent_by_concil( ofaReconcilStore *self, ofoConcil *concil, GtkTreeIter *iter );
+static gboolean search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIter *iter, ofxCounter exclude );
+static gboolean find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_date, ofoBase *row_object, gint *spread, gboolean *spread_set );
+static gboolean search_for_parent_by_concil( ofaReconcilStore *self, ofoConcil *concil, GtkTreeIter *iter, ofxCounter exclude );
 static gboolean search_for_entry_by_number( ofaReconcilStore *self, ofxCounter number, GtkTreeIter *iter );
 static gboolean search_for_entry_by_number_rec( ofaReconcilStore *self, ofxCounter number, GtkTreeIter *iter );
+static gboolean find_row_by_concil_member( ofaReconcilStore *self, const gchar *type, ofxCounter id, GtkTreeIter *iter );
+static gboolean find_row_by_concil_member_rec( ofaReconcilStore *self, const gchar *type, ofxCounter id, GtkTreeIter *iter );
 static void     hub_connect_to_signaling_system( ofaReconcilStore *self );
 static void     hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilStore *self );
 static void     hub_do_new_entry( ofaReconcilStore *self, ofoEntry *entry );
@@ -110,6 +112,8 @@ static void     hub_do_update_ledger_id( ofaReconcilStore *self, const gchar *pr
 static void     hub_do_update_ope_template_id( ofaReconcilStore *self, const gchar *prev_id, const gchar *new_id );
 static void     hub_do_update_entry( ofaReconcilStore *self, ofoEntry *entry );
 static void     hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilStore *self );
+static void     hub_do_delete_concil( ofaReconcilStore *self, ofoConcil *concil );
+static void     hub_do_delete_concil_enum( ofoConcil *concil, const gchar *type, ofxCounter id, ofaReconcilStore *self );
 static void     hub_do_delete_entry( ofaReconcilStore *self, ofoEntry *entry );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilStore, ofa_reconcil_store, OFA_TYPE_TREE_STORE, 0,
@@ -288,7 +292,7 @@ ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *accoun
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		entry_insert_row( store, entry, TRUE, NULL, NULL );
+		entry_insert_row( store, entry, TRUE, NULL, NULL, 0 );
 	}
 
 	count = g_list_length( dataset );
@@ -302,6 +306,7 @@ ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *accoun
  *  if %FALSE, will just insert at level zero
  * @parent_iter: if set, insert as a child of @parent_iter.
  * @inserted_iter: [out][allow-none]: iter of newly inserted row
+ * @exclude: do not insert the new entry as a child of @exclude entry
  *
  * Insert the entry:
  *
@@ -314,7 +319,8 @@ ofa_reconcil_store_load_by_account( ofaReconcilStore *store, const gchar *accoun
  *   batline as child)
  */
 static void
-entry_insert_row( ofaReconcilStore *self, const ofoEntry *entry, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter )
+entry_insert_row( ofaReconcilStore *self,
+		const ofoEntry *entry, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, ofxCounter exclude )
 {
 	ofoConcil *concil;
 	GtkTreeIter row_parent, row_inserted;
@@ -328,10 +334,10 @@ entry_insert_row( ofaReconcilStore *self, const ofoEntry *entry, gboolean search
 		} else if( search ){
 			concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
 
-			if( concil && search_for_parent_by_concil( self, concil, &row_parent )){
+			if( concil && search_for_parent_by_concil( self, concil, &row_parent, exclude )){
 				insert_with_remediation( self, &row_parent, &row_inserted, TRUE );
 
-			} else if( !concil && search_for_parent_by_amount( self, OFO_BASE( entry ), &row_parent )){
+			} else if( !concil && search_for_parent_by_amount( self, OFO_BASE( entry ), &row_parent, exclude )){
 				insert_with_remediation( self, &row_parent, &row_inserted, TRUE );
 
 			} else {
@@ -466,7 +472,7 @@ ofa_reconcil_store_load_by_bat( ofaReconcilStore *store, ofxCounter bat_id )
 
 	for( it=dataset ; it ; it=it->next ){
 		batline = OFO_BAT_LINE( it->data );
-		bat_insert_row( store, batline, TRUE, NULL, NULL );
+		bat_insert_row( store, batline, TRUE, NULL, NULL, 0 );
 	}
 
 	count = g_list_length( dataset );
@@ -480,6 +486,7 @@ ofa_reconcil_store_load_by_bat( ofaReconcilStore *store, ofxCounter bat_id )
  *  if %FALSE, will just insert at level zero
  * @parent_iter: if set, insert as a child of @parent_iter.
  * @inserted_iter: [out][allow-none]: iter of newly inserted row
+ * @exclude: do not insert the new entry as a child of @exclude entry
  *
  * Insert the line:
  *
@@ -492,10 +499,13 @@ ofa_reconcil_store_load_by_bat( ofaReconcilStore *store, ofxCounter bat_id )
  *   batline as child)
  */
 static void
-bat_insert_row( ofaReconcilStore *self, ofoBatLine *batline, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter )
+bat_insert_row( ofaReconcilStore *self,
+		ofoBatLine *batline, gboolean search, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, ofxCounter exclude )
 {
 	ofoConcil *concil;
 	GtkTreeIter row_parent, row_inserted;
+
+	row_parent.stamp = 0;
 
 	if( parent_iter ){
 		row_parent = *parent_iter;
@@ -504,10 +514,10 @@ bat_insert_row( ofaReconcilStore *self, ofoBatLine *batline, gboolean search, Gt
 	} else if( search ){
 		concil = ofa_iconcil_get_concil( OFA_ICONCIL( batline ));
 
-		if( concil && search_for_parent_by_concil( self, concil, &row_parent )){
+		if( concil && search_for_parent_by_concil( self, concil, &row_parent, exclude )){
 			insert_with_remediation( self, &row_parent, &row_inserted, FALSE );
 
-		} else if( !concil && search_for_parent_by_amount( self, OFO_BASE( batline ), &row_parent )){
+		} else if( !concil && search_for_parent_by_amount( self, OFO_BASE( batline ), &row_parent, exclude )){
 			insert_with_remediation( self, &row_parent, &row_inserted, FALSE );
 
 		} else {
@@ -629,7 +639,7 @@ concil_set_row_with_data( ofaReconcilStore *self, ofxCounter id, const GDate *da
 	gchar *srappro, *snum;
 
 	srappro = date ? my_date_to_str( date, ofa_prefs_date_display()) : g_strdup( "" );
-	snum = id ? g_strdup_printf( "%lu", id ) : g_strdup( "" );
+	snum = id > 0 ? g_strdup_printf( "%lu", id ) : g_strdup( "" );
 
 	/* g_debug( "concil_number=%s", snum ); */
 
@@ -652,6 +662,8 @@ concil_set_row_with_data( ofaReconcilStore *self, ofxCounter id, const GDate *da
  * if @parent_preferred is set *and* the parent row is a BAT line, then
  *  try to exchange the two rows, i.e. insert the new row at level 0,
  *  making the old parent a child of this new row.
+ *
+ * @oarent_iter: is expected to be valid here
  */
 static void
 insert_with_remediation( ofaReconcilStore *self, GtkTreeIter *parent_iter, GtkTreeIter *inserted_iter, gboolean parent_preferred )
@@ -659,6 +671,10 @@ insert_with_remediation( ofaReconcilStore *self, GtkTreeIter *parent_iter, GtkTr
 	ofoBase *row_object, *parent_object;
 	GtkTreePath *path;
 	GtkTreeRowReference *parent_ref, *inserted_ref;
+
+	if( 0 ){
+		g_debug( "insert_with_remediation: parent_iter=%p, stamp=%u", parent_iter, parent_iter ? parent_iter->stamp : 0 );
+	}
 
 	if( 0 && parent_preferred ){
 		gtk_tree_model_get( GTK_TREE_MODEL( self ), parent_iter, RECONCIL_COL_OBJECT, &row_object, -1 );
@@ -747,21 +763,23 @@ move_children_rec( ofaReconcilStore *self, GtkTreeRowReference *target_ref, GtkT
  * Search for the closest date so that entry.dope <= batline.deffect.
  */
 static gboolean
-search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIter *iter )
+search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIter *parent_iter, ofxCounter exclude )
 {
 	static const gchar *thisfn = "ofa_reconcil_store_search_for_parent_by_amount";
-	gboolean is_debug = FALSE;
+	gboolean spread_set, is_debug = TRUE;
 	gchar *obj_debit, *obj_credit, *row_debit, *row_credit;
 	ofoBase *row_object;
 	const GDate *obj_date;
-	GtkTreeIter closest_iter;
+	GtkTreeIter iter, closest_iter;
 	gint spread;
 	gboolean found;
+	ofxCounter row_entnum;
+	ofaEntryStatus row_status;
 
 	g_return_val_if_fail( object && ( OFO_IS_ENTRY( object ) || OFO_IS_BAT_LINE( object )), FALSE );
 
 	found = FALSE;
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
 		/* get amounts of the being-inserted object
 		 * entry: debit is positive, credit is negative
 		 * batline: debit is negative, credit is positive */
@@ -776,14 +794,18 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 			obj_date = ofo_bat_line_get_deffect( OFO_BAT_LINE( object ));
 		}
 		spread = G_MAXINT;
+		spread_set = FALSE;
 		if( is_debug ){
 			g_debug( "%s: object debit=%s credit=%s", thisfn, obj_debit, obj_credit );
 		}
 		/* we are searching for an amount opposite to those of the object
 		 * considering the first row which does not have yet a child */
 		while( TRUE ){
-			if( !gtk_tree_model_iter_has_child( GTK_TREE_MODEL( self ), iter )){
-				gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, RECONCIL_COL_OBJECT, &row_object, -1 );
+			if( !gtk_tree_model_iter_has_child( GTK_TREE_MODEL( self ), &iter )){
+				gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter,
+						RECONCIL_COL_STATUS_I, &row_status,
+						RECONCIL_COL_ENT_NUMBER, &row_entnum,
+						RECONCIL_COL_OBJECT, &row_object, -1 );
 				g_return_val_if_fail( row_object && ( OFO_IS_ENTRY( row_object ) || OFO_IS_BAT_LINE( row_object )), FALSE );
 				g_object_unref( row_object );
 				row_debit = NULL;
@@ -791,7 +813,7 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 
 				if( !ofa_iconcil_get_concil( OFA_ICONCIL( row_object ))){
 					if( OFO_IS_ENTRY( row_object )){
-						if( ofo_entry_get_status( OFO_ENTRY( row_object )) != ENT_STATUS_DELETED ){
+						if( row_status != ENT_STATUS_DELETED && ( exclude == 0 || exclude != row_entnum )){
 							entry_get_amount_strs( self, OFO_ENTRY( row_object ), &row_debit, &row_credit );
 						}
 					} else {
@@ -801,8 +823,11 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 						g_debug( "%s: row debit=%s credit=%s", thisfn, row_debit, row_credit );
 					}
 					if( !my_collate( obj_debit, row_credit ) && !my_collate( obj_credit, row_debit )){
-						if( find_closest_date( self, object, obj_date, row_object, &spread )){
-							closest_iter = *iter;
+						if( find_closest_date( self, object, obj_date, row_object, &spread, &spread_set )){
+							if( is_debug ){
+								g_debug( "%s: setting closest_iter", thisfn );
+							}
+							closest_iter = iter;
 						}
 						if( is_debug ){
 							g_debug( "%s: returning TRUE", thisfn );
@@ -813,7 +838,7 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 				g_free( row_debit );
 				g_free( row_credit );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
 				break;
 			}
 		}
@@ -822,7 +847,7 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
 	}
 
 	if( found ){
-		*iter = closest_iter;
+		*parent_iter = closest_iter;
 	}
 
 	return( found );
@@ -834,7 +859,7 @@ search_for_parent_by_amount( ofaReconcilStore *self, ofoBase *object, GtkTreeIte
  * (object, row_object) = (batline, entry) => obj_date >= row_date
  */
 static gboolean
-find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_date, ofoBase *row_object, gint *spread )
+find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_date, ofoBase *row_object, gint *spread, gboolean *spread_set )
 {
 	const GDate *row_date;
 	gint this_spread;
@@ -843,15 +868,17 @@ find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_dat
 		if( OFO_IS_ENTRY( row_object )){
 			row_date = ofo_entry_get_dope( OFO_ENTRY( row_object ));
 			this_spread = g_date_days_between( obj_date, row_date );
-			if( this_spread == 0 ){
-				*spread = 0;
+			if( !*spread_set || this_spread == 0 ){
+				*spread = this_spread;
+				*spread_set = TRUE;
 				return( TRUE );
 			}
 		} else if( OFO_IS_BAT_LINE( row_object )){
 			row_date = ofo_bat_line_get_deffect( OFO_BAT_LINE( row_object ));
 			this_spread = g_date_days_between( obj_date, row_date );
-			if( this_spread >= 0 && this_spread < *spread ){
+			if( !*spread_set || ( this_spread >= 0 && this_spread < *spread )){
 				*spread = this_spread;
+				*spread_set = TRUE;
 				return( TRUE );
 			}
 		}
@@ -859,15 +886,17 @@ find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_dat
 		if( OFO_IS_ENTRY( row_object )){
 			row_date = ofo_entry_get_dope( OFO_ENTRY( row_object ));
 			this_spread = g_date_days_between( row_date, obj_date );
-			if( this_spread >= 0 && this_spread < *spread ){
+			if( !*spread_set || ( this_spread >= 0 && this_spread < *spread )){
 				*spread = this_spread;
+				*spread_set = TRUE;
 				return( TRUE );
 			}
 		} else {
 			row_date = ofo_bat_line_get_deffect( OFO_BAT_LINE( row_object ));
 			this_spread = g_date_days_between( obj_date, row_date );
-			if( this_spread == 0 ){
-				*spread = 0;
+			if( !*spread_set || this_spread == 0 ){
+				*spread = this_spread;
+				*spread_set = TRUE;
 				return( TRUE );
 			}
 		}
@@ -884,20 +913,24 @@ find_closest_date( ofaReconcilStore *self, ofoBase *object, const GDate *obj_dat
  * return TRUE if found
  */
 static gboolean
-search_for_parent_by_concil( ofaReconcilStore *self, ofoConcil *concil, GtkTreeIter *iter )
+search_for_parent_by_concil( ofaReconcilStore *self, ofoConcil *concil, GtkTreeIter *parent_iter, ofxCounter exclude )
 {
-	ofxCounter concil_id, row_id;
+	ofxCounter concil_id, row_id, row_entnum;
+	GtkTreeIter iter;
 
 	g_return_val_if_fail( concil && OFO_IS_CONCIL( concil ), FALSE );
 
 	concil_id = ofo_concil_get_id( concil );
-	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
+
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, RECONCIL_COL_CONCIL_NUMBER_I, &row_id, -1 );
-			if( row_id == concil_id ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ),
+					&iter, RECONCIL_COL_CONCIL_NUMBER_I, &row_id, RECONCIL_COL_ENT_NUMBER_I, &row_entnum, -1 );
+			if( row_id == concil_id && ( exclude == 0 || exclude != row_entnum )){
+				*parent_iter = iter;
 				return( TRUE );
 			}
-			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), &iter )){
 				break;
 			}
 		}
@@ -947,6 +980,56 @@ search_for_entry_by_number_rec( ofaReconcilStore *self, ofxCounter number, GtkTr
 	return( FALSE );
 }
 
+/*
+ * search the row for this member of the conciliation group
+ */
+static gboolean
+find_row_by_concil_member( ofaReconcilStore *self, const gchar *type, ofxCounter id, GtkTreeIter *iter )
+{
+	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
+		if( find_row_by_concil_member_rec( self, type, id, iter )){
+			return( TRUE );
+		}
+	}
+	return( FALSE );
+}
+
+static gboolean
+find_row_by_concil_member_rec( ofaReconcilStore *self, const gchar *type, ofxCounter id, GtkTreeIter *iter )
+{
+	ofxCounter row_id;
+	GtkTreeIter child_iter;
+	gchar *row_type;
+	gint cmp;
+
+	while( TRUE ){
+		if( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, iter )){
+			if( find_row_by_concil_member_rec( self, type, id, &child_iter )){
+				*iter = child_iter;
+				return( TRUE );
+			}
+		}
+		gtk_tree_model_get( GTK_TREE_MODEL( self ), iter,
+				RECONCIL_COL_CONCIL_TYPE, &row_type, RECONCIL_COL_ENT_NUMBER_I, &row_id, -1 );
+		cmp = ( id < row_id ? -1 : ( id > row_id ? 1 : 0 ));
+		if( cmp == 0 ){
+			cmp = my_collate( type, row_type );
+		}
+		if( 0 ){
+			g_debug( "type=%s, id=%lu, row_type=%s, row_number=%lu, cmp=%d", type, id, row_type, row_id, cmp );
+		}
+		g_free( row_type );
+		if( cmp == 0 ){
+			return( TRUE );
+		}
+		if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){
+			break;
+		}
+	}
+
+	return( FALSE );
+}
+
 /**
  * ofa_reconcil_store_insert_row:
  * @store: this #ofaReconcilStore instance.
@@ -976,9 +1059,9 @@ ofa_reconcil_store_insert_row( ofaReconcilStore *store, ofaIConcil *iconcil, Gtk
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( OFO_IS_ENTRY( iconcil )){
-		entry_insert_row( store, OFO_ENTRY( iconcil ), TRUE, parent_iter, iter );
+		entry_insert_row( store, OFO_ENTRY( iconcil ), TRUE, parent_iter, iter, 0 );
 	} else {
-		bat_insert_row( store, OFO_BAT_LINE( iconcil ), TRUE, parent_iter, iter );
+		bat_insert_row( store, OFO_BAT_LINE( iconcil ), TRUE, parent_iter, iter, 0 );
 	}
 }
 
@@ -1004,9 +1087,9 @@ ofa_reconcil_store_insert_level_zero( ofaReconcilStore *store, ofaIConcil *iconc
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( OFO_IS_ENTRY( iconcil )){
-		entry_insert_row( store, OFO_ENTRY( iconcil ), FALSE, NULL, iter );
+		entry_insert_row( store, OFO_ENTRY( iconcil ), FALSE, NULL, iter, 0 );
 	} else {
-		bat_insert_row( store, OFO_BAT_LINE( iconcil ), FALSE, NULL, iter );
+		bat_insert_row( store, OFO_BAT_LINE( iconcil ), FALSE, NULL, iter, 0 );
 	}
 }
 
@@ -1062,7 +1145,7 @@ hub_do_new_entry( ofaReconcilStore *self, ofoEntry *entry )
 		ent_account = ofo_entry_get_account( entry );
 		acc_number = ofo_account_get_number( priv->account );
 		if( !my_collate( ent_account, acc_number )){
-			entry_insert_row( self, entry, TRUE, NULL, NULL );
+			entry_insert_row( self, entry, TRUE, NULL, NULL, 0 );
 		}
 	}
 }
@@ -1189,7 +1272,7 @@ hub_do_update_entry( ofaReconcilStore *self, ofoEntry *entry )
 		/* else, should it be present now ? */
 		entry_account = ofo_entry_get_account( entry );
 		if( !my_collate( priv->acc_number, entry_account )){
-			entry_insert_row( self, entry, TRUE, NULL, NULL );
+			entry_insert_row( self, entry, TRUE, NULL, NULL, 0 );
 		}
 	}
 }
@@ -1208,8 +1291,36 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilStore *self )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) self );
 
-	if( OFO_IS_ENTRY( object )){
+	if( OFO_IS_CONCIL( object )){
+		hub_do_delete_concil( self, OFO_CONCIL( object ));
+
+	} else if( OFO_IS_ENTRY( object )){
 		hub_do_delete_entry( self, OFO_ENTRY( object ));
+	}
+}
+
+static void
+hub_do_delete_concil( ofaReconcilStore *self, ofoConcil *concil )
+{
+	ofo_concil_for_each_member( concil, ( ofoConcilEnumerate ) hub_do_delete_concil_enum, self );
+}
+
+static void
+hub_do_delete_concil_enum( ofoConcil *concil, const gchar *type, ofxCounter id, ofaReconcilStore *self )
+{
+	static const gchar *thisfn = "ofa_reconcil_store_hub_do_delete_concil_enum";
+	GtkTreeIter iter;
+	ofoBase *row_object;
+
+	if( find_row_by_concil_member( self, type, id, &iter )){
+		gtk_tree_model_get( GTK_TREE_MODEL( self ), &iter, RECONCIL_COL_OBJECT, &row_object, -1 );
+		g_return_if_fail( row_object && OFA_IS_ICONCIL( row_object ));
+		g_object_unref( row_object );
+		ofa_iconcil_clear_data( OFA_ICONCIL( row_object ));
+		concil_set_row_with_data( self, 0, NULL, &iter );
+
+	} else {
+		g_debug( "%s: type=%s, id=%lu not found", thisfn, type, id );
 	}
 }
 
@@ -1218,21 +1329,21 @@ hub_do_delete_entry( ofaReconcilStore *self, ofoEntry *entry )
 {
 	static const gchar *thisfn = "ofa_reconcil_store_hub_do_delete_entry";
 	GtkTreeIter iter, child_iter;
-	ofoBase *object;
+	ofoBase *row_object;
 	ofxCounter entnum;
 
 	entnum = ofo_entry_get_number( entry );
 
 	if( search_for_entry_by_number( self, entnum, &iter )){
 		while( gtk_tree_model_iter_children( GTK_TREE_MODEL( self ), &child_iter, &iter )){
-			gtk_tree_model_get( GTK_TREE_MODEL( self ), &child_iter, RECONCIL_COL_OBJECT, &object, -1 );
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), &child_iter, RECONCIL_COL_OBJECT, &row_object, -1 );
 			gtk_tree_store_remove( GTK_TREE_STORE( self ), &child_iter );
-			if( OFO_IS_ENTRY( object )){
-				entry_insert_row( self, OFO_ENTRY( object ), TRUE, NULL, NULL );
+			if( OFO_IS_ENTRY( row_object )){
+				entry_insert_row( self, OFO_ENTRY( row_object ), TRUE, NULL, NULL, entnum );
 			} else {
-				bat_insert_row( self, OFO_BAT_LINE( object ), TRUE, NULL, NULL );
+				bat_insert_row( self, OFO_BAT_LINE( row_object ), TRUE, NULL, NULL, entnum );
 			}
-			g_object_unref( object );
+			g_object_unref( row_object );
 			if( !search_for_entry_by_number( self, entnum, &iter )){
 				g_return_if_reached();
 			}
