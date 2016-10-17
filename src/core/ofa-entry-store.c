@@ -659,26 +659,5 @@ hub_on_deleted_concil( ofaEntryStore *self, ofoConcil *concil )
 static void
 hub_on_deleted_entry( ofaEntryStore *self, ofoEntry *entry )
 {
-	static const gchar *thisfn = "ofa_entry_store_hub_on_deleted_entry";
-	ofaEntryStorePrivate *priv;
-	ofxCounter id;
-	ofoConcil *concil;
-
-	g_debug( "%s: self=%p, entry=%p", thisfn, ( void * ) self, ( void * ) entry );
-
-	priv = ofa_entry_store_get_instance_private( self );
-
-	/* if entry was settled, then cancel all settlement group */
-	id = ofo_entry_get_settlement_number( entry );
-	if( id > 0 ){
-		ofo_entry_unsettle_by_number( priv->hub, id );
-	}
-
-	/* if entry was conciliated, then remove all conciliation group */
-	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
-	if( concil ){
-		ofa_iconcil_remove_concil( OFA_ICONCIL( entry ), concil );
-	}
-
 	hub_on_updated_entry( self, entry );
 }

@@ -235,7 +235,8 @@ static gboolean     hub_is_deletable_account( ofaHub *hub, ofoAccount *account )
 static gboolean     hub_is_deletable_currency( ofaHub *hub, ofoCurrency *currency );
 static gboolean     hub_is_deletable_ledger( ofaHub *hub, ofoLedger *ledger );
 static gboolean     hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template );
-static void         hub_on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty );
+static void         hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty );
+static void         hub_on_deleted_entry( ofaHub *hub, ofoEntry *entry );
 static void         hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *prev_end, void *empty );
 static gint         check_for_changed_begin_exe_dates( ofaHub *hub, const GDate *prev_begin, const GDate *new_begin, gboolean remediate );
 static gint         check_for_changed_end_exe_dates( ofaHub *hub, const GDate *prev_end, const GDate *new_end, gboolean remediate );
@@ -753,7 +754,7 @@ ofo_entry_get_dataset_for_store( ofaHub *hub, const gchar *account, const gchar 
 }
 
 /*
- * returns a GList * of ofoEntries
+ * returns a #GList * of all #ofoEntry's which satisfy the @where clause
  */
 static GList *
 entry_load_dataset( ofaHub *hub, const gchar *where, const gchar *order )
@@ -3130,7 +3131,7 @@ hub_is_deletable_ope_template( ofaHub *hub, ofoOpeTemplate *template )
  * SIGNAL_HUB_DELETED signal handler
  */
 static void
-hub_on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
+hub_on_deleted_object( ofaHub *hub, ofoBase *object, void *empty )
 {
 	static const gchar *thisfn = "ofo_entry_hub_on_deleted_object";
 
@@ -3140,12 +3141,31 @@ hub_on_deleted_object( const ofaHub *hub, ofoBase *object, void *empty )
 			( void * ) object, G_OBJECT_TYPE_NAME( object ),
 			( void * ) empty );
 
-	/* what is to do on the entries when a conciliation group is deleted ? */
-	/*
-	if( OFO_IS_CONCIL( object )){
-		g_warning( "%s: conciliation group deleted: should update the entries", thisfn );
+	if( OFO_IS_ENTRY( object )){
+		hub_on_deleted_entry( hub, OFO_ENTRY( object ));
 	}
-	*/
+}
+
+static void
+hub_on_deleted_entry( ofaHub *hub, ofoEntry *entry )
+{
+	static const gchar *thisfn = "ofo_entry_hub_on_deleted_entry";
+	ofxCounter id;
+	ofoConcil *concil;
+
+	/* if entry was settled, then cleanup whole settlement group */
+	id = ofo_entry_get_settlement_number( entry );
+	if( id > 0 ){
+		ofo_entry_unsettle_by_number( hub, id );
+	}
+
+	/* if entry was conciliated, then cleanup whole conciliation group */
+	concil = ofa_iconcil_get_concil( OFA_ICONCIL( entry ));
+	if( concil ){
+		ofa_iconcil_remove_concil( OFA_ICONCIL( entry ), concil );
+	} else {
+		g_debug( "%s: entry=%p: conciliation group is null", thisfn, ( void * ) entry );
+	}
 }
 
 /*
