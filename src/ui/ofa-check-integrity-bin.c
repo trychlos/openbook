@@ -43,6 +43,7 @@
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
 #include "api/ofo-class.h"
+#include "api/ofo-concil.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -66,6 +67,7 @@ typedef struct {
 	gulong         dossier_errs;
 	gulong         bat_lines_errs;
 	gulong         accounts_errs;
+	gulong         concil_errs;
 	gulong         entries_errs;
 	gulong         ledgers_errs;
 	gulong         ope_templates_errs;
@@ -117,6 +119,7 @@ static gboolean do_run( ofaCheckIntegrityBin *self );
 static void     check_dossier_run( ofaCheckIntegrityBin *self );
 static void     check_bat_lines_run( ofaCheckIntegrityBin *self );
 static void     check_accounts_run( ofaCheckIntegrityBin *self );
+static void     check_concil_run( ofaCheckIntegrityBin *self );
 static void     check_entries_run( ofaCheckIntegrityBin *self );
 static void     check_ledgers_run( ofaCheckIntegrityBin *self );
 static void     check_ope_templates_run( ofaCheckIntegrityBin *self );
@@ -138,6 +141,7 @@ static checkfn st_fn[] = {
 		check_dossier_run,
 		check_bat_lines_run,
 		check_accounts_run,
+		check_concil_run,
 		check_entries_run,
 		check_ledgers_run,
 		check_ope_templates_run,
@@ -562,7 +566,7 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 	const void *worker;
 	GtkWidget *label;
 	gulong count, i;
-	GList *bats, *it, *lines, *itl;
+	GList *bats, *it, *lines, *itl, *orphans;
 	ofoBat *bat;
 	ofoBatLine *line;
 	const gchar *cur_code;
@@ -586,49 +590,62 @@ check_bat_lines_run( ofaCheckIntegrityBin *self )
 
 	if( count == 0 ){
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
-	}
 
-	for( i=1, it=bats ; it ; ++i, it=it->next ){
-		bat = OFO_BAT( it->data );
-		id = ofo_bat_get_id( bat );
+	} else {
+		for( i=1, it=bats ; it ; ++i, it=it->next ){
+			bat = OFO_BAT( it->data );
+			id = ofo_bat_get_id( bat );
 
-		/* it is ok for a BAT file to not have a currency set */
-		cur_code = ofo_bat_get_currency( bat );
-		if( my_strlen( cur_code )){
-			cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
-			if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
-				str = g_strdup_printf( _( "BAT file %lu currency '%s' doesn't exist" ), id, cur_code );
-				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
-				g_free( str );
-				priv->bat_lines_errs += 1;
-			}
-		}
-
-		lines = ofo_bat_line_get_dataset( priv->hub, id );
-
-		for( itl=lines ; itl ; itl=itl->next ){
-			line = OFO_BAT_LINE( itl->data );
-			idline = ofo_bat_line_get_line_id( line );
-
-			/* it is ok for a BAT line to not have a currency */
-			cur_code = ofo_bat_line_get_currency( line );
+			/* it is ok for a BAT file to not have a currency set */
+			cur_code = ofo_bat_get_currency( bat );
 			if( my_strlen( cur_code )){
 				cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
 				if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
-					str = g_strdup_printf(
-							_( "BAT line %lu (from BAT file %lu) currency '%s' doesn't exist" ),
-							idline, id, cur_code );
+					str = g_strdup_printf( _( "BAT file %lu currency '%s' doesn't exist" ), id, cur_code );
 					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
 					g_free( str );
 					priv->bat_lines_errs += 1;
 				}
 			}
 
-			/* do not check the entry number of the line */
+			lines = ofo_bat_line_get_dataset( priv->hub, id );
+
+			for( itl=lines ; itl ; itl=itl->next ){
+				line = OFO_BAT_LINE( itl->data );
+				idline = ofo_bat_line_get_line_id( line );
+
+				/* it is ok for a BAT line to not have a currency */
+				cur_code = ofo_bat_line_get_currency( line );
+				if( my_strlen( cur_code )){
+					cur_obj = ofo_currency_get_by_code( priv->hub, cur_code );
+					if( !cur_obj || !OFO_IS_CURRENCY( cur_obj )){
+						str = g_strdup_printf(
+								_( "BAT line %lu (from BAT file %lu) currency '%s' doesn't exist" ),
+								idline, id, cur_code );
+						my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+						g_free( str );
+						priv->bat_lines_errs += 1;
+					}
+				}
+
+				/* do not check the entry number of the line */
+			}
+
+			ofo_bat_line_free_dataset( lines );
+			my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
 		}
 
-		ofo_bat_line_free_dataset( lines );
-		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
+		/* check that all details have a parent */
+		orphans = ofo_bat_line_get_orphans( priv->hub );
+		for( it=orphans ; it ; it=it->next ){
+			str = g_strdup_printf( _( "Found orphan BAT line: %s" ), ( const gchar * ) it->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+			priv->bat_lines_errs += 1;
+			count += 1;
+			my_iprogress_pulse( MY_IPROGRESS( self ), worker, count, count );
+		}
+		ofo_bat_line_free_orphans( orphans );
 	}
 
 	/* progress end */
@@ -709,6 +726,48 @@ check_accounts_run( ofaCheckIntegrityBin *self )
 
 	/* progress end */
 	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->accounts_errs );
+}
+
+/*
+ * Check that ofoConcil
+ */
+static void
+check_concil_run( ofaCheckIntegrityBin *self )
+{
+	ofaCheckIntegrityBinPrivate *priv;
+	const void *worker;
+	GtkWidget *label;
+	gulong count;
+	GList *it, *orphans;
+	gchar *str;
+
+	priv = ofa_check_integrity_bin_get_instance_private( self );
+
+	worker = GUINT_TO_POINTER( OFO_TYPE_BAT );
+
+	if( priv->display ){
+		label = gtk_label_new( _( " Check for conciliation groups integrity " ));
+		my_iprogress_start_work( MY_IPROGRESS( self ), worker, label );
+		my_iprogress_start_progress( MY_IPROGRESS( self ), worker, NULL, TRUE );
+	}
+
+	count = 0;
+	priv->concil_errs = 0;
+
+	/* check that all details have a parent */
+	orphans = ofo_concil_get_orphans( priv->hub );
+	for( it=orphans ; it ; it=it->next ){
+		str = g_strdup_printf( _( "Found orphan conciliation member: %s" ), ( const gchar * ) it->data );
+		my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+		g_free( str );
+		priv->concil_errs += 1;
+		count += 1;
+		my_iprogress_pulse( MY_IPROGRESS( self ), worker, count, count );
+	}
+	ofo_concil_free_orphans( orphans );
+
+	/* progress end */
+	my_iprogress_set_ok( MY_IPROGRESS( self ), worker, NULL, priv->concil_errs );
 }
 
 /*
@@ -899,7 +958,7 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 	ofaCheckIntegrityBinPrivate *priv;
 	const void *worker;
 	GtkWidget *label;
-	GList *ope_templates, *it;
+	GList *ope_templates, *it, *orphans;
 	gulong count, i;
 	ofoOpeTemplate *ope_template;
 	gchar *str;
@@ -923,35 +982,48 @@ check_ope_templates_run( ofaCheckIntegrityBin *self )
 
 	if( count == 0 ){
 		my_iprogress_pulse( MY_IPROGRESS( self ), worker, 0, 0 );
-	}
 
-	for( i=1, it=ope_templates ; it && count ; ++i, it=it->next ){
-		ope_template = OFO_OPE_TEMPLATE( it->data );
-		mnemo = ofo_ope_template_get_mnemo( ope_template );
+	} else {
+		for( i=1, it=ope_templates ; it && count ; ++i, it=it->next ){
+			ope_template = OFO_OPE_TEMPLATE( it->data );
+			mnemo = ofo_ope_template_get_mnemo( ope_template );
 
-		/* ledger is optional here */
-		led_mnemo = ofo_ope_template_get_ledger( ope_template );
-		if( my_strlen( led_mnemo )){
-			led_obj = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
-			if( !led_obj || !OFO_IS_LEDGER( led_obj )){
-				str = g_strdup_printf(
-						_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );
-				my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
-				g_free( str );
-				priv->ope_templates_errs += 1;
+			/* ledger is optional here */
+			led_mnemo = ofo_ope_template_get_ledger( ope_template );
+			if( my_strlen( led_mnemo )){
+				led_obj = ofo_ledger_get_by_mnemo( priv->hub, led_mnemo );
+				if( !led_obj || !OFO_IS_LEDGER( led_obj )){
+					str = g_strdup_printf(
+							_( "Operation template %s has ledger '%s' which doesn't exist" ), mnemo, led_mnemo );
+					my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+					g_free( str );
+					priv->ope_templates_errs += 1;
+				}
 			}
+
+			nbdets = ofo_ope_template_get_detail_count( ope_template );
+			for( idet=0 ; idet<nbdets ; ++idet ){
+				/* cannot check for account without first identifying formulas */
+				acc_number = ofo_ope_template_get_detail_account( ope_template, idet );
+				if( !my_strlen( acc_number )){
+
+				}
+			}
+
+			my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
 		}
 
-		nbdets = ofo_ope_template_get_detail_count( ope_template );
-		for( idet=0 ; idet<nbdets ; ++idet ){
-			/* cannot check for account without first identifying formulas */
-			acc_number = ofo_ope_template_get_detail_account( ope_template, idet );
-			if( !my_strlen( acc_number )){
-
-			}
+		/* check that all details have a parent */
+		orphans = ofo_ope_template_get_orphans( priv->hub );
+		for( it=orphans ; it ; it=it->next ){
+			str = g_strdup_printf( _( "Found orphan operation template: %s" ), ( const gchar * ) it->data );
+			my_iprogress_set_text( MY_IPROGRESS( self ), worker, str );
+			g_free( str );
+			priv->ope_templates_errs += 1;
+			count += 1;
+			my_iprogress_pulse( MY_IPROGRESS( self ), worker, count, count );
 		}
-
-		my_iprogress_pulse( MY_IPROGRESS( self ), worker, i, count );
+		ofo_ope_template_free_orphans( orphans );
 	}
 
 	/* progress end */

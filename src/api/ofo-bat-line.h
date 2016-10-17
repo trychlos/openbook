@@ -67,6 +67,9 @@ GType        ofo_bat_line_get_type                      ( void ) G_GNUC_CONST;
 GList       *ofo_bat_line_get_dataset                   ( ofaHub *hub, ofxCounter bat_id );
 #define      ofo_bat_line_free_dataset(L)               g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
 
+GList       *ofo_bat_line_get_orphans                   ( ofaHub *hub );
+#define      ofo_bat_line_free_orphans(L)               g_list_free_full(( L ), ( GDestroyNotify ) g_free )
+
 GList       *ofo_bat_line_get_dataset_for_print_reconcil( ofaHub *hub, const gchar *account_id );
 
 ofxCounter   ofo_bat_line_get_bat_id_from_bat_line_id   ( ofaHub *hub, ofxCounter line_id );

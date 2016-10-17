@@ -132,6 +132,41 @@ ofo_concil_class_init( ofoConcilClass *klass )
 }
 
 /**
+ * ofo_concil_get_orphans:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the list of conciliation children identifiers which no more
+ * have a parent.
+ *
+ * The returned list should not be #ofo_concil_free_orphans() by
+ * the caller.
+ */
+GList *
+ofo_concil_get_orphans( ofaHub *hub )
+{
+	GList *orphans;
+	GSList *result, *irow, *icol;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	if( !ofa_idbconnect_query_ex(
+			ofa_hub_get_connect( hub ),
+			"SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL_IDS "
+			"	WHERE REC_ID NOT IN (SELECT DISTINCT(REC_ID) FROM OFA_T_CONCIL)"
+			"	ORDER BY REC_ID DESC", &result, FALSE )){
+		return( NULL );
+	}
+	orphans = NULL;
+	for( irow=result ; irow ; irow=irow->next ){
+		icol = irow->data;
+		orphans = g_list_prepend( orphans, g_strdup(( gchar * ) icol->data ));
+	}
+	ofa_idbconnect_free_results( result );
+
+	return( orphans );
+}
+
+/**
  * ofo_concil_get_by_id:
  * @hub: the current #ofaHub object.
  * @rec_id: the identifier of the requested conciliation group.

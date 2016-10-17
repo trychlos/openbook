@@ -327,6 +327,41 @@ ofo_ope_template_get_dataset( ofaHub *hub )
 }
 
 /**
+ * ofo_ope_template_get_orphans:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the list of template children identifiers which no more
+ * have a parent.
+ *
+ * The returned list should not be #ofo_ope_template_free_orphans() by
+ * the caller.
+ */
+GList *
+ofo_ope_template_get_orphans( ofaHub *hub )
+{
+	GList *orphans;
+	GSList *result, *irow, *icol;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	if( !ofa_idbconnect_query_ex(
+			ofa_hub_get_connect( hub ),
+			"SELECT DISTINCT(OTE_MNEMO) FROM OFA_T_OPE_TEMPLATES_DET "
+			"	WHERE OTE_MNEMO NOT IN (SELECT DISTINCT(OTE_MNEMO) FROM OFA_T_OPE_TEMPLATES)"
+			"	ORDER BY OTE_MNEMO DESC", &result, FALSE )){
+		return( NULL );
+	}
+	orphans = NULL;
+	for( irow=result ; irow ; irow=irow->next ){
+		icol = irow->data;
+		orphans = g_list_prepend( orphans, g_strdup(( gchar * ) icol->data ));
+	}
+	ofa_idbconnect_free_results( result );
+
+	return( orphans );
+}
+
+/**
  * ofo_ope_template_get_by_mnemo:
  *
  * Returns: the searched model, or %NULL.
@@ -2283,6 +2318,7 @@ do_update_formulas( ofaHub *hub, const gchar *new_id, const gchar *prev_id )
 			g_free( det_label );
 			g_free( etp_mnemo );
 		}
+		ofa_idbconnect_free_results( result );
 	}
 
 	return( ok );

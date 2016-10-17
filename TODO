@@ -133,11 +133,6 @@
      2016- 1-27 other use case: automatically print the reports on
                 period closing
 
- 567 2015- 1- 9 have an EntryStore ?
-     2015- 1-18 - ofaViewEntries add its own columns to its store
-                - ofaReconciliation is a tree store with bat lines
-                so the usefulness has yet to be proved...
-
  584 2015- 1-12 ofo_insert_entry: should also insert reconciliation and
                 settlement data groups if they are set in the object
                 (would prevent two updates when closing the exercice)
@@ -149,7 +144,7 @@
  601 2015- 1-24 ExerciceClose: reset BAT files and lines from the new
                 database
      2016- 4-20 see also #886.
-     2016-10-12 + purge reconciliation groups (wich is actually the #886)
+     2016-10-12 + purge reconciliation groups (wich was actually the #886)
 
  632 2015- 2- 8 desktop file: use prefix when installing icon elsewhere
                 than standard prefix=/usr
@@ -501,6 +496,12 @@
  562 2015- 1- 8 Add misc menu option to see the loaded stores, and
                 reset them
      2016- 5- 2 done
+
+ 567 2015- 1- 9 have an EntryStore ?
+     2015- 1-18 - ofaViewEntries add its own columns to its store
+                - ofaReconciliation is a tree store with bat lines
+                so the usefulness has yet to be proved...
+     2016-10-16 done
 
  572 2015- 1-10 refactor: get rid of amounts (not rates), replacing 
                 them with integers ?

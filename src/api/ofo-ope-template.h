@@ -151,6 +151,9 @@ GType           ofo_ope_template_get_type                 ( void ) G_GNUC_CONST;
 GList          *ofo_ope_template_get_dataset              ( ofaHub *hub );
 #define         ofo_ope_template_free_dataset( L )        g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
+GList          *ofo_ope_template_get_orphans              ( ofaHub *hub );
+#define         ofo_ope_template_free_orphans( L )        g_list_free_full(( L ),( GDestroyNotify ) g_free )
+
 ofoOpeTemplate *ofo_ope_template_get_by_mnemo             ( ofaHub *hub, const gchar *mnemo );
 
 ofoOpeTemplate *ofo_ope_template_new                      ( void );

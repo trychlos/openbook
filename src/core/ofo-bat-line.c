@@ -233,6 +233,41 @@ bat_line_load_dataset( ofaHub *hub, const gchar *where )
 }
 
 /**
+ * ofo_bat_line_get_orphans:
+ * @hub: the current #ofaHub object.
+ *
+ * Returns: the list of BAT children identifiers which no more
+ * have a parent.
+ *
+ * The returned list should not be #ofo_bat_line_free_orphans() by
+ * the caller.
+ */
+GList *
+ofo_bat_line_get_orphans( ofaHub *hub )
+{
+	GList *orphans;
+	GSList *result, *irow, *icol;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	if( !ofa_idbconnect_query_ex(
+			ofa_hub_get_connect( hub ),
+			"SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT_LINES "
+			"	WHERE BAT_ID NOT IN (SELECT DISTINCT(BAT_ID) FROM OFA_T_BAT)"
+			"	ORDER BY BAT_ID DESC", &result, FALSE )){
+		return( NULL );
+	}
+	orphans = NULL;
+	for( irow=result ; irow ; irow=irow->next ){
+		icol = irow->data;
+		orphans = g_list_prepend( orphans, g_strdup(( gchar * ) icol->data ));
+	}
+	ofa_idbconnect_free_results( result );
+
+	return( orphans );
+}
+
+/**
  * ofo_bat_line_get_dataset_for_print_reconcil:
  * @hub: the current #ofaHub object.
  * @account: the reconciliated account.
