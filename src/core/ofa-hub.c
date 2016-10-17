@@ -47,6 +47,7 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
+#include "api/ofo-paimean.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofo-rate.h"
 
@@ -694,6 +695,7 @@ ofa_hub_register_types( ofaHub *hub )
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_PAIMEAN, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_RATE, NULL ));
 	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
