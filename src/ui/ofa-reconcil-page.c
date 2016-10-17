@@ -259,7 +259,6 @@ static void                 bat_display_by_id( ofaReconcilPage *self, ofxCounter
 static void                 bat_display_file( ofaReconcilPage *self, ofoBat *bat );
 static void                 bat_display_name( ofaReconcilPage *self );
 static void                 bat_display_counts( ofaReconcilPage *self );
-//static void                 expand_node_by_store_iter( ofaReconcilPage *self, GtkTreeIter *store_iter );
 static gboolean             check_for_enable_view( ofaReconcilPage *self );
 static void                 action_on_reconciliate_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPage *self );
 static void                 do_reconciliate( ofaReconcilPage *self );
@@ -273,7 +272,6 @@ static void                 do_unconciliate( ofaReconcilPage *self );
 static GList               *do_unconciliate_get_children_refs( ofaReconcilPage *self, GtkTreeRowReference *parent_ref );
 static void                 do_unconciliate_iconcil( ofaReconcilPage *self, GList *store_refs, GList **obj_list );
 static void                 set_reconciliated_balance( ofaReconcilPage *self );
-//static const GDate         *get_bat_line_dope( ofaReconcilPage *self, ofoBatLine *batline );
 static void                 get_tree_models( ofaReconcilPage *self, GtkTreeModel **sort_model, GtkTreeModel **filter_model );
 static GList               *selected_to_store_refs( ofaReconcilPage *self, GtkTreeModel *sort_model, GtkTreeModel *filter_model, GtkTreeModel *store_model, GList *selected );
 static GtkTreeRowReference *sort_iter_to_store_ref( ofaReconcilPage *self, GtkTreeModel *sort_model, GtkTreeModel *filter_model, GtkTreeModel *store_model, GtkTreeIter *sort_iter );
@@ -1865,29 +1863,6 @@ bat_associates_account( ofaReconcilPage *self, ofoBatLine *batline, const gchar 
 	}
 }
 
-#if 0
-static void
-expand_node_by_store_iter( ofaReconcilPage *self, GtkTreeIter *store_iter )
-{
-	ofaReconcilPagePrivate *priv;
-	GtkTreePath *store_path, *filter_path, *sort_path;
-
-	priv = ofa_reconcil_page_get_instance_private( self );
-
-	store_path = gtk_tree_model_get_path( priv->tstore, store_iter );
-	filter_path = gtk_tree_model_filter_convert_child_path_to_path(
-						GTK_TREE_MODEL_FILTER( priv->tfilter ), store_path );
-	sort_path = gtk_tree_model_sort_convert_child_path_to_path(
-						GTK_TREE_MODEL_SORT( priv->tsort ), filter_path );
-
-	gtk_tree_view_expand_row( priv->tview, sort_path, FALSE );
-
-	gtk_tree_path_free( sort_path );
-	gtk_tree_path_free( filter_path );
-	gtk_tree_path_free( store_path );
-}
-#endif
-
 /*
  * the view is disabled (insensitive) each time the configuration parms
  * are not valid (invalid account or invalid reconciliation display
@@ -2637,21 +2612,6 @@ set_reconciliated_balance( ofaReconcilPage *self )
 	g_free( scre );
 }
 
-#if 0
-static const GDate *
-get_bat_line_dope( ofaReconcilPage *self, ofoBatLine *batline )
-{
-	const GDate *dope;
-
-	dope = ofo_bat_line_get_dope( batline );
-	if( !my_date_is_valid( dope )){
-		dope = ofo_bat_line_get_deffect( batline );
-	}
-
-	return( dope );
-}
-#endif
-
 static void
 get_tree_models( ofaReconcilPage *self, GtkTreeModel **sort_model, GtkTreeModel **filter_model )
 {
@@ -3029,7 +2989,7 @@ hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	if( OFO_IS_BAT_LINE( object ) || OFO_IS_ENTRY( object )){
+	if( OFO_IS_BAT_LINE( object ) || OFO_IS_CONCIL( object ) || OFO_IS_ENTRY( object )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 		ofa_reconcil_treeview_default_expand( priv->tview );
 		set_reconciliated_balance( self );
@@ -3054,7 +3014,7 @@ hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaRe
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	if( OFO_IS_BAT_LINE( object ) || OFO_IS_ENTRY( object )){
+	if( OFO_IS_BAT_LINE( object ) || OFO_IS_CONCIL( object ) || OFO_IS_ENTRY( object )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 		ofa_reconcil_treeview_default_expand( priv->tview );
 		set_reconciliated_balance( self );
@@ -3078,7 +3038,7 @@ hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	if( OFO_IS_BAT_LINE( object ) || OFO_IS_ENTRY( object )){
+	if( OFO_IS_BAT_LINE( object ) || OFO_IS_CONCIL( object ) || OFO_IS_ENTRY( object )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 		ofa_reconcil_treeview_default_expand( priv->tview );
 		set_reconciliated_balance( self );
