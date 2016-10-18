@@ -52,6 +52,7 @@ static GType st_col_types[PER_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* code, label, have_detail */
 		G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_STRING,	/* have_detail_b, add_type, add_count */
 		G_TYPE_INT, G_TYPE_STRING, 0,					/* add_count_i, notes, notes_png */
+		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoRecPeriod itself */
 };
 

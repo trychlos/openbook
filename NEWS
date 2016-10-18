@@ -88,6 +88,7 @@
    - ofaPaimeanStore: new class (todo #714).
    - ofaPaimeanTreeview: new class (todo #714).
    - ofoPaimean: new class (todo #714).
+   - ofaRecPeriodPage: new class.
    - ofaRecPeriodStore: new class.
    - ofaRecPeriodTreeview: new class.
    - ofoRecPeriod: new class.

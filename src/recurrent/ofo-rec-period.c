@@ -477,6 +477,30 @@ ofo_rec_period_is_add_type_valid( const gchar *add_type )
 }
 
 /**
+ * ofo_rec_period_is_deletable:
+ *
+ * A periodicity may be deleted when it is not referenced anywhere.
+ */
+gboolean
+ofo_rec_period_is_deletable( ofoRecPeriod *period )
+{
+	ofaHub *hub;
+	gboolean deletable;
+
+	g_return_val_if_fail( period && OFO_IS_REC_PERIOD( period ), FALSE );
+	g_return_val_if_fail( !OFO_BASE( period )->prot->dispose_has_run, FALSE );
+
+	deletable = TRUE;
+	hub = ofo_base_get_hub( OFO_BASE( period ));
+
+	if( hub && deletable ){
+		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, period, &deletable );
+	}
+
+	return( deletable );
+}
+
+/**
  * ofo_rec_period_set_code:
  * @period: this #ofoRecPeriod object.
  * @code:

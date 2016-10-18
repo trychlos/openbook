@@ -89,6 +89,7 @@ const gchar    *ofo_rec_period_detail_get_code   ( ofoRecPeriod *period, guint i
 const gchar    *ofo_rec_period_detail_get_label  ( ofoRecPeriod *period, guint idx );
 
 gboolean        ofo_rec_period_is_add_type_valid ( const gchar *add_type );
+gboolean        ofo_rec_period_is_deletable      ( ofoRecPeriod *period );
 
 void            ofo_rec_period_set_code          ( ofoRecPeriod *period, const gchar *code );
 void            ofo_rec_period_set_label         ( ofoRecPeriod *period, const gchar *label );

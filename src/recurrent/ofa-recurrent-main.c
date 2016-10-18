@@ -35,6 +35,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itheme-manager.h"
 
+#include "recurrent/ofa-rec-period-page.h"
 #include "recurrent/ofa-recurrent-main.h"
 #include "recurrent/ofa-recurrent-model-page.h"
 #include "recurrent/ofa-recurrent-run-page.h"
@@ -61,12 +62,14 @@ typedef struct {
 static void on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty );
 static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
 static void on_theme_available( ofaIGetter *getter, ofaIThemeManager *manager, void *empty );
+static void on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
-/* all the actions added for the TVA modules
+/* all the actions added for the Recurrent modules
  */
 static const GActionEntry st_win_entries[] = {
+		{ "rec-period",  on_rec_period,  NULL, NULL, NULL },
 		{ "recurrent-run",  on_recurrent_run,  NULL, NULL, NULL },
 		{ "recurrent-define",  on_recurrent_manage,  NULL, NULL, NULL },
 };
@@ -80,14 +83,16 @@ static const sItemDef st_items_ope2[] = {
 
 static const sItemDef st_items_ref[] = {
 		{ "recurrent-define", N_( "_Recurrent models management..." ) },
+		{ "rec-period",       N_( "Recurrent _periodicities..." ) },
 		{ 0 }
 };
 
 /* the themes which also define the tab titles
  */
 static sThemeDef st_theme_defs[] = {
-		{ "recurrent-run",  N_( "_Recurrent operations validation" ),  ofa_recurrent_run_page_get_type },
-		{ "recurrent-define",  N_( "_Recurrent models management" ),  ofa_recurrent_model_page_get_type },
+		{ "rec-period",       N_( "_Recurrent periodicities" ),         ofa_rec_period_page_get_type },
+		{ "recurrent-run",    N_( "_Recurrent operations validation" ), ofa_recurrent_run_page_get_type },
+		{ "recurrent-define", N_( "_Recurrent models management" ),     ofa_recurrent_model_page_get_type },
 		{ 0 }
 };
 
@@ -137,7 +142,7 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 	static const gchar *thisfn = "recurrent/ofa_recurrent_main_menu_add_section";
 	GMenuModel *menu_model;
     GMenu *section;
-    GMenuItem *item;
+    //GMenuItem *item;
     gchar *label, *action_name;
     gint i;
 
@@ -154,14 +159,15 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 		for( i=0 ; sitems[i].action_name ; ++i ){
 			label = g_strdup( sitems[i].item_label );
 			action_name = g_strconcat( "win.", sitems[i].action_name, NULL );
-			g_menu_insert( section, 0, label, action_name );
+			g_menu_insert( section, i, label, action_name );
 			g_free( label );
 			g_free( action_name );
-			item = g_menu_item_new_section( NULL, G_MENU_MODEL( section ));
-			g_menu_item_set_attribute( item, "id", "s", sitems[i].action_name );
-			g_menu_append_item( G_MENU( menu_model ), item );
-			g_object_unref( item );
 		}
+		/*item = g_menu_item_new_section( NULL, G_MENU_MODEL( section ));
+		g_menu_item_set_attribute( item, "id", "s", sitems[i].action_name );
+		g_menu_append_item( G_MENU( menu_model ), item );
+		g_object_unref( item );*/
+		g_menu_append_section( G_MENU( menu_model ), NULL, G_MENU_MODEL( section ));
 		g_object_unref( section );
 	}
 }
@@ -178,6 +184,21 @@ on_theme_available( ofaIGetter *getter, ofaIThemeManager *manager, void *empty )
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
 		ofa_itheme_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );
 	}
+}
+
+static void
+on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data )
+{
+	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_rec_period";
+	ofaIThemeManager *manager;
+
+	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
+			thisfn, action, parameter, ( void * ) user_data );
+
+	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
+
+	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
+	ofa_itheme_manager_activate( manager, OFA_TYPE_REC_PERIOD_PAGE );
 }
 
 static void

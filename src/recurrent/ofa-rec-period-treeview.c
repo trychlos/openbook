@@ -316,11 +316,11 @@ setup_columns( ofaRecPeriodTreeview *self )
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_CODE,        _( "Code" ),     _( "Periodicity identifier" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), PER_COL_LABEL,       _( "Label" ),    _( "Periodicity label" ));
-	ofa_tvbin_add_column_text_x ( OFA_TVBIN( self ), PER_COL_HAVE_DETAIL, _( "Details" ),  _( "Has details" ));
-	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), PER_COL_ADD_TYPE,    _( "Type" ),     _( "Add type" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_ADD_COUNT,   _( "Count" ),    _( "Add count" ));
-	ofa_tvbin_add_column_amount ( OFA_TVBIN( self ), PER_COL_NOTES,       _( "Notes" ),        NULL);
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PER_COL_LABEL,       _( "Label" ),    _( "Periodicity label" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_HAVE_DETAIL, _( "Details" ),  _( "Has details" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_ADD_TYPE,    _( "Type" ),     _( "Add type" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), PER_COL_ADD_COUNT,   _( "Count" ),    _( "Add count" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PER_COL_NOTES,       _( "Notes" ),        NULL);
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), PER_COL_NOTES_PNG,      "",           _( "Notes indicator" ));
 	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_UPD_USER,    _( "User" ),     _( "Last update user" ));
 	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), PER_COL_UPD_STAMP,      NULL,         _( "Last update timestamp" ));

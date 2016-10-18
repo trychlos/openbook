@@ -132,6 +132,7 @@ recurrent_model_page_dispose( GObject *instance )
 
 		g_object_unref( priv->new_action );
 		g_object_unref( priv->update_action );
+		g_object_unref( priv->duplicate_action );
 		g_object_unref( priv->delete_action );
 		g_object_unref( priv->generate_action );
 		g_object_unref( priv->view_opes_action );
