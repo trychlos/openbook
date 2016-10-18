@@ -140,6 +140,7 @@ Press Continue.</property>
                 <property name="margin_top">2</property>
                 <property name="margin_bottom">2</property>
                 <property name="hexpand">False</property>
+                <property name="row_spacing">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="label221">
