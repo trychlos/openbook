@@ -28,7 +28,7 @@
 /**
  * SECTION: ofo_recurrent_model
  * @short_description: #ofoRecurrentModel class definition.
- * @include: recurrent/ofo-recurrent-form.h
+ * @include: recurrent/ofo-recurrent-model.h
  *
  * This file defines the #ofoRecurrentModel class behavior.
  *

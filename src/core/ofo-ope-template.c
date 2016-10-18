@@ -764,6 +764,10 @@ ope_template_set_upd_stamp( ofoOpeTemplate *model, const GTimeVal *upd_stamp )
 	ofo_base_setter( OPE_TEMPLATE, model, string, OTE_UPD_STAMP, upd_stamp );
 }
 
+/**
+ * ofo_ope_template_add_detail:
+ * @model:
+ */
 void
 ofo_ope_template_add_detail( ofoOpeTemplate *model,
 								const gchar *comment,

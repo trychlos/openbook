@@ -169,7 +169,7 @@ am_libofa_recurrent_la_OBJECTS = ofa-extension.lo \
 	ofa-recurrent-model-store.lo ofa-recurrent-model-treeview.lo \
 	ofa-recurrent-run-page.lo ofa-recurrent-run-store.lo \
 	ofa-recurrent-run-treeview.lo ofa-recurrent-tree-adder.lo \
-	ofo-recurrent-gen.lo ofo-recurrent-model.lo \
+	ofo-rec-period.lo ofo-recurrent-gen.lo ofo-recurrent-model.lo \
 	ofo-recurrent-run.lo
 am__objects_1 = resources.lo
 nodist_libofa_recurrent_la_OBJECTS = $(am__objects_1)
@@ -474,6 +474,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-run-treeview.h						\
 	ofa-recurrent-tree-adder.c							\
 	ofa-recurrent-tree-adder.h							\
+	ofo-rec-period.c									\
+	ofo-rec-period.h									\
 	ofo-recurrent-gen.c									\
 	ofo-recurrent-gen.h									\
 	ofo-recurrent-model.c								\
@@ -593,6 +595,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-run-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-run-treeview.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-recurrent-tree-adder.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-rec-period.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-recurrent-gen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-recurrent-model.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofo-recurrent-run.Plo@am__quote@

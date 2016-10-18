@@ -353,12 +353,6 @@
                 are displayed with a last closed date in the previous
                 exercice (weird ?)
 
-1232 2016-10-11 Feature question: should the opening ledger be closed
-                with a date at the end of the exercice ? This would
-                prevent any new entry to be registered after (previous)
-                exercice closing operations.
-                For now, it is closed at the first day of the exercice.
-
 1234 2016-10-11 RestoreAssistant: the New button is enabled, but not the
                 corresponding menu item
                 (maybe same that #1221 ?)
@@ -369,7 +363,9 @@
 1236 2016-10-13 clean up user and dossier settings to have most informations
                 in dbms
 
-1237
+1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
+
+1238
 
 -----------------------------------------------------------------------
  DONE
@@ -1854,6 +1850,14 @@
 1230 2016-10-10 ExerciceCloseAssistant: check that closing and opening
                 templates are valid (able to generate valid entries)
      2016-10-11 done
+
+1232 2016-10-11 Feature question: should the opening ledger be closed
+                with a date at the end of the exercice ? This would
+                prevent any new entry to be registered after (previous)
+                exercice closing operations.
+                For now, it is closed at the first day of the exercice.
+     2016-10-17 this is ok: let the ledger be imputed in case of a new
+                account be opened during the exercice, and need a RAN
 
 1233 2016-10-11 RestoreAssistant: Button 'ne_w'
      2016-10-11 fixed

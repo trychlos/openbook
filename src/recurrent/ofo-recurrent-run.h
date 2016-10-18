@@ -28,7 +28,7 @@
 /**
  * SECTION: ofo_recurrent_run
  * @short_description: #ofoRecurrentRun class definition.
- * @include: recurrent/ofo-recurrent-form.h
+ * @include: recurrent/ofo-recurrent-run.h
  *
  * This file defines the #ofoRecurrentRun class behavior.
  *
