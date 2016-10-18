@@ -60,6 +60,8 @@ nodist_libofa_recurrent_la_SOURCES = \
 
 libofa_recurrent_la_SOURCES = \
 	ofa-extension.c										\
+	ofa-rec-period-store.c								\
+	ofa-rec-period-store.h								\
 	ofa-recurrent-dbmodel.c								\
 	ofa-recurrent-dbmodel.h								\
 	ofa-recurrent-execlose.c							\

@@ -78,7 +78,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 		{ REC_LABEL,
 				"REC_PER_LABEL",
 				"REC_LABEL",
-				OFA_TYPE_DATE,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ REC_HAVE_DETAIL,
@@ -983,7 +983,7 @@ iexportable_get_interface_version( void )
 static gchar *
 iexportable_get_label( const ofaIExportable *instance )
 {
-	return( g_strdup( _( "Reference : _periodicity" )));
+	return( g_strdup( _( "Recurrent _periodicities" )));
 }
 
 /*

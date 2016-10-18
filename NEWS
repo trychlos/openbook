@@ -88,6 +88,7 @@
    - ofaPaimeanStore: new class (todo #714).
    - ofaPaimeanTreeview: new class (todo #714).
    - ofoPaimean: new class (todo #714).
+   - ofaRecPeriodStore: new class.
    - ofoRecPeriod: new class.
    - ofsAccountBalance: remove unused API (todo #1224).
 
