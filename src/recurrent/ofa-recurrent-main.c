@@ -142,7 +142,6 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 	static const gchar *thisfn = "recurrent/ofa_recurrent_main_menu_add_section";
 	GMenuModel *menu_model;
     GMenu *section;
-    //GMenuItem *item;
     gchar *label, *action_name;
     gint i;
 
@@ -163,10 +162,6 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 			g_free( label );
 			g_free( action_name );
 		}
-		/*item = g_menu_item_new_section( NULL, G_MENU_MODEL( section ));
-		g_menu_item_set_attribute( item, "id", "s", sitems[i].action_name );
-		g_menu_append_item( G_MENU( menu_model ), item );
-		g_object_unref( item );*/
 		g_menu_append_section( G_MENU( menu_model ), NULL, G_MENU_MODEL( section ));
 		g_object_unref( section );
 	}
