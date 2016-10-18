@@ -62,6 +62,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-extension.c										\
 	ofa-rec-period-store.c								\
 	ofa-rec-period-store.h								\
+	ofa-rec-period-treeview.c							\
+	ofa-rec-period-treeview.h							\
 	ofa-recurrent-dbmodel.c								\
 	ofa-recurrent-dbmodel.h								\
 	ofa-recurrent-execlose.c							\
