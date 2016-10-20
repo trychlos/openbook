@@ -329,7 +329,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 		list = ofa_ledger_treeview_get_selected( tview );
 		priv->selected = NULL;
 		for( it=list ; it ; it=it->next ){
-			ledger = ofo_ledger_get_by_mnemo( hub, ( const gchar * ) it->data );
+			ledger = ( ofoLedger * ) it->data;
 			g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), FALSE );
 			priv->selected = g_list_append( priv->selected, ledger );
 		}
