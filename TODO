@@ -356,6 +356,7 @@
 1234 2016-10-11 RestoreAssistant: the New button is enabled, but not the
                 corresponding menu item
                 (maybe same that #1221 ?)
+     2016-10-19 actually no item context is activated
 
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
@@ -364,7 +365,19 @@
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
 
-1238
+1238 2016-10-19 configure VAT report on VAT declaration (pwi consultants)
+
+1239 2016-10-19 export from EntryPage
+
+1240 2016-10-20 Stock importers: version label should be "2016.1" instead
+                of 'v 2016.1'
+
+1241 2016-10-20 display somewhere (in PluginManager) the DB versions
+
+1242 2016-10-20 rename ThemeManager to PageManager
+                (and clarify the behavior)
+
+1243
 
 -----------------------------------------------------------------------
  DONE

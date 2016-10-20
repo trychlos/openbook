@@ -28,7 +28,7 @@
 /**
  * SECTION: ofa_ope_template_properties
  * @short_description: #ofaOpeTemplateProperties class definition.
- * @include: ui/ofa-entry-template-properties.h
+ * @include: ui/ofa-ope-template-properties.h
  *
  * Update the model properties.
  *
