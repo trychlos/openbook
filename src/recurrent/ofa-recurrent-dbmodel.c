@@ -73,6 +73,8 @@ static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
 static gulong   count_v5( sUpdate *update_data );
 static gboolean dbmodel_to_v6( sUpdate *update_data, guint version );
 static gulong   count_v6( sUpdate *update_data );
+static gboolean dbmodel_to_v7( sUpdate *update_data, guint version );
+static gulong   count_v7( sUpdate *update_data );
 
 typedef struct {
 	gint        ver_target;
@@ -88,6 +90,7 @@ static sMigration st_migrates[] = {
 		{ 4, dbmodel_to_v4, count_v4 },
 		{ 5, dbmodel_to_v5, count_v5 },
 		{ 6, dbmodel_to_v6, count_v6 },
+		{ 7, dbmodel_to_v7, count_v7 },
 		{ 0 }
 };
 
@@ -307,6 +310,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
 
 	/* updated in v4 */
+	/* altered in v7 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_GEN ("
 			"	REC_ID             INTEGER      NOT NULL UNIQUE        COMMENT 'Unique identifier',"
@@ -505,6 +509,7 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 	user = ofa_idbconnect_get_account( update_data->connect );
 
 	/* 1 - create Periodicity table */
+	/* altered in v7 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS ("
 			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
@@ -521,6 +526,7 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 	}
 
 	/* 2 - create Periodicity Details table */
+	/* altered in v7 */
 	if( !exec_query( update_data,
 			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS_DET ("
 			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
@@ -677,6 +683,433 @@ static gulong
 count_v6( sUpdate *update_data )
 {
 	return( 15 );
+}
+
+/*
+ * REC_T_PERIODS: have numeric identifiers
+ */
+static gboolean
+dbmodel_to_v7( sUpdate *update_data, guint version )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v7";
+	gchar *query;
+	gboolean ok;
+
+	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+
+	/* 1 - update GEN table */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_GEN "
+			"	ADD    COLUMN REC_LAST_PER_ID          BIGINT DEFAULT 0 COMMENT 'Last periodicity identifier',"
+			"	ADD    COLUMN REC_LAST_PER_DET_ID      BIGINT DEFAULT 0 COMMENT 'Last periodicity identifier'" )){
+		return( FALSE );
+	}
+
+	/* 2 - update Periodicity table */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_PERIODS "
+			"	CHANGE COLUMN REC_PER_ID REC_PER_ID0   VARCHAR(16),"
+			"	ADD    COLUMN REC_PER_ID               BIGINT  NOT NULL  COMMENT 'Periodicity identifier',"
+			"	ADD    COLUMN REC_PER_ORDER            INTEGER NOT NULL  COMMENT 'Periodicity display order',"
+			"	DROP KEY REC_PER_ID" )){
+		return( FALSE );
+	}
+
+	/* 3 - update Periodicity Details table */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_PERIODS_DET "
+			"	CHANGE COLUMN REC_PER_ID     REC_PER_ID0     VARCHAR(16),"
+			"	CHANGE COLUMN REC_PER_DET_ID REC_PER_DET_ID0 VARCHAR(16),"
+			"	ADD    COLUMN REC_PER_ID                     BIGINT  NOT NULL  COMMENT 'Periodicity identifier',"
+			"	ADD    COLUMN REC_PER_DET_ID                 BIGINT  NOT NULL  COMMENT 'Periodicity detail identifier',"
+			"	ADD    COLUMN REC_PER_DET_ORDER              INTEGER NOT NULL  COMMENT 'Periodicity detail display order',"
+			"	DROP KEY REC_PER_ID" )){
+		return( FALSE );
+	}
+
+	/* 4 - update Periodicity table */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS SET "
+			"	REC_PER_ID=1,"
+			"	REC_PER_ORDER=0 WHERE REC_PER_ID0='0N'" )){
+		return( FALSE );
+	}
+
+	/* 5 - update Periodicity table */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS SET "
+			"	REC_PER_ID=2,"
+			"	REC_PER_ORDER=1 WHERE REC_PER_ID0='3W'" )){
+		return( FALSE );
+	}
+
+	/* 6 - update Periodicity table */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS SET "
+			"	REC_PER_ID=3,"
+			"	REC_PER_ORDER=2 WHERE REC_PER_ID0='6M'" )){
+		return( FALSE );
+	}
+
+	/* 7 - update GEN table */
+	query = g_strdup_printf( "UPDATE REC_T_GEN SET REC_LAST_PER_ID=3 WHERE REC_ID=%u", RECURRENT_ROW_ID );
+	ok = exec_query( update_data, query );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+
+	/* 8 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=2,REC_PER_DET_ID=1,REC_PER_DET_ORDER=0 WHERE REC_PER_DET_ID0='0MON'" )){
+		return( FALSE );
+	}
+
+	/* 9 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=2,REC_PER_DET_ID=2,REC_PER_DET_ORDER=1 WHERE REC_PER_DET_ID0='1TUE'" )){
+		return( FALSE );
+	}
+
+	/* 10 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=2,REC_PER_DET_ID=3,REC_PER_DET_ORDER=2 WHERE REC_PER_DET_ID0='2WED'" )){
+		return( FALSE );
+	}
+
+	/* 11 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=2,REC_PER_DET_ID=4,REC_PER_DET_ORDER=3 WHERE REC_PER_DET_ID0='3THU'" )){
+		return( FALSE );
+	}
+
+	/* 12 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=2,REC_PER_DET_ID=5,REC_PER_DET_ORDER=4 WHERE REC_PER_DET_ID0='4FRI'" )){
+		return( FALSE );
+	}
+
+	/* 13 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=2,REC_PER_DET_ID=6,REC_PER_DET_ORDER=5 WHERE REC_PER_DET_ID0='5SAT'" )){
+		return( FALSE );
+	}
+
+	/* 14 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=2,REC_PER_DET_ID=7,REC_PER_DET_ORDER=6 WHERE REC_PER_DET_ID0='6SUN'" )){
+		return( FALSE );
+	}
+
+	/* 15 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=8,REC_PER_DET_ORDER=0 WHERE REC_PER_DET_ID0='01'" )){
+		return( FALSE );
+	}
+
+	/* 16 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=9,REC_PER_DET_ORDER=1 WHERE REC_PER_DET_ID0='02'" )){
+		return( FALSE );
+	}
+
+	/* 17 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=10,REC_PER_DET_ORDER=2 WHERE REC_PER_DET_ID0='03'" )){
+		return( FALSE );
+	}
+
+	/* 18 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=11,REC_PER_DET_ORDER=3 WHERE REC_PER_DET_ID0='04'" )){
+		return( FALSE );
+	}
+
+	/* 19 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=12,REC_PER_DET_ORDER=4 WHERE REC_PER_DET_ID0='05'" )){
+		return( FALSE );
+	}
+
+	/* 20 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=13,REC_PER_DET_ORDER=5 WHERE REC_PER_DET_ID0='06'" )){
+		return( FALSE );
+	}
+
+	/* 21 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=14,REC_PER_DET_ORDER=6 WHERE REC_PER_DET_ID0='07'" )){
+		return( FALSE );
+	}
+
+	/* 22 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=15,REC_PER_DET_ORDER=7 WHERE REC_PER_DET_ID0='08'" )){
+		return( FALSE );
+	}
+
+	/* 23 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=16,REC_PER_DET_ORDER=8 WHERE REC_PER_DET_ID0='09'" )){
+		return( FALSE );
+	}
+
+	/* 24 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=17,REC_PER_DET_ORDER=9 WHERE REC_PER_DET_ID0='10'" )){
+		return( FALSE );
+	}
+
+	/* 25 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=18,REC_PER_DET_ORDER=10 WHERE REC_PER_DET_ID0='11'" )){
+		return( FALSE );
+	}
+
+	/* 26 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=19,REC_PER_DET_ORDER=11 WHERE REC_PER_DET_ID0='12'" )){
+		return( FALSE );
+	}
+
+	/* 27 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=20,REC_PER_DET_ORDER=12 WHERE REC_PER_DET_ID0='13'" )){
+		return( FALSE );
+	}
+
+	/* 28 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=21,REC_PER_DET_ORDER=13 WHERE REC_PER_DET_ID0='14'" )){
+		return( FALSE );
+	}
+
+	/* 29 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=22,REC_PER_DET_ORDER=14 WHERE REC_PER_DET_ID0='15'" )){
+		return( FALSE );
+	}
+
+	/* 30 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=23,REC_PER_DET_ORDER=15 WHERE REC_PER_DET_ID0='16'" )){
+		return( FALSE );
+	}
+
+	/* 31 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=24,REC_PER_DET_ORDER=16 WHERE REC_PER_DET_ID0='17'" )){
+		return( FALSE );
+	}
+
+	/* 32 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=25,REC_PER_DET_ORDER=17 WHERE REC_PER_DET_ID0='18'" )){
+		return( FALSE );
+	}
+
+	/* 33 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=26,REC_PER_DET_ORDER=18 WHERE REC_PER_DET_ID0='19'" )){
+		return( FALSE );
+	}
+
+	/* 34 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=27,REC_PER_DET_ORDER=19 WHERE REC_PER_DET_ID0='20'" )){
+		return( FALSE );
+	}
+
+	/* 35 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=28,REC_PER_DET_ORDER=20 WHERE REC_PER_DET_ID0='21'" )){
+		return( FALSE );
+	}
+
+	/* 36 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=29,REC_PER_DET_ORDER=21 WHERE REC_PER_DET_ID0='22'" )){
+		return( FALSE );
+	}
+
+	/* 37 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=30,REC_PER_DET_ORDER=22 WHERE REC_PER_DET_ID0='23'" )){
+		return( FALSE );
+	}
+
+	/* 38 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=31,REC_PER_DET_ORDER=23 WHERE REC_PER_DET_ID0='24'" )){
+		return( FALSE );
+	}
+
+	/* 39 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=32,REC_PER_DET_ORDER=24 WHERE REC_PER_DET_ID0='25'" )){
+		return( FALSE );
+	}
+
+	/* 40 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=33,REC_PER_DET_ORDER=25 WHERE REC_PER_DET_ID0='26'" )){
+		return( FALSE );
+	}
+
+	/* 41 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=34,REC_PER_DET_ORDER=26 WHERE REC_PER_DET_ID0='27'" )){
+		return( FALSE );
+	}
+
+	/* 42 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=35,REC_PER_DET_ORDER=27 WHERE REC_PER_DET_ID0='28'" )){
+		return( FALSE );
+	}
+
+	/* 43 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=36,REC_PER_DET_ORDER=28 WHERE REC_PER_DET_ID0='29'" )){
+		return( FALSE );
+	}
+
+	/* 44 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=37,REC_PER_DET_ORDER=29 WHERE REC_PER_DET_ID0='30'" )){
+		return( FALSE );
+	}
+
+	/* 45 - update Periodicity details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_PERIODS_DET "
+			"	SET REC_PER_ID=3,REC_PER_DET_ID=38,REC_PER_DET_ORDER=30 WHERE REC_PER_DET_ID0='31'" )){
+		return( FALSE );
+	}
+
+	/* 46 - update GEN table */
+	query = g_strdup_printf( "UPDATE REC_T_GEN SET REC_LAST_PER_DET_ID=38 WHERE REC_ID=%u", RECURRENT_ROW_ID );
+	ok = exec_query( update_data, query );
+	g_free( query );
+	if( !ok ){
+		return( FALSE );
+	}
+
+	/* 47 - update Periodicity table */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_PERIODS "
+			"	DROP COLUMN REC_PER_ID0,"
+			"	ADD UNIQUE KEY PERID_IX (REC_PER_ID)" )){
+		return( FALSE );
+	}
+
+	/* 48 - update Periodicity Details table */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_PERIODS_DET "
+			"	DROP   COLUMN REC_PER_ID0,"
+			"	DROP   COLUMN REC_PER_DET_ID0,"
+			"	ADD UNIQUE KEY PERID_IX (REC_PER_ID,REC_PER_DET_ID)" )){
+		return( FALSE );
+	}
+
+	/* 49 - update Periodicity table */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_MODELS "
+			"	CHANGE COLUMN REC_PERIOD        REC_PERIOD0       VARCHAR(16),"
+			"	CHANGE COLUMN REC_PERIOD_DETAIL REC_PERIOD_DET0   VARCHAR(16),"
+			"	ADD    COLUMN REC_PERIOD        BIGINT  NOT NULL  COMMENT 'Periodicity identifier',"
+			"	ADD    COLUMN REC_PERIOD_DETAIL BIGINT  NOT NULL  COMMENT 'Periodicity detail identifier'" )){
+		return( FALSE );
+	}
+
+	/* 50 - update current models periodicity */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD=1 WHERE REC_PERIOD0='0N'" )){
+		return( FALSE );
+	}
+
+	/* 51 - update current models periodicity */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD=2 WHERE REC_PERIOD0='3W'" )){
+		return( FALSE );
+	}
+
+	/* 52 - update current models periodicity */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+		"		SET REC_PERIOD=3 WHERE REC_PERIOD0='7M'" )){
+		return( FALSE );
+	}
+
+	/* 53 - update current models periodicity weekly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL=LEFT(REC_PERIOD_DET0,1)-1 WHERE REC_PERIOD=2" )){
+		return( FALSE );
+	}
+
+	/* 54 - update current models periodicity monthly details */
+	if( !exec_query( update_data,
+			"UPDATE REC_T_MODELS "
+			"	SET REC_PERIOD_DETAIL=REC_PERIOD_DET0+7 WHERE REC_PERIOD=3" )){
+		return( FALSE );
+	}
+
+	/* 55 - update current models */
+	if( !exec_query( update_data,
+			"ALTER TABLE REC_T_MODELS "
+			"	DROP COLUMN REC_PERIOD0,"
+			"	DROP COLUMN REC_PERIOD_DET0" )){
+		return( FALSE );
+	}
+
+	return( TRUE );
+}
+
+static gulong
+count_v7( sUpdate *update_data )
+{
+	return( 55 );
 }
 
 static gulong

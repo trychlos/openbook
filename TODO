@@ -360,8 +360,7 @@
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
 
-1236 2016-10-13 clean up user and dossier settings to have most informations
-                in dbms
+1236 2016-10-13 move user and dossier settings to dbms
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
 
