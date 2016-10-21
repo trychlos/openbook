@@ -79,7 +79,9 @@ typedef struct {
  * @REC_MODEL_COL_LABEL             : label                         String       Yes
  * @REC_MODEL_COL_OPE_TEMPLATE      : operation template            String       Yes
  * @REC_MODEL_COL_PERIODICITY       : periodicity                   String       Yes
+ * @REC_MODEL_COL_PERIOD_I          : periodicity                   Long          No
  * @REC_MODEL_COL_PERIODICITY_DETAIL: periodicity detail            String       Yes
+ * @REC_MODEL_COL_PERIOD_DETAIL_I   : periodicity detail            Long          No
  * @REC_MODEL_COL_DEF_AMOUNT1       : amount 1                      String       Yes
  * @REC_MODEL_COL_DEF_AMOUNT2       : amount 2                      String       Yes
  * @REC_MODEL_COL_DEF_AMOUNT3       : amount 3                      String       Yes
@@ -96,7 +98,9 @@ enum {
 	REC_MODEL_COL_LABEL,
 	REC_MODEL_COL_OPE_TEMPLATE,
 	REC_MODEL_COL_PERIODICITY,
+	REC_MODEL_COL_PERIOD_I,
 	REC_MODEL_COL_PERIODICITY_DETAIL,
+	REC_MODEL_COL_PERIOD_DETAIL_I,
 	REC_MODEL_COL_DEF_AMOUNT1,
 	REC_MODEL_COL_DEF_AMOUNT2,
 	REC_MODEL_COL_DEF_AMOUNT3,

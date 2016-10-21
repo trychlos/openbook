@@ -43,6 +43,8 @@
 #include "api/ofa-igetter-def.h"
 #include "api/ofo-ope-template-def.h"
 
+#include "recurrent/ofo-rec-period.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_REC_PERIOD_PROPERTIES                ( ofa_rec_period_properties_get_type())

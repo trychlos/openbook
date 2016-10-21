@@ -31,10 +31,10 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-periodicity.h"
 #include "api/ofo-ope-template.h"
 
 #include "recurrent/ofa-recurrent-model-store.h"
+#include "recurrent/ofo-rec-period.h"
 #include "recurrent/ofo-recurrent-model.h"
 
 /* private instance data
@@ -50,8 +50,9 @@ typedef struct {
 	ofaRecurrentModelStorePrivate;
 
 static GType st_col_types[REC_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_STRING,					/* mnemo, label */
-		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* ope_template, periodicity, detail */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ope_template */
+		G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING,		/* periodicity, period_i, detail */
+		G_TYPE_INT,										/* detail_i */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* def_amount1,def_amount2,def_amount3 */
 		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* enabled_str, enabled_bool */
 		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
@@ -249,17 +250,35 @@ static void
 set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_store_set_row";
+	ofaRecurrentModelStorePrivate *priv;
 	gchar *stamp;
 	const gchar *csper, *csdet, *csdef1, *csdef2, *csdef3, *cenabled;
-	const gchar *periodicity, *notes;
+	const gchar *notes;
 	GError *error;
 	GdkPixbuf *notes_png;
 	gboolean is_enabled;
+	ofxCounter perid, perdetid;
+	ofoRecPeriod *period;
+	gint idx;
+
+	priv = ofa_recurrent_model_store_get_instance_private( self );
 
 	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
-	periodicity = ofo_recurrent_model_get_periodicity( model );
-	csper = ofa_periodicity_get_label( periodicity );
-	csdet = ofa_periodicity_get_detail_label( periodicity, ofo_recurrent_model_get_periodicity_detail( model ));
+
+	perid = ofo_recurrent_model_get_periodicity( model );
+	period = ofo_rec_period_get_by_id( priv->hub, perid );
+	csper = period ? ofo_rec_period_get_label( period ) : "";
+
+	csdet = "";
+	perdetid = 0;
+	if( ofo_rec_period_get_have_details( period )){
+		perdetid = ofo_recurrent_model_get_periodicity_detail( model );
+		idx = ofo_rec_period_detail_get_by_id( period, perdetid );
+		if( idx >= 0 ){
+			csdet = ofo_rec_period_detail_get_label( period, idx );
+		}
+	}
+
 	csdef1 = ofo_recurrent_model_get_def_amount1( model );
 	csdef2 = ofo_recurrent_model_get_def_amount2( model );
 	csdef3 = ofo_recurrent_model_get_def_amount3( model );
@@ -280,8 +299,10 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 			REC_MODEL_COL_MNEMO,              ofo_recurrent_model_get_mnemo( model ),
 			REC_MODEL_COL_LABEL,              ofo_recurrent_model_get_label( model ),
 			REC_MODEL_COL_OPE_TEMPLATE,       ofo_recurrent_model_get_ope_template( model ),
-			REC_MODEL_COL_PERIODICITY,        csper ? csper : "",
-			REC_MODEL_COL_PERIODICITY_DETAIL, csdet ? csdet : "",
+			REC_MODEL_COL_PERIODICITY,        csper,
+			REC_MODEL_COL_PERIOD_I,           perid,
+			REC_MODEL_COL_PERIODICITY_DETAIL, csdet,
+			REC_MODEL_COL_PERIOD_DETAIL_I,    perdetid,
 			REC_MODEL_COL_DEF_AMOUNT1,        csdef1 ? csdef1 : "",
 			REC_MODEL_COL_DEF_AMOUNT2,        csdef2 ? csdef2 : "",
 			REC_MODEL_COL_DEF_AMOUNT3,        csdef3 ? csdef3 : "",

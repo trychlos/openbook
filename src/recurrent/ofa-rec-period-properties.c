@@ -42,15 +42,8 @@
 #include "api/ofo-dossier.h"
 
 #include "recurrent/ofa-rec-period-properties.h"
-#include "recurrent/ofo-rec-period.h"
 
 /* private instance data
- *
- * each line of the grid is :
- * - button 'Add' (if last line)
- * - code
- * - label
- * - button remove
  */
 typedef struct {
 	gboolean        dispose_has_run;
@@ -58,80 +51,85 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter     *getter;
-	ofoRecPeriod *rec_period;
-	gchar          *ledger;				/* ledger mnemo */
+	ofoRecPeriod   *rec_period;
 
 	/* internals
 	 */
 	gboolean        is_writable;
 	gboolean        is_new;
 
-	/* data
-	 */
-	gchar          *mnemo;
-	gchar          *label;
-	gboolean        ledger_locked;
-	gchar          *ref;				/* piece reference */
-	gboolean        ref_locked;
-	gchar          *upd_user;
-	GTimeVal        upd_stamp;
-
 	/* UI
 	 */
-	ofaLedgerCombo *ledger_combo;
-	GtkWidget      *ledger_parent;
-	GtkWidget      *ref_entry;
-	GtkWidget      *details_grid;
+	GtkWidget      *p1_id_label;
+	GtkWidget      *p1_order_label;
+	GtkWidget      *p1_label_entry;
+	GtkWidget      *p1_havedetails_btn;
+	GtkWidget      *p1_addtype_box;
+	GtkWidget      *p1_addcount_spin;
+	GtkWidget      *p3_details_grid;
 	GtkWidget      *msg_label;
 	GtkWidget      *ok_btn;
 }
 	ofaRecPeriodPropertiesPrivate;
 
+/* when selecting the type of data to be added
+ */
+typedef struct {
+	const gchar *code;
+	const gchar *label;
+}
+	sAddType;
+
+static const sAddType st_add_type[] = {
+		{ REC_PERIOD_DAY,   N_( "Day" ) },
+		{ REC_PERIOD_WEEK,  N_( "Week" ) },
+		{ REC_PERIOD_MONTH, N_( "Month" ) },
+		{ 0 }
+};
+
+enum {
+	TYPE_COL_CODE = 0,
+	TYPE_COL_LABEL,
+	TYPE_N_COLUMNS
+};
+
+/* details gridllist:
+ *
+ * each line of the grid is :
+ * - button 'Add' (if last line)
+ * - label
+ * - button up
+ * - button down
+ * - button remove
+ */
 /* columns in the detail treeview
  */
 enum {
-	DET_COL_COMMENT = 0,
-	DET_COL_PAM,
-	DET_COL_ACCOUNT,
-	DET_COL_ACCOUNT_LOCKED,
-	DET_COL_LABEL,
-	DET_COL_LABEL_LOCKED,
-	DET_COL_DEBIT,
-	DET_COL_DEBIT_LOCKED,
-	DET_COL_CREDIT,
-	DET_COL_CREDIT_LOCKED,
+	DET_COL_LABEL = 0,
 	DET_N_COLUMNS
 };
 
 /* horizontal space between widgets in a detail line */
 #define DETAIL_SPACE                    0
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-template-properties.ui";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-rec-period-properties.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
-static void      init_dialog_title( ofaRecPeriodProperties *self );
-static void      init_mnemo( ofaRecPeriodProperties *self );
-static void      init_label( ofaRecPeriodProperties *self );
-static void      init_ledger( ofaRecPeriodProperties *self );
-static void      init_ledger_locked( ofaRecPeriodProperties *self );
-static void      init_ref( ofaRecPeriodProperties *self );
-static void      init_detail( ofaRecPeriodProperties *self );
+static void      init_dialog( ofaRecPeriodProperties *self );
+static void      init_properties( ofaRecPeriodProperties *self );
+static void      init_details( ofaRecPeriodProperties *self );
+static void      setup_properties( ofaRecPeriodProperties *self );
 static void      igridlist_iface_init( myIGridListInterface *iface );
 static guint     igridlist_get_interface_version( void );
 static void      igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
-static void      setup_detail_widgets( ofaRecPeriodProperties *self, guint row );
-static void      set_detail_values( ofaRecPeriodProperties *self, guint row );
-static void      on_mnemo_changed( GtkEntry *entry, ofaRecPeriodProperties *self );
+static void      init_detail_widgets( ofaRecPeriodProperties *self, guint row );
+static void      setup_detail_values( ofaRecPeriodProperties *self, guint row );
 static void      on_label_changed( GtkEntry *entry, ofaRecPeriodProperties *self );
-static void      on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaRecPeriodProperties *self );
-static void      on_ledger_locked_toggled( GtkToggleButton *toggle, ofaRecPeriodProperties *self );
-static void      on_ref_locked_toggled( GtkToggleButton *toggle, ofaRecPeriodProperties *self );
-static void      on_pam_toggled( GtkToggleButton *btn, ofaRecPeriodProperties *self );
-static void      on_account_changed( GtkEntry *entry, ofaRecPeriodProperties *self );
-static void      on_help_clicked( GtkButton *btn, ofaRecPeriodProperties *self );
+static void      on_have_details_toggled( GtkToggleButton *toggle, ofaRecPeriodProperties *self );
+static void      on_add_type_changed( GtkComboBox *combo, ofaRecPeriodProperties *self );
+static void      on_add_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
 static void      check_for_enable_dlg( ofaRecPeriodProperties *self );
 static gboolean  is_dialog_validable( ofaRecPeriodProperties *self );
 static gboolean  do_update( ofaRecPeriodProperties *self, gchar **msgerr );
@@ -148,7 +146,6 @@ static void
 rec_period_properties_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_rec_period_properties_finalize";
-	ofaRecPeriodPropertiesPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -156,12 +153,6 @@ rec_period_properties_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_REC_PERIOD_PROPERTIES( instance ));
 
 	/* free data members here */
-	priv = ofa_rec_period_properties_get_instance_private( OFA_REC_PERIOD_PROPERTIES( instance ));
-	g_free( priv->mnemo );
-	g_free( priv->label );
-	g_free( priv->ledger );
-	g_free( priv->ref );
-	g_free( priv->upd_user );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_rec_period_properties_parent_class )->finalize( instance );
@@ -223,26 +214,24 @@ ofa_rec_period_properties_class_init( ofaRecPeriodPropertiesClass *klass )
  * ofa_rec_period_properties_run:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent of this dialog.
- * @template: [allow-none]: a #ofoRecPeriod to be edited.
- * @ledger: [allow-none]: a #ofoLedger to be attached to @template.
+ * @period: [allow-none]: a #ofoRecPeriod to be edited.
  *
  * Creates or represents a #ofaRecPeriodProperties non-modal dialog
  * to edit the @template.
  */
 void
-ofa_rec_period_properties_run(
-		ofaIGetter *getter, GtkWindow *parent, ofoRecPeriod *template, const gchar *ledger )
+ofa_rec_period_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRecPeriod *period )
 {
 	static const gchar *thisfn = "ofa_rec_period_properties_run";
 	ofaRecPeriodProperties *self;
 	ofaRecPeriodPropertiesPrivate *priv;
 
-	g_debug( "%s: getter=%p, parent=%p, template=%p, ledger=%s",
-			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) template, ledger );
+	g_debug( "%s: getter=%p, parent=%p, period=%p",
+			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) period );
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
-	g_return_if_fail( !template || OFO_IS_REC_PERIOD( template ));
+	g_return_if_fail( !period || OFO_IS_REC_PERIOD( period ));
 
 	self = g_object_new( OFA_TYPE_REC_PERIOD_PROPERTIES, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
@@ -251,8 +240,7 @@ ofa_rec_period_properties_run(
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
 	priv->getter = getter;
-	priv->rec_period = template;
-	priv->ledger = g_strdup( ledger );
+	priv->rec_period = period;
 
 	/* run modal or non-modal depending of the parent */
 	my_idialog_run_maybe_modal( MY_IDIALOG( self ));
@@ -267,26 +255,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_rec_period_properties_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_identifier = iwindow_get_identifier;
-}
-
-/*
- * identifier is built with class name and template mnemo
- */
-static gchar *
-iwindow_get_identifier( const myIWindow *instance )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	gchar *id;
-
-	priv = ofa_rec_period_properties_get_instance_private( OFA_REC_PERIOD_PROPERTIES( instance ));
-
-	id = g_strdup_printf( "%s-%s",
-				G_OBJECT_TYPE_NAME( instance ),
-				ofo_rec_period_get_mnemo( priv->rec_period ));
-
-	return( id );
 }
 
 /*
@@ -308,7 +276,6 @@ idialog_init( myIDialog *instance )
 	static const gchar *thisfn = "ofa_rec_period_properties_idialog_init";
 	ofaRecPeriodPropertiesPrivate *priv;
 	ofaHub *hub;
-	GtkWidget *button;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -322,19 +289,11 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 	priv->is_writable = ofa_hub_dossier_is_writable( hub );
 
-	init_dialog_title( OFA_REC_PERIOD_PROPERTIES( instance ));
-	init_mnemo( OFA_REC_PERIOD_PROPERTIES( instance ));
-	init_label( OFA_REC_PERIOD_PROPERTIES( instance ));
-	init_ledger( OFA_REC_PERIOD_PROPERTIES( instance ));
-	init_ledger_locked( OFA_REC_PERIOD_PROPERTIES( instance ));
-	init_ref( OFA_REC_PERIOD_PROPERTIES( instance ));
+	init_dialog( OFA_REC_PERIOD_PROPERTIES( instance ));
+	init_properties( OFA_REC_PERIOD_PROPERTIES( instance ));
 
 	my_utils_container_notes_init( instance, rec_period );
 	my_utils_container_updstamp_init( instance, rec_period );
-
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "help-btn" );
-	g_return_if_fail( button && GTK_IS_BUTTON( button ));
-	g_signal_connect( button, "clicked", G_CALLBACK( on_help_clicked ), instance );
 
 	if( priv->is_writable ){
 		gtk_widget_grab_focus(
@@ -350,29 +309,30 @@ idialog_init( myIDialog *instance )
 
 	/* init dialog detail rows after having globally set the fields
 	 * sensitivity so that IGridList can individually adjust rows sensitivity */
-	init_detail( OFA_REC_PERIOD_PROPERTIES( instance ));
+	init_details( OFA_REC_PERIOD_PROPERTIES( instance ));
 
-	gtk_widget_show_all( GTK_WIDGET( instance ));
+	/* last, setup the data */
+	setup_properties( OFA_REC_PERIOD_PROPERTIES( instance ));
 
 	check_for_enable_dlg( OFA_REC_PERIOD_PROPERTIES( instance ));
 }
 
 static void
-init_dialog_title( ofaRecPeriodProperties *self )
+init_dialog( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	const gchar *mnemo;
+	ofxCounter id;
 	gchar *title;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	mnemo = ofo_rec_period_get_mnemo( priv->rec_period );
-	priv->is_new = !my_strlen( mnemo );
+	id = ofo_rec_period_get_id( priv->rec_period );
+	priv->is_new = ( id == 0 );
 
 	if( priv->is_new ){
-		title = g_strdup( _( "Defining a new operation template" ));
+		title = g_strdup( _( "Defining a new periodicity" ));
 	} else {
-		title = g_strdup_printf( _( "Updating « %s » operation template" ), mnemo );
+		title = g_strdup_printf( _( "Updating « %s » periodicity" ), ofo_rec_period_get_label( priv->rec_period ));
 	}
 
 	gtk_window_set_title( GTK_WINDOW( self ), title );
@@ -380,148 +340,125 @@ init_dialog_title( ofaRecPeriodProperties *self )
 }
 
 static void
-init_mnemo( ofaRecPeriodProperties *self )
+init_properties( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *entry, *label;
+	GtkWidget *label, *entry, *button, *combo, *spin;
+	GtkListStore *store;
+	GtkTreeIter iter;
+	GtkCellRenderer *cell;
+	gint i;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	priv->mnemo = g_strdup( ofo_rec_period_get_mnemo( priv->rec_period ));
-	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-entry" );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	if( priv->mnemo ){
-		gtk_entry_set_text( GTK_ENTRY( entry ), priv->mnemo );
-	}
-	g_signal_connect( entry, "changed", G_CALLBACK( on_mnemo_changed ), self );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-mnemo-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-id-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-}
+	priv->p1_id_label = label;
 
-static void
-init_label( ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *entry, *label;
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-order-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->p1_order_label = label;
 
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	priv->label = g_strdup( ofo_rec_period_get_label( priv->rec_period ));
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-prompt" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	if( priv->label ){
-		gtk_entry_set_text( GTK_ENTRY( entry ), priv->label );
-	}
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), entry );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
+	priv->p1_label_entry = entry;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-label" );
+	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-details-btn" );
+	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
+	g_signal_connect( button, "toggled", G_CALLBACK( on_have_details_toggled ), self );
+	priv->p1_havedetails_btn = button;
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addtype-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( entry ));
-}
+	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addtype-combo" );
+	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
 
-static void
-init_ledger( ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *label;
-	ofaHub *hub;
-	static const gint st_ledger_cols[] = {
-			LEDGER_COL_LABEL,
-			-1 };
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
-
-	priv->ledger_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-parent" );
-	g_return_if_fail( priv->ledger_parent && GTK_IS_CONTAINER( priv->ledger_parent ));
-
-	priv->ledger_combo = ofa_ledger_combo_new();
-	gtk_container_add( GTK_CONTAINER( priv->ledger_parent ), GTK_WIDGET( priv->ledger_combo ));
-	ofa_ledger_combo_set_columns( priv->ledger_combo, st_ledger_cols );
-	ofa_ledger_combo_set_hub( priv->ledger_combo, hub );
-
-	g_signal_connect( priv->ledger_combo, "ofa-changed", G_CALLBACK( on_ledger_changed ), self );
-
-	ofa_ledger_combo_set_selected( priv->ledger_combo,
-			priv->is_new ? priv->ledger : ofo_rec_period_get_ledger( priv->rec_period ));
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ledger-label" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), GTK_WIDGET( priv->ledger_combo ));
-}
-
-static void
-init_ledger_locked( ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *btn;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	priv->ledger_locked = ofo_rec_period_get_ledger_locked( priv->rec_period );
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-jou-locked" );
-	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ledger_locked );
-
-	g_signal_connect( btn, "toggled", G_CALLBACK( on_ledger_locked_toggled ), self );
-}
-
-static void
-init_ref( ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *btn, *label;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	priv->ref = g_strdup( ofo_rec_period_get_ref( priv->rec_period ));
-	priv->ref_locked = ofo_rec_period_get_ref_locked( priv->rec_period );
-
-	priv->ref_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-entry" );
-	g_return_if_fail( priv->ref_entry && GTK_IS_ENTRY( priv->ref_entry ));
-	ofa_paimean_editable_init( GTK_EDITABLE( priv->ref_entry ), priv->getter );
-
-	if( priv->ref ){
-		gtk_entry_set_text( GTK_ENTRY( priv->ref_entry ), priv->ref );
+	store = gtk_list_store_new( TYPE_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING );
+	for( i=0 ; st_add_type[i].code ; ++i ){
+		gtk_list_store_insert_with_values( store, &iter,
+				TYPE_COL_CODE, st_add_type[i].code,
+				TYPE_COL_LABEL, st_add_type[i].label,
+				-1 );
 	}
+	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( store ));
+	g_object_unref( store );
 
-	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-locked" );
-	g_return_if_fail( btn && GTK_IS_TOGGLE_BUTTON( btn ));
+	cell = gtk_cell_renderer_text_new();
+	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
+	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", TYPE_COL_LABEL );
+	gtk_combo_box_set_id_column( GTK_COMBO_BOX( combo ), TYPE_COL_CODE );
 
-	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( btn ), priv->ref_locked );
+	g_signal_connect( combo, "changed", G_CALLBACK( on_add_type_changed ), self );
+	priv->p1_addtype_box = combo;
 
-	g_signal_connect( btn, "toggled", G_CALLBACK( on_ref_locked_toggled ), self );
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-ref-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addcount-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->ref_entry );
+	spin = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addcount-spin" );
+	g_return_if_fail( spin && GTK_IS_SPIN_BUTTON( spin ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), spin );
+	g_signal_connect( spin, "value-changed", G_CALLBACK( on_add_count_changed ), self );
+	priv->p1_addcount_spin = spin;
 }
 
 /*
- * add one line per detail record
+ * prepare the IGridList with one line per detail
  */
 static void
-init_detail( ofaRecPeriodProperties *self )
+init_details( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
 	gint count, i;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	priv->details_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-details" );
-	g_return_if_fail( priv->details_grid && GTK_IS_GRID( priv->details_grid ));
+	priv->p3_details_grid = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-grid" );
+	g_return_if_fail( priv->p3_details_grid && GTK_IS_GRID( priv->p3_details_grid ));
 
 	my_igridlist_init(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			TRUE, priv->is_writable, DET_N_COLUMNS );
+			MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ),
+			TRUE, priv->is_writable, TYPE_N_COLUMNS );
 
-	count = ofo_rec_period_get_detail_count( priv->rec_period );
+	count = ofo_rec_period_detail_get_count( priv->rec_period );
 	for( i=1 ; i<=count ; ++i ){
-		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
+		my_igridlist_add_row( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ));
 	}
+}
+
+static void
+setup_properties( ofaRecPeriodProperties *self )
+{
+	ofaRecPeriodPropertiesPrivate *priv;
+	gchar *str;
+	const gchar *cstr;
+
+	priv = ofa_rec_period_properties_get_instance_private( self );
+
+	str = g_strdup_printf( "%lu", ofo_rec_period_get_id( priv->rec_period ));
+	gtk_label_set_text( GTK_LABEL( priv->p1_id_label ), str );
+	g_free( str );
+
+	str = g_strdup_printf( "%u", ofo_rec_period_get_order( priv->rec_period ));
+	gtk_label_set_text( GTK_LABEL( priv->p1_order_label ), str );
+	g_free( str );
+
+	cstr = ofo_rec_period_get_label( priv->rec_period );
+	gtk_entry_set_text( GTK_ENTRY( priv->p1_label_entry ), cstr );
+
+	gtk_toggle_button_set_active(
+			GTK_TOGGLE_BUTTON( priv->p1_havedetails_btn ),
+			ofo_rec_period_get_have_details( priv->rec_period ));
+
+	cstr = ofo_rec_period_get_add_type( priv->rec_period );
+	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->p1_addtype_box ), cstr );
+
+	gtk_spin_button_set_value(
+			GTK_SPIN_BUTTON( priv->p1_addcount_spin ),
+			ofo_rec_period_get_add_count( priv->rec_period ));
 }
 
 /*
@@ -552,280 +489,80 @@ igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row )
 	g_return_if_fail( instance && OFA_IS_REC_PERIOD_PROPERTIES( instance ));
 
 	priv = ofa_rec_period_properties_get_instance_private( OFA_REC_PERIOD_PROPERTIES( instance ));
-	g_return_if_fail( grid == GTK_GRID( priv->details_grid ));
+	g_return_if_fail( grid == GTK_GRID( priv->p3_details_grid ));
 
-	setup_detail_widgets( OFA_REC_PERIOD_PROPERTIES( instance ), row );
-	set_detail_values( OFA_REC_PERIOD_PROPERTIES( instance ), row );
+	init_detail_widgets( OFA_REC_PERIOD_PROPERTIES( instance ), row );
+	setup_detail_values( OFA_REC_PERIOD_PROPERTIES( instance ), row );
 }
 
 static void
-setup_detail_widgets( ofaRecPeriodProperties *self, guint row )
+init_detail_widgets( ofaRecPeriodProperties *self, guint row )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *toggle;
-	GtkEntry *entry;
+	GtkWidget *entry;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	/* ope template detail comment */
-	entry = GTK_ENTRY( gtk_entry_new());
-	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_widget_set_halign( GTK_WIDGET( entry ), GTK_ALIGN_START );
-	gtk_entry_set_alignment( entry, 0 );
-	gtk_entry_set_max_length( entry, OTE_DET_COMMENT_MAX_LENGTH );
-	gtk_entry_set_max_width_chars( entry, OTE_DET_COMMENT_MAX_LENGTH );
+	/* detail label */
+	entry = gtk_entry_new();
+	my_utils_widget_set_margin_left( entry, DETAIL_SPACE );
+	gtk_widget_set_halign( entry, GTK_ALIGN_START );
+	gtk_entry_set_alignment( GTK_ENTRY( entry ), 0 );
+	gtk_entry_set_max_length( GTK_ENTRY( entry ), REC_PERIOD_LABEL_MAX );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), REC_PERIOD_LABEL_MAX );
+	gtk_widget_set_sensitive( entry, priv->is_writable );
 	if( priv->is_writable ){
-		gtk_widget_grab_focus( GTK_WIDGET( entry ));
+		gtk_widget_grab_focus( entry );
 	}
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
 	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			GTK_WIDGET( entry ), 1+DET_COL_COMMENT, row, 1, 1 );
-
-	/* mean of paiement target */
-	toggle = gtk_check_button_new();
-	my_utils_widget_set_margin_left( toggle, DETAIL_SPACE );
-	gtk_widget_set_sensitive( toggle, priv->is_writable );
-	gtk_widget_set_halign( toggle, GTK_ALIGN_CENTER );
-	g_signal_connect( toggle, "toggled", G_CALLBACK( on_pam_toggled ), self );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			toggle, 1+DET_COL_PAM, row, 1, 1 );
-
-	/* account identifier */
-	entry = GTK_ENTRY( gtk_entry_new());
-	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
-	ofa_account_editable_init( GTK_EDITABLE( entry ), priv->getter, ACCOUNT_ALLOW_ALL );
-	g_signal_connect( entry, "changed", G_CALLBACK( on_account_changed ), self );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			GTK_WIDGET( entry ), 1+DET_COL_ACCOUNT, row, 1, 1 );
-
-	/* account locked */
-	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_writable );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			toggle, 1+DET_COL_ACCOUNT_LOCKED, row, 1, 1 );
-
-	/* label */
-	entry = GTK_ENTRY( gtk_entry_new());
-	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_widget_set_hexpand( GTK_WIDGET( entry ), TRUE );
-	gtk_entry_set_max_length( entry, OTE_DET_LABEL_MAX_LENGTH );
-	gtk_entry_set_max_width_chars( entry, OTE_DET_LABEL_MAX_LENGTH );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			GTK_WIDGET( entry ), 1+DET_COL_LABEL, row, 1, 1 );
-
-	/* label locked */
-	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_writable );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			toggle, 1+DET_COL_LABEL_LOCKED, row, 1, 1 );
-
-	/* debit */
-	entry = GTK_ENTRY( gtk_entry_new());
-	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_entry_set_max_length( entry, OTE_DET_AMOUNT_MAX_LENGTH );
-	gtk_entry_set_width_chars( entry, 10 );
-	gtk_entry_set_max_width_chars( entry, OTE_DET_AMOUNT_MAX_LENGTH );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			GTK_WIDGET( entry ), 1+DET_COL_DEBIT, row, 1, 1 );
-
-	/* debit locked */
-	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_writable );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			toggle, 1+DET_COL_DEBIT_LOCKED, row, 1, 1 );
-
-	/* credit */
-	entry = GTK_ENTRY( gtk_entry_new());
-	my_utils_widget_set_margin_left( GTK_WIDGET( entry ), DETAIL_SPACE );
-	gtk_entry_set_max_length( entry, OTE_DET_AMOUNT_MAX_LENGTH );
-	gtk_entry_set_width_chars( entry, 10 );
-	gtk_entry_set_max_width_chars( entry, OTE_DET_AMOUNT_MAX_LENGTH );
-	gtk_widget_set_sensitive( GTK_WIDGET( entry ), priv->is_writable );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			GTK_WIDGET( entry ), 1+DET_COL_CREDIT, row, 1, 1 );
-
-	/* credit locked */
-	toggle = gtk_check_button_new();
-	gtk_widget_set_sensitive( toggle, priv->is_writable );
-	my_igridlist_set_widget(
-			MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ),
-			toggle, 1+DET_COL_CREDIT_LOCKED, row, 1, 1 );
+			MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ),
+			entry, 1+DET_COL_LABEL, row, 1, 1 );
 }
 
 static void
-set_detail_values( ofaRecPeriodProperties *self, guint row )
+setup_detail_values( ofaRecPeriodProperties *self, guint row )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkEntry *entry;
-	GtkToggleButton *toggle;
-	const gchar *str;
-	gint pam_row;
+	GtkWidget *entry;
+	const gchar *cstr;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_COMMENT, row ));
-	str = ofo_rec_period_get_detail_comment( priv->rec_period, row-1 );
-	gtk_entry_set_text( entry, str ? str : "" );
-
-	pam_row = ofo_rec_period_get_pam_row( priv->rec_period );
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, row ));
-	gtk_toggle_button_set_active( toggle, 1+pam_row == row );
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT, row ));
-	str = ofo_rec_period_get_detail_account( priv->rec_period, row-1 );
-	gtk_entry_set_text( entry, str ? str : "" );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_rec_period_get_detail_account_locked( priv->rec_period, row-1 ));
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_LABEL, row ));
-	str = ofo_rec_period_get_detail_label( priv->rec_period, row-1 );
-	gtk_entry_set_text( entry, str ? str : "" );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_LABEL_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_rec_period_get_detail_label_locked( priv->rec_period, row-1 ));
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_DEBIT, row ));
-	str = ofo_rec_period_get_detail_debit( priv->rec_period, row-1 );
-	gtk_entry_set_text( entry, str ? str : "" );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_DEBIT_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_rec_period_get_detail_debit_locked( priv->rec_period, row-1 ));
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT, row ));
-	str = ofo_rec_period_get_detail_credit( priv->rec_period, row-1 );
-	gtk_entry_set_text( entry, str ? str : "" );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT_LOCKED, row ));
-	gtk_toggle_button_set_active( toggle, ofo_rec_period_get_detail_credit_locked( priv->rec_period, row-1 ));
-}
-
-static void
-on_mnemo_changed( GtkEntry *entry, ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	g_free( priv->mnemo );
-	priv->mnemo = g_strdup( gtk_entry_get_text( entry ));
-
-	check_for_enable_dlg( self );
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_LABEL, row );
+	cstr = ofo_rec_period_detail_get_label( priv->rec_period, row-1 );
+	gtk_entry_set_text( GTK_ENTRY( entry ), cstr ? cstr : "" );
 }
 
 static void
 on_label_changed( GtkEntry *entry, ofaRecPeriodProperties *self )
 {
+	check_for_enable_dlg( self );
+}
+
+static void
+on_have_details_toggled( GtkToggleButton *toggle, ofaRecPeriodProperties *self )
+{
 	ofaRecPeriodPropertiesPrivate *priv;
+	gboolean active;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	g_free( priv->label );
-	priv->label = g_strdup( gtk_entry_get_text( entry ));
+	active = gtk_toggle_button_get_active( toggle );
+	gtk_widget_set_sensitive( priv->p3_details_grid, active );
 
 	check_for_enable_dlg( self );
 }
 
 static void
-on_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaRecPeriodProperties *self )
+on_add_type_changed( GtkComboBox *combo, ofaRecPeriodProperties *self )
 {
-	ofaRecPeriodPropertiesPrivate *priv;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	g_free( priv->ledger );
-	priv->ledger = g_strdup( mnemo );
-
 	check_for_enable_dlg( self );
 }
 
 static void
-on_ledger_locked_toggled( GtkToggleButton *btn, ofaRecPeriodProperties *self )
+on_add_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self )
 {
-	ofaRecPeriodPropertiesPrivate *priv;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	priv->ledger_locked = gtk_toggle_button_get_active( btn );
-
-	/* doesn't change the validable status of the dialog */
-}
-
-static void
-on_ref_locked_toggled( GtkToggleButton *btn, ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	priv->ref_locked = gtk_toggle_button_get_active( btn );
-
-	/* doesn't change the validable status of the dialog */
-}
-
-/*
- * at most one row may be the target of a mean of paiement
- */
-static void
-on_pam_toggled( GtkToggleButton *btn, ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	gint count, i;
-	GtkWidget *row_btn;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
-
-	if( gtk_toggle_button_get_active( btn )){
-		for( i=1 ; i<=count ; ++i ){
-			row_btn = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
-			if( row_btn != GTK_WIDGET( btn )){
-				gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( row_btn ), FALSE );
-			}
-		}
-	}
-}
-
-static void
-on_account_changed( GtkEntry *entry, ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	const gchar *number, *label;
-	ofoAccount *account;
-	ofaHub *hub;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
-	number = gtk_entry_get_text( entry );
-	account = ofo_account_get_by_number( hub, number );
-	if( account && OFO_IS_ACCOUNT( account )){
-		label = ofo_account_get_label( account );
-		gtk_widget_set_tooltip_text( GTK_WIDGET( entry ), label );
-	}
-}
-
-static void
-on_help_clicked( GtkButton *btn, ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	ofa_rec_period_help_run( priv->getter, GTK_WINDOW( self ));
+	check_for_enable_dlg( self );
 }
 
 /*
@@ -844,52 +581,27 @@ check_for_enable_dlg( ofaRecPeriodProperties *self )
 }
 
 /*
- * we accept to save uncomplete detail lines
+ * detail order is reinitialized from the current display
  */
 static gboolean
 is_dialog_validable( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	ofoRecPeriod *exists;
 	gboolean ok;
+	const gchar *clabel, *caddtype;
+	gboolean havedetails;
+	guint addcount;
 	gchar *msgerr;
-	ofaHub *hub;
-	guint i, count, pam_count;
-	GtkWidget *toggle;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
-
 	msgerr = NULL;
-	hub = ofa_igetter_get_hub( priv->getter );
 
-	ok = ofo_rec_period_is_valid_data( priv->mnemo, priv->label, priv->ledger, &msgerr );
+	clabel = gtk_entry_get_text( GTK_ENTRY( priv->p1_label_entry ));
+	havedetails = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_havedetails_btn ));
+	caddtype = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->p1_addtype_box ));
+	addcount = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( priv->p1_addcount_spin ));
 
-	if( ok ){
-		exists = ofo_rec_period_get_by_mnemo( hub, priv->mnemo );
-		ok = !exists ||
-				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_rec_period_get_mnemo( priv->rec_period )));
-		if( !ok ){
-			msgerr = g_strdup_printf( _( "Operation template '%s' already exists" ), priv->mnemo );
-		}
-	}
-
-	/* make sure that we have at most one mean of paiement target */
-	if( ok && priv->details_grid ){
-		count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
-		pam_count = 0;
-		for( i=1 ; i<=count ; ++i ){
-			get_detail_list( self, i );
-			/* get target of mean of paiment */
-			toggle = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
-			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( toggle ))){
-				pam_count += 1;
-			}
-		}
-		if( pam_count > 1 ){
-			msgerr = g_strdup( "PROGRAM ERROR: more than one mean of paiement target" );
-			ok = FALSE;
-		}
-	}
+	ok = ofo_rec_period_is_valid_data( clabel, havedetails, caddtype, addcount, &msgerr );
 
 	set_msgerr( self, msgerr );
 	g_free( msgerr );
@@ -901,105 +613,67 @@ static gboolean
 do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	gchar *prev_mnemo;
+	const gchar *clabel, *caddtype;
+	gboolean havedetails;
+	guint addcount;
 	guint i, count;
-	gint pam_row;
 	gboolean ok;
 	ofaHub *hub;
-	GtkWidget *toggle;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-
-	prev_mnemo = g_strdup( ofo_rec_period_get_mnemo( priv->rec_period ));
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
-	/* le nouveau mnemo n'est pas encore utilisé,
-	 * ou bien il est déjà utilisé par ce même model (n'a pas été modifié)
-	 */
-	ofo_rec_period_set_mnemo( priv->rec_period, priv->mnemo );
-	ofo_rec_period_set_label( priv->rec_period, priv->label );
-	ofo_rec_period_set_ledger( priv->rec_period, priv->ledger );
-	ofo_rec_period_set_ledger_locked( priv->rec_period, priv->ledger_locked );
-	ofo_rec_period_set_ref( priv->rec_period, gtk_entry_get_text( GTK_ENTRY( priv->ref_entry )));
-	ofo_rec_period_set_ref_locked( priv->rec_period, priv->ref_locked );
+	hub = ofa_igetter_get_hub( priv->getter );
+
+	clabel = gtk_entry_get_text( GTK_ENTRY( priv->p1_label_entry ));
+	havedetails = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_havedetails_btn ));
+	caddtype = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->p1_addtype_box ));
+	addcount = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( priv->p1_addcount_spin ));
 	my_utils_container_notes_get( GTK_WINDOW( self ), rec_period );
 
+	ofo_rec_period_set_label( priv->rec_period, clabel );
+	ofo_rec_period_set_have_details( priv->rec_period, havedetails );
+	ofo_rec_period_set_add_type( priv->rec_period, caddtype );
+	ofo_rec_period_set_add_count( priv->rec_period, addcount );
+
 	ofo_rec_period_free_detail_all( priv->rec_period );
-	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
-	pam_row = -1;
+	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ));
 	for( i=1 ; i<=count ; ++i ){
 		get_detail_list( self, i );
-		/* get target of mean of paiment */
-		toggle = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
-		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( toggle ))){
-			pam_row = i-1;
-		}
 	}
-	ofo_rec_period_set_pam_row( priv->rec_period, pam_row );
 
-	if( !prev_mnemo ){
+	if( priv->is_new ){
 		ok = ofo_rec_period_insert( priv->rec_period, hub );
 		if( !ok ){
-			*msgerr = g_strdup( _( "Unable to create this new operation template" ));
+			*msgerr = g_strdup( _( "Unable to create this new periodicity" ));
 		}
 	} else {
-		ok = ofo_rec_period_update( priv->rec_period, prev_mnemo );
+		ok = ofo_rec_period_update( priv->rec_period );
 		if( !ok ){
-			*msgerr = g_strdup( _( "Unable to update the operation template" ));
+			*msgerr = g_strdup( _( "Unable to update the periodicity" ));
 		}
 	}
-
-	g_free( prev_mnemo );
 
 	return( ok );
 }
 
+/*
+ * @row: row index in the grid (starting from 1)
+ */
 static void
 get_detail_list( ofaRecPeriodProperties *self, gint row )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkEntry *entry;
-	GtkToggleButton *toggle;
-	const gchar *comment, *account, *label, *debit, *credit;
-	gboolean account_locked, label_locked, debit_locked, credit_locked;
+	GtkWidget *entry;
+	const gchar *clabel;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_COMMENT, row ));
-	comment = gtk_entry_get_text( entry );
+	entry = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_LABEL, row );
+	clabel = gtk_entry_get_text( GTK_ENTRY( entry ));
 
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT, row ));
-	account = gtk_entry_get_text( entry );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_ACCOUNT_LOCKED, row ));
-	account_locked = gtk_toggle_button_get_active( toggle );
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_LABEL, row ));
-	label = gtk_entry_get_text( entry );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_LABEL_LOCKED, row ));
-	label_locked = gtk_toggle_button_get_active( toggle );
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_DEBIT, row ));
-	debit = gtk_entry_get_text( entry );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_DEBIT_LOCKED, row ));
-	debit_locked = gtk_toggle_button_get_active( toggle );
-
-	entry = GTK_ENTRY( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT, row ));
-	credit = gtk_entry_get_text( entry );
-
-	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT_LOCKED, row ));
-	credit_locked = gtk_toggle_button_get_active( toggle );
-
-	ofo_rec_period_add_detail( priv->rec_period,
-				comment,
-				account, account_locked,
-				label, label_locked,
-				debit, debit_locked,
-				credit, credit_locked );
+	ofo_rec_period_add_detail( priv->rec_period, row-1, clabel );
 }
 
 static void

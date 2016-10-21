@@ -273,7 +273,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaCurrency
 	priv = ofa_currency_combo_get_instance_private( self );
 
 	gtk_tree_model_get( tmodel, a, priv->sort_column_id, &stra, -1 );
-	gtk_tree_model_get( tmodel, a, priv->sort_column_id, &strb, -1 );
+	gtk_tree_model_get( tmodel, b, priv->sort_column_id, &strb, -1 );
 
 	cmp = my_collate( stra, strb );
 

@@ -41,7 +41,6 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-periodicity.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-base.h"
@@ -52,6 +51,7 @@
 #include "ofa-recurrent-model-treeview.h"
 #include "ofa-recurrent-run-store.h"
 #include "ofa-recurrent-run-treeview.h"
+#include "ofo-rec-period.h"
 #include "ofo-recurrent-gen.h"
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
@@ -101,7 +101,7 @@ typedef struct {
 	guint                 already;
 	GList                *messages;
 }
-	sEnumDates;
+	sEnumBetween;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-generate.ui";
 
@@ -121,7 +121,7 @@ static void     action_on_generate_activated( GSimpleAction *action, GVariant *e
 static void     generate_do( ofaRecurrentGenerate *self );
 static gboolean confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date );
 static GList   *generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages );
-static void     generate_enum_dates_cb( const GDate *date, sEnumDates *data );
+static void     generate_enum_dates_cb( const GDate *date, sEnumBetween *data );
 static void     display_error_messages( ofaRecurrentGenerate *self, GList *messages );
 static gboolean do_record( ofaRecurrentGenerate *self, gchar **msgerr );
 static void     get_settings( ofaRecurrentGenerate *self );
@@ -668,15 +668,16 @@ confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date )
 }
 
 /*
- * generating new operations (mnemo+date) between the two dates
+ * generating new operations (mnemo+date) between the two dates (included)
  */
 static GList *
 generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages )
 {
-	static const gchar *thisfn = "ofa_recurrent_generate_generate_do_opes";
 	ofaRecurrentGeneratePrivate *priv;
-	const gchar *per_main, *per_detail;
-	sEnumDates sdata;
+	ofxCounter per_id, perdetid;
+	ofoRecPeriod *period;
+	sEnumBetween sdata;
+	gchar *str;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
@@ -689,19 +690,23 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 
 		sdata.model = model;
 		sdata.template = ofo_ope_template_get_by_mnemo( priv->hub, ofo_recurrent_model_get_ope_template( model ));
-		per_main = ofo_recurrent_model_get_periodicity( model );
-		per_detail = ofo_recurrent_model_get_periodicity_detail( model );
 
-		g_debug( "%s: model=%s, periodicity=%s,%s",
-				thisfn, ofo_recurrent_model_get_label( model ), per_main, per_detail );
+		per_id = ofo_recurrent_model_get_periodicity( model );
+		period = ofo_rec_period_get_by_id( priv->hub, per_id );
+		if( period ){
+			perdetid = ofo_recurrent_model_get_periodicity_detail( model );
+			ofo_rec_period_enum_between(
+					period, perdetid, begin_date, end_date,
+					( RecPeriodEnumBetweenCb ) generate_enum_dates_cb, &sdata );
+			if( g_list_length( sdata.messages )){
+				*messages = g_list_concat( *messages, sdata.messages );
+			}
 
-		ofa_periodicity_enum_dates_between(
-				per_main, per_detail,
-				begin_date, end_date,
-				( PeriodicityDatesCb ) generate_enum_dates_cb, &sdata );
-
-		if( g_list_length( sdata.messages )){
-			*messages = g_list_concat( *messages, sdata.messages );
+		} else {
+			str = g_strdup_printf(
+					_( "Model '%s': unknown periodicity identifier: %lu" ),
+					ofo_recurrent_model_get_mnemo( model ), per_id );
+			*messages = g_list_prepend( *messages, str );
 		}
 	}
 
@@ -713,7 +718,7 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
  * given mnemo+date couple
  */
 static void
-generate_enum_dates_cb( const GDate *date, sEnumDates *data )
+generate_enum_dates_cb( const GDate *date, sEnumBetween *data )
 {
 	ofaRecurrentGeneratePrivate *priv;
 	ofoRecurrentRun *recrun;

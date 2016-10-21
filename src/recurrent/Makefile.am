@@ -60,6 +60,8 @@ nodist_libofa_recurrent_la_SOURCES = \
 
 libofa_recurrent_la_SOURCES = \
 	ofa-extension.c										\
+	ofa-rec-period-bin.c								\
+	ofa-rec-period-bin.h								\
 	ofa-rec-period-page.c								\
 	ofa-rec-period-page.h								\
 	ofa-rec-period-properties.c							\

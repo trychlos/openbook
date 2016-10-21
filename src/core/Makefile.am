@@ -165,8 +165,6 @@ libofa_core_la_SOURCES = \
 	ofa-paimean-treeview.h								\
 	ofa-paned-page.c									\
 	ofa-page.c											\
-	ofa-periodicity.c									\
-	ofa-periodicity-bin.c								\
 	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
 	ofa-rate-store.c									\

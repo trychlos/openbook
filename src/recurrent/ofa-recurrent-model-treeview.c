@@ -74,7 +74,6 @@ static void      on_selection_delete( ofaRecurrentModelTreeview *self, GtkTreeSe
 static void      get_and_send( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList    *get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection );
 static gint      tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
-static gint      sort_periodicity_detail( const gchar *detaila, const gchar *detailb );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelTreeview, ofa_recurrent_model_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaRecurrentModelTreeview ))
@@ -480,16 +479,17 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_recurrent_model_treeview_v_sort";
 	gint cmp;
-	gchar *mnemoa, *labela, *templa, *pera, *detaila, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *templb, *perb, *detailb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb;
+	gchar *mnemoa, *labela, *templa, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *templb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
+	ofxCounter pera, perdeta, perb, perdetb;
 
 	gtk_tree_model_get( tmodel, a,
 			REC_MODEL_COL_MNEMO,              &mnemoa,
 			REC_MODEL_COL_LABEL,              &labela,
 			REC_MODEL_COL_OPE_TEMPLATE,       &templa,
-			REC_MODEL_COL_PERIODICITY,        &pera,
-			REC_MODEL_COL_PERIODICITY_DETAIL, &detaila,
+			REC_MODEL_COL_PERIOD_I,           &pera,
+			REC_MODEL_COL_PERIOD_DETAIL_I,    &perdeta,
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1a,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2a,
 			REC_MODEL_COL_DEF_AMOUNT3,        &amount3a,
@@ -503,8 +503,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			REC_MODEL_COL_MNEMO,              &mnemob,
 			REC_MODEL_COL_LABEL,              &labelb,
 			REC_MODEL_COL_OPE_TEMPLATE,       &templb,
-			REC_MODEL_COL_PERIODICITY,        &perb,
-			REC_MODEL_COL_PERIODICITY_DETAIL, &detailb,
+			REC_MODEL_COL_PERIOD_I,           &perb,
+			REC_MODEL_COL_PERIOD_DETAIL_I,    &perdetb,
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1b,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2b,
 			REC_MODEL_COL_DEF_AMOUNT3,        &amount3b,
@@ -527,10 +527,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( templa, templb );
 			break;
 		case REC_MODEL_COL_PERIODICITY:
-			cmp = my_collate( pera, perb );
+			cmp = pera < perb ? -1 : ( pera > perb ? 1 : 0 );
 			break;
 		case REC_MODEL_COL_PERIODICITY_DETAIL:
-			cmp = sort_periodicity_detail( detaila, detailb );
+			cmp = perdeta < perdetb ? -1 : ( perdeta > perdetb ? 1 : 0 );
 			break;
 		case REC_MODEL_COL_DEF_AMOUNT1:
 			cmp = my_collate( amount1a, amount1b );
@@ -561,8 +561,6 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( mnemoa );
 	g_free( labela );
 	g_free( templa );
-	g_free( pera );
-	g_free( detaila );
 	g_free( amount1a );
 	g_free( amount2a );
 	g_free( amount3a );
@@ -574,28 +572,13 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( mnemob );
 	g_free( labelb );
 	g_free( templb );
-	g_free( perb );
-	g_free( detailb );
 	g_free( amount1b );
 	g_free( amount2b );
 	g_free( amount3b );
+	g_free( notesb );
 	g_free( upduserb );
 	g_free( updstampb );
 	g_clear_object( &pngb );
 
 	return( cmp );
-}
-
-static gint
-sort_periodicity_detail( const gchar *detaila, const gchar *detailb )
-{
-	int deta, detb;
-
-	if( my_strlen( detaila ) && my_strlen( detailb )){
-		deta = atoi( detaila );
-		detb = atoi( detailb );
-		return( deta < detb ? -1 : ( deta > detb ? 1 : 0 ));
-	}
-
-	return( my_collate( detaila, detailb ));
 }

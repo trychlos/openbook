@@ -66,18 +66,31 @@ typedef struct {
 #define REC_PERIOD_WEEK                 "W"
 #define REC_PERIOD_MONTH                "M"
 
+/*
+ * widgets Tmax size
+ */
+#define REC_PERIOD_LABEL_MAX            256
+
+/**
+ * RecPeriodEnumBetweenCb:
+ *
+ * The #ofo_rec_period_enum_between() callback.
+ */
+typedef void (*RecPeriodEnumBetweenCb)( const GDate *date, void *user_data );
+
 GType           ofo_rec_period_get_type          ( void ) G_GNUC_CONST;
 
 GList          *ofo_rec_period_get_dataset       ( ofaHub *hub );
 #define         ofo_rec_period_free_dataset( L ) g_list_free_full(( L ),( GDestroyNotify ) g_object_unref )
 
-ofoRecPeriod   *ofo_rec_period_get_by_code       ( ofaHub *hub, const gchar *code );
+ofoRecPeriod   *ofo_rec_period_get_by_id         ( ofaHub *hub, ofxCounter id );
 
 ofoRecPeriod   *ofo_rec_period_new               ( void );
 
-const gchar    *ofo_rec_period_get_code          ( ofoRecPeriod *period );
+ofxCounter      ofo_rec_period_get_id            ( ofoRecPeriod *period );
+guint           ofo_rec_period_get_order         ( ofoRecPeriod *period );
 const gchar    *ofo_rec_period_get_label         ( ofoRecPeriod *period );
-gboolean        ofo_rec_period_get_have_detail   ( ofoRecPeriod *period );
+gboolean        ofo_rec_period_get_have_details  ( ofoRecPeriod *period );
 const gchar    *ofo_rec_period_get_add_type      ( ofoRecPeriod *period );
 guint           ofo_rec_period_get_add_count     ( ofoRecPeriod *period );
 const gchar    *ofo_rec_period_get_notes         ( ofoRecPeriod *period );
@@ -85,23 +98,34 @@ const gchar    *ofo_rec_period_get_upd_user      ( ofoRecPeriod *period );
 const GTimeVal *ofo_rec_period_get_upd_stamp     ( ofoRecPeriod *period );
 
 guint           ofo_rec_period_detail_get_count  ( ofoRecPeriod *period );
-const gchar    *ofo_rec_period_detail_get_code   ( ofoRecPeriod *period, guint idx );
+gint            ofo_rec_period_detail_get_by_id  ( ofoRecPeriod *period, ofxCounter det_id );
+ofxCounter      ofo_rec_period_detail_get_id     ( ofoRecPeriod *period, guint idx );
+guint           ofo_rec_period_detail_get_order  ( ofoRecPeriod *period, guint idx );
 const gchar    *ofo_rec_period_detail_get_label  ( ofoRecPeriod *period, guint idx );
 
 gboolean        ofo_rec_period_is_add_type_valid ( const gchar *add_type );
+gboolean        ofo_rec_period_is_valid_data     ( const gchar *label, gboolean have_details,
+														const gchar *add_type, guint add_count,
+														gchar **msgerr );
 gboolean        ofo_rec_period_is_deletable      ( ofoRecPeriod *period );
 
-void            ofo_rec_period_set_code          ( ofoRecPeriod *period, const gchar *code );
+void            ofo_rec_period_enum_between      ( ofoRecPeriod *period,
+														ofxCounter detail_id,
+														const GDate *begin, const GDate *end,
+														RecPeriodEnumBetweenCb cb, void *user_data );
+
+void            ofo_rec_period_set_order         ( ofoRecPeriod *period, guint order );
 void            ofo_rec_period_set_label         ( ofoRecPeriod *period, const gchar *label );
-void            ofo_rec_period_set_have_detail   ( ofoRecPeriod *period, gboolean have_detail );
+void            ofo_rec_period_set_have_details  ( ofoRecPeriod *period, gboolean have_detail );
 void            ofo_rec_period_set_add_type      ( ofoRecPeriod *period, const gchar *type );
 void            ofo_rec_period_set_add_count     ( ofoRecPeriod *period, guint count );
 void            ofo_rec_period_set_notes         ( ofoRecPeriod *period, const gchar *notes );
 
-void            ofo_rec_period_add_detail        ( ofoRecPeriod *period, const gchar *code, const gchar *label );
+void            ofo_rec_period_free_detail_all   ( ofoRecPeriod *period );
+void            ofo_rec_period_add_detail        ( ofoRecPeriod *period, guint order, const gchar *label );
 
 gboolean        ofo_rec_period_insert            ( ofoRecPeriod *period, ofaHub *hub );
-gboolean        ofo_rec_period_update            ( ofoRecPeriod *period, const gchar *prev_code );
+gboolean        ofo_rec_period_update            ( ofoRecPeriod *period );
 gboolean        ofo_rec_period_delete            ( ofoRecPeriod *period );
 
 G_END_DECLS

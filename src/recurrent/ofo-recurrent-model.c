@@ -40,11 +40,11 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-isignal-hub.h"
-#include "api/ofa-periodicity.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-ope-template.h"
 
+#include "ofo-rec-period.h"
 #include "ofo-recurrent-model.h"
 
 /* priv instance data
@@ -85,11 +85,11 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( REC_PERIOD ),
-				OFA_TYPE_STRING,
+				OFA_TYPE_COUNTER,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( REC_PERIOD_DETAIL ),
-				OFA_TYPE_STRING,
+				OFA_TYPE_COUNTER,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( REC_NOTES ),
@@ -423,20 +423,22 @@ ofo_recurrent_model_get_ope_template( const ofoRecurrentModel *model )
 
 /**
  * ofo_recurrent_model_get_periodicity:
+ * @model:
  */
-const gchar *
+ofxCounter
 ofo_recurrent_model_get_periodicity( const ofoRecurrentModel *model )
 {
-	ofo_base_getter( RECURRENT_MODEL, model, string, NULL, REC_PERIOD );
+	ofo_base_getter( RECURRENT_MODEL, model, counter, 0, REC_PERIOD );
 }
 
 /**
  * ofo_recurrent_model_get_periodicity_detail:
+ * @model:
  */
-const gchar *
+ofxCounter
 ofo_recurrent_model_get_periodicity_detail( const ofoRecurrentModel *model )
 {
-	ofo_base_getter( RECURRENT_MODEL, model, string, NULL, REC_PERIOD_DETAIL );
+	ofo_base_getter( RECURRENT_MODEL, model, counter, 0, REC_PERIOD_DETAIL );
 }
 
 /**
@@ -553,7 +555,8 @@ ofo_recurrent_model_is_deletable( const ofoRecurrentModel *model )
  * #ofoRecurrentModel valid, %FALSE else.
  */
 gboolean
-ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label, const gchar *ope_template, const gchar *period, const gchar *detail, gchar **msgerr )
+ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label,
+		const gchar *ope_template, ofoRecPeriod *period, ofxCounter detail_id, gchar **msgerr )
 {
 	if( msgerr ){
 		*msgerr = NULL;
@@ -576,15 +579,21 @@ ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label, const
 		}
 		return( FALSE );
 	}
-	if( !my_strlen( period )){
+	if( !period ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty periodicity" ));
+			*msgerr = g_strdup( _( "Unset periodicity" ));
 		}
 		return( FALSE );
 	}
-	if( !my_strlen( detail ) && my_collate( period, PER_NEVER )){
+	if( ofo_rec_period_get_have_details( period ) && detail_id <= 0 ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty periodicity detail" ));
+			*msgerr = g_strdup( _( "Periodicity expects details, but is unset" ));
+		}
+		return( FALSE );
+	}
+	if( !ofo_rec_period_get_have_details( period ) && detail_id > 0 ){
+		if( msgerr ){
+			*msgerr = g_strdup( _( "Periodicity does not expect detail, but is set" ));
 		}
 		return( FALSE );
 	}
@@ -623,18 +632,18 @@ ofo_recurrent_model_set_ope_template( ofoRecurrentModel *model, const gchar *tem
  * ofo_recurrent_model_set_periodicity:
  */
 void
-ofo_recurrent_model_set_periodicity( ofoRecurrentModel *model, const gchar *period )
+ofo_recurrent_model_set_periodicity( ofoRecurrentModel *model, ofxCounter period )
 {
-	ofo_base_setter( RECURRENT_MODEL, model, string, REC_PERIOD, period );
+	ofo_base_setter( RECURRENT_MODEL, model, counter, REC_PERIOD, period );
 }
 
 /**
  * ofo_recurrent_model_set_periodicity_detail:
  */
 void
-ofo_recurrent_model_set_periodicity_detail( ofoRecurrentModel *model, const gchar *detail )
+ofo_recurrent_model_set_periodicity_detail( ofoRecurrentModel *model, ofxCounter detail )
 {
-	ofo_base_setter( RECURRENT_MODEL, model, string, REC_PERIOD_DETAIL, detail );
+	ofo_base_setter( RECURRENT_MODEL, model, counter, REC_PERIOD_DETAIL, detail );
 }
 
 /**
@@ -743,9 +752,10 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	const gchar *period, *detail, *def_amount1, *def_amount2, *def_amount3;
+	const gchar *def_amount1, *def_amount2, *def_amount3;
 	gchar *label, *template, *notes, *userid, *stamp_str;
 	GTimeVal stamp;
+	ofxCounter period, detail;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
@@ -780,15 +790,15 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	}
 
 	period = ofo_recurrent_model_get_periodicity( model );
-	if( my_strlen( period )){
-		g_string_append_printf( query, "'%s',", period );
+	if( period > 0 ){
+		g_string_append_printf( query, "%lu,", period );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
 
 	detail = ofo_recurrent_model_get_periodicity_detail( model );
-	if( my_strlen( detail )){
-		g_string_append_printf( query, "'%s',", detail );
+	if( detail > 0 ){
+		g_string_append_printf( query, "%lu,", detail );
 	} else {
 		query = g_string_append( query, "NULL," );
 	}
@@ -879,9 +889,10 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	gboolean ok;
 	GString *query;
 	gchar *label, *notes, *userid;
-	const gchar *new_mnemo, *template, *period, *detail, *def_amount;
+	const gchar *new_mnemo, *template, *def_amount;
 	gchar *stamp_str;
 	GTimeVal stamp;
+	ofxCounter period, detail;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
@@ -910,15 +921,15 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	}
 
 	period = ofo_recurrent_model_get_periodicity( model );
-	if( my_strlen( period )){
-		g_string_append_printf( query, "REC_PERIOD='%s',", period );
+	if( period > 0 ){
+		g_string_append_printf( query, "REC_PERIOD=%lu,", period );
 	} else {
 		query = g_string_append( query, "REC_PERIOD=NULL," );
 	}
 
 	detail = ofo_recurrent_model_get_periodicity_detail( model );
-	if( my_strlen( detail )){
-		g_string_append_printf( query, "REC_PERIOD_DETAIL='%s',", detail );
+	if( detail > 0 ){
+		g_string_append_printf( query, "REC_PERIOD_DETAIL=%lu,", detail );
 	} else {
 		query = g_string_append( query, "REC_PERIOD_DETAIL=NULL," );
 	}
@@ -1174,8 +1185,8 @@ iimportable_get_label( const ofaIImportable *instance )
  * - mnemo id
  * - label
  * - ope template
- * - periodicity
- * - periodicity detail
+ * - periodicity identifier
+ * - periodicity detail identifier
  * - notes (opt)
  * - last update user (placeholder)
  * - last update timestamp (placeholder)
@@ -1220,10 +1231,13 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 {
 	GList *dataset;
 	guint numline, total;
-	const gchar *cstr, *clabel, *cperiod;
+	const gchar *cstr;
 	GSList *itl, *fields, *itf;
 	ofoRecurrentModel *model;
 	gchar *str, *splitted;
+	ofoRecPeriod *period;
+	ofxCounter perid, perdetid;
+	gint idx;
 
 	numline = 0;
 	dataset = NULL;
@@ -1271,7 +1285,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		}
 		ofo_recurrent_model_set_ope_template( model, cstr );
 
-		/* periodicity */
+		/* periodicity id. */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !my_strlen( cstr )){
@@ -1279,34 +1293,55 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 			parms->parse_errs += 1;
 			continue;
 		}
-		clabel = ofa_periodicity_get_label( cstr );
-		if( !my_strlen( clabel )){
-			str = g_strdup_printf( _( "unknown periodicity code: %s" ), cstr );
+		perid = atol( cstr );
+		period = ofo_rec_period_get_by_id( parms->hub, perid );
+		if( !period ){
+			str = g_strdup_printf( _( "unknown periodicity identifier: %lu" ), perid );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
 			g_free( str );
 			parms->parse_errs += 1;
 			continue;
 		}
-		ofo_recurrent_model_set_periodicity( model, cstr );
-		cperiod = cstr;
+		ofo_recurrent_model_set_periodicity( model, perid );
 
-		/* periodicity detail */
+		/* periodicity detail id. */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		if( !my_strlen( cstr )){
-			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty model detail periodicity" ));
-			parms->parse_errs += 1;
-			continue;
+		if( my_strlen( cstr )){
+			if( period ){
+				if( ofo_rec_period_get_have_details( period )){
+					perdetid = atol( cstr );
+					idx = ofo_rec_period_detail_get_by_id( period, perdetid );
+					if( idx >= 0 ){
+						ofo_recurrent_model_set_periodicity_detail( model, perdetid );
+					} else {
+						str = g_strdup_printf( _( "unknown periodicity detail identifier: %lu" ), perdetid );
+						ofa_iimporter_progress_num_text( importer, parms, numline, str );
+						g_free( str );
+						parms->parse_errs += 1;
+						continue;
+					}
+				} else {
+					str = g_strdup_printf( _( "periodicity does not accept details, %s identifier found" ), cstr );
+					ofa_iimporter_progress_num_text( importer, parms, numline, str );
+					g_free( str );
+					parms->parse_errs += 1;
+					continue;
+				}
+			} else {
+				ofa_iimporter_progress_num_text( importer, parms, numline,
+						_( "found periodictiy detail, but periodicity is unknown" ));
+				parms->parse_errs += 1;
+				continue;
+			}
+		} else if( period ){
+			if( ofo_rec_period_get_have_details( period )){
+				ofa_iimporter_progress_num_text( importer, parms, numline,
+						_( "periodicity expects unspecified details" ));
+				parms->parse_errs += 1;
+				continue;
+			}
 		}
-		clabel = ofa_periodicity_get_detail_label( cperiod, cstr );
-		if( !my_strlen( clabel )){
-			str = g_strdup_printf( _( "unknown detail periodicity code: %s" ), cstr );
-			ofa_iimporter_progress_num_text( importer, parms, numline, str );
-			g_free( str );
-			parms->parse_errs += 1;
-			continue;
-		}
-		ofo_recurrent_model_set_periodicity_detail( model, cstr );
 
 		/* notes */
 		itf = itf ? itf->next : NULL;
