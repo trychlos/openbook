@@ -369,9 +369,6 @@
 
 1239 2016-10-19 export from EntryPage
 
-1240 2016-10-20 Stock importers: version label should be "2016.1" instead
-                of 'v 2016.1'
-
 1241 2016-10-20 display somewhere (in PluginManager) the DB versions
 
 1242 2016-10-20 rename ThemeManager to PageManager
@@ -1876,6 +1873,10 @@
 
 1233 2016-10-11 RestoreAssistant: Button 'ne_w'
      2016-10-11 fixed
+
+1240 2016-10-20 Stock importers: version label should be "2016.1" instead
+                of 'v 2016.1'
+     2016-10-23 done
 
 1244 2016-10-23 error messages should be full sentences (with a verb)
      2016-10-23 done

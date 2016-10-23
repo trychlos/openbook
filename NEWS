@@ -41,6 +41,7 @@
  New features and improvements:
 
    - Error messages are full sentences (todo #1244).
+   - Homogeneize Importers version numbers (todo #1240).
 
  Bug fixes:
 

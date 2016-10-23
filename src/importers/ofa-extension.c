@@ -169,7 +169,7 @@ iident_get_canon_name( const myIIdent *instance, void *user_data )
 static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
 {
-	return( g_strdup( "v 2016.1" ));
+	return( g_strdup( "2016.1" ));
 }
 
 /*
