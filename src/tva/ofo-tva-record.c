@@ -634,13 +634,13 @@ ofo_tva_record_is_valid_data( const gchar *mnemo, const GDate *begin, const GDat
 	}
 	if( !my_strlen( mnemo)){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty mnemonic identifier" ));
+			*msgerr = g_strdup( _( "Mnemonic identifier is empty" ));
 		}
 		return( FALSE );
 	}
 	if( !my_date_is_valid( end )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Invalid ending date" ));
+			*msgerr = g_strdup( _( "Ending date is invalid" ));
 		}
 		return( FALSE );
 	}
@@ -676,13 +676,13 @@ ofo_tva_record_is_computable( const gchar *mnemo, const GDate *begin, const GDat
 	}
 	if( !my_date_is_valid( begin )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Invalid begin date" ));
+			*msgerr = g_strdup( _( "Begining date is invalid" ));
 		}
 		return( FALSE );
 	}
 	if( my_date_compare( begin, end ) > 0 ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Begin date must be less or equal to end date" ));
+			*msgerr = g_strdup( _( "Beginning date must be less or equal to ending date" ));
 		}
 		return( FALSE );
 	}
@@ -713,13 +713,13 @@ ofo_tva_record_is_validable( const gchar *mnemo, const GDate *begin, const GDate
 	}
 	if( !my_date_is_valid( dope )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Invalid operation date" ));
+			*msgerr = g_strdup( _( "Operation date is invalid" ));
 		}
 		return( FALSE );
 	}
 	if( my_date_compare( end, dope ) > 0 ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Operation date must be greater or equal to end date" ));
+			*msgerr = g_strdup( _( "Operation date must be greater or equal to ending date" ));
 		}
 		return( FALSE );
 	}

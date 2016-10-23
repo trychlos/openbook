@@ -1044,23 +1044,23 @@ ofo_dossier_is_valid_data( const gchar *label, gint nb_months, const gchar *curr
 								const GDate *begin, const GDate *end, gchar **msgerr )
 {
 	if( !my_strlen( label )){
-		*msgerr = g_strdup( _( "Empty label" ));
+		*msgerr = g_strdup( _( "Label is empty" ));
 		return( FALSE );
 	}
 
 	if( nb_months <= 0 ){
-		*msgerr = g_strdup_printf( "Invalid length of exercice: %d", nb_months );
+		*msgerr = g_strdup_printf( "Length of exercice = %d is invalid", nb_months );
 		return( FALSE );
 	}
 
 	if( !my_strlen( currency )){
-		*msgerr = g_strdup( _( "Empty default currency"));
+		*msgerr = g_strdup( _( "Default currency is empty"));
 		return( FALSE );
 	}
 
 	if( my_date_is_valid( begin ) && my_date_is_valid( end )){
 		if( my_date_compare( begin, end ) > 0 ){
-			*msgerr = g_strdup( _( "Exercice is set to begin after it has ended" ));
+			*msgerr = g_strdup( _( "Beginning date of the exercice is greater than the ending date" ));
 			return( FALSE );
 		}
 	}

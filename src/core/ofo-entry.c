@@ -1859,7 +1859,7 @@ error_ledger( const gchar *ledger )
 {
 	gchar *str;
 
-	str = g_strdup_printf( _( "Invalid ledger identifier: %s" ), ledger );
+	str = g_strdup_printf( _( "Ledger identifier '%s' is invalid" ), ledger );
 	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
@@ -1870,7 +1870,7 @@ error_ope_template( const gchar *model )
 {
 	gchar *str;
 
-	str = g_strdup_printf( _( "Invalid operation template identifier: %s" ), model );
+	str = g_strdup_printf( _( "Operation template identifier '%s' is invalid" ), model );
 	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
@@ -1881,7 +1881,7 @@ error_currency( const gchar *currency )
 {
 	gchar *str;
 
-	str = g_strdup_printf( _( "Invalid currency ISO 3A code: %s" ), currency );
+	str = g_strdup_printf( _( "ISO 3A currency code '%s' is invalid" ), currency );
 	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
@@ -1892,7 +1892,7 @@ error_acc_number( void )
 {
 	gchar *str;
 
-	str = g_strdup( _( "Empty account number" ));
+	str = g_strdup( _( "Account number is empty" ));
 	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
@@ -1903,7 +1903,7 @@ error_account( const gchar *number )
 {
 	gchar *str;
 
-	str = g_strdup_printf( _( "Invalid account number: %s" ), number );
+	str = g_strdup_printf( _( "Account number '%s' is invalid" ), number );
 	my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 
 	g_free( str );
@@ -1923,7 +1923,7 @@ error_acc_currency( const gchar *currency, ofoAccount *account )
 	ent_dev = ofo_currency_get_by_code( hub, currency );
 
 	if( !acc_dev ){
-		str = g_strdup_printf( "Invalid currency '%s' for the account '%s'",
+		str = g_strdup_printf( "Currency '%s' is invalid for the account '%s'",
 					acc_currency, ofo_account_get_number( account ));
 	} else if( !ent_dev ){
 		str = g_strdup_printf( "Candidate entry makes use of invalid '%s' currency", currency );

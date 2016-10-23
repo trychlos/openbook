@@ -639,10 +639,10 @@ ofa_idate_filter_is_valid( ofaIDateFilter *filter, gint who, gchar **message )
 	if( !valid && message ){
 		switch( who ){
 			case IDATE_FILTER_FROM:
-				*message = g_strdup( _( "From date is not valid" ));
+				*message = g_strdup( _( "'From' date is not valid" ));
 				break;
 			case IDATE_FILTER_TO:
-				*message = g_strdup( _( "To date is not valid" ));
+				*message = g_strdup( _( "'To' date is not valid" ));
 				break;
 		}
 	}

@@ -386,25 +386,25 @@ ofo_currency_is_valid_data( const gchar *code, const gchar *label, const gchar *
 	}
 	if( !my_strlen( code )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty code" ));
+			*msgerr = g_strdup( _( "ISO 3A code is empty" ));
 		}
 		return( FALSE );
 	}
 	if( !my_strlen( label )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty label" ));
+			*msgerr = g_strdup( _( "Label is empty" ));
 		}
 		return( FALSE );
 	}
 	if( !my_strlen( symbol )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty symbol" ));
+			*msgerr = g_strdup( _( "Symbol is empty" ));
 		}
 		return( FALSE );
 	}
 	if( digits < 0 ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Invalid decimal digits count" ));
+			*msgerr = g_strdup( _( "Digits count is invalid" ));
 		}
 		return( FALSE );
 	}

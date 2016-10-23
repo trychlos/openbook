@@ -380,8 +380,6 @@
 1243 2016-10-22 have a command-line tool which displays the version of
                 each of the DBModels of a saved database
 
-1244 2016-10-23 error messages should be full sentences (with a verb)
-
 1245
 
 -----------------------------------------------------------------------
@@ -1878,6 +1876,9 @@
 
 1233 2016-10-11 RestoreAssistant: Button 'ne_w'
      2016-10-11 fixed
+
+1244 2016-10-23 error messages should be full sentences (with a verb)
+     2016-10-23 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

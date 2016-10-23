@@ -517,11 +517,11 @@ is_dialog_validable( ofaRecurrentGenerate *self )
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	if( !my_date_is_valid( &priv->begin_date )){
-		msgerr = g_strdup( _( "Empty beginning date" ));
+		msgerr = g_strdup( _( "Beginning date is empty" ));
 		valid = FALSE;
 
 	} else if( !my_date_is_valid( &priv->end_date )){
-		msgerr = g_strdup( _( "Empty ending date" ));
+		msgerr = g_strdup( _( "Ending date is empty" ));
 		valid = FALSE;
 
 	} else if( my_date_compare( &priv->begin_date, &priv->end_date ) > 0 ){

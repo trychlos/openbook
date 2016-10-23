@@ -1377,7 +1377,7 @@ account_get_reconciliable( ofaReconcilPage *self, const gchar *number )
 	account = ofo_account_get_by_number( priv->hub, number );
 
 	if( !account ){
-		msgerr = g_strdup( _( "Invalid account number" ));
+		msgerr = g_strdup_printf( _( "Account number '%s' is unknown or invalid" ), number );
 		ok = FALSE;
 
 	} else {

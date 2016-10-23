@@ -588,13 +588,13 @@ ofo_tva_form_is_valid_data( const gchar *mnemo, const gchar *label, gchar **msge
 	if( !my_strlen( mnemo )){
 		ok = FALSE;
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty mnemonic" ));
+			*msgerr = g_strdup( _( "Mnemonic is empty" ));
 		}
 	}
 	if( !my_strlen( label )){
 		ok = FALSE;
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty label" ));
+			*msgerr = g_strdup( _( "Label is empty" ));
 		}
 	}
 

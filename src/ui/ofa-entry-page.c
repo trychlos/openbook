@@ -1466,12 +1466,12 @@ check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter )
 			is_valid = TRUE;
 
 		} else {
-			msg = g_strdup_printf( _( "Invalid operation date: %s" ), sdope );
+			msg = g_strdup_printf( _( "Operation date '%s' is invalid" ), sdope );
 			set_error_msg( self, iter, msg );
 			g_free( msg );
 		}
 	} else {
-		set_error_msg( self, iter, _( "Empty operation date" ));
+		set_error_msg( self, iter, _( "Operation date is empty" ));
 	}
 
 	g_free( sdope );
@@ -1504,12 +1504,12 @@ check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 			is_valid = TRUE;
 
 		} else {
-			msg = g_strdup_printf( _( "Invalid effect date: %s" ), sdeffect );
+			msg = g_strdup_printf( _( "Effect date '%s' is invalid" ), sdeffect );
 			set_error_msg( self, iter, msg );
 			g_free( msg );
 		}
 	} else {
-		set_error_msg( self, iter, _( "Empty effect date" ));
+		set_error_msg( self, iter, _( "Effect date is empty" ));
 	}
 
 	/* if effect date is valid, and operation date has not been set by
@@ -1545,12 +1545,12 @@ check_row_for_valid_ledger( ofaEntryPage *self, GtkTreeIter *iter )
 			is_valid = TRUE;
 
 		} else {
-			msg = g_strdup_printf( _( "Unknwown ledger: %s" ), str );
+			msg = g_strdup_printf( _( "Ledger '%s' is unknown or invalid" ), str );
 			set_error_msg( self, iter, msg );
 			g_free( msg );
 		}
 	} else {
-		set_error_msg( self, iter, _( "Empty ledger mnemonic" ));
+		set_error_msg( self, iter, _( "Ledger identifier is empty" ));
 	}
 	g_free( str );
 
@@ -1585,12 +1585,12 @@ check_row_for_valid_account( ofaEntryPage *self, GtkTreeIter *iter )
 				g_free( msg );
 			}
 		} else {
-			msg = g_strdup_printf( _( "Unknwown account: %s" ), acc_number );
+			msg = g_strdup_printf( _( "Account '%s' is unknown" ), acc_number );
 			set_error_msg( self, iter, msg );
 			g_free( msg );
 		}
 	} else {
-		set_error_msg( self, iter, _( "Empty account number" ));
+		set_error_msg( self, iter, _( "Account number is empty" ));
 	}
 	g_free( acc_number );
 
@@ -1623,7 +1623,7 @@ check_row_for_valid_label( ofaEntryPage *self, GtkTreeIter *iter )
 	if( my_strlen( str )){
 		is_valid = TRUE;
 	} else {
-		set_error_msg( self, iter, _( "Empty label" ));
+		set_error_msg( self, iter, _( "Entry label is empty" ));
 	}
 	g_free( str );
 
@@ -1647,12 +1647,12 @@ check_row_for_valid_currency( ofaEntryPage *self, GtkTreeIter *iter )
 			is_valid = TRUE;
 
 		} else {
-			msg = g_strdup_printf( _( "Unknown currency: %s" ), code );
+			msg = g_strdup_printf( _( "Currency '%s' is unknown" ), code );
 			set_error_msg( self, iter, msg );
 			g_free( msg );
 		}
 	} else {
-		set_error_msg( self, iter, _( "Empty currency" ));
+		set_error_msg( self, iter, _( "Currency is empty" ));
 	}
 	g_free( code );
 

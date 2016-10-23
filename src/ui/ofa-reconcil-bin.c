@@ -331,7 +331,7 @@ ofa_reconcil_bin_is_valid( ofaReconcilBin *bin, gchar **msgerr )
 		if( !priv->account ){
 			valid = FALSE;
 			if( msgerr ){
-				*msgerr = g_strdup( _( "Invalid account" ));
+				*msgerr = g_strdup( _( "Account number is unknown or invalid" ));
 			}
 		}
 	}
@@ -340,7 +340,7 @@ ofa_reconcil_bin_is_valid( ofaReconcilBin *bin, gchar **msgerr )
 				&priv->date,
 				my_date_editable_get_date( GTK_EDITABLE( priv->date_entry ), &valid ));
 		if( !valid  && msgerr ){
-			*msgerr = g_strdup( _( "Invalid reconciliation date" ));
+			*msgerr = g_strdup( _( "Reconciliation date is invalid" ));
 		}
 	}
 	if( valid ){

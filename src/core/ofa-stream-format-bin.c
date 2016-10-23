@@ -1194,7 +1194,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->name_entry ));
 	if( !my_strlen( cstr )){
 		if( error_message ){
-			*error_message = g_strdup( _( "Empty name" ));
+			*error_message = g_strdup( _( "Name is empty" ));
 		}
 		return( FALSE );
 	}
@@ -1203,14 +1203,14 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 	cstr = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->mode_combo ));
 	if( !my_strlen( cstr )){
 		if( error_message ){
-			*error_message = g_strdup( _( "No selected mode" ));
+			*error_message = g_strdup( _( "No mode is selected" ));
 		}
 		return( FALSE );
 	}
 	mode = atoi( cstr );
 	if( mode != OFA_SFMODE_EXPORT && mode != OFA_SFMODE_IMPORT ){
 		if( error_message ){
-			*error_message = g_strdup_printf( _( "Invalid or unknown mode: %s" ), cstr );
+			*error_message = g_strdup_printf( _( "Mode '%s' is unknown or invalid" ), cstr );
 		}
 		return( FALSE );
 	}
@@ -1222,7 +1222,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		if( !my_strlen( charmap )){
 			g_free( charmap );
 			if( error_message ){
-				*error_message = g_strdup( _( "Invalid or unknown characters encoding type" ));
+				*error_message = g_strdup( _( "Characters encoding type is unknown or invalid" ));
 			}
 			return( FALSE );
 		}
@@ -1235,7 +1235,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		ivalue = my_date_combo_get_selected( priv->date_combo );
 		if( ivalue < MY_DATE_FIRST ){
 			if( error_message ){
-				*error_message = g_strdup( _( "Invalid or unknown date format" ));
+				*error_message = g_strdup( _( "Date format is unknown or invalid" ));
 			}
 			return( FALSE );
 		}
@@ -1248,7 +1248,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		if( !my_strlen( thousand_sep )){
 			g_free( thousand_sep );
 			if( error_message ){
-				*error_message = g_strdup( _( "Invalid or unknown thousand separator" ));
+				*error_message = g_strdup( _( "Thousand separator is unknown or invalid" ));
 			}
 			return( FALSE );
 		}
@@ -1262,7 +1262,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		if( !my_strlen( decimal_sep )){
 			g_free( decimal_sep );
 			if( error_message ){
-				*error_message = g_strdup( _( "Invalid or unknown decimal separator" ));
+				*error_message = g_strdup( _( "Decimal separator is unknown or invalid" ));
 			}
 			return( FALSE );
 		}
@@ -1276,7 +1276,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		if( !my_strlen( field_sep )){
 			g_free( field_sep );
 			if( error_message ){
-				*error_message = g_strdup( _( "Invalid or unknown field separator" ));
+				*error_message = g_strdup( _( "Field separator is unknown or invalid" ));
 			}
 			return( FALSE );
 		}
@@ -1289,7 +1289,7 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
 		cstr = gtk_entry_get_text( GTK_ENTRY( priv->strdelim_entry ));
 		if( !my_strlen( cstr )){
 			if( error_message ){
-				*error_message = g_strdup( _( "Invalid or unknown string delimiter" ));
+				*error_message = g_strdup( _( "String delimiter is unknown or invalid" ));
 			}
 			return( FALSE );
 		}

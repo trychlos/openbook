@@ -512,10 +512,10 @@ ofa_iaccount_filter_is_valid( const ofaIAccountFilter *filter, gint who, gchar *
 	if( !valid && message ){
 		switch( who ){
 			case IACCOUNT_FILTER_FROM:
-				*message = g_strdup( _( "From account is not valid" ));
+				*message = g_strdup( _( "'From' account is not valid" ));
 				break;
 			case IACCOUNT_FILTER_TO:
-				*message = g_strdup( _( "To account is not valid" ));
+				*message = g_strdup( _( "'To' account is not valid" ));
 				break;
 		}
 	}

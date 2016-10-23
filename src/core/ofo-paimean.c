@@ -336,7 +336,7 @@ ofo_paimean_is_valid_data( const gchar *code, gchar **msgerr )
 	}
 	if( !my_strlen( code )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty identifier" ));
+			*msgerr = g_strdup( _( "Identifier is empty" ));
 		}
 		return( FALSE );
 	}

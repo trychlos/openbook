@@ -605,7 +605,7 @@ check_for_mnemo( ofaRecurrentModelProperties *self, gchar **msgerr )
 
 	if( !my_strlen( priv->mnemo )){
 		ok = FALSE;
-		*msgerr = g_strdup( _( "Empty mnemonic" ));
+		*msgerr = g_strdup( _( "Mnemonic is empty" ));
 
 	} else {
 		exists = ( ofo_recurrent_model_get_by_mnemo( hub, priv->mnemo ) != NULL );
