@@ -574,7 +574,7 @@ is_dialog_validable( ofaRecurrentModelProperties *self )
 
 		if( ok && !priv->template_obj ){
 			ok = FALSE;
-			msgerr = g_strdup_printf( _( "Unknown operation template: %s" ), priv->ope_template );
+			msgerr = g_strdup_printf( _( "Operation template '%s' is unknown" ), priv->ope_template );
 		}
 	}
 

@@ -61,6 +61,8 @@ typedef struct {
  */
 enum {
 	DET_COL_ID = 0,
+	DET_COL_NUMBER,
+	DET_COL_VALUE,
 	DET_COL_ORDER,
 	DET_COL_LABEL,
 	DET_COL_N_COLUMNS
@@ -79,7 +81,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static void       setup_bin( ofaRecPeriodBin *self );
 static GtkWidget *period_create_combo( ofaRecPeriodBin *self );
 static gint       period_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, void *empty );
-static gboolean   period_set_selected( ofaRecPeriodBin *self, ofxCounter period_id );
+static gboolean   period_set_selected( ofaRecPeriodBin *self, const gchar *period_id );
 static void       period_on_selection_changed( GtkComboBox *combo, ofaRecPeriodBin *self );
 static GtkWidget *detail_create_combo( ofaRecPeriodBin *self );
 static void       detail_populate( ofaRecPeriodBin *self );
@@ -283,8 +285,8 @@ period_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, void
 {
 	gint ordera, orderb, cmp;
 
-	gtk_tree_model_get( tmodel, a, PER_COL_ORDER, &ordera, -1 );
-	gtk_tree_model_get( tmodel, b, PER_COL_ORDER, &orderb, -1 );
+	gtk_tree_model_get( tmodel, a, PER_COL_ORDER_I, &ordera, -1 );
+	gtk_tree_model_get( tmodel, b, PER_COL_ORDER_I, &orderb, -1 );
 
 	cmp = ordera < orderb ? -1 : ( ordera > orderb ? 1 : 0 );
 
@@ -292,12 +294,13 @@ period_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, void
 }
 
 static gboolean
-period_set_selected( ofaRecPeriodBin *self, ofxCounter period_id )
+period_set_selected( ofaRecPeriodBin *self, const gchar *period_id )
 {
 	ofaRecPeriodBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	ofxCounter row_id;
+	gchar *row_id;
+	gint cmp;
 
 	priv = ofa_rec_period_bin_get_instance_private( self );
 
@@ -305,7 +308,9 @@ period_set_selected( ofaRecPeriodBin *self, ofxCounter period_id )
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		while( TRUE ){
 			gtk_tree_model_get( tmodel, &iter, PER_COL_ID, &row_id, -1 );
-			if( row_id == period_id ){
+			cmp = my_collate( row_id, period_id );
+			g_free( row_id );
+			if( cmp == 0 ){
 				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( priv->period_combo ), &iter );
 				return( TRUE );
 			}
@@ -324,24 +329,24 @@ period_on_selection_changed( GtkComboBox *combo, ofaRecPeriodBin *self )
 	ofaRecPeriodBinPrivate *priv;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	gboolean has_details;
+	guint details_count;
 
 	priv = ofa_rec_period_bin_get_instance_private( self );
 
 	priv->det_id = -1;
-	has_details = FALSE;
+	details_count = 0;
 
 	if( gtk_combo_box_get_active_iter( combo, &iter )){
 		tmodel = gtk_combo_box_get_model( combo );
 		gtk_tree_model_get( tmodel, &iter, PER_COL_OBJECT, &priv->period, -1 );
 		if( priv->period ){
 			g_object_unref( priv->period );
-			has_details = ofo_rec_period_get_have_details( priv->period );
+			details_count = ofo_rec_period_get_details_count( priv->period );
 		}
 	}
 
-	gtk_widget_set_sensitive( priv->detail_combo, has_details );
-	if( has_details ){
+	gtk_widget_set_sensitive( priv->detail_combo, details_count > 0 );
+	if( details_count > 0 ){
 		detail_populate( self );
 	}
 
@@ -367,7 +372,8 @@ detail_create_combo( ofaRecPeriodBin *self )
 	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", DET_COL_LABEL );
 
 	/* id, order, label */
-	store = gtk_list_store_new( DET_COL_N_COLUMNS, G_TYPE_ULONG, G_TYPE_INT, G_TYPE_STRING );
+	store = gtk_list_store_new( DET_COL_N_COLUMNS,
+			G_TYPE_ULONG, G_TYPE_INT, G_TYPE_INT, G_TYPE_INT, G_TYPE_STRING );
 	sort_model = gtk_tree_model_sort_new_with_model( GTK_TREE_MODEL( store ));
 	/* the sortable model maintains its own reference on the store */
 	g_object_unref( store );
@@ -401,9 +407,12 @@ detail_populate( ofaRecPeriodBin *self )
 	count = ofo_rec_period_detail_get_count( priv->period );
 	for( i=0 ; i<count ; ++i ){
 		gtk_list_store_insert_with_values( priv->detail_store, &iter, -1,
-				DET_COL_ID,    ofo_rec_period_detail_get_id( priv->period, i ),
-				DET_COL_ORDER, ofo_rec_period_detail_get_order( priv->period, i ),
-				DET_COL_LABEL, ofo_rec_period_detail_get_label( priv->period, i ));
+				DET_COL_ID,     ofo_rec_period_detail_get_id( priv->period, i ),
+				DET_COL_NUMBER, ofo_rec_period_detail_get_number( priv->period, i ),
+				DET_COL_VALUE,  ofo_rec_period_detail_get_value( priv->period, i ),
+				DET_COL_ORDER,  ofo_rec_period_detail_get_order( priv->period, i ),
+				DET_COL_LABEL,  ofo_rec_period_detail_get_label( priv->period, i ),
+				-1 );
 	}
 }
 
@@ -435,7 +444,7 @@ detail_set_selected( ofaRecPeriodBin *self, ofxCounter detail_id )
 		while( TRUE ){
 			gtk_tree_model_get( tmodel, &iter, DET_COL_ID, &row_id, -1 );
 			if( row_id == detail_id ){
-				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( priv->period_combo ), &iter );
+				gtk_combo_box_set_active_iter( GTK_COMBO_BOX( priv->detail_combo ), &iter );
 				break;
 			}
 			if( !gtk_tree_model_iter_next( tmodel, &iter )){
@@ -500,7 +509,7 @@ ofa_rec_period_bin_get_selected( ofaRecPeriodBin *bin, ofoRecPeriod **period, of
  * @detail_id: the detail identifier.
  */
 void
-ofa_rec_period_bin_set_selected( ofaRecPeriodBin *bin, ofxCounter period_id, ofxCounter detail_id )
+ofa_rec_period_bin_set_selected( ofaRecPeriodBin *bin, const gchar *period_id, ofxCounter detail_id )
 {
 	ofaRecPeriodBinPrivate *priv;
 

@@ -49,10 +49,9 @@ typedef struct {
 	ofaRecPeriodStorePrivate;
 
 static GType st_col_types[PER_N_COLUMNS] = {
-		G_TYPE_STRING, G_TYPE_ULONG, G_TYPE_STRING,		/* code, code_i, order */
-		G_TYPE_INT, G_TYPE_STRING, G_TYPE_STRING,		/* order_i, label, have_details */
-		G_TYPE_BOOLEAN, G_TYPE_STRING, G_TYPE_STRING,	/* have_details_b, add_type, add_count */
-		G_TYPE_INT, G_TYPE_STRING, 0,					/* add_count_i, notes, notes_png */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* id, order, order_i */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_INT,		/* label, details_count, details_count_i */
+		G_TYPE_STRING, 0,								/* notes, notes_png */
 		G_TYPE_STRING, G_TYPE_STRING,					/* upd_user, upd_stamp */
 		G_TYPE_OBJECT									/* the #ofoRecPeriod itself */
 };
@@ -202,13 +201,16 @@ ofa_rec_period_store_new( ofaHub *hub )
 static gint
 on_sort_model( GtkTreeModel *trun, GtkTreeIter *a, GtkTreeIter *b, ofaRecPeriodStore *self )
 {
-	ofxCounter ida, idb;
+	gchar *ida, *idb;
 	gint cmp;
 
 	gtk_tree_model_get( trun, a, PER_COL_ID, &ida, -1 );
 	gtk_tree_model_get( trun, b, PER_COL_ID, &idb, -1 );
 
-	cmp = ida < idb ? -1 : ( ida > idb ? 1 : 0 );
+	cmp = my_collate( ida, idb );
+
+	g_free( ida );
+	g_free( idb );
 
 	return( cmp );
 }
@@ -250,23 +252,18 @@ static void
 set_row_by_iter( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *iter )
 {
 	static const gchar *thisfn = "ofa_rec_period_store_set_row_by_iter";
-	const gchar *label, *caddtype, *notes;
-	gboolean have_details;
-	guint order, addcount;
-	gchar *sid, *sorder, *saddcount, *stamp;
+	const gchar *id, *label, *notes;
+	guint order, count;
+	gchar *sorder, *scount, *stamp;
 	GError *error;
 	GdkPixbuf *notes_png;
-	ofxCounter id;
 
 	id = ofo_rec_period_get_id( period );
-	sid = g_strdup_printf( "%lu", id );
 	order = ofo_rec_period_get_order( period );
 	sorder = g_strdup_printf( "%u", order );
 	label = ofo_rec_period_get_label( period );
-	have_details = ofo_rec_period_get_have_details( period );
-	caddtype = ofo_rec_period_get_add_type( period );
-	addcount = ofo_rec_period_get_add_count( period );
-	saddcount = caddtype && addcount > 0 ? g_strdup_printf( "%u", addcount ) : g_strdup( "" );
+	count = ofo_rec_period_get_details_count( period );
+	scount = g_strdup_printf( "%u", count );
 
 	stamp  = my_utils_stamp_to_str( ofo_rec_period_get_upd_stamp( period ), MY_STAMP_DMYYHM );
 
@@ -281,40 +278,39 @@ set_row_by_iter( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *ite
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			PER_COL_ID,             sid,
-			PER_COL_ID_I,           id,
-			PER_COL_ORDER,          sorder,
-			PER_COL_ORDER_I,        order,
-			PER_COL_LABEL,		    label ? label : "",
-			PER_COL_HAVE_DETAILS,   have_details ? _( "Yes" ):_( "No" ),
-			PER_COL_HAVE_DETAILS_B, have_details,
-			PER_COL_ADD_TYPE,       caddtype ? caddtype : "",
-			PER_COL_ADD_COUNT,      saddcount,
-			PER_COL_ADD_COUNT_I,    addcount,
-			PER_COL_NOTES,          notes,
-			PER_COL_NOTES_PNG,      notes_png,
-			PER_COL_UPD_USER,       ofo_rec_period_get_upd_user( period ),
-			PER_COL_UPD_STAMP,      stamp,
-			PER_COL_OBJECT,         period,
+			PER_COL_ID,              id,
+			PER_COL_ORDER,           sorder,
+			PER_COL_ORDER_I,         order,
+			PER_COL_LABEL,		     label ? label : "",
+			PER_COL_DETAILS_COUNT,   scount,
+			PER_COL_DETAILS_COUNT_I, count,
+			PER_COL_NOTES,           notes,
+			PER_COL_NOTES_PNG,       notes_png,
+			PER_COL_UPD_USER,        ofo_rec_period_get_upd_user( period ),
+			PER_COL_UPD_STAMP,       stamp,
+			PER_COL_OBJECT,          period,
 			-1 );
 
-	g_free( sid );
 	g_free( sorder );
-	g_free( saddcount );
+	g_free( scount );
 	g_free( stamp );
 }
 
 static gboolean
 find_row_by_object( ofaRecPeriodStore *self, ofoRecPeriod *period, GtkTreeIter *iter )
 {
-	ofxCounter period_id, row_id;
+	const gchar *period_id;
+	gchar *row_id;
+	gint cmp;
 
 	period_id = ofo_rec_period_get_id( period );
 
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
-			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, PER_COL_ID_I, &row_id, -1 );
-			if( row_id == period_id ){
+			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, PER_COL_ID, &row_id, -1 );
+			cmp = my_collate( period_id, row_id );
+			g_free( row_id );
+			if( cmp == 0 ){
 				return( TRUE );
 			}
 			if( !gtk_tree_model_iter_next( GTK_TREE_MODEL( self ), iter )){

@@ -479,16 +479,16 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_recurrent_model_treeview_v_sort";
 	gint cmp;
-	gchar *mnemoa, *labela, *templa, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *templb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb;
+	gchar *mnemoa, *labela, *templa, *pera, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa;
+	gchar *mnemob, *labelb, *templb, *perb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
-	ofxCounter pera, perdeta, perb, perdetb;
+	ofxCounter perdeta, perdetb;
 
 	gtk_tree_model_get( tmodel, a,
 			REC_MODEL_COL_MNEMO,              &mnemoa,
 			REC_MODEL_COL_LABEL,              &labela,
 			REC_MODEL_COL_OPE_TEMPLATE,       &templa,
-			REC_MODEL_COL_PERIOD_I,           &pera,
+			REC_MODEL_COL_PERIODICITY,        &pera,
 			REC_MODEL_COL_PERIOD_DETAIL_I,    &perdeta,
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1a,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2a,
@@ -503,7 +503,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			REC_MODEL_COL_MNEMO,              &mnemob,
 			REC_MODEL_COL_LABEL,              &labelb,
 			REC_MODEL_COL_OPE_TEMPLATE,       &templb,
-			REC_MODEL_COL_PERIOD_I,           &perb,
+			REC_MODEL_COL_PERIODICITY,        &perb,
 			REC_MODEL_COL_PERIOD_DETAIL_I,    &perdetb,
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1b,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2b,
@@ -527,7 +527,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( templa, templb );
 			break;
 		case REC_MODEL_COL_PERIODICITY:
-			cmp = pera < perb ? -1 : ( pera > perb ? 1 : 0 );
+			cmp = my_collate( pera, perb );
 			break;
 		case REC_MODEL_COL_PERIODICITY_DETAIL:
 			cmp = perdeta < perdetb ? -1 : ( perdeta > perdetb ? 1 : 0 );
@@ -561,6 +561,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( mnemoa );
 	g_free( labela );
 	g_free( templa );
+	g_free( pera );
 	g_free( amount1a );
 	g_free( amount2a );
 	g_free( amount3a );
@@ -572,6 +573,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( mnemob );
 	g_free( labelb );
 	g_free( templb );
+	g_free( perb );
 	g_free( amount1b );
 	g_free( amount2b );
 	g_free( amount3b );

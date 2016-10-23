@@ -45,6 +45,7 @@
 
 #include "ofa-recurrent-main.h"
 #include "ofa-rec-period-page.h"
+#include "ofa-rec-period-properties.h"
 #include "ofa-rec-period-store.h"
 #include "ofa-rec-period-treeview.h"
 
@@ -353,14 +354,12 @@ on_delete_key( ofaRecPeriodTreeview *view, ofoRecPeriod *period, ofaRecPeriodPag
 static void
 action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecPeriodPage *self )
 {
-#if 0
 	ofoRecPeriod *model;
 	GtkWindow *toplevel;
 
 	model = ofo_rec_period_new();
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
 	ofa_rec_period_properties_run( OFA_IGETTER( self ), toplevel, model );
-#endif
 }
 
 /*
@@ -369,25 +368,16 @@ action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRecPeriodPag
 static void
 action_on_update_activated( GSimpleAction *action, GVariant *empty, ofaRecPeriodPage *self )
 {
-#if 0
 	ofaRecPeriodPagePrivate *priv;
-	GList *selected;
 	ofoRecPeriod *model;
 	GtkWindow *toplevel;
 
 	priv = ofa_rec_period_page_get_instance_private( self );
 
-	selected = ofa_rec_period_treeview_get_selected( priv->tview );
-
-	if( g_list_length( selected ) == 1 ){
-		model = ( ofoRecPeriod * ) selected->data;
-		g_return_if_fail( model && OFO_IS_REC_PERIOD( model ));
-		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-		ofa_rec_period_properties_run( OFA_IGETTER( self ), toplevel, model );
-	}
-
-	ofa_rec_period_treeview_free_selected( selected );
-#endif
+	model = ofa_rec_period_treeview_get_selected( priv->tview );
+	g_return_if_fail( model && OFO_IS_REC_PERIOD( model ));
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_rec_period_properties_run( OFA_IGETTER( self ), toplevel, model );
 }
 
 /*

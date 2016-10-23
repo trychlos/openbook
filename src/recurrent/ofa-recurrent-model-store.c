@@ -49,10 +49,9 @@ typedef struct {
 }
 	ofaRecurrentModelStorePrivate;
 
-static GType st_col_types[REC_N_COLUMNS] = {
+static GType st_col_types[REC_MODEL_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* mnemo, label, ope_template */
-		G_TYPE_STRING, G_TYPE_INT, G_TYPE_STRING,		/* periodicity, period_i, detail */
-		G_TYPE_INT,										/* detail_i */
+		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_LONG,		/* periodicity, detail, detail_i */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* def_amount1,def_amount2,def_amount3 */
 		G_TYPE_STRING, G_TYPE_BOOLEAN,					/* enabled_str, enabled_bool */
 		G_TYPE_STRING, 0, G_TYPE_STRING,				/* notes, notes_png, upd_user */
@@ -60,8 +59,8 @@ static GType st_col_types[REC_N_COLUMNS] = {
 		G_TYPE_OBJECT									/* the #ofoRecurrentModel itself */
 };
 
-static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/core/filler.png";
-static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/core/notes.png";
+static const gchar *st_resource_filler_png  = "/org/trychlos/openbook/recurrent/filler.png";
+static const gchar *st_resource_notes_png   = "/org/trychlos/openbook/recurrent/notes.png";
 
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentModelStore *self );
 static void     load_dataset( ofaRecurrentModelStore *self );
@@ -184,7 +183,7 @@ ofa_recurrent_model_store_new( ofaHub *hub )
 
 		st_col_types[REC_MODEL_COL_NOTES_PNG] = GDK_TYPE_PIXBUF;
 		gtk_list_store_set_column_types(
-				GTK_LIST_STORE( store ), REC_N_COLUMNS, st_col_types );
+				GTK_LIST_STORE( store ), REC_MODEL_N_COLUMNS, st_col_types );
 
 		gtk_tree_sortable_set_default_sort_func(
 				GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_model, store, NULL );
@@ -212,7 +211,7 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaRecurren
 	gtk_tree_model_get( tmodel, a, REC_MODEL_COL_MNEMO, &amnemo, -1 );
 	gtk_tree_model_get( tmodel, b, REC_MODEL_COL_MNEMO, &bmnemo, -1 );
 
-	cmp = g_utf8_collate( amnemo, bmnemo );
+	cmp = my_collate( amnemo, bmnemo );
 
 	g_free( amnemo );
 	g_free( bmnemo );
@@ -257,7 +256,7 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 	GError *error;
 	GdkPixbuf *notes_png;
 	gboolean is_enabled;
-	ofxCounter perid, perdetid;
+	ofxCounter perdetid;
 	ofoRecPeriod *period;
 	gint idx;
 
@@ -265,13 +264,12 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 
 	stamp  = my_utils_stamp_to_str( ofo_recurrent_model_get_upd_stamp( model ), MY_STAMP_DMYYHM );
 
-	perid = ofo_recurrent_model_get_periodicity( model );
-	period = ofo_rec_period_get_by_id( priv->hub, perid );
-	csper = period ? ofo_rec_period_get_label( period ) : "";
+	csper = ofo_recurrent_model_get_periodicity( model );
+	period = ofo_rec_period_get_by_id( priv->hub, csper );
 
 	csdet = "";
 	perdetid = 0;
-	if( ofo_rec_period_get_have_details( period )){
+	if( period && ofo_rec_period_get_details_count( period ) > 0 ){
 		perdetid = ofo_recurrent_model_get_periodicity_detail( model );
 		idx = ofo_rec_period_detail_get_by_id( period, perdetid );
 		if( idx >= 0 ){
@@ -300,7 +298,6 @@ set_row_by_iter( ofaRecurrentModelStore *self, const ofoRecurrentModel *model, G
 			REC_MODEL_COL_LABEL,              ofo_recurrent_model_get_label( model ),
 			REC_MODEL_COL_OPE_TEMPLATE,       ofo_recurrent_model_get_ope_template( model ),
 			REC_MODEL_COL_PERIODICITY,        csper,
-			REC_MODEL_COL_PERIOD_I,           perid,
 			REC_MODEL_COL_PERIODICITY_DETAIL, csdet,
 			REC_MODEL_COL_PERIOD_DETAIL_I,    perdetid,
 			REC_MODEL_COL_DEF_AMOUNT1,        csdef1 ? csdef1 : "",
@@ -328,7 +325,7 @@ model_find_by_mnemo( ofaRecurrentModelStore *self, const gchar *code, GtkTreeIte
 	if( gtk_tree_model_get_iter_first( GTK_TREE_MODEL( self ), iter )){
 		while( TRUE ){
 			gtk_tree_model_get( GTK_TREE_MODEL( self ), iter, REC_MODEL_COL_MNEMO, &str, -1 );
-			cmp = g_utf8_collate( str, code );
+			cmp = my_collate( str, code );
 			g_free( str );
 			if( cmp == 0 ){
 				return( TRUE );

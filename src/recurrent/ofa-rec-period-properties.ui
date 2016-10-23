@@ -30,7 +30,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkButton" id="btn-ok">
+              <object class="GtkButton" id="ok-btn">
                 <property name="label">gtk-ok</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -71,7 +71,7 @@
                     <property name="row_spacing">2</property>
                     <property name="column_spacing">4</property>
                     <child>
-                      <object class="GtkLabel" id="label11">
+                      <object class="GtkLabel" id="p1-order-prompt">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="has_tooltip">True</property>
@@ -116,74 +116,26 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p1-addcount_prompt">
+                      <object class="GtkLabel" id="p1-count_prompt">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Add _count :</property>
+                        <property name="label" translatable="yes">Detail types _count :</property>
                         <property name="use_underline">True</property>
                         <property name="xalign">1</property>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
-                        <property name="top_attach">5</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkCheckButton" id="p1-details-btn">
-                        <property name="label" translatable="yes">Have _details</property>
-                        <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="receives_default">False</property>
-                        <property name="use_underline">True</property>
-                        <property name="draw_indicator">True</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
                         <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p1-addtype-prompt">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Add _type :</property>
-                        <property name="use_underline">True</property>
-                        <property name="xalign">1</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">0</property>
-                        <property name="top_attach">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkComboBox" id="p1-addtype-combo">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">4</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinButton" id="p1-addcount-spin">
+                      <object class="GtkSpinButton" id="p1-count-spin">
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
-                        <property name="top_attach">5</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkLabel" id="p1-order-label">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="xalign">0</property>
-                      </object>
-                      <packing>
-                        <property name="left_attach">1</property>
-                        <property name="top_attach">1</property>
+                        <property name="top_attach">3</property>
                       </packing>
                     </child>
                     <child>
@@ -214,13 +166,14 @@
                       </packing>
                     </child>
                     <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
-                    </child>
-                    <child>
-                      <placeholder/>
+                      <object class="GtkSpinButton" id="p1-order-spin">
+                        <property name="visible">True</property>
+                        <property name="can_focus">True</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">1</property>
+                        <property name="top_attach">1</property>
+                      </packing>
                     </child>
                     <child>
                       <placeholder/>
@@ -283,7 +236,7 @@
                       <object class="GtkLabel" id="label131">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Code</property>
+                        <property name="label" translatable="yes">Type num.</property>
                         <property name="xalign">0</property>
                       </object>
                       <packing>
@@ -300,6 +253,18 @@
                       </object>
                       <packing>
                         <property name="left_attach">2</property>
+                        <property name="top_attach">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkLabel" id="label1">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="label" translatable="yes">Value</property>
+                        <property name="xalign">0</property>
+                      </object>
+                      <packing>
+                        <property name="left_attach">3</property>
                         <property name="top_attach">0</property>
                       </packing>
                     </child>
@@ -397,7 +362,7 @@
     </child>
     <action-widgets>
       <action-widget response="-6">btn-cancel</action-widget>
-      <action-widget response="-5">btn-ok</action-widget>
+      <action-widget response="-5">ok-btn</action-widget>
     </action-widgets>
   </template>
 </interface>

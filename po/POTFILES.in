@@ -21,6 +21,7 @@ src/core/ofa-stream-format-disp.ui
 src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui
 src/mysql/ofa-mysql-prefs-bin.ui
+src/recurrent/ofa-rec-period-properties.ui
 src/recurrent/ofa-recurrent-generate.ui
 src/recurrent/ofa-recurrent-model-properties.ui
 src/recurrent/ofa-recurrent-run-page.ui

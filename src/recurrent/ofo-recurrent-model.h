@@ -78,7 +78,7 @@ ofoRecurrentModel *ofo_recurrent_model_new_from_model         ( const ofoRecurre
 const gchar       *ofo_recurrent_model_get_mnemo              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_label              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_ope_template       ( const ofoRecurrentModel *model );
-ofxCounter         ofo_recurrent_model_get_periodicity        ( const ofoRecurrentModel *model );
+const gchar       *ofo_recurrent_model_get_periodicity        ( const ofoRecurrentModel *model );
 ofxCounter         ofo_recurrent_model_get_periodicity_detail ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_notes              ( const ofoRecurrentModel *model );
 const gchar       *ofo_recurrent_model_get_upd_user           ( const ofoRecurrentModel *model );
@@ -94,7 +94,7 @@ gboolean           ofo_recurrent_model_is_valid_data          ( const gchar *mne
 void               ofo_recurrent_model_set_mnemo              ( ofoRecurrentModel *model, const gchar *mnemo );
 void               ofo_recurrent_model_set_label              ( ofoRecurrentModel *model, const gchar *label );
 void               ofo_recurrent_model_set_ope_template       ( ofoRecurrentModel *model, const gchar *ope_template );
-void               ofo_recurrent_model_set_periodicity        ( ofoRecurrentModel *model, ofxCounter periodicity );
+void               ofo_recurrent_model_set_periodicity        ( ofoRecurrentModel *model, const gchar *periodicity );
 void               ofo_recurrent_model_set_periodicity_detail ( ofoRecurrentModel *model, ofxCounter detail );
 void               ofo_recurrent_model_set_notes              ( ofoRecurrentModel *model, const gchar *notes );
 void               ofo_recurrent_model_set_def_amount1        ( ofoRecurrentModel *model, const gchar *def_amount );

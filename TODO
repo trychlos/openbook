@@ -377,7 +377,12 @@
 1242 2016-10-20 rename ThemeManager to PageManager
                 (and clarify the behavior)
 
-1243
+1243 2016-10-22 have a command-line tool which displays the version of
+                each of the DBModels of a saved database
+
+1244 2016-10-23 error messages should be full sentences (with a verb)
+
+1245
 
 -----------------------------------------------------------------------
  DONE

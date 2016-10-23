@@ -63,35 +63,27 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                            Type     Displayable
- *                                                            -------  -----------
- * @PER_COL_ID             : identifier                       String       Yes
- * @PER_COL_ID_I           : identifier                       Long          No
- * @PER_COL_ORDER          : order                            String       Yes
- * @PER_COL_ORDER_I        : order                            Int           No
- * @PER_COL_LABEL          : label                            String       Yes
- * @PER_COL_HAVE_DETAILS   : whether it has details           String       Yes
- * @PER_COL_HAVE_DETAILS_B : whether it has details           Boolean       No
- * @PER_COL_ADD_TYPE       : add type                         String       Yes
- * @PER_COL_ADD_COUNT      : add count                        String       Yes
- * @PER_COL_ADD_COUNT_I    : add count                        Int           No
- * @PER_COL_NOTES          : notes                            String       Yes
- * @PER_COL_NOTES_PNG      : notes indicator                  Pixbuf       Yes
- * @PER_COL_UPD_USER       : last update user                 String       Yes
- * @PER_COL_UPD_STAMP      : last update timestamp            String       Yes
- * @REC_RUN_COL_OBJECT     : the #ofoRecPeriod object         GObject       No
+ *                                                             Type     Displayable
+ *                                                             -------  -----------
+ * @PER_COL_ID              : identifier                       String       Yes
+ * @PER_COL_ORDER           : order                            String       Yes
+ * @PER_COL_ORDER_I         : order                            Int           No
+ * @PER_COL_LABEL           : label                            String       Yes
+ * @PER_COL_DETAILS_COUNT   : count of detail types            String       Yes
+ * @PER_COL_DETAILS_COUNT_I : count of detail types            Int           No
+ * @PER_COL_NOTES           : notes                            String       Yes
+ * @PER_COL_NOTES_PNG       : notes indicator                  Pixbuf       Yes
+ * @PER_COL_UPD_USER        : last update user                 String       Yes
+ * @PER_COL_UPD_STAMP       : last update timestamp            String       Yes
+ * @REC_RUN_COL_OBJECT      : the #ofoRecPeriod object         GObject       No
  */
 enum {
 	PER_COL_ID= 0,
-	PER_COL_ID_I,
 	PER_COL_ORDER,
 	PER_COL_ORDER_I,
 	PER_COL_LABEL,
-	PER_COL_HAVE_DETAILS,
-	PER_COL_HAVE_DETAILS_B,
-	PER_COL_ADD_TYPE,
-	PER_COL_ADD_COUNT,
-	PER_COL_ADD_COUNT_I,
+	PER_COL_DETAILS_COUNT,
+	PER_COL_DETAILS_COUNT_I,
 	PER_COL_NOTES,
 	PER_COL_NOTES_PNG,
 	PER_COL_UPD_USER,

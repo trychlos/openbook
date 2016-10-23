@@ -61,43 +61,22 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget      *p1_id_label;
-	GtkWidget      *p1_order_label;
+	GtkWidget      *p1_order_spin;
 	GtkWidget      *p1_label_entry;
-	GtkWidget      *p1_havedetails_btn;
-	GtkWidget      *p1_addtype_box;
-	GtkWidget      *p1_addcount_spin;
+	GtkWidget      *p1_count_spin;
 	GtkWidget      *p3_details_grid;
 	GtkWidget      *msg_label;
 	GtkWidget      *ok_btn;
 }
 	ofaRecPeriodPropertiesPrivate;
 
-/* when selecting the type of data to be added
- */
-typedef struct {
-	const gchar *code;
-	const gchar *label;
-}
-	sAddType;
-
-static const sAddType st_add_type[] = {
-		{ REC_PERIOD_DAY,   N_( "Day" ) },
-		{ REC_PERIOD_WEEK,  N_( "Week" ) },
-		{ REC_PERIOD_MONTH, N_( "Month" ) },
-		{ 0 }
-};
-
-enum {
-	TYPE_COL_CODE = 0,
-	TYPE_COL_LABEL,
-	TYPE_N_COLUMNS
-};
-
 /* details gridllist:
  *
  * each line of the grid is :
  * - button 'Add' (if last line)
+ * - type number
  * - label
+ * - value
  * - button up
  * - button down
  * - button remove
@@ -105,12 +84,16 @@ enum {
 /* columns in the detail treeview
  */
 enum {
-	DET_COL_LABEL = 0,
+	DET_COL_NUMBER = 0,
+	DET_COL_LABEL,
+	DET_COL_VALUE,
 	DET_N_COLUMNS
 };
 
 /* horizontal space between widgets in a detail line */
-#define DETAIL_SPACE                    0
+#define DETAIL_SPACE                      0
+#define DET_SPIN_WIDTH                    4
+#define DET_SPIN_MAX_WIDTH                4
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-rec-period-properties.ui";
 
@@ -126,10 +109,9 @@ static guint     igridlist_get_interface_version( void );
 static void      igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
 static void      init_detail_widgets( ofaRecPeriodProperties *self, guint row );
 static void      setup_detail_values( ofaRecPeriodProperties *self, guint row );
+static void      on_order_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
 static void      on_label_changed( GtkEntry *entry, ofaRecPeriodProperties *self );
-static void      on_have_details_toggled( GtkToggleButton *toggle, ofaRecPeriodProperties *self );
-static void      on_add_type_changed( GtkComboBox *combo, ofaRecPeriodProperties *self );
-static void      on_add_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
+static void      on_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
 static void      check_for_enable_dlg( ofaRecPeriodProperties *self );
 static gboolean  is_dialog_validable( ofaRecPeriodProperties *self );
 static gboolean  do_update( ofaRecPeriodProperties *self, gchar **msgerr );
@@ -297,7 +279,7 @@ idialog_init( myIDialog *instance )
 
 	if( priv->is_writable ){
 		gtk_widget_grab_focus(
-				my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-mnemo-entry" ));
+				my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-order-spin" ));
 	}
 
 	/* if not the current exercice, then only have a 'Close' button */
@@ -321,13 +303,13 @@ static void
 init_dialog( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	ofxCounter id;
+	const gchar *id;
 	gchar *title;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
 	id = ofo_rec_period_get_id( priv->rec_period );
-	priv->is_new = ( id == 0 );
+	priv->is_new = ( my_strlen( id ) == 0 );
 
 	if( priv->is_new ){
 		title = g_strdup( _( "Defining a new periodicity" ));
@@ -343,11 +325,7 @@ static void
 init_properties( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *label, *entry, *button, *combo, *spin;
-	GtkListStore *store;
-	GtkTreeIter iter;
-	GtkCellRenderer *cell;
-	gint i;
+	GtkWidget *label, *entry, *spin;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
@@ -355,9 +333,13 @@ init_properties( ofaRecPeriodProperties *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->p1_id_label = label;
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-order-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-order-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	priv->p1_order_label = label;
+	spin = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-order-spin" );
+	g_return_if_fail( spin && GTK_IS_SPIN_BUTTON( spin ));
+	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), spin );
+	g_signal_connect( spin, "value-changed", G_CALLBACK( on_order_changed ), self );
+	priv->p1_order_spin = spin;
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-label-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
@@ -367,42 +349,13 @@ init_properties( ofaRecPeriodProperties *self )
 	g_signal_connect( entry, "changed", G_CALLBACK( on_label_changed ), self );
 	priv->p1_label_entry = entry;
 
-	button = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-details-btn" );
-	g_return_if_fail( button && GTK_IS_CHECK_BUTTON( button ));
-	g_signal_connect( button, "toggled", G_CALLBACK( on_have_details_toggled ), self );
-	priv->p1_havedetails_btn = button;
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addtype-prompt" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-count-prompt" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	combo = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addtype-combo" );
-	g_return_if_fail( combo && GTK_IS_COMBO_BOX( combo ));
-	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), combo );
-
-	store = gtk_list_store_new( TYPE_N_COLUMNS, G_TYPE_STRING, G_TYPE_STRING );
-	for( i=0 ; st_add_type[i].code ; ++i ){
-		gtk_list_store_insert_with_values( store, &iter,
-				TYPE_COL_CODE, st_add_type[i].code,
-				TYPE_COL_LABEL, st_add_type[i].label,
-				-1 );
-	}
-	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( store ));
-	g_object_unref( store );
-
-	cell = gtk_cell_renderer_text_new();
-	gtk_cell_layout_pack_start( GTK_CELL_LAYOUT( combo ), cell, FALSE );
-	gtk_cell_layout_add_attribute( GTK_CELL_LAYOUT( combo ), cell, "text", TYPE_COL_LABEL );
-	gtk_combo_box_set_id_column( GTK_COMBO_BOX( combo ), TYPE_COL_CODE );
-
-	g_signal_connect( combo, "changed", G_CALLBACK( on_add_type_changed ), self );
-	priv->p1_addtype_box = combo;
-
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addcount-prompt" );
-	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	spin = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-addcount-spin" );
+	spin = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-count-spin" );
 	g_return_if_fail( spin && GTK_IS_SPIN_BUTTON( spin ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), spin );
-	g_signal_connect( spin, "value-changed", G_CALLBACK( on_add_count_changed ), self );
-	priv->p1_addcount_spin = spin;
+	g_signal_connect( spin, "value-changed", G_CALLBACK( on_count_changed ), self );
+	priv->p1_count_spin = spin;
 }
 
 /*
@@ -421,7 +374,7 @@ init_details( ofaRecPeriodProperties *self )
 
 	my_igridlist_init(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ),
-			TRUE, priv->is_writable, TYPE_N_COLUMNS );
+			TRUE, priv->is_writable, DET_N_COLUMNS );
 
 	count = ofo_rec_period_detail_get_count( priv->rec_period );
 	for( i=1 ; i<=count ; ++i ){
@@ -433,32 +386,22 @@ static void
 setup_properties( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	gchar *str;
 	const gchar *cstr;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	str = g_strdup_printf( "%lu", ofo_rec_period_get_id( priv->rec_period ));
-	gtk_label_set_text( GTK_LABEL( priv->p1_id_label ), str );
-	g_free( str );
+	gtk_label_set_text( GTK_LABEL( priv->p1_id_label ),
+			ofo_rec_period_get_id( priv->rec_period ));
 
-	str = g_strdup_printf( "%u", ofo_rec_period_get_order( priv->rec_period ));
-	gtk_label_set_text( GTK_LABEL( priv->p1_order_label ), str );
-	g_free( str );
+	gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->p1_order_spin ),
+			ofo_rec_period_get_order( priv->rec_period ));
 
 	cstr = ofo_rec_period_get_label( priv->rec_period );
 	gtk_entry_set_text( GTK_ENTRY( priv->p1_label_entry ), cstr );
 
-	gtk_toggle_button_set_active(
-			GTK_TOGGLE_BUTTON( priv->p1_havedetails_btn ),
-			ofo_rec_period_get_have_details( priv->rec_period ));
-
-	cstr = ofo_rec_period_get_add_type( priv->rec_period );
-	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->p1_addtype_box ), cstr );
-
 	gtk_spin_button_set_value(
-			GTK_SPIN_BUTTON( priv->p1_addcount_spin ),
-			ofo_rec_period_get_add_count( priv->rec_period ));
+			GTK_SPIN_BUTTON( priv->p1_count_spin ),
+			ofo_rec_period_get_details_count( priv->rec_period ));
 }
 
 /*
@@ -499,9 +442,26 @@ static void
 init_detail_widgets( ofaRecPeriodProperties *self, guint row )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *entry;
+	GtkWidget *spin, *entry;
+	GtkAdjustment *adjustment;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
+
+	/* detail type number */
+	adjustment = gtk_adjustment_new( 1.0, 1.0, ( gdouble ) G_MAXUINT, 1.0, 10.0, 0.0 );
+	spin = gtk_spin_button_new( adjustment, 1.0, 0 );
+	g_object_unref( adjustment );
+	gtk_entry_set_width_chars( GTK_ENTRY( spin ), DET_SPIN_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( spin ), DET_SPIN_MAX_WIDTH );
+	gtk_spin_button_set_numeric( GTK_SPIN_BUTTON( spin ), TRUE );
+	my_utils_widget_set_margin_left( spin, DETAIL_SPACE );
+	gtk_widget_set_sensitive( spin, priv->is_writable );
+	if( priv->is_writable ){
+		gtk_widget_grab_focus( spin );
+	}
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ),
+			spin, 1+DET_COL_NUMBER, row, 1, 1 );
 
 	/* detail label */
 	entry = gtk_entry_new();
@@ -511,26 +471,48 @@ init_detail_widgets( ofaRecPeriodProperties *self, guint row )
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), REC_PERIOD_LABEL_MAX );
 	gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), REC_PERIOD_LABEL_MAX );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
-	if( priv->is_writable ){
-		gtk_widget_grab_focus( entry );
-	}
 	my_igridlist_set_widget(
 			MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ),
 			entry, 1+DET_COL_LABEL, row, 1, 1 );
+
+	/* detail value */
+	adjustment = gtk_adjustment_new( 1.0, 1.0, ( gdouble ) G_MAXUINT, 1.0, 10.0, 0.0 );
+	spin = gtk_spin_button_new( adjustment, 1.0, 0 );
+	g_object_unref( adjustment );
+	gtk_entry_set_width_chars( GTK_ENTRY( spin ), DET_SPIN_WIDTH );
+	gtk_entry_set_max_width_chars( GTK_ENTRY( spin ), DET_SPIN_MAX_WIDTH );
+	gtk_spin_button_set_numeric( GTK_SPIN_BUTTON( spin ), TRUE );
+	my_utils_widget_set_margin_left( entry, DETAIL_SPACE );
+	gtk_widget_set_sensitive( spin, priv->is_writable );
+	my_igridlist_set_widget(
+			MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ),
+			spin, 1+DET_COL_VALUE, row, 1, 1 );
 }
 
 static void
 setup_detail_values( ofaRecPeriodProperties *self, guint row )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *entry;
+	GtkWidget *spin, *entry;
 	const gchar *cstr;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
+	spin = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_NUMBER, row );
+	gtk_spin_button_set_value( GTK_SPIN_BUTTON( spin ), ofo_rec_period_detail_get_number( priv->rec_period, row-1 ));
+
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_LABEL, row );
 	cstr = ofo_rec_period_detail_get_label( priv->rec_period, row-1 );
 	gtk_entry_set_text( GTK_ENTRY( entry ), cstr ? cstr : "" );
+
+	spin = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_VALUE, row );
+	gtk_spin_button_set_value( GTK_SPIN_BUTTON( spin ), ofo_rec_period_detail_get_value( priv->rec_period, row-1 ));
+}
+
+static void
+on_order_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self )
+{
+	check_for_enable_dlg( self );
 }
 
 static void
@@ -540,27 +522,7 @@ on_label_changed( GtkEntry *entry, ofaRecPeriodProperties *self )
 }
 
 static void
-on_have_details_toggled( GtkToggleButton *toggle, ofaRecPeriodProperties *self )
-{
-	ofaRecPeriodPropertiesPrivate *priv;
-	gboolean active;
-
-	priv = ofa_rec_period_properties_get_instance_private( self );
-
-	active = gtk_toggle_button_get_active( toggle );
-	gtk_widget_set_sensitive( priv->p3_details_grid, active );
-
-	check_for_enable_dlg( self );
-}
-
-static void
-on_add_type_changed( GtkComboBox *combo, ofaRecPeriodProperties *self )
-{
-	check_for_enable_dlg( self );
-}
-
-static void
-on_add_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self )
+on_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self )
 {
 	check_for_enable_dlg( self );
 }
@@ -588,20 +550,15 @@ is_dialog_validable( ofaRecPeriodProperties *self )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
 	gboolean ok;
-	const gchar *clabel, *caddtype;
-	gboolean havedetails;
-	guint addcount;
+	const gchar *clabel;
 	gchar *msgerr;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 	msgerr = NULL;
 
 	clabel = gtk_entry_get_text( GTK_ENTRY( priv->p1_label_entry ));
-	havedetails = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_havedetails_btn ));
-	caddtype = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->p1_addtype_box ));
-	addcount = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( priv->p1_addcount_spin ));
 
-	ok = ofo_rec_period_is_valid_data( clabel, havedetails, caddtype, addcount, &msgerr );
+	ok = ofo_rec_period_is_valid_data( clabel, &msgerr );
 
 	set_msgerr( self, msgerr );
 	g_free( msgerr );
@@ -613,10 +570,8 @@ static gboolean
 do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	const gchar *clabel, *caddtype;
-	gboolean havedetails;
-	guint addcount;
-	guint i, count;
+	const gchar *clabel;
+	guint det_count, i, count;
 	gboolean ok;
 	ofaHub *hub;
 
@@ -627,15 +582,11 @@ do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 	hub = ofa_igetter_get_hub( priv->getter );
 
 	clabel = gtk_entry_get_text( GTK_ENTRY( priv->p1_label_entry ));
-	havedetails = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->p1_havedetails_btn ));
-	caddtype = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->p1_addtype_box ));
-	addcount = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( priv->p1_addcount_spin ));
+	det_count = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( priv->p1_count_spin ));
 	my_utils_container_notes_get( GTK_WINDOW( self ), rec_period );
 
 	ofo_rec_period_set_label( priv->rec_period, clabel );
-	ofo_rec_period_set_have_details( priv->rec_period, havedetails );
-	ofo_rec_period_set_add_type( priv->rec_period, caddtype );
-	ofo_rec_period_set_add_count( priv->rec_period, addcount );
+	ofo_rec_period_set_details_count( priv->rec_period, det_count );
 
 	ofo_rec_period_free_detail_all( priv->rec_period );
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->p3_details_grid ));
@@ -665,15 +616,22 @@ static void
 get_detail_list( ofaRecPeriodProperties *self, gint row )
 {
 	ofaRecPeriodPropertiesPrivate *priv;
-	GtkWidget *entry;
+	GtkWidget *spin, *entry;
 	const gchar *clabel;
+	guint number, value;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
+
+	spin = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_NUMBER, row );
+	number = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( spin ));
 
 	entry = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_LABEL, row );
 	clabel = gtk_entry_get_text( GTK_ENTRY( entry ));
 
-	ofo_rec_period_add_detail( priv->rec_period, row-1, clabel );
+	spin = gtk_grid_get_child_at( GTK_GRID( priv->p3_details_grid ), 1+DET_COL_VALUE, row );
+	value = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( spin ));
+
+	ofo_rec_period_add_detail( priv->rec_period, row-1, clabel, number, value );
 }
 
 static void

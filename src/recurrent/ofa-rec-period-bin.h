@@ -73,7 +73,7 @@ void             ofa_rec_period_bin_get_selected         ( ofaRecPeriodBin *bin,
 																ofxCounter *detail_id );
 
 void             ofa_rec_period_bin_set_selected         ( ofaRecPeriodBin *bin,
-																ofxCounter period_id,
+																const gchar *period_id,
 																ofxCounter detail_id );
 
 GtkWidget       *ofa_rec_period_bin_get_periodicity_combo( ofaRecPeriodBin *bin );

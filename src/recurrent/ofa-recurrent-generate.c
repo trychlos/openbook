@@ -674,7 +674,8 @@ static GList *
 generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages )
 {
 	ofaRecurrentGeneratePrivate *priv;
-	ofxCounter per_id, perdetid;
+	const gchar *per_id;
+	ofxCounter perdetid;
 	ofoRecPeriod *period;
 	sEnumBetween sdata;
 	gchar *str;
@@ -704,7 +705,7 @@ generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GD
 
 		} else {
 			str = g_strdup_printf(
-					_( "Model '%s': unknown periodicity identifier: %lu" ),
+					_( "Model '%s': unknown periodicity identifier: %s" ),
 					ofo_recurrent_model_get_mnemo( model ), per_id );
 			*messages = g_list_prepend( *messages, str );
 		}

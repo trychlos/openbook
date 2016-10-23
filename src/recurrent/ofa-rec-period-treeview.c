@@ -315,16 +315,14 @@ setup_columns( ofaRecPeriodTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), PER_COL_ID,           _( "Id" ),       _( "Periodicity identifier" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), PER_COL_ORDER,        _( "Order" ),    _( "Periodicity display order" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PER_COL_LABEL,        _( "Label" ),    _( "Periodicity label" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_HAVE_DETAILS, _( "Details" ),  _( "Has details" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_ADD_TYPE,     _( "Type" ),     _( "Add type" ));
-	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), PER_COL_ADD_COUNT,    _( "Count" ),    _( "Add count" ));
-	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PER_COL_NOTES,        _( "Notes" ),        NULL);
-	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), PER_COL_NOTES_PNG,       "",           _( "Notes indicator" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_UPD_USER,     _( "User" ),     _( "Last update user" ));
-	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), PER_COL_UPD_STAMP,       NULL,         _( "Last update timestamp" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_ID,            _( "Id" ),       _( "Periodicity identifier" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), PER_COL_ORDER,         _( "Order" ),    _( "Periodicity display order" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PER_COL_LABEL,         _( "Label" ),    _( "Periodicity label" ));
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), PER_COL_DETAILS_COUNT, _( "Details" ),  _( "Detail types count" ));
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), PER_COL_NOTES,         _( "Notes" ),        NULL);
+	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), PER_COL_NOTES_PNG,        "",           _( "Notes indicator" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), PER_COL_UPD_USER,      _( "User" ),     _( "Last update user" ));
+	ofa_tvbin_add_column_stamp  ( OFA_TVBIN( self ), PER_COL_UPD_STAMP,        NULL,         _( "Last update timestamp" ));
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), PER_COL_LABEL );
 }
@@ -411,44 +409,39 @@ static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_rec_period_treeview_v_sort";
-	gchar *labela, *deta, *typea, *notesa, *usera, *stampa;
-	gchar *labelb, *detb, *typeb, *notesb, *userb, *stampb;
-	ofxCounter ida, idb;
+	gchar *ida, *labela, *notesa, *usera, *stampa;
+	gchar *idb, *labelb, *notesb, *userb, *stampb;
 	guint ordera, orderb, counta, countb;
 	GdkPixbuf *pnga, *pngb;
 	gint cmp;
 
 	gtk_tree_model_get( tmodel, a,
-			PER_COL_ID_I,         &ida,
-			PER_COL_ORDER_I,      &ordera,
-			PER_COL_LABEL,        &labela,
-			PER_COL_HAVE_DETAILS, &deta,
-			PER_COL_ADD_TYPE,     &typea,
-			PER_COL_ADD_COUNT_I,  &counta,
-			PER_COL_NOTES,        &notesa,
-			PER_COL_NOTES_PNG,    &pnga,
-			PER_COL_UPD_USER,     &usera,
-			PER_COL_UPD_STAMP,    &stampa,
+			PER_COL_ID,              &ida,
+			PER_COL_ORDER_I,         &ordera,
+			PER_COL_LABEL,           &labela,
+			PER_COL_DETAILS_COUNT_I, &counta,
+			PER_COL_NOTES,           &notesa,
+			PER_COL_NOTES_PNG,       &pnga,
+			PER_COL_UPD_USER,        &usera,
+			PER_COL_UPD_STAMP,       &stampa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			PER_COL_ID_I,         &idb,
-			PER_COL_ORDER_I,      &orderb,
-			PER_COL_LABEL,        &labelb,
-			PER_COL_HAVE_DETAILS, &detb,
-			PER_COL_ADD_TYPE,     &typeb,
-			PER_COL_ADD_COUNT_I,  &countb,
-			PER_COL_NOTES,        &notesb,
-			PER_COL_NOTES_PNG,    &pngb,
-			PER_COL_UPD_USER,     &userb,
-			PER_COL_UPD_STAMP,    &stampb,
+			PER_COL_ID,              &idb,
+			PER_COL_ORDER_I,         &orderb,
+			PER_COL_LABEL,           &labelb,
+			PER_COL_DETAILS_COUNT_I, &countb,
+			PER_COL_NOTES,           &notesb,
+			PER_COL_NOTES_PNG,       &pngb,
+			PER_COL_UPD_USER,        &userb,
+			PER_COL_UPD_STAMP,       &stampb,
 			-1 );
 
 	cmp = 0;
 
 	switch( column_id ){
 		case PER_COL_ID:
-			cmp = ida < idb ? -1 : ( ida > idb ? 1 : 0 );
+			cmp = my_collate( ida, idb );
 			break;
 		case PER_COL_ORDER:
 			cmp = ordera < orderb ? -1 : ( ordera > orderb ? 1 : 0 );
@@ -456,13 +449,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 		case PER_COL_LABEL:
 			cmp = my_collate( labela, labelb );
 			break;
-		case PER_COL_HAVE_DETAILS:
-			cmp = my_collate( deta, detb );
-			break;
-		case PER_COL_ADD_TYPE:
-			cmp = my_collate( typea, typeb );
-			break;
-		case PER_COL_ADD_COUNT:
+		case PER_COL_DETAILS_COUNT:
 			cmp = ( counta < countb ? -1 : ( counta > countb ? 1 : 0 ));
 			break;
 		case PER_COL_NOTES:
@@ -482,16 +469,14 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			break;
 	}
 
+	g_free( ida );
 	g_free( labela );
-	g_free( deta );
-	g_free( typea );
 	g_free( notesa );
 	g_free( usera );
 	g_free( stampa );
 
+	g_free( idb );
 	g_free( labelb );
-	g_free( detb );
-	g_free( typeb );
 	g_free( notesb );
 	g_free( userb );
 	g_free( stampb );

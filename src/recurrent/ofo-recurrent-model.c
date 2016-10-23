@@ -85,7 +85,7 @@ static const ofsBoxDef st_boxed_defs[] = {
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( REC_PERIOD ),
-				OFA_TYPE_COUNTER,
+				OFA_TYPE_STRING,
 				TRUE,
 				FALSE },
 		{ OFA_BOX_CSV( REC_PERIOD_DETAIL ),
@@ -425,10 +425,10 @@ ofo_recurrent_model_get_ope_template( const ofoRecurrentModel *model )
  * ofo_recurrent_model_get_periodicity:
  * @model:
  */
-ofxCounter
+const gchar *
 ofo_recurrent_model_get_periodicity( const ofoRecurrentModel *model )
 {
-	ofo_base_getter( RECURRENT_MODEL, model, counter, 0, REC_PERIOD );
+	ofo_base_getter( RECURRENT_MODEL, model, string, NULL, REC_PERIOD );
 }
 
 /**
@@ -563,37 +563,37 @@ ofo_recurrent_model_is_valid_data( const gchar *mnemo, const gchar *label,
 	}
 	if( !my_strlen( mnemo )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty mnemonic" ));
+			*msgerr = g_strdup( _( "Mnemonic is empty" ));
 		}
 		return( FALSE );
 	}
 	if( !my_strlen( label )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty label" ));
+			*msgerr = g_strdup( _( "Label is empty" ));
 		}
 		return( FALSE );
 	}
 	if( !my_strlen( ope_template )){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Empty operation template" ));
+			*msgerr = g_strdup( _( "Operation template is empty" ));
 		}
 		return( FALSE );
 	}
 	if( !period ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Unset periodicity" ));
+			*msgerr = g_strdup( _( "Periodicity is not set" ));
 		}
 		return( FALSE );
 	}
-	if( ofo_rec_period_get_have_details( period ) && detail_id <= 0 ){
+	if( ofo_rec_period_get_details_count( period ) > 0 && detail_id <= 0 ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Periodicity expects details, but is unset" ));
+			*msgerr = g_strdup( _( "Periodicity expects details, but no detail is set" ));
 		}
 		return( FALSE );
 	}
-	if( !ofo_rec_period_get_have_details( period ) && detail_id > 0 ){
+	if( ofo_rec_period_get_details_count( period ) == 0 && detail_id > 0 ){
 		if( msgerr ){
-			*msgerr = g_strdup( _( "Periodicity does not expect detail, but is set" ));
+			*msgerr = g_strdup( _( "Periodicity does not expect detail, but a detail is set" ));
 		}
 		return( FALSE );
 	}
@@ -632,9 +632,9 @@ ofo_recurrent_model_set_ope_template( ofoRecurrentModel *model, const gchar *tem
  * ofo_recurrent_model_set_periodicity:
  */
 void
-ofo_recurrent_model_set_periodicity( ofoRecurrentModel *model, ofxCounter period )
+ofo_recurrent_model_set_periodicity( ofoRecurrentModel *model, const gchar *period )
 {
-	ofo_base_setter( RECURRENT_MODEL, model, counter, REC_PERIOD, period );
+	ofo_base_setter( RECURRENT_MODEL, model, string, REC_PERIOD, period );
 }
 
 /**
@@ -752,10 +752,10 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 {
 	gboolean ok;
 	GString *query;
-	const gchar *def_amount1, *def_amount2, *def_amount3;
+	const gchar *period, *def_amount1, *def_amount2, *def_amount3;
 	gchar *label, *template, *notes, *userid, *stamp_str;
 	GTimeVal stamp;
-	ofxCounter period, detail;
+	ofxCounter detail;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
@@ -790,17 +790,15 @@ model_insert_main( ofoRecurrentModel *model, const ofaIDBConnect *connect )
 	}
 
 	period = ofo_recurrent_model_get_periodicity( model );
-	if( period > 0 ){
-		g_string_append_printf( query, "%lu,", period );
+	if( my_strlen( period ) > 0 ){
+		detail = ofo_recurrent_model_get_periodicity_detail( model );
+		if( detail > 0 ){
+			g_string_append_printf( query, "'%s',%lu,", period, detail );
+		} else {
+			g_string_append_printf( query, "'%s',NULL,", period );
+		}
 	} else {
-		query = g_string_append( query, "NULL," );
-	}
-
-	detail = ofo_recurrent_model_get_periodicity_detail( model );
-	if( detail > 0 ){
-		g_string_append_printf( query, "%lu,", detail );
-	} else {
-		query = g_string_append( query, "NULL," );
+		query = g_string_append( query, "NULL,NULL," );
 	}
 
 	if( my_strlen( def_amount1 )){
@@ -889,10 +887,10 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	gboolean ok;
 	GString *query;
 	gchar *label, *notes, *userid;
-	const gchar *new_mnemo, *template, *def_amount;
+	const gchar *new_mnemo, *template, *period, *def_amount;
 	gchar *stamp_str;
 	GTimeVal stamp;
-	ofxCounter period, detail;
+	ofxCounter detail;
 
 	userid = ofa_idbconnect_get_account( connect );
 	label = my_utils_quote_sql( ofo_recurrent_model_get_label( model ));
@@ -921,16 +919,17 @@ model_update_main( ofoRecurrentModel *model, const ofaIDBConnect *connect, const
 	}
 
 	period = ofo_recurrent_model_get_periodicity( model );
-	if( period > 0 ){
-		g_string_append_printf( query, "REC_PERIOD=%lu,", period );
+	if( my_strlen( period ) > 0 ){
+		detail = ofo_recurrent_model_get_periodicity_detail( model );
+		if( detail > 0 ){
+			g_string_append_printf( query, "REC_PERIOD='%s',", period );
+			g_string_append_printf( query, "REC_PERIOD_DETAIL=%lu,", detail );
+		} else {
+			g_string_append_printf( query, "REC_PERIOD='%s',", period );
+			query = g_string_append( query, "REC_PERIOD_DETAIL=NULL," );
+		}
 	} else {
 		query = g_string_append( query, "REC_PERIOD=NULL," );
-	}
-
-	detail = ofo_recurrent_model_get_periodicity_detail( model );
-	if( detail > 0 ){
-		g_string_append_printf( query, "REC_PERIOD_DETAIL=%lu,", detail );
-	} else {
 		query = g_string_append( query, "REC_PERIOD_DETAIL=NULL," );
 	}
 
@@ -1231,12 +1230,12 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 {
 	GList *dataset;
 	guint numline, total;
-	const gchar *cstr;
+	const gchar *cstr, *perid;
 	GSList *itl, *fields, *itf;
 	ofoRecurrentModel *model;
 	gchar *str, *splitted;
 	ofoRecPeriod *period;
-	ofxCounter perid, perdetid;
+	ofxCounter perdetid;
 	gint idx;
 
 	numline = 0;
@@ -1289,14 +1288,14 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( !my_strlen( cstr )){
-			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty model periodicity" ));
+			ofa_iimporter_progress_num_text( importer, parms, numline, _( "empty periodicity" ));
 			parms->parse_errs += 1;
 			continue;
 		}
-		perid = atol( cstr );
+		perid = cstr;
 		period = ofo_rec_period_get_by_id( parms->hub, perid );
 		if( !period ){
-			str = g_strdup_printf( _( "unknown periodicity identifier: %lu" ), perid );
+			str = g_strdup_printf( _( "unknown periodicity identifier: %s" ), perid );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
 			g_free( str );
 			parms->parse_errs += 1;
@@ -1309,7 +1308,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
 		if( my_strlen( cstr )){
 			if( period ){
-				if( ofo_rec_period_get_have_details( period )){
+				if( ofo_rec_period_get_details_count( period ) > 0 ){
 					perdetid = atol( cstr );
 					idx = ofo_rec_period_detail_get_by_id( period, perdetid );
 					if( idx >= 0 ){
@@ -1335,7 +1334,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 				continue;
 			}
 		} else if( period ){
-			if( ofo_rec_period_get_have_details( period )){
+			if( ofo_rec_period_get_details_count( period ) > 0 ){
 				ofa_iimporter_progress_num_text( importer, parms, numline,
 						_( "periodicity expects unspecified details" ));
 				parms->parse_errs += 1;

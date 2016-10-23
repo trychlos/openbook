@@ -460,6 +460,7 @@ setup_detail_widgets( ofaTVAFormProperties *self, guint row )
 	/* level */
 	adjustment = gtk_adjustment_new( 1.0, 1.0, ( gdouble ) G_MAXUINT, 1.0, 10.0, 0.0 );
 	spin = gtk_spin_button_new( adjustment, 1.0, 0 );
+	g_object_unref( adjustment );
 	gtk_entry_set_width_chars( GTK_ENTRY( spin ), DET_SPIN_WIDTH );
 	gtk_entry_set_max_width_chars( GTK_ENTRY( spin ), DET_SPIN_MAX_WIDTH );
 	gtk_spin_button_set_numeric( GTK_SPIN_BUTTON( spin ), TRUE );

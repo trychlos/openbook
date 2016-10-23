@@ -50,7 +50,7 @@ typedef struct {
 }
 	ofaRecurrentRunStorePrivate;
 
-static GType st_col_types[REC_N_COLUMNS] = {
+static GType st_col_types[REC_RUN_N_COLUMNS] = {
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_ULONG,		/* mnemo, numseq, numseq_int */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* label, date, status */
 		G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,	/* amount1, amount2, amount3 */
@@ -202,7 +202,7 @@ create_new_store( ofaHub *hub, gint mode )
 	priv->mode = mode;
 
 	gtk_list_store_set_column_types(
-			GTK_LIST_STORE( store ), REC_N_COLUMNS, st_col_types );
+			GTK_LIST_STORE( store ), REC_RUN_N_COLUMNS, st_col_types );
 
 	gtk_tree_sortable_set_default_sort_func(
 			GTK_TREE_SORTABLE( store ), ( GtkTreeIterCompareFunc ) on_sort_run, store, NULL );

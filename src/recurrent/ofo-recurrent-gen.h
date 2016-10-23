@@ -67,8 +67,6 @@ void         ofo_recurrent_gen_set_last_run_date  ( ofaHub *hub, const GDate *da
 
 ofxCounter   ofo_recurrent_gen_get_next_numseq    ( ofaHub *hub );
 
-ofxCounter   ofo_recurrent_gen_get_next_per_id    ( ofaHub *hub );
-
 ofxCounter   ofo_recurrent_gen_get_next_per_det_id( ofaHub *hub );
 
 G_END_DECLS
