@@ -44,7 +44,7 @@ typedef struct {
 	ofaImporterCSVPrivate;
 
 #define IMPORTER_DISPLAY_NAME            "Text/CSV importer"
-#define IMPORTER_VERSION                 "v 2016.1"
+#define IMPORTER_VERSION                 "2016.1"
 
 static GList *st_accepted_contents      = NULL;
 
