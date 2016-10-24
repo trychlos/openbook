@@ -30,13 +30,40 @@
  * @short_description: #ofaTva class definition.
  *
  * #ofaIDBModel interface management.
+ *
+ * The #ofaIDBModel may be easily directly implemeted by the
+ * #ofaTVAId class, which is naturally instanciated by
+ * Openbook mechanisms.
+ *
+ * Having a dedicated class for the #ofaIDBModel implementation
+ * let us display a dedicated version number in the Openbook
+ * plugin's management interface.
  */
 
 #include "api/ofa-idbmodel.h"
 
 G_BEGIN_DECLS
 
-void ofa_tva_dbmodel_iface_init( ofaIDBModelInterface *iface );
+#define OFA_TYPE_TVA_DBMODEL                ( ofa_tva_dbmodel_get_type())
+#define OFA_TVA_DBMODEL( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_TVA_DBMODEL, ofaTvaDBModel ))
+#define OFA_TVA_DBMODEL_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_TVA_DBMODEL, ofaTvaDBModelClass ))
+#define OFA_IS_TVA_DBMODEL( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_TVA_DBMODEL ))
+#define OFA_IS_TVA_DBMODEL_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_TVA_DBMODEL ))
+#define OFA_TVA_DBMODEL_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_TVA_DBMODEL, ofaTvaDBModelClass ))
+
+typedef struct {
+	/*< public members >*/
+	GObject      parent;
+}
+	ofaTvaDBModel;
+
+typedef struct {
+	/*< public members >*/
+	GObjectClass parent;
+}
+	ofaTvaDBModelClass;
+
+GType ofa_tva_dbmodel_get_type( void ) G_GNUC_CONST;
 
 G_END_DECLS
 

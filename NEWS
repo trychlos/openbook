@@ -42,6 +42,7 @@
 
    - Error messages are full sentences (todo #1244).
    - Homogeneize Importers version numbers (todo #1240).
+   - Plugin manager now displays the implemented DB models (todo #1241).
 
  Bug fixes:
 

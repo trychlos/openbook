@@ -234,18 +234,18 @@ iident_get_canon_name( const myIIdent *instance, void *user_data )
 
 /*
  * Openbook uses IDBModel MyIIdent interface to pass the current IDBConnect
+ *
+ * Note that the version number returned here for this plugin must be
+ * the last available version number, rather than one read from an opened
+ * database.
  */
 static gchar *
 iident_get_version( const myIIdent *instance, void *user_data )
 {
 	guint version;
 
-	if( user_data && OFA_IS_IDBCONNECT( user_data )){
-		version = idbmodel_get_current_version( OFA_IDBMODEL( instance ), OFA_IDBCONNECT( user_data ));
-		return( g_strdup_printf( "%u", version ));
-	}
-
-	return( g_strdup( "" ));
+	version = get_last_version();
+	return( g_strdup_printf( "DBMS:%u", version ));
 }
 
 /*

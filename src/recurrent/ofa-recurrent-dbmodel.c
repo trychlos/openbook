@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-iident.h"
 #include "my/my-iprogress.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
@@ -41,45 +42,47 @@
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
 
-/* a dedicated structure to hold needed datas
+/* private instance data
  */
 typedef struct {
+	gboolean             dispose_has_run;
 
-	/* initialization
+	/* update setup
 	 */
-	const ofaIDBModel   *instance;
 	ofaHub              *hub;
 	const ofaIDBConnect *connect;
 	myIProgress         *window;
 
-	/* progression
+	/* update progression
 	 */
 	gulong               total;
 	gulong               current;
 }
-	sUpdate;
+	ofaRecurrentDBModelPrivate;
+
+#define DBMODEL_CANON_NAME               "REC"
 
 /* the functions which update the DB model
  */
-static gboolean dbmodel_to_v1( sUpdate *update_data, guint version );
-static gulong   count_v1( sUpdate *update_data );
-static gboolean dbmodel_to_v2( sUpdate *update_data, guint version );
-static gulong   count_v2( sUpdate *update_data );
-static gboolean dbmodel_to_v3( sUpdate *update_data, guint version );
-static gulong   count_v3( sUpdate *update_data );
-static gboolean dbmodel_to_v4( sUpdate *update_data, guint version );
-static gulong   count_v4( sUpdate *update_data );
-static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
-static gulong   count_v5( sUpdate *update_data );
-static gboolean dbmodel_to_v6( sUpdate *update_data, guint version );
-static gulong   count_v6( sUpdate *update_data );
-static gboolean dbmodel_to_v7( sUpdate *update_data, guint version );
-static gulong   count_v7( sUpdate *update_data );
+static gboolean dbmodel_to_v1( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v1( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v2( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v2( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v3( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v3( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v4( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v4( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v5( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v5( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v6( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v6( ofaRecurrentDBModel *self );
+static gboolean dbmodel_to_v7( ofaRecurrentDBModel *self, guint version );
+static gulong   count_v7( ofaRecurrentDBModel *self );
 
 typedef struct {
 	gint        ver_target;
-	gboolean ( *fnquery )( sUpdate *update_data, guint version );
-	gulong   ( *fncount )( sUpdate *update_data );
+	gboolean ( *fnquery )( ofaRecurrentDBModel *self, guint version );
+	gulong   ( *fncount )( ofaRecurrentDBModel *self );
 }
 	sMigration;
 
@@ -96,23 +99,129 @@ static sMigration st_migrates[] = {
 
 #define MARGIN_LEFT                     20
 
+static void       iident_iface_init( myIIdentInterface *iface );
+static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar     *iident_get_version( const myIIdent *instance, void *user_data );
+static void       idbmodel_iface_init( ofaIDBModelInterface *iface );
 static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static guint      get_last_version( void );
 static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
-static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
-static gboolean   exec_query( sUpdate *update_data, const gchar *query );
-static gboolean   version_begin( sUpdate *update_data, gint version );
-static gboolean   version_end( sUpdate *update_data, gint version );
+static gboolean   upgrade_to( ofaRecurrentDBModel *self, sMigration *smig );
+static gboolean   exec_query( ofaRecurrentDBModel *self, const gchar *query );
+static gboolean   version_begin( ofaRecurrentDBModel *self, gint version );
+static gboolean   version_end( ofaRecurrentDBModel *self, gint version );
 static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
 static gulong     check_model( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
 static gulong     check_run( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
 
+G_DEFINE_TYPE_EXTENDED( ofaRecurrentDBModel, ofa_recurrent_dbmodel, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaRecurrentDBModel )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBMODEL, idbmodel_iface_init ))
+
+static void
+recurrent_dbmodel_finalize( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_finalize";
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_RECURRENT_DBMODEL( instance ));
+
+	/* free data members here */
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_recurrent_dbmodel_parent_class )->finalize( instance );
+}
+
+static void
+recurrent_dbmodel_dispose( GObject *instance )
+{
+	ofaRecurrentDBModelPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_RECURRENT_DBMODEL( instance ));
+
+	priv = ofa_recurrent_dbmodel_get_instance_private( OFA_RECURRENT_DBMODEL( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_recurrent_dbmodel_parent_class )->dispose( instance );
+}
+
+static void
+ofa_recurrent_dbmodel_init( ofaRecurrentDBModel *self )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_init";
+	ofaRecurrentDBModelPrivate *priv;
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_RECURRENT_DBMODEL( self ));
+
+	priv = ofa_recurrent_dbmodel_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+}
+
+static void
+ofa_recurrent_dbmodel_class_init( ofaRecurrentDBModelClass *klass )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = recurrent_dbmodel_dispose;
+	G_OBJECT_CLASS( klass )->finalize = recurrent_dbmodel_finalize;
+}
+
+/*
+ * myIIdent interface management
+ */
+static void
+iident_iface_init( myIIdentInterface *iface )
+{
+	static const gchar *thisfn = "ofa_recurrent_dbmodel_iident_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_canon_name = iident_get_canon_name;
+	iface->get_version = iident_get_version;
+}
+
+static gchar *
+iident_get_canon_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( DBMODEL_CANON_NAME ));
+}
+
+/*
+ * Openbook uses IDBModel MyIIdent interface to pass the current IDBConnect
+ *
+ * Note that the version number returned here for this plugin must be
+ * the last available version number, rather than one read from an opened
+ * database.
+ */
+static gchar *
+iident_get_version( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup_printf( "DBMS:%u", get_last_version()));
+}
+
 /*
  * #ofaIDBModel interface setup
  */
-void
-ofa_recurrent_dbmodel_iface_init( ofaIDBModelInterface *iface )
+static void
+idbmodel_iface_init( ofaIDBModelInterface *iface )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_iface_init";
 
@@ -149,6 +258,12 @@ idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *
 static guint
 idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
+	return( get_last_version());
+}
+
+static guint
+get_last_version( void )
+{
 	guint last_version, i;
 
 	last_version = 0;
@@ -165,21 +280,20 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *con
 static gboolean
 idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 {
-	sUpdate *update_data;
+	ofaRecurrentDBModelPrivate *priv;
 	guint i, cur_version, last_version;
 	GtkWidget *label;
 	gchar *str;
 	gboolean ok;
 
 	ok = TRUE;
-	update_data = g_new0( sUpdate, 1 );
-	update_data->instance = instance;
-	update_data->hub = hub;
-	update_data->connect = ofa_hub_get_connect( hub );
-	update_data->window = window;
+	priv = ofa_recurrent_dbmodel_get_instance_private( OFA_RECURRENT_DBMODEL( instance ));
+	priv->hub = hub;
+	priv->connect = ofa_hub_get_connect( hub );
+	priv->window = window;
 
-	cur_version = idbmodel_get_current_version( instance, update_data->connect );
-	last_version = idbmodel_get_last_version( instance, update_data->connect );
+	cur_version = idbmodel_get_current_version( instance, priv->connect );
+	last_version = idbmodel_get_last_version( instance, priv->connect );
 
 	label = gtk_label_new( _( " Updating Recurrent DB Model " ));
 	my_iprogress_start_work( window, instance, label );
@@ -193,7 +307,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 	if( cur_version < last_version ){
 		for( i=0 ; st_migrates[i].ver_target && ok ; ++i ){
 			if( cur_version < st_migrates[i].ver_target ){
-				if( !upgrade_to( update_data, &st_migrates[i] )){
+				if( !upgrade_to( OFA_RECURRENT_DBMODEL( instance ), &st_migrates[i] )){
 					str = g_strdup_printf(
 								_( "Unable to upgrade current Recurrent DB model to v %d" ),
 								st_migrates[i].ver_target );
@@ -202,7 +316,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 					my_utils_widget_set_margins( label, 0, 0, 2*MARGIN_LEFT, 0 );
 					my_style_add( label, "labelerror" );
 					gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-					my_iprogress_start_progress( update_data->window, update_data->instance, label, FALSE );
+					my_iprogress_start_progress( priv->window, instance, label, FALSE );
 					ok = FALSE;
 					break;
 				}
@@ -213,7 +327,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 		label = gtk_label_new( str );
 		g_free( str );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-		my_iprogress_start_progress( update_data->window, update_data->instance, label, FALSE );
+		my_iprogress_start_progress( priv->window, instance, label, FALSE );
 	}
 
 	return( ok );
@@ -223,52 +337,58 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
  * upgrade the DB model to the specified version
  */
 static gboolean
-upgrade_to( sUpdate *update_data, sMigration *smig )
+upgrade_to( ofaRecurrentDBModel *self, sMigration *smig )
 {
+	ofaRecurrentDBModelPrivate *priv;
 	gboolean ok;
 	GtkWidget *label;
 	gchar *str;
+
+	priv = ofa_recurrent_dbmodel_get_instance_private( self );
 
 	str = g_strdup_printf( _( "Upgrading to v %d :" ), smig->ver_target );
 	label = gtk_label_new( str );
 	g_free( str );
 	gtk_widget_set_valign( label, GTK_ALIGN_END );
 	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
-	my_iprogress_start_progress( update_data->window, update_data->instance, label, TRUE );
+	my_iprogress_start_progress( priv->window, self, label, TRUE );
 
-	update_data->total = smig->fncount( update_data )+3;	/* counting version_begin+version_end */
-	update_data->current = 0;
+	priv->total = smig->fncount( self )+3;	/* counting version_begin+version_end */
+	priv->current = 0;
 
-	ok = version_begin( update_data, smig->ver_target ) &&
-			smig->fnquery( update_data, smig->ver_target ) &&
-			version_end( update_data, smig->ver_target );
+	ok = version_begin( self, smig->ver_target ) &&
+			smig->fnquery( self, smig->ver_target ) &&
+			version_end( self, smig->ver_target );
 
 	return( ok );
 }
 
 static gboolean
-exec_query( sUpdate *update_data, const gchar *query )
+exec_query( ofaRecurrentDBModel *self, const gchar *query )
 {
+	ofaRecurrentDBModelPrivate *priv;
 	gboolean ok;
 
-	my_iprogress_set_text( update_data->window, update_data->instance, query );
+	priv = ofa_recurrent_dbmodel_get_instance_private( self );
 
-	ok = ofa_idbconnect_query( update_data->connect, query, TRUE );
+	my_iprogress_set_text( priv->window, self, query );
 
-	update_data->current += 1;
-	my_iprogress_pulse( update_data->window, update_data->instance, update_data->current, update_data->total );
+	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+
+	priv->current += 1;
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
 
 	return( ok );
 }
 
 static gboolean
-version_begin( sUpdate *update_data, gint version )
+version_begin( ofaRecurrentDBModel *self, gint version )
 {
 	gboolean ok;
 	gchar *query;
 
 	/* default value for timestamp cannot be null */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_VERSION ("
 			"	VER_NUMBER INTEGER   NOT NULL UNIQUE DEFAULT 0 COMMENT 'Recurrent DB model version number',"
 			"	VER_DATE   TIMESTAMP                 DEFAULT 0 COMMENT 'Recurrent version application timestamp') "
@@ -278,14 +398,14 @@ version_begin( sUpdate *update_data, gint version )
 
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO REC_T_VERSION (VER_NUMBER, VER_DATE) VALUES (%u, 0)", version );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-version_end( sUpdate *update_data, gint version )
+version_end( ofaRecurrentDBModel *self, gint version )
 {
 	gchar *query;
 	gboolean ok;
@@ -295,23 +415,23 @@ version_end( sUpdate *update_data, gint version )
 	 */
 	query = g_strdup_printf(
 			"UPDATE REC_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", version );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-dbmodel_to_v1( sUpdate *update_data, guint version )
+dbmodel_to_v1( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v1";
 	gchar *str;
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
 	/* updated in v4 */
 	/* altered in v7 */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_GEN ("
 			"	REC_ID             INTEGER      NOT NULL UNIQUE        COMMENT 'Unique identifier',"
 			"	REC_LAST_RUN       DATE                                COMMENT 'Last recurrent operations generation date')"
@@ -320,14 +440,14 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 	}
 
 	str = g_strdup_printf( "INSERT IGNORE INTO REC_T_GEN (REC_ID,REC_LAST_RUN) VALUES (%d,NULL)", RECURRENT_ROW_ID );
-	if( !exec_query( update_data, str )){
+	if( !exec_query( self, str )){
 		return( FALSE );
 	}
 
 	/* updated in v2 */
 	/* updated in v5 */
 	/* altered in v6 */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_MODELS ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL UNIQUE COMMENT 'Recurrent operation identifier',"
 			"	REC_LABEL          VARCHAR(256)                        COMMENT 'Recurrent operation label',"
@@ -344,7 +464,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 	/* updated in v2 */
 	/* updated in v3 */
 	/* updated in v4 */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_RUN ("
 			"	REC_MNEMO          VARCHAR(64)  BINARY NOT NULL        COMMENT 'Recurrent operation identifier',"
 			"	REC_DATE           DATE                NOT NULL        COMMENT 'Operation date',"
@@ -360,7 +480,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v1( sUpdate *update_data )
+count_v1( ofaRecurrentDBModel *self )
 {
 	return( 4 );
 }
@@ -369,13 +489,13 @@ count_v1( sUpdate *update_data )
  * display three amounts in the model, letting the user edit them
  */
 static gboolean
-dbmodel_to_v2( sUpdate *update_data, guint version )
+dbmodel_to_v2( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v2";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_MODELS "
 			"	ADD COLUMN REC_DEF_AMOUNT1    VARCHAR(64)              COMMENT 'Definition of amount n° 1',"
 			"	ADD COLUMN REC_DEF_AMOUNT2    VARCHAR(64)              COMMENT 'Definition of amount n° 2',"
@@ -383,7 +503,7 @@ dbmodel_to_v2( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_RUN "
 			"	ADD COLUMN REC_AMOUNT1        DECIMAL(20,5)            COMMENT 'Amount n° 1',"
 			"	ADD COLUMN REC_AMOUNT2        DECIMAL(20,5)            COMMENT 'Amount n° 2',"
@@ -395,7 +515,7 @@ dbmodel_to_v2( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v2( sUpdate *update_data )
+count_v2( ofaRecurrentDBModel *self )
 {
 	return( 2 );
 }
@@ -406,19 +526,19 @@ count_v2( sUpdate *update_data )
  *   Waiting|Validated - this is controlled by the code.
  */
 static gboolean
-dbmodel_to_v3( sUpdate *update_data, guint version )
+dbmodel_to_v3( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v3";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_RUN "
 			"	DROP PRIMARY KEY" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_RUN "
 			"	ADD COLUMN REC_NUMSEQ         BIGINT NOT NULL UNIQUE AUTO_INCREMENT COMMENT 'Automatic sequence number'" )){
 		return( FALSE );
@@ -428,7 +548,7 @@ dbmodel_to_v3( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v3( sUpdate *update_data )
+count_v3( ofaRecurrentDBModel *self )
 {
 	return( 2 );
 }
@@ -437,19 +557,19 @@ count_v3( sUpdate *update_data )
  * REC_T_GEN: maintain last NUMSEQ
  */
 static gboolean
-dbmodel_to_v4( sUpdate *update_data, guint version )
+dbmodel_to_v4( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v4";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_GEN "
 			"	ADD COLUMN REC_LAST_NUMSEQ    BIGINT                                COMMENT 'Last sequence number'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_GEN "
 			"	SET REC_LAST_NUMSEQ=(SELECT MAX(REC_NUMSEQ) FROM REC_T_RUN)" )){
 		return( FALSE );
@@ -459,7 +579,7 @@ dbmodel_to_v4( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v4( sUpdate *update_data )
+count_v4( ofaRecurrentDBModel *self )
 {
 	return( 2 );
 }
@@ -468,19 +588,19 @@ count_v4( sUpdate *update_data )
  * REC_T_MODEL: enable/disable the model
  */
 static gboolean
-dbmodel_to_v5( sUpdate *update_data, guint version )
+dbmodel_to_v5( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v5";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_MODELS "
 			"	ADD COLUMN REC_ENABLED        CHAR(1)                               COMMENT 'Whether the model is enabled'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS SET REC_ENABLED='Y'" )){
 		return( FALSE );
 	}
@@ -489,7 +609,7 @@ dbmodel_to_v5( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v5( sUpdate *update_data )
+count_v5( ofaRecurrentDBModel *self )
 {
 	return( 2 );
 }
@@ -498,19 +618,21 @@ count_v5( sUpdate *update_data )
  * REC_T_PERIODS: configure the periodicity per table
  */
 static gboolean
-dbmodel_to_v6( sUpdate *update_data, guint version )
+dbmodel_to_v6( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v6";
+	ofaRecurrentDBModelPrivate *priv;
 	gchar *user, *query;
 	gboolean ok;
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	user = ofa_idbconnect_get_account( update_data->connect );
+	priv = ofa_recurrent_dbmodel_get_instance_private( self );
+	user = ofa_idbconnect_get_account( priv->connect );
 
 	/* 1 - create Periodicity table */
 	/* altered in v7 */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS ("
 			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
 			"	REC_PER_LABEL       VARCHAR(256)                     COMMENT 'Periodicity label',"
@@ -527,7 +649,7 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 
 	/* 2 - create Periodicity Details table */
 	/* altered in v7 */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS REC_T_PERIODS_DET ("
 			"	REC_PER_ID          VARCHAR(16)    BINARY NOT NULL   COMMENT 'Periodicity identifier',"
 			"	REC_PER_DET_ID      VARCHAR(16)                      COMMENT 'Periodicity detail identifier',"
@@ -538,7 +660,7 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 	}
 
 	/* 3 - update Models description */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_MODELS "
 			"	MODIFY COLUMN REC_PERIOD         VARCHAR(16)         COMMENT 'Recurrent model periodicity',"
 			"	MODIFY COLUMN REC_PERIOD_DETAIL  VARCHAR(16)         COMMENT 'Recurrent model periodicity detail'")){
@@ -554,14 +676,14 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 			"	('0N','Never','N',NULL,NULL,'%s'),"
 			"	('3W','Weekly','Y','D',7,'%s'),"
 			"	('6M','Monthly','Y','M',1,'%s')", user, user, user );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
 	}
 
 	/* 5 - initialize periodicity details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"INSERT IGNORE INTO REC_T_PERIODS_DET (REC_PER_ID,REC_PER_DET_ID,REC_PER_DET_LABEL) VALUES "
 			"	('3W','0MON','Monday'),"
 			"	('3W','1TUE','Tuesday'),"
@@ -605,70 +727,70 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 	}
 
 	/* 6 - update current models periodicity */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD='0N' WHERE REC_PERIOD='N'" )){
 		return( FALSE );
 	}
 
 	/* 7 - update current models periodicity */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD='3W' WHERE REC_PERIOD='W'" )){
 		return( FALSE );
 	}
 
 	/* 8 - update current models periodicity */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 		"		SET REC_PERIOD='6M' WHERE REC_PERIOD='M'" )){
 		return( FALSE );
 	}
 
 	/* 9 - update current models periodicity weekly details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL='0MON' WHERE REC_PERIOD_DETAIL='MON'" )){
 		return( FALSE );
 	}
 
 	/* 10 - update current models periodicity weekly details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL='1TUE' WHERE REC_PERIOD_DETAIL='TUE'" )){
 		return( FALSE );
 	}
 
 	/* 11 - update current models periodicity weekly details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL='2WED' WHERE REC_PERIOD_DETAIL='WED'" )){
 		return( FALSE );
 	}
 
 	/* 12 - update current models periodicity weekly details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL='3THU' WHERE REC_PERIOD_DETAIL='THU'" )){
 		return( FALSE );
 	}
 
 	/* 13 - update current models periodicity weekly details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL='4FRI' WHERE REC_PERIOD_DETAIL='FRI'" )){
 		return( FALSE );
 	}
 
 	/* 14 - update current models periodicity weekly details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL='5SAT' WHERE REC_PERIOD_DETAIL='SAT'" )){
 		return( FALSE );
 	}
 
 	/* 15 - update current models periodicity weekly details */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL='6SUN' WHERE REC_PERIOD_DETAIL='SUN'" )){
 		return( FALSE );
@@ -680,7 +802,7 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v6( sUpdate *update_data )
+count_v6( ofaRecurrentDBModel *self )
 {
 	return( 15 );
 }
@@ -689,23 +811,23 @@ count_v6( sUpdate *update_data )
  * REC_T_PERIODS: have numeric identifiers
  */
 static gboolean
-dbmodel_to_v7( sUpdate *update_data, guint version )
+dbmodel_to_v7( ofaRecurrentDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_recurrent_dbmodel_to_v7";
 	gchar *query;
 	gboolean ok;
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
 	/* 1 - update GEN table */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_GEN "
 			"	ADD    COLUMN REC_LAST_PER_DET_ID      BIGINT DEFAULT 0 COMMENT 'Last periodicity detail identifier'" )){
 		return( FALSE );
 	}
 
 	/* 2 - update Periodicity table */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_PERIODS "
 			"	DROP   COLUMN REC_PER_HAVE_DETAIL,"
 			"	DROP   COLUMN REC_PER_ADD_TYPE,"
@@ -716,7 +838,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 	}
 
 	/* 3 - update Periodicity Details table */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_PERIODS_DET "
 			"	CHANGE COLUMN REC_PER_DET_ID REC_PER_DET_ID0 VARCHAR(16),"
 			"	ADD    COLUMN REC_PER_DET_ID                 BIGINT  NOT NULL  COMMENT 'Periodicity detail identifier',"
@@ -733,7 +855,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	REC_PER_ID='%s',"
 			"	REC_PER_ORDER=10,"
 			"	REC_PER_DETAILS_COUNT=0 WHERE REC_PER_ID='0N'", REC_PERIOD_NEVER );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -745,7 +867,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	REC_PER_ID='%s',"
 			"	REC_PER_ORDER=20,"
 			"	REC_PER_DETAILS_COUNT=1 WHERE REC_PER_ID='3W'", REC_PERIOD_WEEKLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -757,7 +879,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	REC_PER_ID='%s',"
 			"	REC_PER_ORDER=30,"
 			"	REC_PER_DETAILS_COUNT=1 WHERE REC_PER_ID='6M'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -769,7 +891,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=1,"
 			"	REC_PER_DET_ORDER=0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=%d WHERE REC_PER_DET_ID0='0MON'",
 			REC_PERIOD_WEEKLY, G_DATE_MONDAY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -781,7 +903,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=2,"
 			"	REC_PER_DET_ORDER=1,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=%d WHERE REC_PER_DET_ID0='1TUE'",
 			REC_PERIOD_WEEKLY, G_DATE_TUESDAY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -793,7 +915,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=3,"
 			"	REC_PER_DET_ORDER=2,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=%d WHERE REC_PER_DET_ID0='2WED'",
 			REC_PERIOD_WEEKLY, G_DATE_WEDNESDAY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -805,7 +927,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=4,"
 			"REC_PER_DET_ORDER=3,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=%d WHERE REC_PER_DET_ID0='3THU'",
 			REC_PERIOD_WEEKLY, G_DATE_THURSDAY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -817,7 +939,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=5,"
 			"REC_PER_DET_ORDER=4,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=%d WHERE REC_PER_DET_ID0='4FRI'",
 			REC_PERIOD_WEEKLY, G_DATE_FRIDAY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -829,7 +951,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=6,"
 			"REC_PER_DET_ORDER=5,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=%d WHERE REC_PER_DET_ID0='5SAT'",
 			REC_PERIOD_WEEKLY, G_DATE_SATURDAY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -841,7 +963,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=7,"
 			"REC_PER_DET_ORDER=6,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=%d WHERE REC_PER_DET_ID0='6SUN'",
 			REC_PERIOD_WEEKLY, G_DATE_SUNDAY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -853,7 +975,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=8,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='01'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -865,7 +987,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=9,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='02'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -877,7 +999,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=10,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='03'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -889,7 +1011,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=11,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='04'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -901,7 +1023,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=12,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='05'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -913,7 +1035,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=13,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='06'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -925,7 +1047,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=14,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='07'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -937,7 +1059,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=15,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='08'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -949,7 +1071,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=16,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='09'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -961,7 +1083,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=17,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='10'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -973,7 +1095,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=18,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='11'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -985,7 +1107,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=19,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='12'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -997,7 +1119,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=20,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='13'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1009,7 +1131,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=21,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='14'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1021,7 +1143,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=22,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='15'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1033,7 +1155,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=23,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='16'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1045,7 +1167,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=24,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='17'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1057,7 +1179,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=25,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='18'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1069,7 +1191,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=26,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='19'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1081,7 +1203,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=27,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='20'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1093,7 +1215,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=28,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='21'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1105,7 +1227,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=29,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='22'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1117,7 +1239,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=30,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='23'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1129,7 +1251,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=31,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='24'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1141,7 +1263,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=32,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='25'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1153,7 +1275,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=33,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='26'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1165,7 +1287,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=34,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='27'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1177,7 +1299,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=35,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='28'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1189,7 +1311,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=36,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='29'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1201,7 +1323,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=37,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='30'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1213,7 +1335,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 			"	SET REC_PER_ID='%s',REC_PER_DET_ID=38,"
 			"	REC_PER_DET_ORDER=0+REC_PER_DET_ID0,REC_PER_DET_NUMBER=0,REC_PER_DET_VALUE=0+REC_PER_DET_ID0"
 			"	WHERE REC_PER_DET_ID0='31'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1221,14 +1343,14 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 
 	/* 45 - update GEN table */
 	query = g_strdup_printf( "UPDATE REC_T_GEN SET REC_LAST_PER_DET_ID=38 WHERE REC_ID=%u", RECURRENT_ROW_ID );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
 	}
 
 	/* 46 - update Periodicity Details table */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_PERIODS_DET "
 			"	DROP   COLUMN REC_PER_DET_ID0,"
 			"	ADD UNIQUE KEY PERID_IX (REC_PER_DET_ID)" )){
@@ -1236,7 +1358,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 	}
 
 	/* 47 - update Recurrent models */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_MODELS "
 			"	CHANGE COLUMN REC_PERIOD_DETAIL REC_PERIOD_DET0   VARCHAR(16),"
 			"	ADD    COLUMN REC_PERIOD_DETAIL BIGINT  NOT NULL  COMMENT 'Periodicity detail identifier'" )){
@@ -1246,7 +1368,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 	/* 48 - update current models periodicity */
 	query = g_strdup_printf(
 			"UPDATE REC_T_MODELS SET REC_PERIOD='%s' WHERE REC_PERIOD='0N'", REC_PERIOD_NEVER );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1255,7 +1377,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 	/* 49 - update current models periodicity */
 	query = g_strdup_printf(
 			"UPDATE REC_T_MODELS SET REC_PERIOD='%s' WHERE REC_PERIOD='3W'", REC_PERIOD_WEEKLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1264,7 +1386,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 	/* 50 - update current models periodicity */
 	query = g_strdup_printf(
 			"UPDATE REC_T_MODELS SET REC_PERIOD='%s' WHERE REC_PERIOD='6M'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1274,7 +1396,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 	query = g_strdup_printf(
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL=LEFT(REC_PERIOD_DET0,1)-1 WHERE REC_PERIOD='%s'", REC_PERIOD_WEEKLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
@@ -1284,14 +1406,14 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 	query = g_strdup_printf(
 			"UPDATE REC_T_MODELS "
 			"	SET REC_PERIOD_DETAIL=REC_PERIOD_DET0+7 WHERE REC_PERIOD='%s'", REC_PERIOD_MONTHLY );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 	if( !ok ){
 		return( FALSE );
 	}
 
 	/* 55 - update current models */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE REC_T_MODELS "
 			"	DROP COLUMN REC_PERIOD_DET0" )){
 		return( FALSE );
@@ -1301,7 +1423,7 @@ dbmodel_to_v7( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v7( sUpdate *update_data )
+count_v7( ofaRecurrentDBModel *self )
 {
 	return( 53 );
 }

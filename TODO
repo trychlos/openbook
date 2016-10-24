@@ -349,7 +349,7 @@
 
 1231 2016-10-11 Feature question: should we reset the last closed date
                 of the ledgers when closing an exercice ?
-                For now, they are now reset. On the new exercice, ledgers
+                For now, they are not reset. On the new exercice, ledgers
                 are displayed with a last closed date in the previous
                 exercice (weird ?)
 
@@ -368,8 +368,6 @@
 1238 2016-10-19 configure VAT report on VAT declaration (pwi consultants)
 
 1239 2016-10-19 export from EntryPage
-
-1241 2016-10-20 display somewhere (in PluginManager) the DB versions
 
 1243 2016-10-22 have a command-line tool which displays the version of
                 each of the DBModels of a saved database
@@ -1874,6 +1872,9 @@
 1240 2016-10-20 Stock importers: version label should be "2016.1" instead
                 of 'v 2016.1'
      2016-10-23 done
+
+1241 2016-10-20 display somewhere (in PluginManager) the DB versions
+     2016-10-24 done
 
 1242 2016-10-20 rename ThemeManager to PageManager
                 (and clarify the behavior)

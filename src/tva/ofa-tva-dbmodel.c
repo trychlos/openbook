@@ -28,6 +28,7 @@
 
 #include <glib/gi18n.h>
 
+#include "my/my-iident.h"
 #include "my/my-iprogress.h"
 #include "my/my-style.h"
 #include "my/my-utils.h"
@@ -39,43 +40,45 @@
 #include "ofo-tva-form.h"
 #include "ofo-tva-record.h"
 
-/* a dedicated structure to hold needed datas
+/* private instance data
  */
 typedef struct {
+	gboolean             dispose_has_run;
 
-	/* initialization
+	/* update setup
 	 */
-	const ofaIDBModel   *instance;
 	ofaHub              *hub;
 	const ofaIDBConnect *connect;
 	myIProgress         *window;
 
-	/* progression
+	/* update progression
 	 */
 	gulong               total;
 	gulong               current;
 }
-	sUpdate;
+	ofaTvaDBModelPrivate;
+
+#define DBMODEL_CANON_NAME               "VAT"
 
 /* the functions which update the DB model
  */
-static gboolean dbmodel_to_v1( sUpdate *update_data, guint version );
-static gulong   count_v1( sUpdate *update_data );
-static gboolean dbmodel_to_v2( sUpdate *update_data, guint version );
-static gulong   count_v2( sUpdate *update_data );
-static gboolean dbmodel_to_v3( sUpdate *update_data, guint version );
-static gulong   count_v3( sUpdate *update_data );
-static gboolean dbmodel_to_v4( sUpdate *update_data, guint version );
-static gulong   count_v4( sUpdate *update_data );
-static gboolean dbmodel_to_v5( sUpdate *update_data, guint version );
-static gulong   count_v5( sUpdate *update_data );
-static gboolean dbmodel_to_v6( sUpdate *update_data, guint version );
-static gulong   count_v6( sUpdate *update_data );
+static gboolean dbmodel_to_v1( ofaTvaDBModel *self, guint version );
+static gulong   count_v1( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v2( ofaTvaDBModel *self, guint version );
+static gulong   count_v2( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v3( ofaTvaDBModel *self, guint version );
+static gulong   count_v3( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v4( ofaTvaDBModel *self, guint version );
+static gulong   count_v4( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v5( ofaTvaDBModel *self, guint version );
+static gulong   count_v5( ofaTvaDBModel *self );
+static gboolean dbmodel_to_v6( ofaTvaDBModel *self, guint version );
+static gulong   count_v6( ofaTvaDBModel *self );
 
 typedef struct {
 	gint        ver_target;
-	gboolean ( *fnquery )( sUpdate *update_data, guint version );
-	gulong   ( *fncount )( sUpdate *update_data );
+	gboolean ( *fnquery )( ofaTvaDBModel *self, guint version );
+	gulong   ( *fncount )( ofaTvaDBModel *self );
 }
 	sMigration;
 
@@ -91,21 +94,127 @@ static sMigration st_migrates[] = {
 
 #define MARGIN_LEFT                     20
 
+static void       iident_iface_init( myIIdentInterface *iface );
+static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar     *iident_get_version( const myIIdent *instance, void *user_data );
+static void       idbmodel_iface_init( ofaIDBModelInterface *iface );
 static guint      idbmodel_get_interface_version( void );
 static guint      idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
 static guint      idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect );
+static guint      get_last_version( void );
 static gboolean   idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window );
-static gboolean   upgrade_to( sUpdate *update_data, sMigration *smig );
-static gboolean   exec_query( sUpdate *update_data, const gchar *query );
-static gboolean   version_begin( sUpdate *update_data, gint version );
-static gboolean   version_end( sUpdate *update_data, gint version );
+static gboolean   upgrade_to( ofaTvaDBModel *self, sMigration *smig );
+static gboolean   exec_query( ofaTvaDBModel *self, const gchar *query );
+static gboolean   version_begin( ofaTvaDBModel *self, gint version );
+static gboolean   version_end( ofaTvaDBModel *self, gint version );
 static gulong     idbmodel_check_dbms_integrity( const ofaIDBModel *instance, ofaHub *hub, myIProgress *progress );
+
+G_DEFINE_TYPE_EXTENDED( ofaTvaDBModel, ofa_tva_dbmodel, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaTvaDBModel )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBMODEL, idbmodel_iface_init ))
+
+static void
+tva_dbmodel_finalize( GObject *instance )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_finalize";
+
+	g_debug( "%s: instance=%p (%s)",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+
+	g_return_if_fail( instance && OFA_IS_TVA_DBMODEL( instance ));
+
+	/* free data members here */
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_tva_dbmodel_parent_class )->finalize( instance );
+}
+
+static void
+tva_dbmodel_dispose( GObject *instance )
+{
+	ofaTvaDBModelPrivate *priv;
+
+	g_return_if_fail( instance && OFA_IS_TVA_DBMODEL( instance ));
+
+	priv = ofa_tva_dbmodel_get_instance_private( OFA_TVA_DBMODEL( instance ));
+
+	if( !priv->dispose_has_run ){
+
+		priv->dispose_has_run = TRUE;
+
+		/* unref object members here */
+	}
+
+	/* chain up to the parent class */
+	G_OBJECT_CLASS( ofa_tva_dbmodel_parent_class )->dispose( instance );
+}
+
+static void
+ofa_tva_dbmodel_init( ofaTvaDBModel *self )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_init";
+	ofaTvaDBModelPrivate *priv;
+
+	g_debug( "%s: self=%p (%s)",
+			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_TVA_DBMODEL( self ));
+
+	priv = ofa_tva_dbmodel_get_instance_private( self );
+
+	priv->dispose_has_run = FALSE;
+}
+
+static void
+ofa_tva_dbmodel_class_init( ofaTvaDBModelClass *klass )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_class_init";
+
+	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
+
+	G_OBJECT_CLASS( klass )->dispose = tva_dbmodel_dispose;
+	G_OBJECT_CLASS( klass )->finalize = tva_dbmodel_finalize;
+}
+
+/*
+ * myIIdent interface management
+ */
+static void
+iident_iface_init( myIIdentInterface *iface )
+{
+	static const gchar *thisfn = "ofa_tva_dbmodel_iident_iface_init";
+
+	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->get_canon_name = iident_get_canon_name;
+	iface->get_version = iident_get_version;
+}
+
+static gchar *
+iident_get_canon_name( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup( DBMODEL_CANON_NAME ));
+}
+
+/*
+ * Openbook uses IDBModel MyIIdent interface to pass the current IDBConnect
+ *
+ * Note that the version number returned here for this plugin must be
+ * the last available version number, rather than one read from an opened
+ * database.
+ */
+static gchar *
+iident_get_version( const myIIdent *instance, void *user_data )
+{
+	return( g_strdup_printf( "DBMS:%u", get_last_version()));
+}
 
 /*
  * #ofaIDBModel interface setup
  */
-void
-ofa_tva_dbmodel_iface_init( ofaIDBModelInterface *iface )
+static void
+idbmodel_iface_init( ofaIDBModelInterface *iface )
 {
 	static const gchar *thisfn = "ofa_tva_dbmodel_iface_init";
 
@@ -142,6 +251,12 @@ idbmodel_get_current_version( const ofaIDBModel *instance, const ofaIDBConnect *
 static guint
 idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *connect )
 {
+	return( get_last_version());
+}
+
+static guint
+get_last_version( void )
+{
 	guint last_version, i;
 
 	last_version = 0;
@@ -158,21 +273,20 @@ idbmodel_get_last_version( const ofaIDBModel *instance, const ofaIDBConnect *con
 static gboolean
 idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 {
-	sUpdate *update_data;
+	ofaTvaDBModelPrivate *priv;
 	guint i, cur_version, last_version;
 	GtkWidget *label;
 	gchar *str;
 	gboolean ok;
 
 	ok = TRUE;
-	update_data = g_new0( sUpdate, 1 );
-	update_data->instance = instance;
-	update_data->hub = hub;
-	update_data->connect = ofa_hub_get_connect( hub );
-	update_data->window = window;
+	priv = ofa_tva_dbmodel_get_instance_private( OFA_TVA_DBMODEL( instance ));
+	priv->hub = hub;
+	priv->connect = ofa_hub_get_connect( hub );
+	priv->window = window;
 
-	cur_version = idbmodel_get_current_version( instance, update_data->connect );
-	last_version = idbmodel_get_last_version( instance, update_data->connect );
+	cur_version = idbmodel_get_current_version( instance, priv->connect );
+	last_version = idbmodel_get_last_version( instance, priv->connect );
 
 	label = gtk_label_new( _( " Updating VAT DB Model " ));
 	my_iprogress_start_work( window, instance, label );
@@ -186,7 +300,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 	if( cur_version < last_version ){
 		for( i=0 ; st_migrates[i].ver_target && ok ; ++i ){
 			if( cur_version < st_migrates[i].ver_target ){
-				if( !upgrade_to( update_data, &st_migrates[i] )){
+				if( !upgrade_to( OFA_TVA_DBMODEL( instance ), &st_migrates[i] )){
 					str = g_strdup_printf(
 								_( "Unable to upgrade current VAT DB model to v %d" ),
 								st_migrates[i].ver_target );
@@ -195,7 +309,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 					my_utils_widget_set_margins( label, 0, 0, 2*MARGIN_LEFT, 0 );
 					my_style_add( label, "labelerror" );
 					gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-					my_iprogress_start_progress( update_data->window, update_data->instance, label, FALSE );
+					my_iprogress_start_progress( priv->window, instance, label, FALSE );
 					ok = FALSE;
 					break;
 				}
@@ -206,7 +320,7 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
 		label = gtk_label_new( str );
 		g_free( str );
 		gtk_label_set_xalign( GTK_LABEL( label ), 0 );
-		my_iprogress_start_progress( update_data->window, update_data->instance, label, FALSE );
+		my_iprogress_start_progress( priv->window, instance, label, FALSE );
 	}
 
 	return( ok );
@@ -216,54 +330,60 @@ idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProgress *window )
  * upgrade the DB model to the specified version
  */
 static gboolean
-upgrade_to( sUpdate *update_data, sMigration *smig )
+upgrade_to( ofaTvaDBModel *self, sMigration *smig )
 {
+	ofaTvaDBModelPrivate *priv;
 	gboolean ok;
 	GtkWidget *label;
 	gchar *str;
+
+	priv = ofa_tva_dbmodel_get_instance_private( self );
 
 	str = g_strdup_printf( _( "Upgrading to v %d :" ), smig->ver_target );
 	label = gtk_label_new( str );
 	g_free( str );
 	gtk_widget_set_valign( label, GTK_ALIGN_END );
 	gtk_label_set_xalign( GTK_LABEL( label ), 1 );
-	my_iprogress_start_progress( update_data->window, update_data->instance, label, TRUE );
+	my_iprogress_start_progress( priv->window, self, label, TRUE );
 
-	update_data->total = smig->fncount( update_data )+3;	/* counting version_begin+version_end */
-	update_data->current = 0;
+	priv->total = smig->fncount( self )+3;	/* counting version_begin+version_end */
+	priv->current = 0;
 
-	ok = version_begin( update_data, smig->ver_target ) &&
-			smig->fnquery( update_data, smig->ver_target ) &&
-			version_end( update_data, smig->ver_target );
+	ok = version_begin( self, smig->ver_target ) &&
+			smig->fnquery( self, smig->ver_target ) &&
+			version_end( self, smig->ver_target );
 
-	my_iprogress_set_ok( update_data->window, update_data->instance, NULL, ok ? 0 : 1 );
+	my_iprogress_set_ok( priv->window, self, NULL, ok ? 0 : 1 );
 
 	return( ok );
 }
 
 static gboolean
-exec_query( sUpdate *update_data, const gchar *query )
+exec_query( ofaTvaDBModel *self, const gchar *query )
 {
+	ofaTvaDBModelPrivate *priv;
 	gboolean ok;
 
-	my_iprogress_set_text( update_data->window, update_data->instance, query );
+	priv = ofa_tva_dbmodel_get_instance_private( self );
 
-	ok = ofa_idbconnect_query( update_data->connect, query, TRUE );
+	my_iprogress_set_text( priv->window, self, query );
 
-	update_data->current += 1;
-	my_iprogress_pulse( update_data->window, update_data->instance, update_data->current, update_data->total );
+	ok = ofa_idbconnect_query( priv->connect, query, TRUE );
+
+	priv->current += 1;
+	my_iprogress_pulse( priv->window, self, priv->current, priv->total );
 
 	return( ok );
 }
 
 static gboolean
-version_begin( sUpdate *update_data, gint version )
+version_begin( ofaTvaDBModel *self, gint version )
 {
 	gboolean ok;
 	gchar *query;
 
 	/* default value for timestamp cannot be null */
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_VERSION ("
 			"	VER_NUMBER INTEGER   NOT NULL UNIQUE DEFAULT 0 COMMENT 'VAT DB model version number',"
 			"	VER_DATE   TIMESTAMP                 DEFAULT 0 COMMENT 'VAT version application timestamp') "
@@ -274,14 +394,14 @@ version_begin( sUpdate *update_data, gint version )
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO TVA_T_VERSION "
 			"	(VER_NUMBER, VER_DATE) VALUES (%u, 0)", version );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-version_end( sUpdate *update_data, gint version )
+version_end( ofaTvaDBModel *self, gint version )
 {
 	gchar *query;
 	gboolean ok;
@@ -291,20 +411,20 @@ version_end( sUpdate *update_data, gint version )
 	 */
 	query = g_strdup_printf(
 			"UPDATE TVA_T_VERSION SET VER_DATE=NOW() WHERE VER_NUMBER=%u", version );
-	ok = exec_query( update_data, query );
+	ok = exec_query( self, query );
 	g_free( query );
 
 	return( ok );
 }
 
 static gboolean
-dbmodel_to_v1( sUpdate *update_data, guint version )
+dbmodel_to_v1( ofaTvaDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_tva_dbmodel_to_v1";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL UNIQUE COMMENT 'Form mnemonic',"
 			"	TFO_LABEL          VARCHAR(80)                  COMMENT 'Form label',"
@@ -314,7 +434,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_DET ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
 			"	TFO_DET_ROW        INTEGER      NOT NULL        COMMENT 'Form line number',"
@@ -330,7 +450,7 @@ dbmodel_to_v1( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v1( sUpdate *update_data )
+count_v1( ofaTvaDBModel *self )
 {
 	return( 2 );
 }
@@ -350,19 +470,19 @@ count_v1( sUpdate *update_data )
  * -> add declaration néant
  */
 static gboolean
-dbmodel_to_v2( sUpdate *update_data, guint version )
+dbmodel_to_v2( ofaTvaDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_tva_dbmodel_to_v2";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS "
 			"	ADD    COLUMN TFO_HAS_CORRESPONDENCE CHAR(1)       COMMENT 'Whether this form has a correspondence frame'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS_DET "
 			"	MODIFY COLUMN TFO_DET_LABEL          VARCHAR(192) COMMENT 'Form line label',"
 			"	ADD    COLUMN TFO_DET_HAS_BASE       CHAR(1)      COMMENT 'Whether detail line has a base amount',"
@@ -371,7 +491,7 @@ dbmodel_to_v2( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_FORMS_BOOL ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
 			"	TFO_BOOL_ROW       INTEGER      NOT NULL        COMMENT 'Form line number',"
@@ -384,7 +504,7 @@ dbmodel_to_v2( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v2( sUpdate *update_data )
+count_v2( ofaTvaDBModel *self )
 {
 	return( 3 );
 }
@@ -393,13 +513,13 @@ count_v2( sUpdate *update_data )
  * records the declaration
  */
 static gboolean
-dbmodel_to_v3( sUpdate *update_data, guint version )
+dbmodel_to_v3( ofaTvaDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_tva_dbmodel_to_v3";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
 			"	TFO_LABEL          VARCHAR(80)                  COMMENT 'Form label',"
@@ -414,7 +534,7 @@ dbmodel_to_v3( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS_DET ("
 			"	TFO_MNEMO           VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
 			"	TFO_END             DATE         NOT NULL        COMMENT 'Declaration period end',"
@@ -432,7 +552,7 @@ dbmodel_to_v3( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"CREATE TABLE IF NOT EXISTS TVA_T_RECORDS_BOOL ("
 			"	TFO_MNEMO          VARCHAR(10)  NOT NULL        COMMENT 'Form mnemonic',"
 			"	TFO_END            DATE         NOT NULL        COMMENT 'Declaration period end',"
@@ -447,7 +567,7 @@ dbmodel_to_v3( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v3( sUpdate *update_data )
+count_v3( ofaTvaDBModel *self )
 {
 	return( 3 );
 }
@@ -456,13 +576,13 @@ count_v3( sUpdate *update_data )
  * resize identifiers and labels
  */
 static gboolean
-dbmodel_to_v4( sUpdate *update_data, guint version )
+dbmodel_to_v4( ofaTvaDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_tva_dbmodel_to_v4";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_LABEL           VARCHAR(256)                          COMMENT 'Form label',"
@@ -470,14 +590,14 @@ dbmodel_to_v4( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS_BOOL "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_BOOL_LABEL      VARCHAR(256)                          COMMENT 'Form line label'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS_DET "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_DET_CODE        VARCHAR(64)                           COMMENT 'Detail line code',"
@@ -487,7 +607,7 @@ dbmodel_to_v4( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_LABEL           VARCHAR(256)                          COMMENT 'Form label',"
@@ -495,14 +615,14 @@ dbmodel_to_v4( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS_BOOL "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_BOOL_LABEL      VARCHAR(256)                          COMMENT 'Form line label'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS_DET "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_DET_CODE        VARCHAR(64)                           COMMENT 'Detail line code',"
@@ -516,7 +636,7 @@ dbmodel_to_v4( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v4( sUpdate *update_data )
+count_v4( ofaTvaDBModel *self )
 {
 	return( 6 );
 }
@@ -525,26 +645,26 @@ count_v4( sUpdate *update_data )
  * resize rules
  */
 static gboolean
-dbmodel_to_v5( sUpdate *update_data, guint version )
+dbmodel_to_v5( ofaTvaDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_tva_dbmodel_to_v5";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL UNIQUE   COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_UPD_USER        VARCHAR(64)                           COMMENT 'User responsible of last update'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS_BOOL "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS_DET "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_DET_CODE        VARCHAR(64)                           COMMENT 'Detail line code',"
@@ -553,20 +673,20 @@ dbmodel_to_v5( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_UPD_USER        VARCHAR(64)                           COMMENT 'User responsible of last update'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS_BOOL "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS_DET "
 			"	MODIFY COLUMN TFO_MNEMO           VARCHAR(64)  BINARY NOT NULL          COMMENT 'Form identifier',"
 			"	MODIFY COLUMN TFO_DET_CODE        VARCHAR(64)                           COMMENT 'Detail line code',"
@@ -579,7 +699,7 @@ dbmodel_to_v5( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v5( sUpdate *update_data )
+count_v5( ofaTvaDBModel *self )
 {
 	return( 6 );
 }
@@ -588,20 +708,20 @@ count_v5( sUpdate *update_data )
  * Define operation template rules
  */
 static gboolean
-dbmodel_to_v6( sUpdate *update_data, guint version )
+dbmodel_to_v6( ofaTvaDBModel *self, guint version )
 {
 	static const gchar *thisfn = "ofa_tva_dbmodel_to_v6";
 
-	g_debug( "%s: update_data=%p, version=%u", thisfn, ( void * ) update_data, version );
+	g_debug( "%s: self=%p, version=%u", thisfn, ( void * ) self, version );
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_FORMS_DET "
 			"	ADD    COLUMN TFO_DET_HAS_TEMPLATE CHAR(1)                              COMMENT 'Has operation template',"
 			"	ADD    COLUMN TFO_DET_TEMPLATE     VARCHAR(64)                          COMMENT 'Operation template'" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS "
 			"	DROP   COLUMN TFO_LABEL,"
 			"	DROP   COLUMN TFO_HAS_CORRESPONDENCE,"
@@ -610,13 +730,13 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS_BOOL "
 			"	DROP   COLUMN TFO_BOOL_LABEL" )){
 		return( FALSE );
 	}
 
-	if( !exec_query( update_data,
+	if( !exec_query( self,
 			"ALTER TABLE TVA_T_RECORDS_DET "
 			"	DROP   COLUMN TFO_DET_LEVEL,"
 			"	DROP   COLUMN TFO_DET_CODE,"
@@ -633,7 +753,7 @@ dbmodel_to_v6( sUpdate *update_data, guint version )
 }
 
 static gulong
-count_v6( sUpdate *update_data )
+count_v6( ofaTvaDBModel *self )
 {
 	return( 4 );
 }
