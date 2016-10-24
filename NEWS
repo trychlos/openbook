@@ -51,6 +51,7 @@
  Other changes:
 
    - ofaIThemeManager: renamed to ofaIPageManager (todo #1242).
+   - ofaPaimeanFrameBin: is not an ofaIActioner.
    - ofaPeriodicity: remove obsoleted functions.
 
 -----------------------------------------------------------------------

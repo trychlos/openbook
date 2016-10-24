@@ -33,7 +33,6 @@
 #include "api/ofa-buttons-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
-#include "api/ofa-iactioner.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
@@ -100,13 +99,10 @@ static gboolean   check_for_deletability( ofaPaimeanFrameBin *self, ofoPaimean *
 static void       delete_with_confirm( ofaPaimeanFrameBin *self, ofoPaimean *paimean );
 static void       iactionable_iface_init( ofaIActionableInterface *iface );
 static guint      iactionable_get_interface_version( void );
-static void       iactioner_iface_init( ofaIActionerInterface *iface );
-static guint      iactioner_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaPaimeanFrameBin, ofa_paimean_frame_bin, GTK_TYPE_BIN, 0, \
 		G_ADD_PRIVATE( ofaPaimeanFrameBin )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONER, iactioner_iface_init ));
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IACTIONABLE, iactionable_iface_init ));
 
 static void
 paimean_frame_bin_finalize( GObject *instance )
@@ -629,25 +625,6 @@ iactionable_iface_init( ofaIActionableInterface *iface )
 
 static guint
 iactionable_get_interface_version( void )
-{
-	return( 1 );
-}
-
-/*
- * ofaIActioner interface management
- */
-static void
-iactioner_iface_init( ofaIActionerInterface *iface )
-{
-	static const gchar *thisfn = "ofa_paimean_frame_bin_iactioner_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_interface_version = iactioner_get_interface_version;
-}
-
-static guint
-iactioner_get_interface_version( void )
 {
 	return( 1 );
 }
