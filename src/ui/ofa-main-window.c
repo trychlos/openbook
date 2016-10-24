@@ -44,7 +44,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -115,7 +115,7 @@ typedef struct {
 	GSimpleAction   *action_close_exercice;
 	GSimpleAction   *action_import;
 
-	/* ofaIThemeManager interface
+	/* ofaIPageManager interface
 	 */
 	GList           *themes;			/* registered themes */
 }
@@ -192,7 +192,7 @@ static const GActionEntry st_dos_entries[] = {
  * cannot be used to initialize our themes (because GType is not a
  * compilation constant).
  *
- * This structure is part of ofaIThemeManager implementation.
+ * This structure is part of ofaIPageManager implementation.
  */
 typedef struct {
 	GType   type;
@@ -313,10 +313,10 @@ static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *ins
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
-static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
-static void                  itheme_manager_iface_init( ofaIThemeManagerInterface *iface );
-static void                  itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label );
-static ofaPage              *itheme_manager_activate( ofaIThemeManager *instance, GType type );
+static ofaIPageManager     *igetter_get_theme_manager( const ofaIGetter *instance );
+static void                  ipage_manager_iface_init( ofaIPageManagerInterface *iface );
+static void                  ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label );
+static ofaPage              *ipage_manager_activate( ofaIPageManager *instance, GType type );
 static sThemeDef            *theme_get_by_type( GList **list, GType type );
 static void                  theme_free( sThemeDef *def );
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
@@ -326,7 +326,7 @@ G_DEFINE_TYPE_EXTENDED( ofaMainWindow, ofa_main_window, GTK_TYPE_APPLICATION_WIN
 		G_ADD_PRIVATE( ofaMainWindow )
 		G_IMPLEMENT_INTERFACE( MY_TYPE_IACTION_MAP, iaction_map_iface_init )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IGETTER, igetter_iface_init )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_ITHEME_MANAGER, itheme_manager_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IPAGE_MANAGER, ipage_manager_iface_init ))
 
 static void
 main_window_finalize( GObject *instance )
@@ -606,8 +606,8 @@ init_themes( ofaMainWindow *self )
 
 	/* define the themes for the main window */
 	for( i=0 ; st_theme_defs[i].label ; ++i ){
-		ofa_itheme_manager_define(
-				OFA_ITHEME_MANAGER( self ),
+		ofa_ipage_manager_define(
+				OFA_IPAGE_MANAGER( self ),
 				( *st_theme_defs[i].fn_get_type )(), gettext( st_theme_defs[i].label ));
 	}
 
@@ -1053,7 +1053,7 @@ pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewCo
 	if( gtk_tree_model_get_iter( model, &iter, path )){
 		gtk_tree_model_get( model, &iter, COL_TREE_IDX, &idx, -1 );
 
-		ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( window ), ( *st_tree_defs[idx].fntype )());
+		ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( window ), ( *st_tree_defs[idx].fntype )());
 	}
 }
 
@@ -1322,7 +1322,7 @@ on_ope_guided( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_OPE_TEMPLATE_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_OPE_TEMPLATE_PAGE );
 }
 
 static void
@@ -1335,7 +1335,7 @@ on_ope_entry_page( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_ENTRY_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_ENTRY_PAGE );
 }
 
 static void
@@ -1348,7 +1348,7 @@ on_ope_concil( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_RECONCIL_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_RECONCIL_PAGE );
 }
 
 static void
@@ -1361,7 +1361,7 @@ on_ope_settlement( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_SETTLEMENT_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_SETTLEMENT_PAGE );
 }
 
 static void
@@ -1439,7 +1439,7 @@ on_render_balances( GSimpleAction *action, GVariant *parameter, gpointer user_da
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_BALANCE_RENDER );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_BALANCE_RENDER );
 }
 
 static void
@@ -1452,7 +1452,7 @@ on_render_accounts_book( GSimpleAction *action, GVariant *parameter, gpointer us
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_ACCOUNT_BOOK_RENDER );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_ACCOUNT_BOOK_RENDER );
 }
 
 static void
@@ -1465,7 +1465,7 @@ on_render_ledgers_book( GSimpleAction *action, GVariant *parameter, gpointer use
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_LEDGER_BOOK_RENDER );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_LEDGER_BOOK_RENDER );
 }
 
 static void
@@ -1478,7 +1478,7 @@ on_render_ledgers_summary( GSimpleAction *action, GVariant *parameter, gpointer 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_LEDGER_SUMMARY_RENDER );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_LEDGER_SUMMARY_RENDER );
 }
 
 static void
@@ -1491,7 +1491,7 @@ on_render_reconcil( GSimpleAction *action, GVariant *parameter, gpointer user_da
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_RECONCIL_RENDER );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_RECONCIL_RENDER );
 }
 
 static void
@@ -1504,7 +1504,7 @@ on_ref_accounts( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_ACCOUNT_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_ACCOUNT_PAGE );
 }
 
 static void
@@ -1517,7 +1517,7 @@ on_ref_ledgers( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_LEDGER_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_LEDGER_PAGE );
 }
 
 static void
@@ -1530,7 +1530,7 @@ on_ref_ope_templates( GSimpleAction *action, GVariant *parameter, gpointer user_
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_OPE_TEMPLATE_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_OPE_TEMPLATE_PAGE );
 }
 
 static void
@@ -1543,7 +1543,7 @@ on_ref_currencies( GSimpleAction *action, GVariant *parameter, gpointer user_dat
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_CURRENCY_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_CURRENCY_PAGE );
 }
 
 static void
@@ -1556,7 +1556,7 @@ on_ref_rates( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_RATE_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_RATE_PAGE );
 }
 
 static void
@@ -1569,7 +1569,7 @@ on_ref_classes( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_CLASS_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_CLASS_PAGE );
 }
 
 static void
@@ -1582,7 +1582,7 @@ on_ref_paimeans( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_PAIMEAN_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_PAIMEAN_PAGE );
 }
 
 static void
@@ -1595,7 +1595,7 @@ on_ref_batfiles( GSimpleAction *action, GVariant *parameter, gpointer user_data 
 
 	g_return_if_fail( user_data && OFA_IS_MAIN_WINDOW( user_data ));
 
-	ofa_itheme_manager_activate( OFA_ITHEME_MANAGER( user_data ), OFA_TYPE_BAT_PAGE );
+	ofa_ipage_manager_activate( OFA_IPAGE_MANAGER( user_data ), OFA_TYPE_BAT_PAGE );
 }
 
 static void
@@ -1888,30 +1888,30 @@ igetter_get_main_window( const ofaIGetter *instance )
 /*
  * the themes are managed by the main window
  */
-static ofaIThemeManager *
+static ofaIPageManager *
 igetter_get_theme_manager( const ofaIGetter *instance )
 {
-	return( OFA_ITHEME_MANAGER( instance ));
+	return( OFA_IPAGE_MANAGER( instance ));
 }
 
 /*
- * ofaIThemeManager interface management
+ * ofaIPageManager interface management
  */
 static void
-itheme_manager_iface_init( ofaIThemeManagerInterface *iface )
+ipage_manager_iface_init( ofaIPageManagerInterface *iface )
 {
-	static const gchar *thisfn = "ofa_main_window_itheme_manager_iface_init";
+	static const gchar *thisfn = "ofa_main_window_ipage_manager_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->define = itheme_manager_define;
-	iface->activate = itheme_manager_activate;
+	iface->define = ipage_manager_define;
+	iface->activate = ipage_manager_activate;
 }
 
 static void
-itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label )
+ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label )
 {
-	static const gchar *thisfn = "ofa_itheme_manager_define";
+	static const gchar *thisfn = "ofa_ipage_manager_define";
 	ofaMainWindowPrivate *priv;
 	sThemeDef *sdata;
 
@@ -1929,9 +1929,9 @@ itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *labe
 }
 
 static ofaPage *
-itheme_manager_activate( ofaIThemeManager *instance, GType type )
+ipage_manager_activate( ofaIPageManager *instance, GType type )
 {
-	static const gchar *thisfn = "ofa_itheme_manager_activate";
+	static const gchar *thisfn = "ofa_ipage_manager_activate";
 	ofaMainWindowPrivate *priv;
 	GtkNotebook *book;
 	ofaPage *page;

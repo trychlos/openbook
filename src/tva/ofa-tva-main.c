@@ -31,7 +31,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 
 #include "tva/ofa-tva-form-page.h"
 #include "tva/ofa-tva-main.h"
@@ -59,7 +59,7 @@ typedef struct {
 
 static void on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty );
 static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
-static void on_theme_available( GApplication *application, ofaIThemeManager *manager, void *empty );
+static void on_theme_available( GApplication *application, ofaIPageManager *manager, void *empty );
 static void on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 
@@ -162,7 +162,7 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 }
 
 static void
-on_theme_available( GApplication *application, ofaIThemeManager *manager, void *empty )
+on_theme_available( GApplication *application, ofaIPageManager *manager, void *empty )
 {
 	static const gchar *thisfn = "tva/ofa_tva_main_on_theme_available";
 	guint i;
@@ -171,7 +171,7 @@ on_theme_available( GApplication *application, ofaIThemeManager *manager, void *
 			thisfn, ( void * ) application, ( void * ) manager, empty );
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
-		ofa_itheme_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );
+		ofa_ipage_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );
 	}
 }
 
@@ -179,7 +179,7 @@ static void
 on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "tva/ofa_tva_main_on_tva_declare";
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -187,14 +187,14 @@ on_tva_declare( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_RECORD_PAGE );
+	ofa_ipage_manager_activate( manager, OFA_TYPE_TVA_RECORD_PAGE );
 }
 
 static void
 on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "tva/ofa_tva_main_on_tva_manage";
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -202,5 +202,5 @@ on_tva_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_FORM_PAGE );
+	ofa_ipage_manager_activate( manager, OFA_TYPE_TVA_FORM_PAGE );
 }

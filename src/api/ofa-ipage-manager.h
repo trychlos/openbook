@@ -22,41 +22,41 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_ITHEME_MANAGER_H__
-#define __OPENBOOK_API_OFA_ITHEME_MANAGER_H__
+#ifndef __OPENBOOK_API_OFA_IPAGE_MANAGER_H__
+#define __OPENBOOK_API_OFA_IPAGE_MANAGER_H__
 
 /**
- * SECTION: itheme_manager
- * @title: ofaIThemeManager
- * @short_description: The IThemeManager Interface
- * @include: openbook/ofa-itheme-manager.h
+ * SECTION: ipage_manager
+ * @title: ofaIPageManager
+ * @short_description: The IPageManager Interface
+ * @include: openbook/ofa-ipage-manager.h
  *
- * The #ofaIThemeManager is the interface for theme management.
+ * The #ofaIPageManager is the interface for theme management.
  */
 
 #include <glib-object.h>
 
-#include "api/ofa-itheme-manager-def.h"
+#include "api/ofa-ipage-manager-def.h"
 #include "api/ofa-page-def.h"
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ITHEME_MANAGER                      ( ofa_itheme_manager_get_type())
-#define OFA_ITHEME_MANAGER( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_ITHEME_MANAGER, ofaIThemeManager ))
-#define OFA_IS_ITHEME_MANAGER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_ITHEME_MANAGER ))
-#define OFA_ITHEME_MANAGER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_ITHEME_MANAGER, ofaIThemeManagerInterface ))
+#define OFA_TYPE_IPAGE_MANAGER                      ( ofa_ipage_manager_get_type())
+#define OFA_IPAGE_MANAGER( instance )               ( G_TYPE_CHECK_INSTANCE_CAST( instance, OFA_TYPE_IPAGE_MANAGER, ofaIPageManager ))
+#define OFA_IS_IPAGE_MANAGER( instance )            ( G_TYPE_CHECK_INSTANCE_TYPE( instance, OFA_TYPE_IPAGE_MANAGER ))
+#define OFA_IPAGE_MANAGER_GET_INTERFACE( instance ) ( G_TYPE_INSTANCE_GET_INTERFACE(( instance ), OFA_TYPE_IPAGE_MANAGER, ofaIPageManagerInterface ))
 
 #if 0
-typedef struct _ofaIThemeManager                     ofaIThemeManager;
+typedef struct _ofaIPageManager                     ofaIPageManager;
 #endif
 
 /**
- * ofaIThemeManagerInterface:
+ * ofaIPageManagerInterface:
  * @get_interface_version: [should]: get the version number of the
  *                                   interface implementation.
  * @define: [should]: define a new theme.
  *
- * This defines the interface that an #ofaIThemeManager must/should/may
+ * This defines the interface that an #ofaIPageManager must/should/may
  * implement.
  */
 typedef struct {
@@ -80,7 +80,7 @@ typedef struct {
 	/*** instance-wide ***/
 	/**
 	 * define:
-	 * @instance: the #ofaIThemeManager instance.
+	 * @instance: the #ofaIPageManager instance.
 	 * @type: the GType of the page (and identifier of the theme).
 	 * @label: the tab notebook label.
 	 *
@@ -88,46 +88,46 @@ typedef struct {
 	 *
 	 * Since: version 1.
 	 */
-	void      ( *define )               ( ofaIThemeManager *instance,
+	void      ( *define )               ( ofaIPageManager *instance,
 												GType type,
 												const gchar *label );
 
 	/**
 	 * activate:
-	 * @instance: the #ofaIThemeManager instance.
+	 * @instance: the #ofaIPageManager instance.
 	 * @theme_id: the identifier of the theme to be activated.
 	 *
 	 * Returns: the theme's page.
 	 *
 	 * Since: version 1.
 	 */
-	ofaPage * ( *activate )             ( ofaIThemeManager *instance,
+	ofaPage * ( *activate )             ( ofaIPageManager *instance,
 												GType type );
 }
-	ofaIThemeManagerInterface;
+	ofaIPageManagerInterface;
 
 /*
  * Interface-wide
  */
-GType    ofa_itheme_manager_get_type                  ( void );
+GType    ofa_ipage_manager_get_type                  ( void );
 
-guint    ofa_itheme_manager_get_interface_last_version( void );
+guint    ofa_ipage_manager_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint    ofa_itheme_manager_get_interface_version     ( GType type );
+guint    ofa_ipage_manager_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-void     ofa_itheme_manager_define                    ( ofaIThemeManager *instance,
+void     ofa_ipage_manager_define                    ( ofaIPageManager *instance,
 															GType type,
 															const gchar *label );
 
-ofaPage *ofa_itheme_manager_activate                  ( ofaIThemeManager *instance,
+ofaPage *ofa_ipage_manager_activate                  ( ofaIPageManager *instance,
 															GType type );
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_ITHEME_MANAGER_H__ */
+#endif /* __OPENBOOK_API_OFA_IPAGE_MANAGER_H__ */

@@ -37,7 +37,7 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
@@ -1008,7 +1008,7 @@ static void
 action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 	ofoAccount *account;
 	ofaPage *page;
 
@@ -1016,7 +1016,7 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaAcc
 
 	account = ofa_account_frame_bin_get_selected( self );
 	manager = ofa_igetter_get_theme_manager( priv->getter );
-	page = ofa_itheme_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
+	page = ofa_ipage_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
 	ofa_entry_page_display_entries(
 			OFA_ENTRY_PAGE( page ), OFO_TYPE_ACCOUNT, ofo_account_get_number( account ), NULL, NULL );
 }
@@ -1025,7 +1025,7 @@ static void
 action_on_settlement_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 	ofoAccount *account;
 	ofaPage *page;
 
@@ -1033,7 +1033,7 @@ action_on_settlement_activated( GSimpleAction *action, GVariant *empty, ofaAccou
 
 	account = ofa_account_frame_bin_get_selected( self );
 	manager = ofa_igetter_get_theme_manager( priv->getter );
-	page = ofa_itheme_manager_activate( manager, OFA_TYPE_SETTLEMENT_PAGE );
+	page = ofa_ipage_manager_activate( manager, OFA_TYPE_SETTLEMENT_PAGE );
 	ofa_settlement_page_set_account( OFA_SETTLEMENT_PAGE( page ), ofo_account_get_number( account ));
 }
 
@@ -1041,7 +1041,7 @@ static void
 action_on_reconciliation_activated( GSimpleAction *action, GVariant *empty, ofaAccountFrameBin *self )
 {
 	ofaAccountFrameBinPrivate *priv;
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 	ofoAccount *account;
 	ofaPage *page;
 
@@ -1049,7 +1049,7 @@ action_on_reconciliation_activated( GSimpleAction *action, GVariant *empty, ofaA
 
 	account = ofa_account_frame_bin_get_selected( self );
 	manager = ofa_igetter_get_theme_manager( priv->getter );
-	page = ofa_itheme_manager_activate( manager, OFA_TYPE_RECONCIL_PAGE );
+	page = ofa_ipage_manager_activate( manager, OFA_TYPE_RECONCIL_PAGE );
 	ofa_reconcil_page_set_account( OFA_RECONCIL_PAGE( page ), ofo_account_get_number( account ));
 }
 

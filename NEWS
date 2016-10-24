@@ -49,6 +49,7 @@
 
  Other changes:
 
+   - ofaIThemeManager: renamed to ofaIPageManager (todo #1242).
    - ofaPeriodicity: remove obsoleted functions.
 
 -----------------------------------------------------------------------

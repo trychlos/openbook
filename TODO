@@ -371,9 +371,6 @@
 
 1241 2016-10-20 display somewhere (in PluginManager) the DB versions
 
-1242 2016-10-20 rename ThemeManager to PageManager
-                (and clarify the behavior)
-
 1243 2016-10-22 have a command-line tool which displays the version of
                 each of the DBModels of a saved database
 
@@ -1877,6 +1874,10 @@
 1240 2016-10-20 Stock importers: version label should be "2016.1" instead
                 of 'v 2016.1'
      2016-10-23 done
+
+1242 2016-10-20 rename ThemeManager to PageManager
+                (and clarify the behavior)
+     2016-10-24 done
 
 1244 2016-10-23 error messages should be full sentences (with a verb)
      2016-10-23 done

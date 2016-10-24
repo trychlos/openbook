@@ -37,7 +37,7 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-istore.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"

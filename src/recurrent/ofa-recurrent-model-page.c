@@ -37,7 +37,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -586,8 +586,8 @@ action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 static void
 action_on_view_opes_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentModelPage *self )
 {
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
+	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }

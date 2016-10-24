@@ -26,23 +26,23 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 
-#define ITHEME_MANAGER_LAST_VERSION       1
+#define IPAGE_MANAGER_LAST_VERSION       1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
 static GType register_type( void );
-static void  interface_base_init( ofaIThemeManagerInterface *klass );
-static void  interface_base_finalize( ofaIThemeManagerInterface *klass );
+static void  interface_base_init( ofaIPageManagerInterface *klass );
+static void  interface_base_finalize( ofaIPageManagerInterface *klass );
 
 /**
- * ofa_itheme_manager_get_type:
+ * ofa_ipage_manager_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_itheme_manager_get_type( void )
+ofa_ipage_manager_get_type( void )
 {
 	static GType type = 0;
 
@@ -54,18 +54,18 @@ ofa_itheme_manager_get_type( void )
 }
 
 /*
- * ofa_itheme_manager_register_type:
+ * ofa_ipage_manager_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_itheme_manager_register_type";
+	static const gchar *thisfn = "ofa_ipage_manager_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIThemeManagerInterface ),
+		sizeof( ofaIPageManagerInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -78,7 +78,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIThemeManager", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIPageManager", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -86,9 +86,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIThemeManagerInterface *klass )
+interface_base_init( ofaIPageManagerInterface *klass )
 {
-	static const gchar *thisfn = "ofa_itheme_manager_interface_base_init";
+	static const gchar *thisfn = "ofa_ipage_manager_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -101,9 +101,9 @@ interface_base_init( ofaIThemeManagerInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIThemeManagerInterface *klass )
+interface_base_finalize( ofaIPageManagerInterface *klass )
 {
-	static const gchar *thisfn = "ofa_itheme_manager_interface_base_finalize";
+	static const gchar *thisfn = "ofa_ipage_manager_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -114,19 +114,19 @@ interface_base_finalize( ofaIThemeManagerInterface *klass )
 }
 
 /**
- * ofa_itheme_manager_get_interface_last_version:
- * @instance: this #ofaIThemeManager instance.
+ * ofa_ipage_manager_get_interface_last_version:
+ * @instance: this #ofaIPageManager instance.
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_itheme_manager_get_interface_last_version( void )
+ofa_ipage_manager_get_interface_last_version( void )
 {
-	return( ITHEME_MANAGER_LAST_VERSION );
+	return( IPAGE_MANAGER_LAST_VERSION );
 }
 
 /**
- * ofa_itheme_manager_get_interface_version:
+ * ofa_ipage_manager_get_interface_version:
  * @type: the implementation's GType.
  *
  * Returns: the version number of this interface which is managed by
@@ -137,7 +137,7 @@ ofa_itheme_manager_get_interface_last_version( void )
  * Since: version 1.
  */
 guint
-ofa_itheme_manager_get_interface_version( GType type )
+ofa_ipage_manager_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -145,16 +145,16 @@ ofa_itheme_manager_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, OFA_TYPE_ITHEME_MANAGER );
+	iface = g_type_interface_peek( klass, OFA_TYPE_IPAGE_MANAGER );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( ofaIThemeManagerInterface * ) iface )->get_interface_version ){
-		version = (( ofaIThemeManagerInterface * ) iface )->get_interface_version();
+	if((( ofaIPageManagerInterface * ) iface )->get_interface_version ){
+		version = (( ofaIPageManagerInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'ofaIThemeManager::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'ofaIPageManager::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -164,8 +164,8 @@ ofa_itheme_manager_get_interface_version( GType type )
 }
 
 /**
- * ofa_itheme_manager_define:
- * @instance: the #ofaIThemeManager instance.
+ * ofa_ipage_manager_define:
+ * @instance: the #ofaIPageManager instance.
  * @type: the desired GType type which happens to be used as the theme
  *  identifier.
  * @label: the tab title of the corresponding notebook page.
@@ -173,24 +173,24 @@ ofa_itheme_manager_get_interface_version( GType type )
  * Returns: the new theme identifier, strictly greater than zero.
  */
 void
-ofa_itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *label )
+ofa_ipage_manager_define( ofaIPageManager *instance, GType type, const gchar *label )
 {
-	static const gchar *thisfn = "ofa_itheme_manager_define";
+	static const gchar *thisfn = "ofa_ipage_manager_define";
 
-	g_return_if_fail( instance && OFA_IS_ITHEME_MANAGER( instance ));
+	g_return_if_fail( instance && OFA_IS_IPAGE_MANAGER( instance ));
 
-	if( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->define ){
-		OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->define( instance, type, label );
+	if( OFA_IPAGE_MANAGER_GET_INTERFACE( instance )->define ){
+		OFA_IPAGE_MANAGER_GET_INTERFACE( instance )->define( instance, type, label );
 		return;
 	}
 
-	g_info( "%s: ofaIThemeManager's %s implementation does not provide 'define()' method",
+	g_info( "%s: ofaIPageManager's %s implementation does not provide 'define()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 }
 
 /**
- * ofa_itheme_manager_activate:
- * @instance: the #ofaIThemeManager instance.
+ * ofa_ipage_manager_activate:
+ * @instance: the #ofaIPageManager instance.
  * @type: the desired GType type which happens to be used as the theme
  *  identifier.
  *
@@ -199,17 +199,17 @@ ofa_itheme_manager_define( ofaIThemeManager *instance, GType type, const gchar *
  * Returns: the theme's page.
  */
 ofaPage *
-ofa_itheme_manager_activate( ofaIThemeManager *instance, GType type )
+ofa_ipage_manager_activate( ofaIPageManager *instance, GType type )
 {
-	static const gchar *thisfn = "ofa_itheme_manager_activate";
+	static const gchar *thisfn = "ofa_ipage_manager_activate";
 
-	g_return_val_if_fail( instance && OFA_IS_ITHEME_MANAGER( instance ), NULL );
+	g_return_val_if_fail( instance && OFA_IS_IPAGE_MANAGER( instance ), NULL );
 
-	if( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->activate ){
-		return( OFA_ITHEME_MANAGER_GET_INTERFACE( instance )->activate( instance, type ));
+	if( OFA_IPAGE_MANAGER_GET_INTERFACE( instance )->activate ){
+		return( OFA_IPAGE_MANAGER_GET_INTERFACE( instance )->activate( instance, type ));
 	}
 
-	g_info( "%s: ofaIThemeManager's %s implementation does not provide 'activate()' method",
+	g_info( "%s: ofaIPageManager's %s implementation does not provide 'activate()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

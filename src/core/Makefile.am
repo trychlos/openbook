@@ -123,12 +123,12 @@ libofa_core_la_SOURCES = \
 	ofa-iimporter.c										\
 	ofa-iimportable.c									\
 	ofa-import-duplicate.c								\
+	ofa-ipage-manager.c									\
 	ofa-iprintable.c									\
 	ofa-iproperties.c									\
 	ofa-irenderable.c									\
 	ofa-isignal-hub.c									\
 	ofa-istore.c										\
-	ofa-itheme-manager.c								\
 	ofa-itree-adder.c									\
 	ofa-itvcolumnable.c									\
 	ofa-itvfilterable.c									\

@@ -67,7 +67,7 @@ static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *ins
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
-static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
+static ofaIPageManager     *igetter_get_theme_manager( const ofaIGetter *instance );
 static void                  iactionable_iface_init( ofaIActionableInterface *iface );
 static guint                 iactionable_get_interface_version( void );
 
@@ -376,7 +376,7 @@ igetter_get_main_window( const ofaIGetter *instance )
 	return( ofa_igetter_get_main_window( priv->getter ));
 }
 
-static ofaIThemeManager *
+static ofaIPageManager *
 igetter_get_theme_manager( const ofaIGetter *instance )
 {
 	ofaPagePrivate *priv;

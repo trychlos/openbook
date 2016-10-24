@@ -59,13 +59,13 @@ api_include_HEADERS = \
 	ofa-iimportable.h									\
 	ofa-iimporter.h										\
 	ofa-import-duplicate.h								\
+	ofa-ipage-manager.h									\
+	ofa-ipage-manager-def.h								\
 	ofa-iprintable.h									\
 	ofa-iproperties.h									\
 	ofa-irenderable.h									\
 	ofa-isignal-hub.h									\
 	ofa-istore.h										\
-	ofa-itheme-manager.h								\
-	ofa-itheme-manager-def.h							\
 	ofa-itvcolumnable.h									\
 	ofa-itvfilterable.h									\
 	ofa-itvsortable.h									\

@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_ITHEME_MANAGER_DEF_H__
-#define __OPENBOOK_API_OFA_ITHEME_MANAGER_DEF_H__
+#ifndef __OPENBOOK_API_OFA_IPAGE_MANAGER_DEF_H__
+#define __OPENBOOK_API_OFA_IPAGE_MANAGER_DEF_H__
 
 G_BEGIN_DECLS
 
-typedef struct _ofaIThemeManager        ofaIThemeManager;
+typedef struct _ofaIPageManager        ofaIPageManager;
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_ITHEME_MANAGER_DEF_H__ */
+#endif /* __OPENBOOK_API_OFA_IPAGE_MANAGER_DEF_H__ */

@@ -53,7 +53,7 @@
 
 #include "api/ofa-hub-def.h"
 #include "api/ofa-igetter-def.h"
-#include "api/ofa-itheme-manager-def.h"
+#include "api/ofa-ipage-manager-def.h"
 
 G_BEGIN_DECLS
 
@@ -71,7 +71,7 @@ typedef struct _ofaIGetter                    ofaIGetter;
  * @get_interface_version: [should]: returns the implemented version number.
  * @get_application: [should]: return the #GApplication instance.
  * @get_hub: [should]: return the #ofaHub instance.
- * @get_theme_manager: [should]: return the #ofaIThemeManager instance.
+ * @get_theme_manager: [should]: return the #ofaIPageManager instance.
  *
  * This defines the interface that an #ofaIGetter must/should/may implement.
  */
@@ -142,7 +142,7 @@ typedef struct {
 	 *
 	 * Since: version 1
 	 */
-	ofaIThemeManager *     ( *get_theme_manager )    ( const ofaIGetter *instance );
+	ofaIPageManager *     ( *get_theme_manager )    ( const ofaIGetter *instance );
 }
 	ofaIGetterInterface;
 
@@ -169,7 +169,7 @@ ofaHub               *ofa_igetter_get_hub                   ( const ofaIGetter *
 
 GtkApplicationWindow *ofa_igetter_get_main_window           ( const ofaIGetter *instance );
 
-ofaIThemeManager     *ofa_igetter_get_theme_manager         ( const ofaIGetter *instance );
+ofaIPageManager     *ofa_igetter_get_theme_manager         ( const ofaIGetter *instance );
 
 G_END_DECLS
 

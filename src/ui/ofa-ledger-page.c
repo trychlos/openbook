@@ -34,7 +34,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
@@ -464,7 +464,7 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLed
 	GList *list;
 	ofaPage *page;
 	ofoLedger *ledger;
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 
 	g_return_if_fail( self && OFA_IS_LEDGER_PAGE( self ));
 
@@ -479,7 +479,7 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLed
 	ofa_ledger_treeview_free_selected( list );
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
-	page = ofa_itheme_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
+	page = ofa_ipage_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
 	g_return_if_fail( page && OFA_IS_ENTRY_PAGE( page ));
 
 	ofa_entry_page_display_entries(

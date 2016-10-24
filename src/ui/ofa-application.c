@@ -40,7 +40,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-portfolio-collection.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
@@ -159,7 +159,7 @@ static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *ins
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
-static ofaIThemeManager     *igetter_get_theme_manager( const ofaIGetter *instance );
+static ofaIPageManager     *igetter_get_theme_manager( const ofaIGetter *instance );
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
 static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
 
@@ -398,7 +398,7 @@ ofa_application_class_init( ofaApplicationClass *klass )
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaApplication     *application,
-	 * 						ofaIThemeManager *manager,
+	 * 						ofaIPageManager *manager,
 	 * 						gpointer          user_data );
 	 */
 	st_signals[ THM_AVAILABLE ] = g_signal_new_class_handler(
@@ -1226,14 +1226,14 @@ igetter_get_main_window( const ofaIGetter *instance )
 /*
  * the themes are managed by the main window
  */
-static ofaIThemeManager *
+static ofaIPageManager *
 igetter_get_theme_manager( const ofaIGetter *instance )
 {
 	ofaApplicationPrivate *priv;
 
 	priv = ofa_application_get_instance_private( OFA_APPLICATION( instance ));
 
-	return( OFA_ITHEME_MANAGER( priv->main_window ));
+	return( OFA_IPAGE_MANAGER( priv->main_window ));
 }
 
 /*

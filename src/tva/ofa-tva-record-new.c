@@ -36,7 +36,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -380,7 +380,7 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 	ofaTVARecordNewPrivate *priv;
 	gboolean ok;
 	ofaHub *hub;
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 	ofaPage *page;
 	GtkWindow *toplevel;
 	GDate last_end;
@@ -407,7 +407,7 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 
 	if( ok ){
 		/* activate the page */
-		page = ofa_itheme_manager_activate( manager, OFA_TYPE_TVA_RECORD_PAGE );
+		page = ofa_ipage_manager_activate( manager, OFA_TYPE_TVA_RECORD_PAGE );
 		toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( page ));
 		/* edit the declaration */
 		ofa_tva_record_properties_run( priv->getter, toplevel, priv->tva_record );

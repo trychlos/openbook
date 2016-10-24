@@ -33,7 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-igetter.h"
-#include "api/ofa-itheme-manager.h"
+#include "api/ofa-ipage-manager.h"
 
 #include "recurrent/ofa-rec-period-page.h"
 #include "recurrent/ofa-recurrent-main.h"
@@ -61,7 +61,7 @@ typedef struct {
 
 static void on_menu_available( GApplication *application, GActionMap *map, const gchar *prefix, void *empty );
 static void menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placeholder );
-static void on_theme_available( ofaIGetter *getter, ofaIThemeManager *manager, void *empty );
+static void on_theme_available( ofaIGetter *getter, ofaIPageManager *manager, void *empty );
 static void on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -168,7 +168,7 @@ menu_add_section( GObject *parent, const sItemDef *sitems, const gchar *placehol
 }
 
 static void
-on_theme_available( ofaIGetter *getter, ofaIThemeManager *manager, void *empty )
+on_theme_available( ofaIGetter *getter, ofaIPageManager *manager, void *empty )
 {
 	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_theme_available";
 	guint i;
@@ -177,7 +177,7 @@ on_theme_available( ofaIGetter *getter, ofaIThemeManager *manager, void *empty )
 			thisfn, ( void * ) getter, ( void * ) manager, empty );
 
 	for( i=0 ; st_theme_defs[i].action_name ; ++i ){
-		ofa_itheme_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );
+		ofa_ipage_manager_define( manager, ( *st_theme_defs[i].fntype )(), st_theme_defs[i].theme_label );
 	}
 }
 
@@ -185,7 +185,7 @@ static void
 on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_rec_period";
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -193,14 +193,14 @@ on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_REC_PERIOD_PAGE );
+	ofa_ipage_manager_activate( manager, OFA_TYPE_REC_PERIOD_PAGE );
 }
 
 static void
 on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_recurrent_run";
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -208,14 +208,14 @@ on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
+	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }
 
 static void
 on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 {
 	static const gchar *thisfn = "recurrent/ofa_recurrent_main_on_recurrent_manage";
-	ofaIThemeManager *manager;
+	ofaIPageManager *manager;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
@@ -223,5 +223,5 @@ on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_d
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
 	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
-	ofa_itheme_manager_activate( manager, OFA_TYPE_RECURRENT_MODEL_PAGE );
+	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_MODEL_PAGE );
 }

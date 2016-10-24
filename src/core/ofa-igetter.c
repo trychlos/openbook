@@ -282,12 +282,12 @@ ofa_igetter_get_main_window( const ofaIGetter *instance )
  * ofa_igetter_get_theme_manager:
  * @instance: this #ofaIGetter instance.
  *
- * Returns: the #ofaIThemeManager instance of the application, if any,
+ * Returns: the #ofaIPageManager instance of the application, if any,
  * or %NULL.
  *
  * Only a GUI application has a ThemeManager usage.
  */
-ofaIThemeManager *
+ofaIPageManager *
 ofa_igetter_get_theme_manager( const ofaIGetter *instance )
 {
 	static const gchar *thisfn = "ofa_igetter_get_theme_manager";
