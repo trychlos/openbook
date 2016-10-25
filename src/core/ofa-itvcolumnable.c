@@ -307,7 +307,9 @@ ofa_itvcolumnable_get_interface_version( GType type )
  *
  * The provided @name both:
  * - identifies the actions group (an action is created for each
- *   toggable column),
+ *   toggable column); in other words, actions created by this interface
+ *   are scoped to this @name
+ *   (see also https://wiki.gnome.org/HowDoI/GAction).
  * - is used as the settings key (to record size and position of the
  *   columns).
  *
@@ -364,11 +366,15 @@ ofa_itvcolumnable_set_treeview( ofaITVColumnable *instance, GtkTreeView *treevie
  *  defaults to column title.
  *
  * Records a new displayable column.
+ *
+ * The treeview must have been set prior to adding column
+ * (see #ofa_itvcolumnable_set_treeview() method).
  */
 void
 ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 					GtkTreeViewColumn *column, gint column_id, const gchar *menu_label )
 {
+	static const gchar *thisfn = "ofa_itvcolumnable_add_column";
 	sITVColumnable *sdata;
 	sColumn *scol;
 	GSimpleAction *action;
@@ -376,6 +382,7 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
 
 	sdata = get_instance_data( instance );
+	g_return_if_fail( sdata->treeview != NULL );
 
 	scol = get_column_data_by_id( instance, sdata, column_id );
 	g_return_if_fail( scol == NULL );
@@ -398,11 +405,11 @@ ofa_itvcolumnable_add_column( ofaITVColumnable *instance,
 	scol->column = column;
 	scol->def_visible = FALSE;
 
-	g_debug( "column_id=%u, menu_label=%s, action_group=%s, action_name=%s",
-			column_id, menu_label, scol->group_name, scol->name );
+	g_debug( "%s: column_id=%u, menu_label=%s, action_group=%s, action_name=%s",
+			thisfn, column_id, menu_label, scol->group_name, scol->name );
 
 	/* define a new action and attach it to the action group
-	 * default visibility state is set */
+	 * default visibility state is cleared */
 	action = g_simple_action_new_stateful( scol->name, NULL, g_variant_new_boolean( FALSE ));
 	g_signal_connect( action, "change-state", G_CALLBACK( on_action_changed_state ), instance );
 	ofa_iactionable_set_menu_item( OFA_IACTIONABLE( instance ), scol->group_name, G_ACTION( action ), scol->label );
@@ -1171,7 +1178,7 @@ on_instance_finalized( sITVColumnable *sdata, void *instance )
 	g_list_free_full( sdata->columns_list, ( GDestroyNotify ) free_column );
 	g_hash_table_remove_all( sdata->twins );
 	g_hash_table_unref( sdata->twins );
-	g_object_unref( sdata->treeview );
+	g_clear_object( &sdata->treeview );
 	g_free( sdata->name );
 	g_free( sdata );
 }

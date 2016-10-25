@@ -44,10 +44,11 @@
  * When a column is added to the treeview, an action is created for
  * toggling its visibility state, and grouped together in a dedicated
  * action group.
- * The actions group namespace is <name>-itvcolumnable.action_<n>,
+ * The actions group namespace is <name>.itvcolumnable_<n>,
  * where:
  * - <name> is the identifier name of the instance as provided in
- *   #ofa_itvcolumnable_set_name();
+ *   #ofa_itvcolumnable_set_name(); it defaults to the instance class
+ *   name.
  * - <n> is the column identifier, as provided in
  *   #ofa_itvcolumnable_add_column().
  *
