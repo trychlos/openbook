@@ -1705,6 +1705,7 @@ static gboolean
 do_validate( ofaGuidedInputBin *self )
 {
 	ofaGuidedInputBinPrivate *priv;
+	const ofaIDBConnect *connect;
 	gboolean ok;
 	ofoDossier *dossier;
 	ofoEntry *entry;
@@ -1713,7 +1714,8 @@ do_validate( ofaGuidedInputBin *self )
 
 	priv = ofa_guided_input_bin_get_instance_private( self );
 
-	ok = TRUE;
+	connect = ofa_hub_get_connect( priv->hub );
+	ok = ofa_idbconnect_transaction_start( connect, FALSE, NULL );
 	entries = ofs_ope_generate_entries( priv->ope );
 	dossier = ofa_hub_get_dossier( priv->hub );
 	number = ofo_dossier_get_next_ope( dossier );
@@ -1728,8 +1730,13 @@ do_validate( ofaGuidedInputBin *self )
 		 * then restore the last ecr number of the dossier
 		 */
 	}
+
 	if( ok ){
 		display_ok_message( self, g_list_length( entries ));
+		ofa_idbconnect_transaction_commit( connect, FALSE, NULL );
+
+	} else {
+		ok = ofa_idbconnect_transaction_cancel( connect, FALSE, NULL );
 	}
 
 	g_list_free_full( entries, g_object_unref );

@@ -275,6 +275,42 @@ typedef struct {
 											const ofaIDBPeriod *period,
 											const gchar *user_account,
 											const gchar *user_password );
+
+	/**
+	 * transaction_start:
+	 * @instance: an #ofaIDBConnect user connection on the DBMS server.
+	 *
+	 * Start a transaction.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *transaction_start )    ( const ofaIDBConnect *instance );
+
+	/**
+	 * transaction_commit:
+	 * @instance: an #ofaIDBConnect user connection on the DBMS server.
+	 *
+	 * Commit a transaction.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *transaction_commit )   ( const ofaIDBConnect *instance );
+
+	/**
+	 * transaction_cancel:
+	 * @instance: an #ofaIDBConnect user connection on the DBMS server.
+	 *
+	 * Cancel a transaction.
+	 *
+	 * Returns: %TRUE if successful, %FALSE else.
+	 *
+	 * Since: version 1
+	 */
+	gboolean ( *transaction_cancel )   ( const ofaIDBConnect *instance );
 }
 	ofaIDBConnectInterface;
 
@@ -367,6 +403,18 @@ gboolean        ofa_idbconnect_create_dossier            ( const ofaIDBConnect *
 																const ofaIDBMeta *meta,
 																const gchar *adm_account,
 																const gchar *adm_password );
+
+gboolean        ofa_idbconnect_transaction_start         ( const ofaIDBConnect *connect,
+																gboolean display_error,
+																gchar **msgerr );
+
+gboolean        ofa_idbconnect_transaction_commit        ( const ofaIDBConnect *connect,
+																gboolean display_error,
+																gchar **msgerr );
+
+gboolean        ofa_idbconnect_transaction_cancel        ( const ofaIDBConnect *connect,
+																gboolean display_error,
+																gchar **msgerr );
 
 G_END_DECLS
 

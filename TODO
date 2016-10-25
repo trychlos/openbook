@@ -43,9 +43,6 @@
                 + my_utils_entry_set_valid
      2014- 5-22 see also (cancelled) todo #20
 
-  89 2014- 522 Guided input: have a transaction when writing the new
-               entries so that we can rollback in case of an error
-
  126 2014- 5-28 have several demo dossiers
 
  152 2014- 6- 3 import qif files
@@ -372,6 +369,10 @@
 
   40 2014- 5-12 ofaMainWindow: set accels when changing the menubar
      2016- 4-12 done
+
+  89 2014- 5-22 Guided input: have a transaction when writing the new
+                entries so that we can rollback in case of an error
+     2016-10-25 done
 
  161 2014- 6- 5 Reconciliation: display the bank account balance if
                 present

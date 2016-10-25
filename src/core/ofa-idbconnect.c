@@ -1133,6 +1133,111 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBPeri
 	return( ok );
 }
 
+/**
+ * ofa_idbconnect_transaction_start:
+ * @connect: an #ofaIDBConnect object which handles a user
+ *  connection on the DBMS.
+ * @display_error: whether display an error in a dialog box.
+ * @msgerr: [out][allow-none]: if set, and @display_error is %FALSE,
+ *  then this is a placeholder for an error message.
+ *
+ * Start a transaction.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_transaction_start( const ofaIDBConnect *connect, gboolean display_error, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbconnect_transaction_start";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, display_error=%s, msgerr=%p",
+			thisfn, ( void * ) connect, display_error ? "True":"False", ( void * ) msgerr );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_start ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_start( connect );
+
+	} else {
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'transaction_start()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
+		return( FALSE );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbconnect_transaction_commit:
+ * @connect: an #ofaIDBConnect object which handles a user
+ *  connection on the DBMS.
+ * @display_error: whether display an error in a dialog box.
+ * @msgerr: [out][allow-none]: if set, and @display_error is %FALSE,
+ *  then this is a placeholder for an error message.
+ *
+ * Commit a transaction.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_transaction_commit( const ofaIDBConnect *connect, gboolean display_error, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbconnect_transaction_commit";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, display_error=%s, msgerr=%p",
+			thisfn, ( void * ) connect, display_error ? "True":"False", ( void * ) msgerr );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_commit ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_commit( connect );
+
+	} else {
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'transaction_commit()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
+		return( FALSE );
+	}
+
+	return( ok );
+}
+
+/**
+ * ofa_idbconnect_transaction_cancel:
+ * @connect: an #ofaIDBConnect object which handles a user
+ *  connection on the DBMS.
+ * @display_error: whether display an error in a dialog box.
+ * @msgerr: [out][allow-none]: if set, and @display_error is %FALSE,
+ *  then this is a placeholder for an error message.
+ *
+ * Cancel a transaction.
+ *
+ * Returns: %TRUE if successful.
+ */
+gboolean
+ofa_idbconnect_transaction_cancel( const ofaIDBConnect *connect, gboolean display_error, gchar **msgerr )
+{
+	static const gchar *thisfn = "ofa_idbconnect_transaction_cancel";
+	gboolean ok;
+
+	g_debug( "%s: connect=%p, display_error=%s, msgerr=%p",
+			thisfn, ( void * ) connect, display_error ? "True":"False", ( void * ) msgerr );
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
+
+	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_cancel ){
+		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->transaction_cancel( connect );
+
+	} else {
+		g_info( "%s: ofaIDBConnect's %s implementation does not provide 'transaction_cancel()' method",
+				thisfn, G_OBJECT_TYPE_NAME( connect ));
+		return( FALSE );
+	}
+
+	return( ok );
+}
+
 static sIDBConnect *
 get_idbconnect_data( const ofaIDBConnect *connect )
 {

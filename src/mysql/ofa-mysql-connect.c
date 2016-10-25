@@ -71,6 +71,10 @@ static gboolean idbconnect_create_dossier( const ofaIDBConnect *instance, const 
 static gboolean idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBPeriod *period, const gchar *account, const gchar *password );
 static gchar   *find_new_database( ofaMySQLConnect *connect, const gchar *prev_database );
 static gboolean local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname );
+static gboolean idbconnect_transaction_start( const ofaIDBConnect *instance );
+static gboolean idbconnect_transaction_commit( const ofaIDBConnect *instance );
+static gboolean idbconnect_transaction_cancel( const ofaIDBConnect *instance );
+static gboolean transaction_execute( const ofaIDBConnect *instance, const gchar *thisfn, const gchar *cmd );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLConnect, ofa_mysql_connect, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMySQLConnect )
@@ -164,6 +168,9 @@ idbconnect_iface_init( ofaIDBConnectInterface *iface )
 	iface->archive_and_new = idbconnect_archive_and_new;
 	iface->create_dossier = idbconnect_create_dossier;
 	iface->grant_user = idbconnect_grant_user;
+	iface->transaction_start = idbconnect_transaction_start;
+	iface->transaction_commit = idbconnect_transaction_commit;
+	iface->transaction_cancel = idbconnect_transaction_cancel;
 }
 
 static guint
@@ -701,4 +708,67 @@ local_get_db_exists( ofaMySQLConnect *connect, const gchar *dbname )
 	}
 
 	return( exists );
+}
+
+/*
+ * @instance: a user connection on the DBMS server
+ */
+static gboolean
+idbconnect_transaction_start( const ofaIDBConnect *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_transaction_start";
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+
+	ok = transaction_execute( instance, thisfn, "START TRANSACTION" );
+
+	return( ok );
+}
+
+/*
+ * @instance: a user connection on the DBMS server
+ */
+static gboolean
+idbconnect_transaction_commit( const ofaIDBConnect *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_transaction_commit";
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+
+	ok = transaction_execute( instance, thisfn, "COMMIT" );
+
+	return( ok );
+}
+
+/*
+ * @instance: a user connection on the DBMS server
+ */
+static gboolean
+idbconnect_transaction_cancel( const ofaIDBConnect *instance )
+{
+	static const gchar *thisfn = "ofa_mysql_connect_idbconnect_transaction_cancel";
+	gboolean ok;
+
+	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
+
+	ok = transaction_execute( instance, thisfn, "ROLLBACK" );
+
+	return( ok );
+}
+
+/*
+ * @instance: a user connection on the DBMS server
+ */
+static gboolean
+transaction_execute( const ofaIDBConnect *instance, const gchar *thisfn, const gchar *cmd )
+{
+	gboolean ok;
+
+	g_debug( "%s: instance=%p, cmd='%s'", thisfn, ( void * ) instance, cmd );
+
+	ok = idbconnect_query( instance, cmd );
+
+	return( ok );
 }
