@@ -280,10 +280,12 @@ idialog_iface_init( myIDialogInterface *iface )
 }
 
 /*
- * this dialog is subject to 'is_writable' property
+ * This dialog is subject to 'is_writable' property
  * so first setup the UI fields, then fills them up with the data
  * when entering, only initialization data are set: main_window and
- * entry
+ * entry.
+ *
+ * As of v0.62, update of an #ofaEntry is not handled here.
  */
 static void
 idialog_init( myIDialog *instance )
@@ -302,7 +304,9 @@ idialog_init( myIDialog *instance )
 
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
+	/* v 0.62 */
+	/*priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );*/
+	priv->is_writable = FALSE;
 
 	if( !ofo_entry_get_number( priv->entry )){
 		priv->is_new = TRUE;
@@ -660,77 +664,18 @@ check_for_enable_dlg( ofaEntryProperties *self )
 	}
 }
 
+/*
+ * As of v0.62, update of an #ofaEntry is not handled here
+ */
 static gboolean
 is_dialog_validable( ofaEntryProperties *self )
 {
-#if 0
-	ofaEntryPropertiesPrivate *priv;
-	gboolean ok;
-	gchar *msgerr;
-	ofaHub *hub;
-
-	priv = ofa_entry_properties_get_instance_private( self );
-
-	msgerr = NULL;
-	hub = ofa_igetter_get_hub( priv->getter );
-
-	ok = ofo_entry_is_valid_data( priv->code, priv->label, priv->symbol, priv->digits, &msgerr );
-	if( ok ){
-		exists = ofo_entry_get_by_code( hub, priv->code );
-		ok = !exists ||
-				( !priv->is_new && !g_utf8_collate( priv->code, ofo_entry_get_code( priv->entry )));
-		if( !ok ){
-			msgerr = g_strdup( _( "The entry already exists" ));
-		}
-	}
-
-	set_msgerr( self, msgerr );
-	g_free( msgerr );
-
-	return( ok );
-#endif
-	return( FALSE );
+	return( TRUE );
 }
 
 static gboolean
 do_update( ofaEntryProperties *self, gchar **msgerr )
 {
-#if 0
-	ofaEntryPropertiesPrivate *priv;
-	gchar *prev_code;
-	gboolean ok;
-	ofaHub *hub;
-
-	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-
-	priv = ofa_entry_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
-
-	prev_code = g_strdup( ofo_entry_get_code( priv->entry ));
-
-	ofo_entry_set_code( priv->entry, priv->code );
-	ofo_entry_set_label( priv->entry, priv->label );
-	ofo_entry_set_symbol( priv->entry, priv->symbol );
-	ofo_entry_set_digits( priv->entry, priv->digits );
-	my_utils_container_notes_get( self, entry );
-
-	if( priv->is_new ){
-		ok = ofo_entry_insert( priv->entry, hub );
-		if( !ok ){
-			*msgerr = g_strdup( _( "Unable to create this new entry" ));
-		}
-	} else {
-		ok = ofo_entry_update( priv->entry, prev_code );
-		if( !ok ){
-			*msgerr = g_strdup( _( "Unable to update the entry" ));
-		}
-	}
-
-	g_free( prev_code );
-
-	return( ok );
-#endif
 	return( TRUE );
 }
 
