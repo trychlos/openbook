@@ -993,7 +993,9 @@ get_actions_group_name( const ofaITVColumnable *instance, sITVColumnable *sdata 
 {
 	gchar *group;
 
-	group = g_strdup( my_strlen( sdata->name ) ? sdata->name : G_OBJECT_TYPE_NAME( instance ));
+	group = g_strdup_printf(
+				"%s-ITVColumnable",
+				my_strlen( sdata->name ) ? sdata->name : G_OBJECT_TYPE_NAME( instance ));
 
 	return( group );
 }

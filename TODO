@@ -337,9 +337,6 @@
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
-1221 2016-10- 7 EntryPage: context actions are always disabled but shouldn't)
-     2016-10-11 maybe same that #1234 ?
-
 1223 2016-10- 8 have a daily periodicity (for test use case)
      2016-10-10 or (better): transform the hardcoded class to tables with
                 per-dossier (and suitable defaults) values
@@ -352,11 +349,6 @@
                 For now, they are not reset. On the new exercice, ledgers
                 are displayed with a last closed date in the previous
                 exercice (weird ?)
-
-1234 2016-10-11 RestoreAssistant: the New button is enabled, but not the
-                corresponding menu item
-                (maybe same that #1221 ?)
-     2016-10-19 actually no item context is activated
 
 1235 2016-10-12 begining of the exercice cannot be modified anymore after
                 the first exercice operation
@@ -1826,6 +1818,10 @@
 1220 2016-10- 4 ofa_idate_filter_set_prefs() -> ofa_idate_filter_set_settings_key()
      2016-10- 8 done
 
+1221 2016-10- 7 EntryPage: context actions are always disabled but shouldn't)
+     2016-10-11 maybe same that #1234 ?
+     2016-10-25 fixed
+
 1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
                 not grayed (but should)
      2016-10- 8 fixed
@@ -1868,6 +1864,12 @@
 
 1233 2016-10-11 RestoreAssistant: Button 'ne_w'
      2016-10-11 fixed
+
+1234 2016-10-11 RestoreAssistant: the New button is enabled, but not the
+                corresponding menu item
+                (maybe same that #1221 ?)
+     2016-10-19 actually no item context is activated
+     2016-10-25 fixed
 
 1240 2016-10-20 Stock importers: version label should be "2016.1" instead
                 of 'v 2016.1'

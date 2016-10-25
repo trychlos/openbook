@@ -46,7 +46,7 @@
 
  Bug fixes:
 
-   - 
+   - ofaITVColumnable: defines a dedicated scope (todo #1221, #1234).
 
  Other changes:
 
