@@ -1724,11 +1724,6 @@ do_validate( ofaGuidedInputBin *self )
 		entry = OFO_ENTRY( it->data );
 		ofo_entry_set_ope_number( entry, number );
 		ok &= ofo_entry_insert( entry, priv->hub );
-		/* TODO:
-		 * in case of an error, remove the already recorded entries
-		 * of the list, decrementing the ledgers and the accounts
-		 * then restore the last ecr number of the dossier
-		 */
 	}
 
 	if( ok ){

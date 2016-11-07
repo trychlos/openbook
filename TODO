@@ -334,10 +334,6 @@
 1196 2016- 9-14 FEAT: all printings: let a plugin draw a dossier-specific
                 background
 
-1223 2016-10- 8 have a daily periodicity (for test use case)
-     2016-10-10 or (better): transform the hardcoded class to tables with
-                per-dossier (and suitable defaults) values
-
 1228 2016-10-10 Entry: have a role: exercice_open / exercice_close / normal
                 (may be useful when computing solde of an account)
 
@@ -361,7 +357,9 @@
 1243 2016-10-22 have a command-line tool which displays the version of
                 each of the DBModels of a saved database
 
-1245
+1245 2016-11- 7 Means of paiement page: double click should open properties
+
+1246
 
 -----------------------------------------------------------------------
  DONE
@@ -1826,6 +1824,12 @@
 1222 2016-10- 7 EntryProperties: AccountSelect: non-detail accounts are
                 not grayed (but should)
      2016-10- 8 fixed
+
+1223 2016-10- 8 have a daily periodicity (for test use case)
+     2016-10-10 or (better): transform the hardcoded class to tables with
+                per-dossier (and suitable defaults) values
+     2016-10-26 the periodicity *have* to be hardcoded in order to be able
+                to test the proposed dates
 
 1224 2016-10- 9 review ofsAccountBalance API (removing not used)
      2016-10-11 done
