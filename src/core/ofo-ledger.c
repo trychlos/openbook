@@ -336,7 +336,10 @@ ofo_ledger_get_dataset( ofaHub *hub )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	collection = my_icollector_collection_get( ofa_hub_get_collector( hub ), OFO_TYPE_LEDGER, hub );
-	g_debug( "%s: hub=%p, collection=%p, count=%d", thisfn, hub, collection, g_list_length( collection ));
+
+	if( 0 ){
+		g_debug( "%s: hub=%p, collection=%p, count=%d", thisfn, hub, collection, g_list_length( collection ));
+	}
 
 	return( collection );
 }
@@ -367,9 +370,8 @@ ledger_find_by_mnemo( GList *set, const gchar *mnemo )
 {
 	GList *found;
 
-	g_debug( "ledger_find_by_mnemo: dataset_count=%d", g_list_length( set ));
-	found = g_list_find_custom(
-				set, mnemo, ( GCompareFunc ) ledger_cmp_by_mnemo );
+	found = g_list_find_custom( set, mnemo, ( GCompareFunc ) ledger_cmp_by_mnemo );
+
 	if( found ){
 		g_debug( "ledger_find_by_mnemo: found" );
 		return( OFO_LEDGER( found->data ));
@@ -1795,7 +1797,6 @@ ledger_cmp_by_mnemo( const ofoLedger *a, const gchar *mnemo )
 	const gchar *mnemo_a;
 
 	mnemo_a = ofo_ledger_get_mnemo( a );
-	g_debug( "ledger_cmp_by_mnemo: a=%s, mnemo=%s", mnemo_a, mnemo );
 
 	return( my_collate( mnemo_a, mnemo ));
 }
@@ -2392,7 +2393,6 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 			thisfn, ( void * ) hub, ( void * ) entry, prev_status, new_status, ( void * ) empty );
 
 	mnemo = ofo_entry_get_ledger( entry );
-	g_debug( "%s: ledger=%s", thisfn, mnemo );
 	ledger = ofo_ledger_get_by_mnemo( hub, mnemo );
 	g_return_if_fail( ledger && OFO_IS_LEDGER( ledger ));
 
