@@ -43,6 +43,7 @@
 #include "api/ofo-paimean.h"
 
 #include "core/ofa-paimean-frame-bin.h"
+#include "core/ofa-paimean-properties.h"
 
 #include "ui/ofa-paimean-page.h"
 
@@ -62,6 +63,7 @@ typedef struct {
 
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static GtkWidget *action_page_v_setup_view( ofaActionPage *page );
+static void       on_row_activated( ofaPaimeanFrameBin *bin, ofoPaimean *paimean, ofaPaimeanPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPaimeanPage, ofa_paimean_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaPaimeanPage ))
@@ -154,6 +156,18 @@ action_page_v_setup_view( ofaActionPage *page )
 	priv = ofa_paimean_page_get_instance_private( OFA_PAIMEAN_PAGE( page ));
 
 	priv->fbin = ofa_paimean_frame_bin_new( OFA_IGETTER( page ), priv->settings_prefix );
+	g_signal_connect( priv->fbin, "ofa-activated", G_CALLBACK( on_row_activated ), page );
 
 	return( GTK_WIDGET( priv->fbin ));
+}
+
+static void
+on_row_activated( ofaPaimeanFrameBin *bin, ofoPaimean *paimean, ofaPaimeanPage *self )
+{
+	GtkWindow *toplevel;
+
+	g_return_if_fail( paimean && OFO_IS_PAIMEAN( paimean ));
+
+	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
+	ofa_paimean_properties_run( OFA_IGETTER( self ), toplevel, paimean );
 }

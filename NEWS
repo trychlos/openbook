@@ -48,6 +48,8 @@
  Bug fixes:
 
    - ofaITVColumnable: defines a dedicated scope (todo #1221, #1234).
+   - Fix ledger closing.
+   - Means of paiement page: double-click opens the properties dialog (todo #1245).
 
  Other changes:
 
