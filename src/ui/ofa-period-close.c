@@ -288,11 +288,11 @@ setup_others( ofaPeriodClose *self )
 
 	priv = ofa_period_close_get_instance_private( self );
 
-	priv->accounts_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-accounts" );
-	g_return_if_fail( priv->accounts_btn && GTK_IS_CHECK_BUTTON( priv->accounts_btn ));
-
 	priv->ledgers_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-ledgers" );
 	g_return_if_fail( priv->ledgers_btn && GTK_IS_CHECK_BUTTON( priv->ledgers_btn ));
+
+	priv->accounts_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-accounts" );
+	g_return_if_fail( priv->accounts_btn && GTK_IS_CHECK_BUTTON( priv->accounts_btn ));
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "btn-ok" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));
@@ -410,6 +410,9 @@ on_ok_clicked( GtkButton *button, ofaPeriodClose *self )
 					"period until you fix the errors." ));
 
 	} else if( do_close( self )){
+		gtk_widget_set_sensitive( priv->closing_date, FALSE );
+		gtk_widget_set_sensitive( priv->ledgers_btn, FALSE );
+		gtk_widget_set_sensitive( priv->accounts_btn, FALSE );
 		gtk_widget_set_sensitive( GTK_WIDGET( button ), FALSE );
 		close_btn = gtk_dialog_get_widget_for_response( GTK_DIALOG( self ), GTK_RESPONSE_CANCEL );
 		g_return_if_fail( close_btn && GTK_IS_BUTTON( close_btn ));
