@@ -53,6 +53,7 @@
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
+#include "api/ofo-ledger.h"
 #include "api/ofs-account-balance.h"
 
 /* priv instance data
@@ -2711,6 +2712,7 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 			break;
 	}
 
+	ofo_ledger_get_dataset( hub );
 	ofo_account_update_amounts( account );
 }
 

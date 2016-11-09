@@ -2222,8 +2222,7 @@ ofo_entry_validate_by_ledger( ofaHub *hub, const gchar *mnemo, const GDate *deff
 
 	for( it=dataset ; it ; it=it->next ){
 		entry = OFO_ENTRY( it->data );
-		g_signal_emit_by_name( hub,
-				SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
+		g_signal_emit_by_name( hub, SIGNAL_HUB_STATUS_CHANGE, entry, ENT_STATUS_ROUGH, ENT_STATUS_VALIDATED );
 	}
 
 	ofo_entry_free_dataset( dataset );
@@ -3393,6 +3392,8 @@ hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_st
 					"UPDATE OFA_T_ENTRIES SET ENT_STATUS=%u WHERE ENT_NUMBER=%ld",
 						new_status,
 						ofo_entry_get_number( entry ));
+
+	ofo_ledger_get_dataset( hub );
 
 	if( ofa_idbconnect_query( ofa_hub_get_connect( hub ), query, TRUE )){
 		g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, entry, NULL );
