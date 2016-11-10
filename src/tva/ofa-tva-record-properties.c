@@ -627,12 +627,12 @@ init_correspondence( ofaTVARecordProperties *self )
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	priv->has_correspondence = ofo_tva_form_get_has_correspondence( priv->form );
+
 	if( priv->has_correspondence ){
 		book = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "tva-book" );
 		g_return_if_fail( book && GTK_IS_NOTEBOOK( book ));
 		label = gtk_label_new_with_mnemonic( _( "_Correspondence" ));
 		scrolled = gtk_scrolled_window_new( NULL, NULL );
-		gtk_scrolled_window_set_shadow_type( GTK_SCROLLED_WINDOW( scrolled ), GTK_SHADOW_IN );
 		gtk_notebook_insert_page( GTK_NOTEBOOK( book ), scrolled, label, 3 );
 		priv->corresp_textview = gtk_text_view_new();
 		gtk_text_view_set_left_margin( GTK_TEXT_VIEW( priv->corresp_textview ), 2 );
