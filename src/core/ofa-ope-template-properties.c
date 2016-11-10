@@ -149,7 +149,7 @@ static void      on_help_clicked( GtkButton *btn, ofaOpeTemplateProperties *self
 static void      check_for_enable_dlg( ofaOpeTemplateProperties *self );
 static gboolean  is_dialog_validable( ofaOpeTemplateProperties *self );
 static gboolean  do_update( ofaOpeTemplateProperties *self, gchar **msgerr );
-static void      get_detail_list( ofaOpeTemplateProperties *self, gint row );
+static void      get_detail_list( ofaOpeTemplateProperties *self, gint row, gboolean update );
 static void      set_msgerr( ofaOpeTemplateProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateProperties, ofa_ope_template_properties, GTK_TYPE_DIALOG, 0,
@@ -892,7 +892,7 @@ is_dialog_validable( ofaOpeTemplateProperties *self )
 		count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 		pam_count = 0;
 		for( i=1 ; i<=count ; ++i ){
-			get_detail_list( self, i );
+			get_detail_list( self, i, FALSE );
 			/* get target of mean of paiment */
 			toggle = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
 			if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( toggle ))){
@@ -944,7 +944,7 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 	count = my_igridlist_get_rows_count( MY_IGRIDLIST( self ), GTK_GRID( priv->details_grid ));
 	pam_row = -1;
 	for( i=1 ; i<=count ; ++i ){
-		get_detail_list( self, i );
+		get_detail_list( self, i, TRUE );
 		/* get target of mean of paiment */
 		toggle = gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_PAM, i );
 		if( gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( toggle ))){
@@ -971,7 +971,7 @@ do_update( ofaOpeTemplateProperties *self, gchar **msgerr )
 }
 
 static void
-get_detail_list( ofaOpeTemplateProperties *self, gint row )
+get_detail_list( ofaOpeTemplateProperties *self, gint row, gboolean update )
 {
 	ofaOpeTemplatePropertiesPrivate *priv;
 	GtkEntry *entry;
@@ -1008,12 +1008,14 @@ get_detail_list( ofaOpeTemplateProperties *self, gint row )
 	toggle = GTK_TOGGLE_BUTTON( gtk_grid_get_child_at( GTK_GRID( priv->details_grid ), 1+DET_COL_CREDIT_LOCKED, row ));
 	credit_locked = gtk_toggle_button_get_active( toggle );
 
-	ofo_ope_template_add_detail( priv->ope_template,
-				comment,
-				account, account_locked,
-				label, label_locked,
-				debit, debit_locked,
-				credit, credit_locked );
+	if( update ){
+		ofo_ope_template_add_detail( priv->ope_template,
+					comment,
+					account, account_locked,
+					label, label_locked,
+					debit, debit_locked,
+					credit, credit_locked );
+	}
 }
 
 static void

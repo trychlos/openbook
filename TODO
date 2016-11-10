@@ -357,7 +357,13 @@
 
 1246 2016-11-10 mysql root account could go to settings to be preset in dialogs
 
-1249
+1249 2016-11-10 rec_period_properties: lack of left, right and bottom margins
+
+1251 2016-11-10 myICollector UI has a double frame on the two pages of the book
+
+1252 2016-11-10 unable to display DBMS audit log
+
+1253
 
 -----------------------------------------------------------------------
  DONE
@@ -1898,6 +1904,9 @@
      2016-11-10 done: column header is renamed, and content is completed
 
 1248 2016-11-10 VAT record page: why a non-validated record is n't deletable ?
+     2016-11-10 fixed
+
+1250 2016-11-10 ope_template_properties: cancel doubles the count of rows
      2016-11-10 fixed
 
 -----------------------------------------------------------------------

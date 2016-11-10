@@ -45,6 +45,7 @@
 
  Bug fixes:
 
+   - ofaOpeTemplateProperties: does not double the rows count on Cancel (todo #1250).
    - ofaRecPeriodProperties: does not unref spin adjustment.
    - ofaRecPeriodProperties: fix UI widget name.
    - ofaTVAFormProperties: does not unref spin adjustment.
