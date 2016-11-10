@@ -492,6 +492,7 @@ my_iassistant_set_page_initialized( myIAssistant *instance, GtkWidget *page, gbo
 void
 my_iassistant_set_current_page_complete( myIAssistant *instance, gboolean complete )
 {
+	static const gchar *thisfn = "my_iassistant_set_current_page_complete";
 	sIAssistantInstance *inst_data;
 
 	g_return_if_fail( instance && MY_IS_IASSISTANT( instance ));
@@ -502,6 +503,9 @@ my_iassistant_set_current_page_complete( myIAssistant *instance, gboolean comple
 	if( inst_data->cur_page_widget ){
 		g_return_if_fail( GTK_IS_WIDGET( inst_data->cur_page_widget ));
 		gtk_assistant_set_page_complete( GTK_ASSISTANT( instance ), inst_data->cur_page_widget, complete );
+
+	} else {
+		g_debug( "%s: inst_data->cur_page_widget=%p", thisfn, inst_data->cur_page_widget );
 	}
 }
 

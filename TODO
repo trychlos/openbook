@@ -350,14 +350,18 @@
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
 
-1238 2016-10-19 configure VAT report on VAT declaration (pwi consultants)
-
 1239 2016-10-19 export from EntryPage
 
 1243 2016-10-22 have a command-line tool which displays the version of
                 each of the DBModels of a saved database
 
-1246
+1246 2016-11-10 mysql root account could go to settings to be preset in dialogs
+
+1247 2016-11-10 VAT record page: rename valid column
+
+1248 2016-11-10 VAT record page: why a non-validated record is n't deletable ?
+
+1249
 
 -----------------------------------------------------------------------
  DONE
@@ -1873,6 +1877,9 @@
                 (maybe same that #1221 ?)
      2016-10-19 actually no item context is activated
      2016-10-25 fixed
+
+1238 2016-10-19 configure VAT report on VAT declaration (pwi consultants)
+     2016-11-10 done
 
 1240 2016-10-20 Stock importers: version label should be "2016.1" instead
                 of 'v 2016.1'
