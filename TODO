@@ -359,8 +359,6 @@
 
 1247 2016-11-10 VAT record page: rename valid column
 
-1248 2016-11-10 VAT record page: why a non-validated record is n't deletable ?
-
 1249
 
 -----------------------------------------------------------------------
@@ -1897,6 +1895,9 @@
 
 1245 2016-11- 7 Means of paiement page: double click should open properties
      2016-11- 9 fixed
+
+1248 2016-11-10 VAT record page: why a non-validated record is n't deletable ?
+     2016-11-10 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

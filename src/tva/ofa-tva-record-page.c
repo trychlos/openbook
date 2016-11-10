@@ -383,7 +383,7 @@ check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	priv = ofa_tva_record_page_get_instance_private( self );
 
-	is_record = record && OFO_IS_TVA_FORM( record );
+	is_record = record && OFO_IS_TVA_RECORD( record );
 
 	return( priv->is_writable && is_record && ofo_tva_record_is_deletable( record ));
 }

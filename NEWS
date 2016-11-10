@@ -48,6 +48,7 @@
    - ofaRecPeriodProperties: does not unref spin adjustment.
    - ofaRecPeriodProperties: fix UI widget name.
    - ofaTVAFormProperties: does not unref spin adjustment.
+   - ofaTVARecordPage: fix deletability check (todo #1248).
 
  Other changes:
 
