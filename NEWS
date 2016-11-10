@@ -41,8 +41,9 @@
   
  New features and improvements:
 
-   - ofaTVARecordProperties: remove double correspondence frame.
    - ofaMiscCollector: remove double frame on each pages (todo #1251).
+   - ofaRecPeriodProperties: add missing margins (todo #1249).
+   - ofaTVARecordProperties: remove double correspondence frame.
    - ofaTVARecordStore: complete column content (todo #1247).
    - ofaTVARecordTreeview: rename column header (todo #1247).
 
