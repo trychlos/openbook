@@ -310,7 +310,7 @@ setup_columns( ofaTVARecordTreeview *self )
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_CORRESPONDENCE, _( "Correspondence" ),     NULL );
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_BEGIN,          _( "Begin" ),          _( "Beginning date" ));
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_END,            _( "End" ),            _( "Ending date" ));
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_IS_VALIDATED,   _( "Valid" ),          _( "Validated" ));
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), TVA_RECORD_COL_IS_VALIDATED,   _( "Validated" ),          NULL );
 	ofa_tvbin_add_column_date   ( OFA_TVBIN( self ), TVA_RECORD_COL_DOPE,           _( "Ope" ),            _( "Operation date" ));
 	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES,          _( "Notes" ),              NULL );
 	ofa_tvbin_add_column_pixbuf ( OFA_TVBIN( self ), TVA_RECORD_COL_NOTES_PNG,         "",                 _( "Notes indicator" ));
