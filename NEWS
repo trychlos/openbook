@@ -42,6 +42,9 @@
  New features and improvements:
 
    - ofaTVARecordProperties: remove double correspondence frame.
+   - ofaMiscCollector: remove double frame on each pages (todo #1251).
+   - ofaTVARecordStore: complete column content (todo #1247).
+   - ofaTVARecordTreeview: rename column header (todo #1247).
 
  Bug fixes:
 
@@ -50,8 +53,6 @@
    - ofaRecPeriodProperties: fix UI widget name.
    - ofaTVAFormProperties: does not unref spin adjustment.
    - ofaTVARecordPage: fix deletability check (todo #1248).
-   - ofaTVARecordStore: complete column content (todo #1247).
-   - ofaTVARecordTreeview: rename column header (todo #1247).
 
  Other changes:
 

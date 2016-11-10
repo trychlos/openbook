@@ -359,8 +359,6 @@
 
 1249 2016-11-10 rec_period_properties: lack of left, right and bottom margins
 
-1251 2016-11-10 myICollector UI has a double frame on the two pages of the book
-
 1252 2016-11-10 unable to display DBMS audit log
 
 1253
@@ -1907,6 +1905,9 @@
      2016-11-10 fixed
 
 1250 2016-11-10 ope_template_properties: cancel doubles the count of rows
+     2016-11-10 fixed
+
+1251 2016-11-10 myICollector UI has a double frame on the two pages of the book
      2016-11-10 fixed
 
 -----------------------------------------------------------------------
