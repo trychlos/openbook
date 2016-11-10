@@ -617,6 +617,7 @@ ofo_ope_template_get_upd_stamp( const ofoOpeTemplate *model )
 gboolean
 ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 {
+	static const gchar *thisfn = "ofo_ope_template_is_deletable";
 	ofaHub *hub;
 	gboolean deletable;
 
@@ -628,7 +629,10 @@ ofo_ope_template_is_deletable( const ofoOpeTemplate *model )
 
 	if( hub ){
 		g_signal_emit_by_name( hub, SIGNAL_HUB_DELETABLE, model, &deletable );
-		g_debug( "deletable=%s", deletable ? "True":"False" );
+		if( 0 ){
+			g_debug( "%s: mnemo=%s, deletable=%s",
+					thisfn, ofo_ope_template_get_mnemo( model ), deletable ? "True":"False" );
+		}
 	}
 
 	return( deletable );

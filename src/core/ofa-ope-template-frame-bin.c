@@ -895,12 +895,6 @@ is_delete_allowed( ofaOpeTemplateFrameBin *self, ofoOpeTemplate *template )
 
 	ok = priv->is_writable && template && ofo_ope_template_is_deletable( template );
 
-	if( template ){
-		g_debug( "template=%s, is_deletable=%s",
-				ofo_ope_template_get_mnemo( template ),
-				ofo_ope_template_is_deletable( template ) ? "True":"False" );
-	}
-
 	return( ok );
 }
 
