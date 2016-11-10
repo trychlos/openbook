@@ -116,7 +116,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="p1-count_prompt">
+                      <object class="GtkLabel" id="p1-count-prompt">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="label" translatable="yes">Detail types _count :</property>
