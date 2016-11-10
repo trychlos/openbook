@@ -75,14 +75,14 @@
  *          with the account number from row n° 1.
  *
  * 2/ a reference to a global field of the operation
- *    - 'OPMN':    operation template mnemo
- *    - 'OPLA':    operation template label
- *    - 'LEMN':    ledger mnemo
- *    - 'LELA':    ledger label
- *    - 'REF':     the operation piece reference
+ *    - 'DEFFECT': effect date (format from user preferences)
  *    - 'DOPE':    operation date (format from user preferences)
  *    - 'DOMY':    operation date as Mmm yyyy
- *    - 'DEFFECT': effect date (format from user preferences)
+ *    - 'LELA':    ledger label
+ *    - 'LEMN':    ledger mnemo
+ *    - 'OPLA':    operation template label
+ *    - 'OPMN':    operation template mnemo
+ *    - 'REF':     the operation piece reference
  *    - 'SOLDE':   the solde of the entries debit and credit to balance
  *                 the operation
  *    - 'IDEM':    the content of the same field from the previous row
@@ -91,15 +91,22 @@
  *    shortcut to RATE() function).
  *
  * 3/ a function, arguments being passed between parenthesis:
- *    - 'ACLA()': returns account label
- *    - 'ACCU()': returns account currency
- *    - 'EVAL()': evaluate the result of the operation
- *                may be omitted when in an amount entry
- *    - 'RATE()': evaluates the rate value at the operation date
- *                may be omitted, only using %<rate> if the
- *                'rate' mnemonic is not ambiguous
- *    - 'ACCL()': the closing account for the currency of the specified
- *                account number
+ *    - 'ACCOUNT()': returns account number; same as %Ai
+ *    - 'ACCL()'   : the closing account for the currency of the specified
+ *                   account number
+ *    - 'ACCU()'   : returns account currency
+ *    - 'ACLA()'   : returns account label
+ *    - 'BALCR()'  : returns the account balance if credit, or zero
+ *    - 'BALDB()'  : returns the account balance if debit, or zero
+ *    - 'CREDIT()' : returns credit; same as %Ci
+ *    - 'CREDIT()' : returns credit; same as %Ci
+ *    - 'DEBIT()'  : returns debit; same as %Di
+ *    - 'EVAL()'   : evaluate the result of the operation
+ *                   may be omitted when in an amount entry
+ *    - 'LABEL()'  : returns label; same as %Li
+ *    - 'RATE()'   : evaluates the rate value at the operation date
+ *                   may be omitted, only using %<rate> if the
+ *                   'rate' mnemonic is not ambiguous
  *    The opening parenthesis must immediately follow the function name.
  *    E.g.:
  *    - the '%ACLA(%A1)' (without the quotes) will be substituted with

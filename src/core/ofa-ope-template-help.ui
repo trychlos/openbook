@@ -84,32 +84,38 @@ Tokens are identified by a percent character '%', followed by an uppercase lette
 Tokens may be:
   1/ a reference to another field of the operation;
       these tokens are single-uppercase-letter, immediately followed by the number of the row, counted from 1:
-     - 'Ai': account number
-     - 'Li': label
-     - 'Di': debit
-     - 'Ci': credit
+     - 'Ai'	: account number
+     - 'Li'	: label
+     - 'Di'	: debit
+     - 'Ci'	: credit
      E.g.: the '%A1' string (without the quotes) will be substituted with the account number from row n° 1.
 
  2/ a reference to a global field of the operation
-     - 'OPMN':    operation template mnemo
-     - 'OPLA':    operation template label
-     - 'LEMN':    ledger mnemo
-     - 'LELA':    ledger label
-     - 'REF':     the operation piece reference
-     - 'DOPE':    operation date (format from user preferences)
-     - 'DOMY':    operation date as mmm yyyy
-     - 'DEFFECT': effect date (format from user preferences)
-     - 'SOLDE':   the solde of the entries debit and credit to balance the operation
-     - 'IDEM':    the content of the same field from the previous row
+     - 'DEFFECT'	: effect date (format from user preferences)
+     - 'DOMY'		: operation date as mmm yyyy
+     - 'DOPE'		: operation date (format from user preferences)
+     - 'IDEM'		: the content of the same field from the previous row
+     - 'LELA'		: ledger label
+     - 'LEMN'		: ledger mnemo
+     - 'OPLA'		: operation template label
+     - 'OPMN'		: operation template mnemo
+     - 'REF'		: the operation piece reference
+     - 'SOLDE'		: the solde of the entries debit and credit to balance the operation
 
 Other keywords are searched as rate mnemonics (as a convenient shortcut to RATE() function).
 
  3/ a function, arguments being passed between parenthesis:
-     - 'ACLA()': returns account label
-     - 'ACCU()': returns account currency
-     - 'EVAL()': evaluate the result of the operation ; may be omitted when in an amount entry
-     - 'RATE()': evaluates the rate value at the operation date ; may be omitted, only using %&lt;rate&gt; if the 'rate' mnemonic is not ambiguous
-     - 'ACCL()': the closing account for the currency of the specified account number
+     - 'ACCL(&lt;account_id&gt;)'	: returns the closing account identifier for the currency of the &lt;account_id&gt; account
+     - 'ACCOUNT(&lt;i&gt;)'		: returns the account identifier from the &lt;i&gt; row ; is the same than %Ai
+     - 'ACCU(&lt;account_id&gt;)'	: returns the account currency
+     - 'ACLA(&lt;account_id&gt;)'	: returns the account label
+     - 'BALCR(&lt;account_id&gt;)'	: returns the balance of the account if it is credit, or zero
+     - 'BALDB(&lt;account_id&gt;)'	: returns the balance of the account if it is debit, or zero
+     - 'CREDIT(&lt;i&gt;)'			: returns the credit amount from the &lt;i&gt; row ; is the same than %Ci
+     - 'DEBIT(&lt;i&gt;)'			: returns the debit amount from the &lt;i&gt; row ; is the same than %Di
+     - 'EVAL()'				: evaluate the result of the operation ; may be omitted when in an amount entry
+     - 'LABEL(&lt;i&gt;)'			: returns the label from the &lt;i&gt; row ; is the same than %Li
+     - 'RATE(&lt;rate_id&gt;)'		: evaluates the rate value at the operation date ; may be omitted, only using %&lt;rate_id&gt; if the 'rate' mnemonic is not ambiguous
 
     The opening parenthesis must immediately follow the function name.
     E.g.:

@@ -1229,9 +1229,8 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
 		if( ofo_tva_form_detail_get_has_amount( priv->form, rec_idx )){
 			amount = ofo_tva_record_detail_get_amount( priv->tva_record, rec_idx );
 			cstr = ofo_tva_form_detail_get_template( priv->form, rec_idx );
-			g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
-
 			if( amount > 0 && my_strlen( cstr )){
+				g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
 				done = FALSE;
 				template = ofo_ope_template_get_by_mnemo( hub, cstr );
 				g_return_val_if_fail( template && OFO_IS_OPE_TEMPLATE( template ), FALSE );

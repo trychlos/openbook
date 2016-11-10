@@ -111,6 +111,8 @@ static gchar           *eval_accl( ofsFormulaHelper *helper );
 static gchar           *eval_accu( ofsFormulaHelper *helper );
 static gchar           *eval_acla( ofsFormulaHelper *helper );
 static gchar           *eval_amount( ofsFormulaHelper *helper );
+static gchar           *eval_balcr( ofsFormulaHelper *helper );
+static gchar           *eval_baldb( ofsFormulaHelper *helper );
 static gchar           *eval_code( ofsFormulaHelper *helper );
 static gchar           *eval_credit( ofsFormulaHelper *helper );
 static gchar           *eval_debit( ofsFormulaHelper *helper );
@@ -145,6 +147,8 @@ static const sEvalDef st_formula_fns[] = {
 		{ "ACCU",    1, 1, eval_accu },
 		{ "ACLA",    1, 1, eval_acla },
 		{ "AMOUNT",  1, 1, eval_amount },
+		{ "BALCR",   1, 1, eval_balcr },
+		{ "BALDB",   1, 1, eval_baldb },
 		{ "CODE",    1, 1, eval_code },
 		{ "CREDIT",  1, 1, eval_credit },
 		{ "DEBIT",   1, 1, eval_debit },
@@ -628,6 +632,72 @@ eval_amount( ofsFormulaHelper *helper )
 		a = g_strtod( cstr, NULL );
 		res = g_strdup_printf( "%lf", 1.1 * a );
 	}
+
+	return( res );
+}
+
+/*
+ * %BALCR(<account_id>)
+ * Returns: the balance of the account if credit, or zero
+ * i.e. if credit > debit, returns credit - debit,
+ *      else returns zero
+ */
+static gchar *
+eval_balcr( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofaHub *hub;
+	ofoAccount *account;
+	ofxAmount solde;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	solde = 0;
+	if( account ){
+		solde = ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account )
+				- ofo_account_get_val_debit( account ) - ofo_account_get_rough_debit( account );
+		if( solde < 0 ){
+			solde = 0;
+		}
+	}
+	res = ofa_amount_to_str( solde, NULL );
+
+	return( res );
+}
+
+/*
+ * %BALCR(<account_id>)
+ * Returns: the balance of the account if debit, or zero
+ * i.e. if debit > credit, returns debit - credit,
+ *      else returns zero
+ */
+static gchar *
+eval_baldb( ofsFormulaHelper *helper )
+{
+	gchar *res;
+	GList *it;
+	const gchar *cstr;
+	ofaHub *hub;
+	ofoAccount *account;
+	ofxAmount solde;
+
+	it = helper->args_list;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	account = ( hub && my_strlen( cstr )) ? ofo_account_get_by_number( hub, cstr ) : NULL;
+	solde = 0;
+	if( account ){
+		solde = ofo_account_get_val_credit( account ) + ofo_account_get_rough_credit( account )
+				- ofo_account_get_val_debit( account ) - ofo_account_get_rough_debit( account );
+		if( solde < 0 ){
+			solde = 0;
+		}
+	}
+	res = ofa_amount_to_str( solde, NULL );
 
 	return( res );
 }

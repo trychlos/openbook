@@ -359,7 +359,12 @@
 
 1252 2016-11-10 unable to display DBMS audit log
 
-1253
+1253 2016-11-10 review the dynamic of the VAT declaration:
+                - compute
+                - generate operations at a given date: cannot compute anymore
+                - validate: cannot do anything anymore
+
+1254
 
 -----------------------------------------------------------------------
  DONE
