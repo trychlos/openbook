@@ -320,11 +320,6 @@
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
-1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
-     2016-10- 9 Review layout with: the content area + the last update line
-                + the separator + the error message between the separator
-                and the action area
-
 1192 2016- 9-14 FEAT: export the balance for a period
 
 1194 2016- 9-14 ViewEntries: the effect dates filter frame should expand
@@ -358,10 +353,6 @@
 1246 2016-11-10 mysql root account could go to settings to be preset in dialogs
 
 1252 2016-11-10 unable to display DBMS audit log
-
-1254 2016-11-13 remove the window_save_position by window+identifier
-                replacing it by a small shift if another window of the
-                same class already exists
 
 1255 2016-11-13 have a setting per dossier to automatize backups path and name
 
@@ -1680,6 +1671,12 @@
                 already opened.
      2016-10- 4 fixed
 
+1184 2016- 8-23 Add a separator in all dialog boxes (as in DossierManager)
+     2016-10- 9 Review layout with: the content area + the last update line
+                + the separator + the error message between the separator
+                and the action area
+     2016-11-14 done
+
 1185 2016- 8-23 DossierTreeview: some columns have no sense depending of
                 the filter (do not allow to display them)
      2016-10- 4 fixed
@@ -1922,6 +1919,11 @@
                 - generate operations at a given date
                 - validate: cannot do anything anymore
      2016-11-14 done
+
+1254 2016-11-13 remove the window_save_position by window+identifier
+                replacing it by a small shift if another window of the
+                same class already exists
+     2016-11-14 cancelled
 
 1256 2016-11-13 AccountProperties: "Account identifier '(null)' is too short"
      2016-11-14 fixed

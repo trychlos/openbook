@@ -48,6 +48,7 @@
    - ofaTVARecordProperties: review the validation dynamics (todo #1253).
    - ofaTVARecordStore: complete column content (todo #1247).
    - ofaTVARecordTreeview: rename column header (todo #1247).
+   - UI: review dialog boxes layout (todo #1184).
 
  Bug fixes:
 
