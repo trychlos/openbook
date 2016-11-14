@@ -69,10 +69,14 @@ typedef struct {
  *                                                             -------  -----------
  * @AUDIT_COL_DATE         : timestamp                         String       Yes
  * @AUDIT_COL_QUERY        : query                             String       Yes
+ * @AUDIT_COL_LINENUM      : line number                       String       Yes
+ * @AUDIT_COL_LINENUM_I    : line number                       Int          No
  */
 enum {
 	AUDIT_COL_DATE = 0,
 	AUDIT_COL_QUERY,
+	AUDIT_COL_LINENUM,
+	AUDIT_COL_LINENUM_I,
 	AUDIT_N_COLUMNS
 };
 

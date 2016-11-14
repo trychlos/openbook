@@ -60,12 +60,13 @@ typedef struct {
 	sAudit;
 
 static GType st_col_types[AUDIT_N_COLUMNS] = {
-	G_TYPE_STRING, G_TYPE_STRING					/* date, command */
+	G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING,			/* date, command, linenum */
+	G_TYPE_INT												/* linenum_i */
 };
 
 static GList *load_dataset( ofaMiscAuditStore *self, guint pageno );
-static void   insert_row( ofaMiscAuditStore *self, sAudit *audit );
-static void   set_row_by_iter( ofaMiscAuditStore *self, GtkTreeIter *iter, sAudit *audit );
+static void   insert_row( ofaMiscAuditStore *self, guint lineno, sAudit *audit );
+static void   set_row_by_iter( ofaMiscAuditStore *self, GtkTreeIter *iter, guint lineno, sAudit *audit );
 static void   audit_free( sAudit *audit );
 
 G_DEFINE_TYPE_EXTENDED( ofaMiscAuditStore, ofa_misc_audit_store, OFA_TYPE_LIST_STORE, 0,
@@ -204,6 +205,7 @@ ofa_misc_audit_store_load_lines( ofaMiscAuditStore *store, guint page_num )
 {
 	ofaMiscAuditStorePrivate *priv;
 	GList *dataset, *it;
+	guint lineno;
 
 	g_return_if_fail( store && OFA_IS_MISC_AUDIT_STORE( store ));
 
@@ -214,8 +216,10 @@ ofa_misc_audit_store_load_lines( ofaMiscAuditStore *store, guint page_num )
 	gtk_list_store_clear( GTK_LIST_STORE( store ));
 
 	dataset = load_dataset( store, page_num );
+	lineno = ( page_num - 1 ) * priv->page_size;
+
 	for( it=dataset ; it ; it=it->next ){
-		insert_row( store, ( sAudit * ) it->data );
+		insert_row( store, lineno++, ( sAudit * ) it->data );
 	}
 
 	g_list_free_full( dataset, ( GDestroyNotify ) audit_free );
@@ -237,7 +241,7 @@ load_dataset( ofaMiscAuditStore *self, guint pageno )
 	connect = ofa_hub_get_connect( priv->hub );
 
 	query = g_strdup_printf(
-					"SELECT AUD_STAMP,AUD_QUERY FROM OFA_T_AUDIT LIMIT %u,%u",
+					"SELECT AUD_STAMP,AUD_QUERY FROM OFA_T_AUDIT ORDER BY AUD_STAMP ASC LIMIT %u,%u",
 					(( pageno-1) * priv->page_size ), priv->page_size );
 
 	if( ofa_idbconnect_query_ex( connect, query, &result, TRUE )){
@@ -253,27 +257,35 @@ load_dataset( ofaMiscAuditStore *self, guint pageno )
 	}
 	g_free( query );
 
-	return( dataset );
+	return( g_list_reverse( dataset ));
 }
 
 static void
-insert_row( ofaMiscAuditStore *self, sAudit *audit )
+insert_row( ofaMiscAuditStore *self, guint lineno, sAudit *audit )
 {
 	GtkTreeIter iter;
 
 	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
-	set_row_by_iter( self, &iter, audit );
+	set_row_by_iter( self, &iter, lineno, audit );
 }
 
 static void
-set_row_by_iter( ofaMiscAuditStore *self, GtkTreeIter *iter, sAudit *audit )
+set_row_by_iter( ofaMiscAuditStore *self, GtkTreeIter *iter, guint lineno, sAudit *audit )
 {
+	gchar *snum;
+
+	snum = g_strdup_printf( "%u", lineno );
+
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			AUDIT_COL_DATE,  audit->stamp,
-			AUDIT_COL_QUERY, audit->query,
+			AUDIT_COL_DATE,      audit->stamp,
+			AUDIT_COL_QUERY,     audit->query,
+			AUDIT_COL_LINENUM,   snum,
+			AUDIT_COL_LINENUM_I, lineno,
 			-1 );
+
+	g_free( snum );
 }
 
 static void

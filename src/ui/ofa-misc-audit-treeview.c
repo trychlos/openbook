@@ -191,8 +191,9 @@ setup_columns( ofaMiscAuditTreeview *self )
 
 	g_debug( "%s: self=%p", thisfn, ( void * ) self );
 
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), AUDIT_COL_DATE,  _( "Timestamp" ),  NULL);
-	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), AUDIT_COL_QUERY, _( "Query" ),      NULL );
+	ofa_tvbin_add_column_text   ( OFA_TVBIN( self ), AUDIT_COL_DATE,    _( "Timestamp" ),  NULL);
+	ofa_tvbin_add_column_text_rx( OFA_TVBIN( self ), AUDIT_COL_QUERY,   _( "Query" ),      NULL );
+	ofa_tvbin_add_column_int    ( OFA_TVBIN( self ), AUDIT_COL_LINENUM, _( "Line" ),       NULL );
 
 	ofa_itvcolumnable_set_default_column( OFA_ITVCOLUMNABLE( self ), AUDIT_COL_QUERY );
 }
@@ -202,9 +203,12 @@ setup_columns( ofaMiscAuditTreeview *self )
  * @view: this #ofaMiscAuditTreeview instance.
  * @hub: the #ofaHub of the application.
  *
- * Create the store which automatically loads the dataset.
+ * Create the store which automatically loads the first page of the
+ * dataset.
+ *
+ * Returns: the #ofaMiscAuditStore instance.
  */
-void
+ofaMiscAuditStore *
 ofa_misc_audit_treeview_setup_store( ofaMiscAuditTreeview *view, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_misc_audit_treeview_setup_store";
@@ -212,12 +216,12 @@ ofa_misc_audit_treeview_setup_store( ofaMiscAuditTreeview *view, ofaHub *hub )
 
 	g_debug( "%s: view=%p, hub=%p", thisfn, ( void * ) view, ( void * ) hub );
 
-	g_return_if_fail( view && OFA_IS_MISC_AUDIT_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	g_return_val_if_fail( view && OFA_IS_MISC_AUDIT_TREEVIEW( view ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	priv = ofa_misc_audit_treeview_get_instance_private( view );
 
-	g_return_if_fail( !priv->dispose_has_run );
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	if( !priv->store ){
 		priv->store = ofa_misc_audit_store_new( hub );
@@ -225,6 +229,8 @@ ofa_misc_audit_treeview_setup_store( ofaMiscAuditTreeview *view, ofaHub *hub )
 	}
 
 	gtk_widget_show_all( GTK_WIDGET( view ));
+
+	return( priv->store );
 }
 
 static gint
@@ -234,15 +240,18 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	gint cmp;
 	gchar *data, *quea;
 	gchar *datb, *queb;
+	guint numa, numb;
 
 	gtk_tree_model_get( tmodel, a,
-			AUDIT_COL_DATE,  &data,
-			AUDIT_COL_QUERY, &quea,
+			AUDIT_COL_DATE,      &data,
+			AUDIT_COL_QUERY,     &quea,
+			AUDIT_COL_LINENUM_I, &numa,
 			-1 );
 
 	gtk_tree_model_get( tmodel, b,
-			AUDIT_COL_DATE,  &datb,
-			AUDIT_COL_QUERY, &queb,
+			AUDIT_COL_DATE,      &datb,
+			AUDIT_COL_QUERY,     &queb,
+			AUDIT_COL_LINENUM_I, &numb,
 			-1 );
 
 	cmp = 0;
@@ -253,6 +262,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			break;
 		case AUDIT_COL_QUERY:
 			cmp = my_collate( quea, queb );
+			break;
+		case AUDIT_COL_LINENUM:
+			cmp = numa < numb ? -1 : ( numa > numb ? 1 : 0 );
 			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );

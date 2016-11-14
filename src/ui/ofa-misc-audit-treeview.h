@@ -68,7 +68,7 @@ void                  ofa_misc_audit_treeview_set_settings_key( ofaMiscAuditTree
 
 void                  ofa_misc_audit_treeview_setup_columns   ( ofaMiscAuditTreeview *view );
 
-void                  ofa_misc_audit_treeview_setup_store     ( ofaMiscAuditTreeview *view,
+ofaMiscAuditStore    *ofa_misc_audit_treeview_setup_store     ( ofaMiscAuditTreeview *view,
 																	ofaHub *hub );
 
 G_END_DECLS
