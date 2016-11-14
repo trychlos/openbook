@@ -479,8 +479,8 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 {
 	static const gchar *thisfn = "ofa_recurrent_model_treeview_v_sort";
 	gint cmp;
-	gchar *mnemoa, *labela, *templa, *pera, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa;
-	gchar *mnemob, *labelb, *templb, *perb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb;
+	gchar *mnemoa, *labela, *templa, *pera, *amount1a, *amount2a, *amount3a, *notesa, *updusera, *updstampa, *enaa;
+	gchar *mnemob, *labelb, *templb, *perb, *amount1b, *amount2b, *amount3b, *notesb, *upduserb, *updstampb, *enab;
 	GdkPixbuf *pnga, *pngb;
 	ofxCounter perdeta, perdetb;
 
@@ -493,6 +493,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1a,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2a,
 			REC_MODEL_COL_DEF_AMOUNT3,        &amount3a,
+			REC_MODEL_COL_ENABLED,            &enaa,
 			REC_MODEL_COL_NOTES,              &notesa,
 			REC_MODEL_COL_NOTES_PNG,          &pnga,
 			REC_MODEL_COL_UPD_USER,           &updusera,
@@ -508,6 +509,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			REC_MODEL_COL_DEF_AMOUNT1,        &amount1b,
 			REC_MODEL_COL_DEF_AMOUNT2,        &amount2b,
 			REC_MODEL_COL_DEF_AMOUNT3,        &amount3b,
+			REC_MODEL_COL_ENABLED,            &enab,
 			REC_MODEL_COL_NOTES,              &notesb,
 			REC_MODEL_COL_NOTES_PNG,          &pngb,
 			REC_MODEL_COL_UPD_USER,           &upduserb,
@@ -541,6 +543,9 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 		case REC_MODEL_COL_DEF_AMOUNT3:
 			cmp = my_collate( amount3a, amount3b );
 			break;
+		case REC_MODEL_COL_ENABLED:
+			cmp = my_collate( enaa, enab );
+			break;
 		case REC_MODEL_COL_NOTES:
 			cmp = my_collate( notesa, notesb );
 			break;
@@ -565,6 +570,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( amount1a );
 	g_free( amount2a );
 	g_free( amount3a );
+	g_free( enaa );
 	g_free( notesa );
 	g_free( updusera );
 	g_free( updstampa );
@@ -577,6 +583,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 	g_free( amount1b );
 	g_free( amount2b );
 	g_free( amount3b );
+	g_free( enab );
 	g_free( notesb );
 	g_free( upduserb );
 	g_free( updstampb );
