@@ -196,6 +196,8 @@ openbook_SOURCES = \
 	ofa-main-window-def.h								\
 	ofa-misc-audit-item.c								\
 	ofa-misc-audit-item.h								\
+	ofa-misc-audit-store.c								\
+	ofa-misc-audit-store.h								\
 	ofa-misc-audit-ui.c									\
 	ofa-misc-audit-ui.h									\
 	ofa-misc-collector-item.c							\

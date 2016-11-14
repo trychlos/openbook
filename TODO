@@ -293,11 +293,8 @@
 1102 2016- 5- 1 my_utils_widget_style_xx: is not consistent with a CSS
                 file in the application directory layout
 
-1110 2016- 5- 5 BUG GuidedEx: when drag and drop page - see TODO_1110/trace
+1110 2016- 5- 5 BUG DnD: when drag and drop page - see TODO_1110/trace
                 gdk_window_move_resize_internal: assertion 'GDK_IS_WINDOW (window)' failed
-
-1142 2016- 6- 5 BUG when quitting the application
-                (see TODO_1142/trace)
 
 1147 2016- 6- 8 UserPref: whether to take advantage of tab reordering
                 or of detachable pages in the main book as the two are
@@ -1491,6 +1488,10 @@
 1141 2016- 6- 5 RecurrentModelManagement: treeview column headers should
                 be Edit. 1/2/3 rather than Def. 1/2/3
      2016- 6- 5 done
+
+1142 2016- 6- 5 BUG when quitting the application
+                (see TODO_1142/trace)
+     2016-11-14 cancelled (not reproduced application bug)
 
 1143 2016- 6- 5 VAT declarations: make each treeview column sortable
      2016- 6- 7 done
