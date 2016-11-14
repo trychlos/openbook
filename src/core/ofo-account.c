@@ -837,7 +837,11 @@ ofo_account_is_valid_data( const gchar *number, const gchar *label, const gchar 
 	 */
 	if( my_strlen( number ) < 2 ){
 		if( msgerr ){
-			*msgerr = g_strdup_printf( _( "Account identifier '%s' is too short" ), number );
+			if( !my_strlen( number )){
+				*msgerr = g_strdup( _( "Account identifier is not set" ));
+			} else {
+				*msgerr = g_strdup_printf( _( "Account identifier '%s' is too short" ), number );
+			}
 		}
 		return( FALSE );
 	}

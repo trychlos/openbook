@@ -365,8 +365,6 @@
 
 1255 2016-11-13 have a setting per dossier to automatize backups path and name
 
-1256 2016-11-13 AccountProperties: "Account identifier '(null)' is too short"
-
 1258
 
 -----------------------------------------------------------------------
@@ -1924,6 +1922,9 @@
                 - generate operations at a given date
                 - validate: cannot do anything anymore
      2016-11-14 done
+
+1256 2016-11-13 AccountProperties: "Account identifier '(null)' is too short"
+     2016-11-14 fixed
 
 1257 2016-11-13 RecurrentModelManagement: enabled column is not sorted
      2016-11-14 fixed

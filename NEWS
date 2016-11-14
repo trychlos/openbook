@@ -51,6 +51,7 @@
 
  Bug fixes:
 
+   - ofaAccountProperties: fix error message when identifier is empty (todo #1256).
    - ofaOpeTemplateProperties: does not double the rows count on Cancel (todo #1250).
    - ofaRecPeriodProperties: does not unref spin adjustment.
    - ofaRecPeriodProperties: fix UI widget name.
