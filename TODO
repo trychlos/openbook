@@ -359,12 +359,17 @@
 
 1252 2016-11-10 unable to display DBMS audit log
 
-1253 2016-11-10 review the dynamic of the VAT declaration:
-                - compute
-                - generate operations at a given date: cannot compute anymore
-                - validate: cannot do anything anymore
+1254 2016-11-13 remove the window_save_position by window+identifier
+                replacing it by a small shift if another window of the
+                same class already exists
 
-1254
+1255 2016-11-13 have a setting per dossier to automatize backups path and name
+
+1256 2016-11-13 AccountProperties: "Account identifier '(null)' is too short"
+
+1257 2016-11-13 RecurrentModelManagement: enabled column is not sorted
+
+1258
 
 -----------------------------------------------------------------------
  DONE
@@ -1915,6 +1920,12 @@
 
 1251 2016-11-10 myICollector UI has a double frame on the two pages of the book
      2016-11-10 fixed
+
+1253 2016-11-10 review the dynamic of the VAT declaration:
+                - compute
+                - generate operations at a given date
+                - validate: cannot do anything anymore
+     2016-11-14 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

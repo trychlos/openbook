@@ -83,6 +83,7 @@ typedef struct {
 	GtkWidget    *corresp_textview;
 	GtkWidget    *notes_textview;
 	GtkWidget    *compute_btn;
+	GtkWidget    *generate_btn;
 	GtkWidget    *validate_btn;
 	GtkWidget    *ok_btn;
 	GtkWidget    *msg_label;
@@ -156,8 +157,10 @@ static gchar           *eval_amount( ofsFormulaHelper *helper );
 static gchar           *eval_balance( ofsFormulaHelper *helper );
 static gchar           *eval_base( ofsFormulaHelper *helper );
 static gchar           *eval_code( ofsFormulaHelper *helper );
+static void             on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self );
+static gboolean         do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count, guint *ent_count );
 static void             on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self );
-static gboolean         do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr );
+static gboolean         confirm_validate( ofaTVARecordProperties *self );
 static void             set_msgerr( ofaTVARecordProperties *self, const gchar *msg );
 static void             set_msgwarn( ofaTVARecordProperties *self, const gchar *msg );
 
@@ -349,6 +352,10 @@ idialog_init( myIDialog *instance )
 	priv->compute_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "compute-btn" );
 	g_return_if_fail( priv->compute_btn && GTK_IS_BUTTON( priv->compute_btn ));
 	g_signal_connect( priv->compute_btn, "clicked", G_CALLBACK( on_compute_clicked ), instance );
+
+	priv->generate_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "generate-btn" );
+	g_return_if_fail( priv->generate_btn && GTK_IS_BUTTON( priv->generate_btn ));
+	g_signal_connect( priv->generate_btn, "clicked", G_CALLBACK( on_generate_clicked ), instance );
 
 	priv->validate_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "validate-btn" );
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
@@ -701,13 +708,15 @@ on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self )
 }
 
 /*
- * must have both begin and end dates to validate it
+ * - must have both begin and end dates to be able to compute the declaration
+ * - must have an operation date to generate the operations
+ * - is validable at any time
  */
 static void
 check_for_enable_dlg( ofaTVARecordProperties *self )
 {
 	ofaTVARecordPropertiesPrivate *priv;
-	gboolean is_valid, is_validable, is_computable;
+	gboolean is_valid, is_computable, is_validable;
 	gchar *msgerr;
 	ofaHub *hub;
 
@@ -746,13 +755,14 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 		msgerr = NULL;
 
 		/* beginning from this, messages should be treated as warnings */
+		/* here, validable means that we are able to generate operations */
 		if( is_computable ){
 			is_validable = ofo_tva_record_is_validable(
 					priv->mnemo, &priv->begin_date, &priv->end_date, &priv->dope_date, &msgerr );
 		}
 
 		gtk_widget_set_sensitive(
-				priv->validate_btn,
+				priv->generate_btn,
 				priv->is_writable && is_valid && is_validable );
 
 		set_msgwarn( self, msgerr );
@@ -760,6 +770,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 
 	} else {
 		gtk_widget_set_sensitive( priv->compute_btn, FALSE );
+		gtk_widget_set_sensitive( priv->generate_btn, FALSE );
 		gtk_widget_set_sensitive( priv->validate_btn, FALSE );
 	}
 }
@@ -1165,29 +1176,21 @@ eval_code( ofsFormulaHelper *helper )
 }
 
 /*
- * Validating is actually same than recording;
- * just the 'validated' flag is set
+ * generate the operations
  */
 static void
-on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
+on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
-	ofaTVARecordPropertiesPrivate *priv;
-	gchar *msgerr;
-
-	priv = ofa_tva_record_properties_get_instance_private( self );
+	gchar *msgerr, *msg;
+	guint ope_count, ent_count;
 
 	setup_tva_record( self );
-	ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
 
-	if( do_generate_opes( self, &msgerr ) &&
-			do_update_dbms( self, &msgerr )){
-
-		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO,
-				_( "The VAT declaration has been successfully validated." ));
-
-		/* close the Properties dialog box
-		 * with Cancel for not trigger another update */
-		my_iwindow_close( MY_IWINDOW( self ));
+	if( do_generate_opes( self, &msgerr, &ope_count, &ent_count )){
+		msg = g_strdup_printf(
+				_( "%u operations successfully generated (%u entries)" ), ope_count, ent_count );
+		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, msg );
+		g_free( msg );
 
 	} else {
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
@@ -1202,7 +1205,7 @@ on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
  * first of available debit/credit.
  */
 static gboolean
-do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
+do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count, guint *ent_count )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_do_generate_opes";
 	ofaTVARecordPropertiesPrivate *priv;
@@ -1223,7 +1226,8 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	dossier = ofa_hub_get_dossier( hub );
-
+	*ope_count = 0;
+	*ent_count = 0;
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
 	for( rec_idx=0 ; rec_idx < count ; ++rec_idx ){
 		if( ofo_tva_form_detail_get_has_amount( priv->form, rec_idx )){
@@ -1282,9 +1286,11 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
 							entry = OFO_ENTRY( it->data );
 							ofo_entry_set_ope_number( entry, ope_number );
 							ofo_entry_insert( entry, hub );
+							*ent_count += 1;
 						}
 						g_list_free_full( entries, ( GDestroyNotify ) g_object_unref );
 						ofo_tva_record_detail_set_ope_number( priv->tva_record, rec_idx, ope_number );
+						*ope_count += 1;
 					}
 				}
 				ofs_ope_free( ope );
@@ -1293,6 +1299,54 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr )
 	}
 
 	return( TRUE );
+}
+
+/*
+ * Validating is actually same than recording;
+ * just the 'validated' flag is set
+ * After validation, the VAT declaration record is no more modifyable
+ */
+static void
+on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	gchar *msgerr;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	if( confirm_validate( self )){
+		setup_tva_record( self );
+		ofo_tva_record_set_is_validated( priv->tva_record, TRUE );
+
+		if( do_update_dbms( self, &msgerr )){
+
+			my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO,
+					_( "The VAT declaration has been successfully validated." ));
+
+			/* close the Properties dialog box
+			 * with Cancel for not trigger another update */
+			my_iwindow_close( MY_IWINDOW( self ));
+
+		} else {
+			my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
+			g_free( msgerr );
+		}
+	}
+}
+
+static gboolean
+confirm_validate( ofaTVARecordProperties *self )
+{
+	gboolean ok;
+
+	ok = my_utils_dialog_question(
+				_( "You are about to validate the VAT declaration.\n"
+					"After this validation, the declaration will not be modifiable anymore,"
+					"and you will not be able to generate the VAT accounting operations.\n"
+					"Are you sure ?" ),
+				_( "_Validate" ));
+
+	return( ok );
 }
 
 static void
