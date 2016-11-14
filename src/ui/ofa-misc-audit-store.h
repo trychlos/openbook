@@ -68,11 +68,11 @@ typedef struct {
  *                                                             Type     in treeview
  *                                                             -------  -----------
  * @AUDIT_COL_DATE         : timestamp                         String       Yes
- * @AUDIT_COL_COMMAND      : command                           String       Yes
+ * @AUDIT_COL_QUERY        : query                             String       Yes
  */
 enum {
 	AUDIT_COL_DATE = 0,
-	AUDIT_COL_COMMAND,
+	AUDIT_COL_QUERY,
 	AUDIT_N_COLUMNS
 };
 

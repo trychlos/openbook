@@ -63,6 +63,7 @@
  Other changes:
 
    - ofaMiscAuditStore: new class.
+   - ofaMiscAuditTreeview: new class.
 
 -----------------------------------------------------------------------
  Version 0.62

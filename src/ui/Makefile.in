@@ -171,7 +171,8 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-ledger-summary-render.$(OBJEXT) \
 	ofa-ledger-treeview.$(OBJEXT) ofa-main-window.$(OBJEXT) \
 	ofa-misc-audit-item.$(OBJEXT) ofa-misc-audit-store.$(OBJEXT) \
-	ofa-misc-audit-ui.$(OBJEXT) ofa-misc-collector-item.$(OBJEXT) \
+	ofa-misc-audit-treeview.$(OBJEXT) ofa-misc-audit-ui.$(OBJEXT) \
+	ofa-misc-collector-item.$(OBJEXT) \
 	ofa-misc-collector-ui.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) ofa-paimean-page.$(OBJEXT) \
 	ofa-period-close.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
@@ -619,6 +620,8 @@ openbook_SOURCES = \
 	ofa-misc-audit-item.h								\
 	ofa-misc-audit-store.c								\
 	ofa-misc-audit-store.h								\
+	ofa-misc-audit-treeview.c							\
+	ofa-misc-audit-treeview.h							\
 	ofa-misc-audit-ui.c									\
 	ofa-misc-audit-ui.h									\
 	ofa-misc-collector-item.c							\
@@ -843,6 +846,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-main-window.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-audit-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-audit-store.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-audit-treeview.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-audit-ui.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-misc-collector-ui.Po@am__quote@

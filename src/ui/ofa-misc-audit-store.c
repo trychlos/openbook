@@ -271,8 +271,8 @@ set_row_by_iter( ofaMiscAuditStore *self, GtkTreeIter *iter, sAudit *audit )
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
 			iter,
-			AUDIT_COL_DATE,    audit->stamp,
-			AUDIT_COL_COMMAND, audit->query,
+			AUDIT_COL_DATE,  audit->stamp,
+			AUDIT_COL_QUERY, audit->query,
 			-1 );
 }
 
