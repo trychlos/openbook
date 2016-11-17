@@ -41,6 +41,7 @@
     <file>ofa-reconcil-page.ui</file>
     <file>ofa-restore-assistant.ui</file>
     <file>ofa-settlement-page.ui</file>
+    <file>ofa-target-chooser-bin.ui</file>
     <file>ofa-user-credentials-bin.ui</file>
 
     <file>ofa.css</file>

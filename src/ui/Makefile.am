@@ -163,6 +163,8 @@ openbook_SOURCES = \
 	ofa-exercice-close-assistant.h						\
 	ofa-exercice-store.c								\
 	ofa-exercice-store.h								\
+	ofa-exercice-treeview.c								\
+	ofa-exercice-treeview.h								\
 	ofa-export-assistant.c								\
 	ofa-export-assistant.h								\
 	ofa-guided-ex.c										\
@@ -234,6 +236,8 @@ openbook_SOURCES = \
 	ofa-restore-assistant.h								\
 	ofa-settlement-page.c								\
 	ofa-settlement-page.h								\
+	ofa-target-chooser-bin.c							\
+	ofa-target-chooser-bin.h							\
 	ofa-user-credentials-bin.c							\
 	ofa-user-credentials-bin.h							\
 	$(NULL)

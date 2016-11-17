@@ -58,41 +58,23 @@ typedef struct {
 	ofaExerciceStoreClass;
 
 /**
- * ofaExerciceStoreColumn:
- * @EXERCICE_COL_STATUS: localized status string
- * @EXERCICE_COL_BEGIN:  begin of exercice
- * @EXERCICE_COL_END:    end of exercice
- * @EXERCICE_COL_LABEL:  localized exercice description string
- * @EXERCICE_COL_PERIOD: ofaIDBPeriod object
- *
- * The identifiers of the columns stored in the subjacent #GtkListStore.
+ * The columns stored in the subjacent #GtkListStore.
+ *                                                              Type     Displayable
+ *                                                              -------  -----------
+ * @EXERCICE_COL_STATUS: localized status string                String       Yes
+ * @EXERCICE_COL_BEGIN : begin of exercice                      String       Yes
+ * @EXERCICE_COL_END   : end of exercice                        String       Yes
+ * @EXERCICE_COL_LABEL : localized exercice description string  String       Yes
+ * @EXERCICE_COL_PERIOD: ofaIDBPeriod object                    GObject       No
  */
-typedef enum {
+enum {
 	EXERCICE_COL_STATUS = 0,
 	EXERCICE_COL_BEGIN,
 	EXERCICE_COL_END,
 	EXERCICE_COL_LABEL,
 	EXERCICE_COL_PERIOD,
 	EXERCICE_N_COLUMNS
-}
-	ofaExerciceStoreColumn;
-
-/**
- * ofaExerciceDispColumn:
- * @EXERCICE_DISP_STATUS: localized status string
- * @EXERCICE_DISP_BEGIN:  begin of exercice
- * @EXERCICE_DISP_END:    end of exercice
- * @EXERCICE_DISP_LABEL:  localized exercice description string
- *
- * The columns displayed in the views.
- */
-typedef enum {
-	EXERCICE_DISP_STATUS    = 1 << 0,
-	EXERCICE_DISP_BEGIN     = 1 << 1,
-	EXERCICE_DISP_END       = 1 << 2,
-	EXERCICE_DISP_LABEL     = 1 << 3,
-}
-	ofaExerciceDispColumn;
+};
 
 GType             ofa_exercice_store_get_type    ( void ) G_GNUC_CONST;
 
