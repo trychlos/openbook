@@ -293,13 +293,14 @@ do_run( ofaCheckBalancesBin *self )
 static void
 check_entries_balance_run( ofaCheckBalancesBin *self )
 {
+	static const gchar *thisfn = "ofa_check_balances_bin_check_entries_balance_run";
 	ofaCheckBalancesBinPrivate *priv;
 	ofoDossier *dossier;
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
 	GList *entries, *it;
 	const GDate *dbegin;
-	gulong count, i;
+	guint count, i;
 	ofoEntry *entry;
 	const gchar *currency;
 	ofsCurrency *sbal;
@@ -317,18 +318,15 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 
 	priv->entries_list = NULL;
 	dbegin = ofo_dossier_get_exe_begin( dossier );
-	//g_debug( "check_entries_balance_run: dbegin=%s", my_date_to_str( dbegin, MY_DATE_SQL ));
 	entries = ofo_entry_get_dataset_for_print_by_account( priv->hub, NULL, NULL, dbegin, NULL );
 	count = g_list_length( entries );
+	g_debug( "%s: dbegin=%s, count=%u", thisfn, my_date_to_str( dbegin, MY_DATE_SQL ), count );
 
 	if( count == 0 ){
 		set_bar_progression( self, bar, 0, 0 );
 	}
 
 	for( i=1, it=entries ; it && count ; ++i, it=it->next ){
-		/* just slow a bit, else it is too fast */
-		/*g_usleep( 0.005*G_USEC_PER_SEC );*/
-
 		entry = OFO_ENTRY( it->data );
 		currency = ofo_entry_get_currency( entry );
 
@@ -359,12 +357,13 @@ check_entries_balance_run( ofaCheckBalancesBin *self )
 static void
 check_ledgers_balance_run( ofaCheckBalancesBin *self )
 {
+	static const gchar *thisfn = "ofa_check_balances_bin_check_ledgers_balance_run";
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
 	GList *ledgers, *it;
 	GList *currencies, *ic;
-	gulong count, i;
+	guint count, i;
 	ofoLedger *ledger;
 	ofsCurrency *sbal;
 	const gchar *currency;
@@ -381,13 +380,13 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 	priv->ledgers_list = NULL;
 	ledgers = ofo_ledger_get_dataset( priv->hub );
 	count = g_list_length( ledgers );
+	g_debug( "%s: count=%u", thisfn, count );
 
 	if( count == 0 ){
 		set_bar_progression( self, bar, 0, 0 );
 	}
 
 	for( i=1, it=ledgers ; it && count ; ++i, it=it->next ){
-		/*g_usleep( 0.005*G_USEC_PER_SEC );*/
 
 		ledger = OFO_LEDGER( it->data );
 		currencies = ofo_ledger_get_currencies( ledger );
@@ -425,14 +424,16 @@ check_ledgers_balance_run( ofaCheckBalancesBin *self )
 static void
 check_accounts_balance_run( ofaCheckBalancesBin *self )
 {
+	static const gchar *thisfn = "ofa_check_accounts_bin_check_entries_balance_run";
 	ofaCheckBalancesBinPrivate *priv;
 	myProgressBar *bar;
 	ofaBalanceGridBin *grid;
 	GList *accounts, *it;
-	gulong count, i;
+	guint count, i;
 	ofoAccount *account;
 	const gchar *currency;
 	ofsCurrency *sbal;
+	ofxAmount debit, credit;
 
 	priv = ofa_check_balances_bin_get_instance_private( self );
 
@@ -446,29 +447,31 @@ check_accounts_balance_run( ofaCheckBalancesBin *self )
 	priv->accounts_list = NULL;
 	accounts = ofo_account_get_dataset( priv->hub );
 	count = g_list_length( accounts );
+	g_debug( "%s: count=%u", thisfn, count );
 
 	if( count == 0 ){
 		set_bar_progression( self, bar, 0, 0 );
 	}
 
 	for( i=1, it=accounts ; it && count ; ++i, it=it->next ){
-		/*g_usleep( 0.005*G_USEC_PER_SEC );*/
 
 		account = OFO_ACCOUNT( it->data );
 		if( !ofo_account_is_root( account )){
 			currency = ofo_account_get_currency( account );
 
-			sbal = ofs_currency_add_by_code(
-						&priv->accounts_list, priv->hub, currency,
-						ofo_account_get_val_debit( account )
-							+ ofo_account_get_rough_debit( account )
-							+ ofo_account_get_futur_debit( account ),
-						ofo_account_get_val_credit( account )
-							+ ofo_account_get_rough_credit( account )
-							+ ofo_account_get_futur_credit( account ));
+			debit = ofo_account_get_val_debit( account )
+						+ ofo_account_get_rough_debit( account )
+						+ ofo_account_get_futur_debit( account );
 
-			if( priv->display ){
-				g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+			credit = ofo_account_get_val_credit( account )
+						+ ofo_account_get_rough_credit( account )
+						+ ofo_account_get_futur_credit( account );
+
+			if( debit || credit ){
+				sbal = ofs_currency_add_by_code( &priv->accounts_list, priv->hub, currency, debit, credit );
+				if( priv->display ){
+					g_signal_emit_by_name( grid, "ofa-update", currency, sbal->debit, sbal->credit );
+				}
 			}
 		}
 

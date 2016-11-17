@@ -5,6 +5,7 @@
  
    maintainer/
    development rules
+   dbms
    run
 
 -----------------------------------------------------------------------
@@ -54,6 +55,17 @@
    current or archived);
    this is usually not the case of GtkBin-derived widgets, whose
    editability status is taking care by the embedding dialog.
+
+-----------------------------------------------------------------------
+ dbms
+ ====
+
+ Renaming a database:
+
+ # mysqladmin -uroot -p<passwd> create <newdb>
+ # mysqldump -uroot -p<passwd> -v <olddb> | mysql -uroot -p<passwd> -D <newdb>
+
+ > GRANT ALL ON '<newdb>'.* TO '%s'@'localhost' WITH GRANT OPTION
 
 -----------------------------------------------------------------------
  run

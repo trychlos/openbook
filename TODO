@@ -310,10 +310,6 @@
 1153 2016- 6-22 FEAT: besides of the integrity constraint checks, display
                 e.g. operation templates which use such account, and so on
 
-1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
-                generating any operation (and so without the need for
-                an operation date)
-
 1172 2016- 7-11 Gtk-WARNING **: Allocating size to ofaMainWindow 0x99e400 without calling gtk_widget_get_preferred_width/height(). How does the code know the size to allocate?
                 when opening the first page
 
@@ -339,6 +335,16 @@
                 the first exercice operation
 
 1236 2016-10-13 move user and dossier settings to dbms
+     2016-11-13 dossier settings are:
+                $ grep -vE '^#|^\[|^ofa-DBMSProvider|^mysql-db-' ~/.config/openbook/dossier* | cut -d: -f2- | cut -d= -f1 | sort -u
+                - LastBackupFolder
+                - ofa-BackgroundImage
+                - ofa-LastBackupFolder
+                - ofa-LastExportFolder
+                - ofa-LastImportFolder
+                - ofa-OpeTemplateBookOrder
+                - ofa-UserPreferences-settings
+                - OpeTemplateBookOrder
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
 
@@ -350,8 +356,12 @@
 1246 2016-11-10 mysql root account could go to settings to be preset in dialogs
 
 1255 2016-11-13 have a setting per dossier to automatize backups path and name
+     2016-11-17 path is nonetheless kept from last function call
+                so only name has to be configurable
 
-1258
+1260 2016-11-17 ebp2013 reprise is empty (no entries nor ledger)
+
+1261
 
 -----------------------------------------------------------------------
  DONE
@@ -1552,6 +1562,11 @@
                 => have a BALANCE() function for the current balance.
      2016- 6-23 done
 
+1159 2016- 6-23 FEAT: be able to validate a CA3 declaration without
+                generating any operation (and so without the need for
+                an operation date)
+     2016-12-15 done with #1253
+
 1160 2016- 6-23 FEAT: when closing a period and archiving accounts, have
                 a progress bar on archiving
      2016-10-12 done
@@ -1932,6 +1947,28 @@
 
 1257 2016-11-13 RecurrentModelManagement: enabled column is not sorted
      2016-11-14 fixed
+
+1258 2016-11-13 remove from dossier settings datas which are set in dbms
+                - exercice is current
+                - begin of exercice
+                - end of exercice
+                This would imply to get user credentials before selecting an
+                exercice; so for which database ??
+                Unless we have an account which is allowed to access all DBs
+                in a read-only way ? -> no confidentiality
+                -> cancelled
+
+1259 2016-11-17 after opening ebp2013 new copy to pwi_consultants_13:
+                Segmentation fault.
+                0x00007ffff7b4c318 in ofs_currency_cmp (a=0x0, b=b@entry=0xacff90) at ../../../src/core/ofs-currency.c:184
+                184		cmp = my_collate( ofo_currency_get_code( a->currency ), ofo_currency_get_code( b->currency ));
+                Backtrace:
+                #0  0x00007ffff7b4c318 in ofs_currency_cmp (a=0x0, b=b@entry=0xacff90) at ../../../src/core/ofs-currency.c:184
+                #1  0x000000000042f222 in cmp_lists (list_a=0x0, list_b=<optimized out>, self=0xc1ee00) at ../../../src/ui/ofa-check-balances-bin.c:658
+                #2  0x000000000042f8c8 in do_run (self=0xc1ee00) at ../../../src/ui/ofa-check-balances-bin.c:609
+                #3  0x000000000042f8c8 in do_run (self=0xc1ee00) at ../../../src/ui/ofa-check-balances-bin.c:277
+                note that there is no entries nor any ledgers on this db
+     2016-11-17 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
