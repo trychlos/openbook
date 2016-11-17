@@ -58,10 +58,10 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid21">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkLabel" id="p2-furi">
@@ -114,10 +114,10 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid22">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="column_spacing">4</property>
                 <child>
                   <object class="GtkBox" id="p2-dossier-parent">
@@ -185,10 +185,10 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid31">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>
@@ -313,10 +313,10 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid42">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="row_spacing">3</property>
                 <child>
                   <object class="GtkCheckButton" id="p4-open">
@@ -360,10 +360,10 @@ Press Continue.</property>
               <object class="GtkGrid" id="grid41">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">12</property>
-                <property name="margin_right">4</property>
-                <property name="margin_top">4</property>
-                <property name="margin_bottom">4</property>
+                <property name="margin_left">8</property>
+                <property name="margin_right">2</property>
+                <property name="margin_top">2</property>
+                <property name="margin_bottom">2</property>
                 <property name="row_spacing">3</property>
                 <property name="column_spacing">4</property>
                 <child>

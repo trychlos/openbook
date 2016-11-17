@@ -360,8 +360,12 @@
                 so only name has to be configurable
 
 1260 2016-11-17 ebp2013 reprise is empty (no entries nor ledger)
+                => have recovery assistant
 
-1261
+1261 2016-11-17 Have a backup option to save all available periods
+                + have an option to save this choice (do not automatically save)
+
+1262
 
 -----------------------------------------------------------------------
  DONE
