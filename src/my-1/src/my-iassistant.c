@@ -326,8 +326,6 @@ do_page_display( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *i
 			thisfn, ( void * ) instance, ( void * ) page,
 			( void * ) inst_data, ( void * ) page_data, page_data->page_num );
 
-	gtk_widget_show_all( page );
-
 	if( inst_data->cbs ){
 		for( i=0 ; inst_data->cbs[i].page_num >= 0 ; ++i ){
 			if( inst_data->cbs[i].page_num == page_data->page_num ){
@@ -338,6 +336,8 @@ do_page_display( myIAssistant *instance, GtkWidget *page, sIAssistantInstance *i
 			}
 		}
 	}
+
+	gtk_widget_show_all( page );
 }
 
 static void
