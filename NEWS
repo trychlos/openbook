@@ -69,6 +69,7 @@
    - ofaMiscAuditStore: new class.
    - ofaMiscAuditTreeview: new class.
    - ofaTargetChooserBin: new class.
+   - ofaTVBin: new ofa-tvbin-vexpand property.
 
 -----------------------------------------------------------------------
  Version 0.62

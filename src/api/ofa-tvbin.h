@@ -75,7 +75,7 @@
  *   defaults to be visible.
  *
  * - ofa-tvbin-hexpand:
- *   whether the frame should expand horizontaly to the available size;
+ *   whether the frame should expand horizontally to the available size;
  *   defaults to TRUE.
  *
  * - ofa-tvbin-hpolicy:
@@ -93,6 +93,10 @@
  * - ofa-tvbin-shadow:
  *   shadow type of the surrounding frame;
  *   will typically be IN for pages, NONE (default) for dialogs.
+ *
+ * - ofa-tvbin-vexpand:
+ *   whether the frame should expand vertically to the available size;
+ *   defaults to TRUE.
  *
  * - ofa-tvbin-writesettings:
  *   whether this particular instance should write its column settings
@@ -199,6 +203,11 @@ GtkShadowType     ofa_tvbin_get_shadow            ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_shadow            ( ofaTVBin *bin,
 														GtkShadowType type );
+
+gboolean          ofa_tvbin_get_vexpand           ( ofaTVBin *bin );
+
+void              ofa_tvbin_set_vexpand           ( ofaTVBin *bin,
+														gboolean expand );
 
 gboolean          ofa_tvbin_get_write_settings    ( ofaTVBin *bin );
 

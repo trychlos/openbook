@@ -53,6 +53,7 @@ typedef struct {
 	gchar           *name;
 	GtkSelectionMode selection_mode;
 	GtkShadowType    shadow;
+	gboolean         vexpand;
 	gboolean         write_settings;
 
 	/* UI
@@ -72,6 +73,7 @@ enum {
 	PROP_NAME_ID,
 	PROP_SELMODE_ID,
 	PROP_SHADOW_ID,
+	PROP_VEXPAND_ID,
 	PROP_WRITESETTINGS_ID,
 };
 
@@ -204,6 +206,10 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 				g_value_set_int( value, priv->shadow );
 				break;
 
+			case PROP_VEXPAND_ID:
+				g_value_set_boolean( value, priv->vexpand );
+				break;
+
 			case PROP_WRITESETTINGS_ID:
 				g_value_set_boolean( value, priv->write_settings );
 				break;
@@ -254,6 +260,10 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 
 			case PROP_SHADOW_ID:
 				priv->shadow = g_value_get_int( value );
+				break;
+
+			case PROP_VEXPAND_ID:
+				priv->vexpand = g_value_get_boolean( value );
 				break;
 
 			case PROP_WRITESETTINGS_ID:
@@ -316,7 +326,7 @@ init_top_widget( ofaTVBin *self )
 
 	priv->treeview = gtk_tree_view_new();
 	ofa_tvbin_set_hexpand( self, priv->hexpand );
-	gtk_widget_set_vexpand( priv->treeview, TRUE );
+	ofa_tvbin_set_vexpand( self, priv->vexpand );
 	ofa_tvbin_set_headers( self, priv->headers_visible );
 	gtk_container_add( GTK_CONTAINER( priv->scrolled ), priv->treeview );
 
@@ -416,6 +426,16 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 					"Shadow type of surrounding frame",
 					0, 99, GTK_SHADOW_NONE,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_HEXPAND_ID,
+			g_param_spec_boolean(
+					"ofa-tvbin-vexpand",
+					"Expand vertically",
+					"Whether the treeview expand vertically",
+					TRUE,
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -864,6 +884,53 @@ ofa_tvbin_set_shadow( ofaTVBin *bin, GtkShadowType shadow )
 
 	priv->shadow = shadow;
 	gtk_frame_set_shadow_type( GTK_FRAME( priv->frame ), shadow );
+}
+
+/**
+ * ofa_tvbin_get_vexpand:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: the vertical expandable status of the #GtkTreeView.
+ */
+gboolean
+ofa_tvbin_get_vexpand( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), FALSE );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( priv->vexpand );
+}
+
+/**
+ * ofa_tvbin_set_vexpand:
+ * @bin: this #ofaTVBin instance.
+ * @expand: whether the #GtkTreeView should verticaly expand.
+ *
+ * Setup the vertical expandable status.
+ *
+ * May also be set via the "ofa-tvbin-vexpand" construction property.
+ *
+ * The treeview defaults to vertically expand.
+ */
+void
+ofa_tvbin_set_vexpand( ofaTVBin *bin, gboolean expand )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+	g_return_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ));
+
+	priv->vexpand = expand;
+	gtk_widget_set_vexpand( priv->treeview, expand );
 }
 
 /*
