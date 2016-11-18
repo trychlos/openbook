@@ -429,7 +429,7 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
-			PROP_HEXPAND_ID,
+			PROP_VEXPAND_ID,
 			g_param_spec_boolean(
 					"ofa-tvbin-vexpand",
 					"Expand vertically",
@@ -930,6 +930,7 @@ ofa_tvbin_set_vexpand( ofaTVBin *bin, gboolean expand )
 	g_return_if_fail( priv->treeview && GTK_IS_TREE_VIEW( priv->treeview ));
 
 	priv->vexpand = expand;
+	g_debug( "ofa_tvbin_set_vexpand: setting vexpand=%s", priv->vexpand ? "True":"False" );
 	gtk_widget_set_vexpand( priv->treeview, expand );
 }
 
