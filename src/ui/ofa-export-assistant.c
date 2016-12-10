@@ -37,7 +37,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
@@ -70,7 +70,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
-	ofaIDBMeta          *meta;
+	ofaIDBDossierMeta   *meta;
 
 	/* p0: introduction
 	 */

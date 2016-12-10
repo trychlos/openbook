@@ -42,7 +42,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbperiod.h"
 
 G_BEGIN_DECLS
@@ -71,7 +71,7 @@ GType                ofa_target_chooser_bin_get_type    ( void ) G_GNUC_CONST;
 ofaTargetChooserBin *ofa_target_chooser_bin_new         ( const gchar *settings_prefix );
 
 gboolean             ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin,
-																ofaIDBMeta **meta,
+																ofaIDBDossierMeta **meta,
 																ofaIDBPeriod **period );
 
 G_END_DECLS

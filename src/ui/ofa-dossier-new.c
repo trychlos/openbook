@@ -37,8 +37,8 @@
 
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
@@ -86,7 +86,7 @@ typedef struct {
 
 	/* result
 	 */
-	ofaIDBMeta             *meta;
+	ofaIDBDossierMeta      *meta;
 }
 	ofaDossierNewPrivate;
 
@@ -508,8 +508,8 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	priv->meta = ofa_dossier_new_bin_apply( priv->new_bin );
 
 	if( priv->meta ){
-		provider = ofa_idbmeta_get_provider( priv->meta );
-		period = ofa_idbmeta_get_current_period( priv->meta );
+		provider = ofa_idbdossier_meta_get_provider( priv->meta );
+		period = ofa_idbdossier_meta_get_current_period( priv->meta );
 		ofa_dbms_root_bin_get_credentials( priv->root_credentials, &account, &password );
 		connect = ofa_idbprovider_new_connect( provider );
 		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
@@ -534,7 +534,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	}
 
 	if( !ok ){
-		ofa_idbmeta_remove_meta( priv->meta );
+		ofa_idbdossier_meta_remove_meta( priv->meta );
 		g_clear_object( &priv->meta );
 		gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 	}
@@ -543,8 +543,8 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	connect = NULL;
 
 	if( ok && priv->b_open ){
-		provider = ofa_idbmeta_get_provider( priv->meta );
-		period = ofa_idbmeta_get_current_period( priv->meta );
+		provider = ofa_idbdossier_meta_get_provider( priv->meta );
+		period = ofa_idbdossier_meta_get_current_period( priv->meta );
 		connect = ofa_idbprovider_new_connect( provider );
 		if( !ofa_idbconnect_open_with_meta(
 				connect, priv->adm_account, priv->adm_password, priv->meta, period )){

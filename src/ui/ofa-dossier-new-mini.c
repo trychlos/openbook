@@ -35,7 +35,7 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -48,21 +48,21 @@
 /* private instance data
  */
 typedef struct {
-	gboolean          dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter       *getter;
+	ofaIGetter        *getter;
 
 	/* UI
 	 */
-	ofaDossierNewBin *new_bin;
-	GtkWidget        *ok_btn;
-	GtkWidget        *msg_label;
+	ofaDossierNewBin  *new_bin;
+	GtkWidget         *ok_btn;
+	GtkWidget         *msg_label;
 
 	/* result
 	 */
-	ofaIDBMeta       *meta;
+	ofaIDBDossierMeta *meta;
 }
 	ofaDossierNewMiniPrivate;
 
@@ -155,13 +155,13 @@ ofa_dossier_new_mini_class_init( ofaDossierNewMiniClass *klass )
  * ofa_dossier_new_mini_run:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the window parent; defaults to the @main_window.
- * @meta: [out]: an #ofaIDBMeta object which defines the newly created
+ * @meta: [out]: an #ofaIDBDossierMeta object which defines the newly created
  *  dossier.
  *
  * Returns: %TRUE if a new dossier has been defined in the settings.
  */
 gboolean
-ofa_dossier_new_mini_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBMeta **meta )
+ofa_dossier_new_mini_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBDossierMeta **meta )
 {
 	static const gchar *thisfn = "ofa_dossier_new_mini_run";
 	ofaDossierNewMini *self;

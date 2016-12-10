@@ -34,7 +34,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
@@ -54,7 +54,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter               *getter;
-	ofaIDBMeta               *meta;
+	ofaIDBDossierMeta        *dossier_meta;
 	ofaIDBPeriod             *period;
 
 	/* UI
@@ -122,7 +122,7 @@ dossier_delete_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->meta );
+		g_clear_object( &priv->dossier_meta );
 		g_clear_object( &priv->period );
 		g_clear_object( &priv->provider );
 	}
@@ -166,24 +166,24 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
  * ofa_dossier_delete_run:
  * @getter: a #ofaIGetter instance.
  * @parent: [allow-none]: the #GtkWindow parent.
- * @meta: the meta data for the dossier.
+ * @dossier_meta: the meta data for the dossier.
  * @period: the period to be deleted.
  *
  * Run the selection dialog to delete a dossier.
  */
 void
-ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
+ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_run";
 	ofaDossierDelete *self;
 	ofaDossierDeletePrivate *priv;
 
-	g_debug( "%s: getter=%p, parent=%p, meta=%p, period=%p",
-				thisfn, ( void * ) getter, ( void * ) parent, ( void * ) meta, ( void * ) period );
+	g_debug( "%s: getter=%p, parent=%p, dossier_meta=%p, period=%p",
+				thisfn, ( void * ) getter, ( void * ) parent, ( void * ) dossier_meta, ( void * ) period );
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
 	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DELETE, NULL );
@@ -193,7 +193,7 @@ ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBMeta 
 	priv = ofa_dossier_delete_get_instance_private( self );
 
 	priv->getter = getter;
-	priv->meta = g_object_ref(( gpointer ) meta );
+	priv->dossier_meta = g_object_ref(( gpointer ) dossier_meta );
 	priv->period = g_object_ref(( gpointer ) period );
 
 	/* after this call, @self may be invalid */
@@ -243,7 +243,7 @@ idialog_init( myIDialog *instance )
 	/* informational message */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "message" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	dossier_name = ofa_idbmeta_get_dossier_name( priv->meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta );
 	msg = g_strdup_printf( _(
 			"You are about to delete the '%s' dossier.\n"
 			"Please provide below the connection informations "
@@ -254,7 +254,7 @@ idialog_init( myIDialog *instance )
 	g_free( dossier_name );
 
 	/* connection infos */
-	priv->provider = ofa_idbmeta_get_provider( priv->meta );
+	priv->provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
 	g_return_if_fail( priv->provider && OFA_IS_IDBPROVIDER( priv->provider ));
 	priv->infos = ofa_idbprovider_new_editor( priv->provider, FALSE );
 	g_return_if_fail( priv->infos && GTK_IS_WIDGET( priv->infos ));
@@ -269,7 +269,7 @@ idialog_init( myIDialog *instance )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "credentials-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->credentials ));
-	ofa_dbms_root_bin_set_meta( priv->credentials, priv->meta );
+	ofa_dbms_root_bin_set_meta( priv->credentials, priv->dossier_meta );
 	my_utils_size_group_add_size_group(
 			group, ofa_dbms_root_bin_get_size_group( priv->credentials, 0 ));
 	g_signal_connect( priv->credentials, "ofa-changed", G_CALLBACK( on_credentials_changed ), instance );

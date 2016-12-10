@@ -33,8 +33,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-idbmeta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
 
@@ -56,14 +56,14 @@ typedef struct {
 #define DBPROVIDER_DISPLAY_NAME          "MySQL DBMS Provider"
 #define DBPROVIDER_VERSION                PACKAGE_VERSION
 
-static void           iident_iface_init( myIIdentInterface *iface );
-static gchar         *iident_get_canon_name( const myIIdent *instance, void *user_data );
-static gchar         *iident_get_display_name( const myIIdent *instance, void *user_data );
-static gchar         *iident_get_version( const myIIdent *instance, void *user_data );
-static void           idbprovider_iface_init( ofaIDBProviderInterface *iface );
-static ofaIDBMeta    *idbprovider_new_meta( ofaIDBProvider *instance );
-static ofaIDBConnect *idbprovider_new_connect( ofaIDBProvider *instance );
-static ofaIDBEditor  *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
+static void               iident_iface_init( myIIdentInterface *iface );
+static gchar             *iident_get_canon_name( const myIIdent *instance, void *user_data );
+static gchar             *iident_get_display_name( const myIIdent *instance, void *user_data );
+static gchar             *iident_get_version( const myIIdent *instance, void *user_data );
+static void               idbprovider_iface_init( ofaIDBProviderInterface *iface );
+static ofaIDBDossierMeta *idbprovider_new_dossier_meta( ofaIDBProvider *instance );
+static ofaIDBConnect     *idbprovider_new_connect( ofaIDBProvider *instance );
+static ofaIDBEditor      *idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable );
 
 G_DEFINE_TYPE_EXTENDED( ofaMysqlDBProvider, ofa_mysql_dbprovider, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMysqlDBProvider )
@@ -174,22 +174,22 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->new_meta = idbprovider_new_meta;
+	iface->new_dossier_meta = idbprovider_new_dossier_meta;
 	iface->new_connect = idbprovider_new_connect;
 	iface->new_editor = idbprovider_new_editor;
 }
 
 /*
- * instanciates a new ofaIDBMeta object
+ * instanciates a new ofaIDBDossierMeta object
  */
-static ofaIDBMeta *
-idbprovider_new_meta( ofaIDBProvider *instance )
+static ofaIDBDossierMeta *
+idbprovider_new_dossier_meta( ofaIDBProvider *instance )
 {
 	ofaMySQLMeta *meta;
 
 	meta = ofa_mysql_meta_new();
 
-	return( OFA_IDBMETA( meta ));
+	return( OFA_IDBDOSSIER_META( meta ));
 }
 
 /*

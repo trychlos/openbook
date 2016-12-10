@@ -50,7 +50,7 @@
  * - current:    no
  */
 
-#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -78,7 +78,7 @@ GType    ofa_dossier_new_mini_get_type( void ) G_GNUC_CONST;
 
 gboolean ofa_dossier_new_mini_run     ( ofaIGetter *getter,
 												GtkWindow *parent,
-												ofaIDBMeta **meta );
+												ofaIDBDossierMeta **meta );
 
 G_END_DECLS
 

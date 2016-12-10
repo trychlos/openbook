@@ -33,7 +33,7 @@
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 
@@ -484,7 +484,7 @@ ofa_dossier_new_bin_get_valid( ofaDossierNewBin *bin, gchar **error_message )
 	ofaDossierNewBinPrivate *priv;
 	gboolean ok;
 	gchar *str;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), FALSE );
 
@@ -532,14 +532,14 @@ ofa_dossier_new_bin_get_valid( ofaDossierNewBin *bin, gchar **error_message )
  * Define the dossier in user settings, updating the ofaDossierStore
  * simultaneously.
  *
- * Returns: a newly created #ofaIDBMeta object.
+ * Returns: a newly created #ofaIDBDossierMeta object.
  */
-ofaIDBMeta *
+ofaIDBDossierMeta *
 ofa_dossier_new_bin_apply( ofaDossierNewBin *bin )
 {
 	ofaDossierNewBinPrivate *priv;
 	ofaIDBProvider *provider;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 
 	g_return_val_if_fail( bin && OFA_IS_DOSSIER_NEW_BIN( bin ), NULL );
 
@@ -548,8 +548,8 @@ ofa_dossier_new_bin_apply( ofaDossierNewBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	provider = ofa_idbeditor_get_provider( priv->connect_infos );
-	meta = ofa_idbprovider_new_meta( provider );
-	ofa_idbmeta_set_dossier_name( meta, priv->dossier_name );
+	meta = ofa_idbprovider_new_dossier_meta( provider );
+	ofa_idbdossier_meta_set_dossier_name( meta, priv->dossier_name );
 	ofa_dossier_collection_set_meta_from_editor( priv->dossier_collection, meta, priv->connect_infos );
 	g_object_unref( provider );
 

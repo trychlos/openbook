@@ -37,7 +37,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iimporter.h"
 #include "api/ofa-settings.h"
@@ -458,7 +458,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	ofaMysqlDBModelPrivate *priv;
 	gchar *query, *dossier_name;
 	gboolean ok;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
@@ -637,7 +637,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 	/* n° 7
 	 * dossier name is set as a default value for the label */
 	meta = ofa_idbconnect_get_meta( priv->connect );
-	dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "
 			"	(DOS_ID,DOS_LABEL,DOS_EXE_LENGTH,DOS_DEF_CURRENCY,"

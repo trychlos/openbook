@@ -46,7 +46,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -77,7 +77,7 @@ GtkSizeGroup   *ofa_dbms_root_bin_get_size_group ( ofaDBMSRootBin *bin,
 														guint column );
 
 void            ofa_dbms_root_bin_set_meta       ( ofaDBMSRootBin *bin,
-														ofaIDBMeta *meta );
+														ofaIDBDossierMeta *meta );
 
 gboolean        ofa_dbms_root_bin_is_valid       ( ofaDBMSRootBin *bin,
 														gchar **error_message );

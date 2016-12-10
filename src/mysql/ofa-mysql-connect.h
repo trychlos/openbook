@@ -66,7 +66,7 @@ ofaMySQLConnect *ofa_mysql_connect_new             ( void );
 gboolean         ofa_mysql_connect_open_with_meta  ( ofaMySQLConnect *connect,
 															const gchar *account,
 															const gchar *password,
-															const ofaMySQLMeta *meta,
+															const ofaMySQLMeta *dossier_meta,
 															const ofaMySQLPeriod *period );
 
 gboolean         ofa_mysql_connect_query           ( ofaMySQLConnect *connect,

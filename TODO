@@ -396,11 +396,17 @@
                 required by the ui (and not by gtk as Gtk may be required
                 by the plugins which not all involve the ui)
 
-1274 2016-12- 8 rename ofaIDBMeta to ofaIDBDossierMeta
-
 1275 2016-12- 8 rename ofaIDBPeriod to ofaIDBExerciceMeta
 
-1276
+1276 2016-12-10 review the way the exercices are written in dossier settings
+                so that this may be managed by the application instead of
+                by the dbms plugin
+
+1277 2016-12-10 rename ofaMySQLMeta to ofaMysqlDossierMeta 
+
+1278 2016-12-10 rename ofaMySQLPeriod to ofaMysqlExerciceMeta 
+
+1279
 
 -----------------------------------------------------------------------
  DONE
@@ -2023,6 +2029,9 @@
 1269 2016-11-29 ofaExerciceMeta class obsoletes ofaIDBPeriod interface
                 and ofaMysqlPeriod class
      2016-12- 8 -> cancelled (same as #1268)
+
+1274 2016-12- 8 rename ofaIDBMeta to ofaIDBDossierMeta
+     2016-12-10 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

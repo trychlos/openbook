@@ -43,7 +43,7 @@
 
 #include "my/my-isettings.h"
 
-#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -81,7 +81,7 @@ void         ofa_settings_set_boolean                ( ofaSettingsTarget target,
 															const gchar *key,
 															gboolean value );
 
-gint         ofa_settings_get_uint                   ( ofaSettingsTarget target,
+gint         ofa_settings_get_uint                      ( ofaSettingsTarget target,
 															const gchar *group,
 															const gchar *key );
 
@@ -146,17 +146,17 @@ void         ofa_settings_set_string_list            ( ofaSettingsTarget target,
 
 /* dossiers configuration management
  */
-gchar       *ofa_settings_dossier_get_string         ( const ofaIDBMeta *meta,
+gchar       *ofa_settings_dossier_get_string         ( const ofaIDBDossierMeta *meta,
 															const gchar *key );
 
-void         ofa_settings_dossier_set_string         ( const ofaIDBMeta *meta,
+void         ofa_settings_dossier_set_string         ( const ofaIDBDossierMeta *meta,
 															const gchar *key,
 															const gchar *value );
 
-GList       *ofa_settings_dossier_get_string_list    ( const ofaIDBMeta *meta,
+GList       *ofa_settings_dossier_get_string_list    ( const ofaIDBDossierMeta *meta,
 															const gchar *key );
 
-void         ofa_settings_dossier_set_string_list    ( const ofaIDBMeta *meta,
+void         ofa_settings_dossier_set_string_list    ( const ofaIDBDossierMeta *meta,
 															const gchar *key,
 															const GList *list );
 

@@ -30,9 +30,9 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-idbmeta.h"
 
 /* some data attached to each IDBEditor instance
  * we store here the data provided by the application
@@ -43,8 +43,8 @@ typedef struct {
 }
 	sIDBEditor;
 
-#define IDBEDITOR_DATA                  "idbeditor-data"
-#define IDBEDITOR_LAST_VERSION          1
+#define IDBEDITOR_LAST_VERSION              1
+#define IDBEDITOR_DATA                     "idbeditor-data"
 
 /* signals defined here
  */
@@ -54,7 +54,7 @@ enum {
 };
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
-static guint st_initializations         = 0;	/* interface initialization count */
+static guint st_initializations         =   0;	/* interface initialization count */
 
 static GType       register_type( void );
 static void        interface_base_init( ofaIDBEditorInterface *klass );
@@ -250,28 +250,28 @@ ofa_idbeditor_set_provider( ofaIDBEditor *instance, const ofaIDBProvider *provid
 /**
  * ofa_idbeditor_set_meta:
  * @instance: this #ofaIDBEditor instance.
- * @meta: [allow-none]: the #ofaIDBMeta object which holds dossier
- *  informations.
+ * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta object which
+ *  holds the dossier meta informations.
  * @period: [allow-none]: the #ofaIDBPeriod object which holds exercice
  *  informations; must be %NULL if @meta is %NULL.
  *
  * Initialize the widget with provided datas.
  */
 void
-ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
+ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_idbeditor_set_meta";
 
-	g_debug( "%s: instance=%p, meta=%p, period=%p",
-			thisfn, ( void * ) instance, ( void * ) meta, ( void * ) period );
+	g_debug( "%s: instance=%p, dossier_meta=%p, period=%p",
+			thisfn, ( void * ) instance, ( void * ) dossier_meta, ( void * ) period );
 
 	g_return_if_fail( instance && OFA_IS_IDBEDITOR( instance ));
-	g_return_if_fail( !meta || OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
 	g_return_if_fail( !period || OFA_IS_IDBPERIOD( period ));
-	g_return_if_fail( meta || !period );
+	g_return_if_fail( dossier_meta || !period );
 
 	if( OFA_IDBEDITOR_GET_INTERFACE( instance )->set_meta ){
-		OFA_IDBEDITOR_GET_INTERFACE( instance )->set_meta( instance, meta, period );
+		OFA_IDBEDITOR_GET_INTERFACE( instance )->set_meta( instance, dossier_meta, period );
 		return;
 	}
 

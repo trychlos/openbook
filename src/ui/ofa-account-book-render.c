@@ -35,7 +35,7 @@
 #include "api/ofa-amount.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-irenderable.h"
 #include "api/ofa-page.h"
@@ -480,13 +480,13 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	gchar *dossier_name;
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	connect = ofa_hub_get_connect( hub );
 	meta = ofa_idbconnect_get_meta( connect );
-	dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	g_object_unref( meta );
 
 	return( dossier_name );

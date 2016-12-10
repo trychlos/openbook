@@ -66,9 +66,10 @@
  Other changes:
 
    - ofaExerciceTreeview: new class.
+   - ofaIDBMeta interface is renamed to ofaIDBDossierMeta (todo #1274).
    - ofaMiscAuditStore: new class.
    - ofaMiscAuditTreeview: new class.
-   - ofaPortfolioCollection: renamed to ofaDossierCollection (todo #1264).
+   - ofaPortfolioCollection class is renamed to ofaDossierCollection (todo #1264).
    - ofaTargetChooserBin: new class.
    - ofaTVBin: new ofa-tvbin-vexpand property.
 

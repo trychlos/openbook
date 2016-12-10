@@ -29,7 +29,7 @@
 #include "my/my-settings.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-settings.h"
 
 static mySettings *st_user_settings     = NULL;
@@ -300,7 +300,7 @@ ofa_settings_set_string_list( ofaSettingsTarget target, const gchar *group, cons
 
 /**
  * ofa_settings_dossier_get_string:
- * @meta: the #ofaIDBMeta meta informations about the dossier.
+ * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
  * @key: the searched key
  *
  * Returns the key string for the dossier, as a newly allocated string
@@ -311,7 +311,7 @@ ofa_settings_set_string_list( ofaSettingsTarget target, const gchar *group, cons
  * the DBMS providers.
  */
 gchar *
-ofa_settings_dossier_get_string( const ofaIDBMeta *meta, const gchar *key )
+ofa_settings_dossier_get_string( const ofaIDBDossierMeta *meta, const gchar *key )
 {
 	mySettings *settings;
 	gchar *group, *value;
@@ -319,7 +319,7 @@ ofa_settings_dossier_get_string( const ofaIDBMeta *meta, const gchar *key )
 	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
 	if( settings ){
 		g_return_val_if_fail( MY_IS_SETTINGS( settings ), NULL );
-		group = ofa_idbmeta_get_group_name( meta );
+		group = ofa_idbdossier_meta_get_group_name( meta );
 		value = my_isettings_get_string( MY_ISETTINGS( settings ), group, key );
 		g_free( group );
 		return( value );
@@ -330,14 +330,14 @@ ofa_settings_dossier_get_string( const ofaIDBMeta *meta, const gchar *key )
 
 /**
  * ofa_settings_dossier_set_string:
- * @meta: the #ofaIDBMeta meta informations about the dossier.
+ * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
  * @key: the searched key
  * @value: the value to be set
  *
  * Set the value for the key in the dossier group.
  */
 void
-ofa_settings_dossier_set_string( const ofaIDBMeta *meta, const gchar *key, const gchar *value )
+ofa_settings_dossier_set_string( const ofaIDBDossierMeta *meta, const gchar *key, const gchar *value )
 {
 	mySettings *settings;
 	gchar *group;
@@ -345,7 +345,7 @@ ofa_settings_dossier_set_string( const ofaIDBMeta *meta, const gchar *key, const
 	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
 	if( settings ){
 		g_return_if_fail( MY_IS_SETTINGS( settings ));
-		group = ofa_idbmeta_get_group_name( meta );
+		group = ofa_idbdossier_meta_get_group_name( meta );
 		my_isettings_set_string( MY_ISETTINGS( settings ), group, key, value );
 		g_free( group );
 		return;
@@ -356,7 +356,7 @@ ofa_settings_dossier_set_string( const ofaIDBMeta *meta, const gchar *key, const
 
 /**
  * ofa_settings_dossier_get_string_list:
- * @meta: the #ofaIDBMeta meta informations about the dossier.
+ * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
  * @key: the searched key
  *
  * Returns the key string list for the dossier.
@@ -365,7 +365,7 @@ ofa_settings_dossier_set_string( const ofaIDBMeta *meta, const gchar *key, const
  * by the caller.
  */
 GList *
-ofa_settings_dossier_get_string_list( const ofaIDBMeta *meta, const gchar *key )
+ofa_settings_dossier_get_string_list( const ofaIDBDossierMeta *meta, const gchar *key )
 {
 	mySettings *settings;
 	gchar *group;
@@ -374,7 +374,7 @@ ofa_settings_dossier_get_string_list( const ofaIDBMeta *meta, const gchar *key )
 	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
 	if( settings ){
 		g_return_val_if_fail( MY_IS_SETTINGS( settings ), NULL );
-		group = ofa_idbmeta_get_group_name( meta );
+		group = ofa_idbdossier_meta_get_group_name( meta );
 		value = my_isettings_get_string_list( MY_ISETTINGS( settings ), group, key );
 		g_free( group );
 		return( value );
@@ -385,14 +385,14 @@ ofa_settings_dossier_get_string_list( const ofaIDBMeta *meta, const gchar *key )
 
 /**
  * ofa_settings_dossier_set_string_list:
- * @meta: the #ofaIDBMeta meta informations about the dossier.
+ * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
  * @key: the searched key
  * @value: the value to be set
  *
  * Set the value for the key in the dossier group.
  */
 void
-ofa_settings_dossier_set_string_list( const ofaIDBMeta *meta, const gchar *key, const GList *value )
+ofa_settings_dossier_set_string_list( const ofaIDBDossierMeta *meta, const gchar *key, const GList *value )
 {
 	mySettings *settings;
 	gchar *group;
@@ -400,7 +400,7 @@ ofa_settings_dossier_set_string_list( const ofaIDBMeta *meta, const gchar *key, 
 	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
 	if( settings ){
 		g_return_if_fail( MY_IS_SETTINGS( settings ));
-		group = ofa_idbmeta_get_group_name( meta );
+		group = ofa_idbdossier_meta_get_group_name( meta );
 		my_isettings_set_string_list( MY_ISETTINGS( settings ), group, key, value );
 		g_free( group );
 		return;

@@ -34,8 +34,6 @@
 
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-idbmeta.h"
-#include "api/ofa-idbperiod.h"
 
 #include "ofa-mysql-connect.h"
 #include "ofa-mysql-editor-enter.h"
@@ -45,10 +43,8 @@
 typedef struct {
 	gboolean      dispose_has_run;
 
-	/* setup
+	/* initialization
 	 */
-	ofaIDBMeta   *meta;
-	ofaIDBPeriod *period;
 
 	/* runtime data
 	 */

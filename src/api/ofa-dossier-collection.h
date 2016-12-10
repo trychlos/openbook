@@ -30,8 +30,8 @@
  * @short_description: #ofaDossierCollection class definition.
  * @include: openbook/ofa-dossier-collection.h
  *
- * This class manages the dossiers directory as a list of #ofaIDBMeta
- * instances.
+ * This class manages the dossiers directory as a list of
+ * #ofaIDBDossierMeta instances.
  *
  * It is defined to be implemented as a singleton by any program of the
  * Openbook software suite. It takes care of maintaining itself up-to-
@@ -46,8 +46,8 @@
 #include <glib-object.h>
 
 #include "api/ofa-hub-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-idbmeta-def.h"
 
 G_BEGIN_DECLS
 
@@ -78,11 +78,11 @@ GList                *ofa_dossier_collection_get_list            ( ofaDossierCol
 
 guint                 ofa_dossier_collection_get_count           ( ofaDossierCollection *collection );
 
-ofaIDBMeta           *ofa_dossier_collection_get_meta            ( ofaDossierCollection *collection,
+ofaIDBDossierMeta    *ofa_dossier_collection_get_meta            ( ofaDossierCollection *collection,
 																			const gchar *dossier_name );
 
 void                  ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection,
-																			ofaIDBMeta *meta,
+																			ofaIDBDossierMeta *meta,
 																			const ofaIDBEditor *editor );
 
 G_END_DECLS

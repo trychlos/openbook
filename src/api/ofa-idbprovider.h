@@ -53,8 +53,8 @@
 
 #include "ofa-hub-def.h"
 #include "ofa-idbconnect.h"
+#include "ofa-idbdossier-meta-def.h"
 #include "ofa-idbeditor.h"
-#include "ofa-idbmeta-def.h"
 #include "ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
@@ -72,7 +72,7 @@ typedef struct _ofaIDBProviderInterface           ofaIDBProviderInterface;
 /**
  * ofaIDBProviderInterface:
  * @get_interface_version: [should]: returns the implemented version number.
- * @new_meta: [should]: returns a new ofaIDBMeta object.
+ * @new_meta: [should]: returns a new ofaIDBDossierMeta object.
  * @new_connect: [should]: returns a new ofaIDBConnect object.
  * @new_editor: [should]: returns a new ofaIDBEditor object.
  *
@@ -94,18 +94,18 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1.
 	 */
-	guint           ( *get_interface_version )( void );
+	guint               ( *get_interface_version )( void );
 
 	/*** instance-wide ***/
 	/**
-	 * new_meta:
+	 * new_dossier_meta:
 	 * @instance: this #ofaIDBProvider instance.
 	 *
-	 * Returns: a newly defined #ofaIDBMeta object.
+	 * Returns: a newly defined #ofaIDBDossierMeta object.
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBMeta *    ( *new_meta )             ( ofaIDBProvider *instance );
+	ofaIDBDossierMeta * ( *new_dossier_meta )     ( ofaIDBProvider *instance );
 
 	/**
 	 * new_connect:
@@ -115,7 +115,7 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBConnect * ( *new_connect )          ( ofaIDBProvider *instance );
+	ofaIDBConnect *     ( *new_connect )          ( ofaIDBProvider *instance );
 
 	/**
 	 * new_editor:
@@ -129,38 +129,38 @@ struct _ofaIDBProviderInterface {
 	 *
 	 * Since: version 1
 	 */
-	ofaIDBEditor *  ( *new_editor )           ( ofaIDBProvider *instance,
-													gboolean editable );
+	ofaIDBEditor *      ( *new_editor )           ( ofaIDBProvider *instance,
+														gboolean editable );
 };
 
 /*
  * Interface-wide
  */
-GType           ofa_idbprovider_get_type                  ( void );
+GType              ofa_idbprovider_get_type                  ( void );
 
-guint           ofa_idbprovider_get_interface_last_version( void );
+guint              ofa_idbprovider_get_interface_last_version( void );
 
-ofaIDBProvider *ofa_idbprovider_get_by_name               ( ofaHub *hub,
-																const gchar *provider_name );
+ofaIDBProvider    *ofa_idbprovider_get_by_name               ( ofaHub *hub,
+																	const gchar *provider_name );
 
 /*
  * Implementation-wide
  */
-guint           ofa_idbprovider_get_interface_version     ( GType type );
+guint              ofa_idbprovider_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIDBMeta     *ofa_idbprovider_new_meta                  ( ofaIDBProvider *instance );
+ofaIDBDossierMeta *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *instance );
 
-ofaIDBConnect  *ofa_idbprovider_new_connect               ( ofaIDBProvider *instance );
+ofaIDBConnect     *ofa_idbprovider_new_connect               ( ofaIDBProvider *instance );
 
-ofaIDBEditor   *ofa_idbprovider_new_editor                ( ofaIDBProvider *instance,
-																gboolean editable );
+ofaIDBEditor      *ofa_idbprovider_new_editor                ( ofaIDBProvider *instance,
+																	gboolean editable );
 
-gchar          *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *instance );
+gchar             *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *instance );
 
-gchar          *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *instance );
+gchar             *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *instance );
 
 G_END_DECLS
 

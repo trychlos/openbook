@@ -39,7 +39,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-preferences.h"
@@ -805,7 +805,7 @@ application_activate( GApplication *application )
 	static const gchar *thisfn = "ofa_application_activate";
 	ofaApplicationPrivate *priv;
 	ofaDossierCollection *collection;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	ofaIDBPeriod *period;
 	GDate dbegin, dend;
 	gchar *str;
@@ -833,11 +833,11 @@ application_activate( GApplication *application )
 		period = NULL;
 		if( meta ){
 			if( !st_dossier_begin_opt && !st_dossier_end_opt ){
-				period = ofa_idbmeta_get_current_period( meta );
+				period = ofa_idbdossier_meta_get_current_period( meta );
 			} else {
 				my_date_set_from_str( &dbegin, st_dossier_begin_opt, MY_DATE_YYMD );
 				my_date_set_from_str( &dend, st_dossier_end_opt, MY_DATE_YYMD );
-				period = ofa_idbmeta_get_period( meta, &dbegin, &dend );
+				period = ofa_idbdossier_meta_get_period( meta, &dbegin, &dend );
 				if( !period ){
 					str = g_strdup_printf(
 							_( "Unable to find a financial period with specified dates (begin=%s, end=%s)" ),

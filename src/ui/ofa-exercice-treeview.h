@@ -45,7 +45,7 @@
  *    +------------------+--------------+
  */
 
-#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-tvbin.h"
 
@@ -77,7 +77,7 @@ GType                ofa_exercice_treeview_get_type    ( void ) G_GNUC_CONST;
 ofaExerciceTreeview *ofa_exercice_treeview_new         ( const gchar *settings_prefix );
 
 void                 ofa_exercice_treeview_set_dossier ( ofaExerciceTreeview *view,
-																ofaIDBMeta *meta );
+																ofaIDBDossierMeta *meta );
 
 gboolean             ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view,
 																ofaIDBPeriod **period );

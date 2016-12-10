@@ -30,7 +30,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -42,16 +42,16 @@
 /* private instance data
  */
 typedef struct {
-	gboolean          dispose_has_run;
+	gboolean           dispose_has_run;
 
 	/* initialization
 	 */
-	gchar            *settings_prefix;
+	gchar             *settings_prefix;
 
 	/* runtime
 	 */
-	ofaIDBMeta       *meta;
-	ofaExerciceStore *store;
+	ofaIDBDossierMeta *meta;
+	ofaExerciceStore  *store;
 }
 	ofaExerciceTreeviewPrivate;
 
@@ -205,7 +205,7 @@ ofa_exercice_treeview_class_init( ofaExerciceTreeviewClass *klass )
 	 * #ofaTVBin sends a 'ofa-seldelete' signal, with the current
 	 * #GtkTreeSelection as an argument.
 	 * #ofaExerciceTreeview proxyes it with this 'ofa-exedelete' signal,
-	 * providing the #ofoIDBMeta/#ofaIDBPeriod selected objects.
+	 * providing the #ofoIDBDossierMeta/#ofaIDBPeriod selected objects.
 	 *
 	 * Arguments is the selected ofaIDBPeriod object.
 	 *
@@ -291,13 +291,13 @@ setup_columns( ofaExerciceTreeview *self )
 /**
  * ofa_exercice_treeview_set_dossier:
  * @view: this #ofaExerciceTreeview instance.
- * @meta: the #ofaIDBMeta which describes the dossier.
+ * @meta: the #ofaIDBDossierMeta which describes the dossier.
  *
  * Create the store which automatically loads the available exercices
  * for this dossier.
  */
 void
-ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view, ofaIDBMeta *meta )
+ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view, ofaIDBDossierMeta *meta )
 {
 	static const gchar *thisfn = "ofa_exercice_treeview_set_dossier";
 	ofaExerciceTreeviewPrivate *priv;
@@ -305,7 +305,7 @@ ofa_exercice_treeview_set_dossier( ofaExerciceTreeview *view, ofaIDBMeta *meta )
 	g_debug( "%s: view=%p, meta=%p", thisfn, ( void * ) view, ( void * ) meta );
 
 	g_return_if_fail( view && OFA_IS_EXERCICE_TREEVIEW( view ));
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
 	priv = ofa_exercice_treeview_get_instance_private( view );
 

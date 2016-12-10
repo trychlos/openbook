@@ -32,7 +32,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 
 #include "core/ofa-dbms-root-bin.h"
@@ -51,7 +51,7 @@ typedef struct {
 
 	/* runtime data
 	 */
-	ofaIDBMeta   *meta;
+	ofaIDBDossierMeta   *meta;
 	gchar        *account;
 	gchar        *password;
 }
@@ -282,7 +282,7 @@ ofa_dbms_root_bin_get_size_group( ofaDBMSRootBin *bin, guint column )
 /**
  * ofa_dbms_root_bin_set_meta:
  * @bin: this #ofaDBMSRootBin instance.
- * @meta: the #ofaIDBMeta object which holds meta dossier datas.
+ * @meta: the #ofaIDBDossierMeta object which holds meta dossier datas.
  *
  * When set, this let the composite widget validate the account and the
  * password against the actual DBMS which manages this dossier.
@@ -292,12 +292,12 @@ ofa_dbms_root_bin_get_size_group( ofaDBMSRootBin *bin, guint column )
  * This reference will be released on widget destroy.
  */
 void
-ofa_dbms_root_bin_set_meta( ofaDBMSRootBin *bin, ofaIDBMeta *meta )
+ofa_dbms_root_bin_set_meta( ofaDBMSRootBin *bin, ofaIDBDossierMeta *meta )
 {
 	ofaDBMSRootBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_DBMS_ROOT_BIN( bin ));
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
 	priv = ofa_dbms_root_bin_get_instance_private( bin );
 
@@ -407,7 +407,7 @@ is_valid_composite( ofaDBMSRootBin *bin )
 		/* this only works if the dossier is already registered */
 		if( priv->meta ){
 			ok = FALSE;
-			provider = ofa_idbmeta_get_provider( priv->meta );
+			provider = ofa_idbdossier_meta_get_provider( priv->meta );
 			if( provider ){
 				connect = ofa_idbprovider_new_connect( provider );
 				ok = ofa_idbconnect_open_with_meta(

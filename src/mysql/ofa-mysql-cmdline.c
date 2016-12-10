@@ -46,7 +46,7 @@
 
 #include "my/my-utils.h"
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-settings.h"
 
@@ -233,7 +233,7 @@ ofa_mysql_cmdline_archive_and_new( ofaMySQLConnect *connect,
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_archive_and_new";
 	ofaMySQLConnect *server_cnx;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	const gchar *host, *socket, *prev_dbname;
 	guint port;
 	ofaIDBPeriod *period;
@@ -328,7 +328,7 @@ cmdline_build_from_connect( const gchar *template,
 {
 	static const gchar *thisfn = "ofa_mysql_cmdline_build_from_connect";
 	gchar *cmdline, *account, *password;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	const gchar *host, *socket, *connect_database;
 	guint port;
 

@@ -385,7 +385,7 @@ ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
 {
 	ofaDossierPrefsPrivate *priv;
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 
 	g_return_if_fail( prefs && OFA_IS_DOSSIER_PREFS( prefs ));
 
@@ -413,7 +413,7 @@ get_dossier_settings( ofaDossierPrefs *self )
 	ofaDossierPrefsPrivate *priv;
 	GList *list, *it;
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	const gchar *cstr;
 	gchar *str;
 
@@ -457,7 +457,7 @@ set_dossier_settings( ofaDossierPrefs *self )
 {
 	ofaDossierPrefsPrivate *priv;
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	gchar *str;
 
 	priv = ofa_dossier_prefs_get_instance_private( self );

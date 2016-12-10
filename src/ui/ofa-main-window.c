@@ -42,7 +42,7 @@
 
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-page.h"
@@ -888,7 +888,7 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 	ofaHub *hub;
 	ofoDossier *dossier;
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	ofaIDBPeriod *period;
 	gchar *title, *dos_name, *period_label, *period_name;
 
@@ -904,7 +904,7 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 		connect = ofa_hub_get_connect( hub );
 		meta = ofa_idbconnect_get_meta( connect );
 		period = ofa_idbconnect_get_period( connect );
-		dos_name = ofa_idbmeta_get_dossier_name( meta );
+		dos_name = ofa_idbdossier_meta_get_dossier_name( meta );
 		period_label = ofa_idbperiod_get_label( period );
 		period_name = ofa_idbperiod_get_name( period );
 

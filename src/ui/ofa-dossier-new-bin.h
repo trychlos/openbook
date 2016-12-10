@@ -42,8 +42,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbeditor.h"
-#include "api/ofa-idbmeta-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -67,19 +67,19 @@ typedef struct {
 }
 	ofaDossierNewBinClass;
 
-GType             ofa_dossier_new_bin_get_type             ( void ) G_GNUC_CONST;
+GType              ofa_dossier_new_bin_get_type      ( void ) G_GNUC_CONST;
 
-ofaDossierNewBin *ofa_dossier_new_bin_new                  ( ofaIGetter *getter );
+ofaDossierNewBin  *ofa_dossier_new_bin_new           ( ofaIGetter *getter );
 
-GtkSizeGroup     *ofa_dossier_new_bin_get_size_group       ( ofaDossierNewBin *bin,
-																	guint column );
+GtkSizeGroup      *ofa_dossier_new_bin_get_size_group( ofaDossierNewBin *bin,
+															guint column );
 
-gboolean          ofa_dossier_new_bin_get_valid            ( ofaDossierNewBin *bin,
-																	gchar **error_message );
+gboolean           ofa_dossier_new_bin_get_valid     ( ofaDossierNewBin *bin,
+															gchar **error_message );
 
-ofaIDBMeta       *ofa_dossier_new_bin_apply                ( ofaDossierNewBin *bin );
+ofaIDBDossierMeta *ofa_dossier_new_bin_apply         ( ofaDossierNewBin *bin );
 
-ofaIDBEditor     *ofa_dossier_new_bin_get_editor           ( ofaDossierNewBin *bin );
+ofaIDBEditor      *ofa_dossier_new_bin_get_editor    ( ofaDossierNewBin *bin );
 
 G_END_DECLS
 

@@ -37,7 +37,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
@@ -83,13 +83,13 @@ static void      idialog_init( myIDialog *instance );
 static void      setup_treeview( ofaDossierManager *self );
 static void      idialog_init_actions( ofaDossierManager *self );
 static void      idialog_init_menu( ofaDossierManager *self );
-static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
-static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
+static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
+static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self );
 static void      action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
 static void      action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
-static void      do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period );
+static void      do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBPeriod *period );
 static void      action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
-static gboolean  confirm_delete( ofaDossierManager *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
+static gboolean  confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const ofaIDBPeriod *period );
 static void      iactionable_iface_init( ofaIActionableInterface *iface );
 static guint     iactionable_get_interface_version( void );
 
@@ -342,13 +342,13 @@ idialog_init_menu( ofaDossierManager *self )
 }
 
 static void
-on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
+on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
 {
 	ofaDossierManagerPrivate *priv;
 	gboolean ok, is_opened;
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *dossier_meta;
+	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBPeriod *dossier_period;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
@@ -376,7 +376,7 @@ on_tview_changed( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *per
 }
 
 static void
-on_tview_activated( ofaDossierTreeview *tview, ofaIDBMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
+on_tview_activated( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaDossierManager *self )
 {
 	if( meta && period ){
 		do_open( self, meta, period );
@@ -405,7 +405,7 @@ action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierMana
 {
 	static const gchar *thisfn = "ofa_dossier_manager_action_on_open_activated";
 	ofaDossierManagerPrivate *priv;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	ofaIDBPeriod *period;
 
 	g_debug( "%s: action=%p, empty=%p, self=%p",
@@ -418,7 +418,7 @@ action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierMana
 
 	if( ofa_dossier_treeview_get_selected( priv->dossier_tview, &meta, &period )){
 		if( 0 ){
-			ofa_idbmeta_dump( meta );
+			ofa_idbdossier_meta_dump( meta );
 			ofa_idbperiod_dump( period );
 		}
 		do_open( self, meta, period );
@@ -426,7 +426,7 @@ action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierMana
 }
 
 static void
-do_open( ofaDossierManager *self, ofaIDBMeta *meta, ofaIDBPeriod *period )
+do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBPeriod *period )
 {
 	ofaDossierManagerPrivate *priv;
 
@@ -446,7 +446,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 	ofaDossierManagerPrivate *priv;
 	ofaHub *hub;
 	const ofaIDBConnect *dossier_connect;
-	ofaIDBMeta *meta, *dossier_meta;
+	ofaIDBDossierMeta *meta, *dossier_meta;
 	ofaIDBPeriod *period, *dossier_period;
 	ofoDossier *dossier;
 	gint cmp;
@@ -469,9 +469,9 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 			dossier_connect = ofa_hub_get_connect( hub );
 			g_return_if_fail( dossier_connect && OFA_IS_IDBCONNECT( dossier_connect ));
 			dossier_meta = ofa_idbconnect_get_meta( dossier_connect );
-			g_return_if_fail( dossier_meta && OFA_IS_IDBMETA( dossier_meta ));
+			g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
 			cmp = 1;
-			if( ofa_idbmeta_are_equal( meta, dossier_meta )){
+			if( ofa_idbdossier_meta_compare( meta, dossier_meta ) == 0 ){
 				dossier_period = ofa_idbconnect_get_period( dossier_connect );
 				g_return_if_fail( dossier_period && OFA_IS_IDBPERIOD( dossier_period ));
 				cmp = ofa_idbperiod_compare( period, dossier_period );
@@ -482,17 +482,17 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 				ofa_hub_dossier_close( ofa_igetter_get_hub( priv->getter ));
 			}
 		}
-		ofa_idbmeta_remove_period( meta, period );
+		ofa_idbdossier_meta_remove_period( meta, period );
 	}
 }
 
 static gboolean
-confirm_delete( ofaDossierManager *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
+confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const ofaIDBPeriod *period )
 {
 	gboolean ok;
 	gchar *period_name, *dossier_name, *str;
 
-	dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	period_name = ofa_idbperiod_get_name( period );
 	str = g_strdup_printf(
 			_( "You are about to remove the '%s' period from the '%s' dossier.\n"

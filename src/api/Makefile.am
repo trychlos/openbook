@@ -46,9 +46,9 @@ api_include_HEADERS = \
 	ofa-icontext.h										\
 	ofa-idate-filter.h									\
 	ofa-idbconnect.h									\
+	ofa-idbdossier-meta.h								\
+	ofa-idbdossier-meta-def.h							\
 	ofa-idbeditor.h										\
-	ofa-idbmeta.h										\
-	ofa-idbmeta-def.h									\
 	ofa-idbmodel.h										\
 	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\

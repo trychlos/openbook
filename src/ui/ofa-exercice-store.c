@@ -29,7 +29,7 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-preferences.h"
 
@@ -169,12 +169,12 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExercice
 /**
  * ofa_exercice_store_set_dossier:
  * @store: this #ofaExerciceStore instance.
- * @meta: the #ofaIDBMeta dossier.
+ * @meta: the #ofaIDBDossierMeta dossier.
  *
  * Set the store with defined financial periods for the @meta dossier.
  */
 void
-ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBMeta *meta )
+ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta )
 {
 	ofaExerciceStorePrivate *priv;
 	GList *period_list, *it;
@@ -183,14 +183,14 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBMeta *meta )
 	gchar *begin, *end, *status, *label;
 
 	g_return_if_fail( store && OFA_IS_EXERCICE_STORE( store ));
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
 	priv = ofa_exercice_store_get_instance_private( store );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
 	gtk_list_store_clear( GTK_LIST_STORE( store ));
-	period_list = ofa_idbmeta_get_periods( meta );
+	period_list = ofa_idbdossier_meta_get_periods( meta );
 
 	for( it=period_list; it ; it=it->next ){
 		period = ( ofaIDBPeriod * ) it->data;
@@ -221,5 +221,5 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBMeta *meta )
 		g_free( label );
 	}
 
-	ofa_idbmeta_free_periods( period_list );
+	ofa_idbdossier_meta_free_periods( period_list );
 }

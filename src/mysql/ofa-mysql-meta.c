@@ -29,7 +29,7 @@
 #include "my/my-isettings.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 
 #include "ofa-mysql-editor-enter.h"
 #include "ofa-mysql-meta.h"
@@ -52,19 +52,19 @@ typedef struct {
 #define MYSQL_SOCKET_KEY                "mysql-socket"
 #define MYSQL_PORT_KEY                  "mysql-port"
 
-static void            idbmeta_iface_init( ofaIDBMetaInterface *iface );
-static guint           idbmeta_get_interface_version( void );
-static void            idbmeta_set_from_settings( ofaIDBMeta *instance, myISettings *settings, const gchar *group );
-static void            idbmeta_set_from_editor( ofaIDBMeta *instance, const ofaIDBEditor *editor, myISettings *settings, const gchar *group );
-static GList          *load_periods( ofaIDBMeta *meta, myISettings *settings, const gchar *group );
+static void            idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface );
+static guint           idbdossier_meta_get_interface_version( void );
+static void            idbdossier_meta_set_from_settings( ofaIDBDossierMeta *instance, myISettings *settings, const gchar *group );
+static void            idbdossier_meta_set_from_editor( ofaIDBDossierMeta *instance, const ofaIDBEditor *editor, myISettings *settings, const gchar *group );
+static GList          *load_periods( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group );
 static ofaMySQLPeriod *find_period( ofaMySQLPeriod *period, GList *list );
-static void            idbmeta_update_period( ofaIDBMeta *instance, ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end );
-static void            idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period );
-static void            idbmeta_dump( const ofaIDBMeta *instance );
+static void            idbdossier_meta_update_period( ofaIDBDossierMeta *instance, ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end );
+static void            idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBPeriod *period );
+static void            idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMySQLMeta )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBMETA, idbmeta_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBDOSSIER_META, idbdossier_meta_iface_init ))
 
 static void
 mysql_meta_finalize( GObject *instance )
@@ -131,31 +131,31 @@ ofa_mysql_meta_class_init( ofaMySQLMetaClass *klass )
 }
 
 /*
- * ofaIDBMeta interface management
+ * ofaIDBDossierMeta interface management
  */
 static void
-idbmeta_iface_init( ofaIDBMetaInterface *iface )
+idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_meta_idbmeta_iface_init";
+	static const gchar *thisfn = "ofa_mysql_meta_idbdossier_meta_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
-	iface->get_interface_version = idbmeta_get_interface_version;
-	iface->set_from_settings = idbmeta_set_from_settings;
-	iface->set_from_editor = idbmeta_set_from_editor;
-	iface->update_period = idbmeta_update_period;
-	iface->remove_period = idbmeta_remove_period;
-	iface->dump = idbmeta_dump;
+	iface->get_interface_version = idbdossier_meta_get_interface_version;
+	iface->set_from_settings = idbdossier_meta_set_from_settings;
+	iface->set_from_editor = idbdossier_meta_set_from_editor;
+	iface->update_period = idbdossier_meta_update_period;
+	iface->remove_period = idbdossier_meta_remove_period;
+	iface->dump = idbdossier_meta_dump;
 }
 
 static guint
-idbmeta_get_interface_version( void )
+idbdossier_meta_get_interface_version( void )
 {
 	return( 1 );
 }
 
 static void
-idbmeta_set_from_settings( ofaIDBMeta *meta, myISettings *settings, const gchar *group )
+idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group )
 {
 	ofaMySQLMetaPrivate *priv;
 	GList *periods;
@@ -173,8 +173,8 @@ idbmeta_set_from_settings( ofaIDBMeta *meta, myISettings *settings, const gchar 
 
 	/* reload defined periods */
 	periods = load_periods( meta, settings, group );
-	ofa_idbmeta_set_periods( meta, periods );
-	ofa_idbmeta_free_periods( periods );
+	ofa_idbdossier_meta_set_periods( meta, periods );
+	ofa_idbdossier_meta_free_periods( periods );
 }
 
 /*
@@ -182,7 +182,7 @@ idbmeta_set_from_settings( ofaIDBMeta *meta, myISettings *settings, const gchar 
  *  existing references
  */
 static GList *
-load_periods( ofaIDBMeta *meta, myISettings *settings, const gchar *group )
+load_periods( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group )
 {
 	GList *outlist, *prev_list;
 	GList *keys, *itk;
@@ -190,7 +190,7 @@ load_periods( ofaIDBMeta *meta, myISettings *settings, const gchar *group )
 	ofaMySQLPeriod *new_period, *exist_period, *period;
 
 	keys = my_isettings_get_keys( settings, group );
-	prev_list = ofa_idbmeta_get_periods( meta );
+	prev_list = ofa_idbdossier_meta_get_periods( meta );
 	outlist = NULL;
 
 	for( itk=keys ; itk ; itk=itk->next ){
@@ -210,7 +210,7 @@ load_periods( ofaIDBMeta *meta, myISettings *settings, const gchar *group )
 		}
 	}
 
-	ofa_idbmeta_free_periods( prev_list );
+	ofa_idbdossier_meta_free_periods( prev_list );
 	my_isettings_free_keys( settings, keys );
 
 	return( g_list_reverse( outlist ));
@@ -233,7 +233,7 @@ find_period( ofaMySQLPeriod *period, GList *list )
 }
 
 static void
-idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, myISettings *settings, const gchar *group )
+idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, const ofaIDBEditor *editor, myISettings *settings, const gchar *group )
 {
 	ofaMySQLMetaPrivate *priv;
 	const gchar *host, *socket, *database;
@@ -266,12 +266,12 @@ idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, myISettin
 	database = ofa_mysql_editor_enter_get_database( OFA_MYSQL_EDITOR_ENTER( editor ));
 	period = ofa_mysql_period_new_to_settings( settings, group, TRUE, NULL, NULL, database );
 	periods = g_list_append( NULL, period );
-	ofa_idbmeta_set_periods( meta, periods );
-	ofa_idbmeta_free_periods( periods );
+	ofa_idbdossier_meta_set_periods( meta, periods );
+	ofa_idbdossier_meta_free_periods( periods );
 }
 
 static void
-idbmeta_update_period( ofaIDBMeta *instance,
+idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
 		ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end )
 {
 	myISettings *settings;
@@ -280,15 +280,15 @@ idbmeta_update_period( ofaIDBMeta *instance,
 	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
 	g_return_if_fail( period && OFA_IS_MYSQL_PERIOD( period ));
 
-	settings = ofa_idbmeta_get_settings( instance );
-	group = ofa_idbmeta_get_group_name( instance );
+	settings = ofa_idbdossier_meta_get_settings( instance );
+	group = ofa_idbdossier_meta_get_group_name( instance );
 	ofa_mysql_period_update( OFA_MYSQL_PERIOD( period ), settings, group, current, begin, end );
 
 	g_free( group );
 }
 
 static void
-idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period )
+idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBPeriod *period )
 {
 	myISettings *settings;
 	gchar *group;
@@ -296,15 +296,15 @@ idbmeta_remove_period( ofaIDBMeta *instance, ofaIDBPeriod *period )
 	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
 	g_return_if_fail( period && OFA_IS_MYSQL_PERIOD( period ));
 
-	settings = ofa_idbmeta_get_settings( instance );
-	group = ofa_idbmeta_get_group_name( instance );
+	settings = ofa_idbdossier_meta_get_settings( instance );
+	group = ofa_idbdossier_meta_get_group_name( instance );
 	ofa_mysql_period_remove( OFA_MYSQL_PERIOD( period ), settings, group );
 
 	g_free( group );
 }
 
 static void
-idbmeta_dump( const ofaIDBMeta *instance )
+idbdossier_meta_dump( const ofaIDBDossierMeta *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_meta_dump";
 	ofaMySQLMetaPrivate *priv;
@@ -418,13 +418,13 @@ ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
 	myISettings *settings;
 	gchar *group;
 
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
-	settings = ofa_idbmeta_get_settings( OFA_IDBMETA( meta ));
-	group = ofa_idbmeta_get_group_name( OFA_IDBMETA( meta ));
+	settings = ofa_idbdossier_meta_get_settings( OFA_IDBDOSSIER_META( meta ));
+	group = ofa_idbdossier_meta_get_group_name( OFA_IDBDOSSIER_META( meta ));
 
 	period = ofa_mysql_period_new_to_settings( settings, group, current, begin, end, database );
-	ofa_idbmeta_add_period( OFA_IDBMETA( meta ), OFA_IDBPERIOD( period ));
+	ofa_idbdossier_meta_add_period( OFA_IDBDOSSIER_META( meta ), OFA_IDBPERIOD( period ));
 	g_object_unref( period );
 
 	g_free( group );

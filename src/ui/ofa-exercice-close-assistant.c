@@ -40,7 +40,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-iexe-close.h"
@@ -81,7 +81,7 @@ typedef struct {
 	 */
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
-	ofaIDBMeta           *meta;
+	ofaIDBDossierMeta    *meta;
 	gchar                *dos_name;
 
 	/* p1 - closing parms
@@ -431,7 +431,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_meta( priv->connect );
-	priv->dos_name = ofa_idbmeta_get_dossier_name( priv->meta );
+	priv->dos_name = ofa_idbdossier_meta_get_dossier_name( priv->meta );
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 
@@ -1417,7 +1417,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	period = ofa_idbconnect_get_period( priv->connect );
 	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
 	end_old = ofo_dossier_get_exe_end( priv->dossier );
-	ofa_idbmeta_update_period( priv->meta, period, FALSE, begin_old, end_old );
+	ofa_idbdossier_meta_update_period( priv->meta, period, FALSE, begin_old, end_old );
 	g_object_unref( period );
 
 	begin_next = my_date_editable_get_date( GTK_EDITABLE( priv->p1_begin_next ), NULL );
@@ -1433,11 +1433,11 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 
 	} else {
 		/* open the new exercice */
-		period = ofa_idbmeta_get_current_period( priv->meta );
+		period = ofa_idbdossier_meta_get_current_period( priv->meta );
 		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
 		ofa_idbperiod_dump( period );
 
-		provider = ofa_idbmeta_get_provider( priv->meta );
+		provider = ofa_idbdossier_meta_get_provider( priv->meta );
 		cur_account = ofa_idbconnect_get_account( priv->connect );
 		cur_password = ofa_idbconnect_get_password( priv->connect );
 

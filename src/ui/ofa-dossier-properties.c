@@ -40,7 +40,6 @@
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmeta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"

@@ -22,19 +22,19 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OPENBOOK_API_OFA_IDBMETA_DEF_H__
-#define __OPENBOOK_API_OFA_IDBMETA_DEF_H__
+#ifndef __OPENBOOK_API_OFA_IDBDOSSIER_META_DEF_H__
+#define __OPENBOOK_API_OFA_IDBDOSSIER_META_DEF_H__
 
 /**
- * SECTION: idbmeta
- * @include: openbook/ofa-idbmeta-def.h
+ * SECTION: idbdossier_meta
+ * @include: openbook/ofa-idbdossier-meta-def.h
  */
 
 G_BEGIN_DECLS
 
-typedef struct _ofaIDBMeta                     ofaIDBMeta;
-typedef struct _ofaIDBMetaInterface            ofaIDBMetaInterface;
+typedef struct _ofaIDBDossierMeta                     ofaIDBDossierMeta;
+typedef struct _ofaIDBDossierMetaInterface            ofaIDBDossierMetaInterface;
 
 G_END_DECLS
 
-#endif /* __OPENBOOK_API_OFA_IDBMETA_DEF_H__ */
+#endif /* __OPENBOOK_API_OFA_IDBDOSSIER_META_DEF_H__ */

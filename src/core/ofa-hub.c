@@ -34,7 +34,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-iexportable.h"
@@ -1019,7 +1019,7 @@ check_db_vs_settings( ofaHub *hub )
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
 	const ofaIDBConnect *cnx;
 	ofaIDBPeriod *period;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
 	remediated = FALSE;
@@ -1058,7 +1058,7 @@ check_db_vs_settings( ofaHub *hub )
 		g_free( ssetend );
 
 		meta = ofa_idbconnect_get_meta( cnx );
-		ofa_idbmeta_update_period( meta, period, db_current, db_begin, db_end );
+		ofa_idbdossier_meta_update_period( meta, period, db_current, db_begin, db_end );
 		g_object_unref( meta );
 
 		remediated = TRUE;

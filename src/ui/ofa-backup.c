@@ -35,7 +35,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbperiod.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
@@ -61,7 +61,7 @@ typedef struct {
 	 */
 	ofaHub              *hub;
 	const ofaIDBConnect *connect;		/* its user connection */
-	ofaIDBMeta          *meta;			/* its meta datas */
+	ofaIDBDossierMeta   *meta;			/* its meta datas */
 }
 	ofaBackupPrivate;
 

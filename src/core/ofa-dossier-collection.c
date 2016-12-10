@@ -33,8 +33,8 @@
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-idbmeta.h"
 #include "api/ofa-settings.h"
 
 /* private instance data
@@ -68,12 +68,12 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void        setup_settings( ofaDossierCollection *self );
-static void        on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCollection *self );
-static GList      *load_dossiers( ofaDossierCollection *self, GList *previous_list );
-static ofaIDBMeta *dossier_collection_find_by_name( const gchar *dossier_name, GList *list );
-static void        dossier_collection_free_list( ofaDossierCollection *self );
-static void        free_dossiers_list( GList *list );
+static void               setup_settings( ofaDossierCollection *self );
+static void               on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCollection *self );
+static GList             *load_dossiers( ofaDossierCollection *self, GList *previous_list );
+static ofaIDBDossierMeta *dossier_collection_find_by_name( const gchar *dossier_name, GList *list );
+static void               dossier_collection_free_list( ofaDossierCollection *self );
+static void               free_dossiers_list( GList *list );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierCollection, ofa_dossier_collection, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaDossierCollection ))
@@ -213,7 +213,7 @@ setup_settings( ofaDossierCollection *self )
  * @collection: this #ofaDossierCollection instance.
  *
  * Returns: a list of defined dossiers as a #GList of GObject -derived
- * objects which implement the #ofaIDBMeta interface.
+ * objects which implement the #ofaIDBDossierMeta interface.
  *
  * The returned list is owned by the @collection instance, and should
  * not be released by the caller.
@@ -272,7 +272,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 	const gchar *cstr;
 	gchar *dos_name, *prov_name;
 	ofaIDBProvider *idbprovider;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 
 	priv = ofa_dossier_collection_get_instance_private( self );
 
@@ -305,13 +305,13 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			g_debug( "%s: dossier_name=%s is new, provider=%s", thisfn, dos_name, prov_name );
 			idbprovider = ofa_idbprovider_get_by_name( priv->hub, prov_name );
 			if( idbprovider ){
-				meta = ofa_idbprovider_new_meta( idbprovider );
-				ofa_idbmeta_set_dossier_name( meta, dos_name );
+				meta = ofa_idbprovider_new_dossier_meta( idbprovider );
+				ofa_idbdossier_meta_set_dossier_name( meta, dos_name );
 			}
 			g_free( prov_name );
 		}
-		ofa_idbmeta_set_from_settings( meta, MY_ISETTINGS( priv->settings ), cstr );
-		ofa_idbmeta_dump_rec( meta );
+		ofa_idbdossier_meta_set_from_settings( meta, MY_ISETTINGS( priv->settings ), cstr );
+		ofa_idbdossier_meta_dump_rec( meta );
 		outlist = g_list_prepend( outlist, meta );
 		g_free( dos_name );
 	}
@@ -349,17 +349,17 @@ ofa_dossier_collection_get_count( ofaDossierCollection *collection )
  * @collection: this #ofaDossierCollection instance.
  * @dossier_name: the named of the searched dossier.
  *
- * Returns: a new reference to the #ofaIDBMeta instance which holds
+ * Returns: a new reference to the #ofaIDBDossierMeta instance which holds
  * the meta datas for the specified @dossier_name, or %NULL if not
  * found.
  *
  * The returned reference should be g_object_unref() by the caller.
  */
-ofaIDBMeta *
+ofaIDBDossierMeta *
 ofa_dossier_collection_get_meta( ofaDossierCollection *collection, const gchar *dossier_name )
 {
 	ofaDossierCollectionPrivate *priv;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 
 	g_return_val_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ), NULL );
 
@@ -375,13 +375,13 @@ ofa_dossier_collection_get_meta( ofaDossierCollection *collection, const gchar *
 /**
  * ofa_dossier_collection_set_meta_from_editor:
  * @collection: this #ofaDossierCollection instance.
- * @meta: the #ofaIDBMeta to be set.
+ * @meta: the #ofaIDBDossierMeta to be set.
  * @editor: a #ofaIDBEditor instance which holds connection informations.
  *
  * Setup the @meta instance, writing informations to settings file.
  */
 void
-ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, ofaIDBMeta *meta, const ofaIDBEditor *editor )
+ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, ofaIDBDossierMeta *meta, const ofaIDBEditor *editor )
 {
 	static const gchar *thisfn = "ofa_dossier_collection_set_meta_from_editor";
 	ofaDossierCollectionPrivate *priv;
@@ -393,14 +393,14 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 			thisfn, ( void * ) collection, ( void * ) meta, ( void * ) editor );
 
 	g_return_if_fail( collection && OFA_IS_DOSSIER_COLLECTION( collection ));
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 	g_return_if_fail( editor && OFA_IS_IDBEDITOR( editor ));
 
 	priv = ofa_dossier_collection_get_instance_private( collection );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	dossier_name = ofa_idbmeta_get_dossier_name( meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	group = g_strdup_printf( "%s%s", DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX, dossier_name );
 
 	prov_instance = ofa_idbeditor_get_provider( editor );
@@ -408,7 +408,7 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 
 	my_isettings_set_string( priv->settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
 
-	ofa_idbmeta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
+	ofa_idbdossier_meta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
 
 	g_free( prov_name );
 	g_object_unref( prov_instance );
@@ -420,22 +420,22 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 }
 
 /*
- * find the #ofaIDBMeta by dossier name if exists
+ * find the #ofaIDBDossierMeta by dossier name if exists
  */
-static ofaIDBMeta *
+static ofaIDBDossierMeta *
 dossier_collection_find_by_name( const gchar *dossier_name, GList *list )
 {
 	GList *it;
-	ofaIDBMeta *meta;
-	gchar *meta_dos_name;
+	ofaIDBDossierMeta *meta;
+	gchar *meta_name;
 	gint cmp;
 
 	for( it=list ; it ; it=it->next ){
-		meta = ( ofaIDBMeta * ) it->data;
-		g_return_val_if_fail( meta && OFA_IS_IDBMETA( meta ), NULL );
-		meta_dos_name = ofa_idbmeta_get_dossier_name( meta );
-		cmp = g_utf8_collate( meta_dos_name, dossier_name );
-		g_free( meta_dos_name );
+		meta = ( ofaIDBDossierMeta * ) it->data;
+		g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+		meta_name = ofa_idbdossier_meta_get_dossier_name( meta );
+		cmp = g_utf8_collate( meta_name, dossier_name );
+		g_free( meta_name );
 		if( cmp == 0 ){
 			return( g_object_ref( meta ));
 		}

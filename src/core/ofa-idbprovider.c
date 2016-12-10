@@ -33,8 +33,8 @@
 
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-idbmeta.h"
 
 #define IDBPROVIDER_LAST_VERSION        1
 
@@ -221,29 +221,29 @@ ofa_idbprovider_get_interface_version( GType type )
 }
 
 /**
- * ofa_idbprovider_new_meta:
+ * ofa_idbprovider_new_dossier_meta:
  * @instance: this #ofaIDBProvider instance.
  *
- * Returns: a newly allocated #ofaIDBMeta object, which should be
+ * Returns: a newly allocated #ofaIDBDossierMeta object, which should be
  * g_object_unref() by the caller.
  */
-ofaIDBMeta *
-ofa_idbprovider_new_meta( ofaIDBProvider *instance )
+ofaIDBDossierMeta *
+ofa_idbprovider_new_dossier_meta( ofaIDBProvider *instance )
 {
-	static const gchar *thisfn = "ofa_idbprovider_new_meta";
-	ofaIDBMeta *meta;
+	static const gchar *thisfn = "ofa_idbprovider_new_dossier_meta";
+	ofaIDBDossierMeta *meta;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta ){
-		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_meta( instance );
-		ofa_idbmeta_set_provider( meta, instance );
+	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_dossier_meta ){
+		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_dossier_meta( instance );
+		ofa_idbdossier_meta_set_provider( meta, instance );
 		return( meta );
 	}
 
-	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_meta()' method",
+	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_dossier_meta()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

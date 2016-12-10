@@ -37,7 +37,7 @@
 
 #include <gtk/gtk.h>
 
-#include "api/ofa-idbmeta-def.h"
+#include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbperiod.h"
 
 G_BEGIN_DECLS
@@ -66,7 +66,7 @@ GType             ofa_exercice_combo_get_type    ( void ) G_GNUC_CONST;
 ofaExerciceCombo *ofa_exercice_combo_new         ( void );
 
 void              ofa_exercice_combo_set_dossier ( ofaExerciceCombo *combo,
-															ofaIDBMeta *meta );
+															ofaIDBDossierMeta *meta );
 
 void              ofa_exercice_combo_set_selected( ofaExerciceCombo *combo,
 															ofaIDBPeriod *period );

@@ -26,7 +26,7 @@
 #include <config.h>
 #endif
 
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 
 #include "ui/ofa-exercice-combo.h"
 #include "ui/ofa-exercice-store.h"
@@ -198,15 +198,15 @@ on_exercice_changed( ofaExerciceCombo *combo, void *empty )
 /**
  * ofa_exercice_combo_set_dossier:
  * @combo: this #ofaExerciceCombo instance.
- * @meta: the #ofaIDBMeta which handles the dossier.
+ * @meta: the #ofaIDBDossierMeta which handles the dossier.
  */
 void
-ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, ofaIDBMeta *meta )
+ofa_exercice_combo_set_dossier( ofaExerciceCombo *combo, ofaIDBDossierMeta *meta )
 {
 	ofaExerciceComboPrivate *priv;
 
 	g_return_if_fail( combo && OFA_IS_EXERCICE_COMBO( combo ));
-	g_return_if_fail( meta && OFA_IS_IDBMETA( meta ));
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
 	priv = ofa_exercice_combo_get_instance_private( combo );
 

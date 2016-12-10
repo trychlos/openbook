@@ -178,7 +178,7 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-guided-input-bin.lo ofa-hub.lo ofa-iabout.lo \
 	ofa-iactionable.lo ofa-iactioner.lo ofa-icontext.lo \
 	ofa-iconcil.lo ofa-idate-filter.lo ofa-idbconnect.lo \
-	ofa-idbeditor.lo ofa-idbmeta.lo ofa-idbmodel.lo \
+	ofa-idbdossier-meta.lo ofa-idbeditor.lo ofa-idbmodel.lo \
 	ofa-idbperiod.lo ofa-idbprovider.lo ofa-iexe-close.lo \
 	ofa-iexportable.lo ofa-igetter.lo ofa-iimporter.lo \
 	ofa-iimportable.lo ofa-import-duplicate.lo \
@@ -532,8 +532,8 @@ libofa_core_la_SOURCES = \
 	ofa-iconcil.h										\
 	ofa-idate-filter.c									\
 	ofa-idbconnect.c									\
+	ofa-idbdossier-meta.c								\
 	ofa-idbeditor.c										\
-	ofa-idbmeta.c										\
 	ofa-idbmodel.c										\
 	ofa-idbperiod.c										\
 	ofa-idbprovider.c									\
@@ -753,8 +753,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-icontext.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idate-filter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbconnect.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbdossier-meta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbeditor.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmeta.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbmodel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbperiod.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-idbprovider.Plo@am__quote@

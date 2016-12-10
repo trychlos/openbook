@@ -33,7 +33,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
-#include "api/ofa-idbmeta.h"
+#include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-isignal-hub.h"
@@ -1907,7 +1907,7 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 {
 	static const gchar *thisfn = "ofo_dossier_hub_on_exe_dates_changed";
 	const ofaIDBConnect *connect;
-	ofaIDBMeta *meta;
+	ofaIDBDossierMeta *meta;
 	ofaIDBPeriod *period;
 	ofoDossier *dossier;
 
@@ -1921,7 +1921,7 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 		meta = ofa_idbconnect_get_meta( connect );
 		period = ofa_idbconnect_get_period( connect );
 
-		ofa_idbmeta_update_period( meta, period,
+		ofa_idbdossier_meta_update_period( meta, period,
 				TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
 
 		g_object_unref( period );
