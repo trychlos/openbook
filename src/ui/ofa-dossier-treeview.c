@@ -412,8 +412,8 @@ get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selecti
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		ok = TRUE;
 		gtk_tree_model_get( tmodel, &iter,
-				DOSSIER_COL_META,   &row_meta,
-				DOSSIER_COL_PERIOD, &row_period,
+				DOSSIER_COL_DOS_META,   &row_meta,
+				DOSSIER_COL_EXE_META, &row_period,
 				-1 );
 		g_object_unref( row_meta );
 		g_object_unref( row_period );
@@ -558,7 +558,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( tvbin ));
 
 	visible = TRUE;
-	gtk_tree_model_get( model, iter, DOSSIER_COL_META, &meta, DOSSIER_COL_PERIOD, &period, -1 );
+	gtk_tree_model_get( model, iter, DOSSIER_COL_DOS_META, &meta, DOSSIER_COL_EXE_META, &period, -1 );
 
 	/* note: a new row is first inserted, before the columns be set
 	 * (cf. ofaDossierStore::insert_row())

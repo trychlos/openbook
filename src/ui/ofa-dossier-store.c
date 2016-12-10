@@ -314,8 +314,8 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 			DOSSIER_COL_END,      end,
 			DOSSIER_COL_STATUS,   status,
 			DOSSIER_COL_CURRENT,  ofa_idbexercice_meta_get_current( period ),
-			DOSSIER_COL_META,     dossier_meta,
-			DOSSIER_COL_PERIOD,   period,
+			DOSSIER_COL_DOS_META,     dossier_meta,
+			DOSSIER_COL_EXE_META,   period,
 			-1 );
 
 	g_free( provname );

@@ -94,8 +94,8 @@ typedef struct {
  * @DOSSIER_COL_BEGIN   : begin of exercice                    String        Yes
  * @DOSSIER_COL_STATUS  : localized status of the exercice     String        Yes
  * @DOSSIER_COL_CURRENT : whether the period is current        Bool           No
- * @DOSSIER_COL_META    : the #ofaIDBDossierMeta object        GObject        No
- * @DOSSIER_COL_PERIOD  : the #ofaIDBExerciceMeta object       GObject        No
+ * @DOSSIER_COL_DOS_META: the #ofaIDBDossierMeta object        GObject        No
+ * @DOSSIER_COL_EXE_META: the #ofaIDBExerciceMeta object       GObject        No
  */
 enum {
 	DOSSIER_COL_DOSNAME = 0,
@@ -105,8 +105,8 @@ enum {
 	DOSSIER_COL_BEGIN,
 	DOSSIER_COL_STATUS,
 	DOSSIER_COL_CURRENT,
-	DOSSIER_COL_META,
-	DOSSIER_COL_PERIOD,
+	DOSSIER_COL_DOS_META,
+	DOSSIER_COL_EXE_META,
 	DOSSIER_N_COLUMNS
 };
 
