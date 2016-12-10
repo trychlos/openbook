@@ -500,11 +500,9 @@ ofa_dossier_new_bin_get_valid( ofaDossierNewBin *bin, gchar **error_message )
 		str = g_strdup( _( "Dossier name is not set" ));
 
 	} else {
-		meta = ofa_dossier_collection_get_meta( priv->dossier_collection, priv->dossier_name );
+		meta = ofa_dossier_collection_get_by_name( priv->dossier_collection, priv->dossier_name );
 		if( meta ){
 			str = g_strdup_printf( _( "%s is already defined" ), priv->dossier_name );
-			g_clear_object( &meta );
-
 		} else {
 			ok = TRUE;
 		}

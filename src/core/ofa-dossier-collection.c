@@ -71,8 +71,8 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static void               setup_settings( ofaDossierCollection *self );
 static void               on_settings_changed( myFileMonitor *monitor, const gchar *filename, ofaDossierCollection *self );
 static GList             *load_dossiers( ofaDossierCollection *self, GList *previous_list );
-static ofaIDBDossierMeta *dossier_collection_find_by_name( const gchar *dossier_name, GList *list );
 static void               dossier_collection_free_list( ofaDossierCollection *self );
+static ofaIDBDossierMeta *get_dossier_by_name( GList *list, const gchar *dossier_name );
 static void               free_dossiers_list( GList *list );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierCollection, ofa_dossier_collection, G_TYPE_OBJECT, 0,
@@ -291,10 +291,11 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			g_info( "%s: found empty dossier name in group '%s', skipping", thisfn, cstr );
 			continue;
 		}
-		meta = dossier_collection_find_by_name( dos_name, prev_list );
+		meta = get_dossier_by_name( prev_list, dos_name );
 		if( meta ){
 			g_debug( "%s: dossier_name=%s already exists with meta=%p, reusing it",
 					thisfn, dos_name, ( void * ) meta );
+			g_object_ref( meta );
 		} else {
 			prov_name = my_isettings_get_string( priv->settings, cstr, DOSSIER_COLLECTION_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
@@ -345,7 +346,7 @@ ofa_dossier_collection_get_count( ofaDossierCollection *collection )
 }
 
 /**
- * ofa_dossier_collection_get_meta:
+ * ofa_dossier_collection_get_by_name:
  * @collection: this #ofaDossierCollection instance.
  * @dossier_name: the named of the searched dossier.
  *
@@ -353,10 +354,11 @@ ofa_dossier_collection_get_count( ofaDossierCollection *collection )
  * the meta datas for the specified @dossier_name, or %NULL if not
  * found.
  *
- * The returned reference should be g_object_unref() by the caller.
+ * The returned reference is owned by the @collection instance and
+ * should not be released by the caller.
  */
 ofaIDBDossierMeta *
-ofa_dossier_collection_get_meta( ofaDossierCollection *collection, const gchar *dossier_name )
+ofa_dossier_collection_get_by_name( ofaDossierCollection *collection, const gchar *dossier_name )
 {
 	ofaDossierCollectionPrivate *priv;
 	ofaIDBDossierMeta *meta;
@@ -367,7 +369,7 @@ ofa_dossier_collection_get_meta( ofaDossierCollection *collection, const gchar *
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	meta = dossier_collection_find_by_name( dossier_name, priv->list );
+	meta = get_dossier_by_name( priv->list, dossier_name );
 
 	return( meta );
 }
@@ -419,30 +421,6 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 }
 
 /*
- * find the #ofaIDBDossierMeta by dossier name if exists
- */
-static ofaIDBDossierMeta *
-dossier_collection_find_by_name( const gchar *dossier_name, GList *list )
-{
-	GList *it;
-	ofaIDBDossierMeta *meta;
-	const gchar *meta_name;
-	gint cmp;
-
-	for( it=list ; it ; it=it->next ){
-		meta = ( ofaIDBDossierMeta * ) it->data;
-		g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
-		meta_name = ofa_idbdossier_meta_get_dossier_name( meta );
-		cmp = g_utf8_collate( meta_name, dossier_name );
-		if( cmp == 0 ){
-			return( g_object_ref( meta ));
-		}
-	}
-
-	return( NULL );
-}
-
-/*
  * free the list of dossiers
  */
 static void
@@ -454,6 +432,28 @@ dossier_collection_free_list( ofaDossierCollection *self )
 
 	free_dossiers_list( priv->list );
 	priv->list = NULL;
+}
+
+/*
+ * find the #ofaIDBDossierMeta by dossier name if exists
+ */
+static ofaIDBDossierMeta *
+get_dossier_by_name( GList *list, const gchar *dossier_name )
+{
+	GList *it;
+	ofaIDBDossierMeta *meta;
+	const gchar *meta_name;
+
+	for( it=list ; it ; it=it->next ){
+		meta = ( ofaIDBDossierMeta * ) it->data;
+		g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+		meta_name = ofa_idbdossier_meta_get_dossier_name( meta );
+		if( my_collate( meta_name, dossier_name ) == 0 ){
+			return( meta );
+		}
+	}
+
+	return( NULL );
 }
 
 /*

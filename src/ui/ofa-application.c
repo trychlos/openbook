@@ -829,7 +829,7 @@ application_activate( GApplication *application )
 	 * command-line */
 	if( st_dossier_name_opt ){
 		collection = ofa_hub_get_dossier_collection( priv->hub );
-		meta = ofa_dossier_collection_get_meta( collection, st_dossier_name_opt );
+		meta = ofa_dossier_collection_get_by_name( collection, st_dossier_name_opt );
 		period = NULL;
 		if( meta ){
 			if( !st_dossier_begin_opt && !st_dossier_end_opt ){
@@ -857,7 +857,6 @@ application_activate( GApplication *application )
 					meta, period, st_dossier_user_opt, st_dossier_passwd_opt );
 		}
 		g_clear_object( &period );
-		g_clear_object( &meta );
 	}
 }
 
