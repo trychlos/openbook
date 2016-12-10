@@ -48,9 +48,9 @@
 
 #include "my/my-icollector.h"
 
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-iimportable.h"
@@ -97,52 +97,52 @@ typedef struct {
 #define SIGNAL_HUB_STATUS_CHANGE        "hub-status-change"
 #define SIGNAL_HUB_EXE_DATES_CHANGED    "hub-exe-dates-changed"
 
-GType                   ofa_hub_get_type                  ( void ) G_GNUC_CONST;
+GType                  ofa_hub_get_type                  ( void ) G_GNUC_CONST;
 
-ofaHub                 *ofa_hub_new                       ( void );
+ofaHub                *ofa_hub_new                       ( void );
 
-ofaExtenderCollection  *ofa_hub_get_extender_collection   ( ofaHub *hub );
+ofaExtenderCollection *ofa_hub_get_extender_collection   ( ofaHub *hub );
 
-void                    ofa_hub_set_extender_collection   ( ofaHub *hub,
+void                   ofa_hub_set_extender_collection   ( ofaHub *hub,
 																ofaExtenderCollection *collection );
 
-myICollector           *ofa_hub_get_collector             ( const ofaHub *hub );
+myICollector          *ofa_hub_get_collector             ( const ofaHub *hub );
 
-void                    ofa_hub_init_signaling_system     ( ofaHub *hub );
+void                   ofa_hub_init_signaling_system     ( ofaHub *hub );
 
-void                    ofa_hub_register_types            ( ofaHub *hub );
+void                   ofa_hub_register_types            ( ofaHub *hub );
 
-GList                  *ofa_hub_get_for_type              ( ofaHub *hub,
+GList                 *ofa_hub_get_for_type              ( ofaHub *hub,
 																GType type );
 
-ofaPortfolioCollection *ofa_hub_get_portfolio_collection  ( ofaHub *hub );
+ofaDossierCollection  *ofa_hub_get_dossier_collection    ( ofaHub *hub );
 
-void                    ofa_hub_set_portfolio_collection  ( ofaHub *hub,
-																ofaPortfolioCollection *collection );
+void                   ofa_hub_set_dossier_collection    ( ofaHub *hub,
+																ofaDossierCollection *collection );
 
-const ofaIDBConnect    *ofa_hub_get_connect               ( ofaHub *hub );
+const ofaIDBConnect   *ofa_hub_get_connect               ( ofaHub *hub );
 
-ofoDossier             *ofa_hub_get_dossier               ( ofaHub *hub );
+ofoDossier            *ofa_hub_get_dossier               ( ofaHub *hub );
 
-gboolean                ofa_hub_dossier_open              ( ofaHub *hub,
+gboolean               ofa_hub_dossier_open              ( ofaHub *hub,
 																ofaIDBConnect *connect,
 																GtkWindow *parent,
 																gboolean run_prefs,
 																gboolean read_only );
 
-void                    ofa_hub_dossier_close             ( ofaHub *hub );
+void                   ofa_hub_dossier_close             ( ofaHub *hub );
 
-gboolean                ofa_hub_dossier_is_writable       ( ofaHub *hub );
+gboolean               ofa_hub_dossier_is_writable       ( ofaHub *hub );
 
-ofaDossierPrefs        *ofa_hub_dossier_get_prefs         ( ofaHub *hub );
+ofaDossierPrefs       *ofa_hub_dossier_get_prefs         ( ofaHub *hub );
 
-gboolean                ofa_hub_dossier_remediate_settings( ofaHub *hub );
+gboolean               ofa_hub_dossier_remediate_settings( ofaHub *hub );
 
-ofaIImporter           *ofa_hub_get_willing_to            ( ofaHub *hub,
+ofaIImporter          *ofa_hub_get_willing_to            ( ofaHub *hub,
 																const gchar *uri,
 																GType type );
 
-void                    ofa_hub_disconnect_handlers       ( ofaHub *hub,
+void                   ofa_hub_disconnect_handlers       ( ofaHub *hub,
 																GList **handlers );
 
 G_END_DECLS

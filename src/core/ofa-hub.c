@@ -54,20 +54,20 @@
 /* private instance data
  */
 typedef struct {
-	gboolean                dispose_has_run;
+	gboolean               dispose_has_run;
 
 	/* global data
 	 */
-	ofaExtenderCollection  *extenders;
-	ofaPortfolioCollection *portfolios;
-	GList                  *core_objects;
+	ofaExtenderCollection *extenders;
+	ofaDossierCollection  *dossier_collection;
+	GList                 *core_objects;
 
 	/* dossier
 	 */
-	ofaIDBConnect          *connect;
-	ofoDossier             *dossier;
-	ofaDossierPrefs        *dossier_prefs;
-	gboolean                read_only;
+	ofaIDBConnect         *connect;
+	ofoDossier            *dossier;
+	ofaDossierPrefs       *dossier_prefs;
+	gboolean               read_only;
 }
 	ofaHubPrivate;
 
@@ -134,7 +134,7 @@ hub_dispose( GObject *instance )
 		/* unref object members here */
 
 		g_clear_object( &priv->extenders );
-		g_clear_object( &priv->portfolios );
+		g_clear_object( &priv->dossier_collection );
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
 
 		dossier_do_close( OFA_HUB( instance ));
@@ -159,7 +159,7 @@ ofa_hub_init( ofaHub *self )
 	priv->dispose_has_run = FALSE;
 
 	priv->extenders = NULL;
-	priv->portfolios = NULL;
+	priv->dossier_collection = NULL;
 }
 
 static void
@@ -742,18 +742,18 @@ ofa_hub_get_for_type( ofaHub *hub, GType type )
 }
 
 /**
- * ofa_hub_get_portfolio_collection:
+ * ofa_hub_get_dossier_collection:
  * @hub: this #ofaHub instance.
  *
- * Returns: the #ofaPortfolioCollection object which manages the
+ * Returns: the #ofaDossierCollection object which manages the
  * collection of dossiers (aka portfolio) from the settings point of
  * view.
  *
  * The returned reference is owned by the @hub instance, and should not
  * be unreffed by the caller.
  */
-ofaPortfolioCollection *
-ofa_hub_get_portfolio_collection( ofaHub *hub )
+ofaDossierCollection *
+ofa_hub_get_dossier_collection( ofaHub *hub )
 {
 	ofaHubPrivate *priv;
 
@@ -763,18 +763,18 @@ ofa_hub_get_portfolio_collection( ofaHub *hub )
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
-	return( priv->portfolios );
+	return( priv->dossier_collection );
 }
 
 /**
- * ofa_hub_set_portfolio_collection:
+ * ofa_hub_set_dossier_collection:
  * @hub: this #ofaHub instance.
- * @collection: the dossier collection.
+ * @collection: the #ofaDossierCollection collection.
  *
- * Set the portfolio collection.
+ * Set the dossiers collection.
  */
 void
-ofa_hub_set_portfolio_collection( ofaHub *hub, ofaPortfolioCollection *collection )
+ofa_hub_set_dossier_collection( ofaHub *hub, ofaDossierCollection *collection )
 {
 	ofaHubPrivate *priv;
 
@@ -784,7 +784,7 @@ ofa_hub_set_portfolio_collection( ofaHub *hub, ofaPortfolioCollection *collectio
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->portfolios = collection;
+	priv->dossier_collection = collection;
 }
 
 /*

@@ -66,11 +66,11 @@ enum {
 static ofaDossierStore *st_store                = NULL;
 static guint            st_signals[ N_SIGNALS ] = { 0 };
 
-static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store );
-static void     on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaDossierStore *store );
-static void     load_dataset( ofaDossierStore *store, ofaPortfolioCollection *dir );
-static void     insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
-static void     set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
+static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *self );
+static void     on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaDossierStore *self );
+static void     load_dataset( ofaDossierStore *self, ofaDossierCollection *collection );
+static void     insert_row( ofaDossierStore *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period );
+static void     set_row( ofaDossierStore *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaDossierStore ))
@@ -162,7 +162,7 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
 
 /**
  * ofa_dossier_store_new:
- * @dir: [allow-none]: the #ofaPortfolioCollection instance which centralize the
+ * @collection: [allow-none]: the #ofaDossierCollection instance which centralize the
  *  list of defined dossiers. This must be non-null at first call
  *  (instanciation time), while is not used on successive calls.
  *
@@ -175,7 +175,7 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
  * must be g_object_unref() by the caller.
  */
 ofaDossierStore *
-ofa_dossier_store_new( ofaPortfolioCollection *dir )
+ofa_dossier_store_new( ofaDossierCollection *collection )
 {
 	ofaDossierStore *store;
 
@@ -195,8 +195,8 @@ ofa_dossier_store_new( ofaPortfolioCollection *dir )
 				GTK_TREE_SORTABLE( store ),
 				GTK_TREE_SORTABLE_DEFAULT_SORT_COLUMN_ID, GTK_SORT_ASCENDING );
 
-		g_signal_connect( dir, "changed", G_CALLBACK( on_file_dir_changed ), store );
-		load_dataset( store, dir );
+		g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), store );
+		load_dataset( store, collection );
 		st_store = store;
 	}
 
@@ -212,7 +212,7 @@ ofa_dossier_store_new( ofaPortfolioCollection *dir )
  * dossier names and dates of exercices
  */
 static gint
-on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *store )
+on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *self )
 {
 	gchar *adname, *abegin, *bdname, *bbegin;
 	gint cmp;
@@ -240,24 +240,24 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierS
 }
 
 static void
-on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaDossierStore *store )
+on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaDossierStore *self )
 {
-	gtk_list_store_clear( GTK_LIST_STORE( store ));
-	load_dataset( store, dir );
+	gtk_list_store_clear( GTK_LIST_STORE( self ));
+	load_dataset( self, collection );
 }
 
 /*
  * load the dataset
  */
 static void
-load_dataset( ofaDossierStore *store, ofaPortfolioCollection *dir )
+load_dataset( ofaDossierStore *self, ofaDossierCollection *collection )
 {
 	GList *dossier_list, *itd;
 	ofaIDBMeta *meta;
 	GList *period_list, *itp;
 	ofaIDBPeriod *period;
 
-	dossier_list = ofa_portfolio_collection_get_dossiers( dir );
+	dossier_list = ofa_dossier_collection_get_list( collection );
 
 	for( itd=dossier_list ; itd ; itd=itd->next ){
 		meta = ( ofaIDBMeta * ) itd->data;
@@ -268,29 +268,27 @@ load_dataset( ofaDossierStore *store, ofaPortfolioCollection *dir )
 			period = ( ofaIDBPeriod * ) itp->data;
 			g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
 
-			insert_row( store, meta, period );
+			insert_row( self, meta, period );
 		}
 		ofa_idbmeta_free_periods( period_list );
 	}
-
-	ofa_portfolio_collection_free_dossiers( dossier_list );
 }
 
 static void
-insert_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
+insert_row( ofaDossierStore *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period )
 {
 	static const gchar *thisfn = "ofa_dossier_store_insert_row";
 	GtkTreeIter iter;
 
-	g_debug( "%s: store=%p, meta=%p, period=%p",
-			thisfn, ( void * ) store, ( void * ) meta, ( void * ) period );
+	g_debug( "%s: self=%p, meta=%p, period=%p",
+			thisfn, ( void * ) self, ( void * ) meta, ( void * ) period );
 
-	gtk_list_store_insert( GTK_LIST_STORE( store ), &iter, -1 );
-	set_row( store, meta, period, &iter );
+	gtk_list_store_insert( GTK_LIST_STORE( self ), &iter, -1 );
+	set_row( self, meta, period, &iter );
 }
 
 static void
-set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter )
+set_row( ofaDossierStore *self, const ofaIDBMeta *meta, const ofaIDBPeriod *period, GtkTreeIter *iter )
 {
 	gchar *dosname, *begin, *end, *status, *pername, *provname;
 	ofaIDBProvider *provider;
@@ -306,7 +304,7 @@ set_row( ofaDossierStore *store, const ofaIDBMeta *meta, const ofaIDBPeriod *per
 	pername = ofa_idbperiod_get_name( period );
 
 	gtk_list_store_set(
-			GTK_LIST_STORE( store ),
+			GTK_LIST_STORE( self ),
 			iter,
 			DOSSIER_COL_DOSNAME,  dosname,
 			DOSSIER_COL_PROVNAME, provname,

@@ -68,6 +68,7 @@
    - ofaExerciceTreeview: new class.
    - ofaMiscAuditStore: new class.
    - ofaMiscAuditTreeview: new class.
+   - ofaPortfolioCollection: renamed to ofaDossierCollection (todo #1264).
    - ofaTargetChooserBin: new class.
    - ofaTVBin: new ofa-tvbin-vexpand property.
 

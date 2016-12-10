@@ -33,6 +33,7 @@ api_include_HEADERS = \
 	ofa-core.h											\
 	ofa-counter.h										\
 	ofa-date-filter-hv-bin.h							\
+	ofa-dossier-collection.h							\
 	ofa-dossier-prefs.h									\
 	ofa-extender-collection.h							\
 	ofa-extender-module.h								\
@@ -78,7 +79,6 @@ api_include_HEADERS = \
 	ofa-page-def.h										\
 	ofa-page-prot.h										\
 	ofa-paimean-editable.h								\
-	ofa-portfolio-collection.h							\
 	ofa-preferences.h									\
 	ofa-render-page.h									\
 	ofa-settings.h										\

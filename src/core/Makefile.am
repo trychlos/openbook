@@ -91,6 +91,7 @@ libofa_core_la_SOURCES = \
 	ofa-date-filter-hv-bin.c							\
 	ofa-dbms-root-bin.c									\
 	ofa-dbms-root-bin.h									\
+	ofa-dossier-collection.c							\
 	ofa-dossier-delete-prefs-bin.c						\
 	ofa-dossier-delete-prefs-bin.h						\
 	ofa-dossier-prefs.c									\
@@ -165,7 +166,6 @@ libofa_core_la_SOURCES = \
 	ofa-paimean-treeview.h								\
 	ofa-paned-page.c									\
 	ofa-page.c											\
-	ofa-portfolio-collection.c							\
 	ofa-preferences.c									\
 	ofa-rate-store.c									\
 	ofa-rate-store.h									\

@@ -367,7 +367,40 @@
 
 1262 2016-11-17 pass settings_prefix as a constructor argument (or know why)
 
-1263
+1263 2016-11-19 store documents
+                + attach documents via an interface to:
+                - BAT: the original imported document from the bank,
+                - operations: the bill, or the purchase trace
+                - entries: idem operation,
+                - accounts: all documents for this account
+
+1265 2016-11-28 myISettings: simplify the interface
+     2016-12- 8 we roughly only need read strlist and write str 
+
+1266 2016-11-28 openbook: have two objects derived from mySettings class
+     2016-12- 6 + registering them in ofaHub
+
+1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
+
+1270 2016-11-29 ofaIDBDossierEditor and ofaIDBExerciceEditor obsolete
+                ofaIDBEditor interface, and ofaMysqlEditorEnter and
+                ofaMysqlEditorDisplay classes.
+
+1271 2016-12- 1 obsoletes ofaDbmsRootBin
+                moving to mysql
+
+1272 2016-12- 6 move initialization from ofa_application_new() to
+                application_startup() if possible
+
+1273 2016-12- 6 move to hub initialization all the stuff which is not
+                required by the ui (and not by gtk as Gtk may be required
+                by the plugins which not all involve the ui)
+
+1274 2016-12- 8 rename ofaIDBMeta to ofaIDBDossierMeta
+
+1275 2016-12- 8 rename ofaIDBPeriod to ofaIDBExerciceMeta
+
+1276
 
 -----------------------------------------------------------------------
  DONE
@@ -1177,11 +1210,11 @@
 1051 2016- 3-26 FEAT add account import on dossier creation
      2016- 3-27 done
 
-1052 2016- 3-26 CODE rename ofaFileDir to ofaPortfolioCollection
+1052 2016- 3-26 CODE rename ofaFileDir to ofaDossierCollection
                       ofaDossierStore to ofaPortfolioStore
                       ofaIDBMeta to ofaPortfolioMeta
                       ofaIDBPeriod to ofaPortfolioPeriod
-     2016- 3-27 done for ofaFileDir to ofaPortfolioCollection
+     2016- 3-27 done for ofaFileDir to ofaDossierCollection
                 ofaIDBMeta and ofaIDBPeriod are left
 
 1054 2016- 3-28 BUG  size and position of a myIWindow should not depend
@@ -1975,6 +2008,21 @@
                 #3  0x000000000042f8c8 in do_run (self=0xc1ee00) at ../../../src/ui/ofa-check-balances-bin.c:277
                 note that there is no entries nor any ledgers on this db
      2016-11-17 fixed
+
+1264 2016-11-24 PortfolioCollection: rename to DossierCollection
+                + this is this class which gives the list of dossiers
+     2016-12-10 done
+
+1268 2016-11-29 ofaDossierMeta class obsoletes ofaIDBMeta interface
+                and ofaMysqlMeta class.
+     2016-12- 8 there is no real added value to have a class object different
+                as ofaIDBConnect has anyway to know the main class to be able
+                to see if a given dossier if opened
+                -> cancelled
+
+1269 2016-11-29 ofaExerciceMeta class obsoletes ofaIDBPeriod interface
+                and ofaMysqlPeriod class
+     2016-12- 8 -> cancelled (same as #1268)
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

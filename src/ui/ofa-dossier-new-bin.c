@@ -30,8 +30,8 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-extender-collection.h"
-#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-idbprovider.h"
@@ -44,26 +44,26 @@
 /* private instance data
  */
 typedef struct {
-	gboolean        dispose_has_run;
+	gboolean              dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter     *getter;
-	ofaHub         *hub;
-	ofaPortfolioCollection     *dir;
+	ofaIGetter           *getter;
+	ofaHub               *hub;
 
 	/* UI
 	 */
-	GtkSizeGroup   *group0;
-	GtkWidget      *dbms_combo;
-	GtkWidget      *connect_infos_parent;
-	ofaIDBEditor   *connect_infos;
-	GtkWidget      *msg_label;
+	GtkSizeGroup         *group0;
+	GtkWidget            *dbms_combo;
+	GtkWidget            *connect_infos_parent;
+	ofaIDBEditor         *connect_infos;
+	GtkWidget            *msg_label;
 
 	/* runtime data
 	 */
-	gchar          *dossier_name;
-	gulong          prov_handler;
+	ofaDossierCollection *dossier_collection;
+	gchar                *dossier_name;
+	gulong                prov_handler;
 }
 	ofaDossierNewBinPrivate;
 
@@ -238,8 +238,8 @@ setup_bin( ofaDossierNewBin *self )
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	priv->dir = ofa_hub_get_portfolio_collection( priv->hub );
-	g_return_if_fail( priv->dir && OFA_IS_PORTFOLIO_COLLECTION( priv->dir ));
+	priv->dossier_collection = ofa_hub_get_dossier_collection( priv->hub );
+	g_return_if_fail( priv->dossier_collection && OFA_IS_DOSSIER_COLLECTION( priv->dossier_collection ));
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -500,7 +500,7 @@ ofa_dossier_new_bin_get_valid( ofaDossierNewBin *bin, gchar **error_message )
 		str = g_strdup( _( "Dossier name is not set" ));
 
 	} else {
-		meta = ofa_portfolio_collection_get_meta( priv->dir, priv->dossier_name );
+		meta = ofa_dossier_collection_get_meta( priv->dossier_collection, priv->dossier_name );
 		if( meta ){
 			str = g_strdup_printf( _( "%s is already defined" ), priv->dossier_name );
 			g_clear_object( &meta );
@@ -550,7 +550,7 @@ ofa_dossier_new_bin_apply( ofaDossierNewBin *bin )
 	provider = ofa_idbeditor_get_provider( priv->connect_infos );
 	meta = ofa_idbprovider_new_meta( provider );
 	ofa_idbmeta_set_dossier_name( meta, priv->dossier_name );
-	ofa_portfolio_collection_set_meta_from_editor( priv->dir, meta, priv->connect_infos );
+	ofa_dossier_collection_set_meta_from_editor( priv->dossier_collection, meta, priv->connect_infos );
 	g_object_unref( provider );
 
 	return( meta );

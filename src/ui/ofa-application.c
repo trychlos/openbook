@@ -35,13 +35,13 @@
 
 #include "api/ofa-box.h"
 #include "api/ofa-core.h"
+#include "api/ofa-dossier-collection.h"
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmeta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
-#include "api/ofa-portfolio-collection.h"
 #include "api/ofa-preferences.h"
 #include "api/ofa-settings.h"
 
@@ -143,7 +143,7 @@ static void                  appli_store_ref( ofaApplication *application, GtkBu
 static void                  application_activate( GApplication *application );
 static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
 static void                  maintainer_test_function( void );
-static void                  on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaApplication *application );
+static void                  on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application );
 static void                  enable_action_open( ofaApplication *application, gboolean enable );
 static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
 static void                  on_new( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -673,7 +673,7 @@ manage_options( ofaApplication *application )
  *
  * When your application starts, the startup signal will be fired. This
  * gives you a chance to perform initialisation tasks that are not
- * directly related to showing a new window. After this, depending on
+ * collectionectly related to showing a new window. After this, depending on
  * how the application is started, either activate or open will be called
  * next.
  *
@@ -697,7 +697,7 @@ application_startup( GApplication *application )
 	ofaApplicationPrivate *priv;
 	GtkBuilder *builder;
 	GMenuModel *menu;
-	ofaPortfolioCollection *collection;
+	ofaDossierCollection *collection;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
@@ -742,12 +742,12 @@ application_startup( GApplication *application )
 
 	g_signal_emit_by_name( application, "menu-available", application, "app" );
 
-	/* dossiers directory monitoring
+	/* dossiers collection monitoring
 	 */
-	collection = ofa_portfolio_collection_new( priv->hub );
-	g_signal_connect( collection, "changed", G_CALLBACK( on_file_dir_changed ), application );
-	on_file_dir_changed( collection, ofa_portfolio_collection_get_dossiers_count( collection ), NULL, appli );
-	ofa_hub_set_portfolio_collection( priv->hub, collection );
+	collection = ofa_dossier_collection_new( priv->hub );
+	g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), application );
+	on_dossier_collection_changed( collection, ofa_dossier_collection_get_count( collection ), appli );
+	ofa_hub_set_dossier_collection( priv->hub, collection );
 
 	/* takes the ownership on the dossier store so that we are sure
 	 * it will be available during the run */
@@ -804,7 +804,7 @@ application_activate( GApplication *application )
 {
 	static const gchar *thisfn = "ofa_application_activate";
 	ofaApplicationPrivate *priv;
-	ofaPortfolioCollection *filedir;
+	ofaDossierCollection *collection;
 	ofaIDBMeta *meta;
 	ofaIDBPeriod *period;
 	GDate dbegin, dend;
@@ -828,8 +828,8 @@ application_activate( GApplication *application )
 	/* if a dossier is to be opened due to options specified in the
 	 * command-line */
 	if( st_dossier_name_opt ){
-		filedir = ofa_hub_get_portfolio_collection( priv->hub );
-		meta = ofa_portfolio_collection_get_meta( filedir, st_dossier_name_opt );
+		collection = ofa_hub_get_dossier_collection( priv->hub );
+		meta = ofa_dossier_collection_get_meta( collection, st_dossier_name_opt );
 		period = NULL;
 		if( meta ){
 			if( !st_dossier_begin_opt && !st_dossier_end_opt ){
@@ -923,12 +923,12 @@ maintainer_test_function( void )
 /*                                                                   */
 /*                                                                   */
 static void
-on_file_dir_changed( ofaPortfolioCollection *dir, guint count, const gchar *filename, ofaApplication *application )
+on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application )
 {
-	static const gchar *thisfn = "ofa_application_on_filed_dir_changed";
+	static const gchar *thisfn = "ofa_application_on_filed_collection_changed";
 
-	g_debug( "%s: dir=%p, count=%u, filename=%s, application=%p",
-			thisfn, ( void * ) dir, count, filename, ( void * ) application );
+	g_debug( "%s: collection=%p, count=%u, application=%p",
+			thisfn, ( void * ) collection, count, ( void * ) application );
 
 	enable_action_open( application, count > 0 );
 }

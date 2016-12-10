@@ -375,8 +375,8 @@ ofa_idbmeta_set_from_editor( ofaIDBMeta *meta, const ofaIDBEditor *editor, myISe
  *
  * Remove @meta from the dossier settings file.
  *
- * The #ofaIDBMeta object itself will be finalized by the #ofaPortfolioCollection
- * directory which auto-updates.
+ * The #ofaIDBMeta object itself will be finalized on automatic update
+ * of the dossiers collection.
  */
 void
 ofa_idbmeta_remove_meta( ofaIDBMeta *meta )

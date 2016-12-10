@@ -40,7 +40,7 @@
  * first).
  *
  * The #ofaDossierStore maintains itself up-to-date by connecting to
- * the #ofaPortfolioCollection 'changed' signal.
+ * the #ofaDossierCollection 'changed' signal.
  *
  * The #ofaDossierStore is managed as a singleton: the first
  * instanciation actually builds the store, while next only returns a
@@ -56,7 +56,7 @@
  *    +-----------+-------------------------+
  */
 
-#include "api/ofa-portfolio-collection.h"
+#include "api/ofa-dossier-collection.h"
 
 G_BEGIN_DECLS
 
@@ -112,7 +112,7 @@ enum {
 
 GType            ofa_dossier_store_get_type( void );
 
-ofaDossierStore *ofa_dossier_store_new     ( ofaPortfolioCollection *dir );
+ofaDossierStore *ofa_dossier_store_new     ( ofaDossierCollection *collection );
 
 G_END_DECLS
 
