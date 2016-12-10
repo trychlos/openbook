@@ -439,14 +439,14 @@ idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBDossierMeta *meta )
 }
 
 /**
- * ofa_idbconnect_get_period:
+ * ofa_idbconnect_get_exercice_meta:
  * @connect: this #ofaIDBConnect instance.
  *
  * Returns: a new reference to the target #ofaIDBExerciceMeta dossier, which
  * should be g_object_unref() by the caller.
  */
 ofaIDBExerciceMeta *
-ofa_idbconnect_get_period( const ofaIDBConnect *connect )
+ofa_idbconnect_get_exercice_meta( const ofaIDBConnect *connect )
 {
 	sIDBConnect *data;
 

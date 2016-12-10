@@ -1032,7 +1032,7 @@ check_db_vs_settings( ofaHub *hub )
 	db_end = ofo_dossier_get_exe_end( dossier );
 
 	/* data from settings */
-	period = ofa_idbconnect_get_period( cnx );
+	period = ofa_idbconnect_get_exercice_meta( cnx );
 	settings_current = ofa_idbexercice_meta_get_current( period );
 	settings_begin = ofa_idbexercice_meta_get_begin_date( period );
 	settings_end = ofa_idbexercice_meta_get_end_date( period );

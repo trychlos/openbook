@@ -352,7 +352,7 @@ gchar              *ofa_idbconnect_get_password             ( const ofaIDBConnec
 
 ofaIDBDossierMeta  *ofa_idbconnect_get_dossier_meta         ( const ofaIDBConnect *connect );
 
-ofaIDBExerciceMeta *ofa_idbconnect_get_period               ( const ofaIDBConnect *connect );
+ofaIDBExerciceMeta *ofa_idbconnect_get_exercice_meta        ( const ofaIDBConnect *connect );
 
 gboolean            ofa_idbconnect_query                    ( const ofaIDBConnect *connect,
 																	const gchar *query,

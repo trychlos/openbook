@@ -1920,7 +1920,7 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 
 		connect = ofa_hub_get_connect( hub );
 		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
-		exercice_meta = ofa_idbconnect_get_period( connect );
+		exercice_meta = ofa_idbconnect_get_exercice_meta( connect );
 
 		ofa_idbdossier_meta_update_period( dossier_meta, exercice_meta,
 				TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));

@@ -127,7 +127,7 @@ ofa_mysql_cmdline_backup_run( ofaMySQLConnect *connect, const gchar *uri )
 
 	template = ofa_mysql_user_prefs_get_backup_command();
 	fname = g_filename_from_uri( uri, NULL, NULL );
-	period = ofa_idbconnect_get_period( OFA_IDBCONNECT( connect ));
+	period = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
 
 	ok = do_execute_async(
 				template,
@@ -256,7 +256,7 @@ ofa_mysql_cmdline_archive_and_new( ofaMySQLConnect *connect,
 	}
 
 	/* get previous database from current connection on closed exercice */
-	period = ofa_idbconnect_get_period( OFA_IDBCONNECT( connect ));
+	period = ofa_idbconnect_get_exercice_meta( OFA_IDBCONNECT( connect ));
 	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
 	prev_dbname = ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period ));

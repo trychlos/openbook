@@ -905,7 +905,7 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 	if( dossier ){
 		connect = ofa_hub_get_connect( hub );
 		meta = ofa_idbconnect_get_dossier_meta( connect );
-		period = ofa_idbconnect_get_period( connect );
+		period = ofa_idbconnect_get_exercice_meta( connect );
 		dos_name = ofa_idbdossier_meta_get_dossier_name( meta );
 		period_label = ofa_idbexercice_meta_get_label( period );
 		period_name = ofa_idbexercice_meta_get_name( period );

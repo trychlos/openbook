@@ -232,7 +232,7 @@ get_default_name( ofaBackup *self )
 	priv = ofa_backup_get_instance_private( self );
 
 	/* get name without spaces */
-	period = ofa_idbconnect_get_period( priv->connect );
+	period = ofa_idbconnect_get_exercice_meta( priv->connect );
 	name = ofa_idbexercice_meta_get_name( period );
 
 	regex = g_regex_new( " ", 0, 0, NULL );

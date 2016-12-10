@@ -1414,7 +1414,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofo_dossier_set_current( priv->dossier, FALSE );
 	ofo_dossier_update( priv->dossier );
 
-	period = ofa_idbconnect_get_period( priv->connect );
+	period = ofa_idbconnect_get_exercice_meta( priv->connect );
 	begin_old = ofo_dossier_get_exe_begin( priv->dossier );
 	end_old = ofo_dossier_get_exe_end( priv->dossier );
 	ofa_idbdossier_meta_update_period( priv->meta, period, FALSE, begin_old, end_old );
