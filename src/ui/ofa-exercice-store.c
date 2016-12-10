@@ -153,9 +153,9 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExercice
 	ofaIDBExerciceMeta *a_period, *b_period;
 	gint cmp;
 
-	gtk_tree_model_get( tmodel, a, EXERCICE_COL_PERIOD, &a_period, -1 );
+	gtk_tree_model_get( tmodel, a, EXERCICE_COL_EXE_META, &a_period, -1 );
 	g_object_unref( a_period );
-	gtk_tree_model_get( tmodel, b, EXERCICE_COL_PERIOD, &b_period, -1 );
+	gtk_tree_model_get( tmodel, b, EXERCICE_COL_EXE_META, &b_period, -1 );
 	g_object_unref( b_period );
 
 	cmp = my_date_compare_ex(
@@ -212,7 +212,7 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta
 				EXERCICE_COL_BEGIN,  begin,
 				EXERCICE_COL_END,    end,
 				EXERCICE_COL_STATUS, status,
-				EXERCICE_COL_PERIOD, period,
+				EXERCICE_COL_EXE_META, period,
 				-1 );
 
 		g_free( begin );

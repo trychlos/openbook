@@ -59,20 +59,20 @@ typedef struct {
 
 /**
  * The columns stored in the subjacent #GtkListStore.
- *                                                              Type     Displayable
- *                                                              -------  -----------
- * @EXERCICE_COL_STATUS: localized status string                String       Yes
- * @EXERCICE_COL_BEGIN : begin of exercice                      String       Yes
- * @EXERCICE_COL_END   : end of exercice                        String       Yes
- * @EXERCICE_COL_LABEL : localized exercice description string  String       Yes
- * @EXERCICE_COL_PERIOD: ofaIDBExerciceMeta object              GObject       No
+ *                                                                Type     Displayable
+ *                                                                -------  -----------
+ * @EXERCICE_COL_STATUS  : localized status string                String       Yes
+ * @EXERCICE_COL_BEGIN   : begin of exercice                      String       Yes
+ * @EXERCICE_COL_END     : end of exercice                        String       Yes
+ * @EXERCICE_COL_LABEL   : localized exercice description string  String       Yes
+ * @EXERCICE_COL_EXE_META: ofaIDBExerciceMeta object              GObject       No
  */
 enum {
 	EXERCICE_COL_STATUS = 0,
 	EXERCICE_COL_BEGIN,
 	EXERCICE_COL_END,
 	EXERCICE_COL_LABEL,
-	EXERCICE_COL_PERIOD,
+	EXERCICE_COL_EXE_META,
 	EXERCICE_N_COLUMNS
 };
 

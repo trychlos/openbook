@@ -189,7 +189,7 @@ on_exercice_changed( ofaExerciceCombo *combo, void *empty )
 	if( gtk_combo_box_get_active_iter( GTK_COMBO_BOX( combo ), &iter )){
 		tmodel = gtk_combo_box_get_model( GTK_COMBO_BOX( combo ));
 		gtk_tree_model_get( tmodel, &iter,
-				EXERCICE_COL_PERIOD, &period,
+				EXERCICE_COL_EXE_META, &period,
 				-1 );
 		g_signal_emit_by_name( combo, "ofa-changed", period );
 		g_object_unref( period );
@@ -281,7 +281,7 @@ ofa_exercice_combo_set_selected( ofaExerciceCombo *combo, ofaIDBExerciceMeta *pe
 
 	if( gtk_tree_model_get_iter_first( tmodel, &iter )){
 		while( TRUE ){
-			gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_PERIOD, &row_period, -1 );
+			gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_EXE_META, &row_period, -1 );
 			cmp = ofa_idbexercice_meta_compare( period, row_period );
 			g_object_unref( row_period );
 

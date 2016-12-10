@@ -398,7 +398,7 @@ get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *select
 
 	if( gtk_tree_selection_get_selected( selection, &tmodel, &iter )){
 		ok = TRUE;
-		gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_PERIOD, &row_period, -1 );
+		gtk_tree_model_get( tmodel, &iter, EXERCICE_COL_EXE_META, &row_period, -1 );
 		g_object_unref( row_period );
 	}
 	if( period ){
