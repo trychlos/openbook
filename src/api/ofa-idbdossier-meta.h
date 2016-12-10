@@ -190,7 +190,7 @@ ofaIDBProvider *ofa_idbdossier_meta_get_provider              ( const ofaIDBDoss
 void            ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,
 																	const ofaIDBProvider *instance );
 
-gchar          *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
+const gchar    *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
 
 void            ofa_idbdossier_meta_set_dossier_name          ( ofaIDBDossierMeta *meta,
 																	const gchar *dossier_name );

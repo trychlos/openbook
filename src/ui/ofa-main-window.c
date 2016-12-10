@@ -890,7 +890,8 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *meta;
 	ofaIDBPeriod *period;
-	gchar *title, *dos_name, *period_label, *period_name;
+	gchar *title, *period_label, *period_name;
+	const gchar *dos_name;
 
 	g_debug( "%s: self=%p, with_dossier=%s",
 			thisfn, ( void * ) self, with_dossier ? "True":"False" );
@@ -916,7 +917,6 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 
 		g_free( period_name );
 		g_free( period_label );
-		g_free( dos_name );
 		g_object_unref( period );
 		g_object_unref( meta );
 

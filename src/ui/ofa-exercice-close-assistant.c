@@ -431,7 +431,7 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_dossier_meta( priv->connect );
-	priv->dos_name = ofa_idbdossier_meta_get_dossier_name( priv->meta );
+	priv->dos_name = g_strdup( ofa_idbdossier_meta_get_dossier_name( priv->meta ));
 
 	priv->dossier = ofa_hub_get_dossier( priv->hub );
 

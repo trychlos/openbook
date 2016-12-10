@@ -456,9 +456,10 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 {
 	static const gchar *thisfn = "ofa_ddl_update_dbmodel_v20";
 	ofaMysqlDBModelPrivate *priv;
-	gchar *query, *dossier_name;
+	gchar *query;
 	gboolean ok;
 	ofaIDBDossierMeta *meta;
+	const gchar *dossier_name;
 
 	g_debug( "%s: self=%p, version=%d", thisfn, ( void * ) self, version );
 
@@ -646,7 +647,6 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 			DOSSIER_ROW_ID, dossier_name, DOSSIER_EXERCICE_DEFAULT_LENGTH, "O", "CLORAN", "CLOSLD" );
 	ok = exec_query( self, query );
 	g_free( query );
-	g_free( dossier_name );
 	g_object_unref( meta );
 	if( !ok ){
 		return( FALSE );

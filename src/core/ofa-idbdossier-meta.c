@@ -227,10 +227,12 @@ ofa_idbdossier_meta_set_provider( ofaIDBDossierMeta *meta, const ofaIDBProvider 
  * ofa_idbdossier_meta_get_dossier_name:
  * @meta: this #ofaIDBDossierMeta instance.
  *
- * Returns: the identifier name of the dossier as a newly allocated
- * string which should be g_free() by the caller.
+ * Returns: the identifier name of the dossier.
+ *
+ * The returned string is owned by the @meta instance, and should not
+ * be released by the caller.
  */
-gchar *
+const gchar *
 ofa_idbdossier_meta_get_dossier_name( const ofaIDBDossierMeta *meta )
 {
 	sIDBMeta *data;
@@ -238,7 +240,7 @@ ofa_idbdossier_meta_get_dossier_name( const ofaIDBDossierMeta *meta )
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
 	data = get_idbdossier_meta_data( meta );
-	return( g_strdup( data->dossier_name ));
+	return(( const gchar * ) data->dossier_name );
 }
 
 /**
@@ -587,7 +589,7 @@ ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *begi
 gint
 ofa_idbdossier_meta_compare( const ofaIDBDossierMeta *a, const ofaIDBDossierMeta *b )
 {
-	gchar *a_name, *b_name;
+	const gchar *a_name, *b_name;
 	gint cmp;
 
 	g_return_val_if_fail( a && OFA_IS_IDBDOSSIER_META( a ), FALSE );
@@ -597,9 +599,6 @@ ofa_idbdossier_meta_compare( const ofaIDBDossierMeta *a, const ofaIDBDossierMeta
 	b_name = ofa_idbdossier_meta_get_dossier_name( b );
 
 	cmp = g_utf8_collate( a_name, b_name );
-
-	g_free( b_name );
-	g_free( a_name );
 
 	return( cmp );
 }

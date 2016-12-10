@@ -486,7 +486,7 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *meta;
-	gchar *dossier_name;
+	const gchar *dossier_name;
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	connect = ofa_hub_get_connect( hub );
@@ -494,7 +494,7 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	g_object_unref( meta );
 
-	return( dossier_name );
+	return( g_strdup( dossier_name ));
 }
 
 static gchar *

@@ -385,9 +385,9 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 {
 	static const gchar *thisfn = "ofa_dossier_collection_set_meta_from_editor";
 	ofaDossierCollectionPrivate *priv;
-	gchar *group, *dossier_name;
+	gchar *group, *prov_name;
 	ofaIDBProvider *prov_instance;
-	gchar *prov_name;
+	const gchar *dossier_name;
 
 	g_debug( "%s: collection=%p, meta=%p, editor=%p",
 			thisfn, ( void * ) collection, ( void * ) meta, ( void * ) editor );
@@ -413,7 +413,6 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 	g_free( prov_name );
 	g_object_unref( prov_instance );
 	g_free( group );
-	g_free( dossier_name );
 
 	on_settings_changed( priv->monitor, NULL, collection );
 	priv->ignore_next = TRUE;
@@ -427,7 +426,7 @@ dossier_collection_find_by_name( const gchar *dossier_name, GList *list )
 {
 	GList *it;
 	ofaIDBDossierMeta *meta;
-	gchar *meta_name;
+	const gchar *meta_name;
 	gint cmp;
 
 	for( it=list ; it ; it=it->next ){
@@ -435,7 +434,6 @@ dossier_collection_find_by_name( const gchar *dossier_name, GList *list )
 		g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 		meta_name = ofa_idbdossier_meta_get_dossier_name( meta );
 		cmp = g_utf8_collate( meta_name, dossier_name );
-		g_free( meta_name );
 		if( cmp == 0 ){
 			return( g_object_ref( meta ));
 		}

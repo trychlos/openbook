@@ -490,7 +490,8 @@ static gboolean
 confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const ofaIDBPeriod *period )
 {
 	gboolean ok;
-	gchar *period_name, *dossier_name, *str;
+	gchar *period_name, *str;
+	const gchar *dossier_name;
 
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	period_name = ofa_idbperiod_get_name( period );
@@ -505,7 +506,6 @@ confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const of
 
 	g_free( str );
 	g_free( period_name );
-	g_free( dossier_name );
 
 	return( ok );
 }

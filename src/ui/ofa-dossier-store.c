@@ -290,8 +290,9 @@ insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const 
 static void
 set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period, GtkTreeIter *iter )
 {
-	gchar *dosname, *begin, *end, *status, *pername, *provname;
+	gchar *begin, *end, *status, *pername, *provname;
 	ofaIDBProvider *provider;
+	const gchar *dosname;
 
 	dosname = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
@@ -321,6 +322,5 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 	g_free( pername );
 	g_free( begin );
 	g_free( end );
-	g_free( dosname );
 	g_free( status );
 }

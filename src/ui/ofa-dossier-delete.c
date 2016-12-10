@@ -232,7 +232,7 @@ idialog_init( myIDialog *instance )
 	GtkWidget *label, *parent;
 	gchar *msg;
 	GtkSizeGroup *group;
-	gchar *dossier_name;
+	const gchar *dossier_name;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -251,7 +251,6 @@ idialog_init( myIDialog *instance )
 				dossier_name );
 	gtk_label_set_text( GTK_LABEL( label ), msg );
 	g_free( msg );
-	g_free( dossier_name );
 
 	/* connection infos */
 	priv->provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );

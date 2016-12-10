@@ -284,7 +284,7 @@ idialog_init( myIDialog *instance )
 	ofaDossierOpenPrivate *priv;
 	GtkWidget *button, *focus;
 	GtkSizeGroup *group;
-	gchar *dossier_name;
+	const gchar *dossier_name;
 	ofaIDBPeriod *init_period;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -311,7 +311,6 @@ idialog_init( myIDialog *instance )
 		init_period = priv->period ? g_object_ref( priv->period ) : NULL;
 		dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta );
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
-		g_free( dossier_name );
 		focus = GTK_WIDGET( priv->exercice_combo );
 
 		if( init_period ){
