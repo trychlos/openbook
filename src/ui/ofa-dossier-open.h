@@ -39,7 +39,7 @@
  */
 
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -68,7 +68,7 @@ GType    ofa_dossier_open_get_type( void ) G_GNUC_CONST;
 gboolean ofa_dossier_open_run     ( ofaIGetter *getter,
 										GtkWindow *parent,
 										ofaIDBDossierMeta *dossier_meta,
-										ofaIDBPeriod *period,
+										ofaIDBExerciceMeta *period,
 										const gchar *account,
 										const gchar *password );
 

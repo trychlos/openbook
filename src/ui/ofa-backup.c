@@ -36,7 +36,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -224,7 +224,7 @@ static gchar *
 get_default_name( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	GRegex *regex;
 	gchar *name, *fname, *sdate, *result;
 	GDate date;
@@ -233,7 +233,7 @@ get_default_name( ofaBackup *self )
 
 	/* get name without spaces */
 	period = ofa_idbconnect_get_period( priv->connect );
-	name = ofa_idbperiod_get_name( period );
+	name = ofa_idbexercice_meta_get_name( period );
 
 	regex = g_regex_new( " ", 0, 0, NULL );
 	fname = g_regex_replace_literal( regex, name, -1, 0, "", 0, NULL );

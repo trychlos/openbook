@@ -48,7 +48,7 @@
 
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-idbprovider-def.h"
 
 G_BEGIN_DECLS
@@ -129,7 +129,7 @@ struct _ofaIDBDossierMetaInterface {
 	/**
 	 * update_period:
 	 * @instance: the #ofaIDBDossierMeta instance.
-	 * @period: the #ofaIDBPeriod to be updated.
+	 * @exercice_meta: the #ofaIDBExerciceMeta to be updated.
 	 * @current: whether the financial period (exercice) is current.
 	 * @begin: [allow-none]: the beginning date.
 	 * @end: [allow-none]: the ending date.
@@ -140,7 +140,7 @@ struct _ofaIDBDossierMetaInterface {
 	 * Since: version 1
 	 */
 	void             ( *update_period )        ( ofaIDBDossierMeta *instance,
-													ofaIDBPeriod *period,
+													ofaIDBExerciceMeta *exercice_meta,
 													gboolean current,
 													const GDate *begin,
 													const GDate *end );
@@ -148,7 +148,7 @@ struct _ofaIDBDossierMetaInterface {
 	/**
 	 * remove_period:
 	 * @instance: the #ofaIDBDossierMeta instance.
-	 * @period: the #ofaIDBPeriod to be removed.
+	 * @exercice_meta: the #ofaIDBExerciceMeta to be removed.
 	 *
 	 * Removes the @period from the dossier settings file.
 	 * The interface makes sure this method is only called when
@@ -157,7 +157,7 @@ struct _ofaIDBDossierMetaInterface {
 	 * Since: version 1
 	 */
 	void             ( *remove_period )        ( ofaIDBDossierMeta *instance,
-													ofaIDBPeriod *period );
+													ofaIDBExerciceMeta *exercice_meta );
 
 	/**
 	 * dump:
@@ -173,75 +173,75 @@ struct _ofaIDBDossierMetaInterface {
 /*
  * Interface-wide
  */
-GType           ofa_idbdossier_meta_get_type                  ( void );
+GType               ofa_idbdossier_meta_get_type                  ( void );
 
-guint           ofa_idbdossier_meta_get_interface_last_version( void );
+guint               ofa_idbdossier_meta_get_interface_last_version( void );
 
 /*
  * Implementation-wide
  */
-guint           ofa_idbdossier_meta_get_interface_version     ( GType type );
+guint               ofa_idbdossier_meta_get_interface_version     ( GType type );
 
 /*
  * Instance-wide
  */
-ofaIDBProvider *ofa_idbdossier_meta_get_provider              ( const ofaIDBDossierMeta *meta );
+ofaIDBProvider     *ofa_idbdossier_meta_get_provider              ( const ofaIDBDossierMeta *meta );
 
-void            ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,
-																	const ofaIDBProvider *instance );
+void                ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,
+																		const ofaIDBProvider *instance );
 
-const gchar    *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
+const gchar        *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
 
-void            ofa_idbdossier_meta_set_dossier_name          ( ofaIDBDossierMeta *meta,
-																	const gchar *dossier_name );
+void                ofa_idbdossier_meta_set_dossier_name          ( ofaIDBDossierMeta *meta,
+																		const gchar *dossier_name );
 
-myISettings    *ofa_idbdossier_meta_get_settings              ( const ofaIDBDossierMeta *meta );
+myISettings        *ofa_idbdossier_meta_get_settings              ( const ofaIDBDossierMeta *meta );
 
-gchar          *ofa_idbdossier_meta_get_group_name            ( const ofaIDBDossierMeta *meta );
+gchar              *ofa_idbdossier_meta_get_group_name            ( const ofaIDBDossierMeta *meta );
 
-void            ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossierMeta *meta,
-																	myISettings *settings,
-																	const gchar *group_name );
+void                ofa_idbdossier_meta_set_from_settings         ( ofaIDBDossierMeta *meta,
+																		myISettings *settings,
+																		const gchar *group_name );
 
-void            ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
-																	const ofaIDBEditor *editor,
-																	myISettings *settings,
-																	const gchar *group_name );
+void                ofa_idbdossier_meta_set_from_editor           ( ofaIDBDossierMeta *meta,
+																		const ofaIDBEditor *editor,
+																		myISettings *settings,
+																		const gchar *group_name );
 
-void            ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
+void                ofa_idbdossier_meta_remove_meta               ( ofaIDBDossierMeta *meta );
 
-GList          *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
+GList              *ofa_idbdossier_meta_get_periods               ( const ofaIDBDossierMeta *meta );
 
-#define         ofa_idbdossier_meta_free_periods(L)           g_list_free_full(( L ), \
-																	( GDestroyNotify ) g_object_unref )
+#define             ofa_idbdossier_meta_free_periods(L)           g_list_free_full(( L ), \
+																		( GDestroyNotify ) g_object_unref )
 
-void            ofa_idbdossier_meta_set_periods               ( ofaIDBDossierMeta *meta,
-																	GList *periods );
+void                ofa_idbdossier_meta_set_periods               ( ofaIDBDossierMeta *meta,
+																		GList *periods );
 
-void            ofa_idbdossier_meta_add_period                ( ofaIDBDossierMeta *meta,
-																	ofaIDBPeriod *period );
+void                ofa_idbdossier_meta_add_period                ( ofaIDBDossierMeta *meta,
+																		ofaIDBExerciceMeta *exercice_meta );
 
-void            ofa_idbdossier_meta_update_period             ( ofaIDBDossierMeta *meta,
-																	ofaIDBPeriod *period,
-																	gboolean current,
-																	const GDate *begin,
-																	const GDate *end );
+void                ofa_idbdossier_meta_update_period             ( ofaIDBDossierMeta *meta,
+																		ofaIDBExerciceMeta *exercice_meta,
+																		gboolean current,
+																		const GDate *begin,
+																		const GDate *end );
 
-void            ofa_idbdossier_meta_remove_period             ( ofaIDBDossierMeta *meta,
-																	ofaIDBPeriod *period );
+void                ofa_idbdossier_meta_remove_period             ( ofaIDBDossierMeta *meta,
+																		ofaIDBExerciceMeta *exercice_meta );
 
-ofaIDBPeriod   *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
+ofaIDBExerciceMeta *ofa_idbdossier_meta_get_current_period        ( const ofaIDBDossierMeta *meta );
 
-ofaIDBPeriod   *ofa_idbdossier_meta_get_period                ( const ofaIDBDossierMeta *meta,
-																	const GDate *begin,
-																	const GDate *end );
+ofaIDBExerciceMeta *ofa_idbdossier_meta_get_period                ( const ofaIDBDossierMeta *meta,
+																		const GDate *begin,
+																		const GDate *end );
 
-gint            ofa_idbdossier_meta_compare                   ( const ofaIDBDossierMeta *a,
+gint                ofa_idbdossier_meta_compare                   ( const ofaIDBDossierMeta *a,
 																	const ofaIDBDossierMeta *b );
 
-void            ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
+void                ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
 
-void            ofa_idbdossier_meta_dump_rec                  ( const ofaIDBDossierMeta *meta );
+void                ofa_idbdossier_meta_dump_rec                  ( const ofaIDBDossierMeta *meta );
 
 G_END_DECLS
 

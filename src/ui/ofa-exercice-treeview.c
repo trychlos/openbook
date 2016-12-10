@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -50,7 +51,6 @@ typedef struct {
 
 	/* runtime
 	 */
-	ofaIDBDossierMeta *meta;
 	ofaExerciceStore  *store;
 }
 	ofaExerciceTreeviewPrivate;
@@ -71,7 +71,7 @@ static void     on_selection_changed( ofaExerciceTreeview *self, GtkTreeSelectio
 static void     on_selection_activated( ofaExerciceTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     on_selection_delete( ofaExerciceTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaExerciceTreeview *self, GtkTreeSelection *selection, const gchar *signal );
-static gboolean get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *selection, ofaIDBPeriod **period );
+static gboolean get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *selection, ofaIDBExerciceMeta **period );
 static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaExerciceTreeview, ofa_exercice_treeview, OFA_TYPE_TVBIN, 0,
@@ -133,7 +133,6 @@ ofa_exercice_treeview_init( ofaExerciceTreeview *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->meta = NULL;
 	priv->store = NULL;
 }
 
@@ -155,12 +154,12 @@ ofa_exercice_treeview_class_init( ofaExerciceTreeviewClass *klass )
 	 * This signal is sent on the #ofaExerciceTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments is the selected ofaIDBPeriod object, which may be %NULL.
+	 * Arguments is the selected ofaIDBExerciceMeta object, which may be %NULL.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaExerciceTreeview *view,
-	 * 						ofaIDBPeriod      *period,
-	 * 						gpointer           user_data );
+	 * void ( *handler )( ofaExerciceTreeview  *view,
+	 * 						ofaIDBExerciceMeta *period,
+	 * 						gpointer            user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-exechanged",
@@ -180,12 +179,12 @@ ofa_exercice_treeview_class_init( ofaExerciceTreeviewClass *klass )
 	 * This signal is sent on the #ofaExerciceTreeview when the selection is
 	 * activated.
 	 *
-	 * Argument is the selected ofaIDBPeriod object.
+	 * Argument is the selected ofaIDBExerciceMeta object.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaExerciceTreeview *view,
-	 * 						ofaIDBPeriod      *period,
-	 * 						gpointer           user_data );
+	 * void ( *handler )( ofaExerciceTreeview  *view,
+	 * 						ofaIDBExerciceMeta *period,
+	 * 						gpointer            user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
 				"ofa-exeactivated",
@@ -205,14 +204,14 @@ ofa_exercice_treeview_class_init( ofaExerciceTreeviewClass *klass )
 	 * #ofaTVBin sends a 'ofa-seldelete' signal, with the current
 	 * #GtkTreeSelection as an argument.
 	 * #ofaExerciceTreeview proxyes it with this 'ofa-exedelete' signal,
-	 * providing the #ofoIDBDossierMeta/#ofaIDBPeriod selected objects.
+	 * providing the #ofoIDBDossierMeta/#ofaIDBExerciceMeta selected objects.
 	 *
-	 * Arguments is the selected ofaIDBPeriod object.
+	 * Arguments is the selected ofaIDBExerciceMeta object.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaExerciceTreeview *view,
-	 * 						ofaIDBPeriod      *period,
-	 * 						gpointer           user_data );
+	 * void ( *handler )( ofaExerciceTreeview  *view,
+	 * 						ofaIDBExerciceMeta *period,
+	 * 						gpointer            user_data );
 	 */
 	st_signals[ DELETE ] = g_signal_new_class_handler(
 				"ofa-exedelete",
@@ -250,7 +249,7 @@ ofa_exercice_treeview_new( const gchar *settings_prefix )
 	priv->settings_prefix = g_strdup( settings_prefix );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
-	 * #ofoIDBMEta/#ofaIDBPeriod objects instead of just the raw
+	 * #ofoIDBMEta/#ofaIDBExerciceMeta objects instead of just the raw
 	 * GtkTreeSelection
 	 */
 	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
@@ -337,16 +336,16 @@ on_selection_delete( ofaExerciceTreeview *self, GtkTreeSelection *selection, voi
 }
 
 /*
- * ofaIDBPeriod may be %NULL when selection is empty (on 'ofa-exechanged' signal)
+ * ofaIDBExerciceMeta may be %NULL when selection is empty (on 'ofa-exechanged' signal)
  */
 static void
 get_and_send( ofaExerciceTreeview *self, GtkTreeSelection *selection, const gchar *signal )
 {
 	gboolean ok;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 
 	ok = get_selected_with_selection( self, selection, &period );
-	g_return_if_fail( !ok || OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( !ok || OFA_IS_IDBEXERCICE_META( period ));
 
 	g_signal_emit_by_name( self, signal, period );
 }
@@ -354,14 +353,14 @@ get_and_send( ofaExerciceTreeview *self, GtkTreeSelection *selection, const gcha
 /**
  * ofa_exercice_treeview_get_selected:
  * @view: this #ofaExerciceTreeview instance.
- * @period: [allow-none][out]: the currently selected #ofaIDBPeriod row;
+ * @period: [allow-none][out]: the currently selected #ofaIDBExerciceMeta row;
  *  this reference is owned by the underlying #GtkTreeModel and should
  *  not be unreffed by the caller.
  *
  * Returns: %TRUE if a selection exists, %FALSE else.
  */
 gboolean
-ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view, ofaIDBPeriod **period )
+ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view, ofaIDBExerciceMeta **period )
 {
 	ofaExerciceTreeviewPrivate *priv;
 	gboolean ok;
@@ -388,12 +387,12 @@ ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view, ofaIDBPeriod **pe
  * Return: the currently selected class, or %NULL.
  */
 static gboolean
-get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *selection, ofaIDBPeriod **period )
+get_selected_with_selection( ofaExerciceTreeview *self, GtkTreeSelection *selection, ofaIDBExerciceMeta **period )
 {
 	gboolean ok;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
-	ofaIDBPeriod *row_period = NULL;
+	ofaIDBExerciceMeta *row_period = NULL;
 
 	ok = FALSE;
 

@@ -40,8 +40,8 @@
 
 #include "ofa-idbdossier-meta-def.h"
 #include "ofa-idbeditor.h"
+#include "ofa-idbexercice-meta-def.h"
 #include "ofa-idbprovider-def.h"
-#include "ofa-idbperiod.h"
 
 G_BEGIN_DECLS
 
@@ -113,9 +113,9 @@ typedef struct {
 	 * @account: the user account.
 	 * @password: [allow-none]: the user password.
 	 * @dossier_meta: the #ofaIDBDossierMeta which identifies the dossier.
-	 * @period: [allow-none]: the #ofaIDBPeriod which identifies the
-	 *  exercice, or %NULL to establish a connection to the server
-	 *  which holds the @meta dossier.
+	 * @exercice_meta: [allow-none]: the #ofaIDBExerciceMeta which
+	 *  identifies the exercice, or %NULL to establish a connection to
+	 *  the server which holds the @dossier_meta dossier.
 	 *
 	 * Returns: %TRUE if the connection has been successfully
 	 * established, %FALSE else.
@@ -126,7 +126,7 @@ typedef struct {
 											const gchar *account,
 											const gchar *password,
 											const ofaIDBDossierMeta *dossier_meta,
-											const ofaIDBPeriod *period );
+											const ofaIDBExerciceMeta *exercice_meta );
 
 	/**
 	 * query:
@@ -203,7 +203,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *restore )              ( const ofaIDBConnect *instance,
-											const ofaIDBPeriod *period,
+											const ofaIDBExerciceMeta *period,
 											const gchar *uri );
 
 	/**
@@ -272,7 +272,7 @@ typedef struct {
 	 * Since: version 1
 	 */
 	gboolean ( *grant_user )           ( const ofaIDBConnect *instance,
-											const ofaIDBPeriod *period,
+											const ofaIDBExerciceMeta *period,
 											const gchar *user_account,
 											const gchar *user_password );
 
@@ -329,92 +329,92 @@ guint              ofa_idbconnect_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-ofaIDBProvider    *ofa_idbconnect_get_provider              ( const ofaIDBConnect *connect );
+ofaIDBProvider     *ofa_idbconnect_get_provider             ( const ofaIDBConnect *connect );
 
-void               ofa_idbconnect_set_provider              ( ofaIDBConnect *connect,
-																const ofaIDBProvider *provider );
+void                ofa_idbconnect_set_provider             ( ofaIDBConnect *connect,
+																	const ofaIDBProvider *provider );
 
-gboolean           ofa_idbconnect_open_with_editor          ( ofaIDBConnect *connect,
-																const gchar *account,
-																const gchar *password,
-																const ofaIDBEditor *editor,
-																gboolean server_only );
+gboolean            ofa_idbconnect_open_with_editor         ( ofaIDBConnect *connect,
+																	const gchar *account,
+																	const gchar *password,
+																	const ofaIDBEditor *editor,
+																	gboolean server_only );
 
-gboolean           ofa_idbconnect_open_with_meta            ( ofaIDBConnect *connect,
-																const gchar *account,
-																const gchar *password,
-																const ofaIDBDossierMeta *dossier_meta,
-																const ofaIDBPeriod *period );
+gboolean            ofa_idbconnect_open_with_meta           ( ofaIDBConnect *connect,
+																	const gchar *account,
+																	const gchar *password,
+																	const ofaIDBDossierMeta *dossier_meta,
+																	const ofaIDBExerciceMeta *period );
 
-gchar             *ofa_idbconnect_get_account               ( const ofaIDBConnect *connect );
+gchar              *ofa_idbconnect_get_account              ( const ofaIDBConnect *connect );
 
-gchar             *ofa_idbconnect_get_password              ( const ofaIDBConnect *connect );
+gchar              *ofa_idbconnect_get_password             ( const ofaIDBConnect *connect );
 
-ofaIDBDossierMeta *ofa_idbconnect_get_dossier_meta          ( const ofaIDBConnect *connect );
+ofaIDBDossierMeta  *ofa_idbconnect_get_dossier_meta         ( const ofaIDBConnect *connect );
 
-ofaIDBPeriod      *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
+ofaIDBExerciceMeta *ofa_idbconnect_get_period               ( const ofaIDBConnect *connect );
 
-gboolean           ofa_idbconnect_query                     ( const ofaIDBConnect *connect,
-																const gchar *query,
-																gboolean display_error );
+gboolean            ofa_idbconnect_query                    ( const ofaIDBConnect *connect,
+																	const gchar *query,
+																	gboolean display_error );
 
-gboolean           ofa_idbconnect_query_ex                  ( const ofaIDBConnect *connect,
-																const gchar *query,
-																GSList **result,
-																gboolean display_error );
+gboolean            ofa_idbconnect_query_ex                 ( const ofaIDBConnect *connect,
+																	const gchar *query,
+																	GSList **result,
+																	gboolean display_error );
 
-gboolean           ofa_idbconnect_query_int                 ( const ofaIDBConnect *connect,
-																const gchar *query,
-																gint *result,
-																gboolean display_error );
+gboolean            ofa_idbconnect_query_int                ( const ofaIDBConnect *connect,
+																	const gchar *query,
+																	gint *result,
+																	gboolean display_error );
 
-gboolean           ofa_idbconnect_has_table                 ( const ofaIDBConnect *connect,
-																const gchar *table );
+gboolean            ofa_idbconnect_has_table                ( const ofaIDBConnect *connect,
+																	const gchar *table );
 
-gchar             *ofa_idbconnect_table_backup              ( const ofaIDBConnect *connect,
-																const gchar *table );
+gchar              *ofa_idbconnect_table_backup             ( const ofaIDBConnect *connect,
+																	const gchar *table );
 
-gboolean           ofa_idbconnect_table_restore             ( const ofaIDBConnect *connect,
-																const gchar *table_src,
-																const gchar *table_dest );
+gboolean            ofa_idbconnect_table_restore            ( const ofaIDBConnect *connect,
+																	const gchar *table_src,
+																	const gchar *table_dest );
 
-#define            ofa_idbconnect_free_results( L )         g_debug( "ofa_idbconnect_free_results" ); \
-																g_slist_foreach(( L ), ( GFunc ) g_slist_free_full, g_free ); \
-																g_slist_free( L )
+#define             ofa_idbconnect_free_results( L )        g_debug( "ofa_idbconnect_free_results" ); \
+																	g_slist_foreach(( L ),( GFunc ) g_slist_free_full, g_free ); \
+																	g_slist_free( L )
 
-gchar             *ofa_idbconnect_get_last_error            ( const ofaIDBConnect *connect );
+gchar              *ofa_idbconnect_get_last_error           ( const ofaIDBConnect *connect );
 
-gboolean           ofa_idbconnect_backup                    ( const ofaIDBConnect *connect,
-																const gchar *uri );
+gboolean            ofa_idbconnect_backup                   ( const ofaIDBConnect *connect,
+																	const gchar *uri );
 
-gboolean           ofa_idbconnect_restore                   ( const ofaIDBConnect *connect,
-																const ofaIDBPeriod *period,
-																const gchar *uri,
-																const gchar *adm_account,
-																const gchar *adm_password );
+gboolean            ofa_idbconnect_restore                  ( const ofaIDBConnect *connect,
+																	const ofaIDBExerciceMeta *period,
+																	const gchar *uri,
+																	const gchar *adm_account,
+																	const gchar *adm_password );
 
-gboolean           ofa_idbconnect_archive_and_new           ( const ofaIDBConnect *connect,
-																const gchar *root_account,
-																const gchar *root_password,
-																const GDate *begin_next,
-																const GDate *end_next );
+gboolean            ofa_idbconnect_archive_and_new          ( const ofaIDBConnect *connect,
+																	const gchar *root_account,
+																	const gchar *root_password,
+																	const GDate *begin_next,
+																	const GDate *end_next );
 
-gboolean           ofa_idbconnect_create_dossier            ( const ofaIDBConnect *connect,
-																const ofaIDBDossierMeta *meta,
-																const gchar *adm_account,
-																const gchar *adm_password );
+gboolean            ofa_idbconnect_create_dossier           ( const ofaIDBConnect *connect,
+																	const ofaIDBDossierMeta *meta,
+																	const gchar *adm_account,
+																	const gchar *adm_password );
 
-gboolean           ofa_idbconnect_transaction_start         ( const ofaIDBConnect *connect,
-																gboolean display_error,
-																gchar **msgerr );
+gboolean            ofa_idbconnect_transaction_start        ( const ofaIDBConnect *connect,
+																	gboolean display_error,
+																	gchar **msgerr );
 
-gboolean           ofa_idbconnect_transaction_commit        ( const ofaIDBConnect *connect,
-																gboolean display_error,
-																gchar **msgerr );
+gboolean            ofa_idbconnect_transaction_commit       ( const ofaIDBConnect *connect,
+																	gboolean display_error,
+																	gchar **msgerr );
 
-gboolean           ofa_idbconnect_transaction_cancel        ( const ofaIDBConnect *connect,
-																gboolean display_error,
-																gchar **msgerr );
+gboolean            ofa_idbconnect_transaction_cancel       ( const ofaIDBConnect *connect,
+																	gboolean display_error,
+																	gchar **msgerr );
 
 G_END_DECLS
 

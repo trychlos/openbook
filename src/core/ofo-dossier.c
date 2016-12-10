@@ -34,6 +34,7 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-isignal-hub.h"
@@ -1907,8 +1908,8 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 {
 	static const gchar *thisfn = "ofo_dossier_hub_on_exe_dates_changed";
 	const ofaIDBConnect *connect;
-	ofaIDBDossierMeta *meta;
-	ofaIDBPeriod *period;
+	ofaIDBDossierMeta *dossier_meta;
+	ofaIDBExerciceMeta *exercice_meta;
 	ofoDossier *dossier;
 
 	g_debug( "%s: hub=%p, prev_begin=%p, prev_end=%p, empty=%p",
@@ -1918,14 +1919,14 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 	if( dossier && OFO_IS_DOSSIER( dossier )){
 
 		connect = ofa_hub_get_connect( hub );
-		meta = ofa_idbconnect_get_dossier_meta( connect );
-		period = ofa_idbconnect_get_period( connect );
+		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
+		exercice_meta = ofa_idbconnect_get_period( connect );
 
-		ofa_idbdossier_meta_update_period( meta, period,
+		ofa_idbdossier_meta_update_period( dossier_meta, exercice_meta,
 				TRUE, ofo_dossier_get_exe_begin( dossier ), ofo_dossier_get_exe_end( dossier ));
 
-		g_object_unref( period );
-		g_object_unref( meta );
+		g_object_unref( exercice_meta );
+		g_object_unref( dossier_meta );
 	}
 }
 

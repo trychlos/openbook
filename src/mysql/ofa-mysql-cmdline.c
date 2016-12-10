@@ -117,7 +117,7 @@ gboolean
 ofa_mysql_cmdline_backup_run( ofaMySQLConnect *connect, const gchar *uri )
 {
 	gchar *template, *fname;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	gboolean ok;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
@@ -166,7 +166,7 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  *  connection on the DBMS server. This object is expected to hold root
  *  account and password, and a non-%NULL meta which identifies the
  *  target dossier.
- * @period: the #ofaIDBPeriod object which qualifies the target
+ * @period: the #ofaIDBExerciceMeta object which qualifies the target
  *  exercice.
  * @uri: the URI of the file to be restored.
  *
@@ -236,7 +236,7 @@ ofa_mysql_cmdline_archive_and_new( ofaMySQLConnect *connect,
 	ofaIDBDossierMeta *meta;
 	const gchar *host, *socket, *prev_dbname;
 	guint port;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	gchar *new_db, *prev_account;
 	gboolean ok;
 	gchar *cmdline, *cmd, *stdout, *stderr;

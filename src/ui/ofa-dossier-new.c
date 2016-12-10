@@ -487,7 +487,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 {
 	ofaDossierNewPrivate *priv;
 	gboolean ok;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
 	gchar *account, *password;

@@ -49,8 +49,9 @@ api_include_HEADERS = \
 	ofa-idbdossier-meta.h								\
 	ofa-idbdossier-meta-def.h							\
 	ofa-idbeditor.h										\
+	ofa-idbexercice-meta.h								\
+	ofa-idbexercice-meta-def.h							\
 	ofa-idbmodel.h										\
-	ofa-idbperiod.h										\
 	ofa-idbprovider.h									\
 	ofa-idbprovider-def.h								\
 	ofa-iexe-close.h									\

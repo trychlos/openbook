@@ -67,6 +67,7 @@
 
    - ofaExerciceTreeview: new class.
    - ofaIDBMeta interface is renamed to ofaIDBDossierMeta (todo #1274).
+   - ofaIDBPeriod interface is renamed to ofaIDBExerciceMeta (todo #1275).
    - ofaMiscAuditStore: new class.
    - ofaMiscAuditTreeview: new class.
    - ofaPortfolioCollection class is renamed to ofaDossierCollection (todo #1264).

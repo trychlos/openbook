@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 
@@ -252,26 +253,26 @@ ofa_idbeditor_set_provider( ofaIDBEditor *instance, const ofaIDBProvider *provid
  * @instance: this #ofaIDBEditor instance.
  * @dossier_meta: [allow-none]: the #ofaIDBDossierMeta object which
  *  holds the dossier meta informations.
- * @period: [allow-none]: the #ofaIDBPeriod object which holds exercice
- *  informations; must be %NULL if @meta is %NULL.
+ * @exercice_meta: [allow-none]: the #ofaIDBExerciceMeta object which
+ *  holds exercice informations; must be %NULL if @dossier_meta is %NULL.
  *
  * Initialize the widget with provided datas.
  */
 void
-ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period )
+ofa_idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *exercice_meta )
 {
 	static const gchar *thisfn = "ofa_idbeditor_set_meta";
 
-	g_debug( "%s: instance=%p, dossier_meta=%p, period=%p",
-			thisfn, ( void * ) instance, ( void * ) dossier_meta, ( void * ) period );
+	g_debug( "%s: instance=%p, dossier_meta=%p, exercice_meta=%p",
+			thisfn, ( void * ) instance, ( void * ) dossier_meta, ( void * ) exercice_meta );
 
 	g_return_if_fail( instance && OFA_IS_IDBEDITOR( instance ));
 	g_return_if_fail( !dossier_meta || OFA_IS_IDBDOSSIER_META( dossier_meta ));
-	g_return_if_fail( !period || OFA_IS_IDBPERIOD( period ));
-	g_return_if_fail( dossier_meta || !period );
+	g_return_if_fail( !exercice_meta || OFA_IS_IDBEXERCICE_META( exercice_meta ));
+	g_return_if_fail( dossier_meta || !exercice_meta );
 
 	if( OFA_IDBEDITOR_GET_INTERFACE( instance )->set_meta ){
-		OFA_IDBEDITOR_GET_INTERFACE( instance )->set_meta( instance, dossier_meta, period );
+		OFA_IDBEDITOR_GET_INTERFACE( instance )->set_meta( instance, dossier_meta, exercice_meta );
 		return;
 	}
 

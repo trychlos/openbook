@@ -35,6 +35,7 @@
 
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
@@ -55,7 +56,7 @@ typedef struct {
 	 */
 	ofaIGetter               *getter;
 	ofaIDBDossierMeta        *dossier_meta;
-	ofaIDBPeriod             *period;
+	ofaIDBExerciceMeta       *exercice_meta;
 
 	/* UI
 	 */
@@ -123,7 +124,7 @@ dossier_delete_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->dossier_meta );
-		g_clear_object( &priv->period );
+		g_clear_object( &priv->exercice_meta );
 		g_clear_object( &priv->provider );
 	}
 
@@ -172,7 +173,7 @@ ofa_dossier_delete_class_init( ofaDossierDeleteClass *klass )
  * Run the selection dialog to delete a dossier.
  */
 void
-ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period )
+ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period )
 {
 	static const gchar *thisfn = "ofa_dossier_delete_run";
 	ofaDossierDelete *self;
@@ -184,7 +185,7 @@ ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBDossi
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 	g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DELETE, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
@@ -194,7 +195,7 @@ ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBDossi
 
 	priv->getter = getter;
 	priv->dossier_meta = g_object_ref(( gpointer ) dossier_meta );
-	priv->period = g_object_ref(( gpointer ) period );
+	priv->exercice_meta = g_object_ref(( gpointer ) period );
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));

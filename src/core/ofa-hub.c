@@ -35,8 +35,8 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbmodel.h"
-#include "api/ofa-idbperiod.h"
 #include "api/ofa-iexportable.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofo-account.h"
@@ -1018,7 +1018,7 @@ check_db_vs_settings( ofaHub *hub )
 	gboolean db_current, settings_current, remediated;
 	const GDate *db_begin, *db_end, *settings_begin, *settings_end;
 	const ofaIDBConnect *cnx;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	ofaIDBDossierMeta *meta;
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
@@ -1033,9 +1033,9 @@ check_db_vs_settings( ofaHub *hub )
 
 	/* data from settings */
 	period = ofa_idbconnect_get_period( cnx );
-	settings_current = ofa_idbperiod_get_current( period );
-	settings_begin = ofa_idbperiod_get_begin_date( period );
-	settings_end = ofa_idbperiod_get_end_date( period );
+	settings_current = ofa_idbexercice_meta_get_current( period );
+	settings_begin = ofa_idbexercice_meta_get_begin_date( period );
+	settings_end = ofa_idbexercice_meta_get_end_date( period );
 
 	/* update settings if not equal */
 	if( db_current != settings_current ||

@@ -806,7 +806,7 @@ application_activate( GApplication *application )
 	ofaApplicationPrivate *priv;
 	ofaDossierCollection *collection;
 	ofaIDBDossierMeta *meta;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	GDate dbegin, dend;
 	gchar *str;
 

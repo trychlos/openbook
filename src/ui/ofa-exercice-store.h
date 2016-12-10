@@ -65,7 +65,7 @@ typedef struct {
  * @EXERCICE_COL_BEGIN : begin of exercice                      String       Yes
  * @EXERCICE_COL_END   : end of exercice                        String       Yes
  * @EXERCICE_COL_LABEL : localized exercice description string  String       Yes
- * @EXERCICE_COL_PERIOD: ofaIDBPeriod object                    GObject       No
+ * @EXERCICE_COL_PERIOD: ofaIDBExerciceMeta object              GObject       No
  */
 enum {
 	EXERCICE_COL_STATUS = 0,

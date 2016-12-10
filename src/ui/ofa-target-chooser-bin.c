@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 
 #include "ui/ofa-dossier-treeview.h"
 #include "ui/ofa-exercice-treeview.h"
@@ -58,7 +59,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-target-chooser-bin.ui";
 
 static void setup_bin( ofaTargetChooserBin *self );
-static void dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBPeriod *empty, ofaTargetChooserBin *self );
+static void dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *empty, ofaTargetChooserBin *self );
 static void dossier_on_new( GtkButton *button, ofaTargetChooserBin *self );
 static void period_on_new( GtkButton *button, ofaTargetChooserBin *self );
 
@@ -203,7 +204,7 @@ setup_bin( ofaTargetChooserBin *self )
 }
 
 static void
-dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBPeriod *empty, ofaTargetChooserBin *self )
+dossier_on_selection_changed( ofaDossierTreeview *treeview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *empty, ofaTargetChooserBin *self )
 {
 	ofaTargetChooserBinPrivate *priv;
 
@@ -229,12 +230,12 @@ period_on_new( GtkButton *button, ofaTargetChooserBin *self )
  * ofa_target_chooser_bin_get_selected:
  * @view: this #ofaTargetChooserBin instance.
  * @meta: [out]: the placeholder for the selected #ofaIDBDossierMeta object.
- * @period: [out]: the placeholder for the selected #ofaIDBPeriod object.
+ * @period: [out]: the placeholder for the selected #ofaIDBExerciceMeta object.
  *
  * Returns: %TRUE if there is a selection.
  */
 gboolean
-ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin, ofaIDBDossierMeta **meta, ofaIDBPeriod **period )
+ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin, ofaIDBDossierMeta **meta, ofaIDBExerciceMeta **period )
 {
 	ofaTargetChooserBinPrivate *priv;
 

@@ -42,7 +42,7 @@
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
@@ -104,8 +104,8 @@ typedef struct {
 	 */
 	GtkWidget              *p2_furi;
 	ofaDossierTreeview     *p2_dossier_tview;
-	ofaIDBDossierMeta      *p2_meta;
-	ofaIDBPeriod           *p2_period;
+	ofaIDBDossierMeta      *p2_dossier_meta;
+	ofaIDBExerciceMeta     *p2_exercice_meta;
 	gchar                  *p2_dbname;
 	gboolean                p2_is_new_dossier;
 	GSimpleAction          *p2_new_action;
@@ -193,8 +193,8 @@ static gboolean p1_check_for_complete( ofaRestoreAssistant *self );
 static void     p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
 static void     p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
 static void     p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
-static gboolean p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaRestoreAssistant *assistant );
-static void     p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaRestoreAssistant *assistant );
+static gboolean p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant );
+static void     p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant );
 static void     p2_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRestoreAssistant *assistant );
 static gboolean p2_check_for_complete( ofaRestoreAssistant *self );
 static void     p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page );
@@ -300,8 +300,8 @@ restore_assistant_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->p2_meta );
-		g_clear_object( &priv->p2_period );
+		g_clear_object( &priv->p2_dossier_meta );
+		g_clear_object( &priv->p2_exercice_meta );
 		g_clear_object( &priv->p3_hgroup );
 		g_clear_object( &priv->p3_connect );
 	}
@@ -705,25 +705,25 @@ p2_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
  * (i.e. a target dossier+exercice are selected)
  */
 static gboolean
-p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaRestoreAssistant *assistant )
+p2_on_dossier_changed( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant )
 {
 	ofaRestoreAssistantPrivate *priv;
 
 	priv = ofa_restore_assistant_get_instance_private( assistant );
 
-	g_clear_object( &priv->p2_meta );
-	g_clear_object( &priv->p2_period );
+	g_clear_object( &priv->p2_dossier_meta );
+	g_clear_object( &priv->p2_exercice_meta );
 
 	if( meta && period ){
-		priv->p2_meta = g_object_ref( meta );
-		priv->p2_period = g_object_ref( period );
+		priv->p2_dossier_meta = g_object_ref( meta );
+		priv->p2_exercice_meta = g_object_ref( period );
 	}
 
 	return( p2_check_for_complete( assistant ));
 }
 
 static void
-p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBPeriod *period, ofaRestoreAssistant *assistant )
+p2_on_dossier_activated( ofaDossierTreeview *view, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaRestoreAssistant *assistant )
 {
 	if( p2_on_dossier_changed( view, meta, period, assistant )){
 		gtk_assistant_next_page( GTK_ASSISTANT( assistant ));
@@ -743,12 +743,12 @@ p2_on_new_activated( GSimpleAction *action, GVariant *empty, ofaRestoreAssistant
 
 	if( ofa_dossier_new_mini_run( priv->getter, GTK_WINDOW( assistant ), &meta )){
 
-		g_clear_object( &priv->p2_meta );
-		priv->p2_meta = meta;
+		g_clear_object( &priv->p2_dossier_meta );
+		priv->p2_dossier_meta = meta;
 
 		priv->p2_is_new_dossier = TRUE;
 
-		dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_meta );
+		dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 		ofa_dossier_treeview_set_selected( priv->p2_dossier_tview, dossier_name );
 
 		gtk_widget_grab_focus( GTK_WIDGET( priv->p2_dossier_tview ));
@@ -763,12 +763,12 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	ok = ( priv->p2_meta && OFA_IS_IDBDOSSIER_META( priv->p2_meta ) &&
-			priv->p2_period && OFA_IS_IDBPERIOD( priv->p2_period ));
+	ok = ( priv->p2_dossier_meta && OFA_IS_IDBDOSSIER_META( priv->p2_dossier_meta ) &&
+			priv->p2_exercice_meta && OFA_IS_IDBEXERCICE_META( priv->p2_exercice_meta ));
 
 	if( ok ){
 		g_free( priv->p2_dbname );
-		priv->p2_dbname = ofa_idbperiod_get_name( priv->p2_period );
+		priv->p2_dbname = ofa_idbexercice_meta_get_name( priv->p2_exercice_meta );
 	}
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
@@ -848,7 +848,7 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_label_set_text( GTK_LABEL( priv->p3_furi ), priv->p1_furi );
 
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 	gtk_label_set_text( GTK_LABEL( priv->p3_dossier ), dossier_name );
 
 	/* as the dossier may have changed since the initialization,
@@ -865,17 +865,17 @@ p3_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 		g_list_free( children );
 	}
 
-	provider = ofa_idbdossier_meta_get_provider( priv->p2_meta );
+	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
 	g_return_if_fail( provider && OFA_IS_IDBPROVIDER( provider ));
 	editor = ofa_idbprovider_new_editor( provider, FALSE );
 	g_object_unref( provider );
 
-	ofa_idbeditor_set_meta( editor, priv->p2_meta, priv->p2_period );
+	ofa_idbeditor_set_meta( editor, priv->p2_dossier_meta, priv->p2_exercice_meta );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( editor ));
 	my_utils_size_group_add_size_group(
 			priv->p3_hgroup, ofa_idbeditor_get_size_group( editor, 0 ));
 
-	ofa_dbms_root_bin_set_meta( priv->p3_dbms_credentials, priv->p2_meta );
+	ofa_dbms_root_bin_set_meta( priv->p3_dbms_credentials, priv->p2_dossier_meta );
 
 	/* setup the dbms root credentials */
 	if( priv->p3_account ){
@@ -953,10 +953,10 @@ p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_clear_object( &priv->p3_connect );
-	provider = ofa_idbdossier_meta_get_provider( priv->p2_meta );
+	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
 	priv->p3_connect = ofa_idbprovider_new_connect( provider );
 	if( !ofa_idbconnect_open_with_meta(
-			priv->p3_connect, priv->p3_account, priv->p3_password, priv->p2_meta, NULL )){
+			priv->p3_connect, priv->p3_account, priv->p3_password, priv->p2_dossier_meta, NULL )){
 		g_clear_object( &priv->p3_connect );
 		g_warning( "%s: unable to open a new '%s' connection on DBMS", thisfn, priv->p3_account );
 	}
@@ -1043,7 +1043,7 @@ p4_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	gtk_label_set_text( GTK_LABEL( priv->p4_furi ), priv->p1_furi );
 
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 	gtk_label_set_text( GTK_LABEL( priv->p4_dossier ), dossier_name );
 
 	gtk_label_set_text( GTK_LABEL( priv->p4_database ), priv->p2_dbname );
@@ -1189,7 +1189,7 @@ p5_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 
 	gtk_label_set_text( GTK_LABEL( priv->p5_furi ), priv->p1_furi );
 	gtk_label_set_text( GTK_LABEL( priv->p5_dossier ), dossier_name );
@@ -1243,7 +1243,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	if( !p6_restore_confirmed( self )){
 		if( priv->p2_is_new_dossier ){
-			ofa_idbdossier_meta_remove_meta( priv->p2_meta );
+			ofa_idbdossier_meta_remove_meta( priv->p2_dossier_meta );
 		}
 		gtk_label_set_text(
 				GTK_LABEL( priv->p6_label1 ),
@@ -1270,7 +1270,7 @@ p6_restore_confirmed( ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	name = ofa_idbperiod_get_name( priv->p2_period );
+	name = ofa_idbexercice_meta_get_name( priv->p2_exercice_meta );
 
 	str = g_strdup_printf(
 				_( "The restore operation will drop, fully reset and repopulate "
@@ -1300,7 +1300,7 @@ p6_do_restore( ofaRestoreAssistant *self )
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_meta );
+	dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->p2_dossier_meta );
 
 	/* restore the backup */
 	ok = ofa_idbconnect_restore(
@@ -1347,12 +1347,12 @@ p6_do_open( ofaRestoreAssistant *self )
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	g_debug( "%s: self=%p, meta=%p, period=%p, account=%s",
-			thisfn, ( void * ) self, ( void * ) priv->p2_meta, ( void * ) priv->p2_period, priv->p4_account );
+			thisfn, ( void * ) self, ( void * ) priv->p2_dossier_meta, ( void * ) priv->p2_exercice_meta, priv->p4_account );
 
 	if( priv->p4_open ){
 		ofa_dossier_open_run(
 				priv->getter, GTK_WINDOW( self ),
-				priv->p2_meta, priv->p2_period, priv->p4_account, priv->p4_password );
+				priv->p2_dossier_meta, priv->p2_exercice_meta, priv->p4_account, priv->p4_password );
 
 		g_debug( "%s: return from ofa_dossier_open_run", thisfn );
 	}

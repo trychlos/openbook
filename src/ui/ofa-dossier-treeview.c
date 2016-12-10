@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvfilterable.h"
 #include "api/ofa-itvsortable.h"
@@ -68,7 +69,7 @@ static void     on_selection_changed( ofaDossierTreeview *self, GtkTreeSelection
 static void     on_selection_activated( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     on_selection_delete( ofaDossierTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar *signal );
-static gboolean get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selection, ofaIDBDossierMeta **meta, ofaIDBPeriod **period );
+static gboolean get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selection, ofaIDBDossierMeta **meta, ofaIDBExerciceMeta **period );
 static gboolean tvbin_v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
@@ -148,13 +149,13 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection
 	 * is changed.
 	 *
-	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBPeriod objects;
+	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBExerciceMeta objects;
 	 * they may be %NULL
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview  *view,
 	 * 						ofaIDBDossierMeta *meta,
-	 * 						ofaIDBPeriod      *period,
+	 * 						ofaIDBExerciceMeta      *period,
 	 * 						gpointer           user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
@@ -175,12 +176,12 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * This signal is sent on the #ofaDossierTreeview when the selection is
 	 * activated.
 	 *
-	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBPeriod objects.
+	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBExerciceMeta objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview  *view,
 	 * 						ofaIDBDossierMeta *meta,
-	 * 						ofaIDBPeriod      *period,
+	 * 						ofaIDBExerciceMeta      *period,
 	 * 						gpointer           user_data );
 	 */
 	st_signals[ ACTIVATED ] = g_signal_new_class_handler(
@@ -201,14 +202,14 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 	 * #ofaTVBin sends a 'ofa-seldelete' signal, with the current
 	 * #GtkTreeSelection as an argument.
 	 * #ofaDossierTreeview proxyes it with this 'ofa-dosdelete' signal,
-	 * providing the #ofoIDBDossierMeta/#ofaIDBPeriod selected objects.
+	 * providing the #ofoIDBDossierMeta/#ofaIDBExerciceMeta selected objects.
 	 *
-	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBPeriod objects.
+	 * Arguments are the selected ofaIDBDossierMeta and ofaIDBExerciceMeta objects.
 	 *
 	 * Handler is of type:
 	 * void ( *handler )( ofaDossierTreeview  *view,
 	 * 						ofaIDBDossierMeta *meta,
-	 * 						ofaIDBPeriod      *period,
+	 * 						ofaIDBExerciceMeta      *period,
 	 * 						gpointer           user_data );
 	 */
 	st_signals[ DELETE ] = g_signal_new_class_handler(
@@ -237,7 +238,7 @@ ofa_dossier_treeview_new( void )
 					NULL );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
-	 * #ofoIDBMEta/#ofaIDBPeriod objects instead of just the raw
+	 * #ofoIDBMEta/#ofaIDBExerciceMeta objects instead of just the raw
 	 * GtkTreeSelection
 	 */
 	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
@@ -341,7 +342,7 @@ on_selection_delete( ofaDossierTreeview *self, GtkTreeSelection *selection, void
 }
 
 /*
- * ofaIDBDossierMeta/ofaIDBPeriod may be %NULL when selection is empty
+ * ofaIDBDossierMeta/ofaIDBExerciceMeta may be %NULL when selection is empty
  * (on 'ofa-doschanged' signal)
  */
 static void
@@ -349,10 +350,10 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
 {
 	gboolean ok;
 	ofaIDBDossierMeta *meta;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 
 	ok = get_selected_with_selection( self, selection, &meta, &period );
-	g_return_if_fail( !ok || ( OFA_IS_IDBDOSSIER_META( meta ) && OFA_IS_IDBPERIOD( period )));
+	g_return_if_fail( !ok || ( OFA_IS_IDBDOSSIER_META( meta ) && OFA_IS_IDBEXERCICE_META( period )));
 
 	g_signal_emit_by_name( self, signal, meta, period );
 }
@@ -363,14 +364,14 @@ get_and_send( ofaDossierTreeview *self, GtkTreeSelection *selection, const gchar
  * @meta: [allow-none][out]: the currently selected #ofaIDBDossierMeta row;
  *  this reference is owned by the underlying #GtkTreeModel and should
  *  not be unreffed by the caller.
- * @period: [allow-none][out]: the currently selected #ofaIDBPeriod row;
+ * @period: [allow-none][out]: the currently selected #ofaIDBExerciceMeta row;
  *  this reference is owned by the underlying #GtkTreeModel and should
  *  not be unreffed by the caller.
  *
  * Returns: %TRUE if a selection exists, %FALSE else.
  */
 gboolean
-ofa_dossier_treeview_get_selected( ofaDossierTreeview *view, ofaIDBDossierMeta **meta, ofaIDBPeriod **period )
+ofa_dossier_treeview_get_selected( ofaDossierTreeview *view, ofaIDBDossierMeta **meta, ofaIDBExerciceMeta **period )
 {
 	ofaDossierTreeviewPrivate *priv;
 	gboolean ok;
@@ -398,13 +399,13 @@ ofa_dossier_treeview_get_selected( ofaDossierTreeview *view, ofaIDBDossierMeta *
  * Return: the currently selected class, or %NULL.
  */
 static gboolean
-get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selection, ofaIDBDossierMeta **meta, ofaIDBPeriod **period )
+get_selected_with_selection( ofaDossierTreeview *self, GtkTreeSelection *selection, ofaIDBDossierMeta **meta, ofaIDBExerciceMeta **period )
 {
 	gboolean ok;
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	ofaIDBDossierMeta *row_meta = NULL;
-	ofaIDBPeriod *row_period = NULL;
+	ofaIDBExerciceMeta *row_period = NULL;
 
 	ok = FALSE;
 
@@ -551,7 +552,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 	ofaDossierTreeviewPrivate *priv;
 	gboolean visible;
 	ofaIDBDossierMeta *meta;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	GList *periods;
 
 	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( tvbin ));
@@ -574,7 +575,7 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *model, GtkTreeIter *iter )
 		if( g_list_length( periods ) == 1 ){
 			visible = TRUE;
 		} else {
-			visible = ofa_idbperiod_get_current( period );
+			visible = ofa_idbexercice_meta_get_current( period );
 		}
 		ofa_idbdossier_meta_free_periods( periods );
 	}

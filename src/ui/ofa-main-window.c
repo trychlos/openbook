@@ -43,6 +43,7 @@
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-page.h"
@@ -889,7 +890,7 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 	ofoDossier *dossier;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *meta;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	gchar *title, *period_label, *period_name;
 	const gchar *dos_name;
 
@@ -906,8 +907,8 @@ set_window_title( ofaMainWindow *self, gboolean with_dossier )
 		meta = ofa_idbconnect_get_dossier_meta( connect );
 		period = ofa_idbconnect_get_period( connect );
 		dos_name = ofa_idbdossier_meta_get_dossier_name( meta );
-		period_label = ofa_idbperiod_get_label( period );
-		period_name = ofa_idbperiod_get_name( period );
+		period_label = ofa_idbexercice_meta_get_label( period );
+		period_name = ofa_idbexercice_meta_get_name( period );
 
 		title = g_strdup_printf( "%s (%s) %s - %s",
 				dos_name,

@@ -30,10 +30,10 @@
 
 #include "my/my-date.h"
 
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-preferences.h"
 
-/* some data attached to each IDBPeriod instance
+/* some data attached to each IDBExerciceMeta instance
  * we store here the data provided by the application
  * which do not depend of a specific implementation
  */
@@ -42,26 +42,26 @@ typedef struct {
 	GDate    end;
 	gboolean current;
 }
-	sIDBPeriod;
+	sIDBMeta;
 
-#define IDBPERIOD_LAST_VERSION          1
-#define IDBPERIOD_DATA                  "idbperiod-data"
+#define IDBEXERCICE_META_LAST_VERSION     1
+#define IDBEXERCICE_META_DATA            "idbexercice-meta-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType       register_type( void );
-static void        interface_base_init( ofaIDBPeriodInterface *klass );
-static void        interface_base_finalize( ofaIDBPeriodInterface *klass );
-static sIDBPeriod *get_idbperiod_data( const ofaIDBPeriod *period );
-static void        on_period_finalized( sIDBPeriod *data, GObject *finalized_period );
+static GType     register_type( void );
+static void      interface_base_init( ofaIDBExerciceMetaInterface *klass );
+static void      interface_base_finalize( ofaIDBExerciceMetaInterface *klass );
+static sIDBMeta *get_idbperiod_data( const ofaIDBExerciceMeta *period );
+static void      on_period_finalized( sIDBMeta *data, GObject *finalized_period );
 
 /**
- * ofa_idbperiod_get_type:
+ * ofa_idbexercice_meta_get_type:
  *
  * Returns: the #GType type of this interface.
  */
 GType
-ofa_idbperiod_get_type( void )
+ofa_idbexercice_meta_get_type( void )
 {
 	static GType type = 0;
 
@@ -73,18 +73,18 @@ ofa_idbperiod_get_type( void )
 }
 
 /*
- * ofa_idbperiod_register_type:
+ * ofa_idbexercice_meta_register_type:
  *
  * Registers this interface.
  */
 static GType
 register_type( void )
 {
-	static const gchar *thisfn = "ofa_idbperiod_register_type";
+	static const gchar *thisfn = "ofa_idbexercice_meta_register_type";
 	GType type;
 
 	static const GTypeInfo info = {
-		sizeof( ofaIDBPeriodInterface ),
+		sizeof( ofaIDBExerciceMetaInterface ),
 		( GBaseInitFunc ) interface_base_init,
 		( GBaseFinalizeFunc ) interface_base_finalize,
 		NULL,
@@ -97,7 +97,7 @@ register_type( void )
 
 	g_debug( "%s", thisfn );
 
-	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIDBPeriod", &info, 0 );
+	type = g_type_register_static( G_TYPE_INTERFACE, "ofaIDBExerciceMeta", &info, 0 );
 
 	g_type_interface_add_prerequisite( type, G_TYPE_OBJECT );
 
@@ -105,9 +105,9 @@ register_type( void )
 }
 
 static void
-interface_base_init( ofaIDBPeriodInterface *klass )
+interface_base_init( ofaIDBExerciceMetaInterface *klass )
 {
-	static const gchar *thisfn = "ofa_idbperiod_interface_base_init";
+	static const gchar *thisfn = "ofa_idbexercice_meta_interface_base_init";
 
 	if( st_initializations == 0 ){
 
@@ -120,9 +120,9 @@ interface_base_init( ofaIDBPeriodInterface *klass )
 }
 
 static void
-interface_base_finalize( ofaIDBPeriodInterface *klass )
+interface_base_finalize( ofaIDBExerciceMetaInterface *klass )
 {
-	static const gchar *thisfn = "ofa_idbperiod_interface_base_finalize";
+	static const gchar *thisfn = "ofa_idbexercice_meta_interface_base_finalize";
 
 	st_initializations -= 1;
 
@@ -133,18 +133,18 @@ interface_base_finalize( ofaIDBPeriodInterface *klass )
 }
 
 /**
- * ofa_idbperiod_get_interface_last_version:
+ * ofa_idbexercice_meta_get_interface_last_version:
  *
  * Returns: the last version number of this interface.
  */
 guint
-ofa_idbperiod_get_interface_last_version( void )
+ofa_idbexercice_meta_get_interface_last_version( void )
 {
-	return( IDBPERIOD_LAST_VERSION );
+	return( IDBEXERCICE_META_LAST_VERSION );
 }
 
 /**
- * ofa_idbperiod_get_interface_version:
+ * ofa_idbexercice_meta_get_interface_version:
  * @type: the implementation's GType.
  *
  * Returns: the version number of this interface which is managed by
@@ -155,7 +155,7 @@ ofa_idbperiod_get_interface_last_version( void )
  * Since: version 1.
  */
 guint
-ofa_idbperiod_get_interface_version( GType type )
+ofa_idbexercice_meta_get_interface_version( GType type )
 {
 	gpointer klass, iface;
 	guint version;
@@ -163,16 +163,16 @@ ofa_idbperiod_get_interface_version( GType type )
 	klass = g_type_class_ref( type );
 	g_return_val_if_fail( klass, 1 );
 
-	iface = g_type_interface_peek( klass, OFA_TYPE_IDBPERIOD );
+	iface = g_type_interface_peek( klass, OFA_TYPE_IDBEXERCICE_META );
 	g_return_val_if_fail( iface, 1 );
 
 	version = 1;
 
-	if((( ofaIDBPeriodInterface * ) iface )->get_interface_version ){
-		version = (( ofaIDBPeriodInterface * ) iface )->get_interface_version();
+	if((( ofaIDBExerciceMetaInterface * ) iface )->get_interface_version ){
+		version = (( ofaIDBExerciceMetaInterface * ) iface )->get_interface_version();
 
 	} else {
-		g_info( "%s implementation does not provide 'ofaIDBPeriod::get_interface_version()' method",
+		g_info( "%s implementation does not provide 'ofaIDBExerciceMeta::get_interface_version()' method",
 				g_type_name( type ));
 	}
 
@@ -182,114 +182,114 @@ ofa_idbperiod_get_interface_version( GType type )
 }
 
 /**
- * ofa_idbperiod_get_begin_date:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_get_begin_date:
+ * @period: this #ofaIDBExerciceMeta instance.
  *
  * Returns: the beginning date of the @period.
  */
 const GDate *
-ofa_idbperiod_get_begin_date( const ofaIDBPeriod *period )
+ofa_idbexercice_meta_get_begin_date( const ofaIDBExerciceMeta *period )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
 	data = get_idbperiod_data( period );
 	return(( const GDate * ) &data->begin );
 }
 
 /**
- * ofa_idbperiod_set_begin_date:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_set_begin_date:
+ * @period: this #ofaIDBExerciceMeta instance.
  * @date: the beginning date to be set.
  *
  * Set the beginning date of the @period.
  */
 void
-ofa_idbperiod_set_begin_date( ofaIDBPeriod *period, const GDate *date )
+ofa_idbexercice_meta_set_begin_date( ofaIDBExerciceMeta *period, const GDate *date )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbperiod_data( period );
 	my_date_set_from_date( &data->begin, date );
 }
 
 /**
- * ofa_idbperiod_get_end_date:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_get_end_date:
+ * @period: this #ofaIDBExerciceMeta instance.
  *
  * Returns: the ending date of the @period.
  */
 const GDate *
-ofa_idbperiod_get_end_date( const ofaIDBPeriod *period )
+ofa_idbexercice_meta_get_end_date( const ofaIDBExerciceMeta *period )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
 	data = get_idbperiod_data( period );
 	return(( const GDate * ) &data->end );
 }
 
 /**
- * ofa_idbperiod_set_end_date:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_set_end_date:
+ * @period: this #ofaIDBExerciceMeta instance.
  * @date: the endning date to be set.
  *
  * Set the ending date of the @period.
  */
 void
-ofa_idbperiod_set_end_date( ofaIDBPeriod *period, const GDate *date )
+ofa_idbexercice_meta_set_end_date( ofaIDBExerciceMeta *period, const GDate *date )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbperiod_data( period );
 	my_date_set_from_date( &data->end, date );
 }
 
 /**
- * ofa_idbperiod_get_current:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_get_current:
+ * @period: this #ofaIDBExerciceMeta instance.
  *
  * Returns: %TRUE if the financial period is current, i.e. may be
  * modified, %FALSE else.
  */
 gboolean
-ofa_idbperiod_get_current( const ofaIDBPeriod *period )
+ofa_idbexercice_meta_get_current( const ofaIDBExerciceMeta *period )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
 	data = get_idbperiod_data( period );
 	return( data->current );
 }
 
 /**
- * ofa_idbperiod_set_current:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_set_current:
+ * @period: this #ofaIDBExerciceMeta instance.
  * @current: whether this @period is current.
  *
  * Set the @current flag.
  */
 void
-ofa_idbperiod_set_current( ofaIDBPeriod *period, gboolean current )
+ofa_idbexercice_meta_set_current( ofaIDBExerciceMeta *period, gboolean current )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbperiod_data( period );
 	data->current = current;
 }
 
 /**
- * ofa_idbperiod_get_status:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_get_status:
+ * @period: this #ofaIDBExerciceMeta instance.
  *
  * Returns: the localized status string, as a newly allocated string
  * which should be g_free() by the caller.
@@ -299,16 +299,16 @@ ofa_idbperiod_set_current( ofaIDBPeriod *period, gboolean current )
  * - 'Archived' for any closed period.
  */
 gchar *
-ofa_idbperiod_get_status( const ofaIDBPeriod *period )
+ofa_idbexercice_meta_get_status( const ofaIDBExerciceMeta *period )
 {
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
-	return( g_strdup( ofa_idbperiod_get_current( period ) ? _( "Current") : _( "Archived" )));
+	return( g_strdup( ofa_idbexercice_meta_get_current( period ) ? _( "Current") : _( "Archived" )));
 }
 
 /**
- * ofa_idbperiod_get_label:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_get_label:
+ * @period: this #ofaIDBExerciceMeta instance.
  *
  * Returns: a localized string which describes and qualifies the @period,
  *  as a newly allocated string which should be g_free() by the caller.
@@ -318,26 +318,26 @@ ofa_idbperiod_get_status( const ofaIDBPeriod *period )
  * - 'Archived exercice from 01/01/2012 to 31/12/2012'.
  */
 gchar *
-ofa_idbperiod_get_label( const ofaIDBPeriod *period )
+ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 {
 	GString *svalue;
 	gchar *sdate;
 	const GDate *begin, *end;
 
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
-	svalue = g_string_new( ofa_idbperiod_get_current( period )
+	svalue = g_string_new( ofa_idbexercice_meta_get_current( period )
 					? _( "Current exercice" )
 					: _( "Archived exercice" ));
 
-	begin = ofa_idbperiod_get_begin_date( period );
+	begin = ofa_idbexercice_meta_get_begin_date( period );
 	if( my_date_is_valid( begin )){
 		sdate = my_date_to_str( begin, ofa_prefs_date_display());
 		g_string_append_printf( svalue, _( " from %s" ), sdate );
 		g_free( sdate );
 	}
 
-	end = ofa_idbperiod_get_end_date( period );
+	end = ofa_idbexercice_meta_get_end_date( period );
 	if( my_date_is_valid( end )){
 		sdate = my_date_to_str( end, ofa_prefs_date_display());
 		g_string_append_printf( svalue, _( " to %s" ), sdate );
@@ -348,39 +348,39 @@ ofa_idbperiod_get_label( const ofaIDBPeriod *period )
 }
 
 /**
- * ofa_idbperiod_get_name:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_get_name:
+ * @period: this #ofaIDBExerciceMeta instance.
  *
  * Returns: a plugin-specific which qualifies the @period,
  *  as a newly allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_idbperiod_get_name( const ofaIDBPeriod *period )
+ofa_idbexercice_meta_get_name( const ofaIDBExerciceMeta *period )
 {
-	static const gchar *thisfn = "ofa_idbperiod_get_name";
+	static const gchar *thisfn = "ofa_idbexercice_meta_get_name";
 
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
-	if( OFA_IDBPERIOD_GET_INTERFACE( period )->get_name ){
-		return( OFA_IDBPERIOD_GET_INTERFACE( period )->get_name( period ));
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->get_name ){
+		return( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->get_name( period ));
 	}
 
-	g_info( "%s: ofaIDBPeriod's %s implementation does not provide 'get_name() method",
+	g_info( "%s: ofaIDBExerciceMeta's %s implementation does not provide 'get_name() method",
 			thisfn, G_OBJECT_TYPE_NAME( period ));
 	return( NULL );
 }
 
 /**
- * ofa_idbperiod_compare:
- * @a: a #ofaIDBPeriod instance.
- * @b: another #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_compare:
+ * @a: a #ofaIDBExerciceMeta instance.
+ * @b: another #ofaIDBExerciceMeta instance.
  *
  * Compare the two periods by their dates.
  *
  * Returns: -1 if @a < @b, +1 if @a > @b, 0 if they are equal.
  */
 gint
-ofa_idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
+ofa_idbexercice_meta_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b )
 {
 	gint cmp;
 	const GDate *a_begin, *a_end, *b_begin, *b_end;
@@ -388,20 +388,20 @@ ofa_idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
 	cmp = 0;
 
 	if( a ){
-		a_begin = ofa_idbperiod_get_begin_date( a );
-		a_end = ofa_idbperiod_get_end_date( a );
+		a_begin = ofa_idbexercice_meta_get_begin_date( a );
+		a_end = ofa_idbexercice_meta_get_end_date( a );
 
 		if( b ){
-			b_begin = ofa_idbperiod_get_begin_date( b );
-			b_end = ofa_idbperiod_get_end_date( b );
+			b_begin = ofa_idbexercice_meta_get_begin_date( b );
+			b_end = ofa_idbexercice_meta_get_end_date( b );
 
 			cmp = my_date_compare_ex( a_begin, b_begin, TRUE );
 			if( cmp == 0 ){
 				cmp = my_date_compare_ex( a_end, b_end, FALSE );
 			}
 			if( cmp == 0 ){
-				if( OFA_IDBPERIOD_GET_INTERFACE( a )->compare ){
-					cmp = OFA_IDBPERIOD_GET_INTERFACE( a )->compare( a, b );
+				if( OFA_IDBEXERCICE_META_GET_INTERFACE( a )->compare ){
+					cmp = OFA_IDBEXERCICE_META_GET_INTERFACE( a )->compare( a, b );
 				}
 			}
 			return( cmp );
@@ -420,17 +420,17 @@ ofa_idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
 }
 
 /**
- * ofa_idbperiod_is_suitable:
- * @period: a #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_is_suitable:
+ * @period: a #ofaIDBExerciceMeta instance.
  * @begin: [allow-none]: the beginning date of a period.
  * @end: [allow-none]: the ending date of a period.
  *
  * Returns: %TRUE if @period is compatible with @begin and @end.
  */
 gboolean
-ofa_idbperiod_is_suitable( const ofaIDBPeriod *period, const GDate *begin, const GDate *end )
+ofa_idbexercice_meta_is_suitable( const ofaIDBExerciceMeta *period, const GDate *begin, const GDate *end )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 	gboolean begin_ok, end_ok;
 
 	begin_ok = FALSE;
@@ -444,22 +444,22 @@ ofa_idbperiod_is_suitable( const ofaIDBPeriod *period, const GDate *begin, const
 }
 
 /**
- * ofa_idbperiod_dump:
- * @period: this #ofaIDBPeriod instance.
+ * ofa_idbexercice_meta_dump:
+ * @period: this #ofaIDBExerciceMeta instance.
  *
  * Dump the object.
  */
 void
-ofa_idbperiod_dump( const ofaIDBPeriod *period )
+ofa_idbexercice_meta_dump( const ofaIDBExerciceMeta *period )
 {
-	static const gchar *thisfn = "ofa_idbperiod_dump";
-	sIDBPeriod *data;
+	static const gchar *thisfn = "ofa_idbexercice_meta_dump";
+	sIDBMeta *data;
 	gchar *begin, *end;
 
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
-	if( OFA_IDBPERIOD_GET_INTERFACE( period )->dump ){
-		OFA_IDBPERIOD_GET_INTERFACE( period )->dump( period );
+	if( OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump ){
+		OFA_IDBEXERCICE_META_GET_INTERFACE( period )->dump( period );
 	}
 
 	data = get_idbperiod_data( period );
@@ -476,16 +476,16 @@ ofa_idbperiod_dump( const ofaIDBPeriod *period )
 	g_free( end );
 }
 
-static sIDBPeriod *
-get_idbperiod_data( const ofaIDBPeriod *period )
+static sIDBMeta *
+get_idbperiod_data( const ofaIDBExerciceMeta *period )
 {
-	sIDBPeriod *data;
+	sIDBMeta *data;
 
-	data = ( sIDBPeriod * ) g_object_get_data( G_OBJECT( period ), IDBPERIOD_DATA );
+	data = ( sIDBMeta * ) g_object_get_data( G_OBJECT( period ), IDBEXERCICE_META_DATA );
 
 	if( !data ){
-		data = g_new0( sIDBPeriod, 1 );
-		g_object_set_data( G_OBJECT( period ), IDBPERIOD_DATA, data );
+		data = g_new0( sIDBMeta, 1 );
+		g_object_set_data( G_OBJECT( period ), IDBEXERCICE_META_DATA, data );
 		g_object_weak_ref( G_OBJECT( period ), ( GWeakNotify ) on_period_finalized, data );
 	}
 
@@ -493,9 +493,9 @@ get_idbperiod_data( const ofaIDBPeriod *period )
 }
 
 static void
-on_period_finalized( sIDBPeriod *data, GObject *finalized_period )
+on_period_finalized( sIDBMeta *data, GObject *finalized_period )
 {
-	static const gchar *thisfn = "ofa_idbperiod_on_period_finalized";
+	static const gchar *thisfn = "ofa_idbexercice_meta_on_period_finalized";
 
 	g_debug( "%s: data=%p, finalized_period=%p", thisfn, ( void * ) data, ( void * ) finalized_period );
 

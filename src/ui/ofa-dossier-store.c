@@ -30,7 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-dossier.h"
@@ -53,7 +53,7 @@ static GType st_col_types[DOSSIER_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* localized status */
 		G_TYPE_BOOLEAN, 				/* is_current */
 		G_TYPE_OBJECT,					/* ofaIDBDossierMeta */
-		G_TYPE_OBJECT					/* ofaIDBPeriod */
+		G_TYPE_OBJECT					/* ofaIDBExerciceMeta */
 };
 
 /* signals defined here
@@ -69,8 +69,8 @@ static guint            st_signals[ N_SIGNALS ] = { 0 };
 static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaDossierStore *self );
 static void     on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaDossierStore *self );
 static void     load_dataset( ofaDossierStore *self, ofaDossierCollection *collection );
-static void     insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period );
-static void     set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period, GtkTreeIter *iter );
+static void     insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period );
+static void     set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierStore, ofa_dossier_store, GTK_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaDossierStore ))
@@ -255,7 +255,7 @@ load_dataset( ofaDossierStore *self, ofaDossierCollection *collection )
 	GList *dossier_list, *itd;
 	ofaIDBDossierMeta *dossier_meta;
 	GList *period_list, *itp;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 
 	dossier_list = ofa_dossier_collection_get_list( collection );
 
@@ -265,8 +265,8 @@ load_dataset( ofaDossierStore *self, ofaDossierCollection *collection )
 
 		period_list = ofa_idbdossier_meta_get_periods( dossier_meta );
 		for( itp=period_list ; itp ; itp=itp->next ){
-			period = ( ofaIDBPeriod * ) itp->data;
-			g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+			period = ( ofaIDBExerciceMeta * ) itp->data;
+			g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 			insert_row( self, dossier_meta, period );
 		}
@@ -275,7 +275,7 @@ load_dataset( ofaDossierStore *self, ofaDossierCollection *collection )
 }
 
 static void
-insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period )
+insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period )
 {
 	static const gchar *thisfn = "ofa_dossier_store_insert_row";
 	GtkTreeIter iter;
@@ -288,7 +288,7 @@ insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const 
 }
 
 static void
-set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period, GtkTreeIter *iter )
+set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period, GtkTreeIter *iter )
 {
 	gchar *begin, *end, *status, *pername, *provname;
 	ofaIDBProvider *provider;
@@ -299,10 +299,10 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 	provname = ofa_idbprovider_get_canon_name( provider );
 	g_object_unref( provider );
 
-	begin = my_date_to_str( ofa_idbperiod_get_begin_date( period ), ofa_prefs_date_display());
-	end = my_date_to_str( ofa_idbperiod_get_end_date( period ), ofa_prefs_date_display());
-	status = ofa_idbperiod_get_status( period );
-	pername = ofa_idbperiod_get_name( period );
+	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_display());
+	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_display());
+	status = ofa_idbexercice_meta_get_status( period );
+	pername = ofa_idbexercice_meta_get_name( period );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),
@@ -313,7 +313,7 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 			DOSSIER_COL_BEGIN,    begin,
 			DOSSIER_COL_END,      end,
 			DOSSIER_COL_STATUS,   status,
-			DOSSIER_COL_CURRENT,  ofa_idbperiod_get_current( period ),
+			DOSSIER_COL_CURRENT,  ofa_idbexercice_meta_get_current( period ),
 			DOSSIER_COL_META,     dossier_meta,
 			DOSSIER_COL_PERIOD,   period,
 			-1 );

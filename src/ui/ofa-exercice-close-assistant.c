@@ -41,7 +41,7 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-iexe-close.h"
 #include "api/ofa-igetter.h"
@@ -1398,7 +1398,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	ofaExerciceCloseAssistantPrivate *priv;
 	GtkApplicationWindow *main_window;
 	ofaIDBConnect *cnx;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	gboolean ok;
 	const GDate *begin_old, *end_old;
 	const GDate *begin_next, *end_next;
@@ -1434,8 +1434,8 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 	} else {
 		/* open the new exercice */
 		period = ofa_idbdossier_meta_get_current_period( priv->meta );
-		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
-		ofa_idbperiod_dump( period );
+		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
+		ofa_idbexercice_meta_dump( period );
 
 		provider = ofa_idbdossier_meta_get_provider( priv->meta );
 		cur_account = ofa_idbconnect_get_account( priv->connect );

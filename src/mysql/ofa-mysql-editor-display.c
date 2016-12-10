@@ -50,7 +50,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysq
 
 static void          idbeditor_iface_init( ofaIDBEditorInterface *iface );
 static guint         idbeditor_get_interface_version( void );
-static void          idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period );
+static void          idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period );
 static GtkSizeGroup *idbeditor_get_size_group( const ofaIDBEditor *instance, guint column );
 static void          setup_bin( ofaMySQLEditorDisplay *bin );
 
@@ -144,7 +144,7 @@ idbeditor_get_interface_version( void )
 }
 
 static void
-idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period )
+idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period )
 {
 	GtkWidget *label;
 	gchar *text;

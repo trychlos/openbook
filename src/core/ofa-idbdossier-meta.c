@@ -31,6 +31,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 
 /* some data attached to each ofaIDBDossierMeta instance
@@ -396,7 +397,7 @@ ofa_idbdossier_meta_remove_meta( ofaIDBDossierMeta *meta )
  * @meta: this #ofaIDBDossierMeta instance.
  *
  * Returns: a list of defined financial periods (exercices) for this
- * file (dossier), as a #GList of #ofaIDBPeriod object, which should
+ * file (dossier), as a #GList of #ofaIDBExerciceMeta object, which should
  * be #ofa_idbdossier_meta_free_periods() by the caller.
  */
 GList *
@@ -433,18 +434,18 @@ ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
 /**
  * ofa_idbdossier_meta_add_period:
  * @meta: this #ofaIDBDossierMeta instance.
- * @period: the new #ofaIDBPeriod to be added.
+ * @period: the new #ofaIDBExerciceMeta to be added.
  *
  * Takes a reference on the provided @period, and adds it to the list
  * of defined financial periods.
  */
 void
-ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBPeriod *period )
+ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
 {
 	sIDBMeta *data;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbdossier_meta_data( meta );
 	data->periods = g_list_prepend( data->periods, g_object_ref( period ));
@@ -453,7 +454,7 @@ ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBPeriod *period )
 /**
  * ofa_idbdossier_meta_update_period:
  * @meta: this #ofaIDBDossierMeta instance.
- * @period: the #ofaIDBPeriod to be updated.
+ * @period: the #ofaIDBExerciceMeta to be updated.
  * @current: whether the financial period (exercice) is current.
  * @begin: [allow-none]: the beginning date.
  * @end: [allow-none]: the ending date.
@@ -462,7 +463,7 @@ ofa_idbdossier_meta_add_period( ofaIDBDossierMeta *meta, ofaIDBPeriod *period )
  */
 void
 ofa_idbdossier_meta_update_period( ofaIDBDossierMeta *meta,
-		ofaIDBPeriod *period, gboolean current, const GDate *begin, const GDate *end )
+		ofaIDBExerciceMeta *period, gboolean current, const GDate *begin, const GDate *end )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_update_period";
 
@@ -471,7 +472,7 @@ ofa_idbdossier_meta_update_period( ofaIDBDossierMeta *meta,
 			current ? "True":"False", ( void * ) begin, ( void * ) end );
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	if( OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->update_period ){
 		OFA_IDBDOSSIER_META_GET_INTERFACE( meta )->update_period( meta, period, current, begin, end );
@@ -485,19 +486,19 @@ ofa_idbdossier_meta_update_period( ofaIDBDossierMeta *meta,
 /**
  * ofa_idbdossier_meta_remove_period:
  * @meta: this #ofaIDBDossierMeta instance.
- * @period: the new #ofaIDBPeriod to be removed.
+ * @period: the new #ofaIDBExerciceMeta to be removed.
  *
  * Remove @period from the list of financial periods of @meta.
  * Also remove @meta from the settings when removing the last period.
  */
 void
-ofa_idbdossier_meta_remove_period( ofaIDBDossierMeta *meta, ofaIDBPeriod *period )
+ofa_idbdossier_meta_remove_period( ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_remove_period";
 	sIDBMeta *data;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
-	g_return_if_fail( period && OFA_IS_IDBPERIOD( period ));
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbdossier_meta_data( meta );
 	if( g_list_length( data->periods ) == 1 ){
@@ -518,24 +519,24 @@ ofa_idbdossier_meta_remove_period( ofaIDBDossierMeta *meta, ofaIDBPeriod *period
  * ofa_idbdossier_meta_get_current_period:
  * @meta: this #ofaIDBDossierMeta instance.
  *
- * Returns: a new reference of the #ofaIDBPeriod which identifies the
+ * Returns: a new reference of the #ofaIDBExerciceMeta which identifies the
  * current financial period. This reference should be g_object_unref()
  * by the caller.
  */
-ofaIDBPeriod *
+ofaIDBExerciceMeta *
 ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
 {
 	sIDBMeta *data;
 	GList *it;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
 	data = get_idbdossier_meta_data( meta );
 	for( it=data->periods ; it ; it=it->next ){
-		period = ( ofaIDBPeriod * ) it->data;
-		g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), NULL );
-		if( ofa_idbperiod_get_current( period )){
+		period = ( ofaIDBExerciceMeta * ) it->data;
+		g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
+		if( ofa_idbexercice_meta_get_current( period )){
 			return( g_object_ref( period ));
 		}
 	}
@@ -549,16 +550,16 @@ ofa_idbdossier_meta_get_current_period( const ofaIDBDossierMeta *meta )
  * @begin: [allow-none]: the beginning date.
  * @end: [allow-none]: the ending date.
  *
- * Returns: a #ofaIDBPeriod which corresponds to the specified @begin
+ * Returns: a #ofaIDBExerciceMeta which corresponds to the specified @begin
  * and @end dates.
  */
-ofaIDBPeriod *
+ofaIDBExerciceMeta *
 ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *begin, const GDate *end )
 {
 	static const gchar *thisfn = "ofa_idbdossier_meta_get_period";
 	sIDBMeta *data;
 	GList *it;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 
 	g_debug( "%s: meta=%p, begin=%p, end=%p",
 			thisfn, ( void * ) meta, ( void * ) begin, ( void * ) end );
@@ -567,8 +568,8 @@ ofa_idbdossier_meta_get_period( const ofaIDBDossierMeta *meta, const GDate *begi
 
 	data = get_idbdossier_meta_data( meta );
 	for( it=data->periods ; it ; it=it->next ){
-		period = ( ofaIDBPeriod * ) it->data;
-		if( ofa_idbperiod_is_suitable( period, begin, end )){
+		period = ( ofaIDBExerciceMeta * ) it->data;
+		if( ofa_idbexercice_meta_is_suitable( period, begin, end )){
 			return( period );
 		}
 	}
@@ -644,7 +645,7 @@ ofa_idbdossier_meta_dump_rec( const ofaIDBDossierMeta *meta )
 	ofa_idbdossier_meta_dump( meta );
 	data = get_idbdossier_meta_data( meta );
 	for( it=data->periods ; it ; it=it->next ){
-		ofa_idbperiod_dump( OFA_IDBPERIOD( it->data ));
+		ofa_idbexercice_meta_dump( OFA_IDBEXERCICE_META( it->data ));
 	}
 }
 

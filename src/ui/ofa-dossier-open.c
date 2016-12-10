@@ -37,6 +37,7 @@
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
@@ -63,7 +64,7 @@ typedef struct {
 	/* data
 	 */
 	ofaIDBDossierMeta     *dossier_meta;		/* the selected dossier */
-	ofaIDBPeriod          *period;				/* the selected exercice */
+	ofaIDBExerciceMeta    *exercice_meta;		/* the selected exercice */
 	gchar                 *account;				/* user credentials */
 	gchar                 *password;
 	ofaIDBConnect         *connect;				/* the DB connection */
@@ -90,8 +91,8 @@ static void      idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *grou
 static void      idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group );
 static void      idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group );
 static void      idialog_init_menu( ofaDossierOpen *self );
-static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBPeriod *period, ofaDossierOpen *self );
-static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIDBPeriod *period, ofaDossierOpen *self );
+static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
+static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
 static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
 static void      check_for_enable_dlg( ofaDossierOpen *self );
 static gboolean  are_data_set( ofaDossierOpen *self, gchar **msg );
@@ -142,7 +143,7 @@ dossier_open_dispose( GObject *instance )
 
 		/* unref object members here */
 		g_clear_object( &priv->dossier_meta );
-		g_clear_object( &priv->period );
+		g_clear_object( &priv->exercice_meta );
 		g_clear_object( &priv->connect );
 	}
 
@@ -200,7 +201,7 @@ ofa_dossier_open_class_init( ofaDossierOpenClass *klass )
  */
 gboolean
 ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
-										ofaIDBDossierMeta *meta, ofaIDBPeriod *period,
+										ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period,
 										const gchar *account, const gchar *password )
 {
 	static const gchar *thisfn = "ofa_dossier_open_run";
@@ -227,7 +228,7 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 	if( meta ){
 		priv->dossier_meta = g_object_ref( meta );
 		if( period ){
-			priv->period = g_object_ref( period );
+			priv->exercice_meta = g_object_ref( period );
 		}
 	}
 
@@ -285,7 +286,7 @@ idialog_init( myIDialog *instance )
 	GtkWidget *button, *focus;
 	GtkSizeGroup *group;
 	const gchar *dossier_name;
-	ofaIDBPeriod *init_period;
+	ofaIDBExerciceMeta *init_period;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -306,15 +307,15 @@ idialog_init( myIDialog *instance )
 	focus = GTK_WIDGET( priv->dossier_tview );
 
 	if( priv->dossier_meta ){
-		/* because initial priv->period will be reset when selecting the
+		/* because initial priv->exercice_meta will be reset when selecting the
 		 * dossier */
-		init_period = priv->period ? g_object_ref( priv->period ) : NULL;
+		init_period = priv->exercice_meta ? g_object_ref( priv->exercice_meta ) : NULL;
 		dossier_name = ofa_idbdossier_meta_get_dossier_name( priv->dossier_meta );
 		ofa_dossier_treeview_set_selected( priv->dossier_tview, dossier_name );
 		focus = GTK_WIDGET( priv->exercice_combo );
 
 		if( init_period ){
-			//ofa_idbperiod_dump( priv->init_period );
+			//ofa_idbexercice_meta_dump( priv->init_period );
 			ofa_exercice_combo_set_selected( priv->exercice_combo, init_period );
 			focus = NULL;
 		}
@@ -439,7 +440,7 @@ idialog_init_menu( ofaDossierOpen *self )
 }
 
 static void
-on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBPeriod *period, ofaDossierOpen *self )
+on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 
@@ -456,15 +457,15 @@ on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, 
 }
 
 static void
-on_exercice_changed( ofaExerciceCombo *combo, ofaIDBPeriod *period, ofaDossierOpen *self )
+on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
-	g_clear_object( &priv->period );
+	g_clear_object( &priv->exercice_meta );
 	if( period ){
-		priv->period = g_object_ref( period );
+		priv->exercice_meta = g_object_ref( period );
 	}
 
 	check_for_enable_dlg( self );
@@ -503,7 +504,7 @@ check_for_enable_dlg( ofaDossierOpen *self )
 	msg = NULL;
 
 	ok_enable = are_data_set( self, &msg );
-	ro_enable = priv->dossier_meta && priv->period && ofa_idbperiod_get_current( priv->period );
+	ro_enable = priv->dossier_meta && priv->exercice_meta && ofa_idbexercice_meta_get_current( priv->exercice_meta );
 
 	if( priv->readonly_btn ){
 		gtk_widget_set_sensitive( priv->readonly_btn, ro_enable );
@@ -531,7 +532,7 @@ are_data_set( ofaDossierOpen *self, gchar **msg )
 		if( msg ){
 			*msg = g_strdup( _( "No selected dossier" ));
 		}
-	} else if( !priv->period ){
+	} else if( !priv->exercice_meta ){
 		if( msg ){
 			*msg = g_strdup( _( "No selected exercice" ));
 		}
@@ -593,7 +594,7 @@ is_connection_valid( ofaDossierOpen *self, gchar **msg )
 	provider = ofa_idbdossier_meta_get_provider( priv->dossier_meta );
 	priv->connect = ofa_idbprovider_new_connect( provider );
 	valid = ofa_idbconnect_open_with_meta(
-					priv->connect, priv->account, priv->password, priv->dossier_meta, priv->period );
+					priv->connect, priv->account, priv->password, priv->dossier_meta, priv->exercice_meta );
 	g_object_unref( provider );
 
 	if( msg ){

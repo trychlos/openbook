@@ -29,7 +29,7 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta.h"
 
 #include "ofa-mysql-period.h"
 
@@ -46,17 +46,17 @@ typedef struct {
 
 #define MYSQL_DATABASE_KEY_PREFIX       "mysql-db-"
 
-static void            idbperiod_iface_init( ofaIDBPeriodInterface *iface );
+static void            idbperiod_iface_init( ofaIDBExerciceMetaInterface *iface );
 static guint           idbperiod_get_interface_version( void );
-static gchar          *idbperiod_get_name( const ofaIDBPeriod *instance );
-static gint            idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b );
-static void            idbperiod_dump( const ofaIDBPeriod *instance );
+static gchar          *idbperiod_get_name( const ofaIDBExerciceMeta *instance );
+static gint            idbperiod_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b );
+static void            idbperiod_dump( const ofaIDBExerciceMeta *instance );
 static ofaMySQLPeriod *read_from_settings( myISettings *settings, const gchar *group, const gchar *key );
 static void            write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *group );
 
 G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaMySQLPeriod )
-		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBPERIOD, idbperiod_iface_init ))
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEXERCICE_META, idbperiod_iface_init ))
 
 static void
 mysql_period_finalize( GObject *instance )
@@ -122,10 +122,10 @@ ofa_mysql_period_class_init( ofaMySQLPeriodClass *klass )
 }
 
 /*
- * ofaIDBPeriod interface management
+ * ofaIDBExerciceMeta interface management
  */
 static void
-idbperiod_iface_init( ofaIDBPeriodInterface *iface )
+idbperiod_iface_init( ofaIDBExerciceMetaInterface *iface )
 {
 	static const gchar *thisfn = "ofa_mysql_period_idbperiod_iface_init";
 
@@ -144,7 +144,7 @@ idbperiod_get_interface_version( void )
 }
 
 static gchar *
-idbperiod_get_name( const ofaIDBPeriod *instance )
+idbperiod_get_name( const ofaIDBExerciceMeta *instance )
 {
 	ofaMySQLPeriodPrivate *priv;
 
@@ -156,7 +156,7 @@ idbperiod_get_name( const ofaIDBPeriod *instance )
 }
 
 static gint
-idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
+idbperiod_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b )
 {
 	ofaMySQLPeriodPrivate *a_priv, *b_priv;
 	gint cmp;
@@ -170,7 +170,7 @@ idbperiod_compare( const ofaIDBPeriod *a, const ofaIDBPeriod *b )
 }
 
 static void
-idbperiod_dump( const ofaIDBPeriod *instance )
+idbperiod_dump( const ofaIDBExerciceMeta *instance )
 {
 	static const gchar *thisfn = "ofa_mysql_period_dump";
 	ofaMySQLPeriodPrivate *priv;
@@ -188,7 +188,7 @@ idbperiod_dump( const ofaIDBPeriod *instance )
  * @key: the key to be examined.
  *
  * Returns: a reference to a new #ofaMySQLPeriod object, which
- * implements the #ofaIDBPeriod interface, if the provided @key is
+ * implements the #ofaIDBExerciceMeta interface, if the provided @key is
  * suitable to define a financial period (an exercice), or %NULL.
  *
  * When non null, the returned reference should be #g_object_unref()
@@ -235,23 +235,23 @@ read_from_settings( myISettings *settings, const gchar *group, const gchar *key 
 	/* first element: current as a True/False string */
 	it = strlist;
 	cstr = it ? it->data : NULL;
-	ofa_idbperiod_set_current(
-			OFA_IDBPERIOD( period ), my_utils_boolean_from_str( cstr ));
+	ofa_idbexercice_meta_set_current(
+			OFA_IDBEXERCICE_META( period ), my_utils_boolean_from_str( cstr ));
 
 	/* second element: beginning date as YYYYMMDD */
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		ofa_idbperiod_set_begin_date(
-				OFA_IDBPERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
+		ofa_idbexercice_meta_set_begin_date(
+				OFA_IDBEXERCICE_META( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
 	}
 
 	/* third element: ending date as YYYYMMDD */
 	it = it ? it->next : NULL;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
-		ofa_idbperiod_set_end_date(
-				OFA_IDBPERIOD( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
+		ofa_idbexercice_meta_set_end_date(
+				OFA_IDBEXERCICE_META( period ), my_date_set_from_str( &date, cstr, MY_DATE_YYMD ));
 	}
 
 	if( strlist ){
@@ -274,7 +274,7 @@ read_from_settings( myISettings *settings, const gchar *group, const gchar *key 
  * Defines a new financial period in the dossier settings
  *
  * Returns: a reference to a new #ofaMySQLPeriod object, which
- * implements the #ofaIDBPeriod interface.
+ * implements the #ofaIDBExerciceMeta interface.
  */
 ofaMySQLPeriod *
 ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
@@ -303,9 +303,9 @@ ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
 	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
 	priv = ofa_mysql_period_get_instance_private( period );
 	priv->database = g_strdup( database );
-	ofa_idbperiod_set_current( OFA_IDBPERIOD( period ), current );
-	ofa_idbperiod_set_begin_date( OFA_IDBPERIOD( period ), begin );
-	ofa_idbperiod_set_end_date( OFA_IDBPERIOD( period ), end );
+	ofa_idbexercice_meta_set_current( OFA_IDBEXERCICE_META( period ), current );
+	ofa_idbexercice_meta_set_begin_date( OFA_IDBEXERCICE_META( period ), begin );
+	ofa_idbexercice_meta_set_end_date( OFA_IDBEXERCICE_META( period ), end );
 
 	return( period );
 }
@@ -357,9 +357,9 @@ ofa_mysql_period_update( ofaMySQLPeriod *period,
 	/* we update the internal data of the object through this is
 	 * pretty useless as writing into dossier settings file will
 	 * trigger a reload of all data (through the myFileMonitor) */
-	ofa_idbperiod_set_current( OFA_IDBPERIOD( period ), current );
-	ofa_idbperiod_set_begin_date( OFA_IDBPERIOD( period ), begin );
-	ofa_idbperiod_set_end_date( OFA_IDBPERIOD( period ), end );
+	ofa_idbexercice_meta_set_current( OFA_IDBEXERCICE_META( period ), current );
+	ofa_idbexercice_meta_set_begin_date( OFA_IDBEXERCICE_META( period ), begin );
+	ofa_idbexercice_meta_set_end_date( OFA_IDBEXERCICE_META( period ), end );
 
 	/* next update the settings */
 	write_to_settings( period, settings, group );
@@ -398,10 +398,10 @@ write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *g
 
 	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->database );
 
-	begin = my_date_to_str( ofa_idbperiod_get_begin_date( OFA_IDBPERIOD( period )), MY_DATE_YYMD );
-	end = my_date_to_str( ofa_idbperiod_get_end_date( OFA_IDBPERIOD( period )), MY_DATE_YYMD );
+	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( OFA_IDBEXERCICE_META( period )), MY_DATE_YYMD );
+	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( OFA_IDBEXERCICE_META( period )), MY_DATE_YYMD );
 	content = g_strdup_printf( "%s;%s;%s;",
-					ofa_idbperiod_get_current( OFA_IDBPERIOD( period )) ? "True":"False",
+					ofa_idbexercice_meta_get_current( OFA_IDBEXERCICE_META( period )) ? "True":"False",
 					begin, end );
 	my_isettings_set_string( settings, group, key, content );
 

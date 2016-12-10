@@ -95,7 +95,7 @@ typedef struct {
  * @DOSSIER_COL_STATUS  : localized status of the exercice     String        Yes
  * @DOSSIER_COL_CURRENT : whether the period is current        Bool           No
  * @DOSSIER_COL_META    : the #ofaIDBDossierMeta object        GObject        No
- * @DOSSIER_COL_PERIOD  : the #ofaIDBPeriod object             GObject        No
+ * @DOSSIER_COL_PERIOD  : the #ofaIDBExerciceMeta object       GObject        No
  */
 enum {
 	DOSSIER_COL_DOSNAME = 0,

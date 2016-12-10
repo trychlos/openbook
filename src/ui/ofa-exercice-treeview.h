@@ -46,7 +46,7 @@
  */
 
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-tvbin.h"
 
 #include "ui/ofa-exercice-store.h"
@@ -80,7 +80,7 @@ void                 ofa_exercice_treeview_set_dossier ( ofaExerciceTreeview *vi
 																ofaIDBDossierMeta *meta );
 
 gboolean             ofa_exercice_treeview_get_selected( ofaExerciceTreeview *view,
-																ofaIDBPeriod **period );
+																ofaIDBExerciceMeta **period );
 
 G_END_DECLS
 

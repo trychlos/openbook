@@ -33,6 +33,7 @@
 
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 
 /* some data attached to each IDBConnect instance
@@ -40,16 +41,16 @@
  * which do not depend of a specific implementation
  */
 typedef struct {
-	ofaIDBProvider    *provider;
-	gchar             *account;
-	gchar             *password;
-	ofaIDBDossierMeta *meta;
-	ofaIDBPeriod      *period;
+	ofaIDBProvider     *provider;
+	gchar              *account;
+	gchar              *password;
+	ofaIDBDossierMeta  *dossier_meta;
+	ofaIDBExerciceMeta *exercice_meta;
 }
 	sIDBConnect;
 
-#define IDBCONNECT_LAST_VERSION         1
-#define IDBCONNECT_DATA                 "idbconnect-data"
+#define IDBCONNECT_LAST_VERSION           1
+#define IDBCONNECT_DATA                  "idbconnect-data"
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
@@ -59,12 +60,12 @@ static void         interface_base_finalize( ofaIDBConnectInterface *klass );
 static void         idbconnect_set_account( ofaIDBConnect *connect, const gchar *account );
 static void         idbconnect_set_password( ofaIDBConnect *connect, const gchar *password );
 static void         idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBDossierMeta *meta );
-static void         idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBPeriod *period );
+static void         idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBExerciceMeta *period );
 static gboolean     idbconnect_query( const ofaIDBConnect *connect, const gchar *query, gboolean display_error );
 static void         audit_query( const ofaIDBConnect *connect, const gchar *query );
 static gchar       *quote_query( const gchar *query );
 static void         error_query( const ofaIDBConnect *connect, const gchar *query );
-static gboolean     idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBPeriod *period, const gchar *adm_account, const gchar *adm_password );
+static gboolean     idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExerciceMeta *period, const gchar *adm_account, const gchar *adm_password );
 static sIDBConnect *get_idbconnect_data( const ofaIDBConnect *connect );
 static void         on_connect_finalized( sIDBConnect *data, GObject *finalized_dbconnect );
 
@@ -279,7 +280,7 @@ ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const gchar *account, c
  * @account: the user account.
  * @password: [allow-none]: the user password.
  * @dossier_meta: the #ofaIDBDossierMeta which identifies the dossier.
- * @period: [allow-none]: the #ofaIDBPeriod which identifies the
+ * @period: [allow-none]: the #ofaIDBExerciceMeta which identifies the
  *  exercice, or %NULL to establish a connection at server-level
  *  to the host of @meta.
  *
@@ -289,7 +290,7 @@ ofa_idbconnect_open_with_editor( ofaIDBConnect *connect, const gchar *account, c
  * %FALSE else.
  */
 gboolean
-ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIDBDossierMeta *dossier_meta, const ofaIDBPeriod *period )
+ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, const gchar *password, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period )
 {
 	static const gchar *thisfn = "ofa_idbconnect_open_with_meta";
 	gboolean ok;
@@ -301,12 +302,12 @@ ofa_idbconnect_open_with_meta( ofaIDBConnect *connect, const gchar *account, con
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 	g_return_val_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_IDBPERIOD( period ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
 	if( 1 ){
 		ofa_idbdossier_meta_dump( dossier_meta );
 		if( period ){
-			ofa_idbperiod_dump( period );
+			ofa_idbexercice_meta_dump( period );
 		}
 	}
 
@@ -411,7 +412,7 @@ ofa_idbconnect_get_dossier_meta( const ofaIDBConnect *connect )
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
 	data = get_idbconnect_data( connect );
-	return( g_object_ref( data->meta ));
+	return( g_object_ref( data->dossier_meta ));
 }
 
 /*
@@ -431,9 +432,9 @@ idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBDossierMeta *meta )
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
 	data = get_idbconnect_data( connect );
-	g_clear_object( &data->meta );
+	g_clear_object( &data->dossier_meta );
 	if( meta ){
-		data->meta = g_object_ref(( gpointer ) meta );
+		data->dossier_meta = g_object_ref(( gpointer ) meta );
 	}
 }
 
@@ -441,10 +442,10 @@ idbconnect_set_meta( ofaIDBConnect *connect, const ofaIDBDossierMeta *meta )
  * ofa_idbconnect_get_period:
  * @connect: this #ofaIDBConnect instance.
  *
- * Returns: a new reference to the target #ofaIDBPeriod dossier, which
+ * Returns: a new reference to the target #ofaIDBExerciceMeta dossier, which
  * should be g_object_unref() by the caller.
  */
-ofaIDBPeriod *
+ofaIDBExerciceMeta *
 ofa_idbconnect_get_period( const ofaIDBConnect *connect )
 {
 	sIDBConnect *data;
@@ -452,29 +453,29 @@ ofa_idbconnect_get_period( const ofaIDBConnect *connect )
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
 	data = get_idbconnect_data( connect );
-	return( g_object_ref( data->period ));
+	return( g_object_ref( data->exercice_meta ));
 }
 
 /*
  * ofa_idbconnect_set_period:
  * @connect: this #ofaIDBConnect instance.
- * @period: the #ofaIDBPeriod object which manages the exercice.
+ * @period: the #ofaIDBExerciceMeta object which manages the exercice.
  *
  * The interface takes a reference on the @period object, to make
  * sure it stays available. This reference will be automatically
  * released on @connect finalization.
  */
 static void
-idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBPeriod *period )
+idbconnect_set_period( ofaIDBConnect *connect, const ofaIDBExerciceMeta *period )
 {
 	sIDBConnect *data;
 
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
 	data = get_idbconnect_data( connect );
-	g_clear_object( &data->period );
+	g_clear_object( &data->exercice_meta );
 	if( period ){
-		data->period = g_object_ref(( gpointer ) period );
+		data->exercice_meta = g_object_ref(( gpointer ) period );
 	}
 }
 
@@ -868,7 +869,7 @@ ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
  *  connection on the DBMS at server-level. It is expected this
  *  @connect object holds a valid #ofaIDBDossierMeta object which describes
  *  the target dossier.
- * @period: [allow-none]: a #ofaIDBPeriod object which describes the
+ * @period: [allow-none]: a #ofaIDBExerciceMeta object which describes the
  *  target exercice; if %NULL, the file is restored on the current
  *  exercice.
  * @uri: the source file to be restored.
@@ -879,12 +880,12 @@ ofa_idbconnect_backup( const ofaIDBConnect *connect, const gchar *uri )
  */
 gboolean
 ofa_idbconnect_restore( const ofaIDBConnect *connect,
-							const ofaIDBPeriod *period, const gchar *uri,
+							const ofaIDBExerciceMeta *period, const gchar *uri,
 							const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_restore";
 	sIDBConnect *data;
-	ofaIDBPeriod *target_period;
+	ofaIDBExerciceMeta *target_period;
 	gboolean ok;
 
 	g_debug( "%s: connect=%p, period=%p, uri=%s, adm_account=%s, adm_password=%s",
@@ -892,18 +893,18 @@ ofa_idbconnect_restore( const ofaIDBConnect *connect,
 			adm_account, adm_password ? "******" : adm_password );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( !period || OFA_IS_IDBPERIOD( period ), FALSE );
+	g_return_val_if_fail( !period || OFA_IS_IDBEXERCICE_META( period ), FALSE );
 	g_return_val_if_fail( my_strlen( uri ), FALSE );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->restore ){
 		ok = FALSE;
 
 		if( period ){
-			target_period = ( ofaIDBPeriod * ) period;
+			target_period = ( ofaIDBExerciceMeta * ) period;
 		} else {
 			data = get_idbconnect_data( connect );
-			g_return_val_if_fail( data->meta && OFA_IS_IDBDOSSIER_META( data->meta ), FALSE );
-			target_period = ofa_idbdossier_meta_get_current_period( data->meta );
+			g_return_val_if_fail( data->dossier_meta && OFA_IS_IDBDOSSIER_META( data->dossier_meta ), FALSE );
+			target_period = ofa_idbdossier_meta_get_current_period( data->dossier_meta );
 		}
 
 		if( target_period ){
@@ -988,7 +989,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	gboolean ok;
 	GString *query;
 	ofaIDBProvider *prov_instance;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	ofaIDBConnect *db_connection;
 
 	g_debug( "%s: connect=%p, meta=%p, adm_account=%s, adm_password=%s",
@@ -1062,7 +1063,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
  *  connection on the DBMS at server-level. It is expected this
  *  @connect object holds a valid #ofaIDBDossierMeta object which describes
  *  the target dossier.
- * @period: the #ofaIDBPeriod object which describes
+ * @period: the #ofaIDBExerciceMeta object which describes
  *  the target exercice.
  * @adm_account: the Openbook administrative user account.
  * @adm_password: the Openbook administrative user password.
@@ -1073,7 +1074,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
  * Returns: %TRUE if successful.
  */
 static gboolean
-idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBPeriod *period,
+idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExerciceMeta *period,
 										const gchar *adm_account, const gchar *adm_password )
 {
 	static const gchar *thisfn = "ofa_idbconnect_set_admin_credentials";
@@ -1087,7 +1088,7 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBPeri
 			adm_account, adm_password ? "******" : adm_password );
 
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
-	g_return_val_if_fail( period && OFA_IS_IDBPERIOD( period ), FALSE );
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 	g_return_val_if_fail( my_strlen( adm_account ), FALSE );
 
 	ok = FALSE;
@@ -1110,7 +1111,7 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBPeri
 	if( ok ){
 		period_connect = ofa_idbprovider_new_connect( data->provider );
 		ok = ofa_idbconnect_open_with_meta(
-					period_connect, data->account, data->password, data->meta, period );
+					period_connect, data->account, data->password, data->dossier_meta, period );
 	}
 	/* be sure the user has 'admin' role
 	 * Insert works if row did not exist yet while Update works
@@ -1263,8 +1264,8 @@ on_connect_finalized( sIDBConnect *data, GObject *finalized_connect )
 			thisfn, ( void * ) data, ( void * ) finalized_connect );
 
 	g_clear_object( &data->provider );
-	g_clear_object( &data->meta );
-	g_clear_object( &data->period );
+	g_clear_object( &data->dossier_meta );
+	g_clear_object( &data->exercice_meta );
 	g_free( data->account );
 	g_free( data->password );
 	g_free( data );

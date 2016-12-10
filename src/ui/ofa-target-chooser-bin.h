@@ -43,7 +43,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta-def.h"
 
 G_BEGIN_DECLS
 
@@ -72,7 +72,7 @@ ofaTargetChooserBin *ofa_target_chooser_bin_new         ( const gchar *settings_
 
 gboolean             ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin,
 																ofaIDBDossierMeta **meta,
-																ofaIDBPeriod **period );
+																ofaIDBExerciceMeta **period );
 
 G_END_DECLS
 

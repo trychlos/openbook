@@ -30,7 +30,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-idbdossier-meta.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-preferences.h"
 
 #include "ui/ofa-exercice-store.h"
@@ -50,7 +50,7 @@ static GType st_col_types[EXERCICE_N_COLUMNS] = {
 		G_TYPE_STRING, 					/* begin date (user display) */
 		G_TYPE_STRING,					/* end date (user display) */
 		G_TYPE_STRING,				 	/* localized label */
-		G_TYPE_OBJECT					/* ofaIDBPeriod */
+		G_TYPE_OBJECT					/* ofaIDBExerciceMeta */
 };
 
 static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExerciceStore *store );
@@ -150,7 +150,7 @@ ofa_exercice_store_new( void )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExerciceStore *store )
 {
-	ofaIDBPeriod *a_period, *b_period;
+	ofaIDBExerciceMeta *a_period, *b_period;
 	gint cmp;
 
 	gtk_tree_model_get( tmodel, a, EXERCICE_COL_PERIOD, &a_period, -1 );
@@ -159,8 +159,8 @@ on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaExercice
 	g_object_unref( b_period );
 
 	cmp = my_date_compare_ex(
-				ofa_idbperiod_get_begin_date( a_period ),
-				ofa_idbperiod_get_begin_date( b_period ),
+				ofa_idbexercice_meta_get_begin_date( a_period ),
+				ofa_idbexercice_meta_get_begin_date( b_period ),
 				TRUE );
 
 	return( -cmp );
@@ -178,7 +178,7 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta
 {
 	ofaExerciceStorePrivate *priv;
 	GList *period_list, *it;
-	ofaIDBPeriod *period;
+	ofaIDBExerciceMeta *period;
 	GtkTreeIter iter;
 	gchar *begin, *end, *status, *label;
 
@@ -193,15 +193,15 @@ ofa_exercice_store_set_dossier( ofaExerciceStore *store, ofaIDBDossierMeta *meta
 	period_list = ofa_idbdossier_meta_get_periods( meta );
 
 	for( it=period_list; it ; it=it->next ){
-		period = ( ofaIDBPeriod * ) it->data;
+		period = ( ofaIDBExerciceMeta * ) it->data;
 
-		label = ofa_idbperiod_get_label( period );
-		status = ofa_idbperiod_get_status( period );
+		label = ofa_idbexercice_meta_get_label( period );
+		status = ofa_idbexercice_meta_get_status( period );
 		begin = my_date_to_str(
-						ofa_idbperiod_get_begin_date( period ),
+						ofa_idbexercice_meta_get_begin_date( period ),
 						ofa_prefs_date_display());
 		end = my_date_to_str(
-						ofa_idbperiod_get_end_date( period ),
+						ofa_idbexercice_meta_get_end_date( period ),
 						ofa_prefs_date_display());
 
 		gtk_list_store_insert_with_values(

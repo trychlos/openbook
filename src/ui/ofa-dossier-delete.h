@@ -41,7 +41,7 @@
 #include <gtk/gtk.h>
 
 #include "api/ofa-idbdossier-meta-def.h"
-#include "api/ofa-idbperiod.h"
+#include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
@@ -70,7 +70,7 @@ GType ofa_dossier_delete_get_type( void ) G_GNUC_CONST;
 void  ofa_dossier_delete_run     ( ofaIGetter *getter,
 										GtkWindow *parent,
 										const ofaIDBDossierMeta *dossier_meta,
-										const ofaIDBPeriod *period );
+										const ofaIDBExerciceMeta *period );
 
 G_END_DECLS
 

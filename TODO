@@ -396,8 +396,6 @@
                 required by the ui (and not by gtk as Gtk may be required
                 by the plugins which not all involve the ui)
 
-1275 2016-12- 8 rename ofaIDBPeriod to ofaIDBExerciceMeta
-
 1276 2016-12-10 review the way the exercices are written in dossier settings
                 so that this may be managed by the application instead of
                 by the dbms plugin
@@ -2031,6 +2029,9 @@
      2016-12- 8 -> cancelled (same as #1268)
 
 1274 2016-12- 8 rename ofaIDBMeta to ofaIDBDossierMeta
+     2016-12-10 done
+
+1275 2016-12- 8 rename ofaIDBPeriod to ofaIDBExerciceMeta
      2016-12-10 done
 
 -----------------------------------------------------------------------
