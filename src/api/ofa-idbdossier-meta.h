@@ -241,7 +241,7 @@ gint                ofa_idbdossier_meta_compare                   ( const ofaIDB
 
 void                ofa_idbdossier_meta_dump                      ( const ofaIDBDossierMeta *meta );
 
-void                ofa_idbdossier_meta_dump_rec                  ( const ofaIDBDossierMeta *meta );
+void                ofa_idbdossier_meta_dump_full                 ( const ofaIDBDossierMeta *meta );
 
 G_END_DECLS
 

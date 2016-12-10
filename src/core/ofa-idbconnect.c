@@ -1020,7 +1020,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	/* define the dossier administrative account
 	 * requires another superuser connection, on the period at this time */
 	if( ok ){
-		ofa_idbdossier_meta_dump_rec( meta );
+		ofa_idbdossier_meta_dump_full( meta );
 		period = ofa_idbdossier_meta_get_current_period( meta );
 		prov_instance = ofa_idbdossier_meta_get_provider( meta );
 		db_connection = ofa_idbprovider_new_connect( prov_instance );

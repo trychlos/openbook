@@ -312,7 +312,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			g_free( prov_name );
 		}
 		ofa_idbdossier_meta_set_from_settings( meta, MY_ISETTINGS( priv->settings ), cstr );
-		ofa_idbdossier_meta_dump_rec( meta );
+		ofa_idbdossier_meta_dump_full( meta );
 		outlist = g_list_prepend( outlist, meta );
 		g_free( dos_name );
 	}

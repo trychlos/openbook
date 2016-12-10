@@ -629,13 +629,13 @@ ofa_idbdossier_meta_dump( const ofaIDBDossierMeta *meta )
 }
 
 /**
- * ofa_idbdossier_meta_dump_rec:
+ * ofa_idbdossier_meta_dump_full:
  * @meta: this #ofaIDBDossierMeta instance.
  *
  * Recursively dumps data.
  */
 void
-ofa_idbdossier_meta_dump_rec( const ofaIDBDossierMeta *meta )
+ofa_idbdossier_meta_dump_full( const ofaIDBDossierMeta *meta )
 {
 	sIDBMeta *data;
 	GList *it;
