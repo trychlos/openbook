@@ -243,7 +243,7 @@ ofa_mysql_cmdline_archive_and_new( ofaMySQLConnect *connect,
 	gint status;
 
 	/* meta informations on the current dossier */
-	meta = ofa_idbconnect_get_meta( OFA_IDBCONNECT( connect ));
+	meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
 
 	/* open a superuser new connection at DBMS server level */
@@ -335,7 +335,7 @@ cmdline_build_from_connect( const gchar *template,
 	g_debug( "%s: connect=%p, period=%p, template=%s, filename=%s, database=%s",
 					thisfn, ( void * ) connect, ( void * ) period, template, filename, database );
 
-	meta = ofa_idbconnect_get_meta( OFA_IDBCONNECT( connect ));
+	meta = ofa_idbconnect_get_dossier_meta( OFA_IDBCONNECT( connect ));
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
 
 	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( meta ));

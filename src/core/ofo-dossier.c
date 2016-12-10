@@ -1918,7 +1918,7 @@ hub_on_exe_dates_changed( ofaHub *hub, const GDate *prev_begin, const GDate *pre
 	if( dossier && OFO_IS_DOSSIER( dossier )){
 
 		connect = ofa_hub_get_connect( hub );
-		meta = ofa_idbconnect_get_meta( connect );
+		meta = ofa_idbconnect_get_dossier_meta( connect );
 		period = ofa_idbconnect_get_period( connect );
 
 		ofa_idbdossier_meta_update_period( meta, period,

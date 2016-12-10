@@ -359,7 +359,7 @@ on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBPeri
 	connect = ofa_hub_get_connect( hub );
 	if( connect ){
 		g_return_if_fail( OFA_IS_IDBCONNECT( connect ));
-		dossier_meta = ofa_idbconnect_get_meta( connect );
+		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
 		dossier_period = ofa_idbconnect_get_period( connect );
 	}
 
@@ -468,7 +468,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 
 			dossier_connect = ofa_hub_get_connect( hub );
 			g_return_if_fail( dossier_connect && OFA_IS_IDBCONNECT( dossier_connect ));
-			dossier_meta = ofa_idbconnect_get_meta( dossier_connect );
+			dossier_meta = ofa_idbconnect_get_dossier_meta( dossier_connect );
 			g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
 			cmp = 1;
 			if( ofa_idbdossier_meta_compare( meta, dossier_meta ) == 0 ){

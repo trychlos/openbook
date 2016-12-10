@@ -362,7 +362,7 @@ iwindow_init( myIWindow *instance )
 
 	hub = ofa_igetter_get_hub( priv->getter );
 	connect = ofa_hub_get_connect( hub );
-	priv->meta = ofa_idbconnect_get_meta( connect );
+	priv->meta = ofa_idbconnect_get_dossier_meta( connect );
 }
 
 /*

@@ -636,7 +636,7 @@ dbmodel_v20( ofaMysqlDBModel *self, gint version )
 
 	/* n° 7
 	 * dossier name is set as a default value for the label */
-	meta = ofa_idbconnect_get_meta( priv->connect );
+	meta = ofa_idbconnect_get_dossier_meta( priv->connect );
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	query = g_strdup_printf(
 			"INSERT IGNORE INTO OFA_T_DOSSIER "

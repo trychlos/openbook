@@ -1057,7 +1057,7 @@ check_db_vs_settings( ofaHub *hub )
 		g_free( ssetbegin );
 		g_free( ssetend );
 
-		meta = ofa_idbconnect_get_meta( cnx );
+		meta = ofa_idbconnect_get_dossier_meta( cnx );
 		ofa_idbdossier_meta_update_period( meta, period, db_current, db_begin, db_end );
 		g_object_unref( meta );
 

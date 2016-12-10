@@ -397,14 +397,14 @@ idbconnect_set_password( ofaIDBConnect *connect, const gchar *password )
 }
 
 /**
- * ofa_idbconnect_get_meta:
+ * ofa_idbconnect_get_dossier_meta:
  * @connect: this #ofaIDBConnect instance.
  *
  * Returns: a new reference to the target #ofaIDBDossierMeta dossier, which
  * should be g_object_unref() by the caller.
  */
 ofaIDBDossierMeta *
-ofa_idbconnect_get_meta( const ofaIDBConnect *connect )
+ofa_idbconnect_get_dossier_meta( const ofaIDBConnect *connect )
 {
 	sIDBConnect *data;
 

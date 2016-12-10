@@ -194,7 +194,7 @@ init_dialog( ofaBackup *self )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
-	priv->meta = ofa_idbconnect_get_meta( priv->connect );
+	priv->meta = ofa_idbconnect_get_dossier_meta( priv->connect );
 
 	priv->dialog = gtk_file_chooser_dialog_new(
 							_( "Backup the dossier" ),

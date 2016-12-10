@@ -551,7 +551,7 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBPeriod *period
 
 	query = g_string_new( "" );
 
-	meta = ofa_idbconnect_get_meta( instance );
+	meta = ofa_idbconnect_get_dossier_meta( instance );
 	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
 
 	hostname = g_strdup( ofa_mysql_meta_get_host( OFA_MYSQL_META( meta )));

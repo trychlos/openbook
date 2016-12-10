@@ -490,7 +490,7 @@ irenderable_get_dossier_name( const ofaIRenderable *instance )
 
 	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	connect = ofa_hub_get_connect( hub );
-	meta = ofa_idbconnect_get_meta( connect );
+	meta = ofa_idbconnect_get_dossier_meta( connect );
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	g_object_unref( meta );
 

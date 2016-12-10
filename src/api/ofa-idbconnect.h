@@ -350,7 +350,7 @@ gchar             *ofa_idbconnect_get_account               ( const ofaIDBConnec
 
 gchar             *ofa_idbconnect_get_password              ( const ofaIDBConnect *connect );
 
-ofaIDBDossierMeta *ofa_idbconnect_get_meta                  ( const ofaIDBConnect *connect );
+ofaIDBDossierMeta *ofa_idbconnect_get_dossier_meta          ( const ofaIDBConnect *connect );
 
 ofaIDBPeriod      *ofa_idbconnect_get_period                ( const ofaIDBConnect *connect );
 
