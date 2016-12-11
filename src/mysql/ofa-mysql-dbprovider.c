@@ -43,7 +43,7 @@
 #include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-editor-display.h"
 #include "mysql/ofa-mysql-editor-enter.h"
-#include "mysql/ofa-mysql-period.h"
+#include "mysql/ofa-mysql-exercice-meta.h"
 
 /* private instance data
  */

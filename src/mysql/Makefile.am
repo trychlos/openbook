@@ -81,8 +81,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-editor-display.h							\
 	ofa-mysql-editor-enter.c							\
 	ofa-mysql-editor-enter.h							\
-	ofa-mysql-period.c									\
-	ofa-mysql-period.h									\
+	ofa-mysql-exercice-meta.c							\
+	ofa-mysql-exercice-meta.h							\
 	ofa-mysql-prefs-bin.c								\
 	ofa-mysql-prefs-bin.h								\
 	ofa-mysql-properties.c								\

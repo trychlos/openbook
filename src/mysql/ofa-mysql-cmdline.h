@@ -31,7 +31,7 @@
  */
 
 #include "ofa-mysql-connect.h"
-#include "ofa-mysql-period.h"
+#include "ofa-mysql-exercice-meta.h"
 
 G_BEGIN_DECLS
 
@@ -43,7 +43,7 @@ gboolean     ofa_mysql_cmdline_backup_run                 ( ofaMySQLConnect *con
 const gchar *ofa_mysql_cmdline_restore_get_default_command( void );
 
 gboolean     ofa_mysql_cmdline_restore_run                ( ofaMySQLConnect *connect,
-																ofaMySQLPeriod *period,
+																ofaMysqlExerciceMeta *period,
 																const gchar *uri );
 
 gboolean     ofa_mysql_cmdline_archive_and_new            ( ofaMySQLConnect *connect,

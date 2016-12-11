@@ -31,7 +31,7 @@
 
 #include "api/ofa-idbexercice-meta.h"
 
-#include "ofa-mysql-period.h"
+#include "ofa-mysql-exercice-meta.h"
 
 /* priv instance data
  */
@@ -42,7 +42,7 @@ typedef struct {
 	 */
 	gchar    *database;
 }
-	ofaMySQLPeriodPrivate;
+	ofaMysqlExerciceMetaPrivate;
 
 #define MYSQL_DATABASE_KEY_PREFIX       "mysql-db-"
 
@@ -51,39 +51,39 @@ static guint           idbperiod_get_interface_version( void );
 static gchar          *idbperiod_get_name( const ofaIDBExerciceMeta *instance );
 static gint            idbperiod_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b );
 static void            idbperiod_dump( const ofaIDBExerciceMeta *instance );
-static ofaMySQLPeriod *read_from_settings( myISettings *settings, const gchar *group, const gchar *key );
-static void            write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *group );
+static ofaMysqlExerciceMeta *read_from_settings( myISettings *settings, const gchar *group, const gchar *key );
+static void            write_to_settings( ofaMysqlExerciceMeta *period, myISettings *settings, const gchar *group );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLPeriod, ofa_mysql_period, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE( ofaMySQLPeriod )
+G_DEFINE_TYPE_EXTENDED( ofaMysqlExerciceMeta, ofa_mysql_exercice_meta, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMysqlExerciceMeta )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBEXERCICE_META, idbperiod_iface_init ))
 
 static void
-mysql_period_finalize( GObject *instance )
+mysql_exercice_meta_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_period_finalize";
-	ofaMySQLPeriodPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_exercice_meta_finalize";
+	ofaMysqlExerciceMetaPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_PERIOD( instance ));
+	g_return_if_fail( instance && OFA_IS_MUSQL_EXERCICE_META( instance ));
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
+	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MUSQL_EXERCICE_META( instance ));
 
 	/* free data members here */
 	g_free( priv->database );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_period_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_mysql_exercice_meta_parent_class )->finalize( instance );
 }
 
 static void
-mysql_period_dispose( GObject *instance )
+mysql_exercice_meta_dispose( GObject *instance )
 {
-	ofaMySQLPeriodPrivate *priv;
+	ofaMysqlExerciceMetaPrivate *priv;
 
-	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
+	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MUSQL_EXERCICE_META( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -93,32 +93,32 @@ mysql_period_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_period_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_mysql_exercice_meta_parent_class )->dispose( instance );
 }
 
 static void
-ofa_mysql_period_init( ofaMySQLPeriod *self )
+ofa_mysql_exercice_meta_init( ofaMysqlExerciceMeta *self )
 {
-	static const gchar *thisfn = "ofa_mysql_period_init";
-	ofaMySQLPeriodPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_exercice_meta_init";
+	ofaMysqlExerciceMetaPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	priv = ofa_mysql_period_get_instance_private( self );
+	priv = ofa_mysql_exercice_meta_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_mysql_period_class_init( ofaMySQLPeriodClass *klass )
+ofa_mysql_exercice_meta_class_init( ofaMysqlExerciceMetaClass *klass )
 {
-	static const gchar *thisfn = "ofa_mysql_period_class_init";
+	static const gchar *thisfn = "ofa_mysql_exercice_meta_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = mysql_period_dispose;
-	G_OBJECT_CLASS( klass )->finalize = mysql_period_finalize;
+	G_OBJECT_CLASS( klass )->dispose = mysql_exercice_meta_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_exercice_meta_finalize;
 }
 
 /*
@@ -127,7 +127,7 @@ ofa_mysql_period_class_init( ofaMySQLPeriodClass *klass )
 static void
 idbperiod_iface_init( ofaIDBExerciceMetaInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_period_idbperiod_iface_init";
+	static const gchar *thisfn = "ofa_mysql_exercice_meta_idbperiod_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -146,9 +146,9 @@ idbperiod_get_interface_version( void )
 static gchar *
 idbperiod_get_name( const ofaIDBExerciceMeta *instance )
 {
-	ofaMySQLPeriodPrivate *priv;
+	ofaMysqlExerciceMetaPrivate *priv;
 
-	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
+	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MUSQL_EXERCICE_META( instance ));
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -158,11 +158,11 @@ idbperiod_get_name( const ofaIDBExerciceMeta *instance )
 static gint
 idbperiod_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b )
 {
-	ofaMySQLPeriodPrivate *a_priv, *b_priv;
+	ofaMysqlExerciceMetaPrivate *a_priv, *b_priv;
 	gint cmp;
 
-	a_priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( a ));
-	b_priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( b ));
+	a_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MUSQL_EXERCICE_META( a ));
+	b_priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MUSQL_EXERCICE_META( b ));
 
 	cmp = g_utf8_collate( a_priv->database, b_priv->database );
 
@@ -172,32 +172,32 @@ idbperiod_compare( const ofaIDBExerciceMeta *a, const ofaIDBExerciceMeta *b )
 static void
 idbperiod_dump( const ofaIDBExerciceMeta *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_period_dump";
-	ofaMySQLPeriodPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_exercice_meta_dump";
+	ofaMysqlExerciceMetaPrivate *priv;
 
-	priv = ofa_mysql_period_get_instance_private( OFA_MYSQL_PERIOD( instance ));
+	priv = ofa_mysql_exercice_meta_get_instance_private( OFA_MUSQL_EXERCICE_META( instance ));
 
 	g_debug( "%s: period=%p", thisfn, ( void * ) instance );
 	g_debug( "%s:   database=%s", thisfn, priv->database );
 }
 
 /**
- * ofa_mysql_period_new_from_settings:
+ * ofa_mysql_exercice_meta_new_from_settings:
  * @settings: the dossier settings file provided by the application.
  * @group: the settings group name.
  * @key: the key to be examined.
  *
- * Returns: a reference to a new #ofaMySQLPeriod object, which
+ * Returns: a reference to a new #ofaMysqlExerciceMeta object, which
  * implements the #ofaIDBExerciceMeta interface, if the provided @key is
  * suitable to define a financial period (an exercice), or %NULL.
  *
  * When non null, the returned reference should be #g_object_unref()
  * by the caller.
  */
-ofaMySQLPeriod *
-ofa_mysql_period_new_from_settings( myISettings *settings, const gchar *group, const gchar *key )
+ofaMysqlExerciceMeta *
+ofa_mysql_exercice_meta_new_from_settings( myISettings *settings, const gchar *group, const gchar *key )
 {
-	ofaMySQLPeriod *period;
+	ofaMysqlExerciceMeta *period;
 
 	period = NULL;
 
@@ -213,19 +213,19 @@ ofa_mysql_period_new_from_settings( myISettings *settings, const gchar *group, c
  * key = <PREFIX> + <database_name>
  * string = current / begin / end
  */
-static ofaMySQLPeriod *
+static ofaMysqlExerciceMeta *
 read_from_settings( myISettings *settings, const gchar *group, const gchar *key )
 {
-	//static const gchar *thisfn = "ofa_mysql_period_read_from_settings";
-	ofaMySQLPeriod *period;
-	ofaMySQLPeriodPrivate *priv;
+	//static const gchar *thisfn = "ofa_mysql_exercice_meta_read_from_settings";
+	ofaMysqlExerciceMeta *period;
+	ofaMysqlExerciceMetaPrivate *priv;
 	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
 
-	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
+	period = g_object_new( OFA_TYPE_MUSQL_EXERCICE_META, NULL );
 
-	priv = ofa_mysql_period_get_instance_private( period );
+	priv = ofa_mysql_exercice_meta_get_instance_private( period );
 
 	priv->database = g_strdup( key+my_strlen( MYSQL_DATABASE_KEY_PREFIX ));
 	//g_debug( "%s: key=%s, database=%s", thisfn, key, priv->database );
@@ -262,7 +262,7 @@ read_from_settings( myISettings *settings, const gchar *group, const gchar *key 
 }
 
 /**
- * ofa_mysql_period_new_to_settings:
+ * ofa_mysql_exercice_meta_new_to_settings:
  * @settings: the #myISettings instance which holds the dossier settings
  *  file.
  * @group: the group name for this dossier.
@@ -273,15 +273,15 @@ read_from_settings( myISettings *settings, const gchar *group, const gchar *key 
  *
  * Defines a new financial period in the dossier settings
  *
- * Returns: a reference to a new #ofaMySQLPeriod object, which
+ * Returns: a reference to a new #ofaMysqlExerciceMeta object, which
  * implements the #ofaIDBExerciceMeta interface.
  */
-ofaMySQLPeriod *
-ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
+ofaMysqlExerciceMeta *
+ofa_mysql_exercice_meta_new_to_settings( myISettings *settings, const gchar *group,
 									gboolean current, const GDate *begin, const GDate *end, const gchar *database )
 {
-	ofaMySQLPeriod *period;
-	ofaMySQLPeriodPrivate *priv;
+	ofaMysqlExerciceMeta *period;
+	ofaMysqlExerciceMetaPrivate *priv;
 	gchar *key, *sbegin, *send, *content;
 
 	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), NULL );
@@ -300,8 +300,8 @@ ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
 	g_free( sbegin );
 	g_free( key );
 
-	period = g_object_new( OFA_TYPE_MYSQL_PERIOD, NULL );
-	priv = ofa_mysql_period_get_instance_private( period );
+	period = g_object_new( OFA_TYPE_MUSQL_EXERCICE_META, NULL );
+	priv = ofa_mysql_exercice_meta_get_instance_private( period );
 	priv->database = g_strdup( database );
 	ofa_idbexercice_meta_set_current( OFA_IDBEXERCICE_META( period ), current );
 	ofa_idbexercice_meta_set_begin_date( OFA_IDBEXERCICE_META( period ), begin );
@@ -311,8 +311,8 @@ ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
 }
 
 /**
- * ofa_mysql_period_get_database:
- * @period: this #ofaMySQLPeriod object.
+ * ofa_mysql_exercice_meta_get_database:
+ * @period: this #ofaMysqlExerciceMeta object.
  *
  * Returns: the database name.
  *
@@ -320,13 +320,13 @@ ofa_mysql_period_new_to_settings( myISettings *settings, const gchar *group,
  * be freed by the caller.
  */
 const gchar *
-ofa_mysql_period_get_database( ofaMySQLPeriod *period )
+ofa_mysql_exercice_meta_get_database( ofaMysqlExerciceMeta *period )
 {
-	ofaMySQLPeriodPrivate *priv;
+	ofaMysqlExerciceMetaPrivate *priv;
 
-	g_return_val_if_fail( period && OFA_IS_MYSQL_PERIOD( period ), NULL );
+	g_return_val_if_fail( period && OFA_IS_MUSQL_EXERCICE_META( period ), NULL );
 
-	priv = ofa_mysql_period_get_instance_private( period );
+	priv = ofa_mysql_exercice_meta_get_instance_private( period );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -334,8 +334,8 @@ ofa_mysql_period_get_database( ofaMySQLPeriod *period )
 }
 
 /**
- * ofa_mysql_period_update:
- * @period: this #ofaMySQLPeriod object.
+ * ofa_mysql_exercice_meta_update:
+ * @period: this #ofaMysqlExerciceMeta object.
  * @settings: the #myISettings object.
  * @group: the group name in the settings.
  * @current: whether the financial period is current.
@@ -345,12 +345,12 @@ ofa_mysql_period_get_database( ofaMySQLPeriod *period )
  * Update the dossier settings for this @period with the specified datas.
  */
 void
-ofa_mysql_period_update( ofaMySQLPeriod *period,
+ofa_mysql_exercice_meta_update( ofaMysqlExerciceMeta *period,
 		myISettings *settings, const gchar *group, gboolean current, const GDate *begin, const GDate *end )
 {
-	ofaMySQLPeriodPrivate *priv;
+	ofaMysqlExerciceMetaPrivate *priv;
 
-	priv = ofa_mysql_period_get_instance_private( period );
+	priv = ofa_mysql_exercice_meta_get_instance_private( period );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -366,20 +366,20 @@ ofa_mysql_period_update( ofaMySQLPeriod *period,
 }
 
 /**
- * ofa_mysql_period_remove:
- * @period: this #ofaMySQLPeriod object.
+ * ofa_mysql_exercice_meta_remove:
+ * @period: this #ofaMysqlExerciceMeta object.
  * @settings: the #myISettings object.
  * @group: the group name in the settings.
  *
  * Removes the @period from dossier settings.
  */
 void
-ofa_mysql_period_remove( ofaMySQLPeriod *period, myISettings *settings, const gchar *group )
+ofa_mysql_exercice_meta_remove( ofaMysqlExerciceMeta *period, myISettings *settings, const gchar *group )
 {
-	ofaMySQLPeriodPrivate *priv;
+	ofaMysqlExerciceMetaPrivate *priv;
 	gchar *key;
 
-	priv = ofa_mysql_period_get_instance_private( period );
+	priv = ofa_mysql_exercice_meta_get_instance_private( period );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -389,12 +389,12 @@ ofa_mysql_period_remove( ofaMySQLPeriod *period, myISettings *settings, const gc
 }
 
 static void
-write_to_settings( ofaMySQLPeriod *period, myISettings *settings, const gchar *group )
+write_to_settings( ofaMysqlExerciceMeta *period, myISettings *settings, const gchar *group )
 {
-	ofaMySQLPeriodPrivate *priv;
+	ofaMysqlExerciceMetaPrivate *priv;
 	gchar *key, *content, *begin, *end;
 
-	priv = ofa_mysql_period_get_instance_private( period );
+	priv = ofa_mysql_exercice_meta_get_instance_private( period );
 
 	key = g_strdup_printf( "%s%s", MYSQL_DATABASE_KEY_PREFIX, priv->database );
 

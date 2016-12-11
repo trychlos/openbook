@@ -400,8 +400,6 @@
                 so that this may be managed by the application instead of
                 by the dbms plugin
 
-1278 2016-12-10 rename ofaMySQLPeriod to ofaMysqlExerciceMeta 
-
 1279
 
 -----------------------------------------------------------------------
@@ -2033,6 +2031,9 @@
      2016-12-10 done
 
 1277 2016-12-10 rename ofaMySQLMeta to ofaMysqlDossierMeta
+     2016-12-11 done
+
+1278 2016-12-10 rename ofaMySQLPeriod to ofaMysqlExerciceMeta
      2016-12-11 done
 
 -----------------------------------------------------------------------

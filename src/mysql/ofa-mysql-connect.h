@@ -36,7 +36,7 @@
  */
 
 #include "ofa-mysql-dossier-meta.h"
-#include "ofa-mysql-period.h"
+#include "ofa-mysql-exercice-meta.h"
 
 G_BEGIN_DECLS
 
@@ -67,7 +67,7 @@ gboolean         ofa_mysql_connect_open_with_meta  ( ofaMySQLConnect *connect,
 															const gchar *account,
 															const gchar *password,
 															const ofaMysqlDossierMeta *dossier_meta,
-															const ofaMySQLPeriod *period );
+															const ofaMysqlExerciceMeta *period );
 
 gboolean         ofa_mysql_connect_query           ( ofaMySQLConnect *connect,
 															const gchar *query );
