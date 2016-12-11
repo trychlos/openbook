@@ -70,6 +70,7 @@
    - ofaIDBPeriod interface is renamed to ofaIDBExerciceMeta (todo #1275).
    - ofaMiscAuditStore: new class.
    - ofaMiscAuditTreeview: new class.
+   - ofaMySQLMeta class is renamed to ofaMysqlDossierMeta (todo #1277).
    - ofaPortfolioCollection class is renamed to ofaDossierCollection (todo #1264).
    - ofaTargetChooserBin: new class.
    - ofaTVBin: new ofa-tvbin-vexpand property.

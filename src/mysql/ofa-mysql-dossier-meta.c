@@ -32,8 +32,8 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 
+#include "ofa-mysql-dossier-meta.h"
 #include "ofa-mysql-editor-enter.h"
-#include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 
 /* priv instance data
@@ -47,7 +47,7 @@ typedef struct {
 	gchar   *socket;
 	guint    port;
 }
-	ofaMySQLMetaPrivate;
+	ofaMysqlDossierMetaPrivate;
 
 #define MYSQL_HOST_KEY                  "mysql-host"
 #define MYSQL_SOCKET_KEY                "mysql-socket"
@@ -63,37 +63,37 @@ static void            idbdossier_meta_update_period( ofaIDBDossierMeta *instanc
 static void            idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *period );
 static void            idbdossier_meta_dump( const ofaIDBDossierMeta *instance );
 
-G_DEFINE_TYPE_EXTENDED( ofaMySQLMeta, ofa_mysql_meta, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE( ofaMySQLMeta )
+G_DEFINE_TYPE_EXTENDED( ofaMysqlDossierMeta, ofa_mysql_dossier_meta, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMysqlDossierMeta )
 		G_IMPLEMENT_INTERFACE( OFA_TYPE_IDBDOSSIER_META, idbdossier_meta_iface_init ))
 
 static void
-mysql_meta_finalize( GObject *instance )
+mysql_dossier_meta_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_meta_finalize";
-	ofaMySQLMetaPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_dossier_meta_finalize";
+	ofaMysqlDossierMetaPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	/* free data members here */
-	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( instance ));
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( instance ));
 
 	g_free( priv->host );
 	g_free( priv->socket );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_meta_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_mysql_dossier_meta_parent_class )->finalize( instance );
 }
 
 static void
-mysql_meta_dispose( GObject *instance )
+mysql_dossier_meta_dispose( GObject *instance )
 {
-	ofaMySQLMetaPrivate *priv;
+	ofaMysqlDossierMetaPrivate *priv;
 
-	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( instance ));
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -103,32 +103,32 @@ mysql_meta_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_meta_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_mysql_dossier_meta_parent_class )->dispose( instance );
 }
 
 static void
-ofa_mysql_meta_init( ofaMySQLMeta *self )
+ofa_mysql_dossier_meta_init( ofaMysqlDossierMeta *self )
 {
-	static const gchar *thisfn = "ofa_mysql_meta_init";
-	ofaMySQLMetaPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_dossier_meta_init";
+	ofaMysqlDossierMetaPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	priv = ofa_mysql_meta_get_instance_private( self );
+	priv = ofa_mysql_dossier_meta_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_mysql_meta_class_init( ofaMySQLMetaClass *klass )
+ofa_mysql_dossier_meta_class_init( ofaMysqlDossierMetaClass *klass )
 {
-	static const gchar *thisfn = "ofa_mysql_meta_class_init";
+	static const gchar *thisfn = "ofa_mysql_dossier_meta_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = mysql_meta_dispose;
-	G_OBJECT_CLASS( klass )->finalize = mysql_meta_finalize;
+	G_OBJECT_CLASS( klass )->dispose = mysql_dossier_meta_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_dossier_meta_finalize;
 }
 
 /*
@@ -137,7 +137,7 @@ ofa_mysql_meta_class_init( ofaMySQLMetaClass *klass )
 static void
 idbdossier_meta_iface_init( ofaIDBDossierMetaInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_meta_idbdossier_meta_iface_init";
+	static const gchar *thisfn = "ofa_mysql_dossier_meta_idbdossier_meta_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -158,12 +158,12 @@ idbdossier_meta_get_interface_version( void )
 static void
 idbdossier_meta_set_from_settings( ofaIDBDossierMeta *meta, myISettings *settings, const gchar *group )
 {
-	ofaMySQLMetaPrivate *priv;
+	ofaMysqlDossierMetaPrivate *priv;
 	GList *periods;
 
-	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
 
-	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( meta ));
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( meta ));
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -236,16 +236,16 @@ find_period( ofaMySQLPeriod *period, GList *list )
 static void
 idbdossier_meta_set_from_editor( ofaIDBDossierMeta *meta, const ofaIDBEditor *editor, myISettings *settings, const gchar *group )
 {
-	ofaMySQLMetaPrivate *priv;
+	ofaMysqlDossierMetaPrivate *priv;
 	const gchar *host, *socket, *database;
 	guint port;
 	ofaMySQLPeriod *period;
 	GList *periods;
 
-	g_return_if_fail( meta && OFA_IS_MYSQL_META( meta ));
+	g_return_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ));
 	g_return_if_fail( editor && OFA_IS_MYSQL_EDITOR_ENTER( editor ));
 
-	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( meta ));
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( meta ));
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -278,7 +278,7 @@ idbdossier_meta_update_period( ofaIDBDossierMeta *instance,
 	myISettings *settings;
 	gchar *group;
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
 	g_return_if_fail( period && OFA_IS_MYSQL_PERIOD( period ));
 
 	settings = ofa_idbdossier_meta_get_settings( instance );
@@ -294,7 +294,7 @@ idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *
 	myISettings *settings;
 	gchar *group;
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_META( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_DOSSIER_META( instance ));
 	g_return_if_fail( period && OFA_IS_MYSQL_PERIOD( period ));
 
 	settings = ofa_idbdossier_meta_get_settings( instance );
@@ -307,10 +307,10 @@ idbdossier_meta_remove_period( ofaIDBDossierMeta *instance, ofaIDBExerciceMeta *
 static void
 idbdossier_meta_dump( const ofaIDBDossierMeta *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_meta_dump";
-	ofaMySQLMetaPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_dossier_meta_dump";
+	ofaMysqlDossierMetaPrivate *priv;
 
-	priv = ofa_mysql_meta_get_instance_private( OFA_MYSQL_META( instance ));
+	priv = ofa_mysql_dossier_meta_get_instance_private( OFA_MYSQL_DOSSIER_META( instance ));
 
 	g_debug( "%s: meta=%p", thisfn, ( void * ) instance );
 	g_debug( "%s:   host=%s", thisfn, priv->host );
@@ -319,24 +319,24 @@ idbdossier_meta_dump( const ofaIDBDossierMeta *instance )
 }
 
 /**
- * ofa_mysql_meta_new:
+ * ofa_mysql_dossier_meta_new:
  *
- * Returns: a newly allocated #ofaMySQLMeta object, which should
+ * Returns: a newly allocated #ofaMysqlDossierMeta object, which should
  * be #g_object_unref() by the caller.
  */
-ofaMySQLMeta *
-ofa_mysql_meta_new( void )
+ofaMysqlDossierMeta *
+ofa_mysql_dossier_meta_new( void )
 {
-	ofaMySQLMeta *meta;
+	ofaMysqlDossierMeta *meta;
 
-	meta = g_object_new( OFA_TYPE_MYSQL_META, NULL );
+	meta = g_object_new( OFA_TYPE_MYSQL_DOSSIER_META, NULL );
 
 	return( meta );
 }
 
 /**
- * ofa_mysql_meta_get_host:
- * @meta: this #ofaMySQLMeta object.
+ * ofa_mysql_dossier_meta_get_host:
+ * @meta: this #ofaMysqlDossierMeta object.
  *
  * Returns: the hostname which hosts the dataserver.
  *
@@ -344,13 +344,13 @@ ofa_mysql_meta_new( void )
  * freed by the caller.
  */
 const gchar *
-ofa_mysql_meta_get_host( ofaMySQLMeta *meta )
+ofa_mysql_dossier_meta_get_host( ofaMysqlDossierMeta *meta )
 {
-	ofaMySQLMetaPrivate *priv;
+	ofaMysqlDossierMetaPrivate *priv;
 
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), NULL );
 
-	priv = ofa_mysql_meta_get_instance_private( meta );
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -358,8 +358,8 @@ ofa_mysql_meta_get_host( ofaMySQLMeta *meta )
 }
 
 /**
- * ofa_mysql_meta_get_socket:
- * @meta: this #ofaMySQLMeta object.
+ * ofa_mysql_dossier_meta_get_socket:
+ * @meta: this #ofaMysqlDossierMeta object.
  *
  * Returns: the listening socket path of the dataserver, or %NULL.
  *
@@ -367,13 +367,13 @@ ofa_mysql_meta_get_host( ofaMySQLMeta *meta )
  * freed by the caller.
  */
 const gchar *
-ofa_mysql_meta_get_socket( ofaMySQLMeta *meta )
+ofa_mysql_dossier_meta_get_socket( ofaMysqlDossierMeta *meta )
 {
-	ofaMySQLMetaPrivate *priv;
+	ofaMysqlDossierMetaPrivate *priv;
 
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), NULL );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), NULL );
 
-	priv = ofa_mysql_meta_get_instance_private( meta );
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -381,20 +381,20 @@ ofa_mysql_meta_get_socket( ofaMySQLMeta *meta )
 }
 
 /**
- * ofa_mysql_meta_get_port:
- * @meta: this #ofaMySQLMeta object.
+ * ofa_mysql_dossier_meta_get_port:
+ * @meta: this #ofaMysqlDossierMeta object.
  *
  * Returns: the listening port of the dataserver, or zero for the
  * default value.
  */
 guint
-ofa_mysql_meta_get_port( ofaMySQLMeta *meta )
+ofa_mysql_dossier_meta_get_port( ofaMysqlDossierMeta *meta )
 {
-	ofaMySQLMetaPrivate *priv;
+	ofaMysqlDossierMetaPrivate *priv;
 
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), 0 );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), 0 );
 
-	priv = ofa_mysql_meta_get_instance_private( meta );
+	priv = ofa_mysql_dossier_meta_get_instance_private( meta );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -402,8 +402,8 @@ ofa_mysql_meta_get_port( ofaMySQLMeta *meta )
 }
 
 /**
- * ofa_mysql_meta_add_period:
- * @meta: this #ofaMySQLMeta instance.
+ * ofa_mysql_dossier_meta_add_period:
+ * @meta: this #ofaMysqlDossierMeta instance.
  * @current: whether the financial period (exercice) is current.
  * @begin: [allow-none]: the beginning date.
  * @end: [allow-none]: the ending date.
@@ -412,7 +412,7 @@ ofa_mysql_meta_get_port( ofaMySQLMeta *meta )
  * Defines a new financial period with the provided datas.
  */
 void
-ofa_mysql_meta_add_period( ofaMySQLMeta *meta,
+ofa_mysql_dossier_meta_add_period( ofaMysqlDossierMeta *meta,
 							gboolean current, const GDate *begin, const GDate *end, const gchar *database )
 {
 	ofaMySQLPeriod *period;

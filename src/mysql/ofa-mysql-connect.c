@@ -237,16 +237,16 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
 	guint port;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_CONNECT( instance ), FALSE );
-	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_META( dossier_meta ), FALSE );
+	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
 	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
 	priv = ofa_mysql_connect_get_instance_private( OFA_MYSQL_CONNECT( instance ));
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	host = ofa_mysql_meta_get_host( OFA_MYSQL_META( dossier_meta ));
-	socket = ofa_mysql_meta_get_socket( OFA_MYSQL_META( dossier_meta ));
-	port = ofa_mysql_meta_get_port( OFA_MYSQL_META( dossier_meta ));
+	host = ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( dossier_meta ));
+	socket = ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( dossier_meta ));
+	port = ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( dossier_meta ));
 	database = period ? ofa_mysql_period_get_database( OFA_MYSQL_PERIOD( period )) : NULL;
 
 	ok = connect_open( OFA_MYSQL_CONNECT( instance ), account, password, host, socket, port, database, NULL );
@@ -259,7 +259,7 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
  * @connect: this #ofaMySQLConnect instance.
  * @account: the user account.
  * @password: the user password.
- * @dossier_meta: the #ofaMySQLMeta object which holds the dossier meta datas.
+ * @dossier_meta: the #ofaMysqlDossierMeta object which holds the dossier meta datas.
  * @period: [allow-none]: the #ofaMySQLPeriod object which holds the
  *  exercice. If %NULL, the connection is opened at server-level.
  *
@@ -272,12 +272,12 @@ idbconnect_open_with_meta( ofaIDBConnect *instance, const gchar *account, const 
 gboolean
 ofa_mysql_connect_open_with_meta( ofaMySQLConnect *connect,
 									const gchar *account, const gchar *password,
-									const ofaMySQLMeta *dossier_meta, const ofaMySQLPeriod *period )
+									const ofaMysqlDossierMeta *dossier_meta, const ofaMySQLPeriod *period )
 {
 	ofaMySQLConnectPrivate *priv;
 
 	g_return_val_if_fail( connect && OFA_IS_MYSQL_CONNECT( connect ), FALSE );
-	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_META( dossier_meta ), FALSE );
+	g_return_val_if_fail( dossier_meta && OFA_IS_MYSQL_DOSSIER_META( dossier_meta ), FALSE );
 	g_return_val_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ), FALSE );
 
 	priv = ofa_mysql_connect_get_instance_private( connect );
@@ -552,9 +552,9 @@ idbconnect_grant_user( const ofaIDBConnect *instance, const ofaIDBExerciceMeta *
 	query = g_string_new( "" );
 
 	meta = ofa_idbconnect_get_dossier_meta( instance );
-	g_return_val_if_fail( meta && OFA_IS_MYSQL_META( meta ), FALSE );
+	g_return_val_if_fail( meta && OFA_IS_MYSQL_DOSSIER_META( meta ), FALSE );
 
-	hostname = g_strdup( ofa_mysql_meta_get_host( OFA_MYSQL_META( meta )));
+	hostname = g_strdup( ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( meta )));
 	if( !my_strlen( hostname )){
 		g_free( hostname );
 		hostname = g_strdup( "localhost" );

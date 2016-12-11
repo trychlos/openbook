@@ -40,9 +40,9 @@
 
 #include "mysql/ofa-mysql-connect.h"
 #include "mysql/ofa-mysql-dbprovider.h"
+#include "mysql/ofa-mysql-dossier-meta.h"
 #include "mysql/ofa-mysql-editor-display.h"
 #include "mysql/ofa-mysql-editor-enter.h"
-#include "mysql/ofa-mysql-meta.h"
 #include "mysql/ofa-mysql-period.h"
 
 /* private instance data
@@ -185,9 +185,9 @@ idbprovider_iface_init( ofaIDBProviderInterface *iface )
 static ofaIDBDossierMeta *
 idbprovider_new_dossier_meta( ofaIDBProvider *instance )
 {
-	ofaMySQLMeta *meta;
+	ofaMysqlDossierMeta *meta;
 
-	meta = ofa_mysql_meta_new();
+	meta = ofa_mysql_dossier_meta_new();
 
 	return( OFA_IDBDOSSIER_META( meta ));
 }

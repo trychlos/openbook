@@ -31,8 +31,8 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 
+#include "ofa-mysql-dossier-meta.h"
 #include "ofa-mysql-editor-display.h"
-#include "ofa-mysql-meta.h"
 #include "ofa-mysql-period.h"
 
 /* private instance data
@@ -151,12 +151,12 @@ idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_met
 	guint port_num;
 
 	g_return_if_fail( instance && OFA_IS_MYSQL_EDITOR_DISPLAY( instance ));
-	g_return_if_fail( !dossier_meta || OFA_IS_MYSQL_META( dossier_meta ));
+	g_return_if_fail( !dossier_meta || OFA_IS_MYSQL_DOSSIER_META( dossier_meta ));
 	g_return_if_fail( !period || OFA_IS_MYSQL_PERIOD( period ));
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "host" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	text = dossier_meta ? g_strdup( ofa_mysql_meta_get_host( OFA_MYSQL_META( dossier_meta ))) : NULL;
+	text = dossier_meta ? g_strdup( ofa_mysql_dossier_meta_get_host( OFA_MYSQL_DOSSIER_META( dossier_meta ))) : NULL;
 	if( !my_strlen( text )){
 		g_free( text );
 		text = g_strdup( "localhost" );
@@ -168,7 +168,7 @@ idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_met
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "socket" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	text = dossier_meta ? g_strdup( ofa_mysql_meta_get_socket( OFA_MYSQL_META( dossier_meta ))) : NULL;
+	text = dossier_meta ? g_strdup( ofa_mysql_dossier_meta_get_socket( OFA_MYSQL_DOSSIER_META( dossier_meta ))) : NULL;
 	if( my_strlen( text )){
 		gtk_label_set_text( GTK_LABEL( label ), text );
 	}
@@ -176,7 +176,7 @@ idbeditor_set_meta( ofaIDBEditor *instance, const ofaIDBDossierMeta *dossier_met
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "port" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	port_num = dossier_meta ? ofa_mysql_meta_get_port( OFA_MYSQL_META( dossier_meta )) : 0;
+	port_num = dossier_meta ? ofa_mysql_dossier_meta_get_port( OFA_MYSQL_DOSSIER_META( dossier_meta )) : 0;
 	if( port_num > 0 ){
 		text = g_strdup_printf( "%d", port_num );
 		gtk_label_set_text( GTK_LABEL( label ), text );

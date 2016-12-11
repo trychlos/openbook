@@ -73,14 +73,14 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-connect.h									\
 	ofa-mysql-dbmodel.c									\
 	ofa-mysql-dbmodel.h									\
+	ofa-mysql-dossier-meta.c							\
+	ofa-mysql-dossier-meta.h							\
 	ofa-mysql-dbprovider.c								\
 	ofa-mysql-dbprovider.h								\
 	ofa-mysql-editor-display.c							\
 	ofa-mysql-editor-display.h							\
 	ofa-mysql-editor-enter.c							\
 	ofa-mysql-editor-enter.h							\
-	ofa-mysql-meta.c									\
-	ofa-mysql-meta.h									\
 	ofa-mysql-period.c									\
 	ofa-mysql-period.h									\
 	ofa-mysql-prefs-bin.c								\

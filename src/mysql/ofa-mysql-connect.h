@@ -35,7 +35,7 @@
  * It implements the #ofaIDBConnect interface.
  */
 
-#include "ofa-mysql-meta.h"
+#include "ofa-mysql-dossier-meta.h"
 #include "ofa-mysql-period.h"
 
 G_BEGIN_DECLS
@@ -66,7 +66,7 @@ ofaMySQLConnect *ofa_mysql_connect_new             ( void );
 gboolean         ofa_mysql_connect_open_with_meta  ( ofaMySQLConnect *connect,
 															const gchar *account,
 															const gchar *password,
-															const ofaMySQLMeta *dossier_meta,
+															const ofaMysqlDossierMeta *dossier_meta,
 															const ofaMySQLPeriod *period );
 
 gboolean         ofa_mysql_connect_query           ( ofaMySQLConnect *connect,
