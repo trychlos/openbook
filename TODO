@@ -389,9 +389,6 @@
 1271 2016-12- 1 obsoletes ofaDbmsRootBin
                 moving to mysql
 
-1272 2016-12- 6 move initialization from ofa_application_new() to
-                application_startup() if possible
-
 1273 2016-12- 6 move to hub initialization all the stuff which is not
                 required by the ui (and not by gtk as Gtk may be required
                 by the plugins which not all involve the ui)
@@ -2023,6 +2020,10 @@
 1269 2016-11-29 ofaExerciceMeta class obsoletes ofaIDBPeriod interface
                 and ofaMysqlPeriod class
      2016-12- 8 -> cancelled (same as #1268)
+
+1272 2016-12- 6 move initialization from ofa_application_new() to
+                application_startup() if possible
+     2016-12-12 done
 
 1274 2016-12- 8 rename ofaIDBMeta to ofaIDBDossierMeta
      2016-12-10 done

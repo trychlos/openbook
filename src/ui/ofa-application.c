@@ -452,8 +452,6 @@ ofaApplication *
 ofa_application_new( void )
 {
 	ofaApplication *application;
-	ofaApplicationPrivate *priv;
-	ofaExtenderCollection *extenders;
 
 	application = g_object_new( OFA_TYPE_APPLICATION,
 
@@ -467,21 +465,6 @@ ofa_application_new( void )
 			OFA_PROP_DESCRIPTION,      gettext( st_description ),
 			OFA_PROP_ICON_NAME,        gettext( st_icon_name ),
 			NULL );
-
-	priv = ofa_application_get_instance_private( application );
-
-	priv->hub = ofa_hub_new();
-
-	extenders = ofa_extender_collection_new( OFA_IGETTER( application ), PKGLIBDIR );
-	ofa_hub_set_extender_collection( priv->hub, extenders );
-	ofa_hub_register_types( priv->hub );
-	ofa_hub_init_signaling_system( priv->hub );
-
-	ofa_box_register_types();
-	my_iaction_map_register( MY_IACTION_MAP( application ), "app" );
-
-	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
-	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
 
 	return( application );
 }
@@ -699,13 +682,15 @@ application_startup( GApplication *application )
 	static const gchar *thisfn = "ofa_application_startup";
 	ofaApplication *appli;
 	ofaApplicationPrivate *priv;
+	ofaExtenderCollection *extenders;
 	GtkBuilder *builder;
 	GMenuModel *menu;
 	ofaDossierCollection *collection;
 
 	g_debug( "%s: application=%p", thisfn, ( void * ) application );
 
-	g_return_if_fail( OFA_IS_APPLICATION( application ));
+	g_return_if_fail( application && OFA_IS_APPLICATION( application ));
+
 	appli = OFA_APPLICATION( application );
 	priv = ofa_application_get_instance_private( appli );
 
@@ -713,6 +698,19 @@ application_startup( GApplication *application )
 	if( G_APPLICATION_CLASS( ofa_application_parent_class )->startup ){
 		G_APPLICATION_CLASS( ofa_application_parent_class )->startup( application );
 	}
+
+	priv->hub = ofa_hub_new();
+
+	extenders = ofa_extender_collection_new( OFA_IGETTER( application ), PKGLIBDIR );
+	ofa_hub_set_extender_collection( priv->hub, extenders );
+	ofa_hub_register_types( priv->hub );
+	ofa_hub_init_signaling_system( priv->hub );
+
+	ofa_box_register_types();
+	my_iaction_map_register( MY_IACTION_MAP( application ), "app" );
+
+	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
+	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
 
 	/* initialize the application settings */
 	ofa_settings_new();
