@@ -42,6 +42,7 @@
  New features and improvements:
 
    - %BALCR, %BALDB: new formula engine macros.
+   - ofaApplication: improve message when command-line arguments are invalid.
    - ofaMiscAuditUI: takes advantage of ofaITVColumnable interface.
    - ofaMiscCollector: remove double frame on each pages (todo #1251).
    - ofaRecPeriodProperties: add missing margins (todo #1249).

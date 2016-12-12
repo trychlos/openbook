@@ -842,8 +842,11 @@ application_activate( GApplication *application )
 				period = ofa_idbdossier_meta_get_period( meta, &dbegin, &dend );
 				if( !period ){
 					str = g_strdup_printf(
-							_( "Unable to find a financial period with specified dates (begin=%s, end=%s)" ),
-							st_dossier_begin_opt, st_dossier_end_opt );
+							_( "Unable to find a financial period "
+								"with specified dates (begin=%s, end=%s) for '%s' dossier" ),
+							st_dossier_begin_opt ? st_dossier_begin_opt : _( "<empty>" ),
+							st_dossier_end_opt ? st_dossier_end_opt : _( "<empty>" ),
+							st_dossier_name_opt );
 					my_utils_msg_dialog( NULL, GTK_MESSAGE_WARNING, str );
 					g_free( str );
 				}
