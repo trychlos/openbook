@@ -226,27 +226,27 @@ my_date_set_from_date( GDate *date, const GDate *orig )
 /**
  * my_date_set_from_sql:
  * @date: [out]: a not-null pointer to the destination GDate structure
- * @sql_string: [in]: a SQL string 'yyyy-mm-dd', or NULL;
+ * @string: [in][allow-none]: a SQL string 'yyyy-mm-dd', or %NULL;
  *  the SQL string may be zero '0000-00-00' or a valid date.
  *
  * Parse a SQL string, putting the result in @date.
- * The dest @date is set invalid if the @sql_string doesn't evaluate to
+ * The dest @date is set invalid if the @string doesn't evaluate to
  * a valid date.
  * NB: parsing a 'yyyy-mm-dd' is not locale-sensitive.
  *
  * Returns: @date, in order to be able to chain the functions.
  */
 GDate *
-my_date_set_from_sql( GDate *date, const gchar *sql_string )
+my_date_set_from_sql( GDate *date, const gchar *string )
 {
 	g_return_val_if_fail( date, NULL );
 
 	g_date_clear( date, 1 );
 
-	if( my_strlen( sql_string ) &&
-			g_utf8_collate( sql_string, "0000-00-00" )){
+	if( my_strlen( string ) &&
+			g_utf8_collate( string, "0000-00-00" )){
 
-		g_date_set_parse( date, sql_string );
+		g_date_set_parse( date, string );
 	}
 
 	return( date );
@@ -255,7 +255,7 @@ my_date_set_from_sql( GDate *date, const gchar *sql_string )
 /**
  * my_date_set_from_str:
  * @date: [out]: a not-null pointer to the destination GDate structure
- * @fmt_string: [in][allow-none]: the string to be parsed
+ * @string: [in][allow-none]: the string to be parsed, or %NULL
  * @format: the expected format of the string
  *
  * Parse a string which should represent a date into a #GDate structure.
@@ -265,9 +265,9 @@ my_date_set_from_sql( GDate *date, const gchar *sql_string )
  * Returns: @date, in order to be able to chain the functions.
  */
 GDate *
-my_date_set_from_str( GDate *date, const gchar *fmt_string, myDateFormat format )
+my_date_set_from_str( GDate *date, const gchar *string, myDateFormat format )
 {
-	return( my_date_set_from_str_ex( date, fmt_string, format, NULL ));
+	return( my_date_set_from_str_ex( date, string, format, NULL ));
 }
 
 /*
@@ -392,10 +392,10 @@ parse_dmydot_string( GDate *date, const gchar *string, gint *year )
 /**
  * my_date_set_from_str_ex:
  * @date: [out]: a not-null pointer to the destination GDate structure
- * @fmt_string: [in][allow-none]: the string to be parsed
+ * @string: [in][allow-none]: the string to be parsed, or %NULL
  * @format: the expected format of the string
  * @year: [in][out][allow-none]: if set, may be used as a default year if it is
- *  missing from the @fmt_string - On output, is set with the year of
+ *  missing from the @string - On output, is set with the year of
  *  the @date if it is valid.
  *
  * Parse a string which should represent a date into a #GDate structure.
@@ -405,45 +405,43 @@ parse_dmydot_string( GDate *date, const gchar *string, gint *year )
  * Returns: @date, in order to be able to chain the functions.
  */
 GDate *
-my_date_set_from_str_ex( GDate *date, const gchar *fmt_string, myDateFormat format, gint *year )
+my_date_set_from_str_ex( GDate *date, const gchar *string, myDateFormat format, gint *year )
 {
 	static const gchar *thisfn = "my_date_set_from_str_ex";
 	gchar *str;
 
 	g_return_val_if_fail( date, NULL);
 
-	str = g_strstrip( g_strdup( fmt_string ));
+	my_date_clear( date );
 
-	switch( format ){
+	if( string ){
+		str = g_strstrip( g_strdup( string ));
 
-		case MY_DATE_DMYY:
-			if( !parse_ddmmyyyy_string( date, str, year )){
-				my_date_clear( date );
-			}
-			break;
+		switch( format ){
 
-		case MY_DATE_SQL:
-			my_date_set_from_sql( date, str );
-			break;
+			case MY_DATE_DMYY:
+				parse_ddmmyyyy_string( date, str, year );
+				break;
 
-		case MY_DATE_YYMD:
-			if( !parse_yyyymmdd_string( date, str )){
-				my_date_clear( date );
-			}
-			break;
+			case MY_DATE_SQL:
+				my_date_set_from_sql( date, str );
+				break;
 
-		case MY_DATE_DMYDOT:
-			if( !parse_dmydot_string( date, str, year )){
-				my_date_clear( date );
-			}
-			break;
+			case MY_DATE_YYMD:
+				parse_yyyymmdd_string( date, str );
+				break;
 
-		default:
-			g_warning( "%s: unhandled format code %u", thisfn, format );
-			break;
+			case MY_DATE_DMYDOT:
+				parse_dmydot_string( date, str, year );
+				break;
+
+			default:
+				g_warning( "%s: unhandled format code %u", thisfn, format );
+				break;
+		}
+
+		g_free( str );
 	}
-
-	g_free( str );
 
 	return( date );
 }
