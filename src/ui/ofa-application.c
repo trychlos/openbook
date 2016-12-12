@@ -33,10 +33,8 @@
 #include "my/my-iaction-map.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-box.h"
 #include "api/ofa-core.h"
 #include "api/ofa-dossier-collection.h"
-#include "api/ofa-extender-collection.h"
 #include "api/ofa-formula-engine.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
@@ -682,7 +680,6 @@ application_startup( GApplication *application )
 	static const gchar *thisfn = "ofa_application_startup";
 	ofaApplication *appli;
 	ofaApplicationPrivate *priv;
-	ofaExtenderCollection *extenders;
 	GtkBuilder *builder;
 	GMenuModel *menu;
 	ofaDossierCollection *collection;
@@ -699,14 +696,9 @@ application_startup( GApplication *application )
 		G_APPLICATION_CLASS( ofa_application_parent_class )->startup( application );
 	}
 
-	priv->hub = ofa_hub_new();
+	/* instanciates and initializes the #ofaHub object of the application */
+	priv->hub = ofa_hub_new( OFA_IGETTER( application ));
 
-	extenders = ofa_extender_collection_new( OFA_IGETTER( application ), PKGLIBDIR );
-	ofa_hub_set_extender_collection( priv->hub, extenders );
-	ofa_hub_register_types( priv->hub );
-	ofa_hub_init_signaling_system( priv->hub );
-
-	ofa_box_register_types();
 	my_iaction_map_register( MY_IACTION_MAP( application ), "app" );
 
 	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));

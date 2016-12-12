@@ -67,8 +67,9 @@
 
  Other changes:
 
-   - ofaApplication: move initialization from instanciation to startup (todo #1272).
+   - ofaApplication: move initialization from instantiation to startup (todo #1272).
    - ofaExerciceTreeview: new class.
+   - ofaHub: initialize from ofa_hub_new() (todo #1273).
    - ofaIDBMeta interface is renamed to ofaIDBDossierMeta (todo #1274).
    - ofaIDBPeriod interface is renamed to ofaIDBExerciceMeta (todo #1275).
    - ofaMiscAuditStore: new class.

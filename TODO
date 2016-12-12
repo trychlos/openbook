@@ -389,10 +389,6 @@
 1271 2016-12- 1 obsoletes ofaDbmsRootBin
                 moving to mysql
 
-1273 2016-12- 6 move to hub initialization all the stuff which is not
-                required by the ui (and not by gtk as Gtk may be required
-                by the plugins which not all involve the ui)
-
 1276 2016-12-10 review the way the exercices are written in dossier settings
                 so that this may be managed by the application instead of
                 by the dbms plugin
@@ -2023,6 +2019,11 @@
 
 1272 2016-12- 6 move initialization from ofa_application_new() to
                 application_startup() if possible
+     2016-12-12 done
+
+1273 2016-12- 6 move to hub initialization all the stuff which is not
+                required by the ui (and not by gtk as Gtk may be required
+                by the plugins which not all involve the ui)
      2016-12-12 done
 
 1274 2016-12- 8 rename ofaIDBMeta to ofaIDBDossierMeta

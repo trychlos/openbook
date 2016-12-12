@@ -33,11 +33,13 @@
 #include "my/my-signal.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-box.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iexportable.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-isignal-hub.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
@@ -55,6 +57,10 @@
  */
 typedef struct {
 	gboolean               dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter            *getter;
 
 	/* global data
 	 */
@@ -93,7 +99,9 @@ static gint st_signals[ N_SIGNALS ]     = { 0 };
 
 static void     icollector_iface_init( myICollectorInterface *iface );
 static guint    icollector_get_interface_version( void );
-static void     connect_signaling_system_to( ofaHub *hub, GType type );
+static void     hub_register_types( ofaHub *self );
+static void     hub_init_signaling_system( ofaHub *self );
+static void     init_signaling_system_connect_to( ofaHub *self, GType type );
 static gboolean on_deletable_default_handler( ofaHub *hub, GObject *object );
 static void     dossier_do_close( ofaHub *hub );
 static gboolean check_db_vs_settings( ofaHub *hub );
@@ -498,17 +506,123 @@ icollector_get_interface_version( void )
 
 /**
  * ofa_hub_new:
+ * @getter: a #ofaIGetter instance which will be passed to dynamically
+ *  loaded plugins.
+ *
+ * Allocates and initializes the #ofaHub object of the application.
  *
  * Returns: a new #ofaHub object.
  */
 ofaHub *
-ofa_hub_new( void )
+ofa_hub_new( ofaIGetter *getter )
 {
 	ofaHub *hub;
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
 	hub = g_object_new( OFA_TYPE_HUB, NULL );
 
+	priv = ofa_hub_get_instance_private( hub );
+
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->extenders = ofa_extender_collection_new( priv->getter, PKGLIBDIR );
+
+	ofa_box_register_types();
+	hub_register_types( hub );
+	hub_init_signaling_system( hub );
+
 	return( hub );
+}
+
+/*
+ * ofa_hub_register_types:
+ * @hub: this #ofaHub instance.
+ *
+ * Registers all #ofoBase derived types provided by the core library
+ * (aka "core types") so that @hub will be able to dynamically request
+ * them on demand.
+ *
+ * This method, plus #ofa_hub_get_for_type() below, are for example
+ * used to get a dynamic list of importable or exportable types, and
+ * more generally to be able to get a dynamic list of any known (and
+ * registered) type.
+ *
+ * Plugins-provided types (aka "plugin types") do not need to register
+ * here. It is enough they implement the desired interface to be
+ * dynamically requested on demand.
+ */
+static void
+hub_register_types( ofaHub *self )
+{
+	ofaHubPrivate *priv;
+
+	priv = ofa_hub_get_instance_private( self );
+
+	/* this is also the order of IExportable/IImportable classes in the
+	 * assistants: do not change this order */
+	priv->core_objects = NULL;
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CLASS, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_PAIMEAN, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_RATE, NULL ));
+	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
+}
+
+/*
+ * ofa_hub_init_signaling_system:
+ * @hub: this #ofaHub instance.
+ *
+ * Initialize the hub signaling system.
+ *
+ * Be sure object class handlers are connected to the dossier signaling
+ * system, as they may be needed before the class has the opportunity
+ * to initialize itself.
+ *
+ * Example of a use case: the intermediate closing by ledger may be run
+ * without having first loaded the accounts, but the accounts should be
+ * connected in order to update themselves.
+ *
+ * This method must be called after having registered core types.
+ */
+static void
+hub_init_signaling_system( ofaHub *self )
+{
+	GList *list, *it;
+
+	list = ofa_hub_get_for_type( self, OFA_TYPE_ISIGNAL_HUB );
+
+	for( it=list ; it ; it=it->next ){
+		init_signaling_system_connect_to( self, G_OBJECT_TYPE( it->data ));
+	}
+
+	g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
+}
+
+static void
+init_signaling_system_connect_to( ofaHub *self, GType type )
+{
+	gpointer klass, iface;
+
+	klass = g_type_class_ref( type );
+	g_return_if_fail( klass );
+
+	iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNAL_HUB );
+
+	if( iface && (( ofaISignalHubInterface * ) iface )->connect ){
+		(( ofaISignalHubInterface * ) iface )->connect( self );
+	} else {
+		g_info( "%s implementation does not provide 'ofaISignalHub::connect()' method",
+				g_type_name( type ));
+	}
+
+	g_type_class_unref( klass );
 }
 
 /**
@@ -535,27 +649,6 @@ ofa_hub_get_extender_collection( ofaHub *hub )
 }
 
 /**
- * ofa_hub_set_extender_collection:
- * @hub: this #ofaHub instance.
- * @collection: the extender collection.
- *
- * Set the extender collection.
- */
-void
-ofa_hub_set_extender_collection( ofaHub *hub, ofaExtenderCollection *collection )
-{
-	ofaHubPrivate *priv;
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->extenders = collection;
-}
-
-/**
  * ofa_hub_get_collector:
  * @hub: this #ofaHub instance.
  *
@@ -567,66 +660,6 @@ ofa_hub_get_collector( const ofaHub *hub )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	return( MY_ICOLLECTOR( hub ));
-}
-
-/**
- * ofa_hub_init_signaling_system:
- * @hub: this #ofaHub instance.
- *
- * Initialize the hub signaling system.
- *
- * Be sure object class handlers are connected to the dossier signaling
- * system, as they may be needed before the class has the opportunity
- * to initialize itself.
- *
- * Example of a use case: the intermediate closing by ledger may be run
- * without having first loaded the accounts, but the accounts should be
- * connected in order to update themselves.
- *
- * This method must be called after having registered core types.
- */
-void
-ofa_hub_init_signaling_system( ofaHub *hub )
-{
-	static const gchar *thisfn = "ofa_hub_init_signaling_system";
-	ofaHubPrivate *priv;
-	GList *list, *it;
-
-	g_debug( "%s: hub=%p", thisfn, ( void * ) hub );
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	list = ofa_hub_get_for_type( hub, OFA_TYPE_ISIGNAL_HUB );
-
-	for( it=list ; it ; it=it->next ){
-		connect_signaling_system_to( hub, G_OBJECT_TYPE( it->data ));
-	}
-
-	g_list_free_full( list, ( GDestroyNotify ) g_object_unref );
-}
-
-static void
-connect_signaling_system_to( ofaHub *hub, GType type )
-{
-	gpointer klass, iface;
-
-	klass = g_type_class_ref( type );
-	g_return_if_fail( klass );
-
-	iface = g_type_interface_peek( klass, OFA_TYPE_ISIGNAL_HUB );
-
-	if( iface && (( ofaISignalHubInterface * ) iface )->connect ){
-		(( ofaISignalHubInterface * ) iface )->connect( hub );
-	} else {
-		g_info( "%s implementation does not provide 'ofaISignalHub::connect()' method",
-				g_type_name( type ));
-	}
-
-	g_type_class_unref( klass );
 }
 
 /*
@@ -655,50 +688,6 @@ on_deletable_default_handler( ofaHub *hub, GObject *object )
 			thisfn, ( void * ) hub, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	return( TRUE );
-}
-
-/**
- * ofa_hub_register_types:
- * @hub: this #ofaHub instance.
- *
- * Registers all #ofoBase derived types provided by the core library
- * (aka "core types") so that @hub will be able to dynamically request
- * them on demand.
- *
- * This method, plus #ofa_hub_get_for_type() below, are for example
- * used to get a dynamic list of importable or exportable types, and
- * more generally to be able to get a dynamic list of any known (and
- * registered) type.
- *
- * Plugins-provided types (aka "plugin types") do not need to register
- * here. It is enough they implement the desired interface to be
- * dynamically requested on demand.
- */
-void
-ofa_hub_register_types( ofaHub *hub )
-{
-	ofaHubPrivate *priv;
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	/* this is also the order of IExportable/IImportable classes:
-	 * do not change */
-	priv->core_objects = NULL;
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_DOSSIER, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CLASS, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CURRENCY, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ACCOUNT, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_CONCIL, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_ENTRY, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_LEDGER, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_PAIMEAN, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_OPE_TEMPLATE, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_RATE, NULL ));
-	priv->core_objects = g_list_prepend( priv->core_objects, g_object_new( OFO_TYPE_BAT, NULL ));
 }
 
 /**

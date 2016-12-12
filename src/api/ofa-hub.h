@@ -53,6 +53,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofa-iimportable.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-dossier-def.h"
@@ -99,18 +100,11 @@ typedef struct {
 
 GType                  ofa_hub_get_type                  ( void ) G_GNUC_CONST;
 
-ofaHub                *ofa_hub_new                       ( void );
+ofaHub                *ofa_hub_new                       ( ofaIGetter *getter );
 
 ofaExtenderCollection *ofa_hub_get_extender_collection   ( ofaHub *hub );
 
-void                   ofa_hub_set_extender_collection   ( ofaHub *hub,
-																ofaExtenderCollection *collection );
-
 myICollector          *ofa_hub_get_collector             ( const ofaHub *hub );
-
-void                   ofa_hub_init_signaling_system     ( ofaHub *hub );
-
-void                   ofa_hub_register_types            ( ofaHub *hub );
 
 GList                 *ofa_hub_get_for_type              ( ofaHub *hub,
 																GType type );
