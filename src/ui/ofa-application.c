@@ -501,16 +501,16 @@ ofa_application_run_with_args( ofaApplication *application, int argc, GStrv argv
 	static const gchar *thisfn = "ofa_application_run_with_args";
 	ofaApplicationPrivate *priv;
 
+	g_debug( "%s: application=%p (%s), argc=%d",
+			thisfn,
+			( void * ) application, G_OBJECT_TYPE_NAME( application ),
+			argc );
+
 	g_return_val_if_fail( OFA_IS_APPLICATION( application ), OFA_EXIT_CODE_PROGRAM );
 
 	priv = ofa_application_get_instance_private( application );
 
 	g_return_val_if_fail( !priv->dispose_has_run, OFA_EXIT_CODE_PROGRAM );
-
-	g_debug( "%s: application=%p (%s), argc=%d",
-			thisfn,
-			( void * ) application, G_OBJECT_TYPE_NAME( application ),
-			argc );
 
 	priv->argc = argc;
 	priv->argv = g_strdupv( argv );
@@ -596,7 +596,7 @@ init_gtk_args( ofaApplication *application )
 				&priv->argc,
 				( char *** ) &priv->argv );
 		if( !ret ){
-			g_warning( "%s", _( "Erreur à l'interprétation des arguments en ligne de commande" ));
+			g_warning( "%s", _( "Error while parsing command-line arguments" ));
 			priv->code = OFA_EXIT_CODE_ARGS;
 		}
 	}
@@ -604,6 +604,10 @@ init_gtk_args( ofaApplication *application )
 	return( ret );
 }
 
+/*
+ * Returns: %TRUE to continue, %FALSE to stop the run and exit the
+ * application.
+ */
 static gboolean
 manage_options( ofaApplication *application )
 {
@@ -642,22 +646,22 @@ manage_options( ofaApplication *application )
 	} else {
 		/* if dossier name is not specified */
 		if( st_dossier_begin_opt ){
-			g_warning( "%s: invalid begin date (%s) while dossier name is not specified",
+			g_warning( "%s: invalid begin date '%s' while dossier name is not specified",
 					thisfn, st_dossier_begin_opt );
 			ret = FALSE;
 		}
 		if( st_dossier_end_opt ){
-			g_warning( "%s: invalid end date (%s) while dossier name is not specified",
+			g_warning( "%s: invalid end date '%s' while dossier name is not specified",
 					thisfn, st_dossier_end_opt );
 			ret = FALSE;
 		}
 		if( st_dossier_user_opt ){
-			g_warning( "%s: invalid account (%s) while dossier name is not specified",
+			g_warning( "%s: invalid account '%s' while dossier name is not specified",
 					thisfn, st_dossier_user_opt );
 			ret = FALSE;
 		}
 		if( st_dossier_passwd_opt ){
-			g_warning( "%s: invalid password (%s) while dossier name is not specified",
+			g_warning( "%s: invalid password '%s' while dossier name is not specified",
 					thisfn, st_dossier_begin_opt );
 			ret = FALSE;
 		}
@@ -673,7 +677,7 @@ manage_options( ofaApplication *application )
  *
  * When your application starts, the startup signal will be fired. This
  * gives you a chance to perform initialisation tasks that are not
- * collectionectly related to showing a new window. After this, depending on
+ * directly related to showing a new window. After this, depending on
  * how the application is started, either activate or open will be called
  * next.
  *
@@ -882,7 +886,7 @@ application_open( GApplication *application, GFile **files, gint n_files, const 
 {
 	static const gchar *thisfn = "ofa_application_open";
 
-	g_warning( "%s: application=%p, n_files=%d, hint=%s: unexpected run here",
+	g_info( "%s: application=%p, n_files=%d, hint=%s: unexpected run here",
 			thisfn, ( void * ) application, n_files, hint );
 }
 
@@ -924,7 +928,7 @@ maintainer_test_function( void )
 static void
 on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application )
 {
-	static const gchar *thisfn = "ofa_application_on_filed_collection_changed";
+	static const gchar *thisfn = "ofa_application_on_dossier_collection_changed";
 
 	g_debug( "%s: collection=%p, count=%u, application=%p",
 			thisfn, ( void * ) collection, count, ( void * ) application );
