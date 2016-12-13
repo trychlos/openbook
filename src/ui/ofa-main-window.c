@@ -403,7 +403,6 @@ main_window_constructed( GObject *instance )
 	GError *error;
 	GtkBuilder *builder;
 	GMenuModel *menu;
-	myISettings *settings;
 
 	g_return_if_fail( instance && OFA_IS_MAIN_WINDOW( instance ));
 
@@ -474,9 +473,6 @@ main_window_constructed( GObject *instance )
 		/*gtk_container_set_resize_mode( GTK_CONTAINER( priv->grid ), GTK_RESIZE_QUEUE );*/
 		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
 		gtk_container_add( GTK_CONTAINER( instance ), GTK_WIDGET( priv->grid ));
-
-		settings = ofa_hub_get_user_settings( ofa_igetter_get_hub( OFA_IGETTER( instance )));
-		my_utils_window_position_restore( GTK_WINDOW( instance), settings, st_main_window_name );
 
 		/* connect some signals
 		 */
@@ -559,6 +555,7 @@ ofa_main_window_new( ofaApplication *application )
 	ofaMainWindow *window;
 	ofaMainWindowPrivate *priv;
 	ofaHub *hub;
+	myISettings *settings;
 
 	g_return_val_if_fail( application && OFA_IS_APPLICATION( application ), NULL );
 
@@ -566,21 +563,28 @@ ofa_main_window_new( ofaApplication *application )
 
 	/* 'application' is a GtkWindow property
 	 *  because it is not defined as a construction property, it is only
-	 *  available after g_object_new() has returned */
+	 *  available after g_object_new() has returned
+	 */
 	window = g_object_new( OFA_TYPE_MAIN_WINDOW, "application", application, NULL );
-
 	priv = ofa_main_window_get_instance_private( window );
+
+	/* restore window geometry
+	 * (here because application is not yet set in constructed()
+	 */
+	hub = ofa_igetter_get_hub( OFA_IGETTER( window ));
+	settings = ofa_hub_get_user_settings( hub );
+	my_utils_window_position_restore( GTK_WINDOW( window ), settings, st_main_window_name );
 
 	/* connect to the ofaHub signals
 	 */
-	hub = ofa_igetter_get_hub( OFA_IGETTER( window ));
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_OPENED, G_CALLBACK( hub_on_dossier_opened ), window );
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CLOSED, G_CALLBACK( hub_on_dossier_closed ), window );
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_CHANGED, G_CALLBACK( hub_on_dossier_changed ), window );
 	g_signal_connect( hub, SIGNAL_HUB_DOSSIER_PREVIEW, G_CALLBACK( hub_on_dossier_preview ), window );
 
 	/* let the plugins update these menu map/model
-	 * (here because application is not yet set in constructed() */
+	 * (here because application is not yet set in constructed()
+	 */
 	g_signal_emit_by_name(( gpointer ) application, "menu-available", window, "win" );
 
 	/* let the plugins update the managed themes */

@@ -394,7 +394,9 @@
                 so that this may be managed by the application instead of
                 by the dbms plugin
 
-1279
+1279 2016-12-13 igetter_get_theme_manager() -> igetter_get_page_manager()
+
+1280
 
 -----------------------------------------------------------------------
  DONE
