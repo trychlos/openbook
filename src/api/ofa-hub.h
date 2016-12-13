@@ -47,6 +47,7 @@
  */
 
 #include "my/my-icollector.h"
+#include "my/my-isettings.h"
 
 #include "api/ofa-dossier-collection.h"
 #include "api/ofa-dossier-prefs.h"
@@ -113,6 +114,10 @@ ofaDossierCollection  *ofa_hub_get_dossier_collection    ( ofaHub *hub );
 
 void                   ofa_hub_set_dossier_collection    ( ofaHub *hub,
 																ofaDossierCollection *collection );
+
+myISettings           *ofa_hub_get_dossier_settings      ( ofaHub *hub );
+
+myISettings           *ofa_hub_get_user_settings         ( ofaHub *hub );
 
 const ofaIDBConnect   *ofa_hub_get_connect               ( ofaHub *hub );
 

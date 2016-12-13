@@ -30,6 +30,8 @@
 
 #include "my/my-date.h"
 #include "my/my-icollector.h"
+#include "my/my-isettings.h"
+#include "my/my-settings.h"
 #include "my/my-signal.h"
 #include "my/my-utils.h"
 
@@ -67,6 +69,8 @@ typedef struct {
 	ofaExtenderCollection *extenders;
 	ofaDossierCollection  *dossier_collection;
 	GList                 *core_objects;
+	mySettings            *dossier_settings;
+	mySettings            *user_settings;
 
 	/* dossier
 	 */
@@ -102,9 +106,10 @@ static guint    icollector_get_interface_version( void );
 static void     hub_register_types( ofaHub *self );
 static void     hub_init_signaling_system( ofaHub *self );
 static void     init_signaling_system_connect_to( ofaHub *self, GType type );
-static gboolean on_deletable_default_handler( ofaHub *hub, GObject *object );
-static void     dossier_do_close( ofaHub *hub );
-static gboolean check_db_vs_settings( ofaHub *hub );
+static void     hub_setup_settings( ofaHub *self );
+static gboolean on_deletable_default_handler( ofaHub *self, GObject *object );
+static void     dossier_do_close( ofaHub *self );
+static gboolean check_db_vs_settings( ofaHub *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaHub, ofa_hub, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaHub )
@@ -143,6 +148,9 @@ hub_dispose( GObject *instance )
 
 		g_clear_object( &priv->extenders );
 		g_clear_object( &priv->dossier_collection );
+		g_clear_object( &priv->dossier_settings );
+		g_clear_object( &priv->user_settings );
+
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
 
 		dossier_do_close( OFA_HUB( instance ));
@@ -531,6 +539,7 @@ ofa_hub_new( ofaIGetter *getter )
 	ofa_box_register_types();
 	hub_register_types( hub );
 	hub_init_signaling_system( hub );
+	hub_setup_settings( hub );
 
 	return( hub );
 }
@@ -625,6 +634,21 @@ init_signaling_system_connect_to( ofaHub *self, GType type )
 	g_type_class_unref( klass );
 }
 
+static void
+hub_setup_settings( ofaHub *self )
+{
+	ofaHubPrivate *priv;
+	gchar *name;
+
+	priv = ofa_hub_get_instance_private( self );
+
+	priv->dossier_settings = my_settings_new_user_config( "dossier.conf", "OFA_DOSSIER_CONF" );
+
+	name = g_strdup_printf( "%s.conf", PACKAGE );
+	priv->user_settings = my_settings_new_user_config( name, "OFA_USER_CONF" );
+	g_free( name );
+}
+
 /**
  * ofa_hub_get_extender_collection:
  * @hub: this #ofaHub instance.
@@ -680,12 +704,12 @@ ofa_hub_get_collector( const ofaHub *hub )
  * supposed to be deletable.
  */
 static gboolean
-on_deletable_default_handler( ofaHub *hub, GObject *object )
+on_deletable_default_handler( ofaHub *self, GObject *object )
 {
 	static const gchar *thisfn = "ofa_hub_on_deletable_default_handler";
 
-	g_debug( "%s: hub=%p, object=%p (%s)",
-			thisfn, ( void * ) hub, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
+	g_debug( "%s: self=%p, object=%p (%s)",
+			thisfn, ( void * ) self, ( void * ) object, G_OBJECT_TYPE_NAME( object ));
 
 	return( TRUE );
 }
@@ -774,6 +798,52 @@ ofa_hub_set_dossier_collection( ofaHub *hub, ofaDossierCollection *collection )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->dossier_collection = collection;
+}
+
+/*
+ * ofa_hub_get_dossier_settings:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #myISettings instance which manages the dossier settings.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+myISettings *
+ofa_hub_get_dossier_settings( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( MY_ISETTINGS( priv->dossier_settings ));
+}
+
+/*
+ * ofa_hub_get_user_settings:
+ * @hub: this #ofaHub instance.
+ *
+ * Returns: the #myISettings instance which manages the user settings.
+ *
+ * The returned reference is owned by the @hub object, and should
+ * not be released by the caller.
+ */
+myISettings *
+ofa_hub_get_user_settings( ofaHub *hub )
+{
+	ofaHubPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	priv = ofa_hub_get_instance_private( hub );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( MY_ISETTINGS( priv->user_settings ));
 }
 
 /*
@@ -902,17 +972,17 @@ ofa_hub_dossier_close( ofaHub *hub )
 }
 
 static void
-dossier_do_close( ofaHub *hub )
+dossier_do_close( ofaHub *self )
 {
 	ofaHubPrivate *priv;
 
-	priv = ofa_hub_get_instance_private( hub );
+	priv = ofa_hub_get_instance_private( self );
 
 	g_clear_object( &priv->connect );
 	g_clear_object( &priv->dossier );
 	g_clear_object( &priv->dossier_prefs );
 
-	my_icollector_free_all( ofa_hub_get_collector( hub ));
+	my_icollector_free_all( ofa_hub_get_collector( self ));
 }
 
 /**
@@ -1000,7 +1070,7 @@ ofa_hub_dossier_remediate_settings( ofaHub *hub )
  * user.
  */
 static gboolean
-check_db_vs_settings( ofaHub *hub )
+check_db_vs_settings( ofaHub *self )
 {
 	static const gchar *thisfn = "ofa_hub_check_db_vs_settings";
 	ofoDossier *dossier;
@@ -1012,8 +1082,8 @@ check_db_vs_settings( ofaHub *hub )
 	gchar *sdbbegin, *sdbend, *ssetbegin, *ssetend;
 
 	remediated = FALSE;
-	dossier = ofa_hub_get_dossier( hub );
-	cnx = ofa_hub_get_connect( hub );
+	dossier = ofa_hub_get_dossier( self );
+	cnx = ofa_hub_get_connect( self );
 
 	/* data from db */
 	db_current = ofo_dossier_is_current( dossier );
