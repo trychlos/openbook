@@ -699,8 +699,6 @@ application_startup( GApplication *application )
 	/* instanciates and initializes the #ofaHub object of the application */
 	priv->hub = ofa_hub_new( OFA_IGETTER( application ));
 
-	my_iaction_map_register( MY_IACTION_MAP( application ), "app" );
-
 	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
 	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
 
@@ -712,6 +710,8 @@ application_startup( GApplication *application )
 			G_ACTION_MAP( appli ),
 	        st_app_entries, G_N_ELEMENTS( st_app_entries ),
 	        ( gpointer ) appli );
+
+	my_iaction_map_register( MY_IACTION_MAP( application ), "app" );
 
 	/* define a traditional menubar
 	 * the program will abort if GtkBuilder is not able to be parsed
