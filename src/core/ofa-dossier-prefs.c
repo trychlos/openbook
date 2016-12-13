@@ -26,11 +26,12 @@
 #include <config.h>
 #endif
 
+#include "my/my-isettings.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-dossier-prefs.h"
 #include "api/ofa-hub.h"
-#include "api/ofa-settings.h"
+#include "api/ofa-idbdossier-meta.h"
 
 /* private instance data
  */
@@ -386,6 +387,8 @@ ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
 	ofaDossierPrefsPrivate *priv;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *meta;
+	gchar *group;
+	myISettings *settings;
 
 	g_return_if_fail( prefs && OFA_IS_DOSSIER_PREFS( prefs ));
 
@@ -398,9 +401,12 @@ ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
 
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_dossier_meta( connect );
+	settings = ofa_hub_get_dossier_settings( priv->hub );
+	group = ofa_idbdossier_meta_get_group_name( meta );
 
-	ofa_settings_dossier_set_string( meta, st_background_img, priv->background_uri );
+	my_isettings_set_string( settings, group, st_background_img, priv->background_uri );
 
+	g_free( group );
 	g_object_unref( meta );
 }
 
@@ -411,17 +417,21 @@ static void
 get_dossier_settings( ofaDossierPrefs *self )
 {
 	ofaDossierPrefsPrivate *priv;
+	myISettings *settings;
 	GList *list, *it;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *meta;
 	const gchar *cstr;
-	gchar *str;
+	gchar *group, *str;
 
 	priv = ofa_dossier_prefs_get_instance_private( self );
 
+	settings = ofa_hub_get_dossier_settings( priv->hub );
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_dossier_meta( connect );
-	list = ofa_settings_dossier_get_string_list( meta, st_prefs_settings );
+	group = ofa_idbdossier_meta_get_group_name( meta );
+
+	list = my_isettings_get_string_list( settings, group, st_prefs_settings );
 
 	it = list ? list : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -443,27 +453,31 @@ get_dossier_settings( ofaDossierPrefs *self )
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	priv->integrity = my_strlen( cstr ) ? my_utils_boolean_from_str( cstr ) : FALSE;
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( settings, list );
 
-	str = ofa_settings_dossier_get_string( meta, st_background_img );
+	str = my_isettings_get_string( settings, group, st_background_img );
 	g_free( priv->background_uri );
 	priv->background_uri = str;
 
 	g_object_unref( meta );
+	g_free( group );
 }
 
 static void
 set_dossier_settings( ofaDossierPrefs *self )
 {
 	ofaDossierPrefsPrivate *priv;
+	myISettings *settings;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *meta;
-	gchar *str;
+	gchar *group, *str;
 
 	priv = ofa_dossier_prefs_get_instance_private( self );
 
+	settings = ofa_hub_get_dossier_settings( priv->hub );
 	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_dossier_meta( connect );
+	group = ofa_idbdossier_meta_get_group_name( meta );
 
 	str = g_strdup_printf( "%s;%s;%s;%s;%s;",
 			priv->notes ? "True":"False",
@@ -472,8 +486,9 @@ set_dossier_settings( ofaDossierPrefs *self )
 			priv->balances ? "True":"False",
 			priv->integrity ? "True":"False" );
 
-	ofa_settings_dossier_set_string( meta, st_prefs_settings, str );
+	my_isettings_set_string( settings, group, st_prefs_settings, str );
 
 	g_free( str );
 	g_object_unref( meta );
+	g_free( group );
 }

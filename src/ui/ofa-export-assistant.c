@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "my/my-iassistant.h"
+#include "my/my-isettings.h"
 #include "my/my-iwindow.h"
 #include "my/my-progress-bar.h"
 #include "my/my-style.h"
@@ -375,6 +376,9 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 	ofaExportAssistantPrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
+	ofaHub *hub;
+	myISettings *dossier_settings;
+	gchar *group;
 
 	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
 
@@ -388,7 +392,13 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	my_isettings_free_string_list( settings, slist );
 
-	priv->p3_furi = ofa_settings_dossier_get_string( priv->meta, st_export_folder );
+	hub = ofa_igetter_get_hub( priv->getter );
+	dossier_settings = ofa_hub_get_dossier_settings( hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+
+	priv->p3_furi = my_isettings_get_string( dossier_settings, group, st_export_folder );
+
+	g_free( group );
 }
 
 static void
@@ -396,7 +406,8 @@ set_settings( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
 	myISettings *settings;
-	gchar *keyname, *str;
+	gchar *keyname, *str, *group;
+	ofaHub *hub;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
@@ -411,9 +422,15 @@ set_settings( ofaExportAssistant *self )
 	g_free( str );
 	g_free( keyname );
 
+	hub = ofa_igetter_get_hub( priv->getter );
+	settings = ofa_hub_get_dossier_settings( hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+
 	if( my_strlen( priv->p3_last_folder )){
-		ofa_settings_dossier_set_string( priv->meta, st_export_folder, priv->p3_last_folder );
+		my_isettings_set_string( settings, group, st_export_folder, priv->p3_last_folder );
 	}
+
+	g_free( group );
 }
 
 /*

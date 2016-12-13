@@ -70,6 +70,7 @@
    - ofaApplication: move initialization from instantiation to startup (todo #1272).
    - ofaExerciceTreeview: new class.
    - ofaHub: initialize from ofa_hub_new() (todo #1273).
+   - ofaHub: manage both dossier and user settings.
    - ofaIDBMeta interface is renamed to ofaIDBDossierMeta (todo #1274).
    - ofaIDBPeriod interface is renamed to ofaIDBExerciceMeta (todo #1275).
    - ofaMiscAuditStore: new class.
@@ -77,6 +78,7 @@
    - ofaMySQLMeta class is renamed to ofaMysqlDossierMeta (todo #1277).
    - ofaMySQLPeriod class is renamed to ofaMysqlExerciceMeta (todo #1278).
    - ofaPortfolioCollection class is renamed to ofaDossierCollection (todo #1264).
+   - ofaSettings: deprecate all ofa_settings_dossier_xxx() methods.
    - ofaTargetChooserBin: new class.
    - ofaTVBin: new ofa-tvbin-vexpand property.
 

@@ -31,6 +31,7 @@
 #include <stdlib.h>
 
 #include "my/my-date.h"
+#include "my/my-isettings.h"
 #include "my/my-utils.h"
 
 #include "api/ofa-hub.h"
@@ -185,7 +186,7 @@ static void
 init_dialog( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	gchar *last_folder, *def_name;
+	gchar *group, *last_folder, *def_name;
 	myISettings *settings;
 
 	priv = ofa_backup_get_instance_private( self );
@@ -213,11 +214,14 @@ init_dialog( ofaBackup *self )
 	gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->dialog ), def_name );
 	g_free( def_name );
 
-	last_folder = ofa_settings_dossier_get_string( priv->meta, st_backup_folder );
+	settings = ofa_hub_get_dossier_settings( priv->hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	last_folder = my_isettings_get_string( settings, group, st_backup_folder );
 	if( my_strlen( last_folder )){
 		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->dialog ), last_folder );
 	}
 	g_free( last_folder );
+	g_free( group );
 }
 
 static gchar *
@@ -255,8 +259,9 @@ static gboolean
 do_backup( ofaBackup *self )
 {
 	ofaBackupPrivate *priv;
-	gchar *folder, *uri;
+	gchar *group, *folder, *uri;
 	gboolean ok;
+	myISettings *settings;
 
 	priv = ofa_backup_get_instance_private( self );
 
@@ -267,10 +272,13 @@ do_backup( ofaBackup *self )
 	uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->dialog ));
 	folder = g_path_get_dirname( uri );
 
-	ofa_settings_dossier_set_string( priv->meta, st_backup_folder, folder );
+	settings = ofa_hub_get_dossier_settings( priv->hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+	my_isettings_set_string( settings, group, st_backup_folder, folder );
 
 	ok = ofa_idbconnect_backup( priv->connect, uri );
 
+	g_free( group );
 	g_free( folder );
 	g_free( uri );
 

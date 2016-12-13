@@ -50,11 +50,9 @@ G_BEGIN_DECLS
 /**
  * ofaSettingsTarget:
  * @SETTINGS_TARGET_USER: target the user preferences settings file.
- * @SETTINGS_TARGET_DOSSIER: target the dossier settings file.
  */
 typedef enum {
 	SETTINGS_TARGET_USER = 1,
-	SETTINGS_TARGET_DOSSIER
 }
 	ofaSettingsTarget;
 
@@ -143,22 +141,6 @@ void         ofa_settings_set_string_list            ( ofaSettingsTarget target,
 
 #define      ofa_settings_user_get_string_list(K)    ofa_settings_get_string_list(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K))
 #define      ofa_settings_user_set_string_list(K,V)  ofa_settings_set_string_list(SETTINGS_TARGET_USER,SETTINGS_GROUP_GENERAL,(K),(V))
-
-/* dossiers configuration management
- */
-gchar       *ofa_settings_dossier_get_string         ( const ofaIDBDossierMeta *meta,
-															const gchar *key );
-
-void         ofa_settings_dossier_set_string         ( const ofaIDBDossierMeta *meta,
-															const gchar *key,
-															const gchar *value );
-
-GList       *ofa_settings_dossier_get_string_list    ( const ofaIDBDossierMeta *meta,
-															const gchar *key );
-
-void         ofa_settings_dossier_set_string_list    ( const ofaIDBDossierMeta *meta,
-															const gchar *key,
-															const GList *list );
 
 G_END_DECLS
 

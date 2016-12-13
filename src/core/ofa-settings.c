@@ -33,7 +33,6 @@
 #include "api/ofa-settings.h"
 
 static mySettings *st_user_settings     = NULL;
-static mySettings *st_dossier_settings  = NULL;
 
 static void        load_key_file( mySettings **settings, ofaSettingsTarget target );
 static mySettings *get_settings_from_target( ofaSettingsTarget target );
@@ -52,7 +51,6 @@ ofa_settings_new( void )
 
 	if( !called ){
 		load_key_file( &st_user_settings, SETTINGS_TARGET_USER );
-		load_key_file( &st_dossier_settings, SETTINGS_TARGET_DOSSIER );
 		called = TRUE;
 	}
 }
@@ -68,10 +66,6 @@ load_key_file( mySettings **settings, ofaSettingsTarget target )
 			*settings = my_settings_new_user_config( name, "OFA_USER_CONF" );
 			g_free( name );
 			break;
-
-		case SETTINGS_TARGET_DOSSIER:
-			*settings = my_settings_new_user_config( "dossier.conf", "OFA_DOSSIER_CONF" );
-			break;
 	}
 }
 
@@ -84,7 +78,6 @@ void
 ofa_settings_free( void )
 {
 	g_clear_object( &st_user_settings );
-	g_clear_object( &st_dossier_settings );
 }
 
 /**
@@ -298,117 +291,6 @@ ofa_settings_set_string_list( ofaSettingsTarget target, const gchar *group, cons
 	g_return_if_reached();
 }
 
-/**
- * ofa_settings_dossier_get_string:
- * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
- * @key: the searched key
- *
- * Returns the key string for the dossier, as a newly allocated string
- * which should be g_free() by the caller.
- *
- * But for the "Provider" key that is directly implemented by the
- * ofaIDbms interface, all other keys are supposed to be used only by
- * the DBMS providers.
- */
-gchar *
-ofa_settings_dossier_get_string( const ofaIDBDossierMeta *meta, const gchar *key )
-{
-	mySettings *settings;
-	gchar *group, *value;
-
-	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
-	if( settings ){
-		g_return_val_if_fail( MY_IS_SETTINGS( settings ), NULL );
-		group = ofa_idbdossier_meta_get_group_name( meta );
-		value = my_isettings_get_string( MY_ISETTINGS( settings ), group, key );
-		g_free( group );
-		return( value );
-	}
-
-	g_return_val_if_reached( NULL );
-}
-
-/**
- * ofa_settings_dossier_set_string:
- * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
- * @key: the searched key
- * @value: the value to be set
- *
- * Set the value for the key in the dossier group.
- */
-void
-ofa_settings_dossier_set_string( const ofaIDBDossierMeta *meta, const gchar *key, const gchar *value )
-{
-	mySettings *settings;
-	gchar *group;
-
-	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
-	if( settings ){
-		g_return_if_fail( MY_IS_SETTINGS( settings ));
-		group = ofa_idbdossier_meta_get_group_name( meta );
-		my_isettings_set_string( MY_ISETTINGS( settings ), group, key, value );
-		g_free( group );
-		return;
-	}
-
-	g_return_if_reached();
-}
-
-/**
- * ofa_settings_dossier_get_string_list:
- * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
- * @key: the searched key
- *
- * Returns the key string list for the dossier.
- *
- * The returned list should be #ofa_settings_free_string_list()
- * by the caller.
- */
-GList *
-ofa_settings_dossier_get_string_list( const ofaIDBDossierMeta *meta, const gchar *key )
-{
-	mySettings *settings;
-	gchar *group;
-	GList *value;
-
-	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
-	if( settings ){
-		g_return_val_if_fail( MY_IS_SETTINGS( settings ), NULL );
-		group = ofa_idbdossier_meta_get_group_name( meta );
-		value = my_isettings_get_string_list( MY_ISETTINGS( settings ), group, key );
-		g_free( group );
-		return( value );
-	}
-
-	g_return_val_if_reached( NULL );
-}
-
-/**
- * ofa_settings_dossier_set_string_list:
- * @meta: the #ofaIDBDossierMeta meta informations about the dossier.
- * @key: the searched key
- * @value: the value to be set
- *
- * Set the value for the key in the dossier group.
- */
-void
-ofa_settings_dossier_set_string_list( const ofaIDBDossierMeta *meta, const gchar *key, const GList *value )
-{
-	mySettings *settings;
-	gchar *group;
-
-	settings = get_settings_from_target( SETTINGS_TARGET_DOSSIER );
-	if( settings ){
-		g_return_if_fail( MY_IS_SETTINGS( settings ));
-		group = ofa_idbdossier_meta_get_group_name( meta );
-		my_isettings_set_string_list( MY_ISETTINGS( settings ), group, key, value );
-		g_free( group );
-		return;
-	}
-
-	g_return_if_reached();
-}
-
 static mySettings *
 get_settings_from_target( ofaSettingsTarget target )
 {
@@ -417,9 +299,6 @@ get_settings_from_target( ofaSettingsTarget target )
 	switch( target ){
 		case SETTINGS_TARGET_USER:
 			return( st_user_settings );
-
-		case SETTINGS_TARGET_DOSSIER:
-			return( st_dossier_settings );
 	}
 
 	g_warning( "%s: unknown target: %d", thisfn, target );
