@@ -738,10 +738,9 @@ application_startup( GApplication *application )
 
 	/* dossiers collection monitoring
 	 */
-	collection = ofa_dossier_collection_new( priv->hub );
+	collection = ofa_hub_get_dossier_collection( priv->hub );
 	g_signal_connect( collection, "changed", G_CALLBACK( on_dossier_collection_changed ), application );
 	on_dossier_collection_changed( collection, ofa_dossier_collection_get_count( collection ), appli );
-	ofa_hub_set_dossier_collection( priv->hub, collection );
 
 	/* takes the ownership on the dossier store so that we are sure
 	 * it will be available during the run */

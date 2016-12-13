@@ -541,6 +541,8 @@ ofa_hub_new( ofaIGetter *getter )
 	hub_init_signaling_system( hub );
 	hub_setup_settings( hub );
 
+	priv->dossier_collection = ofa_dossier_collection_new( hub );
+
 	return( hub );
 }
 
@@ -777,27 +779,6 @@ ofa_hub_get_dossier_collection( ofaHub *hub )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	return( priv->dossier_collection );
-}
-
-/**
- * ofa_hub_set_dossier_collection:
- * @hub: this #ofaHub instance.
- * @collection: the #ofaDossierCollection collection.
- *
- * Set the dossiers collection.
- */
-void
-ofa_hub_set_dossier_collection( ofaHub *hub, ofaDossierCollection *collection )
-{
-	ofaHubPrivate *priv;
-
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv = ofa_hub_get_instance_private( hub );
-
-	g_return_if_fail( !priv->dispose_has_run );
-
-	priv->dossier_collection = collection;
 }
 
 /*

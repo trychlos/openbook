@@ -48,7 +48,7 @@ typedef struct {
 
 	/* runtime data
 	 */
-	myISettings   *settings;
+	myISettings   *dossier_settings;
 	myFileMonitor *monitor;
 	GList         *list;
 	gboolean       ignore_next;
@@ -108,7 +108,6 @@ dossier_collection_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->settings );
 		g_clear_object( &priv->monitor );
 		dossier_collection_free_list( OFA_DOSSIER_COLLECTION( instance ));
 	}
@@ -198,9 +197,9 @@ setup_settings( ofaDossierCollection *self )
 
 	priv = ofa_dossier_collection_get_instance_private( self );
 
-	priv->settings = g_object_ref( ofa_settings_get_settings( SETTINGS_TARGET_DOSSIER ));
+	priv->dossier_settings = ofa_hub_get_dossier_settings( priv->hub );
 
-	filename = my_isettings_get_filename( priv->settings );
+	filename = my_isettings_get_filename( priv->dossier_settings );
 	priv->monitor = my_file_monitor_new( filename );
 	g_free( filename );
 
@@ -278,7 +277,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 
 	outlist = NULL;
 	prefix_len = my_strlen( DOSSIER_COLLECTION_DOSSIER_GROUP_PREFIX );
-	inlist = my_isettings_get_groups( priv->settings );
+	inlist = my_isettings_get_groups( priv->dossier_settings );
 
 	for( it=inlist ; it ; it=it->next ){
 		cstr = ( const gchar * ) it->data;
@@ -297,7 +296,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 					thisfn, dos_name, ( void * ) meta );
 			g_object_ref( meta );
 		} else {
-			prov_name = my_isettings_get_string( priv->settings, cstr, DOSSIER_COLLECTION_PROVIDER_KEY );
+			prov_name = my_isettings_get_string( priv->dossier_settings, cstr, DOSSIER_COLLECTION_PROVIDER_KEY );
 			if( !my_strlen( prov_name )){
 				g_info( "%s: found empty DBMS provider name in group '%s', skipping", thisfn, cstr );
 				g_free( dos_name );
@@ -311,7 +310,7 @@ load_dossiers( ofaDossierCollection *self, GList *prev_list )
 			}
 			g_free( prov_name );
 		}
-		ofa_idbdossier_meta_set_from_settings( meta, MY_ISETTINGS( priv->settings ), cstr );
+		ofa_idbdossier_meta_set_from_settings( meta, MY_ISETTINGS( priv->dossier_settings ), cstr );
 		ofa_idbdossier_meta_dump_full( meta );
 		outlist = g_list_prepend( outlist, meta );
 		g_free( dos_name );
@@ -408,9 +407,9 @@ ofa_dossier_collection_set_meta_from_editor( ofaDossierCollection *collection, o
 	prov_instance = ofa_idbeditor_get_provider( editor );
 	prov_name = ofa_idbprovider_get_canon_name( prov_instance );
 
-	my_isettings_set_string( priv->settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
+	my_isettings_set_string( priv->dossier_settings, group, DOSSIER_COLLECTION_PROVIDER_KEY, prov_name );
 
-	ofa_idbdossier_meta_set_from_editor( meta, editor, MY_ISETTINGS( priv->settings ), group );
+	ofa_idbdossier_meta_set_from_editor( meta, editor, MY_ISETTINGS( priv->dossier_settings ), group );
 
 	g_free( prov_name );
 	g_object_unref( prov_instance );

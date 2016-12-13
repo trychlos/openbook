@@ -112,9 +112,6 @@ GList                 *ofa_hub_get_for_type              ( ofaHub *hub,
 
 ofaDossierCollection  *ofa_hub_get_dossier_collection    ( ofaHub *hub );
 
-void                   ofa_hub_set_dossier_collection    ( ofaHub *hub,
-																ofaDossierCollection *collection );
-
 myISettings           *ofa_hub_get_dossier_settings      ( ofaHub *hub );
 
 myISettings           *ofa_hub_get_user_settings         ( ofaHub *hub );
