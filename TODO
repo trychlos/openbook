@@ -396,7 +396,13 @@
 
 1279 2016-12-13 igetter_get_theme_manager() -> igetter_get_page_manager()
 
-1280
+1280 2016-12-13 recurrent operations open the page with all rows selected
+                (this to show to the user that multiple selection is enabled)
+                unselecting models as soon as operation is treated
+
+1281 2016-12-13 recurrent: idem for waiting operations
+
+1282
 
 -----------------------------------------------------------------------
  DONE

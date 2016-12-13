@@ -618,10 +618,10 @@ ledger_update_row( ofaGuidedEx *self, ofoLedger *ledger, const gchar *prev_id )
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gboolean found;
-	const gchar *cstr;
+	const gchar *ledger_id;
 
-	cstr = prev_id ? prev_id : ofo_ledger_get_mnemo( ledger );
-	found = ledger_find_by_mnemo( self, cstr, &tmodel, &iter );
+	ledger_id = prev_id ? prev_id : ofo_ledger_get_mnemo( ledger );
+	found = ledger_find_by_mnemo( self, ledger_id, &tmodel, &iter );
 	if( found ){
 		gtk_tree_store_set(
 				GTK_TREE_STORE( tmodel ),
@@ -770,8 +770,10 @@ model_update_row( ofaGuidedEx *self, ofoOpeTemplate *model, const gchar *prev_id
 	GtkTreeModel *tmodel;
 	GtkTreeIter iter;
 	gboolean found;
+	const gchar *model_id;
 
-	found = model_find_by_mnemo( self, prev_id, &tmodel, &iter );
+	model_id = my_strlen( prev_id ) ? prev_id : ofo_ope_template_get_mnemo( model );
+	found = model_find_by_mnemo( self, model_id, &tmodel, &iter );
 
 	if( found ){
 		gtk_tree_store_remove( GTK_TREE_STORE( tmodel ), &iter );
