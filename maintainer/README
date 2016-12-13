@@ -7,6 +7,7 @@
    development rules
    dbms
    run
+   environment variables
 
 -----------------------------------------------------------------------
  maintainer/
@@ -83,4 +84,14 @@
  for f in $(find src -type f | grep -E 'c$|h$|ui$|am$'); do c=$(wc -l $f | awk '{ print $1 }'); let total+=$c; done; echo $total
 
 -----------------------------------------------------------------------
- P. Wieser - Last updated on 2015, apr. 23rd.
+ environment variables
+ =====================
+
+ OFA_USER_CONF     pathname of the user settings file
+                   defaults to ~/.config/openbook/openbook.conf
+
+ OFA_DOSSIER_CONF  pathname of the dossier settings file
+                   defaults to ~/.config/openbook/dossier.conf
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2016, dec. 12th.
