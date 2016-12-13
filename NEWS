@@ -58,6 +58,7 @@
    - ofaAccountProperties: fix error message when identifier is empty (todo #1256).
    - ofaCheckBalancesBin: does not increment account balances when amounts are nul (todo #1259).
    - ofaGuidedEx: fix operation template update.
+   - ofaImporterPdf[Bourso,LCL]: read all lines pieces before merging them at once.
    - ofaMiscAuditUI: display DBMS audit trace (todo #1252).
    - ofaOpeTemplateProperties: does not double the rows count on Cancel (todo #1250).
    - ofaRecPeriodProperties: does not unref spin adjustment.

@@ -421,17 +421,20 @@ bourso_pdf_v1_parse( ofaImporterPdfBourso *self, const sParser *parser, ofsImpor
 	//my_utils_dump_gslist_str( output );
 
 	/* then get the lines from bat
+	 * all line pieces are read from all pages before trying to merge
+	 * the segments
 	 */
+	lines1 = NULL;
 	for( page_num=0 ; page_num < pages_count ; ++page_num ){
 		rc_list = ofa_importer_pdf_get_layout(
 						OFA_IMPORTER_PDF( self ), doc, page_num, ofa_stream_format_get_charmap( parms->format ));
-		lines1 = bourso_pdf_v1_parse_lines_rough( self, parser, parms, page_num, rc_list );
+		lines1 = g_list_concat( lines1, bourso_pdf_v1_parse_lines_rough( self, parser, parms, page_num, rc_list ));
 		ofa_importer_pdf_free_layout( rc_list );
-		lines2 = bourso_pdf_v1_parse_lines_merge( self, parser, parms, lines1 );
-		g_list_free_full( lines1, ( GDestroyNotify ) free_line );
-		output = g_slist_concat( output, bourso_pdf_v1_parse_lines_build( self, parser, parms, lines2 ));
-		g_list_free_full( lines2, ( GDestroyNotify ) free_line );
 	}
+	lines2 = bourso_pdf_v1_parse_lines_merge( self, parser, parms, lines1 );
+	g_list_free_full( lines1, ( GDestroyNotify ) free_line );
+	output = g_slist_concat( output, bourso_pdf_v1_parse_lines_build( self, parser, parms, lines2 ));
+	g_list_free_full( lines2, ( GDestroyNotify ) free_line );
 
 	g_object_unref( doc );
 
