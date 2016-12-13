@@ -267,7 +267,7 @@ ofa_preferences_run( ofaIGetter *getter, GtkWindow *parent, ofaExtenderModule *p
 
 	self = g_object_new( OFA_TYPE_PREFERENCES, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_preferences_get_instance_private( self );
 
@@ -655,6 +655,7 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance
 	ofaPreferencesPrivate *priv;
 	GtkWidget *page, *wlabel;
 	gchar *label;
+	ofaHub *hub;
 	myISettings *settings;
 	gboolean ok;
 
@@ -662,9 +663,10 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance
 			thisfn, ( void * ) self, ( void * ) msgerr, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
 	priv = ofa_preferences_get_instance_private( self );
-	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
 
 	ok = FALSE;
+	hub = ofa_igetter_get_hub( priv->getter );
+	settings = ofa_hub_get_user_settings( hub );
 	page = ofa_iproperties_init( instance, settings );
 	label = ofa_iproperties_get_title( instance );
 

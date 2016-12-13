@@ -349,7 +349,7 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 	if( need_update ){
 		window = g_object_new( OFA_TYPE_DBMODEL_WINDOW, NULL );
 		my_iwindow_set_parent( MY_IWINDOW( window ), parent );
-		my_iwindow_set_settings( MY_IWINDOW( window ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+		my_iwindow_set_settings( MY_IWINDOW( window ), ofa_hub_get_user_settings( hub ));
 
 		priv = ofa_dbmodel_window_get_instance_private( window );
 

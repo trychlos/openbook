@@ -175,7 +175,7 @@ paimean_select_new( ofaIGetter *getter, GtkWindow *parent )
 	if( !dialog ){
 		dialog = g_object_new( OFA_TYPE_PAIMEAN_SELECT, NULL );
 		my_iwindow_set_parent( MY_IWINDOW( dialog ), parent );
-		my_iwindow_set_settings( MY_IWINDOW( dialog ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+		my_iwindow_set_settings( MY_IWINDOW( dialog ), ofa_hub_get_user_settings( hub ));
 
 		/* setup a permanent getter before initialization */
 		priv = ofa_paimean_select_get_instance_private( dialog );

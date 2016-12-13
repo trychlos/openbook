@@ -335,7 +335,7 @@ my_iwindow_set_settings( myIWindow *instance, myISettings *settings )
  *
  * It is by no way mandatory for the application to use this key name,
  * nor this same settings implementation, to store the user preferences.
- * This is just the default proposed by the #myIWindow interface, and
+ * This is just a default proposed by the #myIWindow interface, and
  * used by #read_settings() and #write_settings() method.
  */
 gchar *

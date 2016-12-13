@@ -176,7 +176,7 @@ ofa_misc_collector_ui_run( ofaIGetter *getter )
 
 	parent = ofa_igetter_get_main_window( getter );
 	my_iwindow_set_parent( MY_IWINDOW( self ), GTK_WINDOW( parent ));
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_misc_collector_ui_get_instance_private( self );
 

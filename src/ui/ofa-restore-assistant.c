@@ -364,7 +364,7 @@ ofa_restore_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 
 	self = g_object_new( OFA_TYPE_RESTORE_ASSISTANT, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
@@ -405,9 +405,13 @@ iwindow_init( myIWindow *instance )
 static void
 iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
 {
+	static const gchar *thisfn = "ofa_restore_assistant_iwindow_read_settings";
 	ofaRestoreAssistantPrivate *priv;
 	GList *list, *it;
 	const gchar *cstr;
+
+	g_debug( "%s: instance=%p, settings=%p, keyname=%s",
+			thisfn, ( void * ) instance, ( void * ) settings, keyname );
 
 	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
 

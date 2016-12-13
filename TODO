@@ -379,6 +379,7 @@
 
 1266 2016-11-28 openbook: have two objects derived from mySettings class
      2016-12- 6 + registering them in ofaHub
+     2016-12-13 done for dossier settings
 
 1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
 

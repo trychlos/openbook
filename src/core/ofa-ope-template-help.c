@@ -30,8 +30,8 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 
 #include "core/ofa-ope-template-help.h"
 
@@ -159,7 +159,7 @@ ofa_ope_template_help_run( ofaIGetter *getter, GtkWindow *parent )
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_HELP, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	/* after this call, @self may be invalid */
 	shown = my_iwindow_present( MY_IWINDOW( self ));

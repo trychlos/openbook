@@ -33,6 +33,7 @@
 #include "my/my-iwindow.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
@@ -164,7 +165,7 @@ ofa_guided_input_run( ofaIGetter *getter, GtkWindow *parent, ofoOpeTemplate *mod
 
 	self = g_object_new( OFA_TYPE_GUIDED_INPUT, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_guided_input_get_instance_private( self );
 

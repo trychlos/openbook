@@ -33,12 +33,12 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-dbms-root-bin.h"
@@ -189,7 +189,7 @@ ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBDossi
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DELETE, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_delete_get_instance_private( self );
 

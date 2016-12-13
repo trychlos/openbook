@@ -243,7 +243,7 @@ ofa_entry_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoEntry *entry
 
 	self = g_object_new( OFA_TYPE_ENTRY_PROPERTIES, NULL );
 	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_entry_properties_get_instance_private( self );
 

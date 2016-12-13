@@ -366,7 +366,7 @@ main_window_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+		settings = ofa_hub_get_user_settings( ofa_igetter_get_hub( OFA_IGETTER( instance )));
 		my_utils_window_position_save( GTK_WINDOW( instance ), settings, st_main_window_name );
 		if( priv->pane ){
 			pane_save_position( priv->pane );
@@ -475,7 +475,7 @@ main_window_constructed( GObject *instance )
 		gtk_grid_set_row_homogeneous( priv->grid, FALSE );
 		gtk_container_add( GTK_CONTAINER( instance ), GTK_WIDGET( priv->grid ));
 
-		settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+		settings = ofa_hub_get_user_settings( ofa_igetter_get_hub( OFA_IGETTER( instance )));
 		my_utils_window_position_restore( GTK_WINDOW( instance), settings, st_main_window_name );
 
 		/* connect some signals
