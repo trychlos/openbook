@@ -41,6 +41,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_DOSSIER_DELETE_PREFS_BIN                ( ofa_dossier_delete_prefs_bin_get_type())
@@ -87,7 +89,7 @@ typedef enum {
 
 GType                     ofa_dossier_delete_prefs_bin_get_type        ( void ) G_GNUC_CONST;
 
-ofaDossierDeletePrefsBin *ofa_dossier_delete_prefs_bin_new             ( void );
+ofaDossierDeletePrefsBin *ofa_dossier_delete_prefs_bin_new             ( ofaHub *hub );
 
 gint                      ofa_dossier_delete_prefs_bin_get_db_mode     ( ofaDossierDeletePrefsBin *bin );
 
@@ -99,7 +101,7 @@ gboolean                  ofa_dossier_delete_prefs_bin_get_account_mode( ofaDoss
 void                      ofa_dossier_delete_prefs_bin_set_account_mode( ofaDossierDeletePrefsBin *bin,
 																				gboolean drop_account );
 
-void                      ofa_dossier_delete_prefs_bin_set_settings    ( ofaDossierDeletePrefsBin *bin );
+void                      ofa_dossier_delete_prefs_bin_apply           ( ofaDossierDeletePrefsBin *bin );
 
 G_END_DECLS
 

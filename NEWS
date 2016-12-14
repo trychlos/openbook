@@ -70,6 +70,7 @@
  Other changes:
 
    - ofaApplication: move initialization from instantiation to startup (todo #1272).
+   - ofaDossierDeletePrefsBin: get rid of ofaSettings usage.
    - ofaExerciceTreeview: new class.
    - ofaHub: initialize from ofa_hub_new() (todo #1273).
    - ofaHub: manage both dossier and user settings.

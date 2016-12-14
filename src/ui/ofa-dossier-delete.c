@@ -297,7 +297,7 @@ idialog_init( myIDialog *instance )
 	g_signal_connect( priv->credentials, "ofa-changed", G_CALLBACK( on_credentials_changed ), instance );
 
 	/* preferences */
-	priv->prefs = ofa_dossier_delete_prefs_bin_new();
+	priv->prefs = ofa_dossier_delete_prefs_bin_new( priv->hub );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "prefs-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->prefs ));

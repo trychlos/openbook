@@ -84,6 +84,11 @@ typedef struct {
 	ofaHubClass;
 
 /**
+ * The group name for user preferences.
+ */
+#define HUB_USER_SETTINGS_GROUP         "General"
+
+/**
  * Signals defined here:
  */
 #define SIGNAL_HUB_NEW                  "hub-object-new"

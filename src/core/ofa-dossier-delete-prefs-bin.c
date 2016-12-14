@@ -28,9 +28,10 @@
 
 #include <stdlib.h>
 
+#include "my/my-isettings.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-settings.h"
+#include "api/ofa-hub.h"
 
 #include "ofa-dossier-delete-prefs-bin.h"
 
@@ -38,6 +39,10 @@
  */
 typedef struct {
 	gboolean   dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub    *hub;
 
 	/* data
 	 */
@@ -65,11 +70,12 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-dossi
 
 static const gchar *st_delete_prefs     = "DossierDeletePrefs";
 
-static void setup_bin( ofaDossierDeletePrefsBin *bin );
-static void on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
-static void on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin );
-static void changed_composite( ofaDossierDeletePrefsBin *bin );
-static void setup_settings( ofaDossierDeletePrefsBin *bin );
+static void setup_bin( ofaDossierDeletePrefsBin *self );
+static void on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *self );
+static void on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *self );
+static void changed_composite( ofaDossierDeletePrefsBin *self );
+static void read_settings( ofaDossierDeletePrefsBin *self );
+static void write_settings( ofaDossierDeletePrefsBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierDeletePrefsBin, ofa_dossier_delete_prefs_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDossierDeletePrefsBin ))
@@ -163,29 +169,39 @@ ofa_dossier_delete_prefs_bin_class_init( ofaDossierDeletePrefsBinClass *klass )
 
 /**
  * ofa_dossier_delete_prefs_bin_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaDossierDeletePrefsBin object.
  */
 ofaDossierDeletePrefsBin *
-ofa_dossier_delete_prefs_bin_new( void )
+ofa_dossier_delete_prefs_bin_new( ofaHub *hub )
 {
 	ofaDossierDeletePrefsBin *bin;
+	ofaDossierDeletePrefsBinPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	bin = g_object_new( OFA_TYPE_DOSSIER_DELETE_PREFS_BIN, NULL );
 
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+
+	priv->hub = hub;
+
 	setup_bin( bin );
-	setup_settings( bin );
+	read_settings( bin );
 
 	return( bin );
 }
 
 static void
-setup_bin( ofaDossierDeletePrefsBin *bin )
+setup_bin( ofaDossierDeletePrefsBin *self )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *radio, *check, *frame;
 
-	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -193,25 +209,25 @@ setup_bin( ofaDossierDeletePrefsBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
-	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-db-drop" );
+	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-db-drop" );
 	g_return_if_fail( radio && GTK_IS_RADIO_BUTTON( radio ));
-	g_signal_connect( G_OBJECT( radio ), "toggled", G_CALLBACK( on_db_mode_toggled ), bin );
+	g_signal_connect( G_OBJECT( radio ), "toggled", G_CALLBACK( on_db_mode_toggled ), self );
 	priv->p2_db_drop = radio;
 
-	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p2-db-leave" );
+	radio = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-db-leave" );
 	g_return_if_fail( radio && GTK_IS_RADIO_BUTTON( radio ));
-	g_signal_connect( G_OBJECT( radio ), "toggled", G_CALLBACK( on_db_mode_toggled ), bin );
+	g_signal_connect( G_OBJECT( radio ), "toggled", G_CALLBACK( on_db_mode_toggled ), self );
 	priv->p2_db_keep = radio;
 
-	check = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-account-drop" );
+	check = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-account-drop" );
 	g_return_if_fail( check && GTK_IS_CHECK_BUTTON( check ));
-	g_signal_connect( G_OBJECT( check ), "toggled", G_CALLBACK( on_account_toggled ), bin );
+	g_signal_connect( G_OBJECT( check ), "toggled", G_CALLBACK( on_account_toggled ), self );
 	priv->p3_account = check;
 
 	/* #303: unable to remove administrative accounts */
-	frame = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "frame-account-drop" );
+	frame = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "frame-account-drop" );
 	g_return_if_fail( frame && GTK_IS_FRAME( frame ));
 	gtk_widget_set_sensitive( frame, FALSE );
 
@@ -220,12 +236,12 @@ setup_bin( ofaDossierDeletePrefsBin *bin )
 }
 
 static void
-on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
+on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *self )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 	gboolean is_active;
 
-	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
 
 	is_active = gtk_toggle_button_get_active( btn );
 	priv->db_mode = 0;
@@ -239,29 +255,29 @@ on_db_mode_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
 		}
 	}
 
-	changed_composite( bin );
+	changed_composite( self );
 }
 
 static void
-on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *bin )
+on_account_toggled( GtkToggleButton *btn, ofaDossierDeletePrefsBin *self )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 
-	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
 
 	priv->account_mode = gtk_toggle_button_get_active( btn );
 
-	changed_composite( bin );
+	changed_composite( self );
 }
 
 static void
-changed_composite( ofaDossierDeletePrefsBin *bin )
+changed_composite( ofaDossierDeletePrefsBin *self )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
 
-	priv = ofa_dossier_delete_prefs_bin_get_instance_private( bin );
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
 
-	g_signal_emit_by_name( bin, "ofa-changed", priv->db_mode, priv->account_mode );
+	g_signal_emit_by_name( self, "ofa-changed", priv->db_mode, priv->account_mode );
 }
 
 /**
@@ -360,42 +376,16 @@ ofa_dossier_delete_prefs_bin_set_account_mode( ofaDossierDeletePrefsBin *bin, gb
 	on_account_toggled( GTK_TOGGLE_BUTTON( priv->p3_account ), bin );
 }
 
-/*
- * settings: dbmode;drop_account;
- */
-static void
-setup_settings( ofaDossierDeletePrefsBin *bin )
-{
-	GList *strlist, *it;
-	const gchar *cstr;
-	gint dbmode;
-	gboolean drop_account;
-
-	strlist = ofa_settings_user_get_string_list( st_delete_prefs );
-	it = strlist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		dbmode = atoi( cstr );
-		ofa_dossier_delete_prefs_bin_set_db_mode( bin, dbmode );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		drop_account = my_utils_boolean_from_str( cstr );
-		ofa_dossier_delete_prefs_bin_set_account_mode( bin, drop_account );
-	}
-}
-
 /**
- * ofa_dossier_delete_prefs_bin_set_settings:
- * @bin:
+ * ofa_dossier_delete_prefs_bin_apply:
+ * @bin: this #ofaDossierDeletePrefsBin instance.
+ *
+ * Write the preferences in user settings.
  */
 void
-ofa_dossier_delete_prefs_bin_set_settings( ofaDossierDeletePrefsBin *bin )
+ofa_dossier_delete_prefs_bin_apply( ofaDossierDeletePrefsBin *bin )
 {
 	ofaDossierDeletePrefsBinPrivate *priv;
-	gchar *str;
 
 	g_return_if_fail( bin && OFA_IS_DOSSIER_DELETE_PREFS_BIN( bin ));
 
@@ -403,7 +393,60 @@ ofa_dossier_delete_prefs_bin_set_settings( ofaDossierDeletePrefsBin *bin )
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	str = g_strdup_printf( "%d;%s;", priv->db_mode, priv->account_mode ? "True":"False" );
-	ofa_settings_user_set_string( st_delete_prefs, str );
+	write_settings( bin );
+}
+
+/*
+ * settings: dbmode(i); drop_account(b);
+ */
+static void
+read_settings( ofaDossierDeletePrefsBin *self )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gint dbmode;
+	gboolean drop_account;
+
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_delete_prefs );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		dbmode = atoi( cstr );
+		ofa_dossier_delete_prefs_bin_set_db_mode( self, dbmode );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		drop_account = my_utils_boolean_from_str( cstr );
+		ofa_dossier_delete_prefs_bin_set_account_mode( self, drop_account );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+}
+
+static void
+write_settings( ofaDossierDeletePrefsBin *self )
+{
+	ofaDossierDeletePrefsBinPrivate *priv;
+	myISettings *settings;
+	gchar *str;
+
+	priv = ofa_dossier_delete_prefs_bin_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+
+	str = g_strdup_printf( "%d;%s;",
+			priv->db_mode,
+			priv->account_mode ? "True":"False" );
+
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_delete_prefs, str );
+
 	g_free( str );
 }

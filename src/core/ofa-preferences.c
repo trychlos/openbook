@@ -426,7 +426,7 @@ init_dossier_page( ofaPreferences *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "dossier-delete-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dd_prefs = ofa_dossier_delete_prefs_bin_new();
+	priv->dd_prefs = ofa_dossier_delete_prefs_bin_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->dd_prefs ));
 }
 
@@ -994,7 +994,7 @@ do_update_dossier_page( ofaPreferences *self, gchar **msgerr )
 	ofa_settings_user_set_boolean( st_dossier_open_balance, bals );
 	ofa_settings_user_set_boolean( st_dossier_open_integrity, integ );
 
-	ofa_dossier_delete_prefs_bin_set_settings( priv->dd_prefs );
+	ofa_dossier_delete_prefs_bin_apply( priv->dd_prefs );
 
 	return( TRUE );
 }
