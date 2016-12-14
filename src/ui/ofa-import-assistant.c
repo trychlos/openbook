@@ -96,7 +96,12 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	GtkWindow           *parent;
 	ofaIDBDossierMeta   *meta;
+
+	/* runtime
+	 */
+	ofaHub              *hub;
 
 	/* p0: introduction
 	 */
@@ -105,7 +110,7 @@ typedef struct {
 	 */
 	GtkFileChooser      *p1_chooser;
 	gchar               *p1_folder;
-	gchar               *p1_furi;			/* the utf-8 imported filename */
+	gchar               *p1_furi;				/* the utf-8 imported filename */
 	gchar               *p1_content;			/* guessed content */
 
 	/* p2: select a type of data to be imported
@@ -397,12 +402,11 @@ ofa_import_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_IMPORT_ASSISTANT, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -427,17 +431,22 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_import_assistant_iwindow_init";
 	ofaImportAssistantPrivate *priv;
-	ofaHub *hub;
 	const ofaIDBConnect *connect;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	connect = ofa_hub_get_connect( hub );
+	connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_dossier_meta( connect );
 }
 
@@ -452,7 +461,6 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 	GList *slist, *it;
 	const gchar *cstr;
 	myISettings *dossier_settings;
-	ofaHub *hub;
 	gchar *group;
 
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
@@ -482,8 +490,7 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	my_isettings_free_string_list( settings, slist );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	dossier_settings = ofa_hub_get_dossier_settings( hub );
+	dossier_settings = ofa_hub_get_dossier_settings( priv->hub );
 	group = ofa_idbdossier_meta_get_group_name( priv->meta );
 
 	priv->p1_folder = my_isettings_get_string( dossier_settings, group, st_import_folder );
@@ -519,14 +526,12 @@ static void
 set_dossier_settings( ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
-	ofaHub *hub;
 	myISettings *settings;
 	gchar *group;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	settings = ofa_hub_get_dossier_settings( hub );
+	settings = ofa_hub_get_dossier_settings( priv->hub );
 	group = ofa_idbdossier_meta_get_group_name( priv->meta );
 
 	if( my_strlen( priv->p1_folder )){
@@ -678,7 +683,6 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p2_do_init";
 	ofaImportAssistantPrivate *priv;
-	ofaHub *hub;
 	GList *it;
 	gchar *label;
 	GtkWidget *btn, *first;
@@ -698,8 +702,7 @@ p2_do_init( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	my_style_add( priv->p2_content, "labelinfo" );
 
 	/* expected data */
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->p2_importables = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTABLE );
+	priv->p2_importables = ofa_hub_get_for_type( priv->hub, OFA_TYPE_IIMPORTABLE );
 	g_debug( "%s: importables count=%d", thisfn, g_list_length( priv->p2_importables ));
 	priv->p2_col = 1;
 	priv->p2_row = 0;
@@ -893,7 +896,6 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_import_assistant_p3_do_display";
 	ofaImportAssistantPrivate *priv;
-	ofaHub *hub;
 	GList *it;
 	gchar *label, *version;
 	GtkTreeIter iter;
@@ -915,8 +917,7 @@ p3_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 		gtk_list_store_clear( priv->p3_import_store );
 	}
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->p3_importers = ofa_iimporter_find_willing_to( hub, priv->p1_furi, priv->p2_selected_type );
+	priv->p3_importers = ofa_iimporter_find_willing_to( priv->hub, priv->p1_furi, priv->p2_selected_type );
 	for( it=priv->p3_importers ; it ; it=it->next ){
 		label = ofa_iimporter_get_display_name( OFA_IIMPORTER( it->data ));
 		version = ofa_iimporter_get_version( OFA_IIMPORTER( it->data ));
@@ -1554,7 +1555,7 @@ p7_do_import( ofaImportAssistant *self )
 
 	memset( &parms, '\0', sizeof( parms ));
 	parms.version = 1;
-	parms.hub = ofa_igetter_get_hub( priv->getter );
+	parms.hub = priv->hub;
 	parms.empty = priv->p4_empty;
 	parms.mode = priv->p4_import_mode;
 	parms.stop = priv->p4_stop;

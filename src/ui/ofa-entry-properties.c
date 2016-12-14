@@ -41,7 +41,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -63,10 +62,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter     *getter;
+	GtkWindow      *parent;
 	ofoEntry       *entry;
 	gboolean        editable;
 
-	/* internals
+	/* runtime
 	 */
 	ofaHub         *hub;
 	gboolean        is_writable;		/* this are needed by macros, but not used in the code */
@@ -123,6 +123,7 @@ enum {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-entry-properties.ui";
 
 static void       iwindow_iface_init( myIWindowInterface *iface );
+static void       iwindow_init( myIWindow *instance );
 static void       idialog_iface_init( myIDialogInterface *iface );
 static void       idialog_init( myIDialog *instance );
 static void       setup_ui_properties( ofaEntryProperties *self );
@@ -242,12 +243,11 @@ ofa_entry_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoEntry *entry
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_ENTRY_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_entry_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->entry = entry;
 	priv->editable = editable;
 
@@ -264,6 +264,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_entry_properties_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_entry_properties_iwindow_init";
+	ofaEntryPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_entry_properties_get_instance_private( OFA_ENTRY_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -302,8 +322,6 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 	/* v 0.62 */
 	/*priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );*/
 	priv->is_writable = FALSE;

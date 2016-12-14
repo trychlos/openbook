@@ -63,13 +63,14 @@ typedef struct {
 
 	/* initialization
 	 */
-	ofaHub                  *hub;
 	ofaIGetter              *getter;
+	GtkWindow               *parent;
 	ofaRecurrentModelPage   *model_page;
-	gchar                   *settings_prefix;
 
-	/* internals
+	/* runtime
 	 */
+	gchar                   *settings_prefix;
+	ofaHub                  *hub;
 	GDate                    begin_date;
 	GDate                    end_date;
 	GList                   *dataset;
@@ -106,6 +107,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-generate.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static void     init_treeview( ofaRecurrentGenerate *self );
@@ -259,12 +261,10 @@ ofa_recurrent_generate_run( ofaIGetter *getter, GtkWindow *parent, ofaRecurrentM
 		self = g_object_new( OFA_TYPE_RECURRENT_GENERATE, NULL );
 		my_icollector_single_set_object( collector, self );
 
-		my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-		my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
-
 		priv = ofa_recurrent_generate_get_instance_private( self );
 
-		priv->getter = getter;
+		priv->getter = ofa_igetter_get_permanent_getter( getter );
+		priv->parent = parent;
 		priv->hub = hub;
 		priv->model_page = page;
 
@@ -282,6 +282,22 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_recurrent_generate_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_recurrent_generate_iwindow_init";
+	ofaRecurrentGeneratePrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

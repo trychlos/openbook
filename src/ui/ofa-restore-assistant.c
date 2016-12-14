@@ -91,7 +91,12 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter             *getter;
+	GtkWindow              *parent;
+
+	/* runtime
+	 */
 	gchar                  *settings_prefix;
+	ofaHub                 *hub;
 
 	/* p1: select file to be imported
 	 */
@@ -363,12 +368,11 @@ ofa_restore_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_RESTORE_ASSISTANT, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -393,8 +397,18 @@ static void
 iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_restore_assistant_iwindow_init";
+	ofaRestoreAssistantPrivate *priv;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 }
@@ -1258,7 +1272,7 @@ p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 		/* prevent the window manager to close this assistant */
 		priv->is_destroy_allowed = FALSE;
-		ofa_hub_dossier_close( ofa_igetter_get_hub( priv->getter ));
+		ofa_hub_dossier_close( priv->hub );
 		priv->is_destroy_allowed = TRUE;
 
 		g_idle_add(( GSourceFunc ) p6_do_restore, self );

@@ -46,7 +46,6 @@
 #include "api/ofa-iexe-close.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -75,10 +74,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter           *getter;
-	ofaHub               *hub;
+	GtkWindow            *parent;
 
-	/* dossier
+	/* runtime
 	 */
+	ofaHub               *hub;
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
 	ofaIDBDossierMeta    *meta;
@@ -344,12 +344,11 @@ ofa_exercice_close_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_EXERCICE_CLOSE_ASSISTANT, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -373,8 +372,18 @@ static void
 iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_exercice_close_assistant_iwindow_init";
+	ofaExerciceCloseAssistantPrivate *priv;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 }
@@ -425,9 +434,6 @@ p0_do_forward( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_w
 			thisfn, ( void * ) self, page_num, ( void * ) page_widget, G_OBJECT_TYPE_NAME( page_widget ));
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_dossier_meta( priv->connect );

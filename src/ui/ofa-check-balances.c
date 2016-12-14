@@ -32,7 +32,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 
 #include "ui/ofa-check-balances.h"
 #include "ui/ofa-check-balances-bin.h"
@@ -45,6 +44,11 @@ typedef struct {
 	/* initialization (when running with UI)
 	 */
 	ofaIGetter          *getter;
+	GtkWindow           *parent;
+
+	/* runtime
+	 */
+	ofaHub              *hub;
 
 	/* UI
 	 */
@@ -55,10 +59,11 @@ typedef struct {
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-check-balances.ui";
 
-static void  iwindow_iface_init( myIWindowInterface *iface );
-static void  idialog_iface_init( myIDialogInterface *iface );
-static void  idialog_init( myIDialog *instance );
-static void  on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self );
+static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
+static void idialog_iface_init( myIDialogInterface *iface );
+static void idialog_init( myIDialog *instance );
+static void on_checks_done( ofaCheckBalancesBin *bin, gboolean ok, ofaCheckBalances *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaCheckBalances, ofa_check_balances, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaCheckBalances )
@@ -149,12 +154,11 @@ ofa_check_balances_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_CHECK_BALANCES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_check_balances_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -169,6 +173,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_check_balances_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_check_balances_iwindow_init";
+	ofaCheckBalancesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_check_balances_get_instance_private( OFA_CHECK_BALANCES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -188,7 +212,6 @@ static void
 idialog_init( myIDialog *instance )
 {
 	ofaCheckBalancesPrivate *priv;
-	ofaHub *hub;
 	GtkWidget *parent;
 
 	priv = ofa_check_balances_get_instance_private( OFA_CHECK_BALANCES( instance ));
@@ -206,10 +229,7 @@ idialog_init( myIDialog *instance )
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	ofa_check_balances_bin_set_hub( priv->bin, hub );
+	ofa_check_balances_bin_set_hub( priv->bin, priv->hub );
 }
 
 static void

@@ -43,23 +43,27 @@
  * 3/ does not provide any other identifier than standard type name.
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
+	ofaIGetter *getter;
+	GtkWindow  *parent;
 
 	/* runtime
 	 */
-	GList   *parents;
+	ofaHub     *hub;
+	GList      *parents;
 }
 	ofaOpeTemplateHelpPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-ope-template-help.ui";
 
-static void     iwindow_iface_init( myIWindowInterface *iface );
-static void     idialog_iface_init( myIDialogInterface *iface );
-static void     add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent );
-static void     on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent );
+static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
+static void idialog_iface_init( myIDialogInterface *iface );
+static void add_parent( ofaOpeTemplateHelp *self, GtkWindow *parent );
+static void on_parent_finalized( ofaOpeTemplateHelp *self, GObject *finalized_parent );
 
 G_DEFINE_TYPE_EXTENDED( ofaOpeTemplateHelp, ofa_ope_template_help, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaOpeTemplateHelp )
@@ -152,18 +156,21 @@ void
 ofa_ope_template_help_run( ofaIGetter *getter, GtkWindow *parent )
 {
 	ofaOpeTemplateHelp *self;
+	ofaOpeTemplateHelpPrivate *priv;
 	myIWindow *shown;
 
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_OPE_TEMPLATE_HELP, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
+
+	priv = ofa_ope_template_help_get_instance_private( self );
+
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	shown = my_iwindow_present( MY_IWINDOW( self ));
-
 	add_parent( OFA_OPE_TEMPLATE_HELP( shown ), parent );
 }
 
@@ -176,6 +183,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_ope_template_help_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_ope_template_help_iwindow_init";
+	ofaOpeTemplateHelpPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_ope_template_help_get_instance_private( OFA_OPE_TEMPLATE_HELP( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

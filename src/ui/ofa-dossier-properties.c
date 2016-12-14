@@ -43,7 +43,6 @@
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -66,9 +65,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter         *getter;
+	GtkWindow          *parent;
 
 	/* runtime
 	 */
+	ofaHub             *hub;
 	ofoDossier         *dossier;
 	gboolean            is_new;
 	gboolean            is_writable;
@@ -113,7 +114,6 @@ typedef struct {
 	myProgressBar      *bar;
 	gulong              total;
 	gulong              count;
-	ofaHub             *hub;
 	GList              *hub_handlers;
 }
 	ofaDossierPropertiesPrivate;
@@ -124,37 +124,38 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-properties.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      init_properties_page( ofaDossierProperties *self );
-static void      init_forward_page( ofaDossierProperties *self );
-static void      init_exe_notes_page( ofaDossierProperties *self );
-static void      init_counters_page( ofaDossierProperties *self );
-static void      init_preferences_page( ofaDossierProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
-static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self );
-static void      on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierProperties *self );
-static void      on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
-static void      on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
-static void      on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
-static void      on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
-static void      on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self );
-static void      on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
-static void      background_image_on_file_set( GtkFileChooserButton *button, ofaDossierProperties *self );
-static void      background_image_on_clear_clicked( GtkButton *button, ofaDossierProperties *self );
-static void      background_image_on_preview_clicked( GtkButton *button, ofaDossierProperties *self );
-static void      check_for_enable_dlg( ofaDossierProperties *self );
-static gboolean  is_dialog_valid( ofaDossierProperties *self );
-static void      set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
-static void      on_cancel( GtkButton *button, ofaDossierProperties *self );
-static gboolean  do_update( ofaDossierProperties *self, gchar **msgerr );
-static gboolean  confirm_remediation( ofaDossierProperties *self, gint count );
-static void      display_progress_init( ofaDossierProperties *self );
-static void      display_progress_end( ofaDossierProperties *self );
-static void      hub_connect_to_signaling_system( ofaDossierProperties *self );
-static void      hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self );
-static void      hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     init_properties_page( ofaDossierProperties *self );
+static void     init_forward_page( ofaDossierProperties *self );
+static void     init_exe_notes_page( ofaDossierProperties *self );
+static void     init_counters_page( ofaDossierProperties *self );
+static void     init_preferences_page( ofaDossierProperties *self );
+static void     on_label_changed( GtkEntry *entry, ofaDossierProperties *self );
+static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaDossierProperties *self );
+static void     on_import_ledger_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaDossierProperties *self );
+static void     on_duree_changed( GtkEntry *entry, ofaDossierProperties *self );
+static void     on_begin_changed( GtkEditable *editable, ofaDossierProperties *self );
+static void     on_end_changed( GtkEditable *editable, ofaDossierProperties *self );
+static void     on_date_changed( ofaDossierProperties *self, GtkEditable *editable, GDate *date, gboolean *is_empty );
+static void     on_closing_parms_changed( ofaClosingParmsBin *bin, ofaDossierProperties *self );
+static void     on_notes_changed( GtkTextBuffer *buffer, ofaDossierProperties *self );
+static void     background_image_on_file_set( GtkFileChooserButton *button, ofaDossierProperties *self );
+static void     background_image_on_clear_clicked( GtkButton *button, ofaDossierProperties *self );
+static void     background_image_on_preview_clicked( GtkButton *button, ofaDossierProperties *self );
+static void     check_for_enable_dlg( ofaDossierProperties *self );
+static gboolean is_dialog_valid( ofaDossierProperties *self );
+static void     set_msgerr( ofaDossierProperties *self, const gchar *msg, const gchar *spec );
+static void     on_cancel( GtkButton *button, ofaDossierProperties *self );
+static gboolean do_update( ofaDossierProperties *self, gchar **msgerr );
+static gboolean confirm_remediation( ofaDossierProperties *self, gint count );
+static void     display_progress_init( ofaDossierProperties *self );
+static void     display_progress_end( ofaDossierProperties *self );
+static void     hub_connect_to_signaling_system( ofaDossierProperties *self );
+static void     hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, gulong count, ofaDossierProperties *self );
+static void     hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, ofaDossierProperties *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierProperties, ofa_dossier_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierProperties )
@@ -262,12 +263,11 @@ ofa_dossier_properties_run( ofaIGetter *getter, GtkWindow *parent )
 	g_debug( "%s: getter=%p, parent=%p", thisfn, ( void * ) getter, ( void * ) parent );
 
 	self = g_object_new( OFA_TYPE_DOSSIER_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -282,6 +282,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_properties_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_properties_iwindow_init";
+	ofaDossierPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dossier_properties_get_instance_private( OFA_DOSSIER_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

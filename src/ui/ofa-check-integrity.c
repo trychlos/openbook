@@ -45,6 +45,11 @@ typedef struct {
 	/* initialization (when running with UI)
 	 */
 	ofaIGetter           *getter;
+	GtkWindow            *parent;
+
+	/* runtime
+	 */
+	ofaHub               *hub;
 
 	/* UI
 	 */
@@ -55,10 +60,11 @@ typedef struct {
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-check-integrity.ui";
 
-static void   iwindow_iface_init( myIWindowInterface *iface );
-static void   idialog_iface_init( myIDialogInterface *iface );
-static void   idialog_init( myIDialog *instance );
-static void   on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self );
+static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
+static void idialog_iface_init( myIDialogInterface *iface );
+static void idialog_init( myIDialog *instance );
+static void on_checks_done( ofaCheckIntegrityBin *bin, gboolean ok, ofaCheckIntegrity *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaCheckIntegrity, ofa_check_integrity, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaCheckIntegrity )
@@ -150,12 +156,11 @@ ofa_check_integrity_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_CHECK_INTEGRITY, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_check_integrity_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -170,6 +175,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_check_integrity_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_check_integrity_iwindow_init";
+	ofaCheckIntegrityPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_check_integrity_get_instance_private( OFA_CHECK_INTEGRITY( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -189,7 +214,6 @@ static void
 idialog_init( myIDialog *instance )
 {
 	ofaCheckIntegrityPrivate *priv;
-	ofaHub *hub;
 	GtkWidget *parent;
 
 	priv = ofa_check_integrity_get_instance_private( OFA_CHECK_INTEGRITY( instance ));
@@ -208,10 +232,7 @@ idialog_init( myIDialog *instance )
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	ofa_check_integrity_bin_set_hub( priv->bin, hub );
+	ofa_check_integrity_bin_set_hub( priv->bin, priv->hub );
 }
 
 static void

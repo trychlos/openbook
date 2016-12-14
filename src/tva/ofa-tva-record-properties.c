@@ -42,7 +42,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -64,12 +63,14 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter   *getter;
+	GtkWindow    *parent;
 	ofoTVARecord *tva_record;
+
+	/* runtime
+	 */
+	ofaHub       *hub;
 	ofoTVAForm   *form;
 	ofaTVAStyle  *style_provider;
-
-	/* internals
-	 */
 	gboolean      is_writable;
 	gboolean      is_new;
 
@@ -88,7 +89,7 @@ typedef struct {
 	GtkWidget    *ok_btn;
 	GtkWidget    *msg_label;
 
-	/* runtime data
+	/* data
 	 */
 	GDate         init_end_date;
 	gchar        *mnemo;
@@ -132,6 +133,7 @@ static ofaFormulaEngine *st_engine      = NULL;
 static const gchar      *st_resource_ui = "/org/trychlos/openbook/tva/ofa-tva-record-properties.ui";
 
 static void             iwindow_iface_init( myIWindowInterface *iface );
+static void             iwindow_init( myIWindow *instance );
 static gchar           *iwindow_get_identifier( const myIWindow *instance );
 static void             idialog_iface_init( myIDialogInterface *iface );
 static void             idialog_init( myIDialog *instance );
@@ -271,12 +273,11 @@ ofa_tva_record_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoTVAReco
 			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) record );
 
 	self = g_object_new( OFA_TYPE_TVA_RECORD_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->tva_record = record;
 
 	/* after this call, @self may be invalid */
@@ -293,7 +294,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_tva_record_properties_iwindow_init";
+	ofaTVARecordPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_tva_record_properties_get_instance_private( OFA_TVA_RECORD_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -338,7 +358,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_tva_record_properties_idialog_init";
 	ofaTVARecordPropertiesPrivate *priv;
-	ofaHub *hub;
 	const gchar *cstr;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
@@ -361,11 +380,10 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->validate_btn && GTK_IS_BUTTON( priv->validate_btn ));
 	g_signal_connect( priv->validate_btn, "clicked", G_CALLBACK( on_validate_clicked ), instance );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->is_writable = ofa_hub_dossier_is_writable( hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
-	priv->style_provider = ofa_tva_style_new( hub );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub ) && !ofo_tva_record_get_is_validated( priv->tva_record );
+	priv->style_provider = ofa_tva_style_new( priv->hub );
 
-	priv->form = ofo_tva_form_get_by_mnemo( hub, ofo_tva_record_get_mnemo( priv->tva_record ));
+	priv->form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( priv->tva_record ));
 	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
 
 	my_date_set_from_date( &priv->init_end_date, ofo_tva_record_get_end( priv->tva_record ));
@@ -718,12 +736,10 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 	ofaTVARecordPropertiesPrivate *priv;
 	gboolean is_valid, is_computable, is_validable;
 	gchar *msgerr;
-	ofaHub *hub;
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	msgerr = NULL;
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	if( priv->is_writable ){
 
@@ -736,7 +752,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 		}
 
 		if( is_computable ){
-			if( ofo_tva_record_get_by_begin( hub, priv->mnemo, &priv->begin_date, &priv->end_date ) != NULL ){
+			if( ofo_tva_record_get_by_begin( priv->hub, priv->mnemo, &priv->begin_date, &priv->end_date ) != NULL ){
 				msgerr = g_strdup( _( "Begin date overlaps with an already defined declaration" ));
 				is_valid = FALSE;
 				is_computable = FALSE;
@@ -995,7 +1011,6 @@ eval_account( ofsFormulaHelper *helper )
 	gchar *res;
 	GList *it, *dataset;
 	const gchar *cbegin, *cend;
-	ofaHub *hub;
 	ofxAmount amount;
 	ofsAccountBalance  *sbal;
 
@@ -1011,10 +1026,8 @@ eval_account( ofsFormulaHelper *helper )
 	}
 	DEBUG( "%s: begin=%s, end=%s", thisfn, cbegin, cend );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-
 	dataset = ofo_entry_get_dataset_account_balance(
-					hub, cbegin, cend, &priv->begin_date, &priv->end_date );
+					priv->hub, cbegin, cend, &priv->begin_date, &priv->end_date );
 	amount = 0;
 	for( it=dataset ; it ; it=it->next ){
 		sbal = ( ofsAccountBalance * ) it->data;
@@ -1073,7 +1086,6 @@ eval_balance( ofsFormulaHelper *helper )
 	gchar *res;
 	GList *it, *dataset;
 	const gchar *cbegin, *cend, *acc_id;
-	ofaHub *hub;
 	ofxAmount amount;
 	ofoAccount *account;
 
@@ -1089,9 +1101,7 @@ eval_balance( ofsFormulaHelper *helper )
 	}
 	DEBUG( "%s: begin=%s, end=%s", thisfn, cbegin, cend );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-
-	dataset = ofo_account_get_dataset( hub );
+	dataset = ofo_account_get_dataset( priv->hub );
 	amount = 0;
 	for( it=dataset ; it ; it=it->next ){
 		account = OFO_ACCOUNT( it->data );
@@ -1214,7 +1224,6 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 	const gchar *cstr;
 	ofsOpe *ope;
 	ofsOpeDetail *detail;
-	ofaHub *hub;
 	ofoOpeTemplate *template;
 	gboolean done;
 	GList *entries, *it;
@@ -1224,8 +1233,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 
 	priv = ofa_tva_record_properties_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
+	dossier = ofa_hub_get_dossier( priv->hub );
 	*ope_count = 0;
 	*ent_count = 0;
 	count = ofo_tva_record_detail_get_count( priv->tva_record );
@@ -1236,7 +1244,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 			if( amount > 0 && my_strlen( cstr )){
 				g_debug( "%s: amount=%lf, template=%s", thisfn, amount, cstr );
 				done = FALSE;
-				template = ofo_ope_template_get_by_mnemo( hub, cstr );
+				template = ofo_ope_template_get_by_mnemo( priv->hub, cstr );
 				g_return_val_if_fail( template && OFO_IS_OPE_TEMPLATE( template ), FALSE );
 				/*
 				 * generate an operation when the amount is greater thant zero
@@ -1285,7 +1293,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 						for( it=entries ; it ; it=it->next ){
 							entry = OFO_ENTRY( it->data );
 							ofo_entry_set_ope_number( entry, ope_number );
-							ofo_entry_insert( entry, hub );
+							ofo_entry_insert( entry, priv->hub );
 							*ent_count += 1;
 						}
 						g_list_free_full( entries, ( GDestroyNotify ) g_object_unref );

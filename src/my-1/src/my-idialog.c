@@ -371,10 +371,13 @@ my_idialog_run( myIDialog *instance )
  * my_idialog_run_maybe_modal:
  * @instance: this #myIDialog instance.
  *
- * Run as a modal or non-modal dialog depending of the parent.
+ * Run as a modal or non-modal dialog depending of the parent:
+ * - if parent has not been defined, it is expected to be the main window
+ * - if parent is modal, run modal
+ * - else (not modal or not defined), run non modal.
  *
- * This method relies on #my_idialog_click_to_update() method being
- * called at initialization time.
+ * Running a non modal dialog requires that the #my_idialog_click_to_update()
+ * method be called at initialization time.
  */
 void
 my_idialog_run_maybe_modal( myIDialog *instance )
@@ -388,9 +391,9 @@ my_idialog_run_maybe_modal( myIDialog *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	parent = my_iwindow_get_parent( MY_IWINDOW( instance ));
-	g_return_if_fail( parent && GTK_IS_WINDOW( parent ));
+	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
-	if( gtk_window_get_modal( GTK_WINDOW( parent ))){
+	if( parent && gtk_window_get_modal( GTK_WINDOW( parent ))){
 		my_idialog_run( instance );
 
 	} else {

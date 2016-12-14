@@ -43,7 +43,6 @@ static GList   *st_live_list            = NULL;		/* list of IWindow instances */
  */
 typedef struct {
 	GtkWindow   *parent;				/* the set parent of the window */
-	GtkWindow   *computed_parent;		/* the computed parent */
 	myISettings *settings;
 	gboolean     does_restore_pos;
 	gboolean     does_restore_size;
@@ -210,22 +209,12 @@ GtkWindow *
 my_iwindow_get_parent( const myIWindow *instance )
 {
 	sIWindow *sdata;
-	GtkWindow *parent;
 
 	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
 
 	sdata = get_iwindow_data( instance );
 
-	parent = sdata->parent;
-
-	if( !parent ){
-		if( !sdata->computed_parent ){
-			sdata->computed_parent = ( GtkWindow * ) gtk_widget_get_toplevel( GTK_WIDGET( instance ));
-		}
-		parent = sdata->computed_parent;
-	}
-
-	return( parent );
+	return( sdata->parent );
 }
 
 /**
@@ -244,6 +233,7 @@ my_iwindow_set_parent( myIWindow *instance, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	sdata = get_iwindow_data( instance );
+
 	sdata->parent = parent;
 }
 
@@ -372,8 +362,8 @@ my_iwindow_init( myIWindow *instance )
 
 		g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-		iwindow_init_set_transient_for( instance, sdata );
 		iwindow_init_window( instance );
+		iwindow_init_set_transient_for( instance, sdata );
 		iwindow_init_read_settings( instance, sdata );
 
 		position_restore( instance, sdata );
@@ -393,6 +383,23 @@ my_iwindow_init( myIWindow *instance )
 }
 
 /*
+ * Let the implementation init its window
+ */
+static void
+iwindow_init_window( myIWindow *instance )
+{
+	static const gchar *thisfn = "my_iwindow_init_window";
+
+	if( MY_IWINDOW_GET_INTERFACE( instance )->init ){
+		MY_IWINDOW_GET_INTERFACE( instance )->init( instance );
+
+	} else {
+		g_info( "%s: myIWindow's %s implementation does not provide 'init()' method",
+				thisfn, G_OBJECT_TYPE_NAME( instance ));
+	}
+}
+
+/*
  * Set the new window transient regarding its parent.
  * If not explicitly set via #my_iwindow_set_parent() method, the parent
  * defaults to the main window.
@@ -408,23 +415,6 @@ iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata )
 
 	if( parent ){
 		gtk_window_set_transient_for( GTK_WINDOW( instance ), parent );
-	}
-}
-
-/*
- * Let the implementation init its window
- */
-static void
-iwindow_init_window( myIWindow *instance )
-{
-	static const gchar *thisfn = "my_iwindow_init_window";
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->init ){
-		MY_IWINDOW_GET_INTERFACE( instance )->init( instance );
-
-	} else {
-		g_info( "%s: myIWindow's %s implementation does not provide 'init()' method",
-				thisfn, G_OBJECT_TYPE_NAME( instance ));
 	}
 }
 

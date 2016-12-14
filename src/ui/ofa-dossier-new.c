@@ -60,6 +60,18 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter             *getter;
+	GtkWindow              *parent;
+
+	/* runtime
+	 */
+	ofaHub                 *hub;
+	gchar                  *dossier_name;
+	gchar                  *root_account;
+	gchar                  *root_password;
+	gchar                  *adm_account;
+	gchar                  *adm_password;
+	gboolean                b_open;
+	gboolean                b_properties;
 
 	/* UI
 	 */
@@ -69,16 +81,6 @@ typedef struct {
 	GtkWidget              *properties_toggle;
 	GtkWidget              *ok_btn;
 	GtkWidget              *msg_label;
-
-	/* runtime data
-	 */
-	gchar                  *dossier_name;
-	gchar                  *root_account;
-	gchar                  *root_password;
-	gchar                  *adm_account;
-	gchar                  *adm_password;
-	gboolean                b_open;
-	gboolean                b_properties;
 
 	/* settings
 	 */
@@ -92,21 +94,22 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-new.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNew *self );
-static void      on_root_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
-static void      on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
-static void      on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
-static void      on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
-static void      get_settings( ofaDossierNew *self );
-static void      update_settings( ofaDossierNew *self );
-static void      check_for_enable_dlg( ofaDossierNew *self );
-static gboolean  root_credentials_get_valid( ofaDossierNew *self, gchar **message );
-static gboolean  do_create( ofaDossierNew *self, gchar **msgerr );
-static gboolean  create_confirmed( const ofaDossierNew *self );
-static void      set_message( ofaDossierNew *self, const gchar *message );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNew *self );
+static void     on_root_credentials_changed( ofaDBMSRootBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void     on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
+static void     on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
+static void     on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
+static void     get_settings( ofaDossierNew *self );
+static void     update_settings( ofaDossierNew *self );
+static void     check_for_enable_dlg( ofaDossierNew *self );
+static gboolean root_credentials_get_valid( ofaDossierNew *self, gchar **message );
+static gboolean do_create( ofaDossierNew *self, gchar **msgerr );
+static gboolean create_confirmed( const ofaDossierNew *self );
+static void     set_message( ofaDossierNew *self, const gchar *message );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierNew, ofa_dossier_new, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierNew )
@@ -211,12 +214,11 @@ ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -231,6 +233,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_new_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_new_iwindow_init";
+	ofaDossierNewPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -492,7 +514,6 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	ofaIDBConnect *connect;
 	gchar *account, *password;
 	ofaIDBEditor *editor;
-	ofaHub *hub;
 	GtkApplicationWindow *main_window;
 
 	priv = ofa_dossier_new_get_instance_private( self );
@@ -557,11 +578,8 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	}
 
 	if( ok && priv->b_open ){
-		hub = ofa_igetter_get_hub( priv->getter );
-		g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-		if( ofa_hub_dossier_open( hub, connect, GTK_WINDOW( self ), TRUE, FALSE )){
-			ofa_hub_dossier_remediate_settings( hub );
+		if( ofa_hub_dossier_open( priv->hub, connect, GTK_WINDOW( self ), TRUE, FALSE )){
+			ofa_hub_dossier_remediate_settings( priv->hub );
 
 			if( priv->b_properties ){
 				main_window = ofa_igetter_get_main_window( priv->getter );

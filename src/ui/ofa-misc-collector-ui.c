@@ -35,7 +35,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 
 #include "ui/ofa-misc-collector-ui.h"
 
@@ -47,6 +46,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter *getter;
+	GtkWindow  *parent;
+
+	/* runtime
+	 */
+	ofaHub     *hub;
 
 	/* UI
 	 */
@@ -72,15 +76,16 @@ enum {
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-misc-collector-ui.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      collection_setup_treeview( ofaMiscCollectorUI *self );
-static gint      collection_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
-static void      collection_set_data( ofaMiscCollectorUI *self );
-static void      single_setup_treeview( ofaMiscCollectorUI *self );
-static gint      single_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
-static void      single_set_data( ofaMiscCollectorUI *self );
+static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
+static void idialog_iface_init( myIDialogInterface *iface );
+static void idialog_init( myIDialog *instance );
+static void collection_setup_treeview( ofaMiscCollectorUI *self );
+static gint collection_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
+static void collection_set_data( ofaMiscCollectorUI *self );
+static void single_setup_treeview( ofaMiscCollectorUI *self );
+static gint single_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gpointer user_data );
+static void single_set_data( ofaMiscCollectorUI *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaMiscCollectorUI, ofa_misc_collector_ui, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaMiscCollectorUI )
@@ -166,7 +171,6 @@ ofa_misc_collector_ui_run( ofaIGetter *getter )
 	static const gchar *thisfn = "ofa_misc_collector_ui_run";
 	ofaMiscCollectorUI *self;
 	ofaMiscCollectorUIPrivate *priv;
-	GtkApplicationWindow *parent;
 
 	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
@@ -174,13 +178,10 @@ ofa_misc_collector_ui_run( ofaIGetter *getter )
 
 	self = g_object_new( OFA_TYPE_MISC_COLLECTOR_UI, NULL );
 
-	parent = ofa_igetter_get_main_window( getter );
-	my_iwindow_set_parent( MY_IWINDOW( self ), GTK_WINDOW( parent ));
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
-
 	priv = ofa_misc_collector_ui_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = GTK_WINDOW( ofa_igetter_get_main_window( getter ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -195,6 +196,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_misc_collector_ui_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_misc_collector_ui_iwindow_init";
+	ofaMiscCollectorUIPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_misc_collector_ui_get_instance_private( OFA_MISC_COLLECTOR_UI( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -293,7 +314,6 @@ static void
 collection_set_data( ofaMiscCollectorUI *self )
 {
 	ofaMiscCollectorUIPrivate *priv;
-	ofaHub *hub;
 	myICollector *collector;
 	GList *list, *it;
 	GtkTreeModel *tmodel;
@@ -303,10 +323,7 @@ collection_set_data( ofaMiscCollectorUI *self )
 
 	priv = ofa_misc_collector_ui_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_hub_get_collector( priv->hub );
 	g_return_if_fail( collector && MY_IS_ICOLLECTOR( collector ));
 
 	list = my_icollector_collection_get_list( collector );
@@ -389,7 +406,6 @@ static void
 single_set_data( ofaMiscCollectorUI *self )
 {
 	ofaMiscCollectorUIPrivate *priv;
-	ofaHub *hub;
 	myICollector *collector;
 	GList *list, *it;
 	GtkTreeModel *tmodel;
@@ -398,10 +414,7 @@ single_set_data( ofaMiscCollectorUI *self )
 
 	priv = ofa_misc_collector_ui_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	collector = ofa_hub_get_collector( hub );
+	collector = ofa_hub_get_collector( priv->hub );
 	g_return_if_fail( collector && MY_IS_ICOLLECTOR( collector ));
 
 	list = my_icollector_single_get_list( collector );

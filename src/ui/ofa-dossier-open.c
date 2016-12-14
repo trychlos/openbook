@@ -41,7 +41,6 @@
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-open.h"
@@ -59,10 +58,12 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter            *getter;
-	gchar                 *settings_prefix;
+	GtkWindow             *parent;
 
-	/* data
+	/* runtime
 	 */
+	gchar                 *settings_prefix;
+	ofaHub                *hub;
 	ofaIDBDossierMeta     *dossier_meta;		/* the selected dossier */
 	ofaIDBExerciceMeta    *exercice_meta;		/* the selected exercice */
 	gchar                 *account;				/* user credentials */
@@ -84,22 +85,23 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-open.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group );
-static void      idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group );
-static void      idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group );
-static void      idialog_init_menu( ofaDossierOpen *self );
-static void      on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
-static void      on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
-static void      on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
-static void      check_for_enable_dlg( ofaDossierOpen *self );
-static gboolean  are_data_set( ofaDossierOpen *self, gchar **msg );
-static gboolean  idialog_quit_on_ok( myIDialog *instance );
-static gboolean  is_connection_valid( ofaDossierOpen *self, gchar **msg );
-static gboolean  do_open_dossier( ofaDossierOpen *self );
-static void      set_message( ofaDossierOpen *self, const gchar *msg );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group );
+static void     idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group );
+static void     idialog_init_credentials( ofaDossierOpen *self, GtkSizeGroup *group );
+static void     idialog_init_menu( ofaDossierOpen *self );
+static void     on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
+static void     on_exercice_changed( ofaExerciceCombo *combo, ofaIDBExerciceMeta *period, ofaDossierOpen *self );
+static void     on_user_credentials_changed( ofaUserCredentialsBin *credentials, const gchar *account, const gchar *password, ofaDossierOpen *self );
+static void     check_for_enable_dlg( ofaDossierOpen *self );
+static gboolean are_data_set( ofaDossierOpen *self, gchar **msg );
+static gboolean idialog_quit_on_ok( myIDialog *instance );
+static gboolean is_connection_valid( ofaDossierOpen *self, gchar **msg );
+static gboolean do_open_dossier( ofaDossierOpen *self );
+static void     set_message( ofaDossierOpen *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierOpen, ofa_dossier_open, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierOpen )
@@ -218,12 +220,11 @@ ofa_dossier_open_run( ofaIGetter *getter, GtkWindow *parent,
 	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 
 	self = g_object_new( OFA_TYPE_DOSSIER_OPEN, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	if( meta ){
 		priv->dossier_meta = g_object_ref( meta );
@@ -262,6 +263,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_open_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_open_iwindow_init";
+	ofaDossierOpenPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dossier_open_get_instance_private( OFA_DOSSIER_OPEN( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -616,19 +637,15 @@ static gboolean
 do_open_dossier( ofaDossierOpen *self )
 {
 	ofaDossierOpenPrivate *priv;
-	ofaHub *hub;
 	gboolean ok;
 
 	priv = ofa_dossier_open_get_instance_private( self );
 
 	ok = FALSE;
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
-
-	if( ofa_hub_dossier_open( hub, priv->connect, GTK_WINDOW( self ), TRUE, priv->read_only )){
-		if( ofa_hub_dossier_remediate_settings( hub )){
-			g_signal_emit_by_name( hub, SIGNAL_HUB_DOSSIER_CHANGED );
+	if( ofa_hub_dossier_open( priv->hub, priv->connect, GTK_WINDOW( self ), TRUE, priv->read_only )){
+		if( ofa_hub_dossier_remediate_settings( priv->hub )){
+			g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
 		}
 		ok = TRUE;
 	}

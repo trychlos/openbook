@@ -41,7 +41,6 @@
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-delete.h"
@@ -61,7 +60,12 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter         *getter;
+	GtkWindow          *parent;
+
+	/* runtime
+	 */
 	gchar              *settings_prefix;
+	ofaHub             *hub;
 
 	/* UI
 	 */
@@ -77,21 +81,22 @@ typedef struct {
 
 static const gchar *st_resource_ui       = "/org/trychlos/openbook/ui/ofa-dossier-manager.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      setup_treeview( ofaDossierManager *self );
-static void      idialog_init_actions( ofaDossierManager *self );
-static void      idialog_init_menu( ofaDossierManager *self );
-static void      on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self );
-static void      on_tview_activated( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self );
-static void      action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
-static void      action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
-static void      do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period );
-static void      action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
-static gboolean  confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const ofaIDBExerciceMeta *period );
-static void      iactionable_iface_init( ofaIActionableInterface *iface );
-static guint     iactionable_get_interface_version( void );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     setup_treeview( ofaDossierManager *self );
+static void     idialog_init_actions( ofaDossierManager *self );
+static void     idialog_init_menu( ofaDossierManager *self );
+static void     on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self );
+static void     on_tview_activated( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period, ofaDossierManager *self );
+static void     action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
+static void     action_on_open_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
+static void     do_open( ofaDossierManager *self, ofaIDBDossierMeta *meta, ofaIDBExerciceMeta *period );
+static void     action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierManager *self );
+static gboolean confirm_delete( ofaDossierManager *self, const ofaIDBDossierMeta *meta, const ofaIDBExerciceMeta *period );
+static void     iactionable_iface_init( ofaIActionableInterface *iface );
+static guint    iactionable_get_interface_version( void );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierManager, ofa_dossier_manager, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierManager )
@@ -194,12 +199,11 @@ ofa_dossier_manager_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_MANAGER, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -214,6 +218,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_manager_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_manager_iwindow_init";
+	ofaDossierManagerPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dossier_manager_get_instance_private( OFA_DOSSIER_MANAGER( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -346,17 +370,13 @@ on_tview_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *meta, ofaIDBExer
 {
 	ofaDossierManagerPrivate *priv;
 	gboolean ok, is_opened;
-	ofaHub *hub;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *dossier_meta;
 	ofaIDBExerciceMeta *dossier_period;
 
 	priv = ofa_dossier_manager_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	connect = ofa_hub_get_connect( hub );
+	connect = ofa_hub_get_connect( priv->hub );
 	if( connect ){
 		g_return_if_fail( OFA_IS_IDBCONNECT( connect ));
 		dossier_meta = ofa_idbconnect_get_dossier_meta( connect );
@@ -444,7 +464,6 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 {
 	static const gchar *thisfn = "ofa_dossier_manager_action_on_delete_activated";
 	ofaDossierManagerPrivate *priv;
-	ofaHub *hub;
 	const ofaIDBConnect *dossier_connect;
 	ofaIDBDossierMeta *meta, *dossier_meta;
 	ofaIDBExerciceMeta *period, *dossier_period;
@@ -461,12 +480,11 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 
 		/* close the currently opened dossier/exercice if we are about
 		 * to delete it */
-		hub = ofa_igetter_get_hub( priv->getter );
-		dossier = ofa_hub_get_dossier( hub );
+		dossier = ofa_hub_get_dossier( priv->hub );
 		if( dossier ){
 			g_return_if_fail( OFO_IS_DOSSIER( dossier ));
 
-			dossier_connect = ofa_hub_get_connect( hub );
+			dossier_connect = ofa_hub_get_connect( priv->hub );
 			g_return_if_fail( dossier_connect && OFA_IS_IDBCONNECT( dossier_connect ));
 			dossier_meta = ofa_idbconnect_get_dossier_meta( dossier_connect );
 			g_return_if_fail( dossier_meta && OFA_IS_IDBDOSSIER_META( dossier_meta ));
@@ -479,7 +497,7 @@ action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaDossierMa
 			}
 			g_object_unref( dossier_meta );
 			if( cmp == 0 ){
-				ofa_hub_dossier_close( ofa_igetter_get_hub( priv->getter ));
+				ofa_hub_dossier_close( priv->hub );
 			}
 		}
 		ofa_idbdossier_meta_remove_period( meta, period );

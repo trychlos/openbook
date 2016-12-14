@@ -34,7 +34,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
@@ -49,13 +48,15 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
-	gchar               *settings_prefix;
-
-	/* internals
-	 */
+	GtkWindow           *parent;
 	ofoBat              *bat;
+
+	/* runtime
+	 */
+	gchar               *settings_prefix;
+	ofaHub              *hub;
 	gboolean             is_writable;
-	gboolean             is_new;		/* always FALSE here */
+	gboolean             is_new;			/* always FALSE here */
 	ofaBatPropertiesBin *bat_bin;
 
 	/* UI
@@ -66,13 +67,14 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-bat-properties.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      check_for_enable_dlg( ofaBatProperties *self );
-static gboolean  is_dialog_validable( ofaBatProperties *self );
-static gboolean  do_update( ofaBatProperties *self, gchar **msgerr );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static gchar   *iwindow_get_identifier( const myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     check_for_enable_dlg( ofaBatProperties *self );
+static gboolean is_dialog_validable( ofaBatProperties *self );
+static gboolean do_update( ofaBatProperties *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatProperties, ofa_bat_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaBatProperties )
@@ -176,12 +178,11 @@ ofa_bat_properties_run( ofaIGetter *getter, GtkWindow *parent , ofoBat *bat )
 	g_return_if_fail( bat && OFO_IS_BAT( bat ));
 
 	self = g_object_new( OFA_TYPE_BAT_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_bat_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->bat = bat;
 
 	/* after this call, @self may be invalid */
@@ -198,7 +199,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_bat_properties_iwindow_init";
+	ofaBatPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_bat_properties_get_instance_private( OFA_BAT_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -243,7 +263,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_bat_properties_idialog_init";
 	ofaBatPropertiesPrivate *priv;
-	ofaHub *hub;
 	gchar *title, *key;
 	GtkWidget *parent;
 	ofaBatlineTreeview *line_tview;
@@ -256,8 +275,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->is_writable = ofa_hub_dossier_is_writable( hub );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	title = g_strdup( _( "Updating the BAT properties" ));
 	gtk_window_set_title( GTK_WINDOW( instance ), title );

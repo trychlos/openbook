@@ -38,7 +38,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "tva/ofa-tva-main.h"
@@ -53,10 +52,15 @@
 typedef struct {
 	gboolean      dispose_has_run;
 
-	/* internals
+	/* initialization
 	 */
 	ofaIGetter   *getter;
+	GtkWindow    *parent;
 	ofoTVARecord *tva_record;
+
+	/* runtime
+	 */
+	ofaHub       *hub;
 	ofoTVAForm   *form;
 
 	/* UI
@@ -70,6 +74,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-record-new.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
@@ -172,12 +177,11 @@ ofa_tva_record_new_run( ofaIGetter *getter, GtkWindow *parent, ofoTVARecord *rec
 	g_return_if_fail( getter && OFA_IS_IGETTER( getter ));
 
 	self = g_object_new( OFA_TYPE_TVA_RECORD_NEW, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->tva_record = record;
 
 	/* after this call, @self may be invalid */
@@ -194,7 +198,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_tva_record_new_iwindow_init";
+	ofaTVARecordNewPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_tva_record_new_get_instance_private( OFA_TVA_RECORD_NEW( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -241,7 +264,6 @@ idialog_init( myIDialog *instance )
 	ofaTVARecordNewPrivate *priv;
 	gchar *title;
 	const gchar *mnemo;
-	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -251,8 +273,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->form = ofo_tva_form_get_by_mnemo( hub, ofo_tva_record_get_mnemo( priv->tva_record ));
+	priv->form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( priv->tva_record ));
 	g_return_if_fail( priv->form && OFO_IS_TVA_FORM( priv->form ));
 
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
@@ -338,20 +359,18 @@ check_for_enable_dlg( ofaTVARecordNew *self )
 	const gchar *mnemo;
 	gboolean ok_valid, exists;
 	gchar *msgerr;
-	ofaHub *hub;
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
 	msgerr = NULL;
 	ok_valid = FALSE;
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	dend = ofo_tva_record_get_end( priv->tva_record );
 	if( !my_date_is_valid( dend )){
 		msgerr = g_strdup( _( "End date is not valid" ));
 	} else {
 		mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-		exists = ( ofo_tva_record_get_by_key( hub, mnemo, dend ) != NULL );
+		exists = ( ofo_tva_record_get_by_key( priv->hub, mnemo, dend ) != NULL );
 		if( exists ){
 			msgerr = g_strdup( _( "End date overlaps with an already defined declaration" ));
 		} else {
@@ -379,7 +398,6 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 {
 	ofaTVARecordNewPrivate *priv;
 	gboolean ok;
-	ofaHub *hub;
 	ofaIPageManager *manager;
 	ofaPage *page;
 	GtkWindow *toplevel;
@@ -388,19 +406,18 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
 	manager = ofa_igetter_get_theme_manager( priv->getter );
 
 	/* setup a default begin date
 	 * = previous end date + 1 */
 	mnemo = ofo_tva_record_get_mnemo( priv->tva_record );
-	ofo_tva_record_get_last_end( hub, mnemo, &last_end );
+	ofo_tva_record_get_last_end( priv->hub, mnemo, &last_end );
 	if( my_date_is_valid( &last_end )){
 		g_date_add_days( &last_end, 1 );
 		ofo_tva_record_set_begin( priv->tva_record, &last_end );
 	}
 
-	ok = ofo_tva_record_insert( priv->tva_record, hub );
+	ok = ofo_tva_record_insert( priv->tva_record, priv->hub );
 	if( !ok ){
 		*msgerr = g_strdup( _( "Unable to create this new VAT declaration" ));
 	}

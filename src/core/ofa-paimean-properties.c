@@ -39,7 +39,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
@@ -55,6 +54,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter    *getter;
+	GtkWindow     *parent;
 	ofoPaimean    *paimean;
 
 	/* runtime
@@ -78,20 +78,21 @@ static const gchar *st_style_error      = "labelerror";
 static const gchar *st_style_warning    = "labelwarning";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-paimean-properties.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      init_dialog( ofaPaimeanProperties *self );
-static void      init_properties( ofaPaimeanProperties *self );
-static void      set_properties( ofaPaimeanProperties *self );
-static void      on_code_changed( GtkEntry *entry, ofaPaimeanProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaPaimeanProperties *self );
-static void      on_account_changed( GtkEntry *entry, ofaPaimeanProperties *self );
-static void      check_for_enable_dlg( ofaPaimeanProperties *self );
-static gboolean  is_dialog_validable( ofaPaimeanProperties *self );
-static gboolean  do_update( ofaPaimeanProperties *self, gchar **msgerr );
-static void      set_msgerr( ofaPaimeanProperties *self, const gchar *msg, const gchar *style );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static gchar   *iwindow_get_identifier( const myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     init_dialog( ofaPaimeanProperties *self );
+static void     init_properties( ofaPaimeanProperties *self );
+static void     set_properties( ofaPaimeanProperties *self );
+static void     on_code_changed( GtkEntry *entry, ofaPaimeanProperties *self );
+static void     on_label_changed( GtkEntry *entry, ofaPaimeanProperties *self );
+static void     on_account_changed( GtkEntry *entry, ofaPaimeanProperties *self );
+static void     check_for_enable_dlg( ofaPaimeanProperties *self );
+static gboolean is_dialog_validable( ofaPaimeanProperties *self );
+static gboolean do_update( ofaPaimeanProperties *self, gchar **msgerr );
+static void     set_msgerr( ofaPaimeanProperties *self, const gchar *msg, const gchar *style );
 
 G_DEFINE_TYPE_EXTENDED( ofaPaimeanProperties, ofa_paimean_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPaimeanProperties )
@@ -188,12 +189,11 @@ ofa_paimean_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoPaimean *p
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_PAIMEAN_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_paimean_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->paimean = paimean;
 
 	/* run modal or non-modal depending of the parent */
@@ -210,7 +210,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_paimean_properties_iwindow_init";
+	ofaPaimeanPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_paimean_properties_get_instance_private( OFA_PAIMEAN_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -288,8 +307,6 @@ init_dialog( ofaPaimeanProperties *self )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( MY_IDIALOG( self ), priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	code = ofo_paimean_get_code( priv->paimean );

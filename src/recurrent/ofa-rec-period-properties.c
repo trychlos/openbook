@@ -38,7 +38,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-paimean-editable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "recurrent/ofa-rec-period-properties.h"
@@ -51,10 +50,12 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter     *getter;
+	GtkWindow      *parent;
 	ofoRecPeriod   *rec_period;
 
 	/* internals
 	 */
+	ofaHub         *hub;
 	gboolean        is_writable;
 	gboolean        is_new;
 
@@ -97,26 +98,27 @@ enum {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-rec-period-properties.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      init_dialog( ofaRecPeriodProperties *self );
-static void      init_properties( ofaRecPeriodProperties *self );
-static void      init_details( ofaRecPeriodProperties *self );
-static void      setup_properties( ofaRecPeriodProperties *self );
-static void      igridlist_iface_init( myIGridListInterface *iface );
-static guint     igridlist_get_interface_version( void );
-static void      igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
-static void      init_detail_widgets( ofaRecPeriodProperties *self, guint row );
-static void      setup_detail_values( ofaRecPeriodProperties *self, guint row );
-static void      on_order_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaRecPeriodProperties *self );
-static void      on_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
-static void      check_for_enable_dlg( ofaRecPeriodProperties *self );
-static gboolean  is_dialog_validable( ofaRecPeriodProperties *self );
-static gboolean  do_update( ofaRecPeriodProperties *self, gchar **msgerr );
-static void      get_detail_list( ofaRecPeriodProperties *self, gint row );
-static void      set_msgerr( ofaRecPeriodProperties *self, const gchar *msg );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     init_dialog( ofaRecPeriodProperties *self );
+static void     init_properties( ofaRecPeriodProperties *self );
+static void     init_details( ofaRecPeriodProperties *self );
+static void     setup_properties( ofaRecPeriodProperties *self );
+static void     igridlist_iface_init( myIGridListInterface *iface );
+static guint    igridlist_get_interface_version( void );
+static void     igridlist_setup_row( const myIGridList *instance, GtkGrid *grid, guint row );
+static void     init_detail_widgets( ofaRecPeriodProperties *self, guint row );
+static void     setup_detail_values( ofaRecPeriodProperties *self, guint row );
+static void     on_order_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
+static void     on_label_changed( GtkEntry *entry, ofaRecPeriodProperties *self );
+static void     on_count_changed( GtkSpinButton *btn, ofaRecPeriodProperties *self );
+static void     check_for_enable_dlg( ofaRecPeriodProperties *self );
+static gboolean is_dialog_validable( ofaRecPeriodProperties *self );
+static gboolean do_update( ofaRecPeriodProperties *self, gchar **msgerr );
+static void     get_detail_list( ofaRecPeriodProperties *self, gint row );
+static void     set_msgerr( ofaRecPeriodProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecPeriodProperties, ofa_rec_period_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaRecPeriodProperties )
@@ -216,12 +218,11 @@ ofa_rec_period_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRecPeri
 	g_return_if_fail( !period || OFO_IS_REC_PERIOD( period ));
 
 	self = g_object_new( OFA_TYPE_REC_PERIOD_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->rec_period = period;
 
 	/* run modal or non-modal depending of the parent */
@@ -237,6 +238,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_rec_period_properties_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_rec_period_properties_iwindow_init";
+	ofaRecPeriodPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_rec_period_properties_get_instance_private( OFA_REC_PERIOD_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -257,7 +278,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_rec_period_properties_idialog_init";
 	ofaRecPeriodPropertiesPrivate *priv;
-	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -267,9 +287,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-	priv->is_writable = ofa_hub_dossier_is_writable( hub );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	init_dialog( OFA_REC_PERIOD_PROPERTIES( instance ));
 	init_properties( OFA_REC_PERIOD_PROPERTIES( instance ));
@@ -571,13 +589,10 @@ do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 	const gchar *clabel;
 	guint det_count, i, count;
 	gboolean ok;
-	ofaHub *hub;
 
 	priv = ofa_rec_period_properties_get_instance_private( self );
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
-
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	clabel = gtk_entry_get_text( GTK_ENTRY( priv->p1_label_entry ));
 	det_count = ( guint ) gtk_spin_button_get_value_as_int( GTK_SPIN_BUTTON( priv->p1_count_spin ));
@@ -593,7 +608,7 @@ do_update( ofaRecPeriodProperties *self, gchar **msgerr )
 	}
 
 	if( priv->is_new ){
-		ok = ofo_rec_period_insert( priv->rec_period, hub );
+		ok = ofo_rec_period_insert( priv->rec_period, priv->hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new periodicity" ));
 		}

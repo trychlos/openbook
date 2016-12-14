@@ -41,7 +41,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
@@ -59,6 +58,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter        *getter;
+	GtkWindow         *parent;
 
 	/* internals
 	 */
@@ -97,6 +97,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/recurrent/ofa-recurrent-model-properties.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
@@ -216,12 +217,11 @@ ofa_recurrent_model_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoRe
 			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) model );
 
 	self = g_object_new( OFA_TYPE_RECURRENT_MODEL_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->recurrent_model = model;
 
 	/* after this call, @self may be invalid */
@@ -238,7 +238,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_recurrent_model_properties_iwindow_init";
+	ofaRecurrentModelPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_recurrent_model_properties_get_instance_private( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -292,7 +311,6 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	priv->hub = ofa_igetter_get_hub( priv->getter );
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	init_title( OFA_RECURRENT_MODEL_PROPERTIES( instance ));
@@ -595,20 +613,18 @@ check_for_mnemo( ofaRecurrentModelProperties *self, gchar **msgerr )
 {
 	ofaRecurrentModelPropertiesPrivate *priv;
 	gboolean ok, exists, subok;
-	ofaHub *hub;
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
 
 	ok = TRUE;
 	*msgerr = NULL;
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	if( !my_strlen( priv->mnemo )){
 		ok = FALSE;
 		*msgerr = g_strdup( _( "Mnemonic is empty" ));
 
 	} else {
-		exists = ( ofo_recurrent_model_get_by_mnemo( hub, priv->mnemo ) != NULL );
+		exists = ( ofo_recurrent_model_get_by_mnemo( priv->hub, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
 						!my_collate( priv->mnemo, ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
 		ok = !exists || subok;
@@ -631,15 +647,12 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	ofaRecurrentModelPropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	gboolean ok, is_enabled;
-	ofaHub *hub;
 	const gchar *cstr;
 	ofoOpeTemplate *template_obj;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_recurrent_model_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_recurrent_model_get_mnemo( priv->recurrent_model ));
 
@@ -664,7 +677,7 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( GTK_WINDOW( self ), recurrent_model );
 
 	if( priv->is_new ){
-		ok = ofo_recurrent_model_insert( priv->recurrent_model, hub );
+		ok = ofo_recurrent_model_insert( priv->recurrent_model, priv->hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new recurrent model" ));
 		}
@@ -681,15 +694,15 @@ do_update( ofaRecurrentModelProperties *self, gchar **msgerr )
 	 * initial template to update the treeview
 	 */
 	if( my_strlen( priv->orig_template )){
-		template_obj = ofo_ope_template_get_by_mnemo( hub, priv->orig_template );
+		template_obj = ofo_ope_template_get_by_mnemo( priv->hub, priv->orig_template );
 		if( template_obj ){
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+			g_signal_emit_by_name( G_OBJECT( priv->hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
 		}
 	}
 	if( my_strlen( priv->ope_template ) && my_collate( priv->ope_template, priv->orig_template )){
-		template_obj = ofo_ope_template_get_by_mnemo( hub, priv->ope_template );
+		template_obj = ofo_ope_template_get_by_mnemo( priv->hub, priv->ope_template );
 		if( template_obj ){
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+			g_signal_emit_by_name( G_OBJECT( priv->hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
 		}
 	}
 

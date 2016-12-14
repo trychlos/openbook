@@ -113,7 +113,12 @@ typedef struct {
 /* private instance data
  */
 struct _ofaDBModelWindowPrivate {
-		gboolean   dispose_has_run;
+	gboolean       dispose_has_run;
+
+	/* initialization
+	 */
+	ofaIGetter    *getter;
+	GtkWindow     *parent;
 
 	/* runtime
 	 */
@@ -161,6 +166,7 @@ static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProg
 /* dialog management */
 static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
 static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
 static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
 static void     iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
 static void     idialog_iface_init( myIDialogInterface *iface );
@@ -348,13 +354,12 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 
 	if( need_update ){
 		window = g_object_new( OFA_TYPE_DBMODEL_WINDOW, NULL );
-		my_iwindow_set_parent( MY_IWINDOW( window ), parent );
-		my_iwindow_set_settings( MY_IWINDOW( window ), ofa_hub_get_user_settings( hub ));
 
 		priv = ofa_dbmodel_window_get_instance_private( window );
 
-		priv->plugins_list = plugins_list;
 		priv->hub = hub;
+		priv->parent = parent;
+		priv->plugins_list = plugins_list;
 
 		ok = FALSE;
 		if( my_idialog_run( MY_IDIALOG( window )) == GTK_RESPONSE_OK ){
@@ -611,8 +616,23 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->read_settings = iwindow_read_settings;
 	iface->write_settings = iwindow_write_settings;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dbmodel_window_iwindow_init";
+	ofaDBModelWindowPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

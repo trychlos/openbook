@@ -53,6 +53,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter        *getter;
+	GtkWindow         *parent;
+
+	/* runtime
+	 */
+	ofaHub            *hub;
 
 	/* UI
 	 */
@@ -68,14 +73,15 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-new-mini.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNewMini *self );
-static void      check_for_enable_dlg( ofaDossierNewMini *self );
-static gboolean  is_validable( ofaDossierNewMini *self );
-static gboolean  idialog_quit_on_ok( myIDialog *instance );
-static void      set_message( ofaDossierNewMini *self, const gchar *message );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     on_new_bin_changed( ofaDossierNewBin *bin, const gchar *dname, ofaIDBEditor *editor, ofaDossierNewMini *self );
+static void     check_for_enable_dlg( ofaDossierNewMini *self );
+static gboolean is_validable( ofaDossierNewMini *self );
+static gboolean idialog_quit_on_ok( myIDialog *instance );
+static void     set_message( ofaDossierNewMini *self, const gchar *message );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierNewMini, ofa_dossier_new_mini, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierNewMini )
@@ -176,12 +182,11 @@ ofa_dossier_new_mini_run( ofaIGetter *getter, GtkWindow *parent, ofaIDBDossierMe
 	g_return_val_if_fail( meta, FALSE );
 
 	self = g_object_new( OFA_TYPE_DOSSIER_NEW_MINI, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_new_mini_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	dossier_defined = FALSE;
 
@@ -205,6 +210,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_new_mini_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_new_mini_iwindow_init";
+	ofaDossierNewMiniPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dossier_new_mini_get_instance_private( OFA_DOSSIER_NEW_MINI( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

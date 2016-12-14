@@ -56,13 +56,17 @@
 typedef struct {
 	gboolean            dispose_has_run;
 
-	/* runtime
+	/* initialization
 	 */
 	ofaIGetter         *getter;
+	GtkWindow          *parent;
+
+	/* runtime
+	 */
+	gchar              *settings_prefix;
 	ofaHub             *hub;
 	gboolean            done;				/* whether we have actually done something */
 	GDate               closing;
-	gchar              *settings_prefix;
 	gboolean            all_ledgers;
 	gboolean            archive_ledgers;
 
@@ -102,32 +106,33 @@ typedef struct {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-close.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      setup_treeview( ofaLedgerClose *self );
-static void      setup_date( ofaLedgerClose *self );
-static void      setup_others( ofaLedgerClose *self );
-static void      setup_actions( ofaLedgerClose *self );
-static void      on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
-static void      on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
-static void      on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
-static void      on_date_changed( GtkEditable *entry, ofaLedgerClose *self );
-static void      on_archive_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
-static gboolean  check_for_enable_dlg( ofaLedgerClose *self, GList *selected );
-static gboolean  is_dialog_validable( ofaLedgerClose *self, GList *selected );
-static void      check_foreach_ledger( ofaLedgerClose *self, ofoLedger *ledger );
-static void      on_ok_clicked( GtkButton *button, ofaLedgerClose *self );
-static void      do_ok( ofaLedgerClose *self );
-static gboolean  do_close( ofaLedgerClose *self );
-static void      do_close_ledgers( sClose *sclose );
-static void      close_prepare_grid( sClose *sclose, ofoLedger *ledger );
-static gboolean  close_foreach_ledger( sClose *sclose, ofoLedger *ledger );
-static void      close_end( sClose *sclose );
-static void      get_settings( ofaLedgerClose *self );
-static void      set_settings( ofaLedgerClose *self );
-static void      hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *sclose );
-static void      hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *sclose );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     setup_treeview( ofaLedgerClose *self );
+static void     setup_date( ofaLedgerClose *self );
+static void     setup_others( ofaLedgerClose *self );
+static void     setup_actions( ofaLedgerClose *self );
+static void     on_rows_selected( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
+static void     on_rows_activated( ofaLedgerTreeview *view, GList *selected, ofaLedgerClose *self );
+static void     on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
+static void     on_date_changed( GtkEditable *entry, ofaLedgerClose *self );
+static void     on_archive_ledgers_toggled( GtkToggleButton *button, ofaLedgerClose *self );
+static gboolean check_for_enable_dlg( ofaLedgerClose *self, GList *selected );
+static gboolean is_dialog_validable( ofaLedgerClose *self, GList *selected );
+static void     check_foreach_ledger( ofaLedgerClose *self, ofoLedger *ledger );
+static void     on_ok_clicked( GtkButton *button, ofaLedgerClose *self );
+static void     do_ok( ofaLedgerClose *self );
+static gboolean do_close( ofaLedgerClose *self );
+static void     do_close_ledgers( sClose *sclose );
+static void     close_prepare_grid( sClose *sclose, ofoLedger *ledger );
+static gboolean close_foreach_ledger( sClose *sclose, ofoLedger *ledger );
+static void     close_end( sClose *sclose );
+static void     get_settings( ofaLedgerClose *self );
+static void     set_settings( ofaLedgerClose *self );
+static void     hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *sclose );
+static void     hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *sclose );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerClose, ofa_ledger_close, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaLedgerClose )
@@ -229,12 +234,11 @@ ofa_ledger_close_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_LEDGER_CLOSE, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -282,6 +286,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_ledger_close_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_ledger_close_iwindow_init";
+	ofaLedgerClosePrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -310,9 +334,6 @@ idialog_init( myIDialog *instance )
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_ledger_close_get_instance_private( OFA_LEDGER_CLOSE( instance ));
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	setup_treeview( OFA_LEDGER_CLOSE( instance ));
 	setup_date( OFA_LEDGER_CLOSE( instance ));

@@ -71,6 +71,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	GtkWindow           *parent;
+
+	/* runtime
+	 */
+	ofaHub              *hub;
 	ofaIDBDossierMeta   *meta;
 
 	/* p0: introduction
@@ -153,38 +158,38 @@ enum {
 static const gchar *st_export_folder    = "ofa-LastExportFolder";
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-export-assistant.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      iwindow_init( myIWindow *instance );
-static void      iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
-static void      set_settings( ofaExportAssistant *self );
-static void      iassistant_iface_init( myIAssistantInterface *iface );
-static gboolean  iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
-static void      p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
-static void      p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p1_on_type_toggled( GtkToggleButton *button, ofaExportAssistant *self );
-static gboolean  p1_is_complete( ofaExportAssistant *self );
-static void      p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p2_on_settings_changed( ofaStreamFormatBin *bin, ofaExportAssistant *self );
-static void      p2_on_new_profile_clicked( GtkButton *button, ofaExportAssistant *self );
-static void      p2_check_for_complete( ofaExportAssistant *self );
-static void      p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p3_on_selection_changed( GtkFileChooser *chooser, ofaExportAssistant *self );
-static void      p3_on_file_activated( GtkFileChooser *chooser, ofaExportAssistant *self );
-static gboolean  p3_check_for_complete( ofaExportAssistant *self );
-static void      p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static void      p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static gboolean  p3_confirm_overwrite( const ofaExportAssistant *self, const gchar *fname );
-static void      p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
-static gboolean  p5_export_data( ofaExportAssistant *self );
-static void      iprogress_iface_init( myIProgressInterface *iface );
-static void      iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *empty );
-static void      iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
+static void     set_settings( ofaExportAssistant *self );
+static void     iassistant_iface_init( myIAssistantInterface *iface );
+static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
+static void     p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
+static void     p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p1_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p1_on_type_toggled( GtkToggleButton *button, ofaExportAssistant *self );
+static gboolean p1_is_complete( ofaExportAssistant *self );
+static void     p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p2_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p2_on_settings_changed( ofaStreamFormatBin *bin, ofaExportAssistant *self );
+static void     p2_on_new_profile_clicked( GtkButton *button, ofaExportAssistant *self );
+static void     p2_check_for_complete( ofaExportAssistant *self );
+static void     p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p3_on_selection_changed( GtkFileChooser *chooser, ofaExportAssistant *self );
+static void     p3_on_file_activated( GtkFileChooser *chooser, ofaExportAssistant *self );
+static gboolean p3_check_for_complete( ofaExportAssistant *self );
+static void     p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p4_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static void     p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static gboolean p3_confirm_overwrite( const ofaExportAssistant *self, const gchar *fname );
+static void     p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
+static gboolean p5_export_data( ofaExportAssistant *self );
+static void     iprogress_iface_init( myIProgressInterface *iface );
+static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *empty );
+static void     iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
 
 G_DEFINE_TYPE_EXTENDED( ofaExportAssistant, ofa_export_assistant, GTK_TYPE_ASSISTANT, 0,
 		G_ADD_PRIVATE( ofaExportAssistant )
@@ -322,12 +327,11 @@ ofa_export_assistant_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_EXPORT_ASSISTANT, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -352,17 +356,22 @@ iwindow_init( myIWindow *instance )
 {
 	static const gchar *thisfn = "ofa_export_assistant_iwindow_init";
 	ofaExportAssistantPrivate *priv;
-	ofaHub *hub;
 	const ofaIDBConnect *connect;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
 	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
 
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	connect = ofa_hub_get_connect( hub );
+	connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_dossier_meta( connect );
 }
 
@@ -376,7 +385,6 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 	ofaExportAssistantPrivate *priv;
 	GList *slist, *it;
 	const gchar *cstr;
-	ofaHub *hub;
 	myISettings *dossier_settings;
 	gchar *group;
 
@@ -392,8 +400,7 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	my_isettings_free_string_list( settings, slist );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	dossier_settings = ofa_hub_get_dossier_settings( hub );
+	dossier_settings = ofa_hub_get_dossier_settings( priv->hub );
 	group = ofa_idbdossier_meta_get_group_name( priv->meta );
 
 	priv->p3_furi = my_isettings_get_string( dossier_settings, group, st_export_folder );
@@ -407,7 +414,6 @@ set_settings( ofaExportAssistant *self )
 	ofaExportAssistantPrivate *priv;
 	myISettings *settings;
 	gchar *keyname, *str, *group;
-	ofaHub *hub;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
@@ -422,8 +428,7 @@ set_settings( ofaExportAssistant *self )
 	g_free( str );
 	g_free( keyname );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	settings = ofa_hub_get_dossier_settings( hub );
+	settings = ofa_hub_get_dossier_settings( priv->hub );
 	group = ofa_idbdossier_meta_get_group_name( priv->meta );
 
 	if( my_strlen( priv->p3_last_folder )){
@@ -482,7 +487,6 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p1_do_init";
 	ofaExportAssistantPrivate *priv;
-	ofaHub *hub;
 	GList *it;
 	gchar *label;
 	GtkWidget *btn, *first;
@@ -492,8 +496,7 @@ p1_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->p1_exportables = ofa_hub_get_for_type( hub, OFA_TYPE_IEXPORTABLE );
+	priv->p1_exportables = ofa_hub_get_for_type( priv->hub, OFA_TYPE_IEXPORTABLE );
 	g_debug( "%s: exportables count=%d", thisfn, g_list_length( priv->p1_exportables ));
 	priv->p1_selected_btn = NULL;
 	priv->p1_row = 0;
@@ -1051,15 +1054,12 @@ p5_export_data( ofaExportAssistant *self )
 	GtkWidget *label;
 	gchar *str, *text;
 	gboolean ok;
-	ofaHub *hub;
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-
 	/* first, export */
 	ok = ofa_iexportable_export_to_uri(
-			priv->p5_base, priv->p3_furi, priv->p2_export_settings, hub, MY_IPROGRESS( self ));
+			priv->p5_base, priv->p3_furi, priv->p2_export_settings, priv->hub, MY_IPROGRESS( self ));
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );

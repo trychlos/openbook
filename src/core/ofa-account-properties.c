@@ -38,7 +38,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
@@ -57,6 +56,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
+	GtkWindow           *parent;
 	ofoAccount          *account;
 
 	/* runtime data
@@ -113,6 +113,7 @@ typedef const GDate * ( *fnGetDate )  ( const ofoAccount * );
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-account-properties.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      iwindow_init( myIWindow *instance );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
@@ -240,12 +241,11 @@ ofa_account_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoAccount *a
 			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) account );
 
 	self = g_object_new( OFA_TYPE_ACCOUNT_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_account_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->account = account;
 
 	/* run modal or non-modal depending of the parent */
@@ -262,7 +262,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_account_properties_iwindow_init";
+	ofaAccountPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_account_properties_get_instance_private( OFA_ACCOUNT_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -317,9 +336,6 @@ idialog_init( myIDialog *instance )
 	priv->ok_btn = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "btn-ok" );
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
-
-	priv->hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	/* dialog title */
 	acc_number = ofo_account_get_number( priv->account );

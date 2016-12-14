@@ -55,8 +55,16 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter               *getter;
+	GtkWindow                *parent;
 	ofaIDBDossierMeta        *dossier_meta;
 	ofaIDBExerciceMeta       *exercice_meta;
+
+	/* runtime
+	 */
+	ofaHub                   *hub;
+	ofaIDBProvider           *provider;
+	gchar                    *root_account;
+	gchar                    *root_password;
 
 	/* UI
 	 */
@@ -65,23 +73,18 @@ typedef struct {
 	ofaDossierDeletePrefsBin *prefs;
 	GtkWidget                *err_msg;
 	GtkWidget                *delete_btn;
-
-	/* runtime data
-	 */
-	ofaIDBProvider           *provider;
-	gchar                    *root_account;
-	gchar                    *root_password;
 }
 	ofaDossierDeletePrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-delete.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      on_credentials_changed( ofaDBMSRootBin *bin, gchar *account, gchar *password, ofaDossierDelete *dialog );
-static void      check_for_enable_dlg( ofaDossierDelete *self );
-static gboolean  do_delete_dossier( ofaDossierDelete *self, gchar **msgerr );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     on_credentials_changed( ofaDBMSRootBin *bin, gchar *account, gchar *password, ofaDossierDelete *dialog );
+static void     check_for_enable_dlg( ofaDossierDelete *self );
+static gboolean do_delete_dossier( ofaDossierDelete *self, gchar **msgerr );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierDelete, ofa_dossier_delete, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierDelete )
@@ -188,12 +191,11 @@ ofa_dossier_delete_run( ofaIGetter *getter, GtkWindow *parent, const ofaIDBDossi
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DELETE, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_delete_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->dossier_meta = g_object_ref(( gpointer ) dossier_meta );
 	priv->exercice_meta = g_object_ref(( gpointer ) period );
 
@@ -210,6 +212,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_delete_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_delete_iwindow_init";
+	ofaDossierDeletePrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dossier_delete_get_instance_private( OFA_DOSSIER_DELETE( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

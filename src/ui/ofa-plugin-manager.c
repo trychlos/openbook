@@ -55,6 +55,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter    *getter;
+	GtkWindow     *parent;
+
+	/* runtime
+	 */
+	ofaHub        *hub;
 
 	/* UI
 	 */
@@ -90,6 +95,7 @@ enum {
 };
 
 static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
 static void iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *key );
 static void iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *key );
 static void idialog_iface_init( myIDialogInterface *iface );
@@ -201,12 +207,11 @@ ofa_plugin_manager_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_PLUGIN_MANAGER, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -222,8 +227,27 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->read_settings = iwindow_read_settings;
 	iface->write_settings = iwindow_write_settings;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_plugin_manager_iwindow_init";
+	ofaPluginManagerPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -542,7 +566,6 @@ plugins_load( ofaPluginManager *self )
 	GtkTreeModel *tmodel;
 	GtkTreeSelection *select;
 	GtkTreeIter iter;
-	ofaHub *hub;
 	ofaExtenderCollection *extenders;
 	const GList *modules, *it;
 	ofaExtenderModule *plugin;
@@ -553,8 +576,7 @@ plugins_load( ofaPluginManager *self )
 	tmodel = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->plugin_tview ));
 	gtk_list_store_clear( GTK_LIST_STORE( tmodel ));
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	extenders = ofa_hub_get_extender_collection( hub );
+	extenders = ofa_hub_get_extender_collection( priv->hub );
 	modules = ofa_extender_collection_get_modules( extenders );
 
 	for( it=modules ; it ; it=it->next ){

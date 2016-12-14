@@ -36,7 +36,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-paimean.h"
 #include "api/ofo-dossier.h"
 
@@ -51,7 +50,12 @@ typedef struct {
 	/* input data
 	 */
 	ofaIGetter         *getter;
+	GtkWindow          *parent;
+
+	/* runtime
+	 */
 	gchar              *settings_prefix;
+	ofaHub             *hub;
 
 	/* UI
 	 */
@@ -68,6 +72,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-paime
 
 static ofaPaimeanSelect *paimean_select_new( ofaIGetter *getter, GtkWindow *parent );
 static void              iwindow_iface_init( myIWindowInterface *iface );
+static void              iwindow_init( myIWindow *instance );
 static void              idialog_iface_init( myIDialogInterface *iface );
 static void              idialog_init( myIDialog *instance );
 static void              on_selection_changed( ofaPaimeanFrameBin *bin, ofoPaimean *paimean, ofaPaimeanSelect *self );
@@ -174,12 +179,13 @@ paimean_select_new( ofaIGetter *getter, GtkWindow *parent )
 
 	if( !dialog ){
 		dialog = g_object_new( OFA_TYPE_PAIMEAN_SELECT, NULL );
-		my_iwindow_set_parent( MY_IWINDOW( dialog ), parent );
-		my_iwindow_set_settings( MY_IWINDOW( dialog ), ofa_hub_get_user_settings( hub ));
+
+		priv = ofa_paimean_select_get_instance_private( dialog );
+
+		priv->getter = ofa_igetter_get_permanent_getter( getter );
+		priv->parent = parent;
 
 		/* setup a permanent getter before initialization */
-		priv = ofa_paimean_select_get_instance_private( dialog );
-		priv->getter = ofa_igetter_get_permanent_getter( getter );
 		my_iwindow_init( MY_IWINDOW( dialog ));
 
 		/* and record this unique object */
@@ -239,6 +245,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_paimean_select_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_paimean_select_iwindow_init";
+	ofaPaimeanSelectPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_paimean_select_get_instance_private( OFA_PAIMEAN_SELECT( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

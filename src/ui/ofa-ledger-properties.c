@@ -38,7 +38,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -54,11 +53,13 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter          *getter;
-
-	/* internals
-	 */
-	gboolean             is_writable;
+	GtkWindow           *parent;
 	ofoLedger           *ledger;
+
+	/* runtime
+	 */
+	ofaHub              *hub;
+	gboolean             is_writable;
 	gboolean             is_new;
 
 	/* data
@@ -86,17 +87,18 @@ enum {
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-properties.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      init_balances_page( ofaLedgerProperties *self );
-static void      on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
-static void      check_for_enable_dlg( ofaLedgerProperties *self );
-static gboolean  is_dialog_validable( ofaLedgerProperties *self );
-static gboolean  do_update( ofaLedgerProperties *self, gchar **msgerr );
-static void      set_msgerr( ofaLedgerProperties *self, const gchar *msg );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static gchar   *iwindow_get_identifier( const myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     init_balances_page( ofaLedgerProperties *self );
+static void     on_mnemo_changed( GtkEntry *entry, ofaLedgerProperties *self );
+static void     on_label_changed( GtkEntry *entry, ofaLedgerProperties *self );
+static void     check_for_enable_dlg( ofaLedgerProperties *self );
+static gboolean is_dialog_validable( ofaLedgerProperties *self );
+static gboolean do_update( ofaLedgerProperties *self, gchar **msgerr );
+static void     set_msgerr( ofaLedgerProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerProperties, ofa_ledger_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaLedgerProperties )
@@ -200,12 +202,11 @@ ofa_ledger_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoLedger *led
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_LEDGER_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_ledger_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->ledger = ledger;
 
 	/* after this call, @self may be invalid */
@@ -222,7 +223,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_ledger_properties_iwindow_init";
+	ofaLedgerPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_ledger_properties_get_instance_private( OFA_LEDGER_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -270,7 +290,6 @@ idialog_init( myIDialog *instance )
 	gchar *title, *str;
 	const gchar *jou_mnemo;
 	GtkWidget *entry, *label, *last_close_entry;
-	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -280,8 +299,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->is_writable = ofa_hub_dossier_is_writable( hub );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	jou_mnemo = ofo_ledger_get_mnemo( priv->ledger );
 	if( !jou_mnemo ){
@@ -411,16 +429,13 @@ is_dialog_validable( ofaLedgerProperties *self )
 	ofoLedger *exists;
 	gboolean ok;
 	gchar *msgerr;
-	ofaHub *hub;
 
 	priv = ofa_ledger_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	ok = ofo_ledger_is_valid_data( priv->mnemo, priv->label, &msgerr );
 
 	if( ok ){
-		exists = ofo_ledger_get_by_mnemo( hub, priv->mnemo );
+		exists = ofo_ledger_get_by_mnemo( priv->hub, priv->mnemo );
 		ok &= !exists ||
 				( !priv->is_new && !g_utf8_collate( priv->mnemo, ofo_ledger_get_mnemo( priv->ledger )));
 		if( !ok ){
@@ -444,13 +459,10 @@ do_update( ofaLedgerProperties *self, gchar **msgerr )
 	ofaLedgerPropertiesPrivate *priv;
 	gchar *prev_mnemo;
 	gboolean ok;
-	ofaHub *hub;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_ledger_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_ledger_get_mnemo( priv->ledger ));
 
@@ -462,7 +474,7 @@ do_update( ofaLedgerProperties *self, gchar **msgerr )
 	my_utils_container_notes_get( self, ledger );
 
 	if( priv->is_new ){
-		ok = ofo_ledger_insert( priv->ledger, hub );
+		ok = ofo_ledger_insert( priv->ledger, priv->hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new ledger" ));
 		}

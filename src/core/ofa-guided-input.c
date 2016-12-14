@@ -35,7 +35,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
 
@@ -50,7 +49,12 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter        *getter;
+	GtkWindow         *parent;
 	ofoOpeTemplate    *model;
+
+	/* runtime
+	 */
+	ofaHub            *hub;
 
 	/* UI
 	 */
@@ -62,6 +66,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-guided-input.ui";
 
 static void      iwindow_iface_init( myIWindowInterface *iface );
+static void      iwindow_init( myIWindow *instance );
 static gchar    *iwindow_get_identifier( const myIWindow *instance );
 static void      idialog_iface_init( myIDialogInterface *iface );
 static void      idialog_init( myIDialog *instance );
@@ -164,12 +169,11 @@ ofa_guided_input_run( ofaIGetter *getter, GtkWindow *parent, ofoOpeTemplate *mod
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_GUIDED_INPUT, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_guided_input_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->model = model;
 
 	/* after this call, @self may be invalid */
@@ -186,7 +190,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_guided_input_iwindow_init";
+	ofaGuidedInputPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_guided_input_get_instance_private( OFA_GUIDED_INPUT( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

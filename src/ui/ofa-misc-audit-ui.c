@@ -38,7 +38,6 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 
 #include "ui/ofa-misc-audit-store.h"
 #include "ui/ofa-misc-audit-treeview.h"
@@ -52,17 +51,19 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter           *getter;
+	GtkWindow            *parent;
+
+	/* runtime
+	 */
 	gchar                *settings_prefix;
+	ofaHub               *hub;
+	guint                 pages;
 
 	/* UI
 	 */
 	ofaMiscAuditStore    *audit_store;
 	ofaMiscAuditTreeview *audit_tview;
 	GtkWidget            *scale;
-
-	/* runtime
-	 */
-	guint                 pages;
 }
 	ofaMiscAuditUIPrivate;
 
@@ -73,6 +74,7 @@ typedef struct {
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-misc-audit-ui.ui";
 
 static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
 static void idialog_iface_init( myIDialogInterface *iface );
 static void idialog_init( myIDialog *instance );
 static void init_treeview( ofaMiscAuditUI *self );
@@ -170,7 +172,6 @@ ofa_misc_audit_ui_run( ofaIGetter *getter )
 	static const gchar *thisfn = "ofa_misc_audit_ui_run";
 	ofaMiscAuditUI *self;
 	ofaMiscAuditUIPrivate *priv;
-	GtkApplicationWindow *parent;
 
 	g_debug( "%s: getter=%p", thisfn, ( void * ) getter );
 
@@ -178,13 +179,10 @@ ofa_misc_audit_ui_run( ofaIGetter *getter )
 
 	self = g_object_new( OFA_TYPE_MISC_AUDIT_UI, NULL );
 
-	parent = ofa_igetter_get_main_window( getter );
-	my_iwindow_set_parent( MY_IWINDOW( self ), GTK_WINDOW( parent ));
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
-
 	priv = ofa_misc_audit_ui_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = GTK_WINDOW( ofa_igetter_get_main_window( getter ));
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -199,6 +197,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_misc_audit_ui_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_misc_audit_ui_iwindow_init";
+	ofaMiscAuditUIPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_misc_audit_ui_get_instance_private( OFA_MISC_AUDIT_UI( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -243,7 +261,7 @@ init_treeview( ofaMiscAuditUI *self )
 	priv->audit_tview = ofa_misc_audit_treeview_new();
 	ofa_misc_audit_treeview_set_settings_key( priv->audit_tview, priv->settings_prefix );
 	ofa_misc_audit_treeview_setup_columns( priv->audit_tview );
-	priv->audit_store = ofa_misc_audit_treeview_setup_store( priv->audit_tview, ofa_igetter_get_hub( priv->getter ));
+	priv->audit_store = ofa_misc_audit_treeview_setup_store( priv->audit_tview, priv->hub );
 
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->audit_tview ));
 }

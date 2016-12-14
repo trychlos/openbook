@@ -42,7 +42,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-ope-template-editable.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ope-template.h"
@@ -58,9 +57,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter    *getter;
+	GtkWindow     *parent;
 
-	/* internals
+	/* runtime
 	 */
+	ofaHub        *hub;
 	gboolean       is_writable;
 	ofoTVAForm    *tva_form;
 	gboolean       is_new;
@@ -114,6 +115,7 @@ enum {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/tva/ofa-tva-form-properties.ui";
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
 static gchar   *iwindow_get_identifier( const myIWindow *instance );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
@@ -242,12 +244,11 @@ ofa_tva_form_properties_run( ofaIGetter *getter, GtkWindow *parent, ofoTVAForm *
 			thisfn, ( void * ) getter, ( void * ) parent, ( void * ) form );
 
 	self = g_object_new( OFA_TYPE_TVA_FORM_PROPERTIES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_settings_get_settings( SETTINGS_TARGET_USER ));
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->tva_form = form;
 
 	/* after this call, @self may be invalid */
@@ -264,7 +265,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
+	iface->init = iwindow_init;
 	iface->get_identifier = iwindow_get_identifier;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_tva_form_properties_iwindow_init";
+	ofaTVAFormPropertiesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_tva_form_properties_get_instance_private( OFA_TVA_FORM_PROPERTIES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -314,7 +334,6 @@ idialog_init( myIDialog *instance )
 	const gchar *mnemo;
 	GtkEntry *entry;
 	GtkWidget *label;
-	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -324,8 +343,7 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( priv->ok_btn && GTK_IS_BUTTON( priv->ok_btn ));
 	my_idialog_click_to_update( instance, priv->ok_btn, ( myIDialogUpdateCb ) do_update );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	priv->is_writable = ofa_hub_dossier_is_writable( hub );
+	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	mnemo = ofo_tva_form_get_mnemo( priv->tva_form );
 	if( !mnemo ){
@@ -809,17 +827,15 @@ is_dialog_validable( ofaTVAFormProperties *self )
 	ofaTVAFormPropertiesPrivate *priv;
 	gboolean ok, exists, subok;
 	gchar *msgerr;
-	ofaHub *hub;
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
 
 	msgerr = NULL;
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	ok = ofo_tva_form_is_valid_data( priv->mnemo, priv->label, &msgerr );
 
 	if( ok ){
-		exists = ( ofo_tva_form_get_by_mnemo( hub, priv->mnemo ) != NULL );
+		exists = ( ofo_tva_form_get_by_mnemo( priv->hub, priv->mnemo ) != NULL );
 		subok = !priv->is_new &&
 						!g_utf8_collate( priv->mnemo, ofo_tva_form_get_mnemo( priv->tva_form ));
 		ok = !exists || subok;
@@ -848,15 +864,12 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	gchar *prev_mnemo;
 	guint rows_count, level;
 	gboolean ok;
-	ofaHub *hub;
 	GList *it;
 	ofoOpeTemplate *template_obj;
 
 	g_return_val_if_fail( is_dialog_validable( self ), FALSE );
 
 	priv = ofa_tva_form_properties_get_instance_private( self );
-
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	prev_mnemo = g_strdup( ofo_tva_form_get_mnemo( priv->tva_form ));
 
@@ -919,7 +932,7 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	}
 
 	if( priv->is_new ){
-		ok = ofo_tva_form_insert( priv->tva_form, hub );
+		ok = ofo_tva_form_insert( priv->tva_form, priv->hub );
 		if( !ok ){
 			*msgerr = g_strdup( _( "Unable to create this new VAT form" ));
 		}
@@ -935,9 +948,9 @@ do_update( ofaTVAFormProperties *self, gchar **msgerr )
 	/* asks the template store to auto-update
 	 * targets all templates which were initially used + those added during the update */
 	for( it=priv->orig_templates ; it ; it=it->next ){
-		template_obj = ofo_ope_template_get_by_mnemo( hub, ( const gchar * ) it->data );
+		template_obj = ofo_ope_template_get_by_mnemo( priv->hub, ( const gchar * ) it->data );
 		if( template_obj ){
-			g_signal_emit_by_name( G_OBJECT( hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
+			g_signal_emit_by_name( G_OBJECT( priv->hub ), SIGNAL_HUB_UPDATED, template_obj, NULL );
 		}
 	}
 

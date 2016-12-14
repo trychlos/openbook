@@ -32,7 +32,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-dossier-display-notes.h"
@@ -45,11 +44,13 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter  *getter;
-
-	/* runtime data
-	 */
+	GtkWindow   *parent;
 	const gchar *main_notes;
 	const gchar *exe_notes;
+
+	/* runtime
+	 */
+	ofaHub      *hub;
 
 	/* result
 	 */
@@ -59,6 +60,7 @@ typedef struct {
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-dossier-display-notes.ui";
 
 static void iwindow_iface_init( myIWindowInterface *iface );
+static void iwindow_init( myIWindow *instance );
 static void idialog_iface_init( myIDialogInterface *iface );
 static void idialog_init( myIDialog *instance );
 static void set_notes( ofaDossierDisplayNotes *self, const gchar *label_name, const gchar *note_name, const gchar *notes );
@@ -153,12 +155,11 @@ ofa_dossier_display_notes_run( ofaIGetter *getter, GtkWindow *parent, const gcha
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_DOSSIER_DISPLAY_NOTES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_dossier_display_notes_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->main_notes = main_notes;
 	priv->exe_notes = exe_notes;
 
@@ -175,6 +176,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_dossier_display_notes_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_dossier_display_notes_iwindow_init";
+	ofaDossierDisplayNotesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_dossier_display_notes_get_instance_private( OFA_DOSSIER_DISPLAY_NOTES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -195,7 +216,6 @@ idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_dossier_display_notes_idialog_init";
 	ofaDossierDisplayNotesPrivate *priv;
-	ofaHub *hub;
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -204,8 +224,7 @@ idialog_init( myIDialog *instance )
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "main-label", "main-text", priv->main_notes );
 	set_notes( OFA_DOSSIER_DISPLAY_NOTES( instance ), "exe-label", "exe-text", priv->exe_notes );
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	my_utils_container_set_editable( GTK_CONTAINER( instance ), ofa_hub_dossier_is_writable( hub ));
+	my_utils_container_set_editable( GTK_CONTAINER( instance ), ofa_hub_dossier_is_writable( priv->hub ));
 }
 
 static void

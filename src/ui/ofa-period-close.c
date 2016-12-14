@@ -54,10 +54,17 @@
 typedef struct {
 	gboolean            dispose_has_run;
 
+	/* initialization
+	 */
 	ofaIGetter         *getter;
+	GtkWindow          *parent;
+
+	/* runtime
+	 */
+	gchar              *settings_prefix;
+	ofaHub             *hub;
 	GDate               prev_closing;
 	GDate               closing;
-	gchar              *settings_prefix;
 
 	/* UI
 	 */
@@ -71,18 +78,19 @@ typedef struct {
 
 static const gchar  *st_resource_ui     = "/org/trychlos/openbook/ui/ofa-period-close.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      setup_date( ofaPeriodClose *self );
-static void      setup_others( ofaPeriodClose *self );
-static void      on_date_changed( GtkEditable *entry, ofaPeriodClose *self );
-static void      check_for_enable_dlg( ofaPeriodClose *self );
-static gboolean  is_dialog_validable( ofaPeriodClose *self );
-static void      on_ok_clicked( GtkButton *button, ofaPeriodClose *self );
-static gboolean  do_close( ofaPeriodClose *self );
-static void      get_settings( ofaPeriodClose *self );
-static void      set_settings( ofaPeriodClose *self );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     setup_date( ofaPeriodClose *self );
+static void     setup_others( ofaPeriodClose *self );
+static void     on_date_changed( GtkEditable *entry, ofaPeriodClose *self );
+static void     check_for_enable_dlg( ofaPeriodClose *self );
+static gboolean is_dialog_validable( ofaPeriodClose *self );
+static void     on_ok_clicked( GtkButton *button, ofaPeriodClose *self );
+static gboolean do_close( ofaPeriodClose *self );
+static void     get_settings( ofaPeriodClose *self );
+static void     set_settings( ofaPeriodClose *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPeriodClose, ofa_period_close, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPeriodClose )
@@ -185,12 +193,11 @@ ofa_period_close_run( ofaIGetter *getter, GtkWindow *parent )
 	g_return_if_fail( !parent || GTK_IS_WINDOW( parent ));
 
 	self = g_object_new( OFA_TYPE_PERIOD_CLOSE, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_period_close_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 
 	/* after this call, @self may be invalid */
 	my_iwindow_present( MY_IWINDOW( self ));
@@ -205,6 +212,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_period_close_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_period_close_iwindow_init";
+	ofaPeriodClosePrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_period_close_get_instance_private( OFA_PERIOD_CLOSE( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -244,15 +271,13 @@ setup_date( ofaPeriodClose *self )
 	GtkWidget *label;
 	gchar *str;
 	ofoDossier *dossier;
-	ofaHub *hub;
 
 	priv = ofa_period_close_get_instance_private( self );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p4-last-closing" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
+	dossier = ofa_hub_get_dossier( priv->hub );
 	my_date_set_from_date( &priv->prev_closing, ofo_dossier_get_last_closing_date( dossier ));
 	if( my_date_is_valid( &priv->prev_closing )){
 		str = my_date_to_str( &priv->prev_closing, ofa_prefs_date_display());
@@ -341,7 +366,6 @@ static gboolean
 is_dialog_validable( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
-	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean ok;
 	const GDate *exe_begin, *exe_end;
@@ -350,8 +374,7 @@ is_dialog_validable( ofaPeriodClose *self )
 
 	ok = FALSE;
 	gtk_label_set_text( GTK_LABEL( priv->message_label ), "" );
-	hub = ofa_igetter_get_hub( priv->getter );
-	dossier = ofa_hub_get_dossier( hub );
+	dossier = ofa_hub_get_dossier( priv->hub );
 
 	/* do we have a intrinsically valid proposed closing date
 	 * + compare it to the limits of the exercice */
@@ -387,23 +410,21 @@ static void
 on_ok_clicked( GtkButton *button, ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
-	ofaHub *hub;
 	GtkWidget *close_btn;
 	GtkWindow *toplevel;
 
 	priv = ofa_period_close_get_instance_private( self );
 
 	toplevel = my_utils_widget_get_toplevel( GTK_WIDGET( self ));
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	/* check balances and dbms integrity */
-	if( !ofa_check_balances_check( hub )){
+	if( !ofa_check_balances_check( priv->hub )){
 		my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
 				_( "We have detected losses of balance in your books.\n\n"
 					"In this current state, we will be unable to close the "
 					"period until you fix your balances." ));
 
-	} else if( !ofa_check_integrity_check( hub )){
+	} else if( !ofa_check_integrity_check( priv->hub )){
 		my_utils_msg_dialog( toplevel, GTK_MESSAGE_WARNING,
 				_( "Integrity check of the DBMS has failed.\\"
 					"In this current state, we will be unable to close the "
@@ -425,7 +446,6 @@ static gboolean
 do_close( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
-	ofaHub *hub;
 	ofoDossier *dossier;
 	gboolean do_archive;
 	GList *dataset, *it;
@@ -436,7 +456,6 @@ do_close( ofaPeriodClose *self )
 	gdouble progress;
 
 	priv = ofa_period_close_get_instance_private( self );
-	hub = ofa_igetter_get_hub( priv->getter );
 
 	/* close all ledgers, archiving their balance if asked for
 	 */
@@ -473,7 +492,7 @@ do_close( ofaPeriodClose *self )
 		/* run */
 		count = 0;
 		total = 0;
-		dataset = ofo_account_get_dataset( hub );
+		dataset = ofo_account_get_dataset( priv->hub );
 		length = g_list_length( dataset );
 		for( it=dataset ; it ; it=it->next ){
 			if( !ofo_account_is_root( OFO_ACCOUNT( it->data ))){
@@ -498,7 +517,7 @@ do_close( ofaPeriodClose *self )
 		gtk_widget_destroy( dialog );
 	}
 
-	dossier = ofa_hub_get_dossier( hub );
+	dossier = ofa_hub_get_dossier( priv->hub );
 	ofo_dossier_set_last_closing_date( dossier, &priv->closing );
 	ofo_dossier_update( dossier );
 

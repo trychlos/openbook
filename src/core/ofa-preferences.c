@@ -56,6 +56,11 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter               *getter;
+	GtkWindow                *parent;
+
+	/* runtime
+	 */
+	ofaHub                   *hub;
 
 	/* UI - General
 	 */
@@ -134,41 +139,42 @@ static const gchar *st_resource_ui                    = "/org/trychlos/openbook/
 
 typedef gboolean ( *pfnPlugin )( ofaPreferences *, gchar **msgerr, ofaIProperties * );
 
-static void           iwindow_iface_init( myIWindowInterface *iface );
-static void           idialog_iface_init( myIDialogInterface *iface );
-static void           idialog_init( myIDialog *instance );
-static void           init_quitting_page( ofaPreferences *self );
-static void           init_dossier_page( ofaPreferences *self );
-static void           init_account_page( ofaPreferences *self );
-static void           init_locales_page( ofaPreferences *self );
-static void           init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
-static void           init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
-static void           init_export_page( ofaPreferences *self );
-static void           init_import_page( ofaPreferences *self );
-static gboolean       enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
-static gboolean       init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
-//static void           activate_first_page( ofaPreferences *self );
-static void           on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
-static void           on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
-static void           on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
-static void           on_date_overwrite_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void           on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
-static void           on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void           on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
-static void           check_for_activable_dlg( ofaPreferences *self );
-static gboolean       do_update( ofaPreferences *self, gchar **msgerr );
-static gboolean       do_update_quitting_page( ofaPreferences *self, gchar **msgerr );
-static gboolean       is_willing_to_quit( void );
-static gboolean       do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
-static gboolean       do_update_account_page( ofaPreferences *self, gchar **msgerr );
-static gboolean       do_update_locales_page( ofaPreferences *self, gchar **msgerr );
-/*static void       error_decimal_sep( ofaPreferences *self );*/
-static void           setup_date_formats( void );
-static void           setup_amount_formats( void );
-static gboolean       do_update_export_page( ofaPreferences *self, gchar **msgerr );
-static gboolean       do_update_import_page( ofaPreferences *self, gchar **msgerr );
-static gboolean       update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
-static void           set_message( ofaPreferences *self, const gchar *message );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     init_quitting_page( ofaPreferences *self );
+static void     init_dossier_page( ofaPreferences *self );
+static void     init_account_page( ofaPreferences *self );
+static void     init_locales_page( ofaPreferences *self );
+static void     init_locale_date( ofaPreferences *self, myDateCombo **wcombo, const gchar *label, const gchar *parent, myDateFormat ivalue );
+static void     init_locale_sep( ofaPreferences *self, GtkWidget **wentry, const gchar *label, const gchar *wname, const gchar *svalue );
+static void     init_export_page( ofaPreferences *self );
+static void     init_import_page( ofaPreferences *self );
+static gboolean enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn );
+static gboolean init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *plugin );
+//static void     activate_first_page( ofaPreferences *self );
+static void     on_quit_on_escape_toggled( GtkToggleButton *button, ofaPreferences *self );
+static void     on_display_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void     on_check_date_changed( GtkComboBox *box, ofaPreferences *self );
+static void     on_date_overwrite_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void     on_date_changed( ofaPreferences *self, GtkComboBox *box, const gchar *sample_name );
+static void     on_accept_dot_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void     on_accept_comma_toggled( GtkToggleButton *toggle, ofaPreferences *self );
+static void     check_for_activable_dlg( ofaPreferences *self );
+static gboolean do_update( ofaPreferences *self, gchar **msgerr );
+static gboolean do_update_quitting_page( ofaPreferences *self, gchar **msgerr );
+static gboolean is_willing_to_quit( void );
+static gboolean do_update_dossier_page( ofaPreferences *self, gchar **msgerr );
+static gboolean do_update_account_page( ofaPreferences *self, gchar **msgerr );
+static gboolean do_update_locales_page( ofaPreferences *self, gchar **msgerr );
+/*static void     error_decimal_sep( ofaPreferences *self );*/
+static void     setup_date_formats( void );
+static void     setup_amount_formats( void );
+static gboolean do_update_export_page( ofaPreferences *self, gchar **msgerr );
+static gboolean do_update_import_page( ofaPreferences *self, gchar **msgerr );
+static gboolean update_prefs_plugin( ofaPreferences *self, gchar **msgerr );
+static void     set_message( ofaPreferences *self, const gchar *message );
 
 G_DEFINE_TYPE_EXTENDED( ofaPreferences, ofa_preferences, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPreferences )
@@ -266,12 +272,11 @@ ofa_preferences_run( ofaIGetter *getter, GtkWindow *parent, ofaExtenderModule *p
 	g_return_if_fail( !plugin || OFA_IS_EXTENDER_MODULE( plugin ));
 
 	self = g_object_new( OFA_TYPE_PREFERENCES, NULL );
-	my_iwindow_set_parent( MY_IWINDOW( self ), parent );
-	my_iwindow_set_settings( MY_IWINDOW( self ), ofa_hub_get_user_settings( ofa_igetter_get_hub( getter )));
 
 	priv = ofa_preferences_get_instance_private( self );
 
-	priv->getter = getter;
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
+	priv->parent = parent;
 	priv->plugin = plugin;
 	priv->object_page = NULL;
 
@@ -288,6 +293,26 @@ iwindow_iface_init( myIWindowInterface *iface )
 	static const gchar *thisfn = "ofa_preferences_iwindow_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
+
+	iface->init = iwindow_init;
+}
+
+static void
+iwindow_init( myIWindow *instance )
+{
+	static const gchar *thisfn = "ofa_preferences_iwindow_init";
+	ofaPreferencesPrivate *priv;
+
+	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	priv = ofa_preferences_get_instance_private( OFA_PREFERENCES( instance ));
+
+	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*
@@ -620,7 +645,6 @@ static gboolean
 enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 {
 	ofaPreferencesPrivate *priv;
-	ofaHub *hub;
 	ofaExtenderCollection *extenders;
 	GList *list, *it;
 	gboolean ok;
@@ -628,8 +652,7 @@ enumerate_prefs_plugins( ofaPreferences *self, gchar **msgerr, pfnPlugin pfn )
 	priv = ofa_preferences_get_instance_private( self );
 
 	ok = TRUE;
-	hub = ofa_igetter_get_hub( priv->getter );
-	extenders = ofa_hub_get_extender_collection( hub );
+	extenders = ofa_hub_get_extender_collection( priv->hub );
 	list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IPROPERTIES );
 
 	for( it=list ; it ; it=it->next ){
@@ -655,7 +678,6 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance
 	ofaPreferencesPrivate *priv;
 	GtkWidget *page, *wlabel;
 	gchar *label;
-	ofaHub *hub;
 	myISettings *settings;
 	gboolean ok;
 
@@ -665,8 +687,7 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance
 	priv = ofa_preferences_get_instance_private( self );
 
 	ok = FALSE;
-	hub = ofa_igetter_get_hub( priv->getter );
-	settings = ofa_hub_get_user_settings( hub );
+	settings = ofa_hub_get_user_settings( priv->hub );
 	page = ofa_iproperties_init( instance, settings );
 	label = ofa_iproperties_get_title( instance );
 
