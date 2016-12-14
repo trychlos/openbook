@@ -27,6 +27,7 @@
 #endif
 
 #include "api/ofa-iabout.h"
+#include "api/ofa-igetter.h"
 
 #define IABOUT_LAST_VERSION       1
 
@@ -164,22 +165,24 @@ ofa_iabout_get_interface_version( GType type )
 
 /**
  * ofa_iabout_do_init:
- * @importer: this #ofaIAbout instance.
+ * @instance: this #ofaIAbout instance.
+ * @getter: a #ofaIGetter of the application.
  *
  * Initialize the page to display the properties.
  */
 GtkWidget *
-ofa_iabout_do_init( const ofaIAbout *instance )
+ofa_iabout_do_init( ofaIAbout *instance, ofaIGetter *getter )
 {
 	static const gchar *thisfn = "ofa_iabout_do_init";
 
 	g_return_val_if_fail( instance && OFA_IS_IABOUT( instance ), NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
+	g_debug( "%s: instance=%p (%s), getter=%p",
+			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ), ( void * ) getter );
 
 	if( OFA_IABOUT_GET_INTERFACE( instance )->do_init ){
-		return( OFA_IABOUT_GET_INTERFACE( instance )->do_init( instance ));
+		return( OFA_IABOUT_GET_INTERFACE( instance )->do_init( instance, getter ));
 	}
 
 	g_info( "%s: ofaIAbout's %s implementation does not provide 'do_init()' method",

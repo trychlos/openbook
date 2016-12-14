@@ -441,7 +441,7 @@ plugin_set_about_page( ofaPluginManager *self, ofaExtenderModule *plugin, const 
 			label = gtk_label_new_with_mnemonic( _( "_About" ));
 			priv->about_page = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 			gtk_notebook_prepend_page( GTK_NOTEBOOK( priv->plugin_book ), priv->about_page, label );
-			content = ofa_iabout_do_init( OFA_IABOUT( it->data ));
+			content = ofa_iabout_do_init( OFA_IABOUT( it->data ), priv->getter );
 			gtk_box_pack_start( GTK_BOX( priv->about_page ), content, TRUE, TRUE, 0 );
 			break;
 		}

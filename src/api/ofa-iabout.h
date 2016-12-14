@@ -31,10 +31,14 @@
  * @short_description: The IAbout Interface
  * @include: openbook/ofa-iabout.h
  *
- * The #ofaIAbout interface let a plugin advertize about its properties.
+ * The #ofaIAbout interface let a plugin advertize about its properties
+ * through a #GtkWidget which will be embedded in an application-provided
+ * container.
  */
 
 #include <gtk/gtk.h>
+
+#include "api/ofa-igetter-def.h"
 
 G_BEGIN_DECLS
 
@@ -78,18 +82,20 @@ typedef struct {
 	/**
 	 * do_init:
 	 * @instance: the #ofaIAbout provider.
+	 * @getter: a #ofaIGetter of the application.
 	 *
 	 * Initialize the dialog.
 	 *
-	 * The IAbout provider may use the ofa_settings_xxx_() API to
-	 * get its value from the user's configuration file.
+	 * The IAbout provider may use the #myISettings user settings instance
+	 * to get its value from the user's configuration file.
 	 *
 	 * Returns: a newly created page which will be displayed by the
 	 * program.
 	 *
 	 * Since: version 1
 	 */
-	GtkWidget * ( *do_init )             ( const ofaIAbout *instance );
+	GtkWidget * ( *do_init )             ( ofaIAbout *instance,
+												ofaIGetter *getter );
 }
 	ofaIAboutInterface;
 
@@ -108,7 +114,8 @@ guint      ofa_iabout_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-GtkWidget *ofa_iabout_do_init                   ( const ofaIAbout *instance );
+GtkWidget *ofa_iabout_do_init                   ( ofaIAbout *instance,
+														ofaIGetter *getter );
 
 G_END_DECLS
 

@@ -417,9 +417,6 @@
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
 
-1288 2016-12-14 ofa_idbmodel_update: have a getter instead of the hub
-                (for consistency reasons)
-
 1289
 
 -----------------------------------------------------------------------
@@ -2064,6 +2061,10 @@
 
 1278 2016-12-10 rename ofaMySQLPeriod to ofaMysqlExerciceMeta
      2016-12-11 done
+
+1288 2016-12-14 ofa_idbmodel_update: have a getter instead of the hub
+                (for consistency reasons)
+     2016-12-14 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
