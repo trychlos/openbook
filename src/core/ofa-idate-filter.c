@@ -32,14 +32,21 @@
 #include "my/my-date-editable.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 
 /* data associated to each implementor object
  */
 typedef struct {
+
+	/* initialization
+	 */
+	ofaHub       *hub;
 	gchar        *ui_resource;
+
+	/* runtime
+	 */
 	gboolean      mandatory;
 	gchar        *settings_key;
 	GtkSizeGroup *group0;
@@ -52,7 +59,7 @@ typedef struct {
 }
 	sIDateFilter;
 
-#define IDATE_FILTER_LAST_VERSION      1
+#define IDATE_FILTER_LAST_VERSION       1
 #define IDATE_FILTER_DATA              "ofa-idate-filter-data"
 
 #define DEFAULT_MANDATORY               FALSE
@@ -69,20 +76,20 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static guint st_initializations = 0;	/* interface initialization count */
 
-static GType          register_type( void );
-static void           interface_base_init( ofaIDateFilterInterface *klass );
-static void           interface_base_finalize( ofaIDateFilterInterface *klass );
+static GType         register_type( void );
+static void          interface_base_init( ofaIDateFilterInterface *klass );
+static void          interface_base_finalize( ofaIDateFilterInterface *klass );
 static sIDateFilter *get_idate_filter_data( ofaIDateFilter *filter );
-static void           on_widget_finalized( ofaIDateFilter *idate_filter, void *finalized_widget );
-static void           setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata );
-static void           on_from_changed( GtkEntry *entry, ofaIDateFilter *filter );
-static gboolean       on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter );
-static void           on_to_changed( GtkEntry *entry, ofaIDateFilter *filter );
-static gboolean       on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter );
-static void           on_date_changed( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date );
-static gboolean       on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDateFilter *sdata );
-static void           load_settings( ofaIDateFilter *filter, sIDateFilter *sdata );
-static void           set_settings( ofaIDateFilter *filter, sIDateFilter *sdata );
+static void          on_widget_finalized( ofaIDateFilter *filter, void *finalized_widget );
+static void          setup_bin( ofaIDateFilter *filter, sIDateFilter *sdata );
+static void          on_from_changed( GtkEntry *entry, ofaIDateFilter *filter );
+static gboolean      on_from_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter );
+static void          on_to_changed( GtkEntry *entry, ofaIDateFilter *filter );
+static gboolean      on_to_focus_out( GtkEntry *entry, GdkEvent *event, ofaIDateFilter *filter );
+static void          on_date_changed( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date );
+static gboolean      on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDateFilter *sdata );
+static void          read_settings( ofaIDateFilter *filter, sIDateFilter *sdata );
+static void          write_settings( ofaIDateFilter *filter, sIDateFilter *sdata );
 
 /**
  * ofa_idate_filter_get_type:
@@ -261,13 +268,14 @@ ofa_idate_filter_get_interface_version( GType type )
 /**
  * ofa_idate_filter_setup_bin:
  * @filter: this #ofaIDateFilter instance.
+ * @hub: the #ofaHub object of the application.
  * @ui_resource: the path of the binary resource which holds the user
  *  interface XML description.
  *
  * Initialize the widget which implements this interface.
  */
 void
-ofa_idate_filter_setup_bin( ofaIDateFilter *filter, const gchar *ui_resource )
+ofa_idate_filter_setup_bin( ofaIDateFilter *filter, ofaHub *hub, const gchar *ui_resource )
 {
 	static const gchar *thisfn = "ofa_idate_filter_setup_bin";
 	sIDateFilter *sdata;
@@ -276,8 +284,11 @@ ofa_idate_filter_setup_bin( ofaIDateFilter *filter, const gchar *ui_resource )
 
 	g_return_if_fail( filter && OFA_IS_IDATE_FILTER( filter ));
 	g_return_if_fail( G_IS_OBJECT( filter ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	sdata = get_idate_filter_data( filter );
+
+	sdata->hub = hub;
 	sdata->ui_resource = g_strdup( ui_resource );
 	sdata->mandatory = DEFAULT_MANDATORY;
 
@@ -493,7 +504,7 @@ on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *dat
 	if( my_date_is_valid( date ) ||
 			( my_date_editable_is_empty( GTK_EDITABLE( entry )) && !sdata->mandatory )){
 
-		set_settings( filter, sdata );
+		write_settings( filter, sdata );
 	}
 
 	g_signal_emit_by_name( filter, "ofa-focus-out", who, date );
@@ -521,7 +532,7 @@ ofa_idate_filter_set_settings_key( ofaIDateFilter *filter, const gchar *settings
 	g_free( sdata->settings_key );
 	sdata->settings_key = g_strdup( settings_key );
 
-	load_settings( filter, sdata );
+	read_settings( filter, sdata );
 }
 
 /**
@@ -728,47 +739,51 @@ ofa_idate_filter_get_prompt( ofaIDateFilter *filter, gint who )
 }
 
 /*
- * settings are: from;to; as SQL-formatted dates
+ * settings are: from(s); to(s); as SQL-formatted dates
  */
 static void
-load_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
+read_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 {
-	GList *slist, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 
-	slist = ofa_settings_user_get_string_list( sdata->settings_key );
-	if( slist ){
-		it = slist ? slist : NULL;
-		cstr = it ? it->data : NULL;
-		if( my_strlen( cstr )){
-			my_date_set_from_sql( &sdata->from_date, cstr );
-			my_date_editable_set_date( GTK_EDITABLE( sdata->from_entry ), &sdata->from_date );
-		}
+	settings = ofa_hub_get_user_settings( sdata->hub );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, sdata->settings_key );
 
-		it = it ? it->next : NULL;
-		cstr = it ? it->data : NULL;
-		if( my_strlen( cstr )){
-			my_date_set_from_sql( &sdata->to_date, cstr );
-			my_date_editable_set_date( GTK_EDITABLE( sdata->to_entry ), &sdata->to_date );
-		}
-
-		ofa_settings_free_string_list( slist );
+	it = strlist;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_sql( &sdata->from_date, cstr );
+		my_date_editable_set_date( GTK_EDITABLE( sdata->from_entry ), &sdata->from_date );
 	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? it->data : NULL;
+	if( my_strlen( cstr )){
+		my_date_set_from_sql( &sdata->to_date, cstr );
+		my_date_editable_set_date( GTK_EDITABLE( sdata->to_entry ), &sdata->to_date );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
 }
 
 static void
-set_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
+write_settings( ofaIDateFilter *filter, sIDateFilter *sdata )
 {
+	myISettings *settings;
 	gchar *sfrom, *sto, *str;
 
 	if( my_strlen( sdata->settings_key )){
+
+		settings = ofa_hub_get_user_settings( sdata->hub );
 
 		sfrom = my_date_to_str( &sdata->from_date, MY_DATE_SQL );
 		sto = my_date_to_str( &sdata->to_date, MY_DATE_SQL );
 
 		str = g_strdup_printf( "%s;%s;", sfrom, sto );
 
-		ofa_settings_user_set_string( sdata->settings_key, str );
+		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, sdata->settings_key, str );
 
 		g_free( str );
 		g_free( sfrom );

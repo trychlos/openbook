@@ -44,7 +44,7 @@
 /* private instance data
  */
 typedef struct {
-	gboolean                dispose_has_run;
+	gboolean               dispose_has_run;
 
 	/* initialization
 	 */
@@ -53,17 +53,17 @@ typedef struct {
 	/* UI
 	 */
 	ofaAccountFilterVVBin *account_filter;
-	GtkWidget              *per_class_btn;		/* subtotal per class */
-	GtkWidget              *new_page_btn;
+	GtkWidget             *per_class_btn;		/* subtotal per class */
+	GtkWidget             *new_page_btn;
 	ofaDateFilterHVBin    *date_filter;
-	GtkWidget              *accounts_balance_btn;
-	GtkWidget              *from_prompt;
-	GtkWidget              *from_entry;
+	GtkWidget             *accounts_balance_btn;
+	GtkWidget             *from_prompt;
+	GtkWidget             *from_entry;
 
 	/* internals
 	 */
-	gboolean                per_class;
-	gboolean                new_page;
+	gboolean               per_class;
+	gboolean               new_page;
 }
 	ofaBalanceBinPrivate;
 
@@ -260,7 +260,7 @@ setup_date_selection( ofaBalanceBin *bin )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_date_filter_hv_bin_new();
+	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */

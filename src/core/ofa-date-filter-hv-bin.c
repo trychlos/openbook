@@ -29,6 +29,7 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-idate-filter.h"
 
 /* private instance data
@@ -113,18 +114,20 @@ ofa_date_filter_hv_bin_class_init( ofaDateFilterHVBinClass *klass )
 
 /**
  * ofa_date_filter_hv_bin_new:
- * @xml_name: the radical of the XML file which defines the UI.
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: a newly allocated #ofaDateFilterHVBin object.
  */
 ofaDateFilterHVBin *
-ofa_date_filter_hv_bin_new( void )
+ofa_date_filter_hv_bin_new( ofaHub *hub )
 {
 	ofaDateFilterHVBin *bin;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
 	bin = g_object_new( OFA_TYPE_DATE_FILTER_HV_BIN, NULL );
 
-	ofa_idate_filter_setup_bin( OFA_IDATE_FILTER( bin ), st_resource_ui );
+	ofa_idate_filter_setup_bin( OFA_IDATE_FILTER( bin ), hub, st_resource_ui );
 
 	return( bin );
 }

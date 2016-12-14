@@ -455,7 +455,7 @@ setup_dates_filter( ofaEntryPage *self )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	priv->effect_filter = ofa_date_filter_hv_bin_new();
+	priv->effect_filter = ofa_date_filter_hv_bin_new( priv->hub );
 	settings_key = g_strdup_printf( "%s-effect", priv->settings_prefix );
 	ofa_idate_filter_set_settings_key( OFA_IDATE_FILTER( priv->effect_filter ), settings_key );
 	g_free( settings_key );

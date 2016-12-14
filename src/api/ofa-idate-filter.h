@@ -36,6 +36,8 @@
  * widget.
  */
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_IDATE_FILTER                      ( ofa_idate_filter_get_type())
@@ -117,6 +119,7 @@ guint        ofa_idate_filter_get_interface_version     ( GType type );
  * Instance-wide
  */
 void         ofa_idate_filter_setup_bin                 ( ofaIDateFilter *filter,
+																ofaHub *hub,
 																const gchar *ui_resource );
 
 void         ofa_idate_filter_add_widget                ( ofaIDateFilter *filter,

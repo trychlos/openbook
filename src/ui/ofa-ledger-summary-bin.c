@@ -219,7 +219,7 @@ setup_date_selection( ofaLedgerSummaryBin *bin )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	filter = ofa_date_filter_hv_bin_new();
+	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
 	/* instead of "effect dates filter" */

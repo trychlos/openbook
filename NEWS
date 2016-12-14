@@ -75,6 +75,7 @@
    - ofaHub: initialize from ofa_hub_new() (todo #1273).
    - ofaHub: manage both dossier and user settings.
    - ofaIAbout: have a ofaIGetter instance.
+   - ofaIDateFilter: get rid of ofaSettings usage.
    - ofaIDBMeta interface is renamed to ofaIDBDossierMeta (todo #1274).
    - ofaIDBModel: update get a #ofaIGetter instead of a ofaHub (todo #1288).
    - ofaIDBPeriod interface is renamed to ofaIDBExerciceMeta (todo #1275).

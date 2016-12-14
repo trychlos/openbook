@@ -49,6 +49,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_DATE_FILTER_HV_BIN                ( ofa_date_filter_hv_bin_get_type())
@@ -72,7 +74,7 @@ typedef struct {
 
 GType               ofa_date_filter_hv_bin_get_type( void ) G_GNUC_CONST;
 
-ofaDateFilterHVBin *ofa_date_filter_hv_bin_new     ( void );
+ofaDateFilterHVBin *ofa_date_filter_hv_bin_new     ( ofaHub *hub );
 
 G_END_DECLS
 
