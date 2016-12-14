@@ -643,7 +643,7 @@ do_open_dossier( ofaDossierOpen *self )
 
 	ok = FALSE;
 
-	if( ofa_hub_dossier_open( priv->hub, priv->connect, GTK_WINDOW( self ), TRUE, priv->read_only )){
+	if( ofa_hub_dossier_open( priv->hub, GTK_WINDOW( self ), priv->connect, TRUE, priv->read_only )){
 		if( ofa_hub_dossier_remediate_settings( priv->hub )){
 			g_signal_emit_by_name( priv->hub, SIGNAL_HUB_DOSSIER_CHANGED );
 		}

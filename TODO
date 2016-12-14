@@ -418,6 +418,7 @@
                 by a my_iwindow_set_is_destroy_allowed() method
 
 1288 2016-12-14 ofa_idbmodel_update: have a getter instead of the hub
+                (for consistency reasons)
 
 1289
 

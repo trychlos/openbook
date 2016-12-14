@@ -876,8 +876,8 @@ ofa_hub_get_dossier( ofaHub *hub )
 /**
  * ofa_hub_dossier_open:
  * @hub: this #ofaHub instance.
+ * @parent: [allow-none]: the #GtkWindow parent window.
  * @connect: a valid connection to the targeted database.
- * @parent: the #GtkWindow parent window.
  * @run_prefs: whether to allow the user prefs to be run.
  * @read_only: whether the dossier should be opened in read-only mode.
  *
@@ -891,12 +891,13 @@ ofa_hub_get_dossier( ofaHub *hub )
  * else.
  */
 gboolean
-ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent, gboolean run_prefs, gboolean read_only )
+ofa_hub_dossier_open( ofaHub *hub, GtkWindow *parent, ofaIDBConnect *connect, gboolean run_prefs, gboolean read_only )
 {
 	ofaHubPrivate *priv;
 	gboolean ok;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), FALSE );
 
 	priv = ofa_hub_get_instance_private( hub );
@@ -908,7 +909,7 @@ ofa_hub_dossier_open( ofaHub *hub, ofaIDBConnect *connect, GtkWindow *parent, gb
 	priv->connect = g_object_ref(( gpointer ) connect );
 	ok = FALSE;
 
-	if( ofa_idbmodel_update( hub, parent )){
+	if( ofa_idbmodel_update( priv->getter, parent )){
 		priv->dossier = ofo_dossier_new( hub );
 		if( priv->dossier ){
 			priv->read_only = read_only;

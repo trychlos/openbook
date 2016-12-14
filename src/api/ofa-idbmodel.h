@@ -69,6 +69,7 @@
 
 #include "api/ofa-hub-def.h"
 #include "api/ofa-idbconnect.h"
+#include "api/ofa-igetter-def.h"
 #include "api/ofo-base-def.h"
 
 G_BEGIN_DECLS
@@ -206,7 +207,7 @@ guint        ofa_idbmodel_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-gboolean     ofa_idbmodel_update                    ( ofaHub *hub,
+gboolean     ofa_idbmodel_update                    ( ofaIGetter *getter,
 															GtkWindow *parent );
 
 ofaIDBModel *ofa_idbmodel_get_by_name               ( ofaHub *hub,

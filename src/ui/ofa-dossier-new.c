@@ -578,7 +578,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	}
 
 	if( ok && priv->b_open ){
-		if( ofa_hub_dossier_open( priv->hub, connect, GTK_WINDOW( self ), TRUE, FALSE )){
+		if( ofa_hub_dossier_open( priv->hub, GTK_WINDOW( self ), connect, TRUE, FALSE )){
 			ofa_hub_dossier_remediate_settings( priv->hub );
 
 			if( priv->b_properties ){

@@ -41,6 +41,7 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
+#include "api/ofa-igetter.h"
 #include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
@@ -122,8 +123,8 @@ struct _ofaDBModelWindowPrivate {
 
 	/* runtime
 	 */
-	GList         *plugins_list;
 	ofaHub        *hub;
+	GList         *plugins_list;
 	GList         *workers;
 	gboolean       work_started;
 
@@ -318,8 +319,8 @@ ofa_idbmodel_get_interface_version( GType type )
 
 /**
  * ofa_idbmodel_update:
- * @hub: the #ofaHub object.
- * @parent: the #GtkWindow parent window.
+ * @getter: a #ofaIGetter of the application.
+ * @parent: [allow-none]: the #GtkWindow parent window.
  *
  * Ask all ofaIDBModel implentations whether they need to update their
  * current DB model, and run them.
@@ -329,7 +330,7 @@ ofa_idbmodel_get_interface_version( GType type )
  * else.
  */
 gboolean
-ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
+ofa_idbmodel_update( ofaIGetter *getter, GtkWindow *parent )
 {
 	static const gchar *thisfn = "ofa_idbmodel_update";
 	ofaExtenderCollection *extenders;
@@ -338,11 +339,17 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 	ofaDBModelWindow *window;
 	ofaDBModelWindowPrivate *priv;
 	const ofaIDBConnect *connect;
+	ofaHub *hub;
 
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), FALSE );
+	g_return_val_if_fail( !parent || GTK_IS_WINDOW( parent ), FALSE );
 
 	ok = TRUE;
 	need_update = FALSE;
+
+	hub = ofa_igetter_get_hub( getter );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
 	connect = ofa_hub_get_connect( hub );
 	extenders = ofa_hub_get_extender_collection( hub );
 	plugins_list = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IDBMODEL );
@@ -357,7 +364,7 @@ ofa_idbmodel_update( ofaHub *hub, GtkWindow *parent )
 
 		priv = ofa_dbmodel_window_get_instance_private( window );
 
-		priv->hub = hub;
+		priv->getter = ofa_igetter_get_permanent_getter( getter );
 		priv->parent = parent;
 		priv->plugins_list = plugins_list;
 
@@ -632,6 +639,10 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
 	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 

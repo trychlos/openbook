@@ -121,8 +121,8 @@ const ofaIDBConnect   *ofa_hub_get_connect               ( ofaHub *hub );
 ofoDossier            *ofa_hub_get_dossier               ( ofaHub *hub );
 
 gboolean               ofa_hub_dossier_open              ( ofaHub *hub,
-																ofaIDBConnect *connect,
 																GtkWindow *parent,
+																ofaIDBConnect *connect,
 																gboolean run_prefs,
 																gboolean read_only );
 
