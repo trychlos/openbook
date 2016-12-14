@@ -39,7 +39,6 @@
 #include "api/ofa-istore.h"
 #include "api/ofa-itree-adder.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
@@ -127,7 +126,7 @@ static void       hub_on_updated_ope_template( ofaOpeTemplateFrameBin *self, ofo
 static void       hub_on_deleted_object( ofaHub *hub, ofoBase *object, ofaOpeTemplateFrameBin *self );
 static void       hub_on_deleted_ledger_object( ofaOpeTemplateFrameBin *self, ofoLedger *ledger );
 static void       hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateFrameBin *self );
-static void       do_write_settings( ofaOpeTemplateFrameBin *self );
+static void       write_settings( ofaOpeTemplateFrameBin *self );
 static void       iactionable_iface_init( ofaIActionableInterface *iface );
 static guint      iactionable_get_interface_version( void );
 static void       iactioner_iface_init( ofaIActionerInterface *iface );
@@ -198,7 +197,7 @@ ope_template_frame_bin_dispose( GObject *instance )
 		/* we expect that the last page seen by the user is those which
 		 * has the better sizes and positions for the columns */
 		ofa_itvcolumnable_write_columns_settings( OFA_ITVCOLUMNABLE( priv->current_page ));
-		do_write_settings( OFA_OPE_TEMPLATE_FRAME_BIN( instance ));
+		write_settings( OFA_OPE_TEMPLATE_FRAME_BIN( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -1072,6 +1071,7 @@ ofa_ope_template_frame_bin_load_dataset( ofaOpeTemplateFrameBin *bin )
 {
 	static const gchar *thisfn = "ofa_ope_template_frame_bin_load_dataset";
 	ofaOpeTemplateFrameBinPrivate *priv;
+	myISettings *settings;
 	GList *strlist, *it;
 	gchar *key;
 
@@ -1087,12 +1087,13 @@ ofa_ope_template_frame_bin_load_dataset( ofaOpeTemplateFrameBin *bin )
 	 * if strlist is set, then create one page per ledger
 	 * other needed pages will be created on fly
 	 * nb: if the ledger no more exists, no page is created */
+	settings = ofa_hub_get_user_settings( priv->hub );
 	key = g_strdup_printf( "%s-pages", priv->settings_key );
-	strlist = ofa_settings_user_get_string_list( key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 	for( it=strlist ; it ; it=it->next ){
 		book_get_page_by_ledger( bin, ( const gchar * ) it->data, FALSE );
 	}
-	ofa_settings_free_string_list( strlist );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( key );
 
 	ofa_istore_load_dataset( OFA_ISTORE( priv->store ));
@@ -1237,9 +1238,10 @@ hub_on_reload_dataset( ofaHub *hub, GType type, ofaOpeTemplateFrameBin *self )
 }
 
 static void
-do_write_settings( ofaOpeTemplateFrameBin *self )
+write_settings( ofaOpeTemplateFrameBin *self )
 {
 	ofaOpeTemplateFrameBinPrivate *priv;
+	myISettings *settings;
 	GList *strlist;
 	gint i, count;
 	GtkWidget *page_w;
@@ -1248,6 +1250,7 @@ do_write_settings( ofaOpeTemplateFrameBin *self )
 
 	priv = ofa_ope_template_frame_bin_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	key = g_strdup_printf( "%s-pages", priv->settings_key );
 	strlist = NULL;
 
@@ -1262,7 +1265,7 @@ do_write_settings( ofaOpeTemplateFrameBin *self )
 		}
 	}
 
-	ofa_settings_user_set_string_list( key, strlist );
+	my_isettings_set_string_list( settings, HUB_USER_SETTINGS_GROUP, key, strlist );
 
 	g_list_free( strlist );
 	g_free( key );
