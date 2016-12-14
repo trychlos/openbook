@@ -71,15 +71,14 @@ typedef struct {
 
 GType             ofa_class_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaClassTreeview *ofa_class_treeview_new             ( void );
+ofaClassTreeview *ofa_class_treeview_new             ( ofaHub *hub );
 
 void              ofa_class_treeview_set_settings_key( ofaClassTreeview *view,
 															const gchar *key );
 
 void              ofa_class_treeview_setup_columns   ( ofaClassTreeview *view );
 
-void              ofa_class_treeview_set_hub         ( ofaClassTreeview *view,
-															ofaHub *hub );
+void              ofa_class_treeview_setup_store     ( ofaClassTreeview *view );
 
 ofoClass         *ofa_class_treeview_get_selected    ( ofaClassTreeview *view );
 

@@ -307,7 +307,7 @@ setup_bin( ofaPaimeanFrameBin *self )
 	gtk_container_add( GTK_CONTAINER( self ), grid );
 
 	/* treeview */
-	priv->tview = ofa_paimean_treeview_new();
+	priv->tview = ofa_paimean_treeview_new( priv->hub );
 	gtk_grid_attach( GTK_GRID( grid ), GTK_WIDGET( priv->tview ), 0, 0, 1, 1 );
 	ofa_paimean_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_paimean_treeview_setup_columns( priv->tview );
@@ -392,7 +392,7 @@ init_view( ofaPaimeanFrameBin *self )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	ofa_paimean_treeview_set_hub( priv->tview, priv->hub );
+	ofa_paimean_treeview_setup_store( priv->tview );
 }
 
 /**

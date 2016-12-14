@@ -340,7 +340,7 @@ idialog_init( myIDialog *instance )
 	setup_others( OFA_LEDGER_CLOSE( instance ));
 	setup_actions( OFA_LEDGER_CLOSE( instance ));
 
-	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
+	ofa_ledger_treeview_setup_store( priv->tview );
 	get_settings( OFA_LEDGER_CLOSE( instance ));
 
 	check_for_enable_dlg( OFA_LEDGER_CLOSE( instance ), NULL );
@@ -357,7 +357,7 @@ setup_treeview( ofaLedgerClose *self )
 	tview_parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-treeview-parent" );
 	g_return_if_fail( tview_parent && GTK_IS_CONTAINER( tview_parent ));
 
-	priv->tview = ofa_ledger_treeview_new();
+	priv->tview = ofa_ledger_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( tview_parent ), GTK_WIDGET( priv->tview ));
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 

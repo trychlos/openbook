@@ -41,6 +41,10 @@
 typedef struct {
 	gboolean           dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub            *hub;
+
 	/* UI
 	 */
 	ofaMiscAuditStore *store;
@@ -122,15 +126,26 @@ ofa_misc_audit_treeview_class_init( ofaMiscAuditTreeviewClass *klass )
 
 /**
  * ofa_misc_audit_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaMiscAuditTreeview instance.
  */
 ofaMiscAuditTreeview *
-ofa_misc_audit_treeview_new( void )
+ofa_misc_audit_treeview_new( ofaHub *hub )
 {
 	ofaMiscAuditTreeview *view;
+	ofaMiscAuditTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_MISC_AUDIT_TREEVIEW,
+					"ofa-tvbin-hub",    hub,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
+
+	priv = ofa_misc_audit_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	return( view );
 }
@@ -201,7 +216,6 @@ setup_columns( ofaMiscAuditTreeview *self )
 /**
  * ofa_misc_audit_treeview_setup_store:
  * @view: this #ofaMiscAuditTreeview instance.
- * @hub: the #ofaHub of the application.
  *
  * Create the store which automatically loads the first page of the
  * dataset.
@@ -209,22 +223,21 @@ setup_columns( ofaMiscAuditTreeview *self )
  * Returns: the #ofaMiscAuditStore instance.
  */
 ofaMiscAuditStore *
-ofa_misc_audit_treeview_setup_store( ofaMiscAuditTreeview *view, ofaHub *hub )
+ofa_misc_audit_treeview_setup_store( ofaMiscAuditTreeview *view )
 {
 	static const gchar *thisfn = "ofa_misc_audit_treeview_setup_store";
 	ofaMiscAuditTreeviewPrivate *priv;
 
-	g_debug( "%s: view=%p, hub=%p", thisfn, ( void * ) view, ( void * ) hub );
+	g_debug( "%s: view=%p", thisfn, ( void * ) view );
 
 	g_return_val_if_fail( view && OFA_IS_MISC_AUDIT_TREEVIEW( view ), NULL );
-	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	priv = ofa_misc_audit_treeview_get_instance_private( view );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	if( !priv->store ){
-		priv->store = ofa_misc_audit_store_new( hub );
+		priv->store = ofa_misc_audit_store_new( priv->hub );
 		ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	}
 

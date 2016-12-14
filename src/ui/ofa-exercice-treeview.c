@@ -30,6 +30,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-itvcolumnable.h"
@@ -47,6 +48,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaHub            *hub;
 	gchar             *settings_prefix;
 
 	/* runtime
@@ -228,22 +230,28 @@ ofa_exercice_treeview_class_init( ofaExerciceTreeviewClass *klass )
 
 /**
  * ofa_exercice_treeview_new:
+ * @hub: the #ofaHub object of the application.
  * @settings_prefix: the prefix of the user preferences in settings.
  *
  * Returns: a new #ofaExerciceTreeview instance.
  */
 ofaExerciceTreeview *
-ofa_exercice_treeview_new( const gchar *settings_prefix )
+ofa_exercice_treeview_new( ofaHub *hub, const gchar *settings_prefix )
 {
 	ofaExerciceTreeview *view;
 	ofaExerciceTreeviewPrivate *priv;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
 	view = g_object_new( OFA_TYPE_EXERCICE_TREEVIEW,
-					"ofa-tvbin-name", settings_prefix,
+					"ofa-tvbin-hub",    hub,
+					"ofa-tvbin-name",   settings_prefix,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_exercice_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );

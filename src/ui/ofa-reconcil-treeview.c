@@ -53,8 +53,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean                      dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub                       *hub;
 	/* runtime
 	 */
 	GtkTreeModelFilterVisibleFunc filter_fn;
@@ -219,19 +222,28 @@ ofa_reconcil_treeview_class_init( ofaReconcilTreeviewClass *klass )
 
 /**
  * ofa_reconcil_treeview_new:
+ * @hub: the #ofaHub object of the application.
  *
- * Returns: a new instance.
+ * Returns: a new #ofaReconcilTreeview instance.
  */
 ofaReconcilTreeview *
-ofa_reconcil_treeview_new( void )
+ofa_reconcil_treeview_new( ofaHub *hub )
 {
 	ofaReconcilTreeview *view;
+	ofaReconcilTreeviewPrivate *priv;
 	GtkWidget *treeview;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
 	view = g_object_new( OFA_TYPE_RECONCIL_TREEVIEW,
+				"ofa-tvbin-hub",     hub,
 				"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
-				"ofa-tvbin-shadow", GTK_SHADOW_IN,
+				"ofa-tvbin-shadow",  GTK_SHADOW_IN,
 				NULL );
+
+	priv = ofa_reconcil_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * the selected objects instead of just the raw GtkTreeSelection

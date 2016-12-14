@@ -203,7 +203,7 @@ setup_treeview( ofaLedgerPage *page )
 
 	priv = ofa_ledger_page_get_instance_private( page );
 
-	priv->tview = ofa_ledger_treeview_new();
+	priv->tview = ofa_ledger_treeview_new( priv->hub );
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_ledger_treeview_setup_columns( priv->tview );
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
@@ -302,7 +302,7 @@ action_page_v_init_view( ofaActionPage *page )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	ofa_ledger_treeview_set_hub( priv->tview, priv->hub );
+	ofa_ledger_treeview_setup_store( priv->tview );
 }
 
 /*

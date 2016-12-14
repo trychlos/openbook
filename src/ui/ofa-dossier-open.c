@@ -403,7 +403,7 @@ idialog_init_dossier( ofaDossierOpen *self, GtkSizeGroup *group )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-dossier-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	priv->dossier_tview = ofa_dossier_treeview_new();
+	priv->dossier_tview = ofa_dossier_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->dossier_tview ));
 	ofa_tvbin_set_headers( OFA_TVBIN( priv->dossier_tview ), FALSE );
 	ofa_dossier_treeview_set_settings_key( priv->dossier_tview, priv->settings_prefix );

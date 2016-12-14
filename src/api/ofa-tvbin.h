@@ -82,6 +82,10 @@
  *   horizontal scrollbar policy;
  *   will typically be NEVER for pages, AUTOMATIC (default) for dialogs.
  *
+ * - ofa-tvbin-hub:
+ *   the #ofaHub object of the application;
+ *   no default, will be %NULL if has not been previously set.
+ *
  * - ofa-tvbin-name:
  *   the identifier name of this class;
  *   defaults to the class name.
@@ -108,6 +112,8 @@
  */
 
 #include <gtk/gtk.h>
+
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
@@ -188,6 +194,11 @@ GtkPolicyType     ofa_tvbin_get_hpolicy           ( ofaTVBin *bin );
 
 void              ofa_tvbin_set_hpolicy           ( ofaTVBin *bin,
 														GtkPolicyType policy );
+
+ofaHub           *ofa_tvbin_get_hub               ( ofaTVBin *bin );
+
+void              ofa_tvbin_set_hub               ( ofaTVBin *bin,
+														ofaHub *hub );
 
 const gchar      *ofa_tvbin_get_name              ( ofaTVBin *bin );
 

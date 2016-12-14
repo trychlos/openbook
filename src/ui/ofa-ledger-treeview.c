@@ -47,11 +47,15 @@
 /* private instance data
  */
 typedef struct {
-	gboolean           dispose_has_run;
+	gboolean        dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub         *hub;
 
 	/* UI
 	 */
-	ofaLedgerStore    *store;
+	ofaLedgerStore *store;
 }
 	ofaLedgerTreeviewPrivate;
 
@@ -227,16 +231,27 @@ ofa_ledger_treeview_class_init( ofaLedgerTreeviewClass *klass )
 
 /**
  * ofa_ledger_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaLedgerTreeview instance.
  */
 ofaLedgerTreeview *
-ofa_ledger_treeview_new( void )
+ofa_ledger_treeview_new( ofaHub *hub )
 {
 	ofaLedgerTreeview *view;
+	ofaLedgerTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_LEDGER_TREEVIEW,
+					"ofa-tvbin-hub",     hub,
 					"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
-					"ofa-tvbin-shadow", GTK_SHADOW_IN,
+					"ofa-tvbin-shadow",  GTK_SHADOW_IN,
 					NULL );
+
+	priv = ofa_ledger_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
@@ -319,20 +334,18 @@ setup_columns( ofaLedgerTreeview *self )
 }
 
 /**
- * ofa_ledger_treeview_set_hub:
+ * ofa_ledger_treeview_setup_store:
  * @view: this #ofaLedgerTreeview instance.
- * @hub: the #ofaHub object of the application.
  *
  * Initialize the underlying store.
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
+ofa_ledger_treeview_setup_store( ofaLedgerTreeview *view )
 {
 	ofaLedgerTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_LEDGER_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_ledger_treeview_get_instance_private( view );
 
@@ -342,7 +355,7 @@ ofa_ledger_treeview_set_hub( ofaLedgerTreeview *view, ofaHub *hub )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_ledger_store_new( hub );
+	priv->store = ofa_ledger_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

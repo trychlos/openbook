@@ -652,7 +652,7 @@ p2_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p2_furi && GTK_IS_LABEL( priv->p2_furi ));
 	my_style_add( priv->p2_furi, "labelinfo" );
 
-	priv->p2_dossier_tview = ofa_dossier_treeview_new();
+	priv->p2_dossier_tview = ofa_dossier_treeview_new( priv->hub );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p2-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dossier_tview ));

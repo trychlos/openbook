@@ -44,6 +44,10 @@
 typedef struct {
 	gboolean          dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub           *hub;
+
 	/* UI
 	 */
 	ofaCurrencyStore *store;
@@ -221,15 +225,26 @@ ofa_currency_treeview_class_init( ofaCurrencyTreeviewClass *klass )
 
 /**
  * ofa_currency_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaCurrencyTreeview instance.
  */
 ofaCurrencyTreeview *
-ofa_currency_treeview_new( void )
+ofa_currency_treeview_new( ofaHub *hub )
 {
 	ofaCurrencyTreeview *view;
+	ofaCurrencyTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_CURRENCY_TREEVIEW,
+					"ofa-tvbin-hub",    hub,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
+
+	priv = ofa_currency_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
@@ -315,20 +330,18 @@ setup_columns( ofaCurrencyTreeview *self )
 }
 
 /**
- * ofa_currency_treeview_set_hub:
+ * ofa_currency_treeview_setup_store:
  * @view: this #ofaCurrencyTreeview instance.
- * @hub: the current #ofaHub object.
  *
  * Initialize the underlying store.
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_currency_treeview_set_hub( ofaCurrencyTreeview *view, ofaHub *hub )
+ofa_currency_treeview_setup_store( ofaCurrencyTreeview *view )
 {
 	ofaCurrencyTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_CURRENCY_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_currency_treeview_get_instance_private( view );
 
@@ -338,7 +351,7 @@ ofa_currency_treeview_set_hub( ofaCurrencyTreeview *view, ofaHub *hub )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_currency_store_new( hub );
+	priv->store = ofa_currency_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

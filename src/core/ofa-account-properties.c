@@ -590,7 +590,7 @@ init_balances_page( ofaAccountProperties *self )
 			ofo_account_get_futur_credit( priv->account ),
 			"p2-futur-credit", "p2-fut-credit-cur", priv->p2_group3, priv->p2_group4 );
 
-	tview = ofa_account_arc_treeview_new( priv->account );
+	tview = ofa_account_arc_treeview_new( priv->hub, priv->account );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( tview ));

@@ -202,7 +202,8 @@ ofa_ledger_book_bin_new( ofaIGetter *getter, const gchar *settings_key )
 	self = g_object_new( OFA_TYPE_LEDGER_BOOK_BIN, NULL );
 
 	priv = ofa_ledger_book_bin_get_instance_private( self );
-	priv->getter = getter;
+
+	priv->getter = ofa_igetter_get_permanent_getter( getter );
 
 	if( my_strlen( settings_key )){
 		g_free( priv->settings_key );
@@ -255,11 +256,11 @@ setup_ledger_selection( ofaLedgerBookBin *self )
 	hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
-	priv->tview = ofa_ledger_treeview_new();
+	priv->tview = ofa_ledger_treeview_new( hub );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_hexpand( OFA_TVBIN( priv->tview ), FALSE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_key );
-	ofa_ledger_treeview_set_hub( priv->tview, hub );
+	ofa_ledger_treeview_setup_store( priv->tview );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-frame-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));

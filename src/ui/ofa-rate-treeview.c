@@ -44,6 +44,10 @@
 typedef struct {
 	gboolean      dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub       *hub;
+
 	/* UI
 	 */
 	ofaRateStore *store;
@@ -221,15 +225,26 @@ ofa_rate_treeview_class_init( ofaRateTreeviewClass *klass )
 
 /**
  * ofa_rate_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaRateTreeview instance.
  */
 ofaRateTreeview *
-ofa_rate_treeview_new( void )
+ofa_rate_treeview_new( ofaHub *hub )
 {
 	ofaRateTreeview *view;
+	ofaRateTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_RATE_TREEVIEW,
+					"ofa-tvbin-hub",    hub,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
+
+	priv = ofa_rate_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoRate object instead of just the raw GtkTreeSelection
@@ -313,20 +328,18 @@ setup_columns( ofaRateTreeview *self )
 }
 
 /**
- * ofa_rate_treeview_set_hub:
+ * ofa_rate_treeview_setup_store:
  * @view: this #ofaRateTreeview instance.
- * @hub: the current #ofaHub object.
  *
  * Initialize the underlying store.
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_rate_treeview_set_hub( ofaRateTreeview *view, ofaHub *hub )
+ofa_rate_treeview_setup_store( ofaRateTreeview *view )
 {
 	ofaRateTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_RATE_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_rate_treeview_get_instance_private( view );
 
@@ -336,7 +349,7 @@ ofa_rate_treeview_set_hub( ofaRateTreeview *view, ofaHub *hub )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_rate_store_new( hub );
+	priv->store = ofa_rate_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

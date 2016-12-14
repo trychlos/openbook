@@ -47,6 +47,7 @@
  * - ofa-account-treeview-class-number: class number attached to this page.
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-account-def.h"
 
@@ -73,7 +74,8 @@ typedef struct {
 
 GType               ofa_account_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaAccountTreeview *ofa_account_treeview_new             ( gint class_num );
+ofaAccountTreeview *ofa_account_treeview_new             ( ofaHub *hub,
+																	gint class_num );
 
 gint                ofa_account_treeview_get_class       ( ofaAccountTreeview *view );
 

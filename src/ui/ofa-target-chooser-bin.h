@@ -42,6 +42,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 
@@ -68,7 +69,8 @@ typedef struct {
 
 GType                ofa_target_chooser_bin_get_type    ( void ) G_GNUC_CONST;
 
-ofaTargetChooserBin *ofa_target_chooser_bin_new         ( const gchar *settings_prefix );
+ofaTargetChooserBin *ofa_target_chooser_bin_new         ( ofaHub *hub,
+																const gchar *settings_prefix );
 
 gboolean             ofa_target_chooser_bin_get_selected( ofaTargetChooserBin *bin,
 																ofaIDBDossierMeta **meta,

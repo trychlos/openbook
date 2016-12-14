@@ -71,15 +71,14 @@ typedef struct {
 
 GType                ofa_currency_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaCurrencyTreeview *ofa_currency_treeview_new             ( void );
+ofaCurrencyTreeview *ofa_currency_treeview_new             ( ofaHub *hub );
 
 void                 ofa_currency_treeview_set_settings_key( ofaCurrencyTreeview *view,
 																	const gchar *key );
 
 void                 ofa_currency_treeview_setup_columns   ( ofaCurrencyTreeview *view );
 
-void                 ofa_currency_treeview_set_hub         ( ofaCurrencyTreeview *view,
-																	ofaHub *hub );
+void                 ofa_currency_treeview_setup_store     ( ofaCurrencyTreeview *view );
 
 ofoCurrency         *ofa_currency_treeview_get_selected    ( ofaCurrencyTreeview *view );
 

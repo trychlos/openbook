@@ -54,6 +54,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaHub  *hub;
 	gint     class_num;
 }
 	ofaAccountTreeviewPrivate;
@@ -307,6 +308,7 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
 
 /**
  * ofa_account_treeview_new:
+ * @hub: the #ofaHub object of the application.
  * @class_number: the filtered class number.
  *  It must be set at instanciation time as it is also used as a
  *  qualifier for the actions group name.
@@ -314,20 +316,20 @@ ofa_account_treeview_class_init( ofaAccountTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaAccountTreeview *
-ofa_account_treeview_new( gint class_number )
+ofa_account_treeview_new( ofaHub *hub, gint class_number )
 {
 	ofaAccountTreeview *view;
 	ofaAccountTreeviewPrivate *priv;
-	gchar *name;
 
-	name = g_strdup_printf( "class%d", class_number );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	view = g_object_new( OFA_TYPE_ACCOUNT_TREEVIEW, NULL );
-
-	g_free( name );
+	view = g_object_new( OFA_TYPE_ACCOUNT_TREEVIEW,
+				"ofa-tvbin-hub",  hub,
+				NULL );
 
 	priv = ofa_account_treeview_get_instance_private( view );
 
+	priv->hub = hub;
 	priv->class_num = class_number;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide

@@ -32,9 +32,9 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 
 #define ITVCOLUMNABLE_LAST_VERSION  1
 
@@ -44,6 +44,7 @@
 
 typedef struct {
 	gchar             *name;
+	ofaHub            *hub;
 	GList             *columns_list;
 	GtkTreeView       *treeview;
 	gint               visible_count;
@@ -330,6 +331,28 @@ ofa_itvcolumnable_set_name( ofaITVColumnable *instance, const gchar *name )
 
 	g_free( sdata->name );
 	sdata->name = g_strdup( name );
+}
+
+/**
+ * ofa_itvcolumnable_set_hub:
+ * @instance: the #ofaITVColumnable instance.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Set the @hub.
+ *
+ * This is needed in order to be able to access to user settings.
+ */
+void
+ofa_itvcolumnable_set_hub( ofaITVColumnable *instance, ofaHub *hub )
+{
+	sITVColumnable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ITVCOLUMNABLE( instance ) && OFA_IS_IACTIONABLE( instance ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	sdata = get_instance_data( instance );
+
+	sdata->hub = hub;
 }
 
 /**
@@ -1070,20 +1093,22 @@ action_name_to_column_id( const gchar *name )
 static gint
 read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
+	myISettings *settings;
 	gchar *settings_key;
-	GList *slist, *it;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gint count, col_id, col_width;
 	sColumn *scol;
 	GtkTreeViewColumn *prev;
 	GActionGroup *action_group;
 
+	settings = ofa_hub_get_user_settings( sdata->hub );
 	settings_key = g_strdup_printf( "%s-columns", sdata->name );
-	slist = ofa_settings_user_get_string_list( settings_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
 	count = 0;
 	prev = NULL;
-	it = slist ? slist : NULL;
+	it = strlist;
 
 	while( it ){
 		cstr = it ? it->data : NULL;
@@ -1107,7 +1132,7 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 		it = it ? it->next : NULL;
 	}
 
-	ofa_settings_free_string_list( slist );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
 
 	return( count );
@@ -1116,6 +1141,7 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 static void
 write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
+	myISettings *settings;
 	gchar *settings_key;
 	guint i, count;
 	GString *str;
@@ -1124,9 +1150,10 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 
 	if( sdata->treeview ){
 
-		str = g_string_new( "" );
+		settings = ofa_hub_get_user_settings( sdata->hub );
 		settings_key = g_strdup_printf( "%s-columns", sdata->name );
 		count = gtk_tree_view_get_n_columns( sdata->treeview );
+		str = g_string_new( "" );
 
 		for( i=0 ; i<count ; ++i ){
 			column = gtk_tree_view_get_column( sdata->treeview, i );
@@ -1137,7 +1164,7 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 			}
 		}
 
-		ofa_settings_user_set_string( settings_key, str->str );
+		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str->str );
 
 		g_free( settings_key );
 		g_string_free( str, TRUE );

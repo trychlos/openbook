@@ -74,15 +74,14 @@ typedef struct {
 
 GType                      ofa_recurrent_model_treeview_get_type          ( void ) G_GNUC_CONST;
 
-ofaRecurrentModelTreeview *ofa_recurrent_model_treeview_new               ( void );
+ofaRecurrentModelTreeview *ofa_recurrent_model_treeview_new               ( ofaHub *hub );
 
 void                       ofa_recurrent_model_treeview_set_settings_key  ( ofaRecurrentModelTreeview *view,
 																					const gchar *key );
 
 void                       ofa_recurrent_model_treeview_setup_columns     ( ofaRecurrentModelTreeview *view );
 
-void                       ofa_recurrent_model_treeview_set_hub           ( ofaRecurrentModelTreeview *view,
-																					ofaHub *hub );
+void                       ofa_recurrent_model_treeview_setup_store       ( ofaRecurrentModelTreeview *view );
 
 GList                     *ofa_recurrent_model_treeview_get_selected      ( ofaRecurrentModelTreeview *view );
 

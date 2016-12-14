@@ -57,9 +57,17 @@
 typedef struct {
 	gboolean      dispose_has_run;
 
-	GtkListStore *store;
+	/* initialization
+	 */
 	ofaHub       *hub;
+
+	/* runtime
+	 */
 	ofoCurrency  *currency;
+
+	/* UI
+	 */
+	GtkListStore *store;
 }
 	ofaBatlineTreeviewPrivate;
 
@@ -236,13 +244,25 @@ ofa_batline_treeview_class_init( ofaBatlineTreeviewClass *klass )
 
 /**
  * ofa_batline_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofoBatlineTreeview object.
  */
 ofaBatlineTreeview *
-ofa_batline_treeview_new( void )
+ofa_batline_treeview_new( ofaHub *hub )
 {
 	ofaBatlineTreeview *view;
+	ofaBatlineTreeviewPrivate *priv;
 
-	view = g_object_new( OFA_TYPE_BATLINE_TREEVIEW, NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
+	view = g_object_new( OFA_TYPE_BATLINE_TREEVIEW,
+					"ofa-tvbin-hub", hub,
+					NULL );
+
+	priv = ofa_batline_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBatLine object instead of just the raw GtkTreeSelection

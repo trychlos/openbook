@@ -72,6 +72,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_ITVCOLUMNABLE                      ( ofa_itvcolumnable_get_type())
@@ -125,6 +127,9 @@ guint              ofa_itvcolumnable_get_interface_version     ( GType type );
  */
 void               ofa_itvcolumnable_set_name                  ( ofaITVColumnable *instance,
 																		const gchar *name );
+
+void               ofa_itvcolumnable_set_hub                   ( ofaITVColumnable *instance,
+																		ofaHub *hub );
 
 void               ofa_itvcolumnable_set_treeview              ( ofaITVColumnable *instance,
 																		GtkTreeView *treeview );

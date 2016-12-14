@@ -72,15 +72,14 @@ typedef struct {
 
 GType               ofa_tva_form_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaTVAFormTreeview *ofa_tva_form_treeview_new             ( void );
+ofaTVAFormTreeview *ofa_tva_form_treeview_new             ( ofaHub *hub );
 
 void                ofa_tva_form_treeview_set_settings_key( ofaTVAFormTreeview *view,
 																	const gchar *key );
 
 void                ofa_tva_form_treeview_setup_columns   ( ofaTVAFormTreeview *view );
 
-void                ofa_tva_form_treeview_set_hub         ( ofaTVAFormTreeview *view,
-																	ofaHub *hub );
+void                ofa_tva_form_treeview_setup_store     ( ofaTVAFormTreeview *view );
 
 ofoTVAForm         *ofa_tva_form_treeview_get_selected    ( ofaTVAFormTreeview *view );
 

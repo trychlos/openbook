@@ -30,6 +30,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 
@@ -41,6 +42,10 @@
  */
 typedef struct {
 	gboolean             dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub              *hub;
 
 	/* runtime data
 	 */
@@ -136,19 +141,24 @@ ofa_target_chooser_bin_class_init( ofaTargetChooserBinClass *klass )
 
 /**
  * ofa_target_chooser_bin_new:
+ * @hub: the #ofaHub object of the application.
  * @settings_prefix: the prefix of the user preferences in settings.
  *
  * Returns: a new #ofaTargetChooserBin instance.
  */
 ofaTargetChooserBin *
-ofa_target_chooser_bin_new( const gchar *settings_prefix )
+ofa_target_chooser_bin_new( ofaHub *hub, const gchar *settings_prefix )
 {
 	ofaTargetChooserBin *bin;
 	ofaTargetChooserBinPrivate *priv;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
 	bin = g_object_new( OFA_TYPE_TARGET_CHOOSER_BIN, NULL );
 
 	priv = ofa_target_chooser_bin_get_instance_private( bin );
+
+	priv->hub = hub;
 
 	g_free( priv->settings_prefix );
 	priv->settings_prefix = g_strdup( settings_prefix );
@@ -178,7 +188,7 @@ setup_bin( ofaTargetChooserBin *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-dossier-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->dossier_treeview = ofa_dossier_treeview_new();
+	priv->dossier_treeview = ofa_dossier_treeview_new( priv->hub );
 	ofa_dossier_treeview_set_settings_key( priv->dossier_treeview, priv->settings_prefix );
 	ofa_dossier_treeview_setup_columns( priv->dossier_treeview );
 	ofa_dossier_treeview_set_show_all( priv->dossier_treeview, FALSE );
@@ -192,7 +202,7 @@ setup_bin( ofaTargetChooserBin *self )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-period-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->period_treeview = ofa_exercice_treeview_new( priv->settings_prefix );
+	priv->period_treeview = ofa_exercice_treeview_new( priv->hub, priv->settings_prefix );
 
 	btn = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-new-btn" );
 	g_return_if_fail( btn && GTK_IS_BUTTON( btn ));

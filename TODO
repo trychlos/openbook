@@ -417,7 +417,9 @@
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
 
-1289
+1289 2016-12-14 LedgerProperties/Balances tab: vertically expand the frame
+
+1290
 
 -----------------------------------------------------------------------
  DONE

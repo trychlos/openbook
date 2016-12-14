@@ -378,7 +378,7 @@ init_balances_page( ofaLedgerProperties *self )
 
 	priv = ofa_ledger_properties_get_instance_private( self );
 
-	tview = ofa_ledger_arc_treeview_new( priv->ledger );
+	tview = ofa_ledger_arc_treeview_new( priv->hub, priv->ledger );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p2-archives" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( tview ));

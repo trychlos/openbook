@@ -32,6 +32,7 @@
 #include "my/my-double-renderer.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-iactionable.h"
 #include "api/ofa-icontext.h"
 #include "api/ofa-itvcolumnable.h"
@@ -50,6 +51,7 @@ typedef struct {
 	gboolean         headers_visible;
 	gboolean         hexpand;
 	GtkPolicyType    hpolicy;
+	ofaHub          *hub;
 	gchar           *name;
 	GtkSelectionMode selection_mode;
 	GtkShadowType    shadow;
@@ -70,6 +72,7 @@ enum {
 	PROP_HEADERS_ID = 1,
 	PROP_HEXPAND_ID,
 	PROP_HPOLICY_ID,
+	PROP_HUB_ID,
 	PROP_NAME_ID,
 	PROP_SELMODE_ID,
 	PROP_SHADOW_ID,
@@ -194,6 +197,10 @@ tvbin_get_property( GObject *instance, guint property_id, GValue *value, GParamS
 				g_value_set_int( value, priv->hpolicy );
 				break;
 
+			case PROP_HUB_ID:
+				g_value_set_pointer( value, priv->hub );
+				break;
+
 			case PROP_NAME_ID:
 				g_value_set_string( value, priv->name );
 				break;
@@ -247,6 +254,10 @@ tvbin_set_property( GObject *instance, guint property_id, const GValue *value, G
 
 			case PROP_HPOLICY_ID:
 				priv->hpolicy = g_value_get_int( value );
+				break;
+
+			case PROP_HUB_ID:
+				priv->hub = g_value_get_pointer( value );
 				break;
 
 			case PROP_NAME_ID:
@@ -336,6 +347,8 @@ init_top_widget( ofaTVBin *self )
 	ofa_tvbin_set_selection_mode( self, priv->selection_mode );
 	selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
 	g_signal_connect( selection, "changed", G_CALLBACK( tview_on_row_selected ), self );
+
+	ofa_tvbin_set_hub( self, priv->hub );
 }
 
 static void
@@ -396,6 +409,15 @@ ofa_tvbin_class_init( ofaTVBinClass *klass )
 					"Horizontal scrollbar policy",
 					0, 99, GTK_POLICY_AUTOMATIC,
 					G_PARAM_CONSTRUCT_ONLY | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
+
+	g_object_class_install_property(
+			G_OBJECT_CLASS( klass ),
+			PROP_HUB_ID,
+			g_param_spec_pointer(
+					"ofa-tvbin-hub",
+					"ofaHub object of the application",
+					"ofaHub object of the application",
+					G_PARAM_CONSTRUCT | G_PARAM_READWRITE | G_PARAM_STATIC_STRINGS ));
 
 	g_object_class_install_property(
 			G_OBJECT_CLASS( klass ),
@@ -735,6 +757,51 @@ ofa_tvbin_set_hpolicy( ofaTVBin *bin, GtkPolicyType policy )
 	priv->hpolicy = policy;
 	gtk_scrolled_window_set_policy(
 			GTK_SCROLLED_WINDOW( priv->scrolled ), priv->hpolicy, GTK_POLICY_AUTOMATIC );
+}
+
+/**
+ * ofa_tvbin_get_hub:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: the #ofaHub object of the application.
+ */
+ofaHub *
+ofa_tvbin_get_hub( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	return( priv->hub );
+}
+
+/*
+ * ofa_tvbin_set_hub:
+ * @bin: this #ofaTVBin instance.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Set the @hub.
+ *
+ * This is needed in order to be able to access to user settings.
+ */
+void
+ofa_tvbin_set_hub( ofaTVBin *bin, ofaHub *hub )
+{
+	ofaTVBinPrivate *priv;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	priv->hub = hub;
+	ofa_itvcolumnable_set_hub( OFA_ITVCOLUMNABLE( bin ), hub );
 }
 
 /**
@@ -1594,7 +1661,7 @@ ofa_tvbin_set_cell_edited_func( ofaTVBin *bin, GCallback fn_cell, void *fn_data 
 }
 
 /*
- * ofa_tvbin_set_store:)
+ * ofa_tvbin_set_store:
  * @bin: this #ofaTVBin instance.
  * @store: the underlying store.
  *

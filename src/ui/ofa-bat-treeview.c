@@ -50,6 +50,10 @@
 typedef struct {
 	gboolean     dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub      *hub;
+
 	/* UI
 	 */
 	ofaBatStore *store;
@@ -227,16 +231,27 @@ ofa_bat_treeview_class_init( ofaBatTreeviewClass *klass )
 
 /**
  * ofa_bat_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaBatTreeview instance.
  */
 ofaBatTreeview *
-ofa_bat_treeview_new( void )
+ofa_bat_treeview_new( ofaHub *hub )
 {
 	ofaBatTreeview *view;
+	ofaBatTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_BAT_TREEVIEW,
 					"ofa-tvbin-hpolicy", GTK_POLICY_NEVER,
-					"ofa-tvbin-shadow", GTK_SHADOW_IN,
+					"ofa-tvbin-hub",     hub,
+					"ofa-tvbin-shadow",  GTK_SHADOW_IN,
 					NULL );
+
+	priv = ofa_bat_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoBat object instead of just the raw GtkTreeSelection
@@ -330,20 +345,18 @@ setup_columns( ofaBatTreeview *self )
 }
 
 /**
- * ofa_bat_treeview_set_hub:
+ * ofa_bat_treeview_setup_store:
  * @view: this #ofaBatTreeview instance.
- * @hub: the current #ofaHub object.
  *
  * Initialize the underlying store.
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_bat_treeview_set_hub( ofaBatTreeview *view, ofaHub *hub )
+ofa_bat_treeview_setup_store( ofaBatTreeview *view )
 {
 	ofaBatTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_bat_treeview_get_instance_private( view );
 
@@ -353,7 +366,7 @@ ofa_bat_treeview_set_hub( ofaBatTreeview *view, ofaHub *hub )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_bat_store_new( hub );
+	priv->store = ofa_bat_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

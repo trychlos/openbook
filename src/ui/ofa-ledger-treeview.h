@@ -75,15 +75,14 @@ typedef struct {
 
 GType              ofa_ledger_treeview_get_type         ( void ) G_GNUC_CONST;
 
-ofaLedgerTreeview *ofa_ledger_treeview_new              ( void );
+ofaLedgerTreeview *ofa_ledger_treeview_new              ( ofaHub *hub );
 
 void               ofa_ledger_treeview_set_settings_key ( ofaLedgerTreeview *view,
 																const gchar *key );
 
 void               ofa_ledger_treeview_setup_columns    ( ofaLedgerTreeview *view );
 
-void               ofa_ledger_treeview_set_hub          ( ofaLedgerTreeview *view,
-																ofaHub *hub );
+void               ofa_ledger_treeview_setup_store      ( ofaLedgerTreeview *view );
 
 GList             *ofa_ledger_treeview_get_selected     ( ofaLedgerTreeview *view );
 

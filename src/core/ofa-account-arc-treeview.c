@@ -128,6 +128,7 @@ ofa_account_arc_treeview_class_init( ofaAccountArcTreeviewClass *klass )
 
 /**
  * ofa_account_arc_treeview_new:
+ * @hub: the #ofaHub object of the application.
  * @account: the #ofoAccount.
  *
  * Define the treeview along with the subjacent store.
@@ -135,11 +136,16 @@ ofa_account_arc_treeview_class_init( ofaAccountArcTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaAccountArcTreeview *
-ofa_account_arc_treeview_new( ofoAccount *account )
+ofa_account_arc_treeview_new( ofaHub *hub, ofoAccount *account )
 {
 	ofaAccountArcTreeview *view;
 
-	view = g_object_new( OFA_TYPE_ACCOUNT_ARC_TREEVIEW, NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
+
+	view = g_object_new( OFA_TYPE_ACCOUNT_ARC_TREEVIEW,
+				"ofa-tvbin-hub", hub,
+				NULL );
 
 	setup_columns( view );
 	setup_store( view, account );

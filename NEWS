@@ -79,6 +79,7 @@
    - ofaIDBMeta interface is renamed to ofaIDBDossierMeta (todo #1274).
    - ofaIDBModel: update get a #ofaIGetter instead of a ofaHub (todo #1288).
    - ofaIDBPeriod interface is renamed to ofaIDBExerciceMeta (todo #1275).
+   - ofaITVColumnable: get rid of ofaSettings usage.
    - ofaMiscAuditStore: new class.
    - ofaMiscAuditTreeview: new class.
    - ofaMySQLMeta class is renamed to ofaMysqlDossierMeta (todo #1277).

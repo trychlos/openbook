@@ -299,7 +299,7 @@ setup_treeview( ofaBatSelect *self )
 	widget = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "treeview-parent" );
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 
-	priv->tview = ofa_bat_treeview_new();
+	priv->tview = ofa_bat_treeview_new( priv->hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->tview ), 0, 0, 0, 2 );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_bat_treeview_set_settings_key( priv->tview, priv->settings_prefix );
@@ -314,7 +314,7 @@ setup_treeview( ofaBatSelect *self )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	ofa_bat_treeview_set_hub( priv->tview, priv->hub );
+	ofa_bat_treeview_setup_store( priv->tview );
 	ofa_bat_treeview_set_selected( priv->tview, priv->bat_id );
 }
 

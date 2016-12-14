@@ -185,7 +185,7 @@ action_page_v_setup_view( ofaActionPage *page )
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
-	priv->tview = ofa_rate_treeview_new();
+	priv->tview = ofa_rate_treeview_new( priv->hub );
 	ofa_rate_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_rate_treeview_setup_columns( priv->tview );
 
@@ -269,7 +269,7 @@ action_page_v_init_view( ofaActionPage *page )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	ofa_rate_treeview_set_hub( priv->tview, priv->hub );
+	ofa_rate_treeview_setup_store( priv->tview );
 }
 
 /*

@@ -48,6 +48,10 @@
 typedef struct {
 	gboolean           dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub            *hub;
+
 	/* UI
 	 */
 	ofaTVARecordStore *store;
@@ -225,17 +229,26 @@ ofa_tva_record_treeview_class_init( ofaTVARecordTreeviewClass *klass )
 
 /**
  * ofa_tva_record_treeview_new:
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: a new #ofaTVARecordTreeview instance.
  */
 ofaTVARecordTreeview *
-ofa_tva_record_treeview_new( void )
+ofa_tva_record_treeview_new( ofaHub *hub )
 {
 	ofaTVARecordTreeview *view;
+	ofaTVARecordTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_TVA_RECORD_TREEVIEW,
+				"ofa-tvbin-hub",    hub,
 				"ofa-tvbin-shadow", GTK_SHADOW_IN,
 				NULL );
+
+	priv = ofa_tva_record_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
@@ -321,20 +334,18 @@ setup_columns( ofaTVARecordTreeview *self )
 }
 
 /**
- * ofa_tva_record_treeview_set_hub:
+ * ofa_tva_record_treeview_setup_store:
  * @view: this #ofaTVARecordTreeview instance.
- * @hub: the #ofaHub object of the application.
  *
  * Initialize the underlying store.
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_tva_record_treeview_set_hub( ofaTVARecordTreeview *view, ofaHub *hub )
+ofa_tva_record_treeview_setup_store( ofaTVARecordTreeview *view )
 {
 	ofaTVARecordTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_TVA_RECORD_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_tva_record_treeview_get_instance_private( view );
 
@@ -344,7 +355,7 @@ ofa_tva_record_treeview_set_hub( ofaTVARecordTreeview *view, ofaHub *hub )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_tva_record_store_new( hub );
+	priv->store = ofa_tva_record_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

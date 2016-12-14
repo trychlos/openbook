@@ -41,7 +41,11 @@
 /* private instance data
  */
 typedef struct {
-	gboolean      dispose_has_run;
+	gboolean         dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub          *hub;
 
 	/* UI
 	 */
@@ -220,13 +224,19 @@ ofa_paimean_treeview_class_init( ofaPaimeanTreeviewClass *klass )
 
 /**
  * ofa_paimean_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new instance.
  */
 ofaPaimeanTreeview *
-ofa_paimean_treeview_new( void )
+ofa_paimean_treeview_new( ofaHub *hub )
 {
 	ofaPaimeanTreeview *view;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
 	view = g_object_new( OFA_TYPE_PAIMEAN_TREEVIEW,
+					"ofa-tvbin-hub",    hub,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
@@ -313,20 +323,18 @@ setup_columns( ofaPaimeanTreeview *self )
 }
 
 /**
- * ofa_paimean_treeview_set_hub:
+ * ofa_paimean_treeview_setup_store:
  * @view: this #ofaPaimeanTreeview instance.
- * @hub: the current #ofaHub object.
  *
  * Initialize the underlying store.
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_paimean_treeview_set_hub( ofaPaimeanTreeview *view, ofaHub *hub )
+ofa_paimean_treeview_setup_store( ofaPaimeanTreeview *view )
 {
 	ofaPaimeanTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_PAIMEAN_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_paimean_treeview_get_instance_private( view );
 
@@ -336,7 +344,7 @@ ofa_paimean_treeview_set_hub( ofaPaimeanTreeview *view, ofaHub *hub )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_paimean_store_new( hub );
+	priv->store = ofa_paimean_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

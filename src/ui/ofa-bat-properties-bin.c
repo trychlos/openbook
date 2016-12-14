@@ -241,7 +241,7 @@ setup_treeview( ofaBatPropertiesBin *self )
 	box = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-boxview" );
 	g_return_if_fail( box && GTK_IS_CONTAINER( box ));
 
-	priv->tview = ofa_batline_treeview_new();
+	priv->tview = ofa_batline_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( box ), GTK_WIDGET( priv->tview ));
 }
 

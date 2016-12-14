@@ -45,6 +45,7 @@
  *    +------------------+--------------+
  */
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 #include "api/ofa-tvbin.h"
@@ -74,7 +75,7 @@ typedef struct {
 
 GType               ofa_dossier_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaDossierTreeview *ofa_dossier_treeview_new             ( void );
+ofaDossierTreeview *ofa_dossier_treeview_new             ( ofaHub *hub );
 
 void                ofa_dossier_treeview_set_settings_key( ofaDossierTreeview *view,
 																const gchar *key );

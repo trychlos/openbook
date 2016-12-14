@@ -214,7 +214,7 @@ setup_treeview( ofaRecurrentModelPage *self )
 
 	priv = ofa_recurrent_model_page_get_instance_private( self );
 
-	priv->tview = ofa_recurrent_model_treeview_new();
+	priv->tview = ofa_recurrent_model_treeview_new( priv->hub );
 	ofa_recurrent_model_treeview_set_settings_key( priv->tview, priv->settings_prefix );
 	ofa_recurrent_model_treeview_setup_columns( priv->tview );
 
@@ -337,7 +337,7 @@ action_page_v_init_view( ofaActionPage *page )
 	/* install the store at the very end of the initialization
 	 * (i.e. after treeview creation, signals connection, actions and
 	 *  menus definition) */
-	ofa_recurrent_model_treeview_set_hub( priv->tview, priv->hub );
+	ofa_recurrent_model_treeview_setup_store( priv->tview );
 
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */

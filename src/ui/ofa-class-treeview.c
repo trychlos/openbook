@@ -49,6 +49,10 @@
 typedef struct {
 	gboolean       dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub        *hub;
+
 	/* UI
 	 */
 	ofaClassStore *store;
@@ -226,15 +230,26 @@ ofa_class_treeview_class_init( ofaClassTreeviewClass *klass )
 
 /**
  * ofa_class_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaClassTreeview instance.
  */
 ofaClassTreeview *
-ofa_class_treeview_new( void )
+ofa_class_treeview_new( ofaHub *hub )
 {
 	ofaClassTreeview *view;
+	ofaClassTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_CLASS_TREEVIEW,
+					"ofa-tvbin-hub",    hub,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
+
+	priv = ofa_class_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoClass object instead of just the raw GtkTreeSelection
@@ -318,20 +333,18 @@ setup_columns( ofaClassTreeview *self )
 }
 
 /**
- * ofa_class_treeview_set_hub:
+ * ofa_class_treeview_setup_store:
  * @view: this #ofaClassTreeview instance.
- * @hub: the current #ofaHub object.
  *
  * Initialize the underlying store.
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_class_treeview_set_hub( ofaClassTreeview *view, ofaHub *hub )
+ofa_class_treeview_setup_store( ofaClassTreeview *view )
 {
 	ofaClassTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_CLASS_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_class_treeview_get_instance_private( view );
 
@@ -341,7 +354,7 @@ ofa_class_treeview_set_hub( ofaClassTreeview *view, ofaHub *hub )
 		setup_columns( view );
 	}
 
-	priv->store = ofa_class_store_new( hub );
+	priv->store = ofa_class_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

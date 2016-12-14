@@ -538,7 +538,7 @@ setup_treeview( ofaEntryPage *self )
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "entries-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
-	priv->tview = ofa_entry_treeview_new();
+	priv->tview = ofa_entry_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_selection_mode( OFA_TVBIN( priv->tview ), GTK_SELECTION_BROWSE );
 	ofa_entry_treeview_set_settings_key( priv->tview, priv->settings_prefix );

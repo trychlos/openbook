@@ -237,6 +237,7 @@ ofa_rec_period_treeview_new( ofaHub *hub )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_REC_PERIOD_TREEVIEW,
+					"ofa-tvbin-hub",    hub,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 

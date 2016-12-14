@@ -51,6 +51,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaHub  *hub;
 }
 	ofaLedgerArcTreeviewPrivate;
 
@@ -128,6 +129,7 @@ ofa_ledger_arc_treeview_class_init( ofaLedgerArcTreeviewClass *klass )
 
 /**
  * ofa_ledger_arc_treeview_new:
+ * @hub: the #ofaHub object of the application.
  * @ledger: the #ofoLedger.
  *
  * Define the treeview along with the subjacent store.
@@ -135,11 +137,21 @@ ofa_ledger_arc_treeview_class_init( ofaLedgerArcTreeviewClass *klass )
  * Returns: a new instance.
  */
 ofaLedgerArcTreeview *
-ofa_ledger_arc_treeview_new( ofoLedger *ledger )
+ofa_ledger_arc_treeview_new( ofaHub *hub, ofoLedger *ledger )
 {
 	ofaLedgerArcTreeview *view;
+	ofaLedgerArcTreeviewPrivate *priv;
 
-	view = g_object_new( OFA_TYPE_LEDGER_ARC_TREEVIEW, NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
+
+	view = g_object_new( OFA_TYPE_LEDGER_ARC_TREEVIEW,
+					"ofa-tvbin-hub", hub,
+					NULL );
+
+	priv = ofa_ledger_arc_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	setup_columns( view );
 	setup_store( view, ledger );

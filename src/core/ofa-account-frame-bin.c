@@ -474,7 +474,7 @@ book_create_page( ofaAccountFrameBin *self, gint class_num )
 
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
-	view = ofa_account_treeview_new( class_num );
+	view = ofa_account_treeview_new( priv->hub, class_num );
 	ofa_account_treeview_set_settings_key( view, priv->settings_key );
 	ofa_account_treeview_setup_columns( view );
 	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));

@@ -72,15 +72,14 @@ typedef struct {
 
 GType           ofa_bat_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaBatTreeview *ofa_bat_treeview_new             ( void );
+ofaBatTreeview *ofa_bat_treeview_new             ( ofaHub *hub );
 
 void            ofa_bat_treeview_set_settings_key( ofaBatTreeview *view,
 														const gchar *key );
 
 void            ofa_bat_treeview_setup_columns   ( ofaBatTreeview *view );
 
-void            ofa_bat_treeview_set_hub         ( ofaBatTreeview *view,
-														ofaHub *hub );
+void            ofa_bat_treeview_setup_store     ( ofaBatTreeview *view );
 
 ofoBat         *ofa_bat_treeview_get_selected    ( ofaBatTreeview *view );
 

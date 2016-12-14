@@ -42,7 +42,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-class.h"
@@ -654,15 +653,18 @@ static void
 iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
 {
 	ofaDBModelWindowPrivate *priv;
-	GList *slist, *it;
+	GList *strlist, *it;
+	const gchar *cstr;
 
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
-	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
-	it = slist ? slist : NULL;
-	priv->paned_pos = it ? atoi( it->data ) : 150;
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
 
-	ofa_settings_free_string_list( slist );
+	it = strlist;
+	cstr = it ? it->data : NULL;
+	priv->paned_pos = my_strlen( cstr ) ? atoi( cstr ) : 150;
+
+	my_isettings_free_string_list( settings, strlist );
 }
 
 static void
@@ -675,7 +677,7 @@ iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar 
 
 	str = g_strdup_printf( "%d;", gtk_paned_get_position( GTK_PANED( priv->paned )));
 
-	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
 
 	g_free( str );
 }

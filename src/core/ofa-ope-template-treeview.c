@@ -50,6 +50,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaHub   *hub;
 	gchar    *ledger;
 }
 	ofaOpeTemplateTreeviewPrivate;
@@ -304,27 +305,28 @@ ofa_ope_template_treeview_class_init( ofaOpeTemplateTreeviewClass *klass )
 
 /**
  * ofa_ope_template_treeview_new:
- * @class_number: the filtered class number.
+ * @hub: the #ofaHub object of the application.
+ * @ledger: the filtered ledger.
  *  It must be set at instanciation time as it is also used as a
  *  qualifier for the actions group name.
  *
  * Returns: a new instance.
  */
 ofaOpeTemplateTreeview *
-ofa_ope_template_treeview_new( const gchar *ledger )
+ofa_ope_template_treeview_new( ofaHub *hub, const gchar *ledger )
 {
 	ofaOpeTemplateTreeview *view;
 	ofaOpeTemplateTreeviewPrivate *priv;
-	gchar *name;
 
-	name = g_strdup_printf( "opetemplate_%s", ledger );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	view = g_object_new( OFA_TYPE_OPE_TEMPLATE_TREEVIEW, NULL );
-
-	g_free( name );
+	view = g_object_new( OFA_TYPE_OPE_TEMPLATE_TREEVIEW,
+				"ofa-tvbin-hub",  hub,
+				NULL );
 
 	priv = ofa_ope_template_treeview_get_instance_private( view );
 
+	priv->hub = hub;
 	priv->ledger = g_strdup( ledger );
 
 	/* signals sent by ofaTVBin base class are intercepted to provide

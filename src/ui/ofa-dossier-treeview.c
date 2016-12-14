@@ -30,6 +30,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-itvcolumnable.h"
@@ -45,11 +46,17 @@
 typedef struct {
 	gboolean         dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub          *hub;
+
+	/* runtime
+	 */
+	gboolean         show_all;
+
 	/* UI
 	 */
 	ofaDossierStore *store;
-
-	gboolean         show_all;
 }
 	ofaDossierTreeviewPrivate;
 
@@ -227,19 +234,30 @@ ofa_dossier_treeview_class_init( ofaDossierTreeviewClass *klass )
 
 /**
  * ofa_dossier_treeview_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new ofaDossierTreeview instance.
  */
 ofaDossierTreeview *
-ofa_dossier_treeview_new( void )
+ofa_dossier_treeview_new( ofaHub *hub )
 {
 	ofaDossierTreeview *view;
+	ofaDossierTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_DOSSIER_TREEVIEW,
+					"ofa-tvbin-hub",    hub,
 					"ofa-tvbin-shadow", GTK_SHADOW_IN,
 					NULL );
 
+	priv = ofa_dossier_treeview_get_instance_private( view );
+
+	priv->hub = hub;
+
 	/* signals sent by ofaTVBin base class are intercepted to provide
-	 * #ofoIDBMEta/#ofaIDBExerciceMeta objects instead of just the raw
-	 * GtkTreeSelection
+	 * #ofoIDBDossierMEta/#ofaIDBExerciceMeta objects instead of just
+	 * the raw GtkTreeSelection
 	 */
 	g_signal_connect( view, "ofa-selchanged", G_CALLBACK( on_selection_changed ), NULL );
 	g_signal_connect( view, "ofa-selactivated", G_CALLBACK( on_selection_activated ), NULL );

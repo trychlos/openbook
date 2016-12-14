@@ -49,9 +49,12 @@
 typedef struct {
 	gboolean  dispose_has_run;
 
-	/* runtime
+	/* initialization
 	 */
 	ofaHub   *hub;
+
+	/* runtime
+	 */
 	gint      visible;
 }
 	ofaRecurrentRunTreeviewPrivate;
@@ -248,8 +251,9 @@ ofa_recurrent_run_treeview_new( ofaHub *hub )
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_RECURRENT_RUN_TREEVIEW,
+					"ofa-tvbin-hub",     hub,
 					"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
-					"ofa-tvbin-shadow", GTK_SHADOW_IN,
+					"ofa-tvbin-shadow",  GTK_SHADOW_IN,
 					NULL );
 
 	priv = ofa_recurrent_run_treeview_get_instance_private( view );

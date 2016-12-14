@@ -51,6 +51,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-tvbin.h"
 #include "api/ofo-ope-template-def.h"
 
@@ -77,7 +78,8 @@ typedef struct {
 
 GType                   ofa_ope_template_treeview_get_type        ( void ) G_GNUC_CONST;
 
-ofaOpeTemplateTreeview *ofa_ope_template_treeview_new             ( const gchar *ledger );
+ofaOpeTemplateTreeview *ofa_ope_template_treeview_new             ( ofaHub *hub,
+																			const gchar *ledger );
 
 const gchar            *ofa_ope_template_treeview_get_ledger      ( ofaOpeTemplateTreeview *view );
 

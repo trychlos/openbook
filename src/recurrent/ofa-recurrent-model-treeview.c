@@ -49,6 +49,10 @@
 typedef struct {
 	gboolean                dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub                 *hub;
+
 	/* UI
 	 */
 	ofaRecurrentModelStore *store;
@@ -227,18 +231,27 @@ ofa_recurrent_model_treeview_class_init( ofaRecurrentModelTreeviewClass *klass )
 
 /**
  * ofa_recurrent_model_treeview_new:
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: a new #ofaRecurrentModelTreeview instance.
  */
 ofaRecurrentModelTreeview *
-ofa_recurrent_model_treeview_new( void )
+ofa_recurrent_model_treeview_new( ofaHub *hub )
 {
 	ofaRecurrentModelTreeview *view;
+	ofaRecurrentModelTreeviewPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	view = g_object_new( OFA_TYPE_RECURRENT_MODEL_TREEVIEW,
+				"ofa-tvbin-hub",     hub,
 				"ofa-tvbin-selmode", GTK_SELECTION_MULTIPLE,
 				"ofa-tvbin-shadow", GTK_SHADOW_IN,
 				NULL );
+
+	priv = ofa_recurrent_model_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	/* signals sent by ofaTVBin base class are intercepted to provide
 	 * a #ofoCurrency object instead of just the raw GtkTreeSelection
@@ -355,7 +368,7 @@ on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeMo
 }
 
 /**
- * ofa_recurrent_model_treeview_set_hub:
+ * ofa_recurrent_model_treeview_setup_store:
  * @view: this #ofaRecurrentModelTreeview instance.
  * @hub: the #ofaHub object of the application.
  *
@@ -363,12 +376,11 @@ on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeMo
  * Read the settings and show the columns accordingly.
  */
 void
-ofa_recurrent_model_treeview_set_hub( ofaRecurrentModelTreeview *view, ofaHub *hub )
+ofa_recurrent_model_treeview_setup_store( ofaRecurrentModelTreeview *view )
 {
 	ofaRecurrentModelTreeviewPrivate *priv;
 
 	g_return_if_fail( view && OFA_IS_RECURRENT_MODEL_TREEVIEW( view ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_recurrent_model_treeview_get_instance_private( view );
 
@@ -378,7 +390,7 @@ ofa_recurrent_model_treeview_set_hub( ofaRecurrentModelTreeview *view, ofaHub *h
 		setup_columns( view );
 	}
 
-	priv->store = ofa_recurrent_model_store_new( hub );
+	priv->store = ofa_recurrent_model_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

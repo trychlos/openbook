@@ -466,7 +466,7 @@ book_create_page( ofaOpeTemplateFrameBin *self, const gchar *ledger )
 		}
 	}
 
-	view = ofa_ope_template_treeview_new( ledger );
+	view = ofa_ope_template_treeview_new( priv->hub, ledger );
 	ofa_ope_template_treeview_set_settings_key( view, priv->settings_key );
 	ofa_ope_template_treeview_setup_columns( view );
 	ofa_istore_add_columns( OFA_ISTORE( priv->store ), OFA_TVBIN( view ));
