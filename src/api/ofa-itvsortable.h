@@ -37,6 +37,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_ITVSORTABLE                      ( ofa_itvsortable_get_type())
@@ -153,6 +155,9 @@ gint          ofa_itvsortable_sort_str_int              ( const gchar *a, const 
  */
 void          ofa_itvsortable_set_name                  ( ofaITVSortable *instance,
 																const gchar *name );
+
+void          ofa_itvsortable_set_hub                   ( ofaITVSortable *instance,
+																ofaHub *hub );
 
 void          ofa_itvsortable_set_treeview              ( ofaITVSortable *instance,
 																GtkTreeView *treeview );

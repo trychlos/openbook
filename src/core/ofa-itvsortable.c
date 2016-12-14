@@ -32,8 +32,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-amount.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-itvsortable.h"
-#include "api/ofa-settings.h"
 
 /* data structure associated to the instance
  */
@@ -42,6 +42,7 @@ typedef struct {
 	/* input
 	 */
 	gchar             *name;
+	ofaHub            *hub;
 	GtkTreeView       *treeview;
 	gint               def_column;
 	GtkSortType        def_order;
@@ -69,8 +70,8 @@ static gint          get_column_id( ofaITVSortable *instance, GtkTreeViewColumn 
 static void          on_header_clicked( GtkTreeViewColumn *column, ofaITVSortable *instance );
 static void          set_sort_indicator( ofaITVSortable *instance, sITVSortable *sdata );
 static gint          on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaITVSortable *instance );
-static void          get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
-static void          set_sort_settings( ofaITVSortable *instance, sITVSortable *sdata );
+static void          read_settings( ofaITVSortable *instance, sITVSortable *sdata );
+static void          write_settings( ofaITVSortable *instance, sITVSortable *sdata );
 static sITVSortable *get_itvsortable_data( ofaITVSortable *instance );
 static void          on_instance_finalized( sITVSortable *sdata, GObject *finalized_instance );
 
@@ -289,6 +290,26 @@ ofa_itvsortable_sort_str_int( const gchar *a, const gchar *b )
 /**
  * ofa_itvsortable_set_name:
  * @instance: this #ofaIStorable instance.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Set the @hub.
+ */
+void
+ofa_itvsortable_set_hub( ofaITVSortable *instance, ofaHub *hub )
+{
+	sITVSortable *sdata;
+
+	g_return_if_fail( instance && OFA_IS_ITVSORTABLE( instance ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	sdata = get_itvsortable_data( instance );
+
+	sdata->hub = hub;
+}
+
+/**
+ * ofa_itvsortable_set_hub:
+ * @instance: this #ofaIStorable instance.
  * @name: the identifier name which is to be used as a prefix key in the
  *  user settings.
  *
@@ -406,7 +427,7 @@ setup_sort_model( ofaITVSortable *instance, sITVSortable *sdata )
 {
 	if( sdata->sort_model && sdata->treeview && ofa_itvsortable_get_is_sortable( instance )){
 		setup_columns_for_sort( instance, sdata );
-		get_sort_settings( instance, sdata );
+		read_settings( instance, sdata );
 		set_sort_indicator( instance, sdata );
 	}
 }
@@ -478,7 +499,7 @@ on_header_clicked( GtkTreeViewColumn *column, ofaITVSortable *instance )
 		sdata->sort_order = sdata->sort_order == GTK_SORT_ASCENDING ? GTK_SORT_DESCENDING : GTK_SORT_ASCENDING;
 	}
 
-	set_sort_settings( instance, sdata );
+	write_settings( instance, sdata );
 	set_sort_indicator( instance, sdata );
 }
 
@@ -568,7 +589,7 @@ ofa_itvsortable_get_is_sortable( ofaITVSortable *instance )
 }
 
 /*
- * sort_settings: sort_column_id;sort_order;
+ * sort_settings: sort_column_id(i); sort_order(i);
  *
  * Note that we record the actual sort order (gtk_sort_ascending for
  * ascending order); only the *display* of the sort indicator of the
@@ -578,9 +599,10 @@ ofa_itvsortable_get_is_sortable( ofaITVSortable *instance )
  * 1: GTK_SORT_DESCENDING
  */
 static void
-get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
+read_settings( ofaITVSortable *self, sITVSortable *sdata )
 {
-	GList *slist, *it, *columns;
+	myISettings *settings;
+	GList *strlist, *it, *columns;
 	const gchar *cstr;
 	gchar *sort_key;
 	GtkTreeViewColumn *column;
@@ -593,10 +615,11 @@ get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
 
 	/* get the settings (if any)
 	 */
+	settings = ofa_hub_get_user_settings( sdata->hub );
 	sort_key = g_strdup_printf( "%s-sort", sdata->name );
-	slist = ofa_settings_user_get_string_list( sort_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, sort_key );
 
-	it = slist ? slist : NULL;
+	it = strlist;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		sdata->sort_column_id = atoi( cstr );
@@ -608,7 +631,7 @@ get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
 		sdata->sort_order = atoi( cstr );
 	}
 
-	ofa_settings_free_string_list( slist );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( sort_key );
 
 	/* setup the initial sort column
@@ -625,14 +648,16 @@ get_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
 }
 
 static void
-set_sort_settings( ofaITVSortable *instance, sITVSortable *sdata )
+write_settings( ofaITVSortable *instance, sITVSortable *sdata )
 {
+	myISettings *settings;
 	gchar *str, *sort_key;
 
+	settings = ofa_hub_get_user_settings( sdata->hub );
 	sort_key = g_strdup_printf( "%s-sort", sdata->name );
 	str = g_strdup_printf( "%d;%d;", sdata->sort_column_id, sdata->sort_order );
 
-	ofa_settings_user_set_string( sort_key, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, sort_key, str );
 
 	g_free( str );
 	g_free( sort_key );

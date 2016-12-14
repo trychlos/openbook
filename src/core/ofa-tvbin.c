@@ -801,7 +801,9 @@ ofa_tvbin_set_hub( ofaTVBin *bin, ofaHub *hub )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->hub = hub;
+
 	ofa_itvcolumnable_set_hub( OFA_ITVCOLUMNABLE( bin ), hub );
+	ofa_itvsortable_set_hub( OFA_ITVSORTABLE( bin ), hub );
 }
 
 /**

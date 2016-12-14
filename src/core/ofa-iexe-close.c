@@ -33,15 +33,14 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-iexe-close.h"
-#include "api/ofa-settings.h"
 
 #define IEXECLOSE_LAST_VERSION    1
 
 static guint st_initializations         = 0;	/* interface initialization count */
 
-static GType    register_type( void );
-static void     interface_base_init( ofaIExeCloseInterface *klass );
-static void     interface_base_finalize( ofaIExeCloseInterface *klass );
+static GType register_type( void );
+static void  interface_base_init( ofaIExeCloseInterface *klass );
+static void  interface_base_finalize( ofaIExeCloseInterface *klass );
 
 /**
  * ofa_iexe_close_get_type:

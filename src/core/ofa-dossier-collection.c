@@ -35,7 +35,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-settings.h"
 
 /* private instance data
  */
