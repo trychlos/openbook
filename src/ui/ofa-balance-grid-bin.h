@@ -37,6 +37,8 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_BALANCE_GRID_BIN                ( ofa_balance_grid_bin_get_type())
@@ -60,7 +62,7 @@ typedef struct {
 
 GType              ofa_balance_grid_bin_get_type ( void ) G_GNUC_CONST;
 
-ofaBalanceGridBin *ofa_balance_grid_bin_new      ( void );
+ofaBalanceGridBin *ofa_balance_grid_bin_new      ( ofaHub *hub );
 
 G_END_DECLS
 

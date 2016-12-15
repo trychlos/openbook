@@ -508,10 +508,13 @@ static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_ledger_treeview_v_sort";
+	ofaLedgerTreeviewPrivate *priv;
 	gint cmp;
 	gchar *mnemoa, *labela, *entrya, *closea, *notesa, *updusera, *updstampa;
 	gchar *mnemob, *labelb, *entryb, *closeb, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
+
+	priv = ofa_ledger_treeview_get_instance_private( OFA_LEDGER_TREEVIEW( bin ));
 
 	gtk_tree_model_get( tmodel, a,
 			LEDGER_COL_MNEMO,       &mnemoa,
@@ -548,7 +551,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = ofa_itvsortable_sort_str_int( entrya, entryb );
 			break;
 		case LEDGER_COL_LAST_CLOSE:
-			cmp = my_date_compare_by_str( closea, closeb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( closea, closeb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case LEDGER_COL_NOTES:
 			cmp = my_collate( notesa, notesb );

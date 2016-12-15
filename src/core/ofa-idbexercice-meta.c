@@ -30,6 +30,7 @@
 
 #include "my/my-date.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-preferences.h"
 
@@ -38,6 +39,7 @@
  * which do not depend of a specific implementation
  */
 typedef struct {
+	ofaHub  *hub;
 	GDate    begin;
 	GDate    end;
 	gboolean current;
@@ -182,6 +184,48 @@ ofa_idbexercice_meta_get_interface_version( GType type )
 }
 
 /**
+ * ofa_idbexercice_meta_get_hub:
+ * @period: this #ofaIDBExerciceMeta instance.
+ *
+ * Returns: the #ofaHub object of the application which has been set
+ * at initialization time.
+ *
+ * The returned reference is owned by the @period instance, and should
+ * not be released by the caller.
+ */
+ofaHub *
+ofa_idbexercice_meta_get_hub( const ofaIDBExerciceMeta *period )
+{
+	sIDBMeta *data;
+
+	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
+
+	data = get_idbperiod_data( period );
+
+	return( data->hub );
+}
+
+/**
+ * ofa_idbexercice_meta_set_hub:
+ * @period: this #ofaIDBExerciceMeta instance.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Set the @hub object.
+ */
+void
+ofa_idbexercice_meta_set_hub( ofaIDBExerciceMeta *period, ofaHub *hub )
+{
+	sIDBMeta *data;
+
+	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	data = get_idbperiod_data( period );
+
+	data->hub = hub;
+}
+
+/**
  * ofa_idbexercice_meta_get_begin_date:
  * @period: this #ofaIDBExerciceMeta instance.
  *
@@ -195,6 +239,7 @@ ofa_idbexercice_meta_get_begin_date( const ofaIDBExerciceMeta *period )
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
 	data = get_idbperiod_data( period );
+
 	return(( const GDate * ) &data->begin );
 }
 
@@ -213,6 +258,7 @@ ofa_idbexercice_meta_set_begin_date( ofaIDBExerciceMeta *period, const GDate *da
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbperiod_data( period );
+
 	my_date_set_from_date( &data->begin, date );
 }
 
@@ -230,6 +276,7 @@ ofa_idbexercice_meta_get_end_date( const ofaIDBExerciceMeta *period )
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
 
 	data = get_idbperiod_data( period );
+
 	return(( const GDate * ) &data->end );
 }
 
@@ -248,6 +295,7 @@ ofa_idbexercice_meta_set_end_date( ofaIDBExerciceMeta *period, const GDate *date
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbperiod_data( period );
+
 	my_date_set_from_date( &data->end, date );
 }
 
@@ -266,6 +314,7 @@ ofa_idbexercice_meta_get_current( const ofaIDBExerciceMeta *period )
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), FALSE );
 
 	data = get_idbperiod_data( period );
+
 	return( data->current );
 }
 
@@ -284,6 +333,7 @@ ofa_idbexercice_meta_set_current( ofaIDBExerciceMeta *period, gboolean current )
 	g_return_if_fail( period && OFA_IS_IDBEXERCICE_META( period ));
 
 	data = get_idbperiod_data( period );
+
 	data->current = current;
 }
 
@@ -320,11 +370,14 @@ ofa_idbexercice_meta_get_status( const ofaIDBExerciceMeta *period )
 gchar *
 ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 {
+	sIDBMeta *data;
 	GString *svalue;
 	gchar *sdate;
 	const GDate *begin, *end;
 
 	g_return_val_if_fail( period && OFA_IS_IDBEXERCICE_META( period ), NULL );
+
+	data = get_idbperiod_data( period );
 
 	svalue = g_string_new( ofa_idbexercice_meta_get_current( period )
 					? _( "Current exercice" )
@@ -332,14 +385,14 @@ ofa_idbexercice_meta_get_label( const ofaIDBExerciceMeta *period )
 
 	begin = ofa_idbexercice_meta_get_begin_date( period );
 	if( my_date_is_valid( begin )){
-		sdate = my_date_to_str( begin, ofa_prefs_date_display());
+		sdate = my_date_to_str( begin, ofa_prefs_date_display( data->hub ));
 		g_string_append_printf( svalue, _( " from %s" ), sdate );
 		g_free( sdate );
 	}
 
 	end = ofa_idbexercice_meta_get_end_date( period );
 	if( my_date_is_valid( end )){
-		sdate = my_date_to_str( end, ofa_prefs_date_display());
+		sdate = my_date_to_str( end, ofa_prefs_date_display( data->hub ));
 		g_string_append_printf( svalue, _( " to %s" ), sdate );
 		g_free( sdate );
 	}

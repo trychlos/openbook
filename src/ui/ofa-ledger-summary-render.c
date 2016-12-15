@@ -61,6 +61,7 @@ typedef struct {
 
 	/* internals
 	 */
+	ofaHub              *hub;
 	GDate                from_date;
 	GDate                to_date;
 	gulong               count;					/* total count of entries */
@@ -208,6 +209,9 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( page ));
 
+	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
 	on_args_changed( priv->args_bin, OFA_LEDGER_SUMMARY_RENDER( page ));
 	get_settings( OFA_LEDGER_SUMMARY_RENDER( page ));
 }
@@ -261,17 +265,14 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	ofaLedgerSummaryRenderPrivate *priv;
 	GList *dataset;
 	ofaIDateFilter *date_filter;
-	ofaHub *hub;
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( page ));
-
-	hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 
 	date_filter = ofa_ledger_summary_bin_get_date_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
-	dataset = ofo_ledger_get_dataset( hub );
+	dataset = ofo_ledger_get_dataset( priv->hub );
 
 	return( dataset );
 }
@@ -359,13 +360,14 @@ irenderable_begin_render( ofaIRenderable *instance, gdouble render_width, gdoubl
 static gchar *
 irenderable_get_dossier_name( const ofaIRenderable *instance )
 {
-	ofaHub *hub;
+	ofaLedgerSummaryRenderPrivate *priv;
 	const ofaIDBConnect *connect;
 	ofaIDBDossierMeta *meta;
 	const gchar *dossier_name;
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
-	connect = ofa_hub_get_connect( hub );
+	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( instance ));
+
+	connect = ofa_hub_get_connect( priv->hub );
 	meta = ofa_idbconnect_get_dossier_meta( connect );
 	dossier_name = ofa_idbdossier_meta_get_dossier_name( meta );
 	g_object_unref( meta );
@@ -394,8 +396,8 @@ irenderable_get_page_header_subtitle( const ofaIRenderable *instance )
 	if( !my_date_is_valid( &priv->from_date ) && !my_date_is_valid( &priv->to_date )){
 		stitle = g_string_append( stitle, "All effect dates" );
 	} else {
-		sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_display());
-		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display());
+		sfrom_date = my_date_to_str( &priv->from_date, ofa_prefs_date_display( priv->hub ));
+		sto_date = my_date_to_str( &priv->to_date, ofa_prefs_date_display( priv->hub ));
 		if( my_date_is_valid( &priv->from_date )){
 			g_string_append_printf( stitle, _( "From %s" ), sfrom_date );
 			if( my_date_is_valid( &priv->to_date )){
@@ -464,11 +466,9 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 	gdouble y, line_height;
 	gboolean first;
 	gchar *str;
-	ofaHub *hub;
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( instance ));
 
-	hub = ofa_igetter_get_hub( OFA_IGETTER( instance ));
 	is_paginating = ofa_irenderable_is_paginating( instance );
 
 	/* take ledger properties */
@@ -479,7 +479,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 
 	/* take the entries for this ledger */
 	entries = ofo_entry_get_dataset_for_print_by_ledger(
-						hub, mnemos_list,
+						priv->hub, mnemos_list,
 						my_date_is_valid( &priv->from_date ) ? &priv->from_date : NULL,
 						my_date_is_valid( &priv->to_date ) ? &priv->to_date : NULL );
 
@@ -495,7 +495,7 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 		credit = ofo_entry_get_credit( entry );
 
 		ofs_currency_add_by_code(
-				&ledger_currencies, hub, ccuriso,
+				&ledger_currencies, priv->hub, ccuriso,
 				is_paginating ? 0 : debit, is_paginating ? 0 : credit );
 
 		priv->count += 1;
@@ -530,12 +530,12 @@ irenderable_draw_line( ofaIRenderable *instance, GList *current )
 						priv->body_ledlabel_ltab, y, ofo_ledger_get_label( ledger ), PANGO_ALIGN_LEFT );
 			}
 
-			str = ofa_amount_to_str( scur->debit, scur->currency );
+			str = ofa_amount_to_str( scur->debit, scur->currency, priv->hub );
 			ofa_irenderable_set_text( instance,
 					priv->body_debit_rtab, y, str, PANGO_ALIGN_RIGHT );
 			g_free( str );
 
-			str = ofa_amount_to_str( scur->credit, scur->currency );
+			str = ofa_amount_to_str( scur->credit, scur->currency, priv->hub );
 			ofa_irenderable_set_text( instance,
 					priv->body_credit_rtab, y, str, PANGO_ALIGN_RIGHT );
 			g_free( str );
@@ -603,12 +603,12 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
 			first = FALSE;
 		}
 
-		str = ofa_amount_to_str( scur->debit, scur->currency );
+		str = ofa_amount_to_str( scur->debit, scur->currency, priv->hub );
 		ofa_irenderable_set_text( instance,
 				priv->body_debit_rtab-shift, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );
 
-		str = ofa_amount_to_str( scur->credit, scur->currency );
+		str = ofa_amount_to_str( scur->credit, scur->currency, priv->hub );
 		ofa_irenderable_set_text( instance,
 				priv->body_credit_rtab-shift, top, str, PANGO_ALIGN_RIGHT );
 		g_free( str );

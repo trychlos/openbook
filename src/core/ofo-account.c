@@ -680,7 +680,7 @@ ofo_account_is_deletable( const ofoAccount *account )
 	deletable = TRUE;
 	hub = ofo_base_get_hub( OFO_BASE( account ));
 
-	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children()){
+	if( ofo_account_is_root( account ) && ofa_prefs_account_delete_root_with_children( hub )){
 		children = ofo_account_get_children( account );
 		for( it=children ; it && deletable ; it=it->next ){
 			deletable &= ofo_account_is_deletable( OFO_ACCOUNT( it->data ));

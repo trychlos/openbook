@@ -391,10 +391,13 @@ check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record )
 static void
 delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 {
+	ofaTVARecordPagePrivate *priv;
 	gchar *msg, *send;
 	gboolean delete_ok;
 
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display());
+	priv = ofa_tva_record_page_get_instance_private( self );
+
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->hub ));
 	msg = g_strdup_printf( _( "Are you sure you want delete the %s at %s TVA declaration ?" ),
 				ofo_tva_record_get_mnemo( record ), send );
 

@@ -87,6 +87,7 @@
    - ofaMySQLPeriod class is renamed to ofaMysqlExerciceMeta (todo #1278).
    - ofaOpeTemplateFrameBin: get rid of ofaSettings usage.
    - ofaPortfolioCollection class is renamed to ofaDossierCollection (todo #1264).
+   - ofaPreferences: get rid of ofaSettings usage.
    - ofaSettings: deprecate all ofa_settings_dossier_xxx() methods.
    - ofaTargetChooserBin: new class.
    - ofaTVBin: new ofa-tvbin-vexpand property.

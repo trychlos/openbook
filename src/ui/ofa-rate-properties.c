@@ -50,36 +50,35 @@
 /* private instance data
  */
 typedef struct {
-	gboolean       dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter    *getter;
-	GtkWindow     *parent;
-	ofoRate       *rate;
+	ofaIGetter *getter;
+	GtkWindow  *parent;
+	ofoRate    *rate;
 
 	/* runtime
 	 */
-	ofaHub        *hub;
-	gboolean       is_writable;
-	gboolean       is_new;
+	ofaHub     *hub;
+	gboolean    is_writable;
+	gboolean    is_new;
 
 	/* UI
 	 */
-	GtkWidget     *grid;				/* the grid which handles the validity rows */
-	GtkWidget     *ok_btn;
-	GtkWidget     *msg_label;
+	GtkWidget  *grid;				/* the grid which handles the validity rows */
+	GtkWidget  *ok_btn;
+	GtkWidget  *msg_label;
 
 	/* data
 	 */
-	gchar         *mnemo;
-	gchar         *label;
+	gchar      *mnemo;
+	gchar      *label;
 }
 	ofaRatePropertiesPrivate;
 
 #define DATA_COLUMN                     "ofa-data-column"
 #define DATA_ROW                        "ofa-data-row"
-#define DEFAULT_RATE_DECIMALS           3
 
 /* the columns in the dynamic grid
  */
@@ -421,7 +420,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -429,7 +428,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_BEGIN, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
@@ -441,7 +440,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_date_editable_init( GTK_EDITABLE( entry ));
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 	g_signal_connect( entry, "changed", G_CALLBACK( on_date_changed ), self );
 	gtk_widget_set_sensitive( entry, priv->is_writable );
 	my_igridlist_set_widget(
@@ -449,7 +448,7 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 			entry, 1+COL_END, row, 1, 1 );
 
 	label = gtk_label_new( "" );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
 	gtk_widget_set_sensitive( label, FALSE );
 	my_utils_widget_set_margin_right( label, 4 );
@@ -461,8 +460,11 @@ setup_detail_widgets( ofaRateProperties *self, guint row )
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), DEFAULT_RATE_DECIMALS );
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
+			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
+			ofa_prefs_amount_accept_dot( priv->hub ),
+			ofa_prefs_amount_accept_comma( priv->hub ),
+			HUB_DEFAULT_DECIMALS_RATE );
 	g_signal_connect( entry, "changed", G_CALLBACK( on_rate_changed ), self );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), 10 );
 	gtk_entry_set_max_length( GTK_ENTRY( entry ), 10 );

@@ -382,7 +382,7 @@ idialog_init_exercice( ofaDossierOpen *self, GtkSizeGroup *group )
 
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "do-exercice-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
-	priv->exercice_combo = ofa_exercice_combo_new();
+	priv->exercice_combo = ofa_exercice_combo_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->exercice_combo ));
 	g_signal_connect( priv->exercice_combo, "ofa-changed", G_CALLBACK( on_exercice_changed ), self );
 

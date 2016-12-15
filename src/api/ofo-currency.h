@@ -63,12 +63,6 @@ typedef struct {
 }
 	ofoCurrencyClass;
 
-/**
- * CUR_DEFAULT_DIGITS:
- * Default count of digits when displaying a currency
- */
-#define CUR_DEFAULT_DIGITS              2
-
 GType           ofo_currency_get_type          ( void ) G_GNUC_CONST;
 
 GList          *ofo_currency_get_dataset       ( ofaHub *hub );

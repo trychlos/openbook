@@ -339,7 +339,7 @@ idialog_init( myIDialog *instance )
 	my_date_set_from_date( &priv->closing, ofo_ledger_get_last_close( priv->ledger ));
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "p1-last-close" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	str = my_date_to_str( &priv->closing, ofa_prefs_date_display());
+	str = my_date_to_str( &priv->closing, ofa_prefs_date_display( priv->hub ));
 	gtk_entry_set_text( GTK_ENTRY( entry ), str );
 	g_free( str );
 	last_close_entry = entry;

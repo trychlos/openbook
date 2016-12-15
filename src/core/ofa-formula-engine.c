@@ -35,6 +35,7 @@
 
 #include "api/ofa-amount.h"
 #include "api/ofa-formula-engine.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-currency.h"
 
@@ -42,6 +43,10 @@
  */
 typedef struct {
 	gboolean         dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub          *hub;
 
 	/* amount interpretation format
 	 */
@@ -240,9 +245,9 @@ ofa_formula_engine_init( ofaFormulaEngine *self )
 
 	priv->dispose_has_run = FALSE;
 
-	priv->thousand_sep = g_utf8_get_char( ofa_prefs_amount_thousand_sep());
-	priv->decimal_sep = g_utf8_get_char( ofa_prefs_amount_decimal_sep());
-	priv->digits = CUR_DEFAULT_DIGITS;
+	priv->thousand_sep = g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub ));
+	priv->decimal_sep = g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub ));
+	priv->digits = HUB_DEFAULT_DECIMALS_AMOUNT;
 
 	priv->auto_eval = TRUE;
 }
@@ -377,15 +382,23 @@ regex_allocate( void )
 
 /**
  * ofa_formula_engine_new:
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: a new #ofaFormulaEngine object.
  */
 ofaFormulaEngine *
-ofa_formula_engine_new( void )
+ofa_formula_engine_new( ofaHub *hub )
 {
 	ofaFormulaEngine *engine;
+	ofaFormulaEnginePrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	engine = g_object_new( OFA_TYPE_FORMULA_ENGINE, NULL );
+
+	priv = ofa_formula_engine_get_instance_private( engine );
+
+	priv->hub = hub;
 
 	return( engine );
 }
@@ -1677,11 +1690,12 @@ static const sEvalDef st_formula_fns[] = {
 
 /**
  * ofa_formula_test:
+ * @hub: the #ofaHub object of the application.
  *
  * Test the formula evaluation.
  */
 void
-ofa_formula_test( void )
+ofa_formula_test( ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_formula_test";
 	ofaFormulaEngine *engine;
@@ -1689,7 +1703,7 @@ ofa_formula_test( void )
 	GList *msg;
 	gchar *result;
 
-	engine = ofa_formula_engine_new();
+	engine = ofa_formula_engine_new( hub );
 
 	ofa_formula_engine_set_auto_eval( engine, TRUE );
 
@@ -1812,18 +1826,20 @@ eval_acla( ofsFormulaHelper *helper )
 static gchar *
 eval_amount( ofsFormulaHelper *helper )
 {
+	ofaFormulaEnginePrivate *priv;
 	gchar *res;
 	GList *it;
 	const gchar *cstr;
 	gdouble a;
 
 	res = NULL;
+	priv = ofa_formula_engine_get_instance_private( helper->engine );
 
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		a = ofa_amount_from_str( cstr );
-		res = ofa_amount_to_str( 5.55 * a, NULL );
+		a = ofa_amount_from_str( cstr, priv->hub );
+		res = ofa_amount_to_str( 5.55 * a, NULL, priv->hub );
 	}
 
 	return( res );
@@ -1871,18 +1887,20 @@ eval_d( ofsFormulaHelper *helper )
 static gchar *
 eval_debit( ofsFormulaHelper *helper )
 {
+	ofaFormulaEnginePrivate *priv;
 	gchar *res;
 	GList *it;
 	const gchar *cstr;
 	gint row;
 
 	res = NULL;
+	priv = ofa_formula_engine_get_instance_private( helper->engine );
 
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		row = atoi( cstr );
-		res = ofa_amount_to_str( -3.33 * ( gdouble ) row, NULL );
+		res = ofa_amount_to_str( -3.33 * ( gdouble ) row, NULL, priv->hub );
 	}
 
 	g_debug( "eval_debit: returns res='%s'", res );

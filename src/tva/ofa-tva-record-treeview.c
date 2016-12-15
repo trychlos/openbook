@@ -441,10 +441,13 @@ static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_tva_record_treeview_v_sort";
+	ofaTVARecordTreeviewPrivate *priv;
 	gint cmp;
 	gchar *mnemoa, *labela, *correspa, *begina, *enda, *valida, *dopea, *notesa, *updusera, *updstampa;
 	gchar *mnemob, *labelb, *correspb, *beginb, *endb, *validb, *dopeb, *notesb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
+
+	priv = ofa_tva_record_treeview_get_instance_private( OFA_TVA_RECORD_TREEVIEW( bin ));
 
 	gtk_tree_model_get( tmodel, a,
 			TVA_RECORD_COL_MNEMO,          &mnemoa,
@@ -487,16 +490,16 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( correspa, correspb );
 			break;
 		case TVA_RECORD_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case TVA_RECORD_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case TVA_RECORD_COL_IS_VALIDATED:
 			cmp = my_collate( valida, validb );
 			break;
 		case TVA_RECORD_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case TVA_RECORD_COL_NOTES:
 			cmp = my_collate( notesa, notesb );

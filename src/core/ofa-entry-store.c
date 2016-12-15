@@ -280,8 +280,8 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 
 	priv = ofa_entry_store_get_instance_private( self );
 
-	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display());
-	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display());
+	sdope = my_date_to_str( ofo_entry_get_dope( entry ), ofa_prefs_date_display( priv->hub ));
+	sdeff = my_date_to_str( ofo_entry_get_deffect( entry ), ofa_prefs_date_display( priv->hub ));
 
 	cstr = ofo_entry_get_ref( entry );
 	cref = cstr ? cstr : "";
@@ -292,9 +292,9 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 	g_return_if_fail( cur_obj && OFO_IS_CURRENCY( cur_obj ));
 
 	amount = ofo_entry_get_debit( entry );
-	sdeb = amount ? ofa_amount_to_str( amount, cur_obj ) : g_strdup( "" );
+	sdeb = amount ? ofa_amount_to_str( amount, cur_obj, priv->hub ) : g_strdup( "" );
 	amount = ofo_entry_get_credit( entry );
-	scre = amount ? ofa_amount_to_str( amount, cur_obj ) : g_strdup( "" );
+	scre = amount ? ofa_amount_to_str( amount, cur_obj, priv->hub ) : g_strdup( "" );
 
 	counter = ofo_entry_get_ope_number( entry );
 	sopenum = counter ? g_strdup_printf( "%lu", counter ) : g_strdup( "" );
@@ -367,10 +367,13 @@ set_row_by_iter( ofaEntryStore *self, const ofoEntry *entry, GtkTreeIter *iter )
 static void
 set_row_concil( ofaEntryStore *self, ofoConcil *concil, GtkTreeIter *iter )
 {
+	ofaEntryStorePrivate *priv;
 	gchar *srappro, *snum;
 
+	priv = ofa_entry_store_get_instance_private( self );
+
 	srappro = concil ?
-				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display()) :
+				my_date_to_str( ofo_concil_get_dval( concil ), ofa_prefs_date_display( priv->hub )) :
 				g_strdup( "" );
 	snum = concil ?
 				g_strdup_printf( "%lu", ofo_concil_get_id( concil )) :

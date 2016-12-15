@@ -933,7 +933,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 		/* currency digits - defaults to 2 */
 		itf = itf ? itf->next : NULL;
 		cstr = itf ? ( const gchar * ) itf->data : NULL;
-		ofo_currency_set_digits( currency, ( my_strlen( cstr ) ? atoi( cstr ) : CUR_DEFAULT_DIGITS ));
+		ofo_currency_set_digits( currency, ( my_strlen( cstr ) ? atoi( cstr ) : HUB_DEFAULT_DECIMALS_AMOUNT ));
 
 		/* notes
 		 * we are tolerant on the last field... */

@@ -205,12 +205,14 @@ ofs_ope_apply_template( ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_apply_template";
 	sOpeHelper *helper;
+	ofaHub *hub;
 
 	g_debug( "%s: entering:", thisfn );
 	ofs_ope_dump( ope );
 
 	if( !st_engine ){
-		st_engine = ofa_formula_engine_new();
+		hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
+		st_engine = ofa_formula_engine_new( hub );
 		ofa_formula_engine_set_auto_eval( st_engine, FALSE );
 	}
 
@@ -234,9 +236,11 @@ compute_simple_formulas( sOpeHelper *helper )
 	ofsOpeDetail *detail;
 	gint i, count;
 	gchar *str;
+	ofaHub *hub;
 
 	ope = helper->ope;
 	template = ope->ope_template;
+	hub = ofo_base_get_hub( OFO_BASE( template ));
 	helper->row = -1;
 	helper->column = -1;
 
@@ -273,14 +277,14 @@ compute_simple_formulas( sOpeHelper *helper )
 		if( !detail->debit_user_set ){
 			helper->column = OPE_COL_DEBIT;
 			str = compute_formula( ofo_ope_template_get_detail_debit( template, i ), helper );
-			detail->debit = ofa_amount_from_str( str );
+			detail->debit = ofa_amount_from_str( str, hub );
 			g_free( str );
 		}
 
 		if( !detail->credit_user_set ){
 			helper->column = OPE_COL_CREDIT;
 			str = compute_formula( ofo_ope_template_get_detail_credit( template, i ), helper );
-			detail->credit = ofa_amount_from_str( str );
+			detail->credit = ofa_amount_from_str( str, hub );
 			g_free( str );
 		}
 	}
@@ -482,9 +486,11 @@ eval_c_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
 {
 	gchar *res;
 	ofsOpeDetail *detail;
+	ofaHub *hub;
 
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
-	res = detail ? ofa_amount_to_str( detail->credit, detail->currency ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->credit, detail->currency, hub ) : NULL;
 
 	return( res );
 }
@@ -498,9 +504,11 @@ eval_d_shortcut( ofsFormulaHelper *helper, const gchar *rowstr )
 {
 	gchar *res;
 	ofsOpeDetail *detail;
+	ofaHub *hub;
 
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 	detail = my_strlen( rowstr ) ? get_ope_detail( rowstr, helper ) : NULL;
-	res = detail ? ofa_amount_to_str( detail->debit, detail->currency ) : NULL;
+	res = detail ? ofa_amount_to_str( detail->debit, detail->currency, hub ) : NULL;
 
 	return( res );
 }
@@ -664,7 +672,7 @@ eval_balcr( ofsFormulaHelper *helper )
 			solde = 0;
 		}
 	}
-	res = ofa_amount_to_str( solde, NULL );
+	res = ofa_amount_to_str( solde, NULL, hub );
 
 	return( res );
 }
@@ -697,7 +705,7 @@ eval_baldb( ofsFormulaHelper *helper )
 			solde = 0;
 		}
 	}
-	res = ofa_amount_to_str( solde, NULL );
+	res = ofa_amount_to_str( solde, NULL, hub );
 
 	return( res );
 }
@@ -731,11 +739,13 @@ eval_credit( ofsFormulaHelper *helper )
 	GList *it;
 	const gchar *cstr;
 	ofsOpeDetail *detail;
+	ofaHub *hub;
 
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
-	res = detail ? ofa_amount_to_str( detail->credit, detail->currency ) : NULL;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	res = detail ? ofa_amount_to_str( detail->credit, detail->currency, hub ) : NULL;
 
 	return( res );
 }
@@ -750,11 +760,13 @@ eval_debit( ofsFormulaHelper *helper )
 	GList *it;
 	const gchar *cstr;
 	ofsOpeDetail *detail;
+	ofaHub *hub;
 
 	it = helper->args_list;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	detail = my_strlen( cstr ) ? get_ope_detail( cstr, helper ) : NULL;
-	res = detail ? ofa_amount_to_str( detail->debit, detail->currency ) : NULL;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+	res = detail ? ofa_amount_to_str( detail->debit, detail->currency, hub ) : NULL;
 
 	return( res );
 }
@@ -774,7 +786,11 @@ eval_domy( ofsFormulaHelper *helper )
 static gchar *
 eval_dope( ofsFormulaHelper *helper )
 {
-	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_display()));
+	ofaHub *hub;
+
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->dope, ofa_prefs_date_display( hub )));
 }
 
 /*
@@ -783,7 +799,11 @@ eval_dope( ofsFormulaHelper *helper )
 static gchar *
 eval_deffect( ofsFormulaHelper *helper )
 {
-	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->deffect, ofa_prefs_date_display()));
+	ofaHub *hub;
+
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
+
+	return( my_date_to_str( &(( sOpeHelper * ) helper->user_data )->ope->deffect, ofa_prefs_date_display( hub )));
 }
 
 /*
@@ -812,9 +832,11 @@ eval_idem( ofsFormulaHelper *helper )
 	sOpeHelper *ope_helper;
 	ofsOpeDetail *prev;
 	gchar *res;
+	ofaHub *hub;
 
 	res = NULL;
 	ope_helper = ( sOpeHelper * ) helper->user_data;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
 	if( ope_helper->row > 0 ){
 		prev = ( ofsOpeDetail * ) g_list_nth_data( ope_helper->ope->detail, ope_helper->row-1 );
@@ -826,10 +848,10 @@ eval_idem( ofsFormulaHelper *helper )
 				res = g_strdup( prev->label );
 				break;
 			case OPE_COL_DEBIT:
-				res = ofa_amount_to_str( prev->debit, prev->currency );
+				res = ofa_amount_to_str( prev->debit, prev->currency, hub );
 				break;
 			case OPE_COL_CREDIT:
-				res = ofa_amount_to_str( prev->credit, prev->currency );
+				res = ofa_amount_to_str( prev->credit, prev->currency, hub );
 				break;
 		}
 	}
@@ -957,10 +979,12 @@ eval_solde( ofsFormulaHelper *helper )
 	gdouble dsold, csold, solde;
 	ofsOpeDetail *detail;
 	gint i;
+	ofaHub *hub;
 
 	csold = 0.0;
 	dsold = 0.0;
 	ope_helper = ( sOpeHelper * ) helper->user_data;
+	hub = ofo_base_get_hub( OFO_BASE((( sOpeHelper * ) helper->user_data )->ope->ope_template ));
 
 	for( i=0 ; i<g_list_length( ope_helper->ope->detail ) ; ++i ){
 		detail = ( ofsOpeDetail * ) g_list_nth_data( ope_helper->ope->detail, i );
@@ -973,7 +997,7 @@ eval_solde( ofsFormulaHelper *helper )
 	}
 
 	solde = fabs( csold-dsold );
-	res = ofa_amount_to_str( solde, NULL );
+	res = ofa_amount_to_str( solde, NULL, hub );
 
 	return( res );
 }
@@ -1020,8 +1044,8 @@ get_rate_by_name( const gchar *name, ofsFormulaHelper *helper )
 		if( my_date_is_valid( &ope_helper->ope->dope )){
 			amount = ofo_rate_get_rate_at_date( rate, &ope_helper->ope->dope )/( gdouble ) 100;
 			res = my_double_to_str( amount,
-						g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-						g_utf8_get_char( ofa_prefs_amount_decimal_sep()), 3 );
+						g_utf8_get_char( ofa_prefs_amount_thousand_sep( hub )),
+						g_utf8_get_char( ofa_prefs_amount_decimal_sep( hub )), HUB_DEFAULT_DECIMALS_RATE );
 
 		} else {
 			str = g_strdup_printf( _( "%s: unable to get a rate value while operation date is invalid" ), thisfn );
@@ -1159,7 +1183,7 @@ check_for_dates( sChecker *checker )
 		if( my_date_is_valid( &dmin )){
 			cmp = my_date_compare( &dmin, &ope->deffect );
 			if( cmp > 0 ){
-				str = my_date_to_str( &dmin, ofa_prefs_date_display());
+				str = my_date_to_str( &dmin, ofa_prefs_date_display( hub ));
 				g_free( checker->message );
 				checker->message = g_strdup_printf(
 						_( "Effect date less than the minimum allowed on this ledger: %s" ), str );
@@ -1509,10 +1533,12 @@ void
 ofs_ope_dump( const ofsOpe *ope )
 {
 	static const gchar *thisfn = "ofs_ope_dump";
+	ofaHub *hub;
 	gchar *sdope, *sdeffect;
 
-	sdope = my_date_to_str( &ope->dope, ofa_prefs_date_display());
-	sdeffect = my_date_to_str( &ope->deffect, ofa_prefs_date_display());
+	hub = ofo_base_get_hub( OFO_BASE( ope->ope_template ));
+	sdope = my_date_to_str( &ope->dope, ofa_prefs_date_display( hub ));
+	sdeffect = my_date_to_str( &ope->deffect, ofa_prefs_date_display( hub ));
 
 	g_debug( "%s: ope=%p, template=%s, ledger=%s, ledger_user_set=%s,"
 			" dope=%s, dope_user_set=%s, deffect=%s, deffect_user_set=%s,"

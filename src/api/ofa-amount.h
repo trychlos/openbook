@@ -32,18 +32,19 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub-def.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-currency-def.h"
 
 G_BEGIN_DECLS
 
-ofxAmount ofa_amount_from_str( const gchar *str );
+ofxAmount ofa_amount_from_str( const gchar *str, ofaHub *hub );
 
 gchar    *ofa_amount_to_csv  ( ofxAmount amount, ofoCurrency *currency, ofaStreamFormat *format );
 
 gchar    *ofa_amount_to_sql  ( ofxAmount amount, ofoCurrency *currency );
 
-gchar    *ofa_amount_to_str  ( ofxAmount amount, ofoCurrency *currency );
+gchar    *ofa_amount_to_str  ( ofxAmount amount, ofoCurrency *currency, ofaHub *hub );
 
 gboolean  ofa_amount_is_zero ( ofxAmount amount, ofoCurrency *currency );
 

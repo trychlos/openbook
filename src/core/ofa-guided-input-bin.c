@@ -60,9 +60,12 @@
 typedef struct {
 	gboolean        dispose_has_run;
 
-	/* input parameters at initialization time
+	/* initialization
 	 */
 	ofaIGetter     *getter;
+
+	/* runtime
+	 */
 	ofaHub         *hub;
 	GList          *hub_handlers;
 
@@ -450,9 +453,9 @@ setup_dialog( ofaGuidedInputBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->dope_entry ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_label( GTK_EDITABLE( priv->dope_entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->dope_entry ), &st_last_dope );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->dope_entry ), ofa_prefs_date_overwrite());
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->dope_entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( priv->dope_entry, "changed", G_CALLBACK( on_dope_changed ), self );
 
@@ -469,9 +472,9 @@ setup_dialog( ofaGuidedInputBin *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->deffect_entry ));
-	my_date_editable_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check());
+	my_date_editable_set_label( GTK_EDITABLE( priv->deffect_entry ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->deffect_entry ), &st_last_deff );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->deffect_entry ), ofa_prefs_date_overwrite());
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->deffect_entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( priv->deffect_entry, "focus-in-event", G_CALLBACK( on_deffect_focus_in ), self );
 	g_signal_connect( priv->deffect_entry, "focus-out-event", G_CALLBACK( on_deffect_focus_out ), self );
@@ -693,8 +696,11 @@ row_widget_entry( ofaGuidedInputBin *self, const sColumnDef *col_def, gint row )
 
 		if( col_def->is_double ){
 			my_double_editable_init_ex( GTK_EDITABLE( widget ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), CUR_DEFAULT_DIGITS );
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
+					ofa_prefs_amount_accept_dot( priv->hub ),
+					ofa_prefs_amount_accept_comma( priv->hub ),
+					HUB_DEFAULT_DECIMALS_AMOUNT );
 			my_double_editable_set_changed_cb(
 					GTK_EDITABLE( widget ), G_CALLBACK( on_entry_changed ), self );
 
@@ -1168,14 +1174,14 @@ on_entry_changed( GtkEntry *entry, ofaGuidedInputBin *self )
 				}
 				break;
 			case OPE_COL_DEBIT:
-				detail->debit = ofa_amount_from_str( cstr );
+				detail->debit = ofa_amount_from_str( cstr, priv->hub );
 				if( priv->focused_row == sdata->row_id && priv->focused_column == sdata->col_def->column_id ){
 					detail->debit_user_set = TRUE;
 					g_debug( "%s: row=%d, setting debit_user_set to %s", thisfn, sdata->row_id, detail->debit_user_set ? "True":"False" );
 				}
 				break;
 			case OPE_COL_CREDIT:
-				detail->credit = ofa_amount_from_str( cstr );
+				detail->credit = ofa_amount_from_str( cstr, priv->hub );
 				if( priv->focused_row == sdata->row_id && priv->focused_column == sdata->col_def->column_id ){
 					detail->credit_user_set = TRUE;
 				}
@@ -1332,12 +1338,12 @@ is_dialog_validable( ofaGuidedInputBin *self )
 			set_ope_to_ui( self, i+1, OPE_COL_LABEL, detail->label );
 		}
 		if( !detail->debit_user_set ){
-			amount_str = ofa_amount_to_str( detail->debit, detail->currency );
+			amount_str = ofa_amount_to_str( detail->debit, detail->currency, priv->hub );
 			set_ope_to_ui( self, i+1, OPE_COL_DEBIT, amount_str );
 			g_free( amount_str );
 		}
 		if( !detail->credit_user_set ){
-			amount_str = ofa_amount_to_str( detail->credit, detail->currency );
+			amount_str = ofa_amount_to_str( detail->credit, detail->currency, priv->hub );
 			set_ope_to_ui( self, i+1, OPE_COL_CREDIT, amount_str );
 			g_free( amount_str );
 		}
@@ -1586,8 +1592,11 @@ add_total_diff_lines( ofaGuidedInputBin *self, gint row )
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), CUR_DEFAULT_DIGITS );
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
+			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
+			ofa_prefs_amount_accept_dot( priv->hub ),
+			ofa_prefs_amount_accept_comma( priv->hub ),
+			HUB_DEFAULT_DECIMALS_AMOUNT );
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
@@ -1596,8 +1605,11 @@ add_total_diff_lines( ofaGuidedInputBin *self, gint row )
 
 	entry = gtk_entry_new();
 	my_double_editable_init_ex( GTK_EDITABLE( entry ),
-			g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-			ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), CUR_DEFAULT_DIGITS );
+			g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
+			g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
+			ofa_prefs_amount_accept_dot( priv->hub ),
+			ofa_prefs_amount_accept_comma( priv->hub ),
+			HUB_DEFAULT_DECIMALS_AMOUNT );
 	gtk_widget_set_can_focus( entry, FALSE );
 	gtk_widget_set_margin_top( entry, TOTAUX_TOP_MARGIN );
 	gtk_entry_set_width_chars( GTK_ENTRY( entry ), AMOUNTS_WIDTH );
@@ -1643,7 +1655,7 @@ total_display_diff( ofaGuidedInputBin *self, ofoCurrency *currency, gint row, gd
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	amount_str = NULL;
 	if( ddiff > 0.001 ){
-		amount_str = ofa_amount_to_str( ddiff, currency );
+		amount_str = ofa_amount_to_str( ddiff, currency, priv->hub );
 		has_diff = TRUE;
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );
@@ -1655,7 +1667,7 @@ total_display_diff( ofaGuidedInputBin *self, ofoCurrency *currency, gint row, gd
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	amount_str = NULL;
 	if( cdiff > 0.001 ){
-		amount_str = ofa_amount_to_str( cdiff, currency );
+		amount_str = ofa_amount_to_str( cdiff, currency, priv->hub );
 		has_diff = TRUE;
 	}
 	gtk_label_set_text( GTK_LABEL( label ), amount_str );

@@ -607,8 +607,8 @@ tview_is_visible_entry( ofaReconcilPage *self, GtkTreeModel *tmodel, GtkTreeIter
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	if( DEBUG_FILTER ){
-		gchar *sdeb = ofa_amount_to_str( ofo_entry_get_debit( entry ), priv->acc_currency );
-		gchar *scre = ofa_amount_to_str( ofo_entry_get_credit( entry ), priv->acc_currency );
+		gchar *sdeb = ofa_amount_to_str( ofo_entry_get_debit( entry ), priv->acc_currency, priv->hub );
+		gchar *scre = ofa_amount_to_str( ofo_entry_get_credit( entry ), priv->acc_currency, priv->hub );
 		g_debug( "%s: entry=%s, debit=%s, credit=%s",
 				thisfn, ofo_entry_get_label( entry ), sdeb, scre );
 		g_free( sdeb );
@@ -688,7 +688,7 @@ tview_is_visible_batline( ofaReconcilPage *self, ofoBatLine *batline )
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	if( DEBUG_FILTER ){
-		gchar *samount = ofa_amount_to_str( ofo_bat_line_get_amount( batline ), priv->acc_currency );
+		gchar *samount = ofa_amount_to_str( ofo_bat_line_get_amount( batline ), priv->acc_currency, priv->hub );
 		g_debug( "%s: batline=%s, amount=%s", thisfn, ofo_bat_line_get_label( batline ), samount );
 		g_free( samount );
 	}
@@ -784,9 +784,9 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 	tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child );
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 
-	sdeb = ofa_amount_to_str( scur.debit, priv->acc_currency );
+	sdeb = ofa_amount_to_str( scur.debit, priv->acc_currency, priv->hub );
 	gtk_label_set_text( GTK_LABEL( priv->select_debit ), sdeb );
-	scre = ofa_amount_to_str( scur.credit, priv->acc_currency );
+	scre = ofa_amount_to_str( scur.credit, priv->acc_currency, priv->hub );
 	gtk_label_set_text( GTK_LABEL( priv->select_credit ), scre );
 
 	if( scur.debit || scur.credit ){
@@ -1097,10 +1097,10 @@ setup_manual_rappro( ofaReconcilPage *self, GtkContainer *parent )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->date_concil ));
-	my_date_editable_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display());
-	my_date_editable_set_label( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check());
+	my_date_editable_set_format( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_display( priv->hub ));
+	my_date_editable_set_label( GTK_EDITABLE( priv->date_concil ), label, ofa_prefs_date_check( priv->hub ));
 	my_date_editable_set_date( GTK_EDITABLE( priv->date_concil ), &priv->dconcil );
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_overwrite());
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->date_concil ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( priv->date_concil, "changed", G_CALLBACK( concil_date_on_changed ), self );
 }
@@ -1481,12 +1481,12 @@ account_set_header_balance( ofaReconcilPage *self )
 				+ ofo_account_get_futur_credit( priv->account );
 
 		if( priv->acc_credit >= priv->acc_debit ){
-			sdiff = ofa_amount_to_str( priv->acc_credit - priv->acc_debit, priv->acc_currency );
+			sdiff = ofa_amount_to_str( priv->acc_credit - priv->acc_debit, priv->acc_currency, priv->hub );
 			samount = g_strdup_printf( _( "%s CR" ), sdiff );
 			gtk_label_set_text( GTK_LABEL( priv->acc_credit_label ), samount );
 
 		} else {
-			sdiff = ofa_amount_to_str( priv->acc_debit - priv->acc_credit, priv->acc_currency );
+			sdiff = ofa_amount_to_str( priv->acc_debit - priv->acc_credit, priv->acc_currency, priv->hub );
 			samount = g_strdup_printf( _( "%s DB" ), sdiff );
 			gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), samount );
 		}
@@ -2143,11 +2143,14 @@ do_reconciliate( ofaReconcilPage *self )
 static gboolean
 do_reconciliate_user_confirm( ofaReconcilPage *self, ofxAmount debit, ofxAmount credit )
 {
+	ofaReconcilPagePrivate *priv;
 	gboolean ok;
 	gchar *sdeb, *scre, *str;
 
-	sdeb = ofa_amount_to_str( debit, NULL );
-	scre = ofa_amount_to_str( credit, NULL );
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	sdeb = ofa_amount_to_str( debit, NULL, priv->hub );
+	scre = ofa_amount_to_str( credit, NULL, priv->hub );
 	str = g_strdup_printf( _( "Caution: reconciliated amounts are not balanced:\n"
 			"debit=%s, credit=%s.\n"
 			"Are you sure you want reconciliate this group ?" ), sdeb, scre );
@@ -2636,12 +2639,12 @@ set_reconciliated_balance( ofaReconcilPage *self )
 
 	/*g_debug( "end: debit=%lf, credit=%lf, solde=%lf", debit, credit, debit-credit );*/
 	if( debit > credit ){
-		str = ofa_amount_to_str( debit-credit, priv->acc_currency );
+		str = ofa_amount_to_str( debit-credit, priv->acc_currency, priv->hub );
 		sdeb = g_strdup_printf( _( "%s DB" ), str );
 		scre = g_strdup( "" );
 	} else {
 		sdeb = g_strdup( "" );
-		str = ofa_amount_to_str( credit-debit, priv->acc_currency );
+		str = ofa_amount_to_str( credit-debit, priv->acc_currency, priv->hub );
 		scre = g_strdup_printf( _( "%s CR" ), str );
 	}
 
@@ -2937,7 +2940,7 @@ get_settings( ofaReconcilPage *self )
 		if( cstr ){
 			my_date_set_from_str( &date, cstr, MY_DATE_SQL );
 			if( my_date_is_valid( &date )){
-				sdate = my_date_to_str( &date, ofa_prefs_date_display());
+				sdate = my_date_to_str( &date, ofa_prefs_date_display( priv->hub ));
 				gtk_entry_set_text( priv->date_concil, sdate );
 				g_free( sdate );
 			}
@@ -2974,7 +2977,7 @@ set_settings( ofaReconcilPage *self )
 		smode = g_strdup_printf( "%d", priv->mode );
 
 		sdate = gtk_entry_get_text( priv->date_concil );
-		my_date_set_from_str( &date, sdate, ofa_prefs_date_display());
+		my_date_set_from_str( &date, sdate, ofa_prefs_date_display( priv->hub ));
 		if( my_date_is_valid( &date )){
 			date_sql = my_date_to_str( &date, MY_DATE_SQL );
 		} else {

@@ -222,63 +222,69 @@ ofa_idbprovider_get_interface_version( GType type )
 
 /**
  * ofa_idbprovider_new_dossier_meta:
- * @instance: this #ofaIDBProvider instance.
+ * @provider: this #ofaIDBProvider provider.
+ * @hub: the #ofaHub object of the application.
+ * @dossier_name: the name of the dossier.
  *
  * Returns: a newly allocated #ofaIDBDossierMeta object, which should be
  * g_object_unref() by the caller.
  */
 ofaIDBDossierMeta *
-ofa_idbprovider_new_dossier_meta( ofaIDBProvider *instance )
+ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, ofaHub *hub, const gchar *dossier_name )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_dossier_meta";
 	ofaIDBDossierMeta *meta;
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+	g_debug( "%s: provider=%p", thisfn, ( void * ) provider );
 
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+	g_return_val_if_fail( my_strlen( dossier_name ), NULL );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_dossier_meta ){
-		meta = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_dossier_meta( instance );
-		ofa_idbdossier_meta_set_provider( meta, instance );
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_meta ){
+		meta = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_dossier_meta( provider );
+		ofa_idbdossier_meta_set_provider( meta, provider );
+		ofa_idbdossier_meta_set_hub( meta, hub );
+		ofa_idbdossier_meta_set_dossier_name( meta, dossier_name );
 		return( meta );
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_dossier_meta()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }
 
 /**
  * ofa_idbprovider_new_connect:
- * @instance: this #ofaIDBProvider instance.
+ * @provider: this #ofaIDBProvider provider.
  *
  * Returns: a newly allocated #ofaIDBConnect object, which should be
  * g_object_unref() by the caller.
  */
 ofaIDBConnect *
-ofa_idbprovider_new_connect( ofaIDBProvider *instance )
+ofa_idbprovider_new_connect( ofaIDBProvider *provider )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_connect";
 	ofaIDBConnect *connect;
 
-	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+	g_debug( "%s: provider=%p", thisfn, ( void * ) provider );
 
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_connect ){
-		connect = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_connect( instance );
-		ofa_idbconnect_set_provider( connect, instance );
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect ){
+		connect = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect( provider );
+		ofa_idbconnect_set_provider( connect, provider );
 		return( connect );
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'new_connect()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }
 
 /**
  * ofa_idbprovider_new_editor:
- * @instance: this #ofaIDBProvider instance.
+ * @provider: this #ofaIDBProvider provider.
  * @editable: whether the informations in the container have to be
  *  editable.
  *
@@ -294,59 +300,59 @@ ofa_idbprovider_new_connect( ofaIDBProvider *instance )
  * should not keep any reference on this container.
  */
 ofaIDBEditor *
-ofa_idbprovider_new_editor( ofaIDBProvider *instance, gboolean editable )
+ofa_idbprovider_new_editor( ofaIDBProvider *provider, gboolean editable )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_editor";
 	ofaIDBEditor *editor;
 
-	g_debug( "%s: instance=%p, editable=%s",
-			thisfn,( void * ) instance, editable ? "True":"False" );
+	g_debug( "%s: provider=%p, editable=%s",
+			thisfn,( void * ) provider, editable ? "True":"False" );
 
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
-	if( OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_editor ){
-		editor = OFA_IDBPROVIDER_GET_INTERFACE( instance )->new_editor( instance, editable );
-		ofa_idbeditor_set_provider( editor, instance );
+	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_editor ){
+		editor = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_editor( provider, editable );
+		ofa_idbeditor_set_provider( editor, provider );
 		return( editor );
 	}
 
 	g_info( "%s: ofaIDBProvider's %s implementation does not provide 'get_editor()' method",
-			thisfn, G_OBJECT_TYPE_NAME( instance ));
+			thisfn, G_OBJECT_TYPE_NAME( provider ));
 	return( NULL );
 }
 
 /*
  * ofa_idbprovider_get_canon_name:
- * @instance: this #ofaIDBProvider instance.
+ * @provider: this #ofaIDBProvider provider.
  *
- * Returns: the canonical name of the @instance, as a newly
+ * Returns: the canonical name of the @provider, as a newly
  * allocated string which should be g_free() by the caller, or %NULL.
  *
  * This method relies on the #myIIdent identification interface,
- * which is expected to be implemented by the @instance class.
+ * which is expected to be implemented by the @provider class.
  */
 gchar *
-ofa_idbprovider_get_canon_name( const ofaIDBProvider *instance )
+ofa_idbprovider_get_canon_name( const ofaIDBProvider *provider )
 {
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
-	return( MY_IS_IIDENT( instance ) ? my_iident_get_canon_name( MY_IIDENT( instance ), NULL ) : NULL );
+	return( MY_IS_IIDENT( provider ) ? my_iident_get_canon_name( MY_IIDENT( provider ), NULL ) : NULL );
 }
 
 /*
  * ofa_idbprovider_get_display_name:
- * @instance: this #ofaIDBProvider instance.
+ * @provider: this #ofaIDBProvider provider.
  *
- * Returns: the displayable name of the @instance, as a newly
+ * Returns: the displayable name of the @provider, as a newly
  * allocated string which should be g_free() by the caller, or %NULL.
  *
  * This method relies on the #myIIdent identification interface,
- * which is expected to be implemented by the @instance class.
+ * which is expected to be implemented by the @provider class.
  */
 gchar *
-ofa_idbprovider_get_display_name( const ofaIDBProvider *instance )
+ofa_idbprovider_get_display_name( const ofaIDBProvider *provider )
 {
-	g_return_val_if_fail( instance && OFA_IS_IDBPROVIDER( instance ), NULL );
+	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
 
-	return( MY_IS_IIDENT( instance ) ? my_iident_get_display_name( MY_IIDENT( instance ), NULL ) : NULL );
+	return( MY_IS_IIDENT( provider ) ? my_iident_get_display_name( MY_IIDENT( provider ), NULL ) : NULL );
 }

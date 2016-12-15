@@ -546,8 +546,7 @@ ofa_dossier_new_bin_apply( ofaDossierNewBin *bin )
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
 	provider = ofa_idbeditor_get_provider( priv->connect_infos );
-	meta = ofa_idbprovider_new_dossier_meta( provider );
-	ofa_idbdossier_meta_set_dossier_name( meta, priv->dossier_name );
+	meta = ofa_idbprovider_new_dossier_meta( provider, priv->hub, priv->dossier_name );
 	ofa_dossier_collection_set_meta_from_editor( priv->dossier_collection, meta, priv->connect_infos );
 	g_object_unref( provider );
 

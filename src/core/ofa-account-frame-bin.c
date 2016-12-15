@@ -1143,12 +1143,15 @@ do_delete_account( ofaAccountFrameBin *self, ofoAccount *account )
 static gboolean
 delete_confirmed( ofaAccountFrameBin *self, ofoAccount *account )
 {
+	ofaAccountFrameBinPrivate *priv;
 	gchar *msg;
 	gboolean delete_ok;
 
+	priv = ofa_account_frame_bin_get_instance_private( self );
+
 	if( ofo_account_is_root( account )){
 		if( ofo_account_has_children( account ) &&
-				ofa_prefs_account_delete_root_with_children()){
+				ofa_prefs_account_delete_root_with_children( priv->hub )){
 			msg = g_strdup_printf( _(
 					"You are about to delete the %s - %s account.\n"
 					"This is a root account which has children.\n"

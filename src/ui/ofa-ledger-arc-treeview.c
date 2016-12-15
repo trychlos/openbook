@@ -182,9 +182,12 @@ setup_columns( ofaLedgerArcTreeview *self )
 static void
 setup_store( ofaLedgerArcTreeview *self, ofoLedger *ledger )
 {
+	ofaLedgerArcTreeviewPrivate *priv;
 	ofaLedgerArcStore *store;
 
-	store = ofa_ledger_arc_store_new( ledger );
+	priv = ofa_ledger_arc_treeview_get_instance_private( self );
+
+	store = ofa_ledger_arc_store_new( priv->hub, ledger );
 
 	ofa_tvbin_set_store( OFA_TVBIN( self ), GTK_TREE_MODEL( store ));
 }
@@ -197,9 +200,12 @@ static gint
 tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_ledger_arc_treeview_v_sort";
+	ofaLedgerArcTreeviewPrivate *priv;
 	gint cmp;
 	gchar *sdatea, *isoa, *debita, *credita, *symbola;
 	gchar *sdateb, *isob, *debitb, *creditb, *symbolb;
+
+	priv = ofa_ledger_arc_treeview_get_instance_private( OFA_LEDGER_ARC_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			LEDGER_ARC_COL_DATE,    &sdatea,
@@ -221,16 +227,16 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 
 	switch( column_id ){
 		case LEDGER_ARC_COL_DATE:
-			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case LEDGER_ARC_COL_ISO:
 			cmp = my_collate( isoa, isob );
 			break;
 		case LEDGER_ARC_COL_DEBIT:
-			cmp = ofa_itvsortable_sort_str_amount( debita, debitb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), debita, debitb );
 			break;
 		case LEDGER_ARC_COL_CREDIT:
-			cmp = ofa_itvsortable_sort_str_amount( credita, creditb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), credita, creditb );
 			break;
 		case LEDGER_ARC_COL_SYMBOL1:
 		case LEDGER_ARC_COL_SYMBOL2:

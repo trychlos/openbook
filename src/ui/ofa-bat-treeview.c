@@ -77,7 +77,7 @@ static void     on_selection_activated( ofaBatTreeview *self, GtkTreeSelection *
 static void     on_selection_delete( ofaBatTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaBatTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoBat  *get_selected_with_selection( ofaBatTreeview *self, GtkTreeSelection *selection );
-static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint     tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatTreeview, ofa_bat_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaBatTreeview ))
@@ -484,6 +484,7 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 	g_return_if_fail( view && OFA_IS_BAT_TREEVIEW( view ));
 
 	priv = ofa_bat_treeview_get_instance_private( view );
+
 	g_return_if_fail( !priv->dispose_has_run );
 
 	treeview = ofa_tvbin_get_tree_view( OFA_TVBIN( view ));
@@ -507,13 +508,16 @@ ofa_bat_treeview_set_selected( ofaBatTreeview *view, ofxCounter id )
 }
 
 static gint
-tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_bat_treeview_v_sort";
+	ofaBatTreeviewPrivate *priv;
 	gint cmp;
 	gchar *ida, *uria, *formata, *begina, *enda, *riba, *cura, *bsoldea, *esoldea, *notesa, *counta, *unuseda, *accounta, *updusera, *updstampa;
 	gchar *idb, *urib, *formatb, *beginb, *endb, *ribb, *curb, *bsoldeb, *esoldeb, *notesb, *countb, *unusedb, *accountb, *upduserb, *updstampb;
 	GdkPixbuf *pnga, *pngb;
+
+	priv = ofa_bat_treeview_get_instance_private( OFA_BAT_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			BAT_COL_ID,             &ida,
@@ -566,10 +570,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( formata, formatb );
 			break;
 		case BAT_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case BAT_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case BAT_COL_RIB:
 			cmp = my_collate( riba, ribb );
@@ -578,10 +582,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( cura, curb );
 			break;
 		case BAT_COL_BEGIN_SOLDE:
-			cmp = ofa_itvsortable_sort_str_amount( bsoldea, bsoldeb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), bsoldea, bsoldeb );
 			break;
 		case BAT_COL_END_SOLDE:
-			cmp = ofa_itvsortable_sort_str_amount( esoldea, esoldeb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), esoldea, esoldeb );
 			break;
 		case BAT_COL_NOTES:
 			cmp = my_collate( notesa, notesb );

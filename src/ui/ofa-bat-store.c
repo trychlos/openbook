@@ -277,16 +277,16 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 
 	priv = ofa_bat_store_get_instance_private( self );
 
-	sid = ofa_counter_to_str( ofo_bat_get_id( bat ));
+	sid = ofa_counter_to_str( ofo_bat_get_id( bat ), priv->hub );
 	date = ofo_bat_get_begin_date( bat );
 	if( my_date_is_valid( date )){
-		sbegin = my_date_to_str( date, ofa_prefs_date_display());
+		sbegin = my_date_to_str( date, ofa_prefs_date_display( priv->hub ));
 	} else {
 		sbegin = g_strdup( "" );
 	}
 	date = ofo_bat_get_end_date( bat );
 	if( my_date_is_valid( date )){
-		send = my_date_to_str( date, ofa_prefs_date_display());
+		send = my_date_to_str( date, ofa_prefs_date_display( priv->hub ));
 	} else {
 		send = g_strdup( "" );
 	}
@@ -297,12 +297,12 @@ set_row_by_iter( ofaBatStore *self, GtkTreeIter *iter, ofoBat *bat )
 	cur_obj = my_strlen( cscurrency ) ? ofo_currency_get_by_code( priv->hub, cscurrency ) : NULL;
 	g_return_if_fail( !cur_obj || OFO_IS_CURRENCY( cur_obj ));
 	if( ofo_bat_get_begin_solde_set( bat )){
-		sbeginsolde = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), cur_obj );
+		sbeginsolde = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), cur_obj, priv->hub );
 	} else {
 		sbeginsolde = g_strdup( "" );
 	}
 	if( ofo_bat_get_end_solde_set( bat )){
-		sendsolde = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), cur_obj );
+		sendsolde = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), cur_obj, priv->hub );
 	} else {
 		sendsolde = g_strdup( "" );
 	}

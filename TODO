@@ -419,7 +419,10 @@
 
 1289 2016-12-14 LedgerProperties/Balances tab: vertically expand the frame
 
-1290
+1290 2016-12-14 which difference between ofa_prefs_dossier_open_notes()
+                and ofa_dossier_prefs_get_open_notes()
+
+1291
 
 -----------------------------------------------------------------------
  DONE

@@ -270,7 +270,6 @@ date_new_from_dbms( const ofsBoxDef *def, const gchar *str )
 	if( my_strlen( str )){
 		box->is_null = FALSE;
 		my_date_set_from_sql( &box->date, str );
-		/*g_debug( "date_new_from_dbms: date=%s", my_date_to_str( &box->date, ofa_prefs_date_display()));*/
 	}
 
 	return( box );

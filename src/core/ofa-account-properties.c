@@ -51,58 +51,58 @@
 /* private instance data
  */
 typedef struct {
-	gboolean             dispose_has_run;
+	gboolean      dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter          *getter;
-	GtkWindow           *parent;
-	ofoAccount          *account;
+	ofaIGetter   *getter;
+	GtkWindow    *parent;
+	ofoAccount   *account;
 
 	/* runtime data
 	 */
-	ofaHub              *hub;
-	ofoDossier          *dossier;
-	gboolean             is_writable;
-	gboolean             is_new;
-	gboolean             number_ok;
-	gboolean             has_entries;
-	gboolean             balances_displayed;
+	ofaHub       *hub;
+	ofoDossier   *dossier;
+	gboolean      is_writable;
+	gboolean      is_new;
+	gboolean      number_ok;
+	gboolean      has_entries;
+	gboolean      balances_displayed;
 
 	/* UI
 	 */
-	GtkWidget           *number_entry;
-	GtkWidget           *label_entry;
-	GtkWidget           *closed_btn;
-	GtkWidget           *type_frame;
-	GtkWidget           *root_btn;
-	GtkWidget           *detail_btn;
-	GtkWidget           *p1_exe_frame;
-	GtkWidget           *settleable_btn;
-	GtkWidget           *reconciliable_btn;
-	GtkWidget           *forward_btn;
-	GtkWidget           *currency_etiq;
-	GtkWidget           *currency_parent;
-	GtkWidget           *currency_combo;
-	GtkWidget           *msg_label;
-	GtkWidget           *ok_btn;
-	GtkSizeGroup        *p2_group0;
-	GtkSizeGroup        *p2_group1;
-	GtkSizeGroup        *p2_group2;
-	GtkSizeGroup        *p2_group3;
-	GtkSizeGroup        *p2_group4;
+	GtkWidget    *number_entry;
+	GtkWidget    *label_entry;
+	GtkWidget    *closed_btn;
+	GtkWidget    *type_frame;
+	GtkWidget    *root_btn;
+	GtkWidget    *detail_btn;
+	GtkWidget    *p1_exe_frame;
+	GtkWidget    *settleable_btn;
+	GtkWidget    *reconciliable_btn;
+	GtkWidget    *forward_btn;
+	GtkWidget    *currency_etiq;
+	GtkWidget    *currency_parent;
+	GtkWidget    *currency_combo;
+	GtkWidget    *msg_label;
+	GtkWidget    *ok_btn;
+	GtkSizeGroup *p2_group0;
+	GtkSizeGroup *p2_group1;
+	GtkSizeGroup *p2_group2;
+	GtkSizeGroup *p2_group3;
+	GtkSizeGroup *p2_group4;
 
 	/* account data
 	 */
-	gchar               *number;
-	gchar               *label;
-	gchar               *currency;
-	ofoCurrency         *cur_object;
-	gint                 cur_digits;
-	const gchar         *cur_symbol;
-	gboolean             root;
-	gchar               *upd_user;
-	GTimeVal             upd_stamp;
+	gchar        *number;
+	gchar        *label;
+	gchar        *currency;
+	ofoCurrency  *cur_object;
+	gint          cur_digits;
+	const gchar  *cur_symbol;
+	gboolean      root;
+	gchar        *upd_user;
+	GTimeVal      upd_stamp;
 }
 	ofaAccountPropertiesPrivate;
 
@@ -112,25 +112,25 @@ typedef const GDate * ( *fnGetDate )  ( const ofoAccount * );
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-account-properties.ui";
 
-static void      iwindow_iface_init( myIWindowInterface *iface );
-static void      iwindow_init( myIWindow *instance );
-static gchar    *iwindow_get_identifier( const myIWindow *instance );
-static void      idialog_iface_init( myIDialogInterface *iface );
-static void      idialog_init( myIDialog *instance );
-static void      init_ui( ofaAccountProperties *dialog );
-static void      remove_balances_page( ofaAccountProperties *self );
-static void      init_balances_page( ofaAccountProperties *self );
-static void      set_current_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur, GtkSizeGroup *sg_amount, GtkSizeGroup *sg_cur );
-static void      on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
-static void      on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
-static void      on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self );
-static void      on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
-static void      on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
-static void      on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, gboolean root );
-static void      check_for_enable_dlg( ofaAccountProperties *self );
-static gboolean  is_dialog_validable( ofaAccountProperties *self );
-static gboolean  do_update( ofaAccountProperties *self, gchar **msgerr );
-static void      set_msgerr( ofaAccountProperties *self, const gchar *msg );
+static void     iwindow_iface_init( myIWindowInterface *iface );
+static void     iwindow_init( myIWindow *instance );
+static gchar   *iwindow_get_identifier( const myIWindow *instance );
+static void     idialog_iface_init( myIDialogInterface *iface );
+static void     idialog_init( myIDialog *instance );
+static void     init_ui( ofaAccountProperties *dialog );
+static void     remove_balances_page( ofaAccountProperties *self );
+static void     init_balances_page( ofaAccountProperties *self );
+static void     set_current_amount( ofaAccountProperties *self, gdouble amount, const gchar *wname, const gchar *wname_cur, GtkSizeGroup *sg_amount, GtkSizeGroup *sg_cur );
+static void     on_number_changed( GtkEntry *entry, ofaAccountProperties *self );
+static void     on_label_changed( GtkEntry *entry, ofaAccountProperties *self );
+static void     on_currency_changed( ofaCurrencyCombo *combo, const gchar *code, ofaAccountProperties *self );
+static void     on_root_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
+static void     on_detail_toggled( GtkRadioButton *btn, ofaAccountProperties *self );
+static void     on_type_toggled( GtkRadioButton *btn, ofaAccountProperties *self, gboolean root );
+static void     check_for_enable_dlg( ofaAccountProperties *self );
+static gboolean is_dialog_validable( ofaAccountProperties *self );
+static gboolean do_update( ofaAccountProperties *self, gchar **msgerr );
+static void     set_msgerr( ofaAccountProperties *self, const gchar *msg );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountProperties, ofa_account_properties, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaAccountProperties )
@@ -607,7 +607,7 @@ set_current_amount( ofaAccountProperties *self,
 	priv = ofa_account_properties_get_instance_private( self );
 
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), wname );
-	str = ofa_amount_to_str( amount, priv->cur_object );
+	str = ofa_amount_to_str( amount, priv->cur_object, priv->hub );
 	gtk_label_set_text( GTK_LABEL( label ), str );
 	g_free( str );
 	gtk_size_group_add_widget( sg_amount, label );

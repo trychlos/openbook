@@ -106,7 +106,7 @@ static void      get_and_send( ofaEntryTreeview *self, GtkTreeSelection *selecti
 static GList    *get_selected_with_selection( ofaEntryTreeview *self, GtkTreeSelection *selection );
 static gint      get_row_errlevel( ofaEntryTreeview *self, GtkTreeModel *tmodel, GtkTreeIter *iter );
 static gboolean  tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint      tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint      tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaEntryTreeview, ofa_entry_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaEntryTreeview ))
@@ -664,12 +664,15 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 }
 
 static gint
-tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_entry_treeview_v_sort";
+	ofaEntryTreeviewPrivate *priv;
 	gint cmp;
 	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma, *stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea, *statusa;
 	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb, *stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb, *statusb;
+
+	priv = ofa_entry_treeview_get_instance_private( OFA_ENTRY_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			ENTRY_COL_DOPE,          &dopea,
@@ -721,10 +724,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	switch( column_id ){
 		case ENTRY_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case ENTRY_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case ENTRY_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -745,10 +748,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( accounta, accountb );
 			break;
 		case ENTRY_COL_DEBIT:
-			cmp = ofa_itvsortable_sort_str_amount( debita, debitb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), debita, debitb );
 			break;
 		case ENTRY_COL_CREDIT:
-			cmp = ofa_itvsortable_sort_str_amount( credita, creditb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), credita, creditb );
 			break;
 		case ENTRY_COL_OPE_NUMBER:
 			cmp = ofa_itvsortable_sort_str_int( openuma, openumb );
@@ -775,7 +778,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = ofa_itvsortable_sort_str_int( concilnuma, concilnumb );
 			break;
 		case ENTRY_COL_CONCIL_DATE:
-			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case ENTRY_COL_STATUS:
 			cmp = ofa_itvsortable_sort_str_int( statusa, statusb );

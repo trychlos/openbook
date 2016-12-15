@@ -1011,7 +1011,7 @@ ofo_dossier_get_last_closed_exercice( const ofoDossier *dossier )
 		}
 	}
 
-	str = my_date_to_str( dmax, ofa_prefs_date_display());
+	str = my_date_to_str( dmax, ofa_prefs_date_display( ofo_base_get_hub( OFO_BASE( dossier ))));
 	g_debug( "%s: last_closed_exercice=%s", thisfn, str );
 	g_free( str );
 

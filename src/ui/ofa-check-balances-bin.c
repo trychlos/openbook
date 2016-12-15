@@ -559,7 +559,7 @@ get_new_balance_grid_bin( ofaCheckBalancesBin *self, const gchar *w_name )
 		parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), w_name );
 		g_return_val_if_fail( parent && GTK_IS_CONTAINER( parent ), FALSE );
 
-		grid = ofa_balance_grid_bin_new();
+		grid = ofa_balance_grid_bin_new( priv->hub );
 		gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( grid ));
 	}
 

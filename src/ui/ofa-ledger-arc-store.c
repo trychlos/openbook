@@ -41,10 +41,12 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean   dispose_has_run;
 
-	/* runtime
+	/* initialization
 	 */
+	ofaHub    *hub;
+	ofoLedger *ledger;
 }
 	ofaLedgerArcStorePrivate;
 
@@ -127,6 +129,7 @@ ofa_ledger_arc_store_class_init( ofaLedgerArcStoreClass *klass )
 
 /**
  * ofa_ledger_arc_store_new:
+ * @hub: the #ofaHub object of the application.
  * @ledger: the #ofoLedger.
  *
  * Load the archived soldes of the ledger.
@@ -134,13 +137,20 @@ ofa_ledger_arc_store_class_init( ofaLedgerArcStoreClass *klass )
  * Returns: a new reference to the #ofaLedgerArcStore object.
  */
 ofaLedgerArcStore *
-ofa_ledger_arc_store_new( ofoLedger *ledger )
+ofa_ledger_arc_store_new( ofaHub *hub, ofoLedger *ledger )
 {
 	ofaLedgerArcStore *store;
+	ofaLedgerArcStorePrivate *priv;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( ledger && OFO_IS_LEDGER( ledger ), NULL );
 
 	store = g_object_new( OFA_TYPE_LEDGER_ARC_STORE, NULL );
+
+	priv = ofa_ledger_arc_store_get_instance_private( store );
+
+	priv->hub = hub;
+	priv->ledger = ledger;
 
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), LEDGER_ARC_N_COLUMNS, st_col_types );
@@ -162,13 +172,16 @@ ofa_ledger_arc_store_new( ofoLedger *ledger )
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaLedgerArcStore *self )
 {
+	ofaLedgerArcStorePrivate *priv;
 	gchar *sdatea, *sdateb;
 	gint cmp;
+
+	priv = ofa_ledger_arc_store_get_instance_private( self );
 
 	gtk_tree_model_get( tmodel, a, LEDGER_ARC_COL_DATE, &sdatea, -1 );
 	gtk_tree_model_get( tmodel, b, LEDGER_ARC_COL_DATE, &sdateb, -1 );
 
-	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display());
+	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->hub ));
 
 	g_free( sdatea );
 	g_free( sdateb );
@@ -200,24 +213,23 @@ insert_row( ofaLedgerArcStore *self, ofoLedger *ledger, gint i )
 static void
 set_row_by_iter( ofaLedgerArcStore *self, ofoLedger *ledger, gint i, GtkTreeIter *iter )
 {
+	ofaLedgerArcStorePrivate *priv;
 	gchar *sdate, *sdebit, *scredit;
-	ofaHub *hub;
 	ofoCurrency *currency;
 	const gchar *iso, *symbol;
 	const GDate *date;
 
-	hub = ofo_base_get_hub( OFO_BASE( ledger ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	priv = ofa_ledger_arc_store_get_instance_private( self );
 
 	iso = ofo_ledger_archive_get_currency( ledger, i );
-	currency = ofo_currency_get_by_code( hub, iso );
+	currency = ofo_currency_get_by_code( priv->hub, iso );
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 	symbol = ofo_currency_get_symbol( currency );
 
 	date = ofo_ledger_archive_get_date( ledger, i );
-	sdate = my_date_to_str( date, ofa_prefs_date_display());
-	sdebit = ofa_amount_to_str( ofo_ledger_archive_get_debit( ledger, iso, date ), currency );
-	scredit = ofa_amount_to_str( ofo_ledger_archive_get_credit( ledger, iso, date ), currency );
+	sdate = my_date_to_str( date, ofa_prefs_date_display( priv->hub ));
+	sdebit = ofa_amount_to_str( ofo_ledger_archive_get_debit( ledger, iso, date ), currency, priv->hub );
+	scredit = ofa_amount_to_str( ofo_ledger_archive_get_credit( ledger, iso, date ), currency, priv->hub );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),

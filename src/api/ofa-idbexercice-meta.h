@@ -37,6 +37,7 @@
 
 #include <glib-object.h>
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
 
 G_BEGIN_DECLS
@@ -135,6 +136,11 @@ guint        ofa_idbexercice_meta_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
+ofaHub      *ofa_idbexercice_meta_get_hub                   ( const ofaIDBExerciceMeta *period );
+
+void         ofa_idbexercice_meta_set_hub                   ( ofaIDBExerciceMeta *period,
+																	ofaHub *hub );
+
 const GDate *ofa_idbexercice_meta_get_begin_date            ( const ofaIDBExerciceMeta *period );
 
 void         ofa_idbexercice_meta_set_begin_date            ( ofaIDBExerciceMeta *period,

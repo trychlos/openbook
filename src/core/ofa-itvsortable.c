@@ -233,15 +233,19 @@ ofa_itvsortable_sort_png( const GdkPixbuf *a, const GdkPixbuf *b )
 
 /**
  * ofa_itvsortable_sort_str_amount:
+ * @instance: the #ofaITVSortable instance.
  * @a.
  * @b
  *
  * Returns: -1, 1 or 0.
  */
 gint
-ofa_itvsortable_sort_str_amount( const gchar *a, const gchar *b )
+ofa_itvsortable_sort_str_amount( ofaITVSortable *instance, const gchar *a, const gchar *b )
 {
+	sITVSortable *sdata;
 	ofxAmount amounta, amountb;
+
+	sdata = get_itvsortable_data( instance );
 
 	if( !my_strlen( a )){
 		if( !my_strlen( b )){
@@ -249,12 +253,12 @@ ofa_itvsortable_sort_str_amount( const gchar *a, const gchar *b )
 		}
 		return( -1 );
 	}
-	amounta = ofa_amount_from_str( a );
+	amounta = ofa_amount_from_str( a, sdata->hub );
 
 	if( !my_strlen( b )){
 		return( 1 );
 	}
-	amountb = ofa_amount_from_str( b );
+	amountb = ofa_amount_from_str( b, sdata->hub );
 
 	return( amounta < amountb ? -1 : ( amounta > amountb ? 1 : 0 ));
 }

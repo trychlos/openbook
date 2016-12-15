@@ -30,6 +30,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -39,8 +40,15 @@
  * which do not depend of a specific implementation
  */
 typedef struct {
-	ofaIDBProvider *prov_instance;
+
+	/* initialization
+	 */
+	ofaIDBProvider *provider;
+	ofaHub         *hub;
 	gchar          *dossier_name;
+
+	/* runtime
+	 */
 	myISettings    *settings;
 	gchar          *group_name;
 	GList          *periods;
@@ -199,7 +207,8 @@ ofa_idbdossier_meta_get_provider( const ofaIDBDossierMeta *meta )
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
 
 	data = get_idbdossier_meta_data( meta );
-	return( g_object_ref( data->prov_instance ));
+
+	return( g_object_ref( data->provider ));
 }
 
 /**
@@ -220,8 +229,51 @@ ofa_idbdossier_meta_set_provider( ofaIDBDossierMeta *meta, const ofaIDBProvider 
 	g_return_if_fail( instance && OFA_IS_IDBPROVIDER( instance ));
 
 	data = get_idbdossier_meta_data( meta );
-	g_clear_object( &data->prov_instance );
-	data->prov_instance = g_object_ref(( gpointer ) instance );
+
+	g_clear_object( &data->provider );
+	data->provider = g_object_ref(( gpointer ) instance );
+}
+
+/**
+ * ofa_idbdossier_meta_get_hub:
+ * @meta: this #ofaIDBDossierMeta instance.
+ *
+ * Returns: the #ofaHub object of the application if it has been
+ * previously set.
+ *
+ * The returned reference is owned by the @meta instance, and should not
+ * be released by the caller.
+ */
+ofaHub *
+ofa_idbdossier_meta_get_hub( const ofaIDBDossierMeta *meta )
+{
+	sIDBMeta *data;
+
+	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), NULL );
+
+	data = get_idbdossier_meta_data( meta );
+
+	return( data->hub );
+}
+
+/**
+ * ofa_idbdossier_meta_set_hub:
+ * @meta: this #ofaIDBDossierMeta instance.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Set the @hub object.
+ */
+void
+ofa_idbdossier_meta_set_hub( ofaIDBDossierMeta *meta, ofaHub *hub )
+{
+	sIDBMeta *data;
+
+	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
+	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+
+	data = get_idbdossier_meta_data( meta );
+
+	data->hub = g_object_ref( hub );
 }
 
 /**
@@ -423,12 +475,20 @@ void
 ofa_idbdossier_meta_set_periods( ofaIDBDossierMeta *meta, GList *periods )
 {
 	sIDBMeta *data;
+	GList *it;
+	ofaIDBExerciceMeta *exercice_meta;
 
 	g_return_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ));
 
 	data = get_idbdossier_meta_data( meta );
+
 	ofa_idbdossier_meta_free_periods( data->periods );
 	data->periods = g_list_copy_deep( periods, ( GCopyFunc ) g_object_ref, NULL );
+
+	for( it=data->periods ; it ; it=it->next ){
+		exercice_meta = OFA_IDBEXERCICE_META( it->data );
+		ofa_idbexercice_meta_set_hub( exercice_meta, data->hub );
+	}
 }
 
 /**
@@ -621,7 +681,7 @@ ofa_idbdossier_meta_dump( const ofaIDBDossierMeta *meta )
 	data = get_idbdossier_meta_data( meta );
 
 	g_debug( "%s: meta=%p (%s)", thisfn, ( void * ) meta, G_OBJECT_TYPE_NAME( meta ));
-	g_debug( "%s:   prov_instance=%p", thisfn, ( void * ) data->prov_instance );
+	g_debug( "%s:   provider=%p", thisfn, ( void * ) data->provider );
 	g_debug( "%s:   dossier_name=%s", thisfn, data->dossier_name );
 	g_debug( "%s:   settings=%p", thisfn, ( void * ) data->settings );
 	g_debug( "%s:   group_name=%s", thisfn, data->group_name );
@@ -672,7 +732,8 @@ on_meta_finalized( sIDBMeta *data, GObject *finalized_meta )
 
 	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
 
-	g_clear_object( &data->prov_instance );
+	g_clear_object( &data->provider );
+	g_clear_object( &data->hub );
 	g_free( data->dossier_name );
 	g_clear_object( &data->settings );
 	g_free( data->group_name );

@@ -326,22 +326,22 @@ set_row_by_iter( ofaAccountStore *self, const ofoAccount *account, GtkTreeIter *
 		fut_debit = ofo_account_get_futur_debit( account );
 		fut_credit = ofo_account_get_futur_credit( account );
 
-		svdeb = ofa_amount_to_str( val_debit, currency_obj );
-		svcre = ofa_amount_to_str( val_credit, currency_obj );
-		srdeb = ofa_amount_to_str( rough_debit, currency_obj );
-		srcre = ofa_amount_to_str( rough_credit, currency_obj );
-		sfdeb = ofa_amount_to_str( fut_debit, currency_obj );
-		sfcre = ofa_amount_to_str( fut_credit, currency_obj );
+		svdeb = ofa_amount_to_str( val_debit, currency_obj, priv->hub );
+		svcre = ofa_amount_to_str( val_credit, currency_obj, priv->hub );
+		srdeb = ofa_amount_to_str( rough_debit, currency_obj, priv->hub );
+		srcre = ofa_amount_to_str( rough_credit, currency_obj, priv->hub );
+		sfdeb = ofa_amount_to_str( fut_debit, currency_obj, priv->hub );
+		sfcre = ofa_amount_to_str( fut_credit, currency_obj, priv->hub );
 
-		sedeb = ofa_amount_to_str( val_debit+rough_debit+fut_debit, currency_obj );
-		secre = ofa_amount_to_str( val_credit+rough_credit+fut_credit, currency_obj );
+		sedeb = ofa_amount_to_str( val_debit+rough_debit+fut_debit, currency_obj, priv->hub );
+		secre = ofa_amount_to_str( val_credit+rough_credit+fut_credit, currency_obj, priv->hub );
 
 		exe_solde = val_debit-val_credit+rough_debit-rough_credit+fut_debit-fut_credit;
 		if( exe_solde >= 0 ){
-			str = ofa_amount_to_str( exe_solde, currency_obj );
+			str = ofa_amount_to_str( exe_solde, currency_obj, priv->hub );
 			sesol = g_strdup_printf( _( "%s DB" ), str );
 		} else {
-			str = ofa_amount_to_str( -exe_solde, currency_obj );
+			str = ofa_amount_to_str( -exe_solde, currency_obj, priv->hub );
 			sesol = g_strdup_printf( _( "%s CR" ), str );
 		}
 		g_free( str );
@@ -877,7 +877,7 @@ hub_on_deleted_account( ofaHub *hub, ofoAccount *account, ofaAccountStore *self 
 	list = remove_rows_by_number( self, ofo_account_get_number( account ));
 	children = list ? list->next : NULL;
 
-	if( !ofa_prefs_account_delete_root_with_children()){
+	if( !ofa_prefs_account_delete_root_with_children( hub )){
 		for( it=children ; it ; it=it->next ){
 			insert_row( self, OFO_ACCOUNT( it->data ));
 		}

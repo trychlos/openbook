@@ -271,7 +271,7 @@ ofa_exercice_treeview_new( ofaHub *hub, const gchar *settings_prefix )
 
 	setup_columns( view );
 
-	priv->store = ofa_exercice_store_new();
+	priv->store = ofa_exercice_store_new( hub );
 	ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 
 	return( view );
@@ -420,9 +420,12 @@ static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_exercice_treeview_v_sort";
+	ofaExerciceTreeviewPrivate *priv;
 	gint cmp;
 	gchar *labela, *enda, *begina, *stata;
 	gchar *labelb, *endb, *beginb, *statb;
+
+	priv = ofa_exercice_treeview_get_instance_private( OFA_EXERCICE_TREEVIEW( bin ));
 
 	gtk_tree_model_get( tmodel, a,
 			EXERCICE_COL_LABEL,  &labela,
@@ -445,10 +448,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( labela, labelb );
 			break;
 		case EXERCICE_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case EXERCICE_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case EXERCICE_COL_STATUS:
 			cmp = my_collate( stata, statb );

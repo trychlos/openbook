@@ -40,13 +40,13 @@
 /* private instance data
  */
 typedef struct {
-	gboolean  dispose_has_run;
+	gboolean dispose_has_run;
 
 	/* runtime
 	 */
-	ofaHub   *hub;
-	GList    *hub_handlers;
-	gint      mode;						/* from_db or from_list */
+	ofaHub  *hub;
+	GList   *hub_handlers;
+	gint     mode;						/* from_db or from_list */
 }
 	ofaRecurrentRunStorePrivate;
 
@@ -307,18 +307,18 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 	model = ofo_recurrent_model_get_by_mnemo( priv->hub, cmnemo );
 	g_return_if_fail( model && OFO_IS_RECURRENT_MODEL( model ));
 
-	sdate = my_date_to_str( ofo_recurrent_run_get_date( run ), ofa_prefs_date_display());
+	sdate = my_date_to_str( ofo_recurrent_run_get_date( run ), ofa_prefs_date_display( priv->hub ));
 
 	cstatus = ofo_recurrent_run_get_status( run );
 	status = ofo_recurrent_run_get_status_label( cstatus );
 
 	numseq = ofo_recurrent_run_get_numseq( run );
-	snum = ofa_counter_to_str( numseq );
+	snum = ofa_counter_to_str( numseq, priv->hub );
 
 	cstr = ofo_recurrent_model_get_def_amount1( model );
 	if( my_strlen( cstr )){
 		amount = ofo_recurrent_run_get_amount1( run );
-		samount1 = ofa_amount_to_str( amount, NULL );
+		samount1 = ofa_amount_to_str( amount, NULL, priv->hub );
 	} else {
 		samount1 = g_strdup( "" );
 	}
@@ -326,7 +326,7 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 	cstr = ofo_recurrent_model_get_def_amount2( model );
 	if( my_strlen( cstr )){
 		amount = ofo_recurrent_run_get_amount2( run );
-		samount2 = ofa_amount_to_str( amount, NULL );
+		samount2 = ofa_amount_to_str( amount, NULL, priv->hub );
 	} else {
 		samount2 = g_strdup( "" );
 	}
@@ -334,7 +334,7 @@ set_row_by_iter( ofaRecurrentRunStore *self, const ofoRecurrentRun *run, GtkTree
 	cstr = ofo_recurrent_model_get_def_amount3( model );
 	if( my_strlen( cstr )){
 		amount = ofo_recurrent_run_get_amount3( run );
-		samount3 = ofa_amount_to_str( amount, NULL );
+		samount3 = ofa_amount_to_str( amount, NULL, priv->hub );
 	} else {
 		samount3 = g_strdup( "" );
 	}

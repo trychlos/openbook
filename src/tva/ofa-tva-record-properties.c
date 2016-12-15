@@ -470,8 +470,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_begin_changed ), self );
 
@@ -497,8 +497,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_end_changed ), self );
 
@@ -520,8 +520,8 @@ init_properties( ofaTVARecordProperties *self )
 
 	my_date_editable_init( GTK_EDITABLE( entry ));
 	my_date_editable_set_mandatory( GTK_EDITABLE( entry ), FALSE );
-	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check());
-	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite());
+	my_date_editable_set_label( GTK_EDITABLE( entry ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( entry ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( entry, "changed", G_CALLBACK( on_dope_changed ), self );
 
@@ -604,8 +604,11 @@ init_taxes( ofaTVARecordProperties *self )
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
+					ofa_prefs_amount_accept_dot( priv->hub ),
+					ofa_prefs_amount_accept_comma( priv->hub ),
+					0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_BASE, row, 1, 1 );
@@ -624,8 +627,11 @@ init_taxes( ofaTVARecordProperties *self )
 			entry = gtk_entry_new();
 			my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
 			my_double_editable_init_ex( GTK_EDITABLE( entry ),
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep()), g_utf8_get_char( ofa_prefs_amount_decimal_sep()),
-					ofa_prefs_amount_accept_dot(), ofa_prefs_amount_accept_comma(), 0 );
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub )),
+					ofa_prefs_amount_accept_dot( priv->hub ),
+					ofa_prefs_amount_accept_comma( priv->hub ),
+					0 );
 			gtk_entry_set_width_chars( GTK_ENTRY( entry ), 8 );
 			gtk_entry_set_max_width_chars( GTK_ENTRY( entry ), 16 );
 			gtk_grid_attach( GTK_GRID( grid ), entry, DET_COL_AMOUNT, row, 1, 1 );
@@ -860,7 +866,7 @@ setup_tva_record( ofaTVARecordProperties *self )
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_BASE, row );
 			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 			str = my_double_editable_get_string( GTK_EDITABLE( entry ));
-			amount = ofa_amount_from_str( str );
+			amount = ofa_amount_from_str( str, priv->hub );
 			ofo_tva_record_detail_set_base( priv->tva_record, idx, amount );
 			g_free( str );
 		}
@@ -868,7 +874,7 @@ setup_tva_record( ofaTVARecordProperties *self )
 			entry = gtk_grid_get_child_at( GTK_GRID( priv->detail_grid ), DET_COL_AMOUNT, row );
 			g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
 			str = my_double_editable_get_string( GTK_EDITABLE( entry ));
-			amount = ofa_amount_from_str( str );
+			amount = ofa_amount_from_str( str, priv->hub );
 			ofo_tva_record_detail_set_amount( priv->tva_record, idx, amount );
 			g_free( str );
 		}
@@ -939,7 +945,7 @@ on_compute_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 	if( resp == GTK_RESPONSE_OK ){
 		if( !st_engine ){
-			st_engine = ofa_formula_engine_new();
+			st_engine = ofa_formula_engine_new( priv->hub );
 			ofa_formula_engine_set_auto_eval( st_engine, TRUE );
 		}
 		count = ofo_tva_record_detail_get_count( priv->tva_record );
@@ -1036,7 +1042,7 @@ eval_account( ofsFormulaHelper *helper )
 		amount += sbal->debit;
 	}
 
-	res = ofa_amount_to_str( amount, NULL );
+	res = ofa_amount_to_str( amount, NULL, priv->hub );
 
 	DEBUG( "%s: ACCOUNT(%s[;%s])=%s", thisfn, cbegin, cend, res );
 
@@ -1066,7 +1072,7 @@ eval_amount( ofsFormulaHelper *helper )
 	row = cstr ? atoi( cstr ) : 0;
 	if( row > 0 && ofo_tva_form_detail_get_has_amount( priv->form, row-1 )){
 		amount = ofo_tva_record_detail_get_amount( priv->tva_record, row-1 );
-		res = ofa_amount_to_str( amount, NULL );
+		res = ofa_amount_to_str( amount, NULL, priv->hub );
 	}
 
 	DEBUG( "%s: cstr=%s, res=%s", thisfn, cstr, res );
@@ -1115,7 +1121,7 @@ eval_balance( ofsFormulaHelper *helper )
 		}
 	}
 
-	res = ofa_amount_to_str( amount, NULL );
+	res = ofa_amount_to_str( amount, NULL, priv->hub );
 
 	DEBUG( "%s: BALANCE(%s[;%s])=%s", thisfn, cbegin, cend, res );
 
@@ -1144,7 +1150,7 @@ eval_base( ofsFormulaHelper *helper )
 	row = cstr ? atoi( cstr ) : 0;
 	if( row > 0 && ofo_tva_form_detail_get_has_base( priv->form, row-1 )){
 		amount = ofo_tva_record_detail_get_base( priv->tva_record, row-1 );
-		res = ofa_amount_to_str( amount, NULL );
+		res = ofa_amount_to_str( amount, NULL, priv->hub );
 	}
 
 	return( res );

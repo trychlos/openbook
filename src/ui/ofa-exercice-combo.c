@@ -26,6 +26,7 @@
 #include <config.h>
 #endif
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 
@@ -36,6 +37,10 @@
  */
 typedef struct {
 	gboolean          dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub           *hub;
 
 	/* UI
 	 */
@@ -147,13 +152,21 @@ ofa_exercice_combo_class_init( ofaExerciceComboClass *klass )
 
 /**
  * ofa_exercice_combo_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaExerciceCombo instance.
  */
 ofaExerciceCombo *
-ofa_exercice_combo_new( void )
+ofa_exercice_combo_new( ofaHub *hub )
 {
 	ofaExerciceCombo *combo;
+	ofaExerciceComboPrivate *priv;
 
 	combo = g_object_new( OFA_TYPE_EXERCICE_COMBO, NULL );
+
+	priv = ofa_exercice_combo_get_instance_private( combo );
+
+	priv->hub = hub;
 
 	setup_combo( combo );
 
@@ -168,7 +181,7 @@ setup_combo( ofaExerciceCombo *combo )
 
 	priv = ofa_exercice_combo_get_instance_private( combo );
 
-	priv->store = ofa_exercice_store_new();
+	priv->store = ofa_exercice_store_new( priv->hub );
 	gtk_combo_box_set_model( GTK_COMBO_BOX( combo ), GTK_TREE_MODEL( priv->store ));
 	g_object_unref( priv->store );
 

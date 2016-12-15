@@ -46,6 +46,7 @@
 
 #include "my/my-isettings.h"
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbdossier-meta-def.h"
 #include "api/ofa-idbexercice-meta-def.h"
@@ -189,6 +190,11 @@ ofaIDBProvider     *ofa_idbdossier_meta_get_provider              ( const ofaIDB
 
 void                ofa_idbdossier_meta_set_provider              ( ofaIDBDossierMeta *meta,
 																		const ofaIDBProvider *instance );
+
+ofaHub             *ofa_idbdossier_meta_get_hub                   ( const ofaIDBDossierMeta *meta );
+
+void                ofa_idbdossier_meta_set_hub                   ( ofaIDBDossierMeta *meta,
+																		ofaHub *hub );
 
 const gchar        *ofa_idbdossier_meta_get_dossier_name          ( const ofaIDBDossierMeta *meta );
 

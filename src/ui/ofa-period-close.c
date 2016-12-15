@@ -280,7 +280,7 @@ setup_date( ofaPeriodClose *self )
 	dossier = ofa_hub_get_dossier( priv->hub );
 	my_date_set_from_date( &priv->prev_closing, ofo_dossier_get_last_closing_date( dossier ));
 	if( my_date_is_valid( &priv->prev_closing )){
-		str = my_date_to_str( &priv->prev_closing, ofa_prefs_date_display());
+		str = my_date_to_str( &priv->prev_closing, ofa_prefs_date_display( priv->hub ));
 	} else {
 		str = g_strdup( "" );
 	}
@@ -298,9 +298,9 @@ setup_date( ofaPeriodClose *self )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 
 	my_date_editable_init( GTK_EDITABLE( priv->closing_date ));
-	my_date_editable_set_format( GTK_EDITABLE( priv->closing_date ), ofa_prefs_date_display());
-	my_date_editable_set_label( GTK_EDITABLE( priv->closing_date ), label, ofa_prefs_date_check());
-	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_date ), ofa_prefs_date_overwrite());
+	my_date_editable_set_format( GTK_EDITABLE( priv->closing_date ), ofa_prefs_date_display( priv->hub ));
+	my_date_editable_set_label( GTK_EDITABLE( priv->closing_date ), label, ofa_prefs_date_check( priv->hub ));
+	my_date_editable_set_overwrite( GTK_EDITABLE( priv->closing_date ), ofa_prefs_date_overwrite( priv->hub ));
 
 	g_signal_connect( priv->closing_date, "changed", G_CALLBACK( on_date_changed ), self );
 }

@@ -29,21 +29,23 @@
 #include "my/my-double.h"
 
 #include "api/ofa-counter.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 
 /**
  * ofa_counter_to_str:
- * @counter:
+ * @counter: the counter to be displayed.
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: the counter as a displayable, localized, decorated newly
  * allocated string, which should be g_free() by the caller.
  */
 gchar *
-ofa_counter_to_str( ofxCounter counter )
+ofa_counter_to_str( ofxCounter counter, ofaHub *hub )
 {
 	gchar *str;
 
-	str = my_bigint_to_str( counter, g_utf8_get_char( ofa_prefs_amount_thousand_sep()));
+	str = my_bigint_to_str( counter, g_utf8_get_char( ofa_prefs_amount_thousand_sep( hub )));
 
 	return( str );
 }

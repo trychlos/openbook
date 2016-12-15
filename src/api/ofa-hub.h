@@ -85,8 +85,17 @@ typedef struct {
 
 /**
  * The group name for user preferences.
+ * The key name of export folder uri.
  */
 #define HUB_USER_SETTINGS_GROUP         "General"
+#define HUB_USER_SETTINGS_EXPORT_FOLDER "ExportDefaultFolder"
+
+/**
+ * The default decimals count for a rate.
+ * The default decimals count for an amount.
+ */
+#define HUB_DEFAULT_DECIMALS_AMOUNT      2
+#define HUB_DEFAULT_DECIMALS_RATE        3
 
 /**
  * Signals defined here:

@@ -151,16 +151,18 @@ guint              ofa_idbprovider_get_interface_version     ( GType type );
 /*
  * Instance-wide
  */
-ofaIDBDossierMeta *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *instance );
+ofaIDBDossierMeta *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *provider,
+																	ofaHub *hub,
+																	const gchar *dossier_name );
 
-ofaIDBConnect     *ofa_idbprovider_new_connect               ( ofaIDBProvider *instance );
+ofaIDBConnect     *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider );
 
-ofaIDBEditor      *ofa_idbprovider_new_editor                ( ofaIDBProvider *instance,
+ofaIDBEditor      *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
 																	gboolean editable );
 
-gchar             *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *instance );
+gchar             *ofa_idbprovider_get_canon_name            ( const ofaIDBProvider *provider );
 
-gchar             *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *instance );
+gchar             *ofa_idbprovider_get_display_name          ( const ofaIDBProvider *provider );
 
 G_END_DECLS
 

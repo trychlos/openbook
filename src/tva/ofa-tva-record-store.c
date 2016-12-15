@@ -267,10 +267,10 @@ set_row_by_iter( ofaTVARecordStore *self, const ofoTVARecord *record, GtkTreeIte
 	form = ofo_tva_form_get_by_mnemo( priv->hub, ofo_tva_record_get_mnemo( record ));
 	g_return_if_fail( form && OFO_IS_TVA_FORM( form ));
 
-	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_display());
-	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display());
+	sbegin = my_date_to_str( ofo_tva_record_get_begin( record ), ofa_prefs_date_display( priv->hub ));
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->hub ));
 	cvalidated = ofo_tva_record_get_is_validated( record ) ? _( "Yes" ) : _( "No" );
-	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_display());
+	sdope = my_date_to_str( ofo_tva_record_get_dope( record ), ofa_prefs_date_display( priv->hub ));
 
 	notes = ofo_tva_form_get_notes( form );
 	error = NULL;

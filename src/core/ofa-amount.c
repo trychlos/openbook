@@ -32,24 +32,26 @@
 #include "my/my-double.h"
 
 #include "api/ofa-amount.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-preferences.h"
 #include "api/ofo-currency.h"
 
 /**
  * ofa_amount_from_str:
  * @str: a localized, decorated, string.
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: the evaluated amount.
  */
 ofxAmount
-ofa_amount_from_str( const gchar *str )
+ofa_amount_from_str( const gchar *str, ofaHub *hub )
 {
 	ofxAmount amount;
 
 	amount = my_double_set_from_str(
 					str,
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep()));
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( hub )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( hub )));
 
 	return( amount );
 }
@@ -107,7 +109,7 @@ ofa_amount_to_sql( ofxAmount amount, ofoCurrency *currency )
 	guint digits;
 
 	digits = currency && OFO_IS_CURRENCY( currency ) ?
-					ofo_currency_get_digits( currency ) : CUR_DEFAULT_DIGITS;
+					ofo_currency_get_digits( currency ) : HUB_DEFAULT_DECIMALS_AMOUNT;
 
 	str = my_double_to_sql_ex( amount, digits );
 
@@ -116,24 +118,25 @@ ofa_amount_to_sql( ofxAmount amount, ofoCurrency *currency )
 
 /**
  * ofa_amount_to_str:
- * @amount:
- * @currency: [allow-none]:
+ * @amount: the amount to be displayed.
+ * @currency: [allow-none]: the display currency if any.
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: the amount as a displayable, localized, decorated newly
  * allocated string, which should be g_free() by the caller.
  */
 gchar *
-ofa_amount_to_str( ofxAmount amount, ofoCurrency *currency )
+ofa_amount_to_str( ofxAmount amount, ofoCurrency *currency, ofaHub *hub )
 {
 	gchar *str;
 	guint digits;
 
 	digits = currency && OFO_IS_CURRENCY( currency ) ?
-					ofo_currency_get_digits( currency ) : CUR_DEFAULT_DIGITS;
+					ofo_currency_get_digits( currency ) : HUB_DEFAULT_DECIMALS_AMOUNT;
 
 	str = my_double_to_str( amount,
-					g_utf8_get_char( ofa_prefs_amount_thousand_sep()),
-					g_utf8_get_char( ofa_prefs_amount_decimal_sep()), digits );
+					g_utf8_get_char( ofa_prefs_amount_thousand_sep( hub )),
+					g_utf8_get_char( ofa_prefs_amount_decimal_sep( hub )), digits );
 
 	return( str );
 }
@@ -152,7 +155,7 @@ ofa_amount_is_zero( ofxAmount amount, ofoCurrency *currency )
 	guint digits;
 
 	digits = currency && OFO_IS_CURRENCY( currency ) ?
-					ofo_currency_get_digits( currency ) : CUR_DEFAULT_DIGITS;
+					ofo_currency_get_digits( currency ) : HUB_DEFAULT_DECIMALS_AMOUNT;
 
 	precision = 1.0 / exp10( digits );
 

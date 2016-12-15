@@ -1560,7 +1560,7 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 
 	if( checkable ){
 		end_solde = ofo_bat_get_end_solde( bat );
-		if( !my_double_is_zero( amount-end_solde, 1+CUR_DEFAULT_DIGITS )){
+		if( !my_double_is_zero( amount-end_solde, 1+HUB_DEFAULT_DECIMALS_AMOUNT )){
 			str = g_strdup_printf( _( "expected end solde %lf not equal to computed one %lf" ), end_solde, amount );
 			ofa_iimporter_progress_num_text( importer, parms, numline, str );
 			g_debug( "%s: %s", thisfn, str );
@@ -1787,8 +1787,8 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 				parms->duplicate_count += 1;
 
 				rib = ofo_bat_get_rib( OFO_BAT( object ));
-				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_display());
-				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_display());
+				sdbegin = my_date_to_str( ofo_bat_get_begin_date( OFO_BAT( object )), ofa_prefs_date_display( parms->hub ));
+				sdend = my_date_to_str( ofo_bat_get_end_date( OFO_BAT( object )), ofa_prefs_date_display( parms->hub ));
 
 				switch( parms->mode ){
 					case OFA_IDUPLICATE_REPLACE:
@@ -1834,7 +1834,7 @@ iimportable_import_insert( ofaIImporter *importer, ofsImporterParms *parms, GLis
 			g_return_if_fail( OFO_IS_BAT_LINE( it->data ));
 
 			if( bat_id <= 0 ){
-				sdate = my_date_to_str( ofo_bat_line_get_dope( OFO_BAT_LINE( it->data )), ofa_prefs_date_display());
+				sdate = my_date_to_str( ofo_bat_line_get_dope( OFO_BAT_LINE( it->data )), ofa_prefs_date_display( parms->hub ));
 				label = ofo_bat_line_get_label( OFO_BAT_LINE( it->data ));
 				if( skipped ){
 					str = g_strdup_printf( _( "%s %s: line ignored due to previous BAT being have been skipped" ), sdate, label );

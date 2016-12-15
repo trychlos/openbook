@@ -1602,8 +1602,8 @@ entry_compute_status( ofoEntry *entry, gboolean set_deffect, ofaHub *hub )
 		}
 
 		if( !is_valid ){
-			sdeffect = my_date_to_str( deffect, ofa_prefs_date_display());
-			sdmin = my_date_to_str( &min_deffect, ofa_prefs_date_display());
+			sdeffect = my_date_to_str( deffect, ofa_prefs_date_display( hub ));
+			sdmin = my_date_to_str( &min_deffect, ofa_prefs_date_display( hub ));
 			g_warning(
 					"%s: entry effect date %s is lesser than minimal allowed %s",
 					thisfn, sdeffect, sdmin );
@@ -2847,8 +2847,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	 * maximal rounding error accepted */
 	for( it=past ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency );
-		scre = ofa_amount_to_str( sdet->credit, sdet->currency );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->hub );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->hub );
 		str = g_strdup_printf( "PAST [%s] tot_debits=%s, tot_credits=%s",
 					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2858,8 +2858,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	}
 	for( it=exe ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency );
-		scre = ofa_amount_to_str( sdet->credit, sdet->currency );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->hub );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->hub );
 		str = g_strdup_printf( "EXE [%s] tot_debits=%s, tot_credits=%s",
 					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );
@@ -2873,8 +2873,8 @@ iimportable_import_parse( ofaIImporter *importer, ofsImporterParms *parms, GSLis
 	}
 	for( it=fut ; it ; it=it->next ){
 		sdet = ( ofsCurrency * ) it->data;
-		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency );
-		scre = ofa_amount_to_str( sdet->credit, sdet->currency );
+		sdeb = ofa_amount_to_str( sdet->debit, sdet->currency, parms->hub );
+		scre = ofa_amount_to_str( sdet->credit, sdet->currency, parms->hub );
 		str = g_strdup_printf( "FUTURE [%s] tot_debits=%s, tot_credits=%s",
 					ofo_currency_get_code( sdet->currency ), sdeb, scre );
 		ofa_iimporter_progress_num_text( importer, parms, numline, str );

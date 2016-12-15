@@ -280,7 +280,7 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	priv = ofa_bat_properties_bin_get_instance_private( self );
 
 	bat_id = ofo_bat_get_id( bat );
-	str = ofa_counter_to_str( bat_id );
+	str = ofa_counter_to_str( bat_id, priv->hub );
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_id ), str );
 	g_free( str );
 
@@ -301,11 +301,11 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_unused ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_begin_date( bat ), ofa_prefs_date_display());
+	str = my_date_to_str( ofo_bat_get_begin_date( bat ), ofa_prefs_date_display( priv->hub ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_begin ), str );
 	g_free( str );
 
-	str = my_date_to_str( ofo_bat_get_end_date( bat ), ofa_prefs_date_display());
+	str = my_date_to_str( ofo_bat_get_end_date( bat ), ofa_prefs_date_display( priv->hub ));
 	gtk_entry_set_text( GTK_ENTRY( priv->bat_end ), str );
 	g_free( str );
 
@@ -322,7 +322,7 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	g_return_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ));
 
 	if( ofo_bat_get_begin_solde_set( bat )){
-		str = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), priv->currency );
+		str = ofa_amount_to_str( ofo_bat_get_begin_solde( bat ), priv->currency, priv->hub );
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_begin ), str );
 		g_free( str );
 	} else {
@@ -330,7 +330,7 @@ display_bat_properties( ofaBatPropertiesBin *self, ofoBat *bat )
 	}
 
 	if( ofo_bat_get_end_solde_set( bat )){
-		str = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), priv->currency );
+		str = ofa_amount_to_str( ofo_bat_get_end_solde( bat ), priv->currency, priv->hub );
 		gtk_entry_set_text( GTK_ENTRY( priv->bat_solde_end ), str );
 		g_free( str );
 	} else {

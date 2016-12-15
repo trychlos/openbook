@@ -620,7 +620,7 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaEntryPage *sel
 		}
 
 		if( visible ){
-			my_date_set_from_str( &deffect, sdate, ofa_prefs_date_display());
+			my_date_set_from_str( &deffect, sdate, ofa_prefs_date_display( priv->hub ));
 			effect_filter = ofa_idate_filter_get_date(
 					OFA_IDATE_FILTER( priv->effect_filter ), IDATE_FILTER_FROM );
 			ok = !my_date_is_valid( effect_filter ) ||
@@ -1184,8 +1184,8 @@ edit_on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, of
 
 		/* reformat amounts before storing them */
 		if( column_id == ENTRY_COL_DEBIT || column_id == ENTRY_COL_CREDIT ){
-			amount = ofa_amount_from_str( text );
-			str = ofa_amount_to_str( amount, NULL );
+			amount = ofa_amount_from_str( text, priv->hub );
+			str = ofa_amount_to_str( amount, NULL, priv->hub );
 		} else {
 			str = g_strdup( text );
 		}
@@ -1339,7 +1339,7 @@ balances_compute( ofaEntryPage *self )
 			if( my_strlen( dev_code ) && ( my_strlen( sdeb ) || my_strlen( scre ))){
 				ofs_currency_add_by_code(
 						&priv->balances, priv->hub, dev_code,
-						ofa_amount_from_str( sdeb ), ofa_amount_from_str( scre ));
+						ofa_amount_from_str( sdeb, priv->hub ), ofa_amount_from_str( scre, priv->hub ));
 			}
 
 			g_free( sdeb );
@@ -1376,12 +1376,12 @@ balance_display( ofsCurrency *pc, ofaEntryPage *self )
 		cstyle = ofs_currency_is_balanced( pc ) ? "labelbalance" : "labelwarning";
 
 		my_style_add( priv->bottom_debit, cstyle );
-		str = ofa_amount_to_str( pc->debit, pc->currency );
+		str = ofa_amount_to_str( pc->debit, pc->currency, priv->hub );
 		gtk_label_set_text( GTK_LABEL( priv->bottom_debit ), str );
 		g_free( str );
 
 		my_style_add( priv->bottom_credit, cstyle );
-		str = ofa_amount_to_str( pc->credit, pc->currency );
+		str = ofa_amount_to_str( pc->credit, pc->currency, priv->hub );
 		gtk_label_set_text( GTK_LABEL( priv->bottom_credit ), str );
 		g_free( str );
 
@@ -1461,7 +1461,7 @@ check_row_for_valid_dope( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DOPE, &sdope, -1 );
 
 	if( my_strlen( sdope )){
-		my_date_set_from_str( &date, sdope, ofa_prefs_date_display());
+		my_date_set_from_str( &date, sdope, ofa_prefs_date_display( priv->hub ));
 		if( my_date_is_valid( &date )){
 			is_valid = TRUE;
 
@@ -1499,7 +1499,7 @@ check_row_for_valid_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DEFFECT, &sdeffect, -1 );
 
 	if( my_strlen( sdeffect )){
-		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display());
+		my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->hub ));
 		if( my_date_is_valid( &deff )){
 			is_valid = TRUE;
 
@@ -1673,8 +1673,8 @@ check_row_for_valid_amounts( ofaEntryPage *self, GtkTreeIter *iter )
 	gtk_tree_model_get( GTK_TREE_MODEL( priv->store ), iter, ENTRY_COL_DEBIT, &sdeb, ENTRY_COL_CREDIT, &scre, -1 );
 
 	if( my_strlen( sdeb ) || my_strlen( scre )){
-		debit = ofa_amount_from_str( sdeb );
-		credit = ofa_amount_from_str( scre );
+		debit = ofa_amount_from_str( sdeb, priv->hub );
+		credit = ofa_amount_from_str( scre, priv->hub );
 		if(( debit && !credit ) || ( !debit && credit )){
 			is_valid = TRUE;
 
@@ -1713,10 +1713,10 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 				ENTRY_COL_LEDGER,  &mnemo,
 				-1 );
 
-	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->hub ));
 	g_return_if_fail( my_date_is_valid( &dope ));
 
-	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display());
+	my_date_set_from_str( &deff, sdeffect, ofa_prefs_date_display( priv->hub ));
 	g_return_if_fail( my_date_is_valid( &deff ));
 
 	g_return_if_fail( my_strlen( mnemo ));
@@ -1732,8 +1732,8 @@ check_row_for_cross_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 	 * the row, then it is valid and will normally apply to account and
 	 * ledger */
 	if( my_date_compare( &deff, &deff_min ) < 0 ){
-		sdmin = my_date_to_str( &deff_min, ofa_prefs_date_display());
-		sdeff = my_date_to_str( &deff, ofa_prefs_date_display());
+		sdmin = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->hub ));
+		sdeff = my_date_to_str( &deff, ofa_prefs_date_display( priv->hub ));
 		msg = g_strdup_printf(
 				_( "Effect date %s is less than the min effect date %s" ),
 				sdeff, sdmin );
@@ -1777,7 +1777,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 					ENTRY_COL_LEDGER, &mnemo,
 					-1 );
 
-		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
+		my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->hub ));
 		g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 
 		g_return_val_if_fail( my_strlen( mnemo ), FALSE );
@@ -1789,7 +1789,7 @@ set_default_deffect( ofaEntryPage *self, GtkTreeIter *iter )
 			my_date_set_from_date( &deff_min, &dope );
 		}
 
-		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_display());
+		sdeff = my_date_to_str( &deff_min, ofa_prefs_date_display( priv->hub ));
 		gtk_list_store_set( GTK_LIST_STORE( priv->store ), iter, ENTRY_COL_DEFFECT, sdeff, -1 );
 		g_free( sdeff );
 
@@ -1946,11 +1946,11 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 		prev_credit = ofo_entry_get_credit( entry );
 	}
 
-	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display());
+	my_date_set_from_str( &dope, sdope, ofa_prefs_date_display( priv->hub ));
 	g_return_val_if_fail( my_date_is_valid( &dope ), FALSE );
 	ofo_entry_set_dope( entry, &dope );
 
-	my_date_set_from_str( &deff, sdeff, ofa_prefs_date_display());
+	my_date_set_from_str( &deff, sdeff, ofa_prefs_date_display( priv->hub ));
 	g_return_val_if_fail( my_date_is_valid( &deff ), FALSE );
 	ofo_entry_set_deffect( entry, &deff );
 
@@ -1958,8 +1958,8 @@ save_entry( ofaEntryPage *self, GtkTreeModel *tmodel, GtkTreeIter *iter )
 	ofo_entry_set_label( entry, label );
 	ofo_entry_set_ledger( entry, ledger );
 	ofo_entry_set_account( entry, account );
-	ofo_entry_set_debit( entry, ofa_amount_from_str( sdeb ));
-	ofo_entry_set_credit( entry, ofa_amount_from_str( scre ));
+	ofo_entry_set_debit( entry, ofa_amount_from_str( sdeb, priv->hub ));
+	ofo_entry_set_credit( entry, ofa_amount_from_str( scre, priv->hub ));
 	ofo_entry_set_currency( entry, currency );
 
 	if( is_new ){

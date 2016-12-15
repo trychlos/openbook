@@ -35,7 +35,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
-#include "api/ofa-preferences.h"
 #include "api/ofo-base.h"
 #include "api/ofo-base-prot.h"
 #include "api/ofo-concil.h"
@@ -82,7 +81,7 @@ concil_finalize( GObject *instance )
 
 	priv = ofo_concil_get_instance_private( OFO_CONCIL( instance ));
 
-	sdate = my_date_to_str( &priv->dval, ofa_prefs_date_display());
+	sdate = my_date_to_str( &priv->dval, MY_DATE_SQL );
 	g_debug( "%s: instance=%p (%s): %ld: %s %s",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
 			priv->id, sdate, priv->user );

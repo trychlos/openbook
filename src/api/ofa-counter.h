@@ -32,10 +32,11 @@
  */
 
 #include "api/ofa-box.h"
+#include "api/ofa-hub-def.h"
 
 G_BEGIN_DECLS
 
-gchar *ofa_counter_to_str( ofxCounter counter );
+gchar *ofa_counter_to_str( ofxCounter counter, ofaHub *hub );
 
 G_END_DECLS
 

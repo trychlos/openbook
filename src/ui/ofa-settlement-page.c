@@ -487,11 +487,15 @@ tview_on_row_selected( ofaEntryTreeview *view, GList *selected, ofaSettlementPag
 		my_style_remove( priv->currency_balance, priv->last_style );
 	}
 
-	samount = priv->account_currency ? ofa_amount_to_str( ses.debit, priv->account_currency ) : g_strdup( "" );
+	samount = priv->account_currency
+			? ofa_amount_to_str( ses.debit, priv->account_currency, priv->hub )
+			: g_strdup( "" );
 	gtk_label_set_text( GTK_LABEL( priv->debit_balance ), samount );
 	g_free( samount );
 
-	samount = priv->account_currency ? ofa_amount_to_str( ses.credit, priv->account_currency ) : g_strdup( "" );
+	samount = priv->account_currency
+			? ofa_amount_to_str( ses.credit, priv->account_currency, priv->hub )
+			: g_strdup( "" );
 	gtk_label_set_text( GTK_LABEL( priv->credit_balance ), samount );
 	g_free( samount );
 

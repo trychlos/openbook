@@ -557,7 +557,7 @@ ofa_dossier_treeview_setup_store( ofaDossierTreeview *view )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	if( !priv->store ){
-		priv->store = ofa_dossier_store_new( NULL );
+		priv->store = ofa_dossier_store_new( NULL, NULL );
 		ofa_tvbin_set_store( OFA_TVBIN( view ), GTK_TREE_MODEL( priv->store ));
 	}
 
@@ -608,9 +608,12 @@ static gint
 tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_dossier_treeview_v_sort";
+	ofaDossierTreeviewPrivate *priv;
 	gint cmp;
 	gchar *dosa, *prova, *pera, *enda, *begina, *stata;
 	gchar *dosb, *provb, *perb, *endb, *beginb, *statb;
+
+	priv = ofa_dossier_treeview_get_instance_private( OFA_DOSSIER_TREEVIEW( bin ));
 
 	gtk_tree_model_get( tmodel, a,
 			DOSSIER_COL_DOSNAME,  &dosa,
@@ -643,10 +646,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( pera, perb );
 			break;
 		case DOSSIER_COL_END:
-			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( enda, endb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case DOSSIER_COL_BEGIN:
-			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( begina, beginb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case DOSSIER_COL_STATUS:
 			cmp = my_collate( stata, statb );

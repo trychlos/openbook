@@ -93,7 +93,7 @@ static void      get_and_send( ofaReconcilTreeview *self, GtkTreeSelection *sele
 static GList    *get_selected_with_selection( ofaReconcilTreeview *self, GtkTreeSelection *selection );
 static void      on_cell_data_func( GtkTreeViewColumn *tcolumn, GtkCellRendererText *cell, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaReconcilTreeview *self );
 static gboolean  tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint      tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint      tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilTreeview, ofa_reconcil_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaReconcilTreeview ))
@@ -866,12 +866,15 @@ tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 }
 
 static gint
-tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_reconcil_treeview_v_sort";
+	ofaReconcilTreeviewPrivate *priv;
 	gint cmp;
 	gchar *dopea, *deffa, *labela, *refa, *cura, *ledgera, *templatea, *accounta, *debita, *credita, *openuma, *stlmtnuma, *stlmtusera, *stlmtstampa, *entnuma, *updusera, *updstampa, *concilnuma, *concildatea, *statusa, *typea;
 	gchar *dopeb, *deffb, *labelb, *refb, *curb, *ledgerb, *templateb, *accountb, *debitb, *creditb, *openumb, *stlmtnumb, *stlmtuserb, *stlmtstampb, *entnumb, *upduserb, *updstampb, *concilnumb, *concildateb, *statusb, *typeb;
+
+	priv = ofa_reconcil_treeview_get_instance_private( OFA_RECONCIL_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			RECONCIL_COL_DOPE,          &dopea,
@@ -925,10 +928,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 
 	switch( column_id ){
 		case RECONCIL_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case RECONCIL_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( deffa, deffb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case RECONCIL_COL_LABEL:
 			cmp = my_collate( labela, labelb );
@@ -949,10 +952,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( accounta, accountb );
 			break;
 		case RECONCIL_COL_DEBIT:
-			cmp = ofa_itvsortable_sort_str_amount( debita, debitb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), debita, debitb );
 			break;
 		case RECONCIL_COL_CREDIT:
-			cmp = ofa_itvsortable_sort_str_amount( credita, creditb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), credita, creditb );
 			break;
 		case RECONCIL_COL_OPE_NUMBER:
 			cmp = ofa_itvsortable_sort_str_int( openuma, openumb );
@@ -982,7 +985,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = ofa_itvsortable_sort_str_int( concilnuma, concilnumb );
 			break;
 		case RECONCIL_COL_CONCIL_DATE:
-			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( concildatea, concildateb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case RECONCIL_COL_CONCIL_TYPE:
 			cmp = my_collate( typea, typeb );

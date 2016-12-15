@@ -37,7 +37,6 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-ope-template-store.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
 

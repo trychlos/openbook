@@ -41,10 +41,12 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean    dispose_has_run;
 
-	/* runtime
+	/* initialization
 	 */
+	ofaHub     *hub;
+	ofoAccount *account;
 }
 	ofaAccountArcStorePrivate;
 
@@ -54,10 +56,10 @@ static GType st_col_types[ACCOUNT_ARC_N_COLUMNS] = {
 		G_TYPE_OBJECT, G_TYPE_OBJECT					/* #ofoAccount, #ofoCurrency */
 };
 
-static gint     on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountArcStore *self );
-static void     load_dataset( ofaAccountArcStore *self, ofoAccount *account );
-static void     insert_row( ofaAccountArcStore *self, ofoAccount *account, gint i );
-static void     set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeIter *iter );
+static gint on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountArcStore *self );
+static void load_dataset( ofaAccountArcStore *self, ofoAccount *account );
+static void insert_row( ofaAccountArcStore *self, ofoAccount *account, gint i );
+static void set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeIter *iter );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountArcStore, ofa_account_arc_store, OFA_TYPE_LIST_STORE, 0,
 		G_ADD_PRIVATE( ofaAccountArcStore ))
@@ -127,6 +129,7 @@ ofa_account_arc_store_class_init( ofaAccountArcStoreClass *klass )
 
 /**
  * ofa_account_arc_store_new:
+ * @hub: the #ofaHub object of the application.
  * @account: the #ofoAccount.
  *
  * Load the archived soldes of the account.
@@ -134,13 +137,20 @@ ofa_account_arc_store_class_init( ofaAccountArcStoreClass *klass )
  * Returns: a new reference to the #ofaAccountArcStore object.
  */
 ofaAccountArcStore *
-ofa_account_arc_store_new( ofoAccount *account )
+ofa_account_arc_store_new( ofaHub *hub, ofoAccount *account )
 {
 	ofaAccountArcStore *store;
+	ofaAccountArcStorePrivate *priv;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
 
 	store = g_object_new( OFA_TYPE_ACCOUNT_ARC_STORE, NULL );
+
+	priv = ofa_account_arc_store_get_instance_private( store );
+
+	priv->hub = hub;
+	priv->account = account;
 
 	gtk_list_store_set_column_types(
 			GTK_LIST_STORE( store ), ACCOUNT_ARC_N_COLUMNS, st_col_types );
@@ -157,18 +167,21 @@ ofa_account_arc_store_new( ofoAccount *account )
 }
 
 /*
- * sorting the self per account_arc code
+ * sorting the store per archive date
  */
 static gint
 on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaAccountArcStore *self )
 {
+	ofaAccountArcStorePrivate *priv;
 	gchar *sdatea, *sdateb;
 	gint cmp;
+
+	priv = ofa_account_arc_store_get_instance_private( self );
 
 	gtk_tree_model_get( tmodel, a, ACCOUNT_ARC_COL_DATE, &sdatea, -1 );
 	gtk_tree_model_get( tmodel, b, ACCOUNT_ARC_COL_DATE, &sdateb, -1 );
 
-	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display());
+	cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->hub ));
 
 	g_free( sdatea );
 	g_free( sdateb );
@@ -200,21 +213,20 @@ insert_row( ofaAccountArcStore *self, ofoAccount *account, gint i )
 static void
 set_row_by_iter( ofaAccountArcStore *self, ofoAccount *account, gint i, GtkTreeIter *iter )
 {
+	ofaAccountArcStorePrivate *priv;
 	gchar *sdate, *sdebit, *scredit;
-	ofaHub *hub;
 	ofoCurrency *currency;
 	const gchar *symbol;
 
-	hub = ofo_base_get_hub( OFO_BASE( account ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
+	priv = ofa_account_arc_store_get_instance_private( self );
 
-	currency = ofo_currency_get_by_code( hub, ofo_account_get_currency( account ));
+	currency = ofo_currency_get_by_code( priv->hub, ofo_account_get_currency( account ));
 	g_return_if_fail( currency && OFO_IS_CURRENCY( currency ));
 	symbol = ofo_currency_get_symbol( currency );
 
-	sdate = my_date_to_str( ofo_account_archive_get_date( account, i ), ofa_prefs_date_display());
-	sdebit = ofa_amount_to_str( ofo_account_archive_get_debit( account, i ), currency );
-	scredit = ofa_amount_to_str( ofo_account_archive_get_credit( account, i ), currency );
+	sdate = my_date_to_str( ofo_account_archive_get_date( account, i ), ofa_prefs_date_display( priv->hub ));
+	sdebit = ofa_amount_to_str( ofo_account_archive_get_debit( account, i ), currency, priv->hub );
+	scredit = ofa_amount_to_str( ofo_account_archive_get_credit( account, i ), currency, priv->hub );
 
 	gtk_list_store_set(
 			GTK_LIST_STORE( self ),

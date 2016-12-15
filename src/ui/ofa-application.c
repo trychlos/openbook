@@ -140,7 +140,7 @@ static void                  application_startup( GApplication *application );
 static void                  appli_store_ref( ofaApplication *application, GtkBuilder *builder, const gchar *placeholder );
 static void                  application_activate( GApplication *application );
 static void                  application_open( GApplication *application, GFile **files, gint n_files, const gchar *hint );
-static void                  maintainer_test_function( void );
+static void                  maintainer_test_function( ofaApplication *application );
 static void                  on_dossier_collection_changed( ofaDossierCollection *collection, guint count, ofaApplication *application );
 static void                  enable_action_open( ofaApplication *application, gboolean enable );
 static void                  on_manage( GSimpleAction *action, GVariant *parameter, gpointer user_data );
@@ -744,7 +744,7 @@ application_startup( GApplication *application )
 
 	/* takes the ownership on the dossier store so that we are sure
 	 * it will be available during the run */
-	priv->dos_store = ofa_dossier_store_new( collection );
+	priv->dos_store = ofa_dossier_store_new( collection, priv->hub );
 }
 
 /*
@@ -815,7 +815,7 @@ application_activate( GApplication *application )
 	gtk_window_present( GTK_WINDOW( priv->main_window ));
 
 	if( 1 ){
-		maintainer_test_function();
+		maintainer_test_function( OFA_APPLICATION( application ));
 	}
 
 	/* if a dossier is to be opened due to options specified in the
@@ -883,11 +883,16 @@ application_open( GApplication *application, GFile **files, gint n_files, const 
 }
 
 static void
-maintainer_test_function( void )
+maintainer_test_function( ofaApplication *application )
 {
-#if 0
 	static const gchar *thisfn = "ofa_application_maintainer_test_function";
+	ofaApplicationPrivate *priv;
 
+	g_debug( "%s: application=%p", thisfn, ( void * ) application );
+
+	priv = ofa_application_get_instance_private( OFA_APPLICATION( application ));
+
+#if 0
 	gchar *cstr = "GRANT ALL PRIVILEGES ON `ofat`.* TO 'ofat'@'localhost' WITH GRANT OPTION";
 	gchar *prev_dbname = "ofat";
 	gchar *dbname = "ofat_3";
@@ -907,7 +912,7 @@ maintainer_test_function( void )
 #endif
 
 	if( 0 ){
-		ofa_formula_test();
+		ofa_formula_test( priv->hub );
 	}
 }
 /*                                                                   */
@@ -1032,7 +1037,7 @@ on_user_prefs( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 /*
  * quitting means quitting the current instance of the application
- * i.e. the most recent ofaMainWindows
+ * i.e. the most recent #ofaMainWindow
  */
 static void
 on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
@@ -1041,17 +1046,19 @@ on_quit( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 	ofaApplication *application;
 	GList *windows;
 	ofaMainWindow *window;
+	ofaApplicationPrivate *priv;
 
 	g_debug( "%s: action=%p, parameter=%p, user_data=%p",
 			thisfn, action, parameter, ( void * ) user_data );
 
 	g_return_if_fail( user_data && OFA_IS_APPLICATION( user_data ));
 	application = OFA_APPLICATION( user_data );
+	priv = ofa_application_get_instance_private( application );
 
 	windows = gtk_application_get_windows( GTK_APPLICATION( application ));
 	if( windows ){
 		window = OFA_MAIN_WINDOW( windows->data );
-		if( !ofa_prefs_appli_confirm_on_quit() || ofa_main_window_is_willing_to_quit( window )){
+		if( !ofa_prefs_appli_confirm_on_quit( priv->hub ) || ofa_main_window_is_willing_to_quit( window )){
 			gtk_widget_destroy( GTK_WIDGET( window ));
 		}
 	} else {

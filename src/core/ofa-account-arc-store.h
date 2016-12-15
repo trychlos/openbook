@@ -91,7 +91,8 @@ enum {
 
 GType               ofa_account_arc_store_get_type( void );
 
-ofaAccountArcStore *ofa_account_arc_store_new     ( ofoAccount *account );
+ofaAccountArcStore *ofa_account_arc_store_new     ( ofaHub *hub,
+														ofoAccount *account );
 
 G_END_DECLS
 

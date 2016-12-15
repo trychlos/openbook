@@ -51,6 +51,7 @@ typedef struct {
 
 	/* initialization
 	 */
+	ofaHub  *hub;
 }
 	ofaAccountArcTreeviewPrivate;
 
@@ -139,6 +140,7 @@ ofaAccountArcTreeview *
 ofa_account_arc_treeview_new( ofaHub *hub, ofoAccount *account )
 {
 	ofaAccountArcTreeview *view;
+	ofaAccountArcTreeviewPrivate *priv;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 	g_return_val_if_fail( account && OFO_IS_ACCOUNT( account ), NULL );
@@ -146,6 +148,10 @@ ofa_account_arc_treeview_new( ofaHub *hub, ofoAccount *account )
 	view = g_object_new( OFA_TYPE_ACCOUNT_ARC_TREEVIEW,
 				"ofa-tvbin-hub", hub,
 				NULL );
+
+	priv = ofa_account_arc_treeview_get_instance_private( view );
+
+	priv->hub = hub;
 
 	setup_columns( view );
 	setup_store( view, account );
@@ -175,9 +181,12 @@ setup_columns( ofaAccountArcTreeview *self )
 static void
 setup_store( ofaAccountArcTreeview *self, ofoAccount *account )
 {
+	ofaAccountArcTreeviewPrivate *priv;
 	ofaAccountArcStore *store;
 
-	store = ofa_account_arc_store_new( account );
+	priv = ofa_account_arc_treeview_get_instance_private( self );
+
+	store = ofa_account_arc_store_new( priv->hub, account );
 
 	ofa_tvbin_set_store( OFA_TVBIN( self ), GTK_TREE_MODEL( store ));
 }
@@ -190,9 +199,12 @@ static gint
 tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_account_arc_treeview_v_sort";
+	ofaAccountArcTreeviewPrivate *priv;
 	gint cmp;
 	gchar *sdatea, *debita, *credita, *symbola;
 	gchar *sdateb, *debitb, *creditb, *symbolb;
+
+	priv = ofa_account_arc_treeview_get_instance_private( OFA_ACCOUNT_ARC_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			ACCOUNT_ARC_COL_DATE,    &sdatea,
@@ -212,13 +224,13 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 
 	switch( column_id ){
 		case ACCOUNT_ARC_COL_DATE:
-			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( sdatea, sdateb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case ACCOUNT_ARC_COL_DEBIT:
-			cmp = ofa_itvsortable_sort_str_amount( debita, debitb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), debita, debitb );
 			break;
 		case ACCOUNT_ARC_COL_CREDIT:
-			cmp = ofa_itvsortable_sort_str_amount( credita, creditb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), credita, creditb );
 			break;
 		case ACCOUNT_ARC_COL_SYMBOL1:
 		case ACCOUNT_ARC_COL_SYMBOL2:

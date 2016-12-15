@@ -146,7 +146,8 @@ guint         ofa_itvsortable_get_interface_version     ( GType type );
 
 gint          ofa_itvsortable_sort_png                  ( const GdkPixbuf *a, const GdkPixbuf *b );
 
-gint          ofa_itvsortable_sort_str_amount           ( const gchar *a, const gchar *b );
+gint          ofa_itvsortable_sort_str_amount           ( ofaITVSortable *instance,
+																const gchar *a, const gchar *b );
 
 gint          ofa_itvsortable_sort_str_int              ( const gchar *a, const gchar *b );
 

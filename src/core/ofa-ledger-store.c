@@ -244,6 +244,7 @@ insert_row( ofaLedgerStore *self, const ofoLedger *ledger )
 static void
 set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *iter )
 {
+	ofaLedgerStorePrivate *priv;
 	static const gchar *thisfn = "ofa_ledger_store_set_row";
 	gchar *sdentry, *sdclose, *stamp;
 	const gchar *notes;
@@ -252,10 +253,12 @@ set_row_by_iter( ofaLedgerStore *self, const ofoLedger *ledger, GtkTreeIter *ite
 	GError *error;
 	GdkPixbuf *notes_png;
 
+	priv = ofa_ledger_store_get_instance_private( self );
+
 	ofo_ledger_get_last_entry( ledger, &dentry );
-	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display());
+	sdentry = my_date_to_str( &dentry, ofa_prefs_date_display( priv->hub ));
 	dclose = ofo_ledger_get_last_close( ledger );
-	sdclose = my_date_to_str( dclose, ofa_prefs_date_display());
+	sdclose = my_date_to_str( dclose, ofa_prefs_date_display( priv->hub ));
 	stamp  = my_utils_stamp_to_str( ofo_ledger_get_upd_stamp( ledger ), MY_STAMP_DMYYHM );
 
 	notes = ofo_ledger_get_notes( ledger );

@@ -29,6 +29,7 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -40,7 +41,12 @@
 /* private instance data
  */
 typedef struct {
-	gboolean dispose_has_run;
+	gboolean              dispose_has_run;
+
+	/* initialization
+	 */
+	ofaDossierCollection *collection;
+	ofaHub               *hub;
 }
 	ofaDossierStorePrivate;
 
@@ -164,7 +170,8 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
  * ofa_dossier_store_new:
  * @collection: [allow-none]: the #ofaDossierCollection instance which centralize the
  *  list of defined dossiers. This must be non-null at first call
- *  (instanciation time), while is not used on successive calls.
+ *  (instantiation time), while is not used on successive calls.
+ * @hub: [allow-none]: the #ofaHub object of the application.
  *
  * The #ofaDossierStore class implements a singleton. Each returned
  * pointer is a new reference to the same instance of the class.
@@ -175,15 +182,21 @@ ofa_dossier_store_class_init( ofaDossierStoreClass *klass )
  * must be g_object_unref() by the caller.
  */
 ofaDossierStore *
-ofa_dossier_store_new( ofaDossierCollection *collection )
+ofa_dossier_store_new( ofaDossierCollection *collection, ofaHub *hub )
 {
 	ofaDossierStore *store;
+	ofaDossierStorePrivate *priv;
 
 	if( st_store ){
 		store = g_object_ref( st_store );
 
 	} else {
 		store = g_object_new( OFA_TYPE_DOSSIER_STORE, NULL );
+
+		priv = ofa_dossier_store_get_instance_private( store );
+
+		priv->collection = collection;
+		priv->hub = hub;
 
 		gtk_list_store_set_column_types(
 				GTK_LIST_STORE( store ), DOSSIER_N_COLUMNS, st_col_types );
@@ -290,17 +303,20 @@ insert_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const 
 static void
 set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofaIDBExerciceMeta *period, GtkTreeIter *iter )
 {
+	ofaDossierStorePrivate *priv;
 	gchar *begin, *end, *status, *pername, *provname;
 	ofaIDBProvider *provider;
 	const gchar *dosname;
+
+	priv = ofa_dossier_store_get_instance_private( self );
 
 	dosname = ofa_idbdossier_meta_get_dossier_name( dossier_meta );
 	provider = ofa_idbdossier_meta_get_provider( dossier_meta );
 	provname = ofa_idbprovider_get_canon_name( provider );
 	g_object_unref( provider );
 
-	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_display());
-	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_display());
+	begin = my_date_to_str( ofa_idbexercice_meta_get_begin_date( period ), ofa_prefs_date_display( priv->hub ));
+	end = my_date_to_str( ofa_idbexercice_meta_get_end_date( period ), ofa_prefs_date_display( priv->hub ));
 	status = ofa_idbexercice_meta_get_status( period );
 	pername = ofa_idbexercice_meta_get_name( period );
 
@@ -314,8 +330,8 @@ set_row( ofaDossierStore *self, const ofaIDBDossierMeta *dossier_meta, const ofa
 			DOSSIER_COL_END,      end,
 			DOSSIER_COL_STATUS,   status,
 			DOSSIER_COL_CURRENT,  ofa_idbexercice_meta_get_current( period ),
-			DOSSIER_COL_DOS_META,     dossier_meta,
-			DOSSIER_COL_EXE_META,   period,
+			DOSSIER_COL_DOS_META, dossier_meta,
+			DOSSIER_COL_EXE_META, period,
 			-1 );
 
 	g_free( provname );

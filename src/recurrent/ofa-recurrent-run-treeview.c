@@ -78,8 +78,8 @@ static void     on_selection_activated( ofaRecurrentRunTreeview *self, GtkTreeSe
 static void     on_selection_delete( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, void *empty );
 static void     get_and_send( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static GList   *get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *selection );
-static gboolean tvbin_v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter );
-static gint     tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gboolean tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter );
+static gint     tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentRunTreeview, ofa_recurrent_run_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaRecurrentRunTreeview ))
@@ -353,7 +353,6 @@ static void
 on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *tmodel, GtkTreeIter *iter, ofaRecurrentRunTreeview *self )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
-
 	ofoRecurrentRun *recrun;
 	ofoRecurrentModel *recmodel;
 	guint column_id;
@@ -404,6 +403,7 @@ on_cell_data_func( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTree
 static void
 on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecurrentRunTreeview *self )
 {
+	ofaRecurrentRunTreeviewPrivate *priv;
 	gint column_id;
 	GtkTreePath *path;
 	GtkTreeModel *sort_model, *filter_model, *store;
@@ -411,6 +411,8 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecu
 	gchar *str;
 	gdouble amount;
 	ofoRecurrentRun *recrun;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( self );
 
 	sort_model = ofa_tvbin_get_tree_model( OFA_TVBIN( self ));
 	if( sort_model ){
@@ -437,8 +439,8 @@ on_cell_edited( GtkCellRendererText *cell, gchar *path_str, gchar *text, ofaRecu
 				case REC_RUN_COL_AMOUNT2:
 				case REC_RUN_COL_AMOUNT3:
 					/* reformat amounts before storing them */
-					amount = ofa_amount_from_str( text );
-					str = ofa_amount_to_str( amount, NULL );
+					amount = ofa_amount_from_str( text, priv->hub );
+					str = ofa_amount_to_str( amount, NULL, priv->hub );
 					gtk_list_store_set( GTK_LIST_STORE( store ), &iter, column_id, str, -1 );
 					g_free( str );
 					break;
@@ -605,14 +607,14 @@ get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *se
 }
 
 static gboolean
-tvbin_v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter )
+tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {
 	ofaRecurrentRunTreeviewPrivate *priv;
 	gboolean visible;
 	ofoRecurrentRun *object;
 	const gchar *status;
 
-	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( bin ));
+	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( tvbin ));
 
 	visible = FALSE;
 
@@ -638,12 +640,15 @@ tvbin_v_filter( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 }
 
 static gint
-tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_recurrent_run_treeview_v_sort";
+	ofaRecurrentRunTreeviewPrivate *priv;
 	gchar *mnemoa, *labela, *seqa, *datea, *statusa, *amount1a, *amount2a, *amount3a;
 	gchar *mnemob, *labelb, *seqb, *dateb, *statusb, *amount1b, *amount2b, *amount3b;
 	gint cmp;
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( OFA_RECURRENT_RUN_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			REC_RUN_COL_MNEMO,   &mnemoa,
@@ -680,19 +685,19 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( labela, labelb );
 			break;
 		case REC_RUN_COL_DATE:
-			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( datea, dateb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case REC_RUN_COL_STATUS:
 			cmp = my_collate( statusa, statusb );
 			break;
 		case REC_RUN_COL_AMOUNT1:
-			cmp = ofa_itvsortable_sort_str_amount( amount1a, amount1b );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), amount1a, amount1b );
 			break;
 		case REC_RUN_COL_AMOUNT2:
-			cmp = ofa_itvsortable_sort_str_amount( amount2a, amount2b );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), amount2a, amount2b );
 			break;
 		case REC_RUN_COL_AMOUNT3:
-			cmp = ofa_itvsortable_sort_str_amount( amount3a, amount3b );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), amount3a, amount3b );
 			break;
 		default:
 			g_warning( "%s: unhandled column: %d", thisfn, column_id );

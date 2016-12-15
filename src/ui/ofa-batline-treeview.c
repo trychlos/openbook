@@ -90,7 +90,7 @@ static void        on_selection_activated( ofaBatlineTreeview *self, GtkTreeSele
 static void        on_selection_delete( ofaBatlineTreeview *self, GtkTreeSelection *selection, void *empty );
 static void        get_and_send( ofaBatlineTreeview *self, GtkTreeSelection *selection, const gchar *signal );
 static ofoBatLine *get_selected_with_selection( ofaBatlineTreeview *self, GtkTreeSelection *selection );
-static gint        tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static gint        tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatlineTreeview, ofa_batline_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaBatlineTreeview ))
@@ -462,8 +462,8 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 
 	sbatid = g_strdup_printf( "%lu", ofo_bat_line_get_bat_id( line ));
 	slineid = g_strdup_printf( "%lu", ofo_bat_line_get_line_id( line ));
-	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display());
-	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display());
+	sdeffect = my_date_to_str( ofo_bat_line_get_deffect( line ), ofa_prefs_date_display( priv->hub ));
+	sdope = my_date_to_str( ofo_bat_line_get_dope( line ), ofa_prefs_date_display( priv->hub ));
 
 	if( !priv->currency ){
 		cur_code = ofo_bat_line_get_currency( line );
@@ -471,7 +471,7 @@ store_batline( ofaBatlineTreeview *self, ofoBatLine *line )
 		g_return_if_fail( !priv->currency || OFO_IS_CURRENCY( priv->currency ));
 	}
 
-	samount = ofa_amount_to_str( ofo_bat_line_get_amount( line ), priv->currency );
+	samount = ofa_amount_to_str( ofo_bat_line_get_amount( line ), priv->currency, priv->hub );
 
 	concil = ofa_iconcil_get_concil( OFA_ICONCIL( line ));
 	snumbers = g_string_new( "" );
@@ -581,12 +581,15 @@ get_selected_with_selection( ofaBatlineTreeview *self, GtkTreeSelection *selecti
 }
 
 static gint
-tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_batline_treeview_v_sort";
+	ofaBatlineTreeviewPrivate *priv;
 	gint cmp;
 	gchar *batida, *lineida, *deffecta, *dopea, *refa, *labela, *cura, *amounta, *entrya, *usera, *stampa, *sconcilida;
 	gchar *batidb, *lineidb, *deffectb, *dopeb, *refb, *labelb, *curb, *amountb, *entryb, *userb, *stampb, *sconcilidb;
+
+	priv = ofa_batline_treeview_get_instance_private( OFA_BATLINE_TREEVIEW( tvbin ));
 
 	gtk_tree_model_get( tmodel, a,
 			BAL_COL_BAT_ID,    &batida,
@@ -628,10 +631,10 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = ofa_itvsortable_sort_str_int( lineida, lineidb );
 			break;
 		case BAL_COL_DEFFECT:
-			cmp = my_date_compare_by_str( deffecta, deffectb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( deffecta, deffectb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case BAL_COL_DOPE:
-			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display());
+			cmp = my_date_compare_by_str( dopea, dopeb, ofa_prefs_date_display( priv->hub ));
 			break;
 		case BAL_COL_REF:
 			cmp = my_collate( refa, refb );
@@ -643,7 +646,7 @@ tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 			cmp = my_collate( cura, curb );
 			break;
 		case BAL_COL_AMOUNT:
-			cmp = ofa_itvsortable_sort_str_amount( amounta, amountb );
+			cmp = ofa_itvsortable_sort_str_amount( OFA_ITVSORTABLE( tvbin ), amounta, amountb );
 			break;
 		case BAL_COL_CONCIL_ID:
 			cmp = ofa_itvsortable_sort_str_int( sconcilida, sconcilidb );

@@ -93,7 +93,8 @@ enum {
 
 GType              ofa_ledger_arc_store_get_type( void );
 
-ofaLedgerArcStore *ofa_ledger_arc_store_new     ( ofoLedger *ledger );
+ofaLedgerArcStore *ofa_ledger_arc_store_new     ( ofaHub *hub,
+														ofoLedger *ledger );
 
 G_END_DECLS
 

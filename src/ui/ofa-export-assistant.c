@@ -454,7 +454,11 @@ iassistant_iface_init( myIAssistantInterface *iface )
 static gboolean
 iassistant_is_willing_to_quit( myIAssistant *instance, guint keyval )
 {
-	return( ofa_prefs_assistant_is_willing_to_quit( keyval ));
+	ofaExportAssistantPrivate *priv;
+
+	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
+
+	return( ofa_prefs_assistant_is_willing_to_quit( priv->hub, keyval ));
 }
 
 /*

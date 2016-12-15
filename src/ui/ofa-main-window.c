@@ -669,8 +669,7 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 {
 	static const gchar *thisfn = "ofa_main_window_on_delete_event";
 	gboolean ok_to_quit;
-
-	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( toplevel ), FALSE );
+	ofaHub *hub;
 
 	g_debug( "%s: toplevel=%p (%s), event=%p, user_data=%p",
 			thisfn,
@@ -678,7 +677,12 @@ on_delete_event( GtkWidget *toplevel, GdkEvent *event, gpointer user_data )
 			( void * ) event,
 			( void * ) user_data );
 
-	ok_to_quit = !ofa_prefs_appli_confirm_on_altf4() ||
+	g_return_val_if_fail( OFA_IS_MAIN_WINDOW( toplevel ), FALSE );
+
+	hub = igetter_get_hub( OFA_IGETTER( toplevel ));
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
+	ok_to_quit = !ofa_prefs_appli_confirm_on_altf4( hub ) ||
 					ofa_main_window_is_willing_to_quit( OFA_MAIN_WINDOW( toplevel ));
 
 	return( !ok_to_quit );
@@ -744,18 +748,19 @@ do_open_run_prefs( ofaMainWindow *self, ofaHub *hub, gboolean read_only )
 	const gchar *main_notes, *exe_notes;
 	ofoDossier *dossier;
 	ofaDossierPrefs *prefs;
-	gboolean empty, user_prefs_non_empty, dossier_prefs_non_empty;
+	gboolean open_notes, empty, user_prefs_non_empty, dossier_prefs_non_empty;
 
 	dossier = ofa_hub_get_dossier( hub );
 	prefs = ofa_hub_dossier_get_prefs( hub );
+	open_notes = ofa_prefs_dossier_open_notes( hub );
 
 	/* display dossier notes ? */
-	if( ofa_prefs_dossier_open_notes() || ofa_dossier_prefs_get_open_notes( prefs )){
+	if( open_notes || ofa_dossier_prefs_get_open_notes( prefs )){
 
 		main_notes = ofo_dossier_get_notes( dossier );
 		exe_notes = ofo_dossier_get_exe_notes( dossier );
 		empty = my_strlen( main_notes ) == 0 && my_strlen( exe_notes ) == 0;
-		user_prefs_non_empty = ofa_prefs_dossier_open_notes() && ofa_prefs_dossier_open_notes_if_empty();
+		user_prefs_non_empty = open_notes && ofa_prefs_dossier_open_notes_if_empty( hub );
 		dossier_prefs_non_empty = ofa_dossier_prefs_get_open_notes( prefs ) && ofa_dossier_prefs_get_nonempty( prefs );
 
 		g_debug( "%s: empty=%s, user_prefs_non_empty=%s, dossier_prefs_non_empty=%s",
@@ -769,15 +774,15 @@ do_open_run_prefs( ofaMainWindow *self, ofaHub *hub, gboolean read_only )
 	}
 
 	/* check balances and DBMS integrity*/
-	if( ofa_prefs_dossier_open_balance() || ofa_dossier_prefs_get_balances( prefs )){
+	if( ofa_prefs_dossier_open_balance( hub ) || ofa_dossier_prefs_get_balances( prefs )){
 		ofa_check_balances_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
 	}
-	if( ofa_prefs_dossier_open_integrity() || ofa_dossier_prefs_get_integrity( prefs )){
+	if( ofa_prefs_dossier_open_integrity( hub ) || ofa_dossier_prefs_get_integrity( prefs )){
 		ofa_check_integrity_run( OFA_IGETTER( self ), GTK_WINDOW( self ));
 	}
 
 	/* display dossier properties */
-	if( ofa_prefs_dossier_open_properties() || ofa_dossier_prefs_get_properties( prefs )){
+	if( ofa_prefs_dossier_open_properties( hub ) || ofa_dossier_prefs_get_properties( prefs )){
 		do_properties( self );
 	}
 }
