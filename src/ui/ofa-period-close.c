@@ -38,7 +38,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
@@ -89,8 +88,8 @@ static void     check_for_enable_dlg( ofaPeriodClose *self );
 static gboolean is_dialog_validable( ofaPeriodClose *self );
 static void     on_ok_clicked( GtkButton *button, ofaPeriodClose *self );
 static gboolean do_close( ofaPeriodClose *self );
-static void     get_settings( ofaPeriodClose *self );
-static void     set_settings( ofaPeriodClose *self );
+static void     read_settings( ofaPeriodClose *self );
+static void     write_settings( ofaPeriodClose *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPeriodClose, ofa_period_close, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPeriodClose )
@@ -132,7 +131,7 @@ period_close_dispose( GObject *instance )
 
 		/* unref object members here */
 
-		set_settings( OFA_PERIOD_CLOSE( instance ));
+		write_settings( OFA_PERIOD_CLOSE( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -261,7 +260,7 @@ idialog_init( myIDialog *instance )
 	setup_date( OFA_PERIOD_CLOSE( instance ));
 	setup_others( OFA_PERIOD_CLOSE( instance ));
 
-	get_settings( OFA_PERIOD_CLOSE( instance ));
+	read_settings( OFA_PERIOD_CLOSE( instance ));
 }
 
 static void
@@ -529,40 +528,43 @@ do_close( ofaPeriodClose *self )
  * archive_accounts; archive_ledgers;
  */
 static void
-get_settings( ofaPeriodClose *self )
+read_settings( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
-	GList *list, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *settings_key;
 
 	priv = ofa_period_close_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	list = ofa_settings_user_get_string_list( settings_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-	it = list;
-	cstr = it ? it->data : NULL;
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->accounts_btn ), my_utils_boolean_from_str( cstr ));
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->ledgers_btn ), my_utils_boolean_from_str( cstr ));
 	}
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
 }
 
 static void
-set_settings( ofaPeriodClose *self )
+write_settings( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
+	myISettings *settings;
 	gchar *str, *settings_key;
 
 	priv = ofa_period_close_get_instance_private( self );
@@ -571,8 +573,9 @@ set_settings( ofaPeriodClose *self )
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->accounts_btn )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn )) ? "True":"False" );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	ofa_settings_user_set_string( settings_key, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 
 	g_free( str );
 	g_free( settings_key );

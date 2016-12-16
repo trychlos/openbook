@@ -37,7 +37,6 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-ledger-treeview.h"
@@ -53,6 +52,12 @@ typedef struct {
 	ofaIGetter          *getter;
 	gchar               *settings_key;
 
+	/* runtime
+	 */
+	ofaHub              *hub;
+	gboolean             all_ledgers;
+	gboolean             new_page;
+
 	/* UI
 	 */
 	GtkWidget           *ledgers_parent;
@@ -60,11 +65,6 @@ typedef struct {
 	GtkWidget           *all_ledgers_btn;
 	GtkWidget           *new_page_btn;
 	ofaDateFilterHVBin  *date_filter;
-
-	/* internals
-	 */
-	gboolean             all_ledgers;
-	gboolean             new_page;
 }
 	ofaLedgerBookBinPrivate;
 
@@ -79,6 +79,7 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-book-bin.ui";
 
+static void setup_runtime( ofaLedgerBookBin *self );
 static void setup_bin( ofaLedgerBookBin *self );
 static void setup_ledger_selection( ofaLedgerBookBin *self );
 static void setup_date_selection( ofaLedgerBookBin *self );
@@ -88,8 +89,8 @@ static void on_tview_selection_changed( ofaLedgerTreeview *tview, void *unused, 
 static void on_all_ledgers_toggled( GtkToggleButton *button, ofaLedgerBookBin *self );
 static void on_new_page_toggled( GtkToggleButton *button, ofaLedgerBookBin *self );
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerBookBin *self );
-static void load_settings( ofaLedgerBookBin *bin );
-static void set_settings( ofaLedgerBookBin *bin );
+static void read_settings( ofaLedgerBookBin *bin );
+static void write_settings( ofaLedgerBookBin *bin );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerBookBin, ofa_ledger_book_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaLedgerBookBin ))
@@ -210,15 +211,27 @@ ofa_ledger_book_bin_new( ofaIGetter *getter, const gchar *settings_key )
 		priv->settings_key = g_strdup( settings_key );
 	}
 
+	setup_runtime( self );
 	setup_bin( self );
 	setup_ledger_selection( self );
 	setup_date_selection( self );
 	setup_others( self );
 	setup_actions( self );
 
-	load_settings( self );
+	read_settings( self );
 
 	return( self );
+}
+
+static void
+setup_runtime( ofaLedgerBookBin *self )
+{
+	ofaLedgerBookBinPrivate *priv;
+
+	priv = ofa_ledger_book_bin_get_instance_private( self );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 }
 
 static void
@@ -245,7 +258,6 @@ setup_ledger_selection( ofaLedgerBookBin *self )
 {
 	ofaLedgerBookBinPrivate *priv;
 	GtkWidget *widget, *toggle, *label;
-	ofaHub *hub;
 
 	priv = ofa_ledger_book_bin_get_instance_private( self );
 
@@ -253,10 +265,7 @@ setup_ledger_selection( ofaLedgerBookBin *self )
 	g_return_if_fail( widget && GTK_IS_CONTAINER( widget ));
 	priv->ledgers_parent = widget;
 
-	hub = ofa_igetter_get_hub( priv->getter );
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
-
-	priv->tview = ofa_ledger_treeview_new( hub );
+	priv->tview = ofa_ledger_treeview_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( widget ), GTK_WIDGET( priv->tview ));
 	ofa_tvbin_set_hexpand( OFA_TVBIN( priv->tview ), FALSE );
 	ofa_ledger_treeview_set_settings_key( priv->tview, priv->settings_key );
@@ -408,7 +417,7 @@ ofa_ledger_book_bin_is_valid( ofaLedgerBookBin *bin, gchar **message )
 	}
 
 	if( valid ){
-		set_settings( bin );
+		write_settings( bin );
 	}
 
 	return( valid );
@@ -502,19 +511,21 @@ ofa_ledger_book_bin_get_date_filter( ofaLedgerBookBin *bin )
  * all_ledgers;from_date;to_date;new_page;
  */
 static void
-load_settings( ofaLedgerBookBin *bin )
+read_settings( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
-	GList *list, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
 
 	priv = ofa_ledger_book_bin_get_instance_private( bin );
 
-	list = ofa_settings_user_get_string_list( priv->settings_key );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, priv->settings_key );
 
-	it = list;
-	cstr = it ? it->data : NULL;
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->all_ledgers_btn ), my_utils_boolean_from_str( cstr ));
@@ -522,7 +533,7 @@ load_settings( ofaLedgerBookBin *bin )
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
 		ofa_idate_filter_set_date(
@@ -530,7 +541,7 @@ load_settings( ofaLedgerBookBin *bin )
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
 		ofa_idate_filter_set_date(
@@ -538,20 +549,21 @@ load_settings( ofaLedgerBookBin *bin )
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->new_page_btn ), my_utils_boolean_from_str( cstr ));
 		on_new_page_toggled( GTK_TOGGLE_BUTTON( priv->new_page_btn ), bin );
 	}
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( settings, strlist );
 }
 
 static void
-set_settings( ofaLedgerBookBin *bin )
+write_settings( ofaLedgerBookBin *bin )
 {
 	ofaLedgerBookBinPrivate *priv;
+	myISettings *settings;
 	gchar *str, *sdfrom, *sdto;
 
 	priv = ofa_ledger_book_bin_get_instance_private( bin );
@@ -569,7 +581,8 @@ set_settings( ofaLedgerBookBin *bin )
 			my_strlen( sdto ) ? sdto : "",
 			priv->new_page ? "True":"False" );
 
-	ofa_settings_user_set_string( priv->settings_key, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, priv->settings_key, str );
 
 	g_free( sdfrom );
 	g_free( sdto );

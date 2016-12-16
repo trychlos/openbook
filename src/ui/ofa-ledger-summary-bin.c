@@ -32,8 +32,8 @@
 #include "my/my-utils.h"
 
 #include "api/ofa-date-filter-hv-bin.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-ledger-summary-bin.h"
@@ -41,18 +41,20 @@
 /* private instance data
  */
 typedef struct {
-	gboolean             dispose_has_run;
+	gboolean            dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter          *getter;
+	ofaIGetter         *getter;
+
+	/* runtime
+	 */
+	ofaHub             *hub;
+	myISettings        *settings;
 
 	/* UI
 	 */
-	ofaDateFilterHVBin  *date_filter;
-
-	/* internals
-	 */
+	ofaDateFilterHVBin *date_filter;
 }
 	ofaLedgerSummaryBinPrivate;
 
@@ -68,11 +70,12 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-summary-bin.ui";
 static const gchar *st_settings         = "RenderLedgersSummary";
 
-static void setup_bin( ofaLedgerSummaryBin *bin );
-static void setup_date_selection( ofaLedgerSummaryBin *bin );
+static void setup_runtime( ofaLedgerSummaryBin *self );
+static void setup_bin( ofaLedgerSummaryBin *self );
+static void setup_date_selection( ofaLedgerSummaryBin *self );
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerSummaryBin *self );
-static void load_settings( ofaLedgerSummaryBin *bin );
-static void set_settings( ofaLedgerSummaryBin *bin );
+static void read_settings( ofaLedgerSummaryBin *self );
+static void write_settings( ofaLedgerSummaryBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerSummaryBin, ofa_ledger_summary_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaLedgerSummaryBin ))
@@ -170,26 +173,40 @@ ofa_ledger_summary_bin_class_init( ofaLedgerSummaryBinClass *klass )
 ofaLedgerSummaryBin *
 ofa_ledger_summary_bin_new( ofaIGetter *getter )
 {
-	ofaLedgerSummaryBin *self;
+	ofaLedgerSummaryBin *bin;
 	ofaLedgerSummaryBinPrivate *priv;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	self = g_object_new( OFA_TYPE_LEDGER_SUMMARY_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_LEDGER_SUMMARY_BIN, NULL );
 
-	priv = ofa_ledger_summary_bin_get_instance_private( self );
+	priv = ofa_ledger_summary_bin_get_instance_private( bin );
 
 	priv->getter = getter;
 
-	setup_bin( self );
-	setup_date_selection( self );
-	load_settings( self );
+	setup_runtime( bin );
+	setup_bin( bin );
+	setup_date_selection( bin );
+	read_settings( bin );
 
-	return( self );
+	return( bin );
 }
 
 static void
-setup_bin( ofaLedgerSummaryBin *bin )
+setup_runtime( ofaLedgerSummaryBin *self )
+{
+	ofaLedgerSummaryBinPrivate *priv;
+
+	priv = ofa_ledger_summary_bin_get_instance_private( self );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->settings = ofa_hub_get_user_settings( priv->hub );
+}
+
+static void
+setup_bin( ofaLedgerSummaryBin *self )
 {
 	GtkBuilder *builder;
 	GObject *object;
@@ -201,22 +218,22 @@ setup_bin( ofaLedgerSummaryBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
 }
 
 static void
-setup_date_selection( ofaLedgerSummaryBin *bin )
+setup_date_selection( ofaLedgerSummaryBin *self )
 {
 	ofaLedgerSummaryBinPrivate *priv;
 	GtkWidget *parent, *label;
 	ofaDateFilterHVBin *filter;
 
-	priv = ofa_ledger_summary_bin_get_instance_private( bin );
+	priv = ofa_ledger_summary_bin_get_instance_private( self );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
@@ -226,7 +243,7 @@ setup_date_selection( ofaLedgerSummaryBin *bin )
 	label = ofa_idate_filter_get_frame_label( OFA_IDATE_FILTER( filter ));
 	gtk_label_set_markup( GTK_LABEL( label ), _( " Effect date selection " ));
 
-	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
+	g_signal_connect( G_OBJECT( filter ), "ofa-changed", G_CALLBACK( on_date_filter_changed ), self );
 
 	priv->date_filter = filter;
 }
@@ -266,7 +283,7 @@ ofa_ledger_summary_bin_is_valid( ofaLedgerSummaryBin *bin, gchar **msgerr )
 					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, msgerr );
 
 	if( valid ){
-		set_settings( bin );
+		write_settings( bin );
 	}
 
 	return( valid );
@@ -297,18 +314,18 @@ ofa_ledger_summary_bin_get_date_filter( ofaLedgerSummaryBin *bin )
  * from_date;to_date;
  */
 static void
-load_settings( ofaLedgerSummaryBin *bin )
+read_settings( ofaLedgerSummaryBin *self )
 {
 	ofaLedgerSummaryBinPrivate *priv;
-	GList *list, *it;
+	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
 
-	priv = ofa_ledger_summary_bin_get_instance_private( bin );
+	priv = ofa_ledger_summary_bin_get_instance_private( self );
 
-	list = ofa_settings_user_get_string_list( st_settings );
+	strlist = my_isettings_get_string_list( priv->settings, HUB_USER_SETTINGS_GROUP, st_settings );
 
-	it = list;
+	it = strlist;
 	cstr = it ? it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
@@ -324,16 +341,16 @@ load_settings( ofaLedgerSummaryBin *bin )
 				OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, &date );
 	}
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( priv->settings, strlist );
 }
 
 static void
-set_settings( ofaLedgerSummaryBin *bin )
+write_settings( ofaLedgerSummaryBin *self )
 {
 	ofaLedgerSummaryBinPrivate *priv;
 	gchar *str, *sdfrom, *sdto;
 
-	priv = ofa_ledger_summary_bin_get_instance_private( bin );
+	priv = ofa_ledger_summary_bin_get_instance_private( self );
 
 	sdfrom = my_date_to_str(
 			ofa_idate_filter_get_date(
@@ -346,7 +363,7 @@ set_settings( ofaLedgerSummaryBin *bin )
 			my_strlen( sdfrom ) ? sdfrom : "",
 			my_strlen( sdto ) ? sdto : "" );
 
-	ofa_settings_user_set_string( st_settings, str );
+	my_isettings_set_string( priv->settings, HUB_USER_SETTINGS_GROUP, st_settings, str );
 
 	g_free( sdfrom );
 	g_free( sdto );

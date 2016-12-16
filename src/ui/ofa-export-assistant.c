@@ -42,7 +42,6 @@
 #include "api/ofa-iexportable.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-class.h"
 #include "api/ofo-account.h"
@@ -161,7 +160,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-export-
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
 static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
-static void     set_settings( ofaExportAssistant *self );
+static void     write_settings( ofaExportAssistant *self );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -390,7 +389,7 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
 
-	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
+	slist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
 
 	it = slist;
 	cstr = it ? it->data : NULL;
@@ -409,7 +408,7 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 }
 
 static void
-set_settings( ofaExportAssistant *self )
+write_settings( ofaExportAssistant *self )
 {
 	ofaExportAssistantPrivate *priv;
 	myISettings *settings;
@@ -423,7 +422,7 @@ set_settings( ofaExportAssistant *self )
 	str = g_strdup_printf( "%s;",
 			priv->p1_selected_class ? priv->p1_selected_class : "" );
 
-	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
 
 	g_free( str );
 	g_free( keyname );
@@ -607,7 +606,7 @@ p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_debug( "%s: selected_btn=%p, selected_label='%s', selected_class=%s",
 			thisfn, ( void * ) priv->p1_selected_btn, priv->p1_selected_label, priv->p1_selected_class );
-	set_settings( self );
+	write_settings( self );
 }
 
 /*
@@ -745,6 +744,7 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	static const gchar *thisfn = "ofa_export_assistant_p3_do_init";
 	ofaExportAssistantPrivate *priv;
 	gchar *dirname, *basename;
+	myISettings *settings;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -773,10 +773,11 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* build a default output filename from the last used folder
 	 * plus the default basename for this data type class */
+	settings = ofa_hub_get_user_settings( priv->hub );
 	if( my_strlen( priv->p3_furi )){
 		dirname = g_strdup( priv->p3_furi );
 	} else {
-		dirname = g_strdup( ofa_settings_user_get_string( SETTINGS_EXPORT_FOLDER ));
+		dirname = my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, HUB_USER_SETTINGS_EXPORT_FOLDER );
 		if( !my_strlen( dirname )){
 			g_free( dirname );
 			dirname = g_strdup( "." );
@@ -940,7 +941,7 @@ p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 		}
 	}
 
-	set_settings( self );
+	write_settings( self );
 }
 
 /*

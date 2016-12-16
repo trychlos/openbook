@@ -38,7 +38,6 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-itvsortable.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 

@@ -32,7 +32,6 @@
 
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 
 #include "ui/ofa-check-integrity.h"
 #include "ui/ofa-check-integrity-bin.h"

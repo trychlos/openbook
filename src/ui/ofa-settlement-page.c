@@ -43,7 +43,6 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -177,8 +176,8 @@ static void       action_on_settle_activated( GSimpleAction *action, GVariant *e
 static void       action_on_unsettle_activated( GSimpleAction *action, GVariant *empty, ofaSettlementPage *self );
 static void       update_selection( ofaSettlementPage *self, gboolean settle );
 static void       update_row( ofoEntry *entry, sEnumSelected *ses );
-static void       get_settings( ofaSettlementPage *self );
-static void       set_settings( ofaSettlementPage *self );
+static void       read_settings( ofaSettlementPage *self );
+static void       write_settings( ofaSettlementPage *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaSettlementPage, ofa_settlement_page, OFA_TYPE_PANED_PAGE, 0,
 		G_ADD_PRIVATE( ofaSettlementPage ))
@@ -213,7 +212,7 @@ settlement_page_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		set_settings( OFA_SETTLEMENT_PAGE( instance ));
+		write_settings( OFA_SETTLEMENT_PAGE( instance ));
 
 		/* unref object members here */
 		priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( instance ));
@@ -683,7 +682,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	 * setup the initial selection if a first row exists */
 	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
 
-	get_settings( OFA_SETTLEMENT_PAGE( page ));
+	read_settings( OFA_SETTLEMENT_PAGE( page ));
 }
 
 static void
@@ -718,7 +717,7 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 	}
 
 	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
-	set_settings( self );
+	write_settings( self );
 }
 
 static void
@@ -741,7 +740,7 @@ on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 		g_free( str );
 
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
-		set_settings( self );
+		write_settings( self );
 	}
 }
 
@@ -843,10 +842,11 @@ ofa_settlement_page_set_account( ofaSettlementPage *page, const gchar *number )
  * Prevent writing settings when just initializing the data.
  */
 static void
-get_settings( ofaSettlementPage *self )
+read_settings( ofaSettlementPage *self )
 {
 	ofaSettlementPagePrivate *priv;
-	GList *slist, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gint pos;
 	gchar *settings_key;
@@ -854,39 +854,42 @@ get_settings( ofaSettlementPage *self )
 	priv = ofa_settlement_page_get_instance_private( self );
 
 	priv->reading_settings = TRUE;
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	slist = ofa_settings_user_get_string_list( settings_key );
 
-	it = slist ? slist : NULL;
-	cstr = it ? it->data : NULL;
+	settings = ofa_hub_get_user_settings( priv->hub );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->filter_combo ), cstr );
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	pos = cstr ? atoi( cstr ) : 0;
 	if( pos <= 10 ){
 		pos = 150;
 	}
 	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
-	ofa_settings_free_string_list( slist );
-	priv->reading_settings = FALSE;
-
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
+
+	priv->reading_settings = FALSE;
 }
 
 static void
-set_settings( ofaSettlementPage *self )
+write_settings( ofaSettlementPage *self )
 {
 	ofaSettlementPagePrivate *priv;
+	myISettings *settings;
 	gchar *str, *settings_key;
 	gint pos;
 
@@ -898,8 +901,9 @@ set_settings( ofaSettlementPage *self )
 		str = g_strdup_printf( "%d;%s;%d;",
 				priv->stlmt_filter, priv->account_number, pos );
 
+		settings = ofa_hub_get_user_settings( priv->hub );
 		settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-		ofa_settings_user_set_string( settings_key, str );
+		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 
 		g_free( str );
 		g_free( settings_key );

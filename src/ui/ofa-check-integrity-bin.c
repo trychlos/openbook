@@ -38,7 +38,6 @@
 #include "api/ofa-extender-collection.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-idbmodel.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-bat-line.h"
@@ -112,8 +111,8 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-check-i
 static const gchar *st_settings_sufix   = "bin";
 
 static void     setup_bin( ofaCheckIntegrityBin *self );
-static void     setup_from_settings( ofaCheckIntegrityBin *self );
-static void     write_to_settings( ofaCheckIntegrityBin *self );
+static void     read_settings( ofaCheckIntegrityBin *self );
+static void     write_settings( ofaCheckIntegrityBin *self );
 static gchar   *get_settings_key( ofaCheckIntegrityBin *self );
 static gboolean do_run( ofaCheckIntegrityBin *self );
 static void     check_dossier_run( ofaCheckIntegrityBin *self );
@@ -186,7 +185,7 @@ check_integrity_bin_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		write_to_settings( OFA_CHECK_INTEGRITY_BIN( instance ));
+		write_settings( OFA_CHECK_INTEGRITY_BIN( instance ));
 
 		/* unref object members here */
 	}
@@ -264,7 +263,7 @@ ofa_check_integrity_bin_new( const gchar *settings )
 	priv->settings = g_strdup( settings );
 
 	setup_bin( bin );
-	setup_from_settings( bin );
+	read_settings( bin );
 
 	return( bin );
 }
@@ -307,32 +306,35 @@ setup_bin( ofaCheckIntegrityBin *self )
  * - paned pos
  */
 static void
-setup_from_settings( ofaCheckIntegrityBin *self )
+read_settings( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	myISettings *settings;
 	gchar *key;
-	GList *list, *it;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gint pos;
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	key = get_settings_key( self );
-	list = ofa_settings_user_get_string_list( key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
-	it = list ? list : NULL;
+	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	pos = my_strlen( cstr ) ? atoi( cstr ) : 100;
 	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( key );
 }
 
 static void
-write_to_settings( ofaCheckIntegrityBin *self )
+write_settings( ofaCheckIntegrityBin *self )
 {
 	ofaCheckIntegrityBinPrivate *priv;
+	myISettings *settings;
 	gchar *key, *str;
 	gint pos;
 
@@ -340,9 +342,11 @@ write_to_settings( ofaCheckIntegrityBin *self )
 
 	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
 
-	key = get_settings_key( self );
 	str = g_strdup_printf( "%d;", pos );
-	ofa_settings_user_set_string( key, str );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = get_settings_key( self );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
 	g_free( key );

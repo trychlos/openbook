@@ -40,7 +40,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-rate.h"

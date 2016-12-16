@@ -34,7 +34,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-iimportable.h"
-#include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 

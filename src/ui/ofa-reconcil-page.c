@@ -50,7 +50,6 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-base.h"
 #include "api/ofo-bat.h"
@@ -152,7 +151,7 @@ typedef struct {
 	 */
 	ofaHub              *hub;
 	GList               *hub_handlers;
-	GList               *bats;			/* loaded ofoBat objects */
+	GList               *bats;				/* loaded ofoBat objects */
 	gboolean             reading_settings;
 }
 	ofaReconcilPagePrivate;
@@ -287,8 +286,8 @@ static void                 action_on_expand_activated( GSimpleAction *action, G
 static gboolean             expand_on_pressed( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self );
 static gboolean             expand_on_released( GtkWidget *button, GdkEvent *event, ofaReconcilPage *self );
 static void                 set_message( ofaReconcilPage *page, const gchar *msg );
-static void                 get_settings( ofaReconcilPage *self );
-static void                 set_settings( ofaReconcilPage *self );
+static void                 read_settings( ofaReconcilPage *self );
+static void                 write_settings( ofaReconcilPage *self );
 static void                 hub_connect_to_signaling_system( ofaReconcilPage *self );
 static void                 hub_on_new_object( ofaHub *hub, ofoBase *object, ofaReconcilPage *self );
 static void                 hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaReconcilPage *self );
@@ -326,7 +325,7 @@ reconciliation_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		set_settings( OFA_RECONCIL_PAGE( instance ));
+		write_settings( OFA_RECONCIL_PAGE( instance ));
 
 		/* unref object members here */
 		priv = ofa_reconcil_page_get_instance_private( OFA_RECONCIL_PAGE( instance ));
@@ -1273,7 +1272,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	 * the store itself */
 	hub_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 
-	get_settings( OFA_RECONCIL_PAGE( page ));
+	read_settings( OFA_RECONCIL_PAGE( page ));
 }
 
 /**
@@ -1494,7 +1493,7 @@ account_set_header_balance( ofaReconcilPage *self )
 		g_free( samount );
 
 		/* only update user preferences if account is ok */
-		set_settings( self );
+		write_settings( self );
 	}
 }
 
@@ -1517,7 +1516,7 @@ mode_filter_on_changed( GtkComboBox *box, ofaReconcilPage *self )
 	if( check_for_enable_view( self )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
 		/* only update user preferences if view is enabled */
-		set_settings( self );
+		write_settings( self );
 	}
 }
 
@@ -1579,7 +1578,7 @@ concil_date_on_changed( GtkEditable *editable, ofaReconcilPage *self )
 		my_date_set_from_date( &priv->dconcil, &date );
 	}
 
-	set_settings( self );
+	write_settings( self );
 }
 
 /*
@@ -2907,10 +2906,11 @@ set_message( ofaReconcilPage *page, const gchar *msg )
  * settings format: account;mode;manualconcil[sql];paned_position;
  */
 static void
-get_settings( ofaReconcilPage *self )
+read_settings( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
-	GList *slist, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
 	gchar *sdate, *settings_key;
@@ -2920,48 +2920,49 @@ get_settings( ofaReconcilPage *self )
 
 	priv->reading_settings = TRUE;
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	slist = ofa_settings_user_get_string_list( settings_key );
-	if( slist ){
-		it = slist ? slist : NULL;
-		cstr = it ? it->data : NULL;
-		if( cstr ){
-			gtk_entry_set_text( GTK_ENTRY( priv->acc_id_entry ), cstr );
-		}
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-		it = it ? it->next : NULL;
-		cstr = it ? it->data : NULL;
-		if( cstr ){
-			mode_filter_select( self, atoi( cstr ));
-		}
-
-		it = it ? it->next : NULL;
-		cstr = it ? it->data : NULL;
-		if( cstr ){
-			my_date_set_from_str( &date, cstr, MY_DATE_SQL );
-			if( my_date_is_valid( &date )){
-				sdate = my_date_to_str( &date, ofa_prefs_date_display( priv->hub ));
-				gtk_entry_set_text( priv->date_concil, sdate );
-				g_free( sdate );
-			}
-		}
-
-		it = it ? it->next : NULL;
-		cstr = it ? it->data : NULL;
-		pos = cstr ? atoi( cstr ) : 0;
-		gtk_paned_set_position( GTK_PANED( priv->paned ), MAX( pos, 150 ));
-
-		ofa_settings_free_string_list( slist );
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( cstr ){
+		gtk_entry_set_text( GTK_ENTRY( priv->acc_id_entry ), cstr );
 	}
 
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( cstr ){
+		mode_filter_select( self, atoi( cstr ));
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( cstr ){
+		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
+		if( my_date_is_valid( &date )){
+			sdate = my_date_to_str( &date, ofa_prefs_date_display( priv->hub ));
+			gtk_entry_set_text( priv->date_concil, sdate );
+			g_free( sdate );
+		}
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = cstr ? atoi( cstr ) : 0;
+	gtk_paned_set_position( GTK_PANED( priv->paned ), MAX( pos, 150 ));
+
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
+
 	priv->reading_settings = FALSE;
 }
 
 static void
-set_settings( ofaReconcilPage *self )
+write_settings( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
+	myISettings *settings;
 	const gchar *account, *sdate;
 	gchar *date_sql, *settings_key;
 	GDate date;
@@ -2988,8 +2989,9 @@ set_settings( ofaReconcilPage *self )
 
 		str = g_strdup_printf( "%s;%s;%s;%d;", account ? account : "", smode, date_sql, pos );
 
+		settings = ofa_hub_get_user_settings( priv->hub );
 		settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-		ofa_settings_user_set_string( settings_key, str );
+		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 		g_free( settings_key );
 
 		g_free( date_sql );

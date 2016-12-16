@@ -48,7 +48,6 @@
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-page.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-guided-input.h"
@@ -268,7 +267,7 @@ static const gchar *st_resource_css     = "/org/trychlos/openbook/ui/ofa.css";
 static const gchar *st_dosmenu_id       = "dos-menu";
 static const gchar *st_icon_fname       = ICONFNAME;
 
-static void                  pane_save_position( GtkPaned *pane );
+static void                  pane_save_position( myISettings *settings, GtkPaned *pane );
 static void                  window_store_ref( ofaMainWindow *self, GtkBuilder *builder, const gchar *placeholder );
 static void                  init_themes( ofaMainWindow *self );
 static void                  hub_on_dossier_opened( ofaHub *hub, gboolean run_prefs, gboolean read_only, ofaMainWindow *self );
@@ -282,7 +281,7 @@ static void                  do_close_dossier( ofaMainWindow *self, ofaHub *hub 
 static void                  menubar_setup( ofaMainWindow *window, myIActionMap *map );
 static void                  set_window_title( ofaMainWindow *window, gboolean with_dossier );
 static void                  warning_exercice_unset( const ofaMainWindow *window );
-static void                  pane_restore_position( GtkPaned *pane );
+static void                  pane_restore_position( ofaHub *hub, GtkPaned *pane );
 static void                  pane_left_add_treeview( ofaMainWindow *window );
 static void                  pane_left_on_item_activated( GtkTreeView *view, GtkTreePath *path, GtkTreeViewColumn *column, ofaMainWindow *window );
 static void                  pane_right_add_empty_notebook( ofaMainWindow *window, ofaHub *hub );
@@ -369,7 +368,7 @@ main_window_dispose( GObject *instance )
 		settings = ofa_hub_get_user_settings( ofa_igetter_get_hub( OFA_IGETTER( instance )));
 		my_utils_window_position_save( GTK_WINDOW( instance ), settings, st_main_window_name );
 		if( priv->pane ){
-			pane_save_position( priv->pane );
+			pane_save_position( settings, priv->pane );
 		}
 		close_all_pages( OFA_MAIN_WINDOW( instance ));
 		my_iwindow_close_all();
@@ -386,12 +385,12 @@ main_window_dispose( GObject *instance )
 }
 
 static void
-pane_save_position( GtkPaned *pane )
+pane_save_position( myISettings *settings, GtkPaned *pane )
 {
 	gchar *key;
 
 	key = g_strdup_printf( "%s-pane", st_main_window_name );
-	ofa_settings_user_set_uint( key, gtk_paned_get_position( pane ));
+	my_isettings_set_uint( settings, HUB_USER_SETTINGS_GROUP, key, gtk_paned_get_position( pane ));
 	g_free( key );
 }
 
@@ -699,7 +698,7 @@ do_open_dossier( ofaMainWindow *self, ofaHub *hub, gboolean run_prefs, gboolean 
 
 	priv->pane = GTK_PANED( gtk_paned_new( GTK_ORIENTATION_HORIZONTAL ));
 	gtk_grid_attach( priv->grid, GTK_WIDGET( priv->pane ), 0, 1, 1, 1 );
-	pane_restore_position( priv->pane );
+	pane_restore_position( hub, priv->pane );
 	pane_left_add_treeview( self );
 	pane_right_add_empty_notebook( self, hub );
 	background_image_update( self, hub );
@@ -975,13 +974,15 @@ warning_exercice_unset( const ofaMainWindow *self )
 }
 
 static void
-pane_restore_position( GtkPaned *pane )
+pane_restore_position( ofaHub *hub, GtkPaned *pane )
 {
+	myISettings *settings;
 	gchar *key;
 	gint pos;
 
+	settings = ofa_hub_get_user_settings( hub );
 	key = g_strdup_printf( "%s-pane", st_main_window_name );
-	pos = ofa_settings_user_get_uint( key );
+	pos = my_isettings_get_uint( settings, HUB_USER_SETTINGS_GROUP, key );
 	if( pos <= 10 ){
 		pos = 150;
 	}

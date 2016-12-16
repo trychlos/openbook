@@ -38,7 +38,6 @@
 #include "api/ofa-icontext.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
 
@@ -88,8 +87,8 @@ static void     on_selection_changed( ofaBatTreeview *tview, ofoBat *bat, ofaBat
 static void     on_row_activated( ofaBatTreeview *tview, ofoBat *bat, ofaBatSelect *self );
 static void     check_for_enable_dlg( ofaBatSelect *self );
 static gboolean idialog_quit_on_ok( myIDialog *instance );
-static void     get_settings( ofaBatSelect *self );
-static void     set_settings( ofaBatSelect *self );
+static void     read_settings( ofaBatSelect *self );
+static void     write_settings( ofaBatSelect *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaBatSelect, ofa_bat_select, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaBatSelect )
@@ -132,7 +131,7 @@ bat_select_dispose( GObject *instance )
 		/* unref object members here */
 
 		priv->pane_pos = gtk_paned_get_position( priv->paned );
-		set_settings( OFA_BAT_SELECT( instance ));
+		write_settings( OFA_BAT_SELECT( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -259,7 +258,7 @@ static void
 idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_bat_select_idialog_init";
-	get_settings( OFA_BAT_SELECT( instance ));
+	read_settings( OFA_BAT_SELECT( instance ));
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
@@ -392,38 +391,42 @@ idialog_quit_on_ok( myIDialog *instance )
  * pane_position;
  */
 static void
-get_settings( ofaBatSelect *self )
+read_settings( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
-	GList *slist, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *settings_key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	slist = ofa_settings_user_get_string_list( settings_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-	it = slist ? slist : NULL;
+	it = strlist ? strlist : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	priv->pane_pos = cstr ? atoi( cstr ) : 200;
 
-	ofa_settings_free_string_list( slist );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
 }
 
 static void
-set_settings( ofaBatSelect *self )
+write_settings( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
+	myISettings *settings;
 	gchar *str, *settings_key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	str = g_strdup_printf( "%u;", priv->pane_pos );
 
-	ofa_settings_user_set_string( settings_key, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 
 	g_free( str );
 	g_free( settings_key );

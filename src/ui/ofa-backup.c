@@ -39,7 +39,6 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-backup.h"
@@ -107,7 +106,7 @@ backup_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+		settings = ofa_hub_get_user_settings( priv->hub );
 		my_utils_window_position_save( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
 
 		gtk_widget_destroy( priv->dialog );
@@ -205,7 +204,7 @@ init_dialog( ofaBackup *self )
 							_( "_Save" ), GTK_RESPONSE_OK,
 							NULL );
 
-	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	settings = ofa_hub_get_user_settings( priv->hub );
 	my_utils_window_position_restore( GTK_WINDOW( priv->dialog ), settings, st_dialog_name );
 
 	gtk_file_chooser_set_do_overwrite_confirmation( GTK_FILE_CHOOSER( priv->dialog ), TRUE );

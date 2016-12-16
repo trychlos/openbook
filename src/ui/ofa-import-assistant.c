@@ -46,7 +46,6 @@
 #include "api/ofa-iimporter.h"
 #include "api/ofa-import-duplicate.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-account.h"
@@ -465,7 +464,7 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
-	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, keyname );
+	slist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
 
 	it = slist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -516,7 +515,7 @@ set_user_settings( ofaImportAssistant *self )
 			priv->p4_import_mode,
 			priv->p4_stop ? "True":"False" );
 
-	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, keyname, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
 
 	g_free( str );
 	g_free( keyname );

@@ -41,7 +41,6 @@
 #include "api/ofa-idbeditor.h"
 #include "api/ofa-idbprovider.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "core/ofa-admin-credentials-bin.h"
@@ -103,8 +102,8 @@ static void     on_root_credentials_changed( ofaDBMSRootBin *bin, const gchar *a
 static void     on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
 static void     on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void     on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
-static void     get_settings( ofaDossierNew *self );
-static void     update_settings( ofaDossierNew *self );
+static void     read_settings( ofaDossierNew *self );
+static void     write_settings( ofaDossierNew *self );
 static void     check_for_enable_dlg( ofaDossierNew *self );
 static gboolean root_credentials_get_valid( ofaDossierNew *self, gchar **message );
 static gboolean do_create( ofaDossierNew *self, gchar **msgerr );
@@ -292,7 +291,7 @@ idialog_init( myIDialog *instance )
 
 	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
 
-	get_settings( OFA_DOSSIER_NEW( instance ));
+	read_settings( OFA_DOSSIER_NEW( instance ));
 
 	/* define the size groups */
 	group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
@@ -560,7 +559,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 		gtk_widget_set_sensitive( priv->ok_btn, FALSE );
 	}
 
-	update_settings( self );
+	write_settings( self );
 	connect = NULL;
 
 	if( ok && priv->b_open ){
@@ -618,50 +617,57 @@ create_confirmed( const ofaDossierNew *self )
  * settings are: "provider_name;open,properties;"
  */
 static void
-get_settings( ofaDossierNew *self )
+read_settings( ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	GList *slist, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	slist = ofa_settings_user_get_string_list( "DossierNew" );
-	it = slist;
+	settings = ofa_hub_get_user_settings( priv->hub );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, "DossierNew" );
+
+	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		g_free( priv->prov_name );
 		priv->prov_name = g_strdup( cstr );
 	}
+
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		priv->b_open = my_utils_boolean_from_str( cstr );
 	}
+
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		priv->b_properties = my_utils_boolean_from_str( cstr );
 	}
 
-	ofa_settings_free_string_list( slist );
+	my_isettings_free_string_list( settings, strlist );
 }
 
 static void
-update_settings( ofaDossierNew *self )
+write_settings( ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
-	GList *slist;
+	myISettings *settings;
+	GList *strlist;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	slist = g_list_append( NULL, g_strdup( priv->prov_name ));
-	slist = g_list_append( slist, g_strdup_printf( "%s", priv->b_open ? "True":"False" ));
-	slist = g_list_append( slist, g_strdup_printf( "%s", priv->b_properties ? "True":"False" ));
+	strlist = g_list_append( NULL, g_strdup( priv->prov_name ));
+	strlist = g_list_append( strlist, g_strdup_printf( "%s", priv->b_open ? "True":"False" ));
+	strlist = g_list_append( strlist, g_strdup_printf( "%s", priv->b_properties ? "True":"False" ));
 
-	ofa_settings_user_set_string_list( "DossierNew", slist );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	my_isettings_set_string_list( settings, HUB_USER_SETTINGS_GROUP, "DossierNew", strlist );
 
-	g_list_free_full( slist, ( GDestroyNotify ) g_free );
+	g_list_free_full( strlist, ( GDestroyNotify ) g_free );
 }
 
 static void

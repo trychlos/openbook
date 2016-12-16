@@ -35,7 +35,6 @@
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
@@ -44,23 +43,23 @@
 /* private instance data
  */
 typedef struct {
-	gboolean             dispose_has_run;
+	gboolean    dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter          *getter;
+	ofaIGetter *getter;
+
+	/* runtime
+	 */
+	ofaHub     *hub;
+	ofoAccount *account;
+	GDate       date;
 
 	/* UI
 	 */
-	GtkWidget           *account_entry;
-	GtkWidget           *account_label;
-	GtkWidget           *date_entry;
-
-	/* internals
-	 */
-	ofaHub              *hub;
-	ofoAccount          *account;
-	GDate                date;
+	GtkWidget  *account_entry;
+	GtkWidget  *account_label;
+	GtkWidget  *date_entry;
 }
 	ofaReconcilBinPrivate;
 
@@ -82,8 +81,8 @@ static void setup_date_selection( ofaReconcilBin *self );
 static void setup_others( ofaReconcilBin *self );
 static void on_account_changed( GtkEntry *entry, ofaReconcilBin *self );
 static void on_date_changed( GtkEntry *entry, ofaReconcilBin *self );
-static void load_settings( ofaReconcilBin *self );
-static void set_settings( ofaReconcilBin *self );
+static void read_settings( ofaReconcilBin *self );
+static void write_settings( ofaReconcilBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaReconcilBin, ofa_reconcil_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaReconcilBin ))
@@ -196,7 +195,7 @@ ofa_reconcil_bin_new( ofaIGetter *getter )
 	setup_date_selection( self );
 	setup_others( self );
 
-	load_settings( self );
+	read_settings( self );
 
 	return( self );
 }
@@ -344,7 +343,7 @@ ofa_reconcil_bin_is_valid( ofaReconcilBin *bin, gchar **msgerr )
 		}
 	}
 	if( valid ){
-		set_settings( bin );
+		write_settings( bin );
 	}
 
 	return( valid );
@@ -423,37 +422,40 @@ ofa_reconcil_bin_get_date( ofaReconcilBin *bin )
  * account;date_sql;
  */
 static void
-load_settings( ofaReconcilBin *self )
+read_settings( ofaReconcilBin *self )
 {
 	ofaReconcilBinPrivate *priv;
-	GList *list, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
 
 	priv = ofa_reconcil_bin_get_instance_private( self );
 
-	list = ofa_settings_user_get_string_list( st_settings );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_settings );
 
-	it = list;
+	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
 		my_date_editable_set_date( GTK_EDITABLE( priv->date_entry ), &date );
 	}
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( settings, strlist );
 }
 
 static void
-set_settings( ofaReconcilBin *self )
+write_settings( ofaReconcilBin *self )
 {
 	ofaReconcilBinPrivate *priv;
+	myISettings *settings;
 	const gchar *cstr;
 	gchar *str, *sdate;
 
@@ -467,7 +469,8 @@ set_settings( ofaReconcilBin *self )
 			cstr ? cstr : "",
 			sdate ? sdate : "" );
 
-	ofa_settings_user_set_string( st_settings, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_settings, str );
 
 	g_free( sdate );
 	g_free( str );

@@ -41,7 +41,6 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -178,8 +177,8 @@ static void               irenderable_draw_line( ofaIRenderable *instance, GList
 static void               irenderable_draw_group_bottom_report( ofaIRenderable *instance );
 static void               irenderable_draw_group_footer( ofaIRenderable *instance );
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
-static void               get_settings( ofaAccountBookRender *self );
-static void               set_settings( ofaAccountBookRender *self );
+static void               read_settings( ofaAccountBookRender *self );
+static void               write_settings( ofaAccountBookRender *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaAccountBookRender, ofa_account_book_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaAccountBookRender )
@@ -213,7 +212,7 @@ account_book_render_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		set_settings( OFA_ACCOUNT_BOOK_RENDER( instance ));
+		write_settings( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
 		/* unref object members here */
 	}
@@ -275,7 +274,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
-	get_settings( OFA_ACCOUNT_BOOK_RENDER( page ));
+	read_settings( OFA_ACCOUNT_BOOK_RENDER( page ));
 }
 
 static GtkWidget *
@@ -308,9 +307,12 @@ render_page_v_get_page_orientation( ofaRenderPage *page )
 static void
 render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name )
 {
+	ofaAccountBookRenderPrivate *priv;
 	myISettings *settings;
 
-	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( page ));
+
+	settings = ofa_hub_get_user_settings( priv->hub );
 	*keyfile = my_isettings_get_keyfile( settings );
 	*group_name = g_strdup( st_print_settings );
 }
@@ -985,41 +987,50 @@ irenderable_draw_bottom_summary( ofaIRenderable *instance )
  * settings = paned_position;
  */
 static void
-get_settings( ofaAccountBookRender *self )
+read_settings( ofaAccountBookRender *self )
 {
-	GList *slist, *it;
+	ofaAccountBookRenderPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	GtkWidget *paned;
 	gint pos;
 
-	slist = ofa_settings_user_get_string_list( st_page_settings );
-	if( slist ){
-		it = slist ? slist : NULL;
-		cstr = it ? it->data : NULL;
-		pos = cstr ? atoi( cstr ) : 0;
-		if( pos <= 10 ){
-			pos = 150;
-		}
-		paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
-		gtk_paned_set_position( GTK_PANED( paned ), pos );
+	priv = ofa_account_book_render_get_instance_private( self );
 
-		ofa_settings_free_string_list( slist );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_page_settings );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = cstr ? atoi( cstr ) : 0;
+	if( pos <= 10 ){
+		pos = 150;
 	}
+	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
+	gtk_paned_set_position( GTK_PANED( paned ), pos );
+
+	my_isettings_free_string_list( settings, strlist );
 }
 
 static void
-set_settings( ofaAccountBookRender *self )
+write_settings( ofaAccountBookRender *self )
 {
+	ofaAccountBookRenderPrivate *priv;
+	myISettings *settings;
 	GtkWidget *paned;
 	gint pos;
 	gchar *str;
+
+	priv = ofa_account_book_render_get_instance_private( self );
 
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
 	pos = gtk_paned_get_position( GTK_PANED( paned ));
 
 	str = g_strdup_printf( "%d;", pos );
 
-	ofa_settings_user_set_string( st_page_settings, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_page_settings, str );
 
 	g_free( str );
 }

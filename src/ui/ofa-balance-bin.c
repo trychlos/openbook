@@ -34,7 +34,6 @@
 #include "api/ofa-date-filter-hv-bin.h"
 #include "api/ofa-hub.h"
 #include "api/ofa-igetter.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
@@ -50,6 +49,13 @@ typedef struct {
 	 */
 	ofaIGetter            *getter;
 
+	/* runtime
+	 */
+	ofaHub                *hub;
+	myISettings           *settings;
+	gboolean               per_class;
+	gboolean               new_page;
+
 	/* UI
 	 */
 	ofaAccountFilterVVBin *account_filter;
@@ -59,11 +65,6 @@ typedef struct {
 	GtkWidget             *accounts_balance_btn;
 	GtkWidget             *from_prompt;
 	GtkWidget             *from_entry;
-
-	/* internals
-	 */
-	gboolean               per_class;
-	gboolean               new_page;
 }
 	ofaBalanceBinPrivate;
 
@@ -79,17 +80,18 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-balance-bin.ui";
 static const gchar *st_settings         = "RenderBalances";
 
-static void setup_bin( ofaBalanceBin *bin );
-static void setup_account_selection( ofaBalanceBin *bin );
-static void setup_date_selection( ofaBalanceBin *bin );
-static void setup_others( ofaBalanceBin *bin );
+static void setup_runtime( ofaBalanceBin *self );
+static void setup_bin( ofaBalanceBin *self );
+static void setup_account_selection( ofaBalanceBin *self );
+static void setup_date_selection( ofaBalanceBin *self );
+static void setup_others( ofaBalanceBin *self );
 static void on_account_filter_changed( ofaIAccountFilter *filter, ofaBalanceBin *self );
 static void on_per_class_toggled( GtkToggleButton *button, ofaBalanceBin *self );
 static void on_new_page_toggled( GtkToggleButton *button, ofaBalanceBin *self );
 static void on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self );
 static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaBalanceBin *self );
-static void load_settings( ofaBalanceBin *bin );
-static void set_settings( ofaBalanceBin *bin );
+static void read_settings( ofaBalanceBin *self );
+static void write_settings( ofaBalanceBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaBalanceBin, ofa_balance_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaBalanceBin ))
@@ -187,29 +189,43 @@ ofa_balance_bin_class_init( ofaBalanceBinClass *klass )
 ofaBalanceBin *
 ofa_balance_bin_new( ofaIGetter *getter )
 {
-	ofaBalanceBin *self;
+	ofaBalanceBin *bin;
 	ofaBalanceBinPrivate *priv;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
 
-	self = g_object_new( OFA_TYPE_BALANCE_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_BALANCE_BIN, NULL );
 
-	priv = ofa_balance_bin_get_instance_private( self );
+	priv = ofa_balance_bin_get_instance_private( bin );
 
 	priv->getter = getter;
 
-	setup_bin( self );
-	setup_account_selection( self );
-	setup_date_selection( self );
-	setup_others( self );
+	setup_runtime( bin );
+	setup_bin( bin );
+	setup_account_selection( bin );
+	setup_date_selection( bin );
+	setup_others( bin );
 
-	load_settings( self );
+	read_settings( bin );
 
-	return( self );
+	return( bin );
 }
 
 static void
-setup_bin( ofaBalanceBin *bin )
+setup_runtime( ofaBalanceBin *self )
+{
+	ofaBalanceBinPrivate *priv;
+
+	priv = ofa_balance_bin_get_instance_private( self );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->settings = ofa_hub_get_user_settings( priv->hub );
+}
+
+static void
+setup_bin( ofaBalanceBin *self )
 {
 	GtkBuilder *builder;
 	GObject *object;
@@ -221,43 +237,43 @@ setup_bin( ofaBalanceBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
 	gtk_widget_destroy( toplevel );
 	g_object_unref( builder );
 }
 
 static void
-setup_account_selection( ofaBalanceBin *bin )
+setup_account_selection( ofaBalanceBin *self )
 {
 	ofaBalanceBinPrivate *priv;
 	GtkWidget *parent;
 	ofaAccountFilterVVBin *filter;
 
-	priv = ofa_balance_bin_get_instance_private( bin );
+	priv = ofa_balance_bin_get_instance_private( self );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "account-filter" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "account-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	filter = ofa_account_filter_vv_bin_new( priv->getter );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( filter ));
 
-	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_account_filter_changed ), bin );
+	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_account_filter_changed ), self );
 
 	priv->account_filter = filter;
 }
 
 static void
-setup_date_selection( ofaBalanceBin *bin )
+setup_date_selection( ofaBalanceBin *self )
 {
 	ofaBalanceBinPrivate *priv;
 	GtkWidget *parent, *label;
 	ofaDateFilterHVBin *filter;
 	GtkWidget *check;
 
-	priv = ofa_balance_bin_get_instance_private( bin );
+	priv = ofa_balance_bin_get_instance_private( self );
 
-	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "date-filter" );
+	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	filter = ofa_date_filter_hv_bin_new( ofa_igetter_get_hub( priv->getter ));
@@ -269,10 +285,10 @@ setup_date_selection( ofaBalanceBin *bin )
 
 	check = gtk_check_button_new_with_mnemonic( _( "Acc_ounts balance" ));
 	ofa_idate_filter_add_widget( OFA_IDATE_FILTER( filter ), check, IDATE_FILTER_BEFORE );
-	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), bin );
+	g_signal_connect( check, "toggled", G_CALLBACK( on_accounts_balance_toggled ), self );
 	priv->accounts_balance_btn = check;
 
-	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_date_filter_changed ), bin );
+	g_signal_connect( filter, "ofa-changed", G_CALLBACK( on_date_filter_changed ), self );
 
 	priv->from_prompt =
 			ofa_idate_filter_get_prompt( OFA_IDATE_FILTER( filter ), IDATE_FILTER_FROM );
@@ -283,23 +299,23 @@ setup_date_selection( ofaBalanceBin *bin )
 }
 
 static void
-setup_others( ofaBalanceBin *bin )
+setup_others( ofaBalanceBin *self )
 {
 	ofaBalanceBinPrivate *priv;
 	GtkWidget *toggle;
 
-	priv = ofa_balance_bin_get_instance_private( bin );
+	priv = ofa_balance_bin_get_instance_private( self );
 
 	/* setup the new_page btn before the per_class one in order to be
 	 * safely updated when setting the later preference */
-	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-new-page" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-new-page" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( toggle, "toggled", G_CALLBACK( on_new_page_toggled ), bin );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_new_page_toggled ), self );
 	priv->new_page_btn = toggle;
 
-	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "p3-per-class" );
+	toggle = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p3-per-class" );
 	g_return_if_fail( toggle && GTK_IS_CHECK_BUTTON( toggle ));
-	g_signal_connect( toggle, "toggled", G_CALLBACK( on_per_class_toggled ), bin );
+	g_signal_connect( toggle, "toggled", G_CALLBACK( on_per_class_toggled ), self );
 	priv->per_class_btn = toggle;
 }
 
@@ -343,15 +359,13 @@ on_accounts_balance_toggled( GtkToggleButton *button, ofaBalanceBin *self )
 	ofaBalanceBinPrivate *priv;
 	gboolean active;
 	const GDate *begin;
-	ofaHub *hub;
 	ofoDossier *dossier;
 
 	priv = ofa_balance_bin_get_instance_private( self );
 
 	active = gtk_toggle_button_get_active( button );
 	if( active ){
-		hub = ofa_igetter_get_hub( priv->getter );
-		dossier = ofa_hub_get_dossier( hub );
+		dossier = ofa_hub_get_dossier( priv->hub );
 		g_return_if_fail( dossier && OFO_IS_DOSSIER( dossier ));
 
 		begin = ofo_dossier_get_exe_begin( dossier );
@@ -399,7 +413,7 @@ ofa_balance_bin_is_valid( ofaBalanceBin *bin, gchar **message )
 					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, message );
 
 	if( valid ){
-		set_settings( bin );
+		write_settings( bin );
 	}
 
 	return( valid );
@@ -510,18 +524,18 @@ ofa_balance_bin_get_date_filter( ofaBalanceBin *bin )
  * account_from;account_to;all_accounts;effect_from;effect_to;subtotal_per_class;new_page_per_class;accounts_balance;
  */
 static void
-load_settings( ofaBalanceBin *bin )
+read_settings( ofaBalanceBin *self )
 {
 	ofaBalanceBinPrivate *priv;
-	GList *list, *it;
+	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
 
-	priv = ofa_balance_bin_get_instance_private( bin );
+	priv = ofa_balance_bin_get_instance_private( self );
 
-	list = ofa_settings_user_get_string_list( st_settings );
+	strlist = my_isettings_get_string_list( priv->settings, HUB_USER_SETTINGS_GROUP, st_settings );
 
-	it = list;
+	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		ofa_iaccount_filter_set_account(
@@ -563,7 +577,7 @@ load_settings( ofaBalanceBin *bin )
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->per_class_btn ), my_utils_boolean_from_str( cstr ));
-		on_per_class_toggled( GTK_TOGGLE_BUTTON( priv->per_class_btn ), bin );
+		on_per_class_toggled( GTK_TOGGLE_BUTTON( priv->per_class_btn ), self );
 	}
 
 	it = it ? it->next : NULL;
@@ -571,7 +585,7 @@ load_settings( ofaBalanceBin *bin )
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->new_page_btn ), my_utils_boolean_from_str( cstr ));
-		on_new_page_toggled( GTK_TOGGLE_BUTTON( priv->new_page_btn ), bin );
+		on_new_page_toggled( GTK_TOGGLE_BUTTON( priv->new_page_btn ), self );
 	}
 
 	it = it ? it->next : NULL;
@@ -579,21 +593,21 @@ load_settings( ofaBalanceBin *bin )
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->accounts_balance_btn ), my_utils_boolean_from_str( cstr ));
-		on_accounts_balance_toggled( GTK_TOGGLE_BUTTON( priv->accounts_balance_btn ), bin );
+		on_accounts_balance_toggled( GTK_TOGGLE_BUTTON( priv->accounts_balance_btn ), self );
 	}
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( priv->settings, strlist );
 }
 
 static void
-set_settings( ofaBalanceBin *bin )
+write_settings( ofaBalanceBin *self )
 {
 	ofaBalanceBinPrivate *priv;
 	gchar *str, *sdfrom, *sdto;
 	const gchar *from_account, *to_account;
 	gboolean all_accounts, acc_balance;
 
-	priv = ofa_balance_bin_get_instance_private( bin );
+	priv = ofa_balance_bin_get_instance_private( self );
 
 	from_account = ofa_iaccount_filter_get_account(
 			OFA_IACCOUNT_FILTER( priv->account_filter ), IACCOUNT_FILTER_FROM );
@@ -602,7 +616,7 @@ set_settings( ofaBalanceBin *bin )
 	all_accounts = ofa_iaccount_filter_get_all_accounts(
 			OFA_IACCOUNT_FILTER( priv->account_filter ));
 
-	acc_balance = ofa_balance_bin_get_accounts_balance( bin );
+	acc_balance = ofa_balance_bin_get_accounts_balance( self );
 
 	sdfrom = my_date_to_str(
 			ofa_idate_filter_get_date(
@@ -621,7 +635,7 @@ set_settings( ofaBalanceBin *bin )
 			priv->new_page ? "True":"False",
 			acc_balance ? "True":"False" );
 
-	ofa_settings_user_set_string( st_settings, str );
+	my_isettings_set_string( priv->settings, HUB_USER_SETTINGS_GROUP, st_settings, str );
 
 	g_free( sdfrom );
 	g_free( sdto );

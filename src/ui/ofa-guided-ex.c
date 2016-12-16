@@ -34,7 +34,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-ledger.h"
 #include "api/ofo-ope-template.h"
@@ -243,13 +242,15 @@ static void
 pane_restore_position( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
+	myISettings *settings;
 	gchar *settings_key;
 	gint pos;
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-pane", priv->settings_prefix );
-	pos = ofa_settings_user_get_uint( settings_key );
+	pos = my_isettings_get_uint( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 	if( pos <= 100 ){
 		pos = 150;
 	}
@@ -261,14 +262,16 @@ static void
 pane_save_position( ofaGuidedEx *self )
 {
 	ofaGuidedExPrivate *priv;
+	myISettings *settings;
 	gchar *settings_key;
 	guint pos;
 
 	priv = ofa_guided_ex_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-pane", priv->settings_prefix );
 	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
-	ofa_settings_user_set_uint( settings_key, pos );
+	my_isettings_set_uint( settings, HUB_USER_SETTINGS_GROUP, settings_key, pos );
 	g_free( settings_key );
 }
 

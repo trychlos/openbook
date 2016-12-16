@@ -41,7 +41,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -129,8 +128,8 @@ static void     do_close_ledgers( sClose *sclose );
 static void     close_prepare_grid( sClose *sclose, ofoLedger *ledger );
 static gboolean close_foreach_ledger( sClose *sclose, ofoLedger *ledger );
 static void     close_end( sClose *sclose );
-static void     get_settings( ofaLedgerClose *self );
-static void     set_settings( ofaLedgerClose *self );
+static void     read_settings( ofaLedgerClose *self );
+static void     write_settings( ofaLedgerClose *self );
 static void     hub_on_entry_status_count( ofaHub *hub, ofaEntryStatus new_status, guint count, sClose *sclose );
 static void     hub_on_entry_status_change( ofaHub *hub, ofoEntry *entry, ofaEntryStatus prev_status, ofaEntryStatus new_status, sClose *sclose );
 
@@ -174,7 +173,7 @@ ledger_close_dispose( GObject *instance )
 
 		/* unref object members here */
 
-		set_settings( OFA_LEDGER_CLOSE( instance ));
+		write_settings( OFA_LEDGER_CLOSE( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -341,7 +340,7 @@ idialog_init( myIDialog *instance )
 	setup_actions( OFA_LEDGER_CLOSE( instance ));
 
 	ofa_ledger_treeview_setup_store( priv->tview );
-	get_settings( OFA_LEDGER_CLOSE( instance ));
+	read_settings( OFA_LEDGER_CLOSE( instance ));
 
 	check_for_enable_dlg( OFA_LEDGER_CLOSE( instance ), NULL );
 }
@@ -687,6 +686,7 @@ do_close( ofaLedgerClose *self )
 static void
 do_close_ledgers( sClose *sclose )
 {
+	myISettings *settings;
 	GList *it;
 	GtkWidget *dialog, *content, *button;
 	gulong handler;
@@ -705,8 +705,8 @@ do_close_ledgers( sClose *sclose )
 					_( "_Close" ), GTK_RESPONSE_OK,
 					NULL );
 
-	my_utils_window_position_restore( GTK_WINDOW( dialog ),
-			ofa_settings_get_settings( SETTINGS_TARGET_USER ), "ofaLedgerClosing" );
+	settings = ofa_hub_get_user_settings( sclose->hub );
+	my_utils_window_position_restore( GTK_WINDOW( dialog ), settings, "ofaLedgerClosing" );
 	gtk_container_set_border_width( GTK_CONTAINER( dialog ), 4 );
 
 	button = gtk_dialog_get_widget_for_response( GTK_DIALOG( dialog ), GTK_RESPONSE_OK );
@@ -737,8 +737,7 @@ do_close_ledgers( sClose *sclose )
 
 	gtk_widget_set_sensitive( button, TRUE );
 	gtk_dialog_run( GTK_DIALOG( dialog ));
-	my_utils_window_position_save( GTK_WINDOW( dialog ),
-			ofa_settings_get_settings( SETTINGS_TARGET_USER ), "ofaLedgerClosing" );
+	my_utils_window_position_save( GTK_WINDOW( dialog ), settings, "ofaLedgerClosing" );
 	gtk_widget_destroy( dialog );
 
 	ofa_hub_disconnect_handlers( sclose->hub, &sclose->hub_handlers );
@@ -811,20 +810,22 @@ close_end( sClose *sclose )
  * all_ledgers; archive_balances;
  */
 static void
-get_settings( ofaLedgerClose *self )
+read_settings( ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
-	GList *list, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *settings_key;
 
 	priv = ofa_ledger_close_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	list = ofa_settings_user_get_string_list( settings_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-	it = list;
-	cstr = it ? it->data : NULL;
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->all_ledgers_btn ), my_utils_boolean_from_str( cstr ));
@@ -832,32 +833,33 @@ get_settings( ofaLedgerClose *self )
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active(
 				GTK_TOGGLE_BUTTON( priv->archive_ledgers_btn ), my_utils_boolean_from_str( cstr ));
 		on_archive_ledgers_toggled( GTK_TOGGLE_BUTTON( priv->all_ledgers_btn ), self );
 	}
 
-	ofa_settings_free_string_list( list );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
 }
 
 static void
-set_settings( ofaLedgerClose *self )
+write_settings( ofaLedgerClose *self )
 {
 	ofaLedgerClosePrivate *priv;
+	myISettings *settings;
 	gchar *str, *settings_key;
 
 	priv = ofa_ledger_close_get_instance_private( self );
-
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
 	str = g_strdup_printf( "%s;%s;",
 			priv->all_ledgers ? "True":"False",
 			priv->archive_ledgers ? "True":"False" );
 
-	ofa_settings_user_set_string( settings_key, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 
 	g_free( str );
 	g_free( settings_key );

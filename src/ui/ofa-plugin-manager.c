@@ -41,7 +41,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-iproperties.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ui/ofa-application.h"
@@ -262,7 +261,7 @@ iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *
 
 	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
 
-	slist = my_isettings_get_string_list( settings, SETTINGS_GROUP_GENERAL, key );
+	slist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = slist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -288,7 +287,7 @@ iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar 
 	str = g_strdup_printf( "%d;",
 				gtk_paned_get_position( GTK_PANED( priv->plugin_pane )));
 
-	my_isettings_set_string( settings, SETTINGS_GROUP_GENERAL, key, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
 }

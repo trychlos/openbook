@@ -41,7 +41,6 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-account.h"
 #include "api/ofo-currency.h"
 #include "api/ofo-dossier.h"
@@ -163,8 +162,8 @@ static void               irenderable_draw_group_bottom_report( ofaIRenderable *
 static void               irenderable_draw_group_footer( ofaIRenderable *instance );
 static void               irenderable_draw_bottom_summary( ofaIRenderable *instance );
 static void               draw_ledger_totals( ofaIRenderable *instance );
-static void               get_settings( ofaLedgerBookRender *self );
-static void               set_settings( ofaLedgerBookRender *self );
+static void               read_settings( ofaLedgerBookRender *self );
+static void               write_settings( ofaLedgerBookRender *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaLedgerBookRender, ofa_ledger_book_render, OFA_TYPE_RENDER_PAGE, 0,
 		G_ADD_PRIVATE( ofaLedgerBookRender )
@@ -199,7 +198,7 @@ ledger_book_render_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		set_settings( OFA_LEDGER_BOOK_RENDER( instance ));
+		write_settings( OFA_LEDGER_BOOK_RENDER( instance ));
 
 		/* unref object members here */
 	}
@@ -266,7 +265,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
-	get_settings( OFA_LEDGER_BOOK_RENDER( page ));
+	read_settings( OFA_LEDGER_BOOK_RENDER( page ));
 }
 
 static GtkWidget *
@@ -304,7 +303,7 @@ render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar
 
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( page ));
 
-	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
+	settings = ofa_hub_get_user_settings( priv->hub );
 	*keyfile = my_isettings_get_keyfile( settings );
 	*group_name = g_strdup_printf( "%s-print", priv->settings_prefix );
 }
@@ -939,10 +938,11 @@ draw_ledger_totals( ofaIRenderable *instance )
  * settings = paned_position;
  */
 static void
-get_settings( ofaLedgerBookRender *self )
+read_settings( ofaLedgerBookRender *self )
 {
 	ofaLedgerBookRenderPrivate *priv;
-	GList *slist, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	GtkWidget *paned;
 	gint pos;
@@ -950,43 +950,42 @@ get_settings( ofaLedgerBookRender *self )
 
 	priv = ofa_ledger_book_render_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	slist = ofa_settings_user_get_string_list( settings_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-	if( slist ){
-		it = slist ? slist : NULL;
-		cstr = it ? it->data : NULL;
-		pos = cstr ? atoi( cstr ) : 0;
-		if( pos <= 10 ){
-			pos = 150;
-		}
-		paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
-		gtk_paned_set_position( GTK_PANED( paned ), pos );
-
-		ofa_settings_free_string_list( slist );
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = cstr ? atoi( cstr ) : 0;
+	if( pos <= 10 ){
+		pos = 150;
 	}
+	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
+	gtk_paned_set_position( GTK_PANED( paned ), pos );
 
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
 }
 
 static void
-set_settings( ofaLedgerBookRender *self )
+write_settings( ofaLedgerBookRender *self )
 {
 	ofaLedgerBookRenderPrivate *priv;
+	myISettings *settings;
 	GtkWidget *paned;
 	gint pos;
 	gchar *str, *settings_key;
 
 	priv = ofa_ledger_book_render_get_instance_private( self );
 
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
 	pos = gtk_paned_get_position( GTK_PANED( paned ));
 
 	str = g_strdup_printf( "%d;", pos );
 
-	ofa_settings_user_set_string( settings_key, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 
 	g_free( str );
 	g_free( settings_key );

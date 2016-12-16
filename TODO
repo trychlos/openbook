@@ -420,13 +420,9 @@
 1289 2016-12-14 LedgerProperties/Balances tab: vertically expand the frame
                 (should be idem than account balances tab)
 
-1290 2016-12-14 which difference between ofa_prefs_dossier_open_notes()
-                and ofa_dossier_prefs_get_open_notes()
+1290 2016-12-16 hub is not finalized
 
-1291 2016-12-16 plugin: test what happens if the first object of an extension
-                is not dynamic ?
-
-1292
+1291
 
 -----------------------------------------------------------------------
  DONE

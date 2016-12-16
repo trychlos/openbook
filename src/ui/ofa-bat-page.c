@@ -40,7 +40,6 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-bat.h"
 #include "api/ofo-dossier.h"
