@@ -688,7 +688,6 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance
 	ofaPreferencesPrivate *priv;
 	GtkWidget *page, *wlabel;
 	gchar *label;
-	myISettings *settings;
 	gboolean ok;
 
 	g_debug( "%s: self=%p, msgerr=%p, instance=%p (%s)",
@@ -697,8 +696,7 @@ init_plugin_page( ofaPreferences *self, gchar **msgerr, ofaIProperties *instance
 	priv = ofa_preferences_get_instance_private( self );
 
 	ok = FALSE;
-	settings = ofa_hub_get_user_settings( priv->hub );
-	page = ofa_iproperties_init( instance, settings );
+	page = ofa_iproperties_init( instance, priv->hub );
 	label = ofa_iproperties_get_title( instance );
 
 	if( page && my_strlen( label )){

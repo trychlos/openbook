@@ -469,9 +469,7 @@ plugin_set_properties_page( ofaPluginManager *self, ofaExtenderModule *plugin, c
 			label = gtk_label_new_with_mnemonic( _( "_Properties" ));
 			priv->properties_page = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
 			gtk_notebook_prepend_page( GTK_NOTEBOOK( priv->plugin_book ), priv->properties_page, label );
-			content = ofa_iproperties_init(
-							OFA_IPROPERTIES( it->data ),
-							ofa_settings_get_settings( SETTINGS_TARGET_USER ));
+			content = ofa_iproperties_init( OFA_IPROPERTIES( it->data ), priv->hub );
 			gtk_box_pack_start( GTK_BOX( priv->properties_page ), content, TRUE, TRUE, 0 );
 			break;
 		}

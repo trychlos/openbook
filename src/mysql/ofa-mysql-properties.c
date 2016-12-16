@@ -28,6 +28,7 @@
 
 #include "my/my-iident.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-iproperties.h"
 
 #include "mysql/ofa-mysql-prefs-bin.h"
@@ -45,7 +46,7 @@ typedef struct {
 static void       iident_iface_init( myIIdentInterface *iface );
 static gchar     *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static void       iproperties_iface_init( ofaIPropertiesInterface *iface );
-static GtkWidget *iproperties_init( ofaIProperties *instance, myISettings *settings );
+static GtkWidget *iproperties_init( ofaIProperties *instance, ofaHub *hub );
 static gboolean   iproperties_get_valid( const ofaIProperties *instance, GtkWidget *widget, gchar **msgerr );
 static void       iproperties_apply( const ofaIProperties *instance, GtkWidget *widget );
 
@@ -150,16 +151,14 @@ iproperties_iface_init( ofaIPropertiesInterface *iface )
 }
 
 static GtkWidget *
-iproperties_init( ofaIProperties *instance, myISettings *settings )
+iproperties_init( ofaIProperties *instance, ofaHub *hub )
 {
 	GtkWidget *bin;
 
 	g_return_val_if_fail( instance && OFA_IS_MYSQL_PROPERTIES( instance ), NULL );
-	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	bin = ofa_mysql_prefs_bin_new();
-
-	ofa_mysql_prefs_bin_set_settings( OFA_MYSQL_PREFS_BIN( bin ), settings );
+	bin = ofa_mysql_prefs_bin_new( hub );
 
 	return( bin );
 }

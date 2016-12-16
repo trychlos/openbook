@@ -26,9 +26,10 @@
 #include <config.h>
 #endif
 
+#include "my/my-isettings.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-settings.h"
+#include "api/ofa-hub.h"
 
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-user-prefs.h"
@@ -47,12 +48,13 @@
  * backup command.
  */
 gchar *
-ofa_mysql_user_prefs_get_backup_command ( void )
+ofa_mysql_user_prefs_get_backup_command( ofaHub *hub )
 {
+	myISettings *settings;
 	gchar *cmdline;
 
-	cmdline = ofa_settings_get_string(
-					SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
+	settings = ofa_hub_get_user_settings( hub );
+	cmdline = my_isettings_get_string( settings, PREFS_GROUP, PREFS_BACKUP_CMDLINE );
 	if( !my_strlen( cmdline )){
 		cmdline = g_strdup( ofa_mysql_cmdline_backup_get_default_command());
 	}
@@ -67,10 +69,12 @@ ofa_mysql_user_prefs_get_backup_command ( void )
  * Records the backup command @command in the user settings.
  */
 void
-ofa_mysql_user_prefs_set_backup_command ( const gchar *command )
+ofa_mysql_user_prefs_set_backup_command( ofaHub *hub, const gchar *command )
 {
-	ofa_settings_set_string(
-			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_BACKUP_CMDLINE, command );
+	myISettings *settings;
+
+	settings = ofa_hub_get_user_settings( hub );
+	my_isettings_set_string( settings, PREFS_GROUP, PREFS_BACKUP_CMDLINE, command );
 }
 
 /**
@@ -80,12 +84,13 @@ ofa_mysql_user_prefs_set_backup_command ( const gchar *command )
  * allocated string which should be g_free() by the caller.
  */
 gchar *
-ofa_mysql_user_prefs_get_restore_command( void )
+ofa_mysql_user_prefs_get_restore_command( ofaHub *hub )
 {
+	myISettings *settings;
 	gchar *cmdline;
 
-	cmdline = ofa_settings_get_string(
-					SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
+	settings = ofa_hub_get_user_settings( hub );
+	cmdline = my_isettings_get_string( settings, PREFS_GROUP, PREFS_RESTORE_CMDLINE );
 	if( !my_strlen( cmdline )){
 		cmdline = g_strdup( ofa_mysql_cmdline_restore_get_default_command());
 	}
@@ -100,8 +105,10 @@ ofa_mysql_user_prefs_get_restore_command( void )
  * Records the restore command @command in the user settings.
  */
 void
-ofa_mysql_user_prefs_set_restore_command( const gchar *command )
+ofa_mysql_user_prefs_set_restore_command( ofaHub *hub, const gchar *command )
 {
-	ofa_settings_set_string(
-			SETTINGS_TARGET_USER, PREFS_GROUP, PREFS_RESTORE_CMDLINE, command );
+	myISettings *settings;
+
+	settings = ofa_hub_get_user_settings( hub );
+	my_isettings_set_string( settings, PREFS_GROUP, PREFS_RESTORE_CMDLINE, command );
 }

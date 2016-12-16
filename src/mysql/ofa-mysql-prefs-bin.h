@@ -42,6 +42,8 @@
 
 #include "my/my-isettings.h"
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_MYSQL_PREFS_BIN                ( ofa_mysql_prefs_bin_get_type())
@@ -65,10 +67,7 @@ typedef struct {
 
 GType      ofa_mysql_prefs_bin_get_type    ( void ) G_GNUC_CONST;
 
-GtkWidget *ofa_mysql_prefs_bin_new         ( void );
-
-void       ofa_mysql_prefs_bin_set_settings( ofaMySQLPrefsBin *bin,
-												myISettings *settings );
+GtkWidget *ofa_mysql_prefs_bin_new         ( ofaHub *hub );
 
 gboolean   ofa_mysql_prefs_bin_get_valid   ( ofaMySQLPrefsBin *bin,
 												gchar **msgerr );

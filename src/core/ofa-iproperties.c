@@ -28,6 +28,7 @@
 
 #include "my/my-iident.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-iproperties.h"
 
 /* some data attached to each widget returned by init().
@@ -177,27 +178,26 @@ ofa_iproperties_get_interface_version( GType type )
 /**
  * ofa_iproperties_init:
  * @instance: this #ofaIProperties instance.
- * @settings: the #myISettings instance which manages the user
- *  preferences settings file.
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: the newly created page.
  */
 GtkWidget *
-ofa_iproperties_init( ofaIProperties *instance, myISettings *settings )
+ofa_iproperties_init( ofaIProperties *instance, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_iproperties_init";
 	GtkWidget *widget;
 	sIProperties *sdata;
 
-	g_debug( "%s: instance=%p (%s), settings=%p",
+	g_debug( "%s: instance=%p (%s), hub=%p",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ),
-			( void * ) settings );
+			( void * ) hub );
 
 	g_return_val_if_fail( instance && OFA_IS_IPROPERTIES( instance ), NULL );
-	g_return_val_if_fail( settings && MY_IS_ISETTINGS( settings ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	if( OFA_IPROPERTIES_GET_INTERFACE( instance )->init ){
-		widget = OFA_IPROPERTIES_GET_INTERFACE( instance )->init( instance, settings );
+		widget = OFA_IPROPERTIES_GET_INTERFACE( instance )->init( instance, hub );
 		if( widget ){
 			sdata = get_iproperties_data( widget );
 			sdata->instance = instance;

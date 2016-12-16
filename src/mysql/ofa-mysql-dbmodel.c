@@ -40,7 +40,6 @@
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbmodel.h"
 #include "api/ofa-iimporter.h"
-#include "api/ofa-settings.h"
 #include "api/ofa-stream-format.h"
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"

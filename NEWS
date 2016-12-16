@@ -85,6 +85,7 @@
    - ofaMiscAuditStore: new class.
    - ofaMiscAuditTreeview: new class.
    - ofaMysqlCmdline: get rid of ofaSettings usage.
+   - ofaMysqlUserPrefs: get rid of ofaSettings usage.
    - ofaMySQLMeta class is renamed to ofaMysqlDossierMeta (todo #1277).
    - ofaMySQLPeriod class is renamed to ofaMysqlExerciceMeta (todo #1278).
    - ofaOpeTemplateFrameBin: get rid of ofaSettings usage.
