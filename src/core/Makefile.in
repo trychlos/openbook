@@ -195,7 +195,7 @@ am_libofa_core_la_OBJECTS = ofa-account-arc-store.lo \
 	ofa-paimean-select.lo ofa-paimean-store.lo \
 	ofa-paimean-treeview.lo ofa-paned-page.lo ofa-page.lo \
 	ofa-preferences.lo ofa-rate-store.lo ofa-render-page.lo \
-	ofa-settings.lo ofa-stream-format.lo ofa-stream-format-bin.lo \
+	ofa-stream-format.lo ofa-stream-format-bin.lo \
 	ofa-stream-format-disp.lo ofa-tree-store.lo ofa-tvbin.lo \
 	ofo-account.lo ofo-base.lo ofo-bat.lo ofo-bat-line.lo \
 	ofo-class.lo ofo-concil.lo ofo-currency.lo ofo-dossier.lo \
@@ -589,7 +589,6 @@ libofa_core_la_SOURCES = \
 	ofa-rate-store.c									\
 	ofa-rate-store.h									\
 	ofa-render-page.c									\
-	ofa-settings.c										\
 	ofa-stream-format.c									\
 	ofa-stream-format-bin.c								\
 	ofa-stream-format-bin.h								\
@@ -796,7 +795,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-preferences.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-store.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-render-page.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-settings.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format-bin.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format-disp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-stream-format.Plo@am__quote@

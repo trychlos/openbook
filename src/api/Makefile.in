@@ -439,7 +439,6 @@ api_include_HEADERS = \
 	ofa-paimean-editable.h								\
 	ofa-preferences.h									\
 	ofa-render-page.h									\
-	ofa-settings.h										\
 	ofa-stream-format.h									\
 	ofa-tree-store.h									\
 	ofa-tvbin.h											\

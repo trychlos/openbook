@@ -377,10 +377,6 @@
 1265 2016-11-28 myISettings: simplify the interface
      2016-12- 8 we roughly only need read strlist and write str 
 
-1266 2016-11-28 openbook: have two objects derived from mySettings class
-     2016-12- 6 + registering them in ofaHub
-     2016-12-13 done for dossier settings
-
 1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
 
 1270 2016-11-29 ofaIDBDossierEditor and ofaIDBExerciceEditor obsolete
@@ -2034,6 +2030,11 @@
 1264 2016-11-24 PortfolioCollection: rename to DossierCollection
                 + this is this class which gives the list of dossiers
      2016-12-10 done
+
+1266 2016-11-28 openbook: have two objects derived from mySettings class
+     2016-12- 6 + registering them in ofaHub
+     2016-12-13 done for dossier settings
+     2016-12-16 done for user settings, decommissionning ofaSettings class
 
 1268 2016-11-29 ofaDossierMeta class obsoletes ofaIDBMeta interface
                 and ofaMysqlMeta class.

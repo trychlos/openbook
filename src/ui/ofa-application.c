@@ -41,7 +41,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-ipage-manager.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 
 #include "ui/ofa-about.h"
 #include "ui/ofa-application.h"
@@ -220,7 +219,6 @@ application_dispose( GObject *instance )
 		g_clear_object( &priv->hub );
 		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->menu );
-		ofa_settings_free();
 	}
 
 	/* chain up to the parent class */
@@ -701,9 +699,6 @@ application_startup( GApplication *application )
 
 	ofa_misc_audit_item_signal_connect( OFA_IGETTER( application ));
 	ofa_misc_collector_item_signal_connect( OFA_IGETTER( application ));
-
-	/* initialize the application settings */
-	ofa_settings_new();
 
 	/* define the application actions */
 	g_action_map_add_action_entries(

@@ -93,6 +93,7 @@
    - ofaPreferences: get rid of ofaSettings usage.
    - ofaRecurrent: get rid of ofaSettings usage.
    - ofaSettings: deprecate all ofa_settings_dossier_xxx() methods.
+   - ofaSettings: removed class (todo #1266).
    - ofaStreamFormat: get rid of ofaSettings usage.
    - ofaTargetChooserBin: new class.
    - ofaTVBin: new ofa-tvbin-vexpand property.
