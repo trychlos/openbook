@@ -257,12 +257,13 @@ ofa_idbprovider_new_dossier_meta( ofaIDBProvider *provider, ofaHub *hub, const g
 /**
  * ofa_idbprovider_new_connect:
  * @provider: this #ofaIDBProvider provider.
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: a newly allocated #ofaIDBConnect object, which should be
  * g_object_unref() by the caller.
  */
 ofaIDBConnect *
-ofa_idbprovider_new_connect( ofaIDBProvider *provider )
+ofa_idbprovider_new_connect( ofaIDBProvider *provider, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_idbprovider_new_connect";
 	ofaIDBConnect *connect;
@@ -270,10 +271,12 @@ ofa_idbprovider_new_connect( ofaIDBProvider *provider )
 	g_debug( "%s: provider=%p", thisfn, ( void * ) provider );
 
 	g_return_val_if_fail( provider && OFA_IS_IDBPROVIDER( provider ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	if( OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect ){
 		connect = OFA_IDBPROVIDER_GET_INTERFACE( provider )->new_connect( provider );
 		ofa_idbconnect_set_provider( connect, provider );
+		ofa_idbconnect_set_hub( connect, hub );
 		return( connect );
 	}
 

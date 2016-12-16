@@ -46,9 +46,10 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
+#include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
-#include "api/ofa-settings.h"
 
 #include "ofa-mysql-cmdline.h"
 #include "ofa-mysql-connect.h"
@@ -59,14 +60,15 @@
 #define BUFSIZE 4096
 
 typedef struct {
-	GtkWidget  *window;
-	GtkWidget  *textview;
-	GtkWidget  *close_btn;
-	gboolean    command_ok;
-	gulong      out_line;
-	gulong      err_line;
-	gboolean    verbose;
-	GMainLoop  *loop;
+	GtkWidget   *window;
+	GtkWidget   *textview;
+	GtkWidget   *close_btn;
+	gboolean     command_ok;
+	gulong       out_line;
+	gulong       err_line;
+	gboolean     verbose;
+	myISettings *settings;
+	GMainLoop   *loop;
 }
 	sExecuteInfos;
 
@@ -164,8 +166,8 @@ ofa_mysql_cmdline_restore_get_default_command( void )
  * ofa_mysql_cmdline_restore_run:
  * @connect: a #ofaIDBConnect object which handles an opened superuser
  *  connection on the DBMS server. This object is expected to hold root
- *  account and password, and a non-%NULL meta which identifies the
- *  target dossier.
+ *  account and password, and a non-%NULL #ofaIDBDossierMeta which
+ *  identifies the target dossier.
  * @period: the #ofaIDBExerciceMeta object which qualifies the target
  *  exercice.
  * @uri: the URI of the file to be restored.
@@ -476,16 +478,21 @@ do_execute_async( const gchar *template,
 	GPid child_pid;
 	gboolean ok;
 	guint source_id;
+	ofaHub *hub;
 	myISettings *settings;
 
 	cmdline = cmdline_build_from_connect( template, connect, period, fname, NULL );
 	g_debug( "%s: cmdline=%s", thisfn, cmdline );
+
+	hub = ofa_idbconnect_get_hub( OFA_IDBCONNECT( connect ));
+	settings = ofa_hub_get_user_settings( hub );
 
 	infos = g_new0( sExecuteInfos, 1 );
 	infos->command_ok = FALSE;
 	infos->out_line = 0;
 	infos->err_line = 0;
 	infos->verbose = verbose;
+	infos->settings = settings;
 
 	if( infos->verbose ){
 		async_create_window( infos, window_title );
@@ -507,7 +514,6 @@ do_execute_async( const gchar *template,
 			g_debug( "%s: running the display dialog", thisfn );
 			gtk_dialog_run( GTK_DIALOG( infos->window ));
 
-			settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
 			my_utils_window_position_save( GTK_WINDOW( infos->window ), settings, st_window_name );
 
 		} else {
@@ -537,7 +543,6 @@ static void
 async_create_window( sExecuteInfos *infos, const gchar *window_title )
 {
 	GtkWidget *content, *grid, *scrolled;
-	myISettings *settings;
 
 	infos->window = gtk_dialog_new_with_buttons(
 							window_title,
@@ -567,8 +572,7 @@ async_create_window( sExecuteInfos *infos, const gchar *window_title )
 	my_utils_widget_set_margins( infos->close_btn, 4, 4, 0, 8 );
 	gtk_widget_set_sensitive( infos->close_btn, FALSE );
 
-	settings = ofa_settings_get_settings( SETTINGS_TARGET_USER );
-	my_utils_window_position_restore( GTK_WINDOW( infos->window ), settings, st_window_name );
+	my_utils_window_position_restore( GTK_WINDOW( infos->window ), infos->settings, st_window_name );
 
 	gtk_widget_show_all( infos->window );
 }

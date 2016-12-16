@@ -38,6 +38,7 @@
  * by a DBMS backend should implement for the needs of the application.
  */
 
+#include "ofa-hub-def.h"
 #include "ofa-idbdossier-meta-def.h"
 #include "ofa-idbeditor.h"
 #include "ofa-idbexercice-meta-def.h"
@@ -333,6 +334,11 @@ ofaIDBProvider     *ofa_idbconnect_get_provider             ( const ofaIDBConnec
 
 void                ofa_idbconnect_set_provider             ( ofaIDBConnect *connect,
 																	const ofaIDBProvider *provider );
+
+ofaHub             *ofa_idbconnect_get_hub                  ( const ofaIDBConnect *connect );
+
+void                ofa_idbconnect_set_hub                  ( ofaIDBConnect *connect,
+																	ofaHub *hub );
 
 gboolean            ofa_idbconnect_open_with_editor         ( ofaIDBConnect *connect,
 																	const gchar *account,

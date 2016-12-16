@@ -312,7 +312,7 @@ idialog_init( myIDialog *instance )
 	/* dbms root credentials */
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "root-credentials" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->root_credentials = ofa_dbms_root_bin_new();
+	priv->root_credentials = ofa_dbms_root_bin_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->root_credentials ));
 	my_utils_size_group_add_size_group(
 			group0, ofa_dbms_root_bin_get_size_group( priv->root_credentials, 0 ));
@@ -489,7 +489,7 @@ root_credentials_get_valid( ofaDossierNew *self, gchar **message )
 	if( my_strlen( priv->root_account )){
 		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
 		provider = ofa_idbeditor_get_provider( editor );
-		connect = ofa_idbprovider_new_connect( provider );
+		connect = ofa_idbprovider_new_connect( provider, priv->hub );
 		ok = ofa_idbconnect_open_with_editor(
 							connect, priv->root_account, priv->root_password, editor, TRUE );
 		g_clear_object( &connect );
@@ -532,7 +532,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 		provider = ofa_idbdossier_meta_get_provider( priv->meta );
 		period = ofa_idbdossier_meta_get_current_period( priv->meta );
 		ofa_dbms_root_bin_get_credentials( priv->root_credentials, &account, &password );
-		connect = ofa_idbprovider_new_connect( provider );
+		connect = ofa_idbprovider_new_connect( provider, priv->hub );
 		editor = ofa_dossier_new_bin_get_editor( priv->new_bin );
 
 		if( !ofa_idbconnect_open_with_editor(
@@ -566,7 +566,7 @@ do_create( ofaDossierNew *self, gchar **msgerr )
 	if( ok && priv->b_open ){
 		provider = ofa_idbdossier_meta_get_provider( priv->meta );
 		period = ofa_idbdossier_meta_get_current_period( priv->meta );
-		connect = ofa_idbprovider_new_connect( provider );
+		connect = ofa_idbprovider_new_connect( provider, priv->hub );
 		if( !ofa_idbconnect_open_with_meta(
 				connect, priv->adm_account, priv->adm_password, priv->meta, period )){
 			*msgerr = g_strdup( _( "Unable to connect to newly created dossier" ));

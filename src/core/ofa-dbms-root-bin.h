@@ -46,6 +46,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
 #include "api/ofa-idbdossier-meta-def.h"
 
 G_BEGIN_DECLS
@@ -71,7 +72,7 @@ typedef struct {
 
 GType           ofa_dbms_root_bin_get_type       ( void ) G_GNUC_CONST;
 
-ofaDBMSRootBin *ofa_dbms_root_bin_new            ( void );
+ofaDBMSRootBin *ofa_dbms_root_bin_new            ( ofaHub *hub );
 
 GtkSizeGroup   *ofa_dbms_root_bin_get_size_group ( ofaDBMSRootBin *bin,
 														guint column );

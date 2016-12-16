@@ -287,7 +287,7 @@ idialog_init( myIDialog *instance )
 			group, ofa_idbeditor_get_size_group( priv->infos, 0 ));
 
 	/* root credentials */
-	priv->credentials = ofa_dbms_root_bin_new();
+	priv->credentials = ofa_dbms_root_bin_new( priv->hub );
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "credentials-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->credentials ));

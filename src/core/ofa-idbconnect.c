@@ -31,6 +31,7 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbexercice-meta.h"
@@ -42,6 +43,7 @@
  */
 typedef struct {
 	ofaIDBProvider     *provider;
+	ofaHub             *hub;
 	gchar              *account;
 	gchar              *password;
 	ofaIDBDossierMeta  *dossier_meta;
@@ -208,6 +210,7 @@ ofa_idbconnect_get_provider( const ofaIDBConnect *connect )
 	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
 
 	data = get_idbconnect_data( connect );
+
 	return( g_object_ref( data->provider ));
 }
 
@@ -228,8 +231,50 @@ ofa_idbconnect_set_provider( ofaIDBConnect *connect, const ofaIDBProvider *provi
 	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
 
 	data = get_idbconnect_data( connect );
+
 	g_clear_object( &data->provider );
 	data->provider = g_object_ref(( gpointer ) provider );
+}
+
+/**
+ * ofa_idbconnect_get_hub:
+ * @connect: this #ofaIDBConnect instance.
+ *
+ * Returns: the #ofaHub object of the application as it has been set at
+ * instantiation time.
+ *
+ * The returned object is owned by the @connect instance, and should not
+ * be released by the caller.
+ */
+ofaHub *
+ofa_idbconnect_get_hub( const ofaIDBConnect *connect )
+{
+	sIDBConnect *data;
+
+	g_return_val_if_fail( connect && OFA_IS_IDBCONNECT( connect ), NULL );
+
+	data = get_idbconnect_data( connect );
+
+	return( data->hub );
+}
+
+/**
+ * ofa_idbconnect_set_hub:
+ * @connect: this #ofaIDBConnect instance.
+ * @hub: the #ofaHub object of the application.
+ *
+ * Set the @hub object.
+ */
+void
+ofa_idbconnect_set_hub( ofaIDBConnect *connect, ofaHub *hub )
+{
+	sIDBConnect *data;
+
+	g_return_if_fail( connect && OFA_IS_IDBCONNECT( connect ));
+
+	data = get_idbconnect_data( connect );
+
+	data->hub = hub;
 }
 
 /**
@@ -988,7 +1033,8 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	sIDBConnect *data;
 	gboolean ok;
 	GString *query;
-	ofaIDBProvider *prov_instance;
+	ofaHub *hub;
+	ofaIDBProvider *provider;
 	ofaIDBExerciceMeta *period;
 	ofaIDBConnect *db_connection;
 
@@ -1000,6 +1046,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	g_return_val_if_fail( meta && OFA_IS_IDBDOSSIER_META( meta ), FALSE );
 
 	ok = FALSE;
+	hub = ofa_idbconnect_get_hub( connect );
 
 	/* create the minimal database and grant the user */
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->create_dossier ){
@@ -1013,7 +1060,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 
 	db_connection = NULL;
 	period = NULL;
-	prov_instance = NULL;
+	provider = NULL;
 	data = get_idbconnect_data( connect );
 	query = g_string_new( "" );
 
@@ -1022,8 +1069,8 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	if( ok ){
 		ofa_idbdossier_meta_dump_full( meta );
 		period = ofa_idbdossier_meta_get_current_period( meta );
-		prov_instance = ofa_idbdossier_meta_get_provider( meta );
-		db_connection = ofa_idbprovider_new_connect( prov_instance );
+		provider = ofa_idbdossier_meta_get_provider( meta );
+		db_connection = ofa_idbprovider_new_connect( provider, hub );
 		ok = ofa_idbconnect_open_with_meta(
 					db_connection, data->account, data->password, meta, period );
 	}
@@ -1051,7 +1098,7 @@ ofa_idbconnect_create_dossier( const ofaIDBConnect *connect,
 	g_string_free( query, TRUE );
 
 	g_clear_object( &db_connection );
-	g_clear_object( &prov_instance );
+	g_clear_object( &provider );
 	g_clear_object( &period );
 
 	return( ok );
@@ -1081,6 +1128,7 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExer
 	sIDBConnect *data;
 	gboolean ok;
 	GString *query;
+	ofaHub *hub;
 	ofaIDBConnect *period_connect;
 
 	g_debug( "%s: connect=%p, period=%p, adm_account=%s, adm_password=%s",
@@ -1092,6 +1140,7 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExer
 	g_return_val_if_fail( my_strlen( adm_account ), FALSE );
 
 	ok = FALSE;
+	hub = ofa_idbconnect_get_hub( connect );
 
 	if( OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user ){
 		ok = OFA_IDBCONNECT_GET_INTERFACE( connect )->grant_user( connect, period, adm_account, adm_password );
@@ -1109,7 +1158,7 @@ idbconnect_set_admin_credentials( const ofaIDBConnect *connect, const ofaIDBExer
 	query = g_string_new( "" );
 
 	if( ok ){
-		period_connect = ofa_idbprovider_new_connect( data->provider );
+		period_connect = ofa_idbprovider_new_connect( data->provider, hub );
 		ok = ofa_idbconnect_open_with_meta(
 					period_connect, data->account, data->password, data->dossier_meta, period );
 	}

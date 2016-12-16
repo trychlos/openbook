@@ -691,7 +691,7 @@ p2_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page_widget ), "p2-dbms" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p2_dbms_credentials = ofa_dbms_root_bin_new();
+	priv->p2_dbms_credentials = ofa_dbms_root_bin_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p2_dbms_credentials ));
 	ofa_dbms_root_bin_set_meta( priv->p2_dbms_credentials, priv->meta );
 
@@ -1451,7 +1451,7 @@ p6_do_archive_exercice( ofaExerciceCloseAssistant *self, gboolean with_ui )
 		cur_account = ofa_idbconnect_get_account( priv->connect );
 		cur_password = ofa_idbconnect_get_password( priv->connect );
 
-		cnx = ofa_idbprovider_new_connect( provider );
+		cnx = ofa_idbprovider_new_connect( provider, priv->hub );
 		ok = ofa_idbconnect_open_with_meta( cnx, cur_account, cur_password, priv->meta, period );
 
 		g_free( cur_password );

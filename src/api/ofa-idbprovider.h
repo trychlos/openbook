@@ -155,7 +155,8 @@ ofaIDBDossierMeta *ofa_idbprovider_new_dossier_meta          ( ofaIDBProvider *p
 																	ofaHub *hub,
 																	const gchar *dossier_name );
 
-ofaIDBConnect     *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider );
+ofaIDBConnect     *ofa_idbprovider_new_connect               ( ofaIDBProvider *provider,
+																	ofaHub *hub );
 
 ofaIDBEditor      *ofa_idbprovider_new_editor                ( ofaIDBProvider *provider,
 																	gboolean editable );

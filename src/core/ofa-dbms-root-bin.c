@@ -31,6 +31,7 @@
 #include "my/my-style.h"
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
 #include "api/ofa-idbconnect.h"
 #include "api/ofa-idbdossier-meta.h"
 #include "api/ofa-idbprovider.h"
@@ -40,20 +41,24 @@
 /* private instance data
  */
 typedef struct {
-	gboolean      dispose_has_run;
+	gboolean           dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub            *hub;
 
 	/* UI
 	 */
-	GtkWidget    *account_entry;
-	GtkWidget    *password_entry;
-	GtkWidget    *msg_label;
-	GtkSizeGroup *group0;
+	GtkWidget         *account_entry;
+	GtkWidget         *password_entry;
+	GtkWidget         *msg_label;
+	GtkSizeGroup      *group0;
 
 	/* runtime data
 	 */
-	ofaIDBDossierMeta   *meta;
-	gchar        *account;
-	gchar        *password;
+	ofaIDBDossierMeta *meta;
+	gchar             *account;
+	gchar             *password;
 }
 	ofaDBMSRootBinPrivate;
 
@@ -68,11 +73,11 @@ static guint st_signals[ N_SIGNALS ]    = { 0 };
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-dbms-root-bin.ui";
 
-static void     setup_bin( ofaDBMSRootBin *bin );
+static void     setup_bin( ofaDBMSRootBin *self );
 static void     on_account_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     on_password_changed( GtkEditable *entry, ofaDBMSRootBin *self );
 static void     changed_composite( ofaDBMSRootBin *self );
-static gboolean is_valid_composite( ofaDBMSRootBin *bin );
+static gboolean is_valid_composite( ofaDBMSRootBin *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDBMSRootBin, ofa_dbms_root_bin, GTK_TYPE_BIN, 0,
 		G_ADD_PRIVATE( ofaDBMSRootBin ))
@@ -177,15 +182,23 @@ ofa_dbms_root_bin_class_init( ofaDBMSRootBinClass *klass )
 
 /**
  * ofa_dbms_root_bin_new:
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: a new #ofaDBMSRootBin instance.
  */
 ofaDBMSRootBin *
-ofa_dbms_root_bin_new( void )
+ofa_dbms_root_bin_new( ofaHub *hub )
 {
 	ofaDBMSRootBin *bin;
+	ofaDBMSRootBinPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	bin = g_object_new( OFA_TYPE_DBMS_ROOT_BIN, NULL );
+
+	priv = ofa_dbms_root_bin_get_instance_private( bin );
+
+	priv->hub = hub;
 
 	setup_bin( bin );
 
@@ -193,14 +206,14 @@ ofa_dbms_root_bin_new( void )
 }
 
 static void
-setup_bin( ofaDBMSRootBin *bin )
+setup_bin( ofaDBMSRootBin *self )
 {
 	ofaDBMSRootBinPrivate *priv;
 	GtkBuilder *builder;
 	GObject *object;
 	GtkWidget *toplevel, *label;
 
-	priv = ofa_dbms_root_bin_get_instance_private( bin );
+	priv = ofa_dbms_root_bin_get_instance_private( self );
 
 	builder = gtk_builder_new_from_resource( st_resource_ui );
 
@@ -212,29 +225,29 @@ setup_bin( ofaDBMSRootBin *bin )
 	g_return_if_fail( object && GTK_IS_WINDOW( object ));
 	toplevel = GTK_WIDGET( g_object_ref( object ));
 
-	my_utils_container_attach_from_window( GTK_CONTAINER( bin ), GTK_WINDOW( toplevel ), "top" );
+	my_utils_container_attach_from_window( GTK_CONTAINER( self ), GTK_WINDOW( toplevel ), "top" );
 
 	/* connect to the 'changed' signal of the entry */
-	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-account-entry" );
+	priv->account_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "drb-account-entry" );
 	g_return_if_fail( priv->account_entry && GTK_IS_ENTRY( priv->account_entry ));
 	g_signal_connect(
-			G_OBJECT( priv->account_entry ), "changed", G_CALLBACK( on_account_changed ), bin );
+			G_OBJECT( priv->account_entry ), "changed", G_CALLBACK( on_account_changed ), self );
 	/* setup the mnemonic widget on the label */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-account-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "drb-account-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->account_entry );
 
 	/* connect to the 'changed' signal of the entry */
-	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-password-entry" );
+	priv->password_entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "drb-password-entry" );
 	g_return_if_fail( priv->password_entry && GTK_IS_ENTRY( priv->password_entry ));
 	g_signal_connect(
-			G_OBJECT( priv->password_entry ), "changed", G_CALLBACK( on_password_changed ), bin );
+			G_OBJECT( priv->password_entry ), "changed", G_CALLBACK( on_password_changed ), self );
 	/* setup the mnemonic widget on the label */
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-password-label" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "drb-password-label" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	gtk_label_set_mnemonic_widget( GTK_LABEL( label ), priv->password_entry );
 
-	label = my_utils_container_get_child_by_name( GTK_CONTAINER( bin ), "drb-message" );
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "drb-message" );
 	my_style_add( label, "labelinfo" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	priv->msg_label = label;
@@ -391,14 +404,14 @@ ofa_dbms_root_bin_is_valid( ofaDBMSRootBin *bin, gchar **error_message )
 }
 
 static gboolean
-is_valid_composite( ofaDBMSRootBin *bin )
+is_valid_composite( ofaDBMSRootBin *self )
 {
 	ofaDBMSRootBinPrivate *priv;
 	ofaIDBProvider *provider;
 	ofaIDBConnect *connect;
 	gboolean ok;
 
-	priv = ofa_dbms_root_bin_get_instance_private( bin );
+	priv = ofa_dbms_root_bin_get_instance_private( self );
 	ok = FALSE;
 
 	if( my_strlen( priv->account ) && my_strlen( priv->password )){
@@ -409,13 +422,13 @@ is_valid_composite( ofaDBMSRootBin *bin )
 			ok = FALSE;
 			provider = ofa_idbdossier_meta_get_provider( priv->meta );
 			if( provider ){
-				connect = ofa_idbprovider_new_connect( provider );
+				connect = ofa_idbprovider_new_connect( provider, priv->hub );
 				ok = ofa_idbconnect_open_with_meta(
 							connect, priv->account, priv->password, priv->meta, NULL );
 				g_clear_object( &connect );
 			}
 			g_clear_object( &provider );
-			ofa_dbms_root_bin_set_valid( bin, ok );
+			ofa_dbms_root_bin_set_valid( self, ok );
 		}
 	}
 

@@ -839,7 +839,7 @@ p3_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-dra-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->p3_dbms_credentials = ofa_dbms_root_bin_new();
+	priv->p3_dbms_credentials = ofa_dbms_root_bin_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->p3_dbms_credentials ));
 	my_utils_size_group_add_size_group(
 			priv->p3_hgroup, ofa_dbms_root_bin_get_size_group( priv->p3_dbms_credentials, 0 ));
@@ -976,7 +976,7 @@ p3_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	g_clear_object( &priv->p3_connect );
 	provider = ofa_idbdossier_meta_get_provider( priv->p2_dossier_meta );
-	priv->p3_connect = ofa_idbprovider_new_connect( provider );
+	priv->p3_connect = ofa_idbprovider_new_connect( provider, priv->hub );
 	if( !ofa_idbconnect_open_with_meta(
 			priv->p3_connect, priv->p3_account, priv->p3_password, priv->p2_dossier_meta, NULL )){
 		g_clear_object( &priv->p3_connect );
