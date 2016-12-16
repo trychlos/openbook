@@ -91,6 +91,7 @@
    - ofaOpeTemplateFrameBin: get rid of ofaSettings usage.
    - ofaPortfolioCollection class is renamed to ofaDossierCollection (todo #1264).
    - ofaPreferences: get rid of ofaSettings usage.
+   - ofaRecurrent: get rid of ofaSettings usage.
    - ofaSettings: deprecate all ofa_settings_dossier_xxx() methods.
    - ofaStreamFormat: get rid of ofaSettings usage.
    - ofaTargetChooserBin: new class.

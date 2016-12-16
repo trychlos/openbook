@@ -42,7 +42,6 @@
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 #include "api/ofo-ledger.h"
@@ -117,8 +116,8 @@ static void       action_on_validate_activated( GSimpleAction *action, GVariant 
 static gboolean   action_user_confirm( ofaRecurrentRunPage *self );
 static gboolean   action_update_status( ofaRecurrentRunPage *self );
 static gboolean   action_on_object_validated( ofaRecurrentRunPage *self );
-static void       get_settings( ofaRecurrentRunPage *self );
-static void       set_settings( ofaRecurrentRunPage *self );
+static void       read_settings( ofaRecurrentRunPage *self );
+static void       write_settings( ofaRecurrentRunPage *self );
 static void       iprogress_iface_init( myIProgressInterface *iface );
 static void       iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
 static void       iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
@@ -157,7 +156,7 @@ recurrent_run_page_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
-		set_settings( OFA_RECURRENT_RUN_PAGE( instance ));
+		write_settings( OFA_RECURRENT_RUN_PAGE( instance ));
 
 		/* unref object members here */
 		priv = ofa_recurrent_run_page_get_instance_private( OFA_RECURRENT_RUN_PAGE( instance ));
@@ -237,7 +236,7 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	view = setup_view2( OFA_RECURRENT_RUN_PAGE( page ));
 	gtk_paned_pack2( paned, view, FALSE, FALSE );
 
-	get_settings( OFA_RECURRENT_RUN_PAGE( page ));
+	read_settings( OFA_RECURRENT_RUN_PAGE( page ));
 }
 
 static GtkWidget *
@@ -713,20 +712,22 @@ action_on_object_validated( ofaRecurrentRunPage *self )
  * settings: paned_position;cancelled_visible;waiting_visible;validated_visible;
  */
 static void
-get_settings( ofaRecurrentRunPage *self )
+read_settings( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
-	GList *slist, *it;
+	myISettings *settings;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gint pos;
 	gchar *settings_key;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	slist = ofa_settings_user_get_string_list( settings_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-	it = slist ? slist : NULL;
+	it = strlist ? strlist : NULL;
 	cstr = it ? it->data : NULL;
 	pos = 0;
 	if( my_strlen( cstr )){
@@ -758,20 +759,19 @@ get_settings( ofaRecurrentRunPage *self )
 		filter_on_validated_btn_toggled( GTK_TOGGLE_BUTTON( priv->validated_toggle ), self );
 	}
 
-	ofa_settings_free_string_list( slist );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
 }
 
 static void
-set_settings( ofaRecurrentRunPage *self )
+write_settings( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
+	myISettings *settings;
 	gchar *str, *settings_key;
 	gint pos;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
-
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
 	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
 
@@ -781,7 +781,9 @@ set_settings( ofaRecurrentRunPage *self )
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->waiting_toggle )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_toggle )) ? "True":"False" );
 
-	ofa_settings_user_set_string( settings_key, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 
 	g_free( str );
 	g_free( settings_key );

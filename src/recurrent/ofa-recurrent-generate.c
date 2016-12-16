@@ -42,7 +42,6 @@
 #include "api/ofa-igetter.h"
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-preferences.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-base.h"
 #include "api/ofo-ope-template.h"
 #include "api/ofs-ope.h"
@@ -126,8 +125,8 @@ static GList   *generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel 
 static void     generate_enum_dates_cb( const GDate *date, sEnumBetween *data );
 static void     display_error_messages( ofaRecurrentGenerate *self, GList *messages );
 static gboolean do_record( ofaRecurrentGenerate *self, gchar **msgerr );
-static void     get_settings( ofaRecurrentGenerate *self );
-static void     set_settings( ofaRecurrentGenerate *self );
+static void     read_settings( ofaRecurrentGenerate *self );
+static void     write_settings( ofaRecurrentGenerate *self );
 static void     set_msgerr( ofaRecurrentGenerate *self, const gchar *msg );
 static void     iactionable_iface_init( ofaIActionableInterface *iface );
 static guint    iactionable_get_interface_version( void );
@@ -171,7 +170,7 @@ recurrent_generate_dispose( GObject *instance )
 
 		priv->dispose_has_run = TRUE;
 
-		set_settings( OFA_RECURRENT_GENERATE( instance ));
+		write_settings( OFA_RECURRENT_GENERATE( instance ));
 
 		/* unref object members here */
 		g_list_free_full( priv->dataset, ( GDestroyNotify ) g_object_unref );
@@ -336,7 +335,7 @@ idialog_init( myIDialog *instance )
 	init_actions( OFA_RECURRENT_GENERATE( instance ));
 	init_data( OFA_RECURRENT_GENERATE( instance ));
 
-get_settings( OFA_RECURRENT_GENERATE( instance ));
+read_settings( OFA_RECURRENT_GENERATE( instance ));
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
@@ -877,20 +876,22 @@ do_record( ofaRecurrentGenerate *self, gchar **msgerr )
  * settings: paned_position;
  */
 static void
-get_settings( ofaRecurrentGenerate *self )
+read_settings( ofaRecurrentGenerate *self )
 {
 	ofaRecurrentGeneratePrivate *priv;
-	GList *slist, *it;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gint pos;
+	myISettings *settings;
 	gchar *settings_key;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
+	settings = ofa_hub_get_user_settings( priv->hub );
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	slist = ofa_settings_user_get_string_list( settings_key );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-	it = slist ? slist : NULL;
+	it = strlist ? strlist : NULL;
 	cstr = it ? it->data : NULL;
 	pos = 0;
 	if( my_strlen( cstr )){
@@ -901,14 +902,15 @@ get_settings( ofaRecurrentGenerate *self )
 	}
 	gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
 
-	ofa_settings_free_string_list( slist );
+	my_isettings_free_string_list( settings, strlist );
 	g_free( settings_key );
 }
 
 static void
-set_settings( ofaRecurrentGenerate *self )
+write_settings( ofaRecurrentGenerate *self )
 {
 	ofaRecurrentGeneratePrivate *priv;
+	myISettings *settings;
 	gchar *str, *settings_key;
 	gint pos;
 
@@ -916,10 +918,11 @@ set_settings( ofaRecurrentGenerate *self )
 
 	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
 
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	str = g_strdup_printf( "%d;", pos );
 
-	ofa_settings_user_set_string( settings_key, str );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
 
 	g_free( str );
 	g_free( settings_key );

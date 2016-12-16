@@ -41,7 +41,6 @@
 #include "api/ofa-itvcolumnable.h"
 #include "api/ofa-page.h"
 #include "api/ofa-page-prot.h"
-#include "api/ofa-settings.h"
 #include "api/ofo-dossier.h"
 
 #include "ofa-recurrent-generate.h"
