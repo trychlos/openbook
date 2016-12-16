@@ -199,8 +199,8 @@ module_v_unload( GTypeModule *module )
  * @filename: the full path to the module file.
  *
  * Returns: a new reference to a #ofaExtenderModule object, or %NULL if
- * the candidate lilbrary is not a valid dynamically loadable module
- * compatible with the defined extendion API.
+ * the candidate library is not a valid dynamically loadable module
+ * compatible with the defined extension API.
  */
 ofaExtenderModule *
 ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
@@ -272,8 +272,6 @@ ofa_extender_module_free( ofaExtenderModule *module, void *user_data )
  *   successively called for each plugin
  * - ofa_extension_shutdown() is optional and will be called on plugin
  *   shutdown if it exists.
- * - ofa_extension_get_api_version is optional, and defaults to 1.
- * - ofa_extension_get_version_number is optional, and defaults to NULL.
  */
 static gboolean
 plugin_is_valid( ofaExtenderModule *self )
