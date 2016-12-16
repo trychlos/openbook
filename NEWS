@@ -38,9 +38,10 @@
  ============
 
  Released on 
-  
+
  New features and improvements:
 
+   - Introduce extension API v2.
    - %BALCR, %BALDB: new formula engine macros.
    - ofaApplication: improve message when command-line arguments are invalid.
    - ofaMiscAuditUI: takes advantage of ofaITVColumnable interface.

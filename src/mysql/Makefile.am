@@ -83,8 +83,8 @@ libofa_mysql_la_SOURCES = \
 	ofa-mysql-editor-enter.h							\
 	ofa-mysql-exercice-meta.c							\
 	ofa-mysql-exercice-meta.h							\
-	ofa-mysql-main.c									\
-	ofa-mysql-main.h									\
+	ofa-mysql-ident.c									\
+	ofa-mysql-ident.h									\
 	ofa-mysql-prefs-bin.c								\
 	ofa-mysql-prefs-bin.h								\
 	ofa-mysql-properties.c								\

@@ -31,19 +31,14 @@
 
 #include "mysql/ofa-mysql-dbmodel.h"
 #include "mysql/ofa-mysql-dbprovider.h"
-#include "mysql/ofa-mysql-main.h"
+#include "mysql/ofa-mysql-ident.h"
 #include "mysql/ofa-mysql-properties.h"
 
-/* ******************************************************************* *
- *       The part below implements the software extension API          *
- * ******************************************************************* */
+#define EXTENSION_VERSION_NUMBER        2
 
-/*
- * The count of GType types provided by this extension.
- * Each of these GType types must be addressed in #ofa_extension_list_types().
- * Only the GTypeModule has to be registered from #ofa_extension_startup().
- */
-#define TYPES_COUNT	 4
+/* ******************************************************************* *
+ *     The part below implements the software extension API v 2        *
+ * ******************************************************************* */
 
 /*
  * ofa_extension_startup:
@@ -57,35 +52,25 @@ ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 
 	g_debug( "%s: module=%p, getter=%p", thisfn, ( void * ) module, ( void * ) getter  );
 
-	ofa_mysql_main_register_type_ex( module );
-
 	return( TRUE );
 }
 
 /*
- * ofa_extension_list_types:
+ * ofa_extension_enum_types:
  *
- * mandatory starting with API v. 1.
+ * mandatory starting with API v. 2.
  */
-guint
-ofa_extension_list_types( const GType **types )
+void
+ofa_extension_enum_types( ofaExtensionEnumTypesCb cb, void *user_data )
 {
-	static const gchar *thisfn = "mysql/ofa_extension_list_types";
-	static GType types_list [1+TYPES_COUNT];
-	gint i = 0;
+	static const gchar *thisfn = "mysql/ofa_extension_enum_types";
 
-	g_debug( "%s: types=%p, count=%u", thisfn, ( void * ) types, TYPES_COUNT );
+	g_debug( "%s: cb=%p, user_data=%p", thisfn, ( void * ) cb, ( void * ) user_data );
 
-	types_list[i++] = OFA_TYPE_MYSQL_MAIN;
-	types_list[i++] = OFA_TYPE_MYSQL_DBMODEL;
-	types_list[i++] = OFA_TYPE_MYSQL_DBPROVIDER;
-	types_list[i++] = OFA_TYPE_MYSQL_PROPERTIES;
-
-	g_return_val_if_fail( i == TYPES_COUNT, 0 );
-	types_list[i] = 0;
-	*types = types_list;
-
-	return( TYPES_COUNT );
+	cb( OFA_TYPE_MYSQL_IDENT, user_data );
+	cb( OFA_TYPE_MYSQL_DBMODEL, user_data );
+	cb( OFA_TYPE_MYSQL_DBPROVIDER, user_data );
+	cb( OFA_TYPE_MYSQL_PROPERTIES, user_data );
 }
 
 /*
@@ -99,4 +84,19 @@ ofa_extension_shutdown( void )
 	static const gchar *thisfn = "mysql/ofa_extension_shutdown";
 
 	g_debug( "%s", thisfn );
+}
+
+/*
+ * ofa_extension_get_version_number:
+ *
+ * optional as of API v. 1.
+ */
+guint
+ofa_extension_get_version_number( void )
+{
+	static const gchar *thisfn = "mysql/ofa_extension_get_version_number";
+
+	g_debug( "%s: version_number=%u", thisfn, EXTENSION_VERSION_NUMBER );
+
+	return( EXTENSION_VERSION_NUMBER );
 }

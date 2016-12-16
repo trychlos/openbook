@@ -1,5 +1,5 @@
 /*
- * Open Firm Accounting
+x * Open Firm Accounting
  * A double-entry accounting application for professional services.
  *
  * Copyright (C) 2014,2015,2016 Pierre Wieser (see AUTHORS)
@@ -32,6 +32,7 @@
 #include "my/my-iident.h"
 
 #include "api/ofa-extender-module.h"
+#include "api/ofa-extension.h"
 #include "api/ofa-igetter.h"
 
 /* private instance data
@@ -49,11 +50,12 @@ typedef struct {
 	GModule    *library;
 	GList      *objects;
 
-	/* api                                                                        v1
+	/* api                                                                             v1         v2
 	 */
-	gboolean ( *startup )   ( GTypeModule *module, ofaIGetter *getter );	/* mandatory */
-	gint     ( *list_types )( const GType **types );						/* mandatory */
-	void     ( *shutdown )  ( void );										/* opt. */
+	gboolean ( *startup )   ( GTypeModule *module, ofaIGetter *getter );		/* mandatory  mandatory  */
+	gint     ( *list_types )( const GType **types );							/* mandatory  deprecated */
+	void     ( *enum_types )( ofaExtensionEnumTypesCb cb, void *user_data );	/*     -      mandatory  */
+	void     ( *shutdown )  ( void );											/* opt.       opt.       */
 }
 	ofaExtenderModulePrivate;
 
@@ -62,6 +64,7 @@ static void     module_v_unload( GTypeModule *module );
 static gboolean plugin_is_valid( ofaExtenderModule *self );
 static gboolean plugin_check( ofaExtenderModule *self, const gchar *symbol, gpointer *pfn );
 static void     plugin_register_types( ofaExtenderModule *self );
+static void     plugin_enum_type( GType type, ofaExtenderModule *self );
 static void     plugin_add_type( ofaExtenderModule *self, GType type );
 static void     on_object_finalized( ofaExtenderModule *self, GObject *finalized_object );
 
@@ -216,13 +219,12 @@ ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
 	priv->filename = g_strdup( filename );
 
 	if( !g_type_module_use( G_TYPE_MODULE( module )) || !plugin_is_valid( module )){
+		g_type_module_unuse( G_TYPE_MODULE( module ));
 		g_object_unref( module );
 		return( NULL );
 	}
 
 	plugin_register_types( module );
-
-	g_type_module_unuse( G_TYPE_MODULE( module ));
 
 	return( module );
 }
@@ -241,11 +243,13 @@ void
 ofa_extender_module_free( ofaExtenderModule *module, void *user_data )
 {
 	ofaExtenderModulePrivate *priv;
+
+	priv = ofa_extender_module_get_instance_private( module );
+
+#if 0
 	gboolean found;
 	GList *it;
 	gpointer ptr;
-
-	priv = ofa_extender_module_get_instance_private( module );
 
 	do {
 		found = FALSE;
@@ -259,6 +263,11 @@ ofa_extender_module_free( ofaExtenderModule *module, void *user_data )
 			}
 		}
 	} while( found );
+#endif
+
+	g_list_free_full( priv->objects, ( GDestroyNotify ) g_object_unref );
+
+	g_type_module_unuse( G_TYPE_MODULE( module ));
 }
 
 /*
@@ -282,10 +291,17 @@ plugin_is_valid( ofaExtenderModule *self )
 
 	priv = ofa_extender_module_get_instance_private( self );
 
-	ok =
-		plugin_check( self, "ofa_extension_startup" , ( gpointer * ) &priv->startup ) &&
-		plugin_check( self, "ofa_extension_list_types" , ( gpointer * ) &priv->list_types ) &&
-		priv->startup( G_TYPE_MODULE( self ), priv->getter );
+	ok = plugin_check( self, "ofa_extension_startup" , ( gpointer * ) &priv->startup );
+
+	/* ofa_extension_list_types in v1 is deprecated by ofa_extension_enum_types in v2 */
+	if( ok ){
+		ok = plugin_check( self, "ofa_extension_list_types" , ( gpointer * ) &priv->list_types ) ||
+			plugin_check( self, "ofa_extension_enum_types" , ( gpointer * ) &priv->enum_types );
+	}
+
+	if( ok ){
+		ok &= priv->startup( G_TYPE_MODULE( self ), priv->getter );
+	}
 
 	if( ok ){
 		g_debug( "%s: %s: ok", thisfn, priv->filename );
@@ -331,14 +347,25 @@ plugin_register_types( ofaExtenderModule *self )
 
 	priv = ofa_extender_module_get_instance_private( self );
 
-	count = priv->list_types( &types );
-	priv->objects = NULL;
+	if( priv->enum_types ){
+		priv->enum_types(( ofaExtensionEnumTypesCb ) plugin_enum_type, self );
 
-	for( i = 0 ; i < count ; i++ ){
-		if( types[i] ){
-			plugin_add_type( self, types[i] );
+	} else {
+		count = priv->list_types( &types );
+		priv->objects = NULL;
+
+		for( i = 0 ; i < count ; i++ ){
+			if( types[i] ){
+				plugin_add_type( self, types[i] );
+			}
 		}
 	}
+}
+
+static void
+plugin_enum_type( GType type, ofaExtenderModule *self )
+{
+	plugin_add_type( self, type );
 }
 
 /*

@@ -35,14 +35,14 @@
 #include "api/ofa-iabout.h"
 #include "api/ofa-igetter.h"
 
-#include "ofa-mysql-main.h"
+#include "ofa-mysql-ident.h"
 
 /* private instance data
  */
 typedef struct {
 	gboolean dispose_has_run;
 }
-	ofaMysqlMainPrivate;
+	ofaMysqlIdentPrivate;
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/mysql/ofa-mysql-about.ui";
 
@@ -53,43 +53,35 @@ static gchar     *iident_get_version( const myIIdent *instance, void *user_data 
 static void       iabout_iface_init( ofaIAboutInterface *iface );
 static GtkWidget *iabout_do_init( ofaIAbout *instance, ofaIGetter *getter );
 
-G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaMysqlMain, ofa_mysql_main, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE_DYNAMIC( ofaMysqlMain )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IABOUT, iabout_iface_init ))
+G_DEFINE_TYPE_EXTENDED( ofaMysqlIdent, ofa_mysql_ident, G_TYPE_OBJECT, 0,
+		G_ADD_PRIVATE( ofaMysqlIdent )
+		G_IMPLEMENT_INTERFACE( MY_TYPE_IIDENT, iident_iface_init )
+		G_IMPLEMENT_INTERFACE( OFA_TYPE_IABOUT, iabout_iface_init ))
 
 static void
-ofa_mysql_main_class_finalize( ofaMysqlMainClass *klass )
+mysql_ident_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_mysql_main_class_finalize";
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-}
-
-static void
-mysql_main_finalize( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_mysql_main_finalize";
+	static const gchar *thisfn = "ofa_mysql_ident_finalize";
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_MAIN( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_IDENT( instance ));
 
 	/* free data members here */
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_main_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_mysql_ident_parent_class )->finalize( instance );
 }
 
 static void
-mysql_main_dispose( GObject *instance )
+mysql_ident_dispose( GObject *instance )
 {
-	ofaMysqlMainPrivate *priv;
+	ofaMysqlIdentPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_MYSQL_MAIN( instance ));
+	g_return_if_fail( instance && OFA_IS_MYSQL_IDENT( instance ));
 
-	priv = ofa_mysql_main_get_instance_private( OFA_MYSQL_MAIN( instance ));
+	priv = ofa_mysql_ident_get_instance_private( OFA_MYSQL_IDENT( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -99,48 +91,32 @@ mysql_main_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_mysql_main_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_mysql_ident_parent_class )->dispose( instance );
 }
 
 static void
-ofa_mysql_main_init( ofaMysqlMain *self )
+ofa_mysql_ident_init( ofaMysqlIdent *self )
 {
-	static const gchar *thisfn = "ofa_mysql_main_init";
-	ofaMysqlMainPrivate *priv;
+	static const gchar *thisfn = "ofa_mysql_ident_init";
+	ofaMysqlIdentPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	priv = ofa_mysql_main_get_instance_private( self );
+	priv = ofa_mysql_ident_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
 }
 
 static void
-ofa_mysql_main_class_init( ofaMysqlMainClass *klass )
+ofa_mysql_ident_class_init( ofaMysqlIdentClass *klass )
 {
-	static const gchar *thisfn = "ofa_mysql_main_class_init";
+	static const gchar *thisfn = "ofa_mysql_ident_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = mysql_main_dispose;
-	G_OBJECT_CLASS( klass )->finalize = mysql_main_finalize;
-}
-
-/**
- * ofa_mysql_main_register_type_ex:
- * @module: the dynamic module the class is derived from.
- *
- * Register the dynamic type at extension startup.
- */
-void
-ofa_mysql_main_register_type_ex( GTypeModule *module )
-{
-	static const gchar *thisfn = "ofa_mysql_main_register_type_ex";
-
-	g_debug( "%s: module=%p", thisfn, ( void * ) module );
-
-	ofa_mysql_main_register_type( module );
+	G_OBJECT_CLASS( klass )->dispose = mysql_ident_dispose;
+	G_OBJECT_CLASS( klass )->finalize = mysql_ident_finalize;
 }
 
 /*
@@ -149,7 +125,7 @@ ofa_mysql_main_register_type_ex( GTypeModule *module )
 static void
 iident_iface_init( myIIdentInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_main_iident_iface_init";
+	static const gchar *thisfn = "ofa_mysql_ident_iident_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
@@ -182,7 +158,7 @@ iident_get_version( const myIIdent *instance, void *user_data )
 static void
 iabout_iface_init( ofaIAboutInterface *iface )
 {
-	static const gchar *thisfn = "ofa_mysql_main_iabout_iface_init";
+	static const gchar *thisfn = "ofa_mysql_ident_iabout_iface_init";
 
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
