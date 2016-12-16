@@ -165,9 +165,10 @@ LTLIBRARIES = $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libofa_importers_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am_libofa_importers_la_OBJECTS = ofa-extension.lo ofa-importer-csv.lo \
-	ofa-importer-pdf.lo ofa-importer-pdf-bourso.lo \
-	ofa-importer-pdf-lcl.lo ofa-importer-txt.lo \
-	ofa-importer-txt-bourso.lo ofa-importer-txt-lcl.lo
+	ofa-importer-ident.lo ofa-importer-pdf.lo \
+	ofa-importer-pdf-bourso.lo ofa-importer-pdf-lcl.lo \
+	ofa-importer-txt.lo ofa-importer-txt-bourso.lo \
+	ofa-importer-txt-lcl.lo
 libofa_importers_la_OBJECTS = $(am_libofa_importers_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -427,6 +428,8 @@ libofa_importers_la_SOURCES = \
 	ofa-extension.c									\
 	ofa-importer-csv.c								\
 	ofa-importer-csv.h								\
+	ofa-importer-ident.c							\
+	ofa-importer-ident.h							\
 	ofa-importer-pdf.c								\
 	ofa-importer-pdf.h								\
 	ofa-importer-pdf-bourso.c						\
@@ -542,6 +545,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-extension.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer-csv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer-ident.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer-pdf-bourso.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer-pdf-lcl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-importer-pdf.Plo@am__quote@
