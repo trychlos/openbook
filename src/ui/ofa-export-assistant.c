@@ -679,12 +679,12 @@ p2_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	/* get a suitable format */
 	found_key = NULL;
-	if( ofa_stream_format_exists( priv->p1_selected_class, OFA_SFMODE_EXPORT )){
+	if( ofa_stream_format_exists( priv->hub, priv->p1_selected_class, OFA_SFMODE_EXPORT )){
 		found_key = priv->p1_selected_class;
 	}
 
 	g_clear_object( &priv->p2_export_settings );
-	priv->p2_export_settings = ofa_stream_format_new( found_key, OFA_SFMODE_EXPORT );
+	priv->p2_export_settings = ofa_stream_format_new( priv->hub, found_key, OFA_SFMODE_EXPORT );
 	ofa_stream_format_bin_set_format( priv->p2_settings_prefs, priv->p2_export_settings );
 
 	p2_check_for_complete( self );

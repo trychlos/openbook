@@ -36,6 +36,8 @@
 #include <glib-object.h>
 #include <poppler.h>
 
+#include "api/ofa-hub-def.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_IMPORTER_PDF                ( ofa_importer_pdf_get_type())
@@ -83,6 +85,7 @@ typedef struct {
 GType    ofa_importer_pdf_get_type           ( void );
 
 gboolean ofa_importer_pdf_is_willing_to      ( ofaImporterPdf *instance,
+													ofaHub *hub,
 													const gchar *uri,
 													const GList *accepted_contents );
 

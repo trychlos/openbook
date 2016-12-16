@@ -1314,15 +1314,15 @@ p5_do_display( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p5_updatable = TRUE;
 	g_clear_object( &priv->p5_import_settings );
 
-	priv->p5_import_settings = ofa_iimporter_get_default_format( priv->p3_importer_obj, &priv->p5_updatable );
+	priv->p5_import_settings = ofa_iimporter_get_default_format( priv->p3_importer_obj, priv->hub, &priv->p5_updatable );
 
 	if( !priv->p5_import_settings ){
 		found_key = NULL;
 		class_name = g_type_name( priv->p2_selected_type );
-		if( ofa_stream_format_exists( class_name, OFA_SFMODE_IMPORT )){
+		if( ofa_stream_format_exists( priv->hub, class_name, OFA_SFMODE_IMPORT )){
 			found_key = class_name;
 		}
-		priv->p5_import_settings = ofa_stream_format_new( found_key, OFA_SFMODE_IMPORT );
+		priv->p5_import_settings = ofa_stream_format_new( priv->hub, found_key, OFA_SFMODE_IMPORT );
 		if( !found_key ){
 			ofa_stream_format_set_name( priv->p5_import_settings, class_name );
 		}

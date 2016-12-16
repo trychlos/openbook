@@ -63,7 +63,7 @@ typedef struct {
 typedef struct _sParser                    sParser;
 
 #define IMPORTER_CANON_NAME               "Boursorama.pdf importer"
-#define IMPORTER_VERSION                  "2015.2"
+#define IMPORTER_VERSION                  "2016.3"
 
 /* a data structure to host head detail line datas
  */
@@ -97,10 +97,10 @@ static void             iident_iface_init( myIIdentInterface *iface );
 static gchar           *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar           *iident_get_version( const myIIdent *instance, void *user_data );
 static void             iimporter_iface_init( ofaIImporterInterface *iface );
-static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance );
-static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
-static gboolean         is_willing_to_parse( const ofaImporterPdfBourso *self, const gchar *uri );
-static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_updatable );
+static const GList     *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub );
+static gboolean         iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type );
+static gboolean         is_willing_to_parse( const ofaImporterPdfBourso *self, ofaHub *hub, const gchar *uri );
+static ofaStreamFormat *iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolean *is_updatable );
 static GSList          *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList          *do_parse( ofaImporterPdfBourso *self, ofsImporterParms *parms, gchar **msgerr );
 static gboolean         bourso_pdf_v1_check( const ofaImporterPdfBourso *self, const sParser *parser, const ofaStreamFormat *format, const gchar *uri );
@@ -111,7 +111,7 @@ static GList           *bourso_pdf_v1_parse_lines_rough( ofaImporterPdfBourso *s
 static GList           *bourso_pdf_v1_parse_lines_merge( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *rough_list );
 static GSList          *bourso_pdf_v1_parse_lines_build( ofaImporterPdfBourso *self, const sParser *parser, ofsImporterParms *parms, GList *filtered_list );
 static sParser         *get_willing_to_parser( const ofaImporterPdfBourso *self, const ofaStreamFormat *format, const gchar *uri );
-static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfBourso *self );
+static ofaStreamFormat *get_default_stream_format( const ofaImporterPdfBourso *self, ofaHub *hub );
 static sLine           *find_line( GList **lines, gdouble acceptable_diff, gdouble y );
 static void             free_line( sLine *line );
 static gchar           *get_amount( ofsPdfRC *rc );
@@ -251,7 +251,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 }
 
 static const GList *
-iimporter_get_accepted_contents( const ofaIImporter *instance )
+iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
 {
 	if( !st_accepted_contents ){
 		st_accepted_contents = g_list_prepend( NULL, "application/pdf" );
@@ -261,13 +261,13 @@ iimporter_get_accepted_contents( const ofaIImporter *instance )
 }
 
 static gboolean
-iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type )
+iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type )
 {
 	gboolean ok;
 
-	ok = ofa_importer_pdf_is_willing_to( OFA_IMPORTER_PDF( instance ), uri, iimporter_get_accepted_contents( instance )) &&
+	ok = ofa_importer_pdf_is_willing_to( OFA_IMPORTER_PDF( instance ), hub, uri, iimporter_get_accepted_contents( instance, hub )) &&
 			type == OFO_TYPE_BAT &&
-			is_willing_to_parse( OFA_IMPORTER_PDF_BOURSO( instance ), uri );
+			is_willing_to_parse( OFA_IMPORTER_PDF_BOURSO( instance ), hub, uri );
 
 	return( ok );
 }
@@ -278,12 +278,12 @@ iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType t
  * Returns: %TRUE if willing to import.
  */
 static gboolean
-is_willing_to_parse( const ofaImporterPdfBourso *self, const gchar *uri )
+is_willing_to_parse( const ofaImporterPdfBourso *self, ofaHub *hub, const gchar *uri )
 {
 	ofaStreamFormat *format;
 	sParser *parser;
 
-	format = get_default_stream_format( self );
+	format = get_default_stream_format( self, hub );
 
 	parser = get_willing_to_parser( self, format, uri );
 
@@ -293,11 +293,11 @@ is_willing_to_parse( const ofaImporterPdfBourso *self, const gchar *uri )
 }
 
 static ofaStreamFormat *
-iimporter_get_default_format( const ofaIImporter *instance, gboolean *updatable )
+iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolean *updatable )
 {
 	ofaStreamFormat *format;
 
-	format = get_default_stream_format( OFA_IMPORTER_PDF_BOURSO( instance ));
+	format = get_default_stream_format( OFA_IMPORTER_PDF_BOURSO( instance ), hub );
 
 	if( updatable ){
 		*updatable = FALSE;
@@ -833,11 +833,11 @@ get_willing_to_parser( const ofaImporterPdfBourso *self, const ofaStreamFormat *
 }
 
 static ofaStreamFormat *
-get_default_stream_format( const ofaImporterPdfBourso *self )
+get_default_stream_format( const ofaImporterPdfBourso *self, ofaHub *hub )
 {
 	ofaStreamFormat *format;
 
-	format = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+	format = ofa_stream_format_new( hub, NULL, OFA_SFMODE_IMPORT );
 
 	ofa_stream_format_set( format,
 			TRUE,  "UTF-8",

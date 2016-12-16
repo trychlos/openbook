@@ -153,7 +153,7 @@ ofa_iimporter_find_willing_to( ofaHub *hub, const gchar *uri, GType type )
 	importers = ofa_hub_get_for_type( hub, OFA_TYPE_IIMPORTER );
 	for( it=importers ; it ; it=it->next ){
 		g_debug( "%s: importer=%p (%s)", thisfn, it->data, G_OBJECT_TYPE_NAME( it->data ));
-		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), uri, type )){
+		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), hub, uri, type )){
 			willing_to = g_list_prepend( willing_to, g_object_ref( it->data ));
 		}
 	}
@@ -272,19 +272,21 @@ ofa_iimporter_get_version( const ofaIImporter *instance )
 /**
  * ofa_iimporter_get_accepted_contents:
  * @instance: this #ofaIImporter instance.
+ * @hub: the #ofaHub object of the application.
  *
  * Returns: the list of mimetypes the @instance importer is able to
  * deal with.
  */
 const GList *
-ofa_iimporter_get_accepted_contents( const ofaIImporter *instance )
+ofa_iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
 {
 	static const gchar *thisfn = "ofa_iimporter_get_accepted_contents";
 
 	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents ){
-		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents( instance ));
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_accepted_contents( instance, hub ));
 	}
 
 	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_accepted_contents()' method",
@@ -295,19 +297,23 @@ ofa_iimporter_get_accepted_contents( const ofaIImporter *instance )
 /**
  * ofa_iimporter_get_accept_content:
  * @instance: this #ofaIImporter instance.
+ * @hub: the #ofaHub object of the application.
  * @content: the (guessed) mimetype of the imported file.
  *
  * Returns: %TRUE if the @instance accepts the @content.
  */
 gboolean
-ofa_iimporter_get_accept_content( const ofaIImporter *instance, const gchar *content )
+ofa_iimporter_get_accept_content( const ofaIImporter *instance, ofaHub *hub, const gchar *content )
 {
 	gboolean accept;
 	const GList *contents, *it;
 
+	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
 	g_debug( "ofa_iimporter_get_accept_content: content=%s", content );
 	accept = FALSE;
-	contents = ofa_iimporter_get_accepted_contents( instance );
+	contents = ofa_iimporter_get_accepted_contents( instance, hub );
 	for( it=contents ; it ; it=it->next ){
 		g_debug( "ofa_iimporter_get_accept_content: it_data=%s", ( const gchar * ) it->data );
 		if( !my_collate(( const gchar * ) it->data, content )){
@@ -322,6 +328,7 @@ ofa_iimporter_get_accept_content( const ofaIImporter *instance, const gchar *con
 /**
  * ofa_iimporter_get_default_format:
  * @instance: this #ofaIImporter instance.
+ * @hub: the #ofaHub object of the application.
  * @is_user_modifiable: [allow-none][out]: whether the returned
  *  #ofaStreamFormat (if any) is modifiable by the user.
  *
@@ -330,14 +337,15 @@ ofa_iimporter_get_accept_content( const ofaIImporter *instance, const gchar *con
  * Since: version 1.
  */
 ofaStreamFormat *
-ofa_iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_user_modifiable )
+ofa_iimporter_get_default_format( const ofaIImporter *instance, ofaHub *hub, gboolean *is_user_modifiable )
 {
 	static const gchar *thisfn = "ofa_iimporter_get_default_format";
 
 	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	if( OFA_IIMPORTER_GET_INTERFACE( instance )->get_default_format ){
-		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_default_format( instance, is_user_modifiable ));
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->get_default_format( instance, hub, is_user_modifiable ));
 	}
 
 	g_info( "%s: ofaIImporter's %s implementation does not provide 'get_default_format()' method",
@@ -348,20 +356,22 @@ ofa_iimporter_get_default_format( const ofaIImporter *instance, gboolean *is_use
 /**
  * ofa_iimporter_is_willing_to:
  * @instance: this #ofaIImporter instance.
+ * @hub: the #ofaHub object of the application.
  * @uri: [allow-none]: the uri of the stream to be imported.
  * @type: [allow-none]: the candidate target GType.
  *
  * Returns: %TRUE if the @instance is willing to import @uri to @type.
  */
 gboolean
-ofa_iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type )
+ofa_iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type )
 {
 	static const gchar *thisfn = "ofa_iimporter_is_willing_to";
 
 	g_return_val_if_fail( instance && OFA_IS_IIMPORTER( instance ), FALSE );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	if( OFA_IIMPORTER_GET_INTERFACE( instance )->is_willing_to ){
-		return( OFA_IIMPORTER_GET_INTERFACE( instance )->is_willing_to( instance, uri, type ));
+		return( OFA_IIMPORTER_GET_INTERFACE( instance )->is_willing_to( instance, hub, uri, type ));
 	}
 
 	g_info( "%s: ofaIImporter's %s implementation does not provide 'is_willing_to()' method",

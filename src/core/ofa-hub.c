@@ -1131,7 +1131,7 @@ ofa_hub_get_willing_to( ofaHub *hub, const gchar *uri, GType type )
 	importers = ofa_extender_collection_get_for_type( extenders, OFA_TYPE_IIMPORTER );
 
 	for( it=importers ; it ; it=it->next ){
-		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), uri, type )){
+		if( ofa_iimporter_is_willing_to( OFA_IIMPORTER( it->data ), hub, uri, type )){
 			found = OFA_IIMPORTER( it->data );
 			break;
 		}

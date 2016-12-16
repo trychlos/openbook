@@ -598,7 +598,7 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_stream_format_new( NULL, OFA_SFMODE_EXPORT );
+	settings = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_EXPORT );
 	priv->export_settings = ofa_stream_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
@@ -639,7 +639,7 @@ init_import_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p6-import-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+	settings = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_IMPORT );
 	priv->import_settings = ofa_stream_format_bin_new( settings );
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));

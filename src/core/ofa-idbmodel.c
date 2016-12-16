@@ -861,7 +861,7 @@ import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import )
 			g_free( str );
 			my_iprogress_start_progress( MY_IPROGRESS( self ), self, label, FALSE );
 
-			settings = ofa_stream_format_new( NULL, OFA_SFMODE_IMPORT );
+			settings = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_IMPORT );
 			ofa_stream_format_set( settings,
 										TRUE,  "UTF-8", 				/* charmap */
 										TRUE,  MY_DATE_SQL, 			/* date format */

@@ -98,16 +98,19 @@ typedef struct {
 	/**
 	 * get_accepted_contents:
 	 * @instance: the #ofaIImporter provider.
+	 * @hub: the #ofaHub object of the application.
 	 *
 	 * Returns: a list of accepted mimetypes content.
 	 *
 	 * Since: version 1.
 	 */
-	const GList *     ( *get_accepted_contents )( const ofaIImporter *instance );
+	const GList *     ( *get_accepted_contents )( const ofaIImporter *instance,
+														ofaHub *hub );
 
 	/**
 	 * is_willing_to:
 	 * @instance: the #ofaIImporter provider.
+	 * @hub: the #ofaHub object of the application.
 	 * @uri: [allow-none]: the imported uri.
 	 * @type: [allow-none]: the candidate GType.
 	 *
@@ -116,12 +119,14 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	gboolean          ( *is_willing_to )        ( const ofaIImporter *instance,
+														ofaHub *hub,
 														const gchar *uri,
 														GType type );
 
 	/**
 	 * get_default_format:
 	 * @instance: the #ofaIImporter provider.
+	 * @hub: the #ofaHub object of the application.
 	 * @is_user_modifiable: whether the returned format is modifiable
 	 *  by the user.
 	 *
@@ -130,6 +135,7 @@ typedef struct {
 	 * Since: version 1.
 	 */
 	ofaStreamFormat * ( *get_default_format )   ( const ofaIImporter *instance,
+														ofaHub *hub,
 														gboolean *is_user_modifiable );
 
 	/**
@@ -216,16 +222,20 @@ gchar           *ofa_iimporter_get_display_name          ( const ofaIImporter *i
 
 gchar           *ofa_iimporter_get_version               ( const ofaIImporter *instance );
 
-const GList     *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance );
+const GList     *ofa_iimporter_get_accepted_contents     ( const ofaIImporter *instance,
+																ofaHub *hub );
 
 gboolean         ofa_iimporter_get_accept_content        ( const ofaIImporter *instance,
-															const gchar *content );
+																ofaHub *hub,
+																const gchar *content );
 
 gboolean         ofa_iimporter_is_willing_to             ( const ofaIImporter *instance,
+																ofaHub *hub,
 																const gchar *uri,
 																GType type );
 
 ofaStreamFormat *ofa_iimporter_get_default_format        ( const ofaIImporter *instance,
+																ofaHub *hub,
 																gboolean *is_user_modifiable );
 
 guint            ofa_iimporter_import                    ( ofaIImporter *instance,

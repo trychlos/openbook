@@ -30,6 +30,8 @@
 
 #include "my/my-utils.h"
 
+#include "api/ofa-hub.h"
+
 #include "importers/ofa-importer-txt.h"
 
 /* private instance data
@@ -108,6 +110,7 @@ ofa_importer_txt_class_init( ofaImporterTxtClass *klass )
 /**
  * ofa_importer_txt_is_willing_to:
  * @instance: a #ofaImporterTxt instance.
+ * @hub: the #ofaHub object of the application.
  * @uri: the uri to the filename to be imported.
  * @accepted_contents: the #GList of the accepted mimetypes.
  *
@@ -115,7 +118,7 @@ ofa_importer_txt_class_init( ofaImporterTxtClass *klass )
  * @accepted_contents.
  */
 gboolean
-ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance, const gchar *uri, const GList *accepted_contents )
+ofa_importer_txt_is_willing_to( const ofaImporterTxt *instance, ofaHub *hub, const gchar *uri, const GList *accepted_contents )
 {
 	gchar *filename, *content;
 	gboolean ok;

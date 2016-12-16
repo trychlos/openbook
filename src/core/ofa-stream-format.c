@@ -33,13 +33,17 @@
 #include "my/my-date.h"
 #include "my/my-utils.h"
 
-#include "api/ofa-settings.h"
+#include "api/ofa-hub.h"
 #include "api/ofa-stream-format.h"
 
 /* private instance data
  */
 typedef struct {
 	gboolean     dispose_has_run;
+
+	/* initialization
+	 */
+	ofaHub      *hub;
 
 	/* when serialized in user preferences
 	 */
@@ -162,6 +166,9 @@ ofa_stream_format_class_init( ofaStreamFormatClass *klass )
  * ofa_stream_format_get_default_name:
  *
  * Returns: the default name.
+ *
+ * The returned name is owned by the #ofaStreamFormat class and should
+ * not be released by the caller.
  */
 const gchar *
 ofa_stream_format_get_default_name( void )
@@ -182,8 +189,12 @@ ofa_stream_format_get_default_mode( void )
 
 /**
  * ofa_stream_format_get_mode_str:
+ * @mode: a #ofeSFMode mode.
  *
  * Returns: the associated non-localized string.
+ *
+ * The returned string is owned by the #ofaStreamFormat class and should
+ * not be released by the caller.
  */
 const gchar *
 ofa_stream_format_get_mode_str( ofeSFMode mode )
@@ -201,8 +212,12 @@ ofa_stream_format_get_mode_str( ofeSFMode mode )
 
 /**
  * ofa_stream_format_get_mode_localestr:
+ * @mode: a #ofeSFMode mode.
  *
- * Returns: the associated ocalized string.
+ * Returns: the associated localized string.
+ *
+ * The returned string is owned by the #ofaStreamFormat class and should
+ * not be released by the caller.
  */
 const gchar *
 ofa_stream_format_get_mode_localestr( ofeSFMode mode )
@@ -220,6 +235,7 @@ ofa_stream_format_get_mode_localestr( ofeSFMode mode )
 
 /**
  * ofa_stream_format_exists:
+ * @hub: the #ofaHub object of the application.
  * @name: the user-provided name for this format.
  * @mode: the target mode for this format.
  *
@@ -227,16 +243,19 @@ ofa_stream_format_get_mode_localestr( ofeSFMode mode )
  * settings.
  */
 gboolean
-ofa_stream_format_exists( const gchar *name, ofeSFMode mode )
+ofa_stream_format_exists( ofaHub *hub, const gchar *name, ofeSFMode mode )
 {
+	myISettings *settings;
 	gboolean exists;
 	gchar *keyname, *str;
 
-	exists = FALSE;
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
+	exists = FALSE;
+	settings = ofa_hub_get_user_settings( hub );
 	keyname = get_key_name( name, mode );
 	if( my_strlen( keyname )){
-		str = ofa_settings_user_get_string( keyname );
+		str = my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, keyname );
 		exists = my_strlen( str ) > 0;
 		g_free( str );
 	}
@@ -246,6 +265,7 @@ ofa_stream_format_exists( const gchar *name, ofeSFMode mode )
 
 /**
  * ofa_stream_format_new:
+ * @hub: the #ofaHub object of the application.
  * @name: [allow-none]: the user-provided name for this format;
  *  defaults to 'Default'.
  * @mode: [allow-none]: the target mode for this format;
@@ -254,11 +274,18 @@ ofa_stream_format_exists( const gchar *name, ofeSFMode mode )
  * Returns: a newly allocated #ofaStreamFormat object.
  */
 ofaStreamFormat *
-ofa_stream_format_new( const gchar *name, ofeSFMode mode )
+ofa_stream_format_new( ofaHub *hub, const gchar *name, ofeSFMode mode )
 {
 	ofaStreamFormat *self;
+	ofaStreamFormatPrivate *priv;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
 	self = g_object_new( OFA_TYPE_STREAM_FORMAT, NULL );
+
+	priv = ofa_stream_format_get_instance_private( self );
+
+	priv->hub = hub;
 
 	do_init( self, name, mode );
 
@@ -276,9 +303,10 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 {
 	ofaStreamFormatPrivate *priv;
 	gchar *keyname;
-	GList *prefs_list, *it;
+	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *text;
+	myISettings *settings;
 
 	priv = ofa_stream_format_get_instance_private( self );
 
@@ -297,10 +325,11 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	keyname = get_key_name( priv->name, priv->mode );
 	g_return_if_fail( my_strlen( keyname ));
 
-	prefs_list = ofa_settings_user_get_string_list( keyname );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
 
 	/* indicators */
-	it = prefs_list;
+	it = strlist;
 	cstr = ( it && it->data ) ? ( const gchar * ) it->data : NULL;
 	priv->indicators = cstr ? atoi( cstr ) : OFA_SFHAS_ALL;
 
@@ -356,24 +385,28 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	g_free( text );
 	//g_debug( "do_init: strdelim=%d", priv->string_delim );
 
-	if( prefs_list ){
-		ofa_settings_free_string_list( prefs_list );
-	}
+	my_isettings_free_string_list( settings, strlist );
 
 	g_free( keyname );
 }
 
 /**
  * ofa_stream_format_get_name:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the name of the @format.
+ *
+ * The returned string is owned by the @format instance, and should not
+ * be released by the caller.
  */
 const gchar *
-ofa_stream_format_get_name( ofaStreamFormat *settings )
+ofa_stream_format_get_name( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), NULL );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), NULL );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -382,15 +415,18 @@ ofa_stream_format_get_name( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_mode:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the #ofeSFMode mode of the @format.
  */
 ofeSFMode
-ofa_stream_format_get_mode( ofaStreamFormat *settings )
+ofa_stream_format_get_mode( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), 0 );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -399,15 +435,18 @@ ofa_stream_format_get_mode( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_has_charmap:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: %TRUE if @format specifies a charmap.
  */
 gboolean
-ofa_stream_format_get_has_charmap( ofaStreamFormat *settings )
+ofa_stream_format_get_has_charmap( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -416,15 +455,24 @@ ofa_stream_format_get_has_charmap( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_charmap:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the name of the charmap specified by @format.
+ *
+ * This is only relevant if @format specifies a charmap
+ * (see #ofa_stream_format_get_has_charmap() method).
+ *
+ * The returned string is owned by the @format instance, and should not
+ * be released by the caller.
  */
 const gchar *
-ofa_stream_format_get_charmap( ofaStreamFormat *settings )
+ofa_stream_format_get_charmap( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), NULL );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), NULL );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -433,15 +481,18 @@ ofa_stream_format_get_charmap( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_has_date:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: %TRUE if @format specifies a date format.
  */
 gboolean
-ofa_stream_format_get_has_date( ofaStreamFormat *settings )
+ofa_stream_format_get_has_date( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -450,15 +501,21 @@ ofa_stream_format_get_has_date( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_date_format:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the date format specified by @format.
+ *
+ * This is only relevant if @format specifies a date format
+ * (see #ofa_stream_format_get_has_date() method).
  */
 myDateFormat
-ofa_stream_format_get_date_format( ofaStreamFormat *settings )
+ofa_stream_format_get_date_format( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), -1 );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), -1 );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, -1 );
 
@@ -467,15 +524,18 @@ ofa_stream_format_get_date_format( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_has_thousand:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: %TRUE if @format specifies a thousand separator.
  */
 gboolean
-ofa_stream_format_get_has_thousand( ofaStreamFormat *settings )
+ofa_stream_format_get_has_thousand( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -484,15 +544,21 @@ ofa_stream_format_get_has_thousand( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_thousand_sep:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the thousand separator specified by @format.
+ *
+ * This is only relevant if @format specifies a thousand separator
+ * (see #ofa_stream_format_get_has_thousand() method).
  */
 gchar
-ofa_stream_format_get_thousand_sep(  ofaStreamFormat *settings )
+ofa_stream_format_get_thousand_sep(  ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), 0 );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -501,15 +567,18 @@ ofa_stream_format_get_thousand_sep(  ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_has_decimal:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: %TRUE if @format specifies a decimal separator.
  */
 gboolean
-ofa_stream_format_get_has_decimal( ofaStreamFormat *settings )
+ofa_stream_format_get_has_decimal( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -518,15 +587,21 @@ ofa_stream_format_get_has_decimal( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_decimal_sep:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the decimal separator specified by @format.
+ *
+ * This is only relevant if @format specifies a decimal separator
+ * (see #ofa_stream_format_get_has_decimal() method).
  */
 gchar
-ofa_stream_format_get_decimal_sep( ofaStreamFormat *settings )
+ofa_stream_format_get_decimal_sep( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), 0 );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -535,15 +610,18 @@ ofa_stream_format_get_decimal_sep( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_has_field:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: %TRUE if @format specifies a field separator.
  */
 gboolean
-ofa_stream_format_get_has_field( ofaStreamFormat *settings )
+ofa_stream_format_get_has_field( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -552,15 +630,21 @@ ofa_stream_format_get_has_field( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_field_sep:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the field separator specified by @format.
+ *
+ * This is only relevant if @format specifies a field separator
+ * (see #ofa_stream_format_get_has_field() method).
  */
 gchar
-ofa_stream_format_get_field_sep( ofaStreamFormat *settings )
+ofa_stream_format_get_field_sep( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), 0 );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -569,15 +653,18 @@ ofa_stream_format_get_field_sep( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_has_strdelim:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: %TRUE if @format specifies a string delimiter.
  */
 gboolean
-ofa_stream_format_get_has_strdelim( ofaStreamFormat *settings )
+ofa_stream_format_get_has_strdelim( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -586,15 +673,21 @@ ofa_stream_format_get_has_strdelim( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_string_delim:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the string delimiter specified by @format.
+ *
+ * This is only relevant if @format specifies a string delimiter
+ * (see #ofa_stream_format_get_has_strdelim() method).
  */
 gchar
-ofa_stream_format_get_string_delim( ofaStreamFormat *settings )
+ofa_stream_format_get_string_delim( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), 0 );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 
@@ -603,15 +696,18 @@ ofa_stream_format_get_string_delim( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_with_headers:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: %TRUE if @format specifies headers.
  */
 gboolean
-ofa_stream_format_get_with_headers( ofaStreamFormat *settings )
+ofa_stream_format_get_with_headers( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), FALSE );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), FALSE );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 	g_return_val_if_fail( priv->mode == OFA_SFMODE_EXPORT, FALSE );
@@ -621,15 +717,21 @@ ofa_stream_format_get_with_headers( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_get_headers_count:
+ * @format: this #ofaStreamFormat instance.
+ *
+ * Returns: the count of headers.
+ *
+ * This is only relevant if @format specifies its headers
+ * (see #ofa_stream_format_get_with_headers() method).
  */
 gint
-ofa_stream_format_get_headers_count( ofaStreamFormat *settings )
+ofa_stream_format_get_headers_count( ofaStreamFormat *format )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ), 0 );
+	g_return_val_if_fail( format && OFA_IS_STREAM_FORMAT( format ), 0 );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_val_if_fail( !priv->dispose_has_run, 0 );
 	g_return_val_if_fail( priv->mode == OFA_SFMODE_IMPORT, FALSE );
@@ -639,18 +741,29 @@ ofa_stream_format_get_headers_count( ofaStreamFormat *settings )
 
 /**
  * ofa_stream_format_set:
- * @settings:
- * @charmap:
- * @date_format:
- * @thousand_sep:
- * @decimal_sep:
- * @field_sep:
+ * @format: this #ofaStreamFormat instance.
+ * @has_charmap: whether @format specifies a charmap.
+ * @charmap: [allow-none]: if @has_charmap is %TRUE, then the name of
+ *  the charmap.
+ * @has_datefmt: whether @format specifies a date format.
+ * @datefmt: [allow-none]: if @has_datefmt is %TRUE, then the date format.
+ * @has_thousand_sep: whether @format specifies a thousand separator.
+ * @thousand_sep: if @has_thousand_sep is %TRUE, then the thousand separator.
+ * @has_decimal_sep: whether @format specifies a decimal separator.
+ * @decimal_sep: if @has_decimal_sep is %TRUE, then the decimal separator.
+ * @has_field_sep: whether @format specifies a field separator.
+ * @field_sep: if @has_field_sep is %TRUE, then the field separator.
+ * @has_string_delim: whether @format specifies a string delimiter.
+ * @string_delim: if @has_string_delim is %TRUE, then the string delimiter.
  * @count_headers:
  *  is headers count on import,
  *  is with_headers if greater than zero on export.
+ *
+ * Set the @format with the provided datas, and write it in the user
+ * settings.
  */
 void
-ofa_stream_format_set( ofaStreamFormat *settings,
+ofa_stream_format_set( ofaStreamFormat *format,
 								gboolean has_charmap, const gchar *charmap,
 								gboolean has_datefmt, myDateFormat datefmt,
 								gboolean has_thousand_sep, gchar thousand_sep,
@@ -664,10 +777,11 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 	GList *prefs_list;
 	gchar *sdate, *sthousand, *sdecimal, *sfield, *sheaders, *sstrdelim;
 	gchar *keyname, *sinds;
+	myISettings *settings;
 
-	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
+	g_return_if_fail( format && OFA_IS_STREAM_FORMAT( format ));
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -751,10 +865,11 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 	prefs_list = g_list_prepend( prefs_list, sinds );
 
 	/* save in user preferences */
+	settings = ofa_hub_get_user_settings( priv->hub );
 	keyname = get_key_name( priv->name, priv->mode );
 	g_debug( "%s: keyname=%s", thisfn, keyname );
 	g_return_if_fail( my_strlen( keyname ));
-	ofa_settings_user_set_string_list( keyname, prefs_list );
+	my_isettings_set_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname, prefs_list );
 	g_free( keyname );
 
 	g_list_free( prefs_list );
@@ -769,24 +884,24 @@ ofa_stream_format_set( ofaStreamFormat *settings,
 
 /**
  * ofa_stream_format_set_name:
- * @settings:
- * @name:
+ * @format: this #ofaStreamFormat instance.
+ * @name: the name of the @format.
  *
- * Change the name of the settings.
+ * Change the name of the format.
  * This will so also change the key in user settings.
  *
  * This let us read a default user preference, and then write to a new
  * (hopefully more specific) user preference.
  */
 void
-ofa_stream_format_set_name( ofaStreamFormat *settings, const gchar *name )
+ofa_stream_format_set_name( ofaStreamFormat *format, const gchar *name )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
+	g_return_if_fail( format && OFA_IS_STREAM_FORMAT( format ));
 	g_return_if_fail( my_strlen( name ));
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -796,20 +911,20 @@ ofa_stream_format_set_name( ofaStreamFormat *settings, const gchar *name )
 
 /**
  * ofa_stream_format_set_mode:
- * @settings:
- * @mode:
+ * @format: this #ofaStreamFormat instance.
+ * @mode: the #ofeSFMode mode.
  *
  * Set the import/export mode.
  */
 void
-ofa_stream_format_set_mode( ofaStreamFormat *settings, ofeSFMode mode )
+ofa_stream_format_set_mode( ofaStreamFormat *format, ofeSFMode mode )
 {
 	ofaStreamFormatPrivate *priv;
 
-	g_return_if_fail( settings && OFA_IS_STREAM_FORMAT( settings ));
+	g_return_if_fail( format && OFA_IS_STREAM_FORMAT( format ));
 	g_return_if_fail( mode == OFA_SFMODE_EXPORT || mode == OFA_SFMODE_IMPORT );
 
-	priv = ofa_stream_format_get_instance_private( settings );
+	priv = ofa_stream_format_get_instance_private( format );
 
 	g_return_if_fail( !priv->dispose_has_run );
 

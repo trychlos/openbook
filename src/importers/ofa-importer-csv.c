@@ -52,8 +52,8 @@ static void         iident_iface_init( myIIdentInterface *iface );
 static gchar       *iident_get_canon_name( const myIIdent *instance, void *user_data );
 static gchar       *iident_get_version( const myIIdent *instance, void *user_data );
 static void         iimporter_iface_init( ofaIImporterInterface *iface );
-static const GList *iimporter_get_accepted_contents( const ofaIImporter *instance );
-static gboolean     iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type );
+static const GList *iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub );
+static gboolean     iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type );
 static GSList      *iimporter_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList      *do_parse( ofaIImporter *instance, ofsImporterParms *parms, gchar **msgerr );
 static GSList      *split_lines_by_field( GSList *lines, ofaStreamFormat *settings, gchar **msgerr );
@@ -169,7 +169,7 @@ iimporter_iface_init( ofaIImporterInterface *iface )
 }
 
 static const GList *
-iimporter_get_accepted_contents( const ofaIImporter *instance )
+iimporter_get_accepted_contents( const ofaIImporter *instance, ofaHub *hub )
 {
 	if( !st_accepted_contents ){
 		st_accepted_contents = g_list_prepend( NULL, "text/csv" );
@@ -182,7 +182,7 @@ iimporter_get_accepted_contents( const ofaIImporter *instance )
  * just check that the provided file is a csv one
  */
 static gboolean
-iimporter_is_willing_to( const ofaIImporter *instance, const gchar *uri, GType type )
+iimporter_is_willing_to( const ofaIImporter *instance, ofaHub *hub, const gchar *uri, GType type )
 {
 	gchar *filename, *content;
 	gboolean ok;

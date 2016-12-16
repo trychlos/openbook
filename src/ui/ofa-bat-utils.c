@@ -98,7 +98,7 @@ ofa_bat_utils_import( ofaIGetter *getter, GtkWindow *parent )
 			parms.stop = TRUE;
 			parms.uri = uri;
 			parms.type = OFO_TYPE_BAT;
-			parms.format = ofa_iimporter_get_default_format( importer, NULL );
+			parms.format = ofa_iimporter_get_default_format( importer, hub, NULL );
 			parms.importable_data = &sbat;
 
 			if( ofa_iimporter_import( importer, &parms ) == 0 ){
