@@ -76,6 +76,8 @@ libofa_recurrent_la_SOURCES = \
 	ofa-recurrent-execlose.h							\
 	ofa-recurrent-generate.c							\
 	ofa-recurrent-generate.h							\
+	ofa-recurrent-ident.c								\
+	ofa-recurrent-ident.h								\
 	ofa-recurrent-main.c								\
 	ofa-recurrent-main.h								\
 	ofa-recurrent-model-page.c							\

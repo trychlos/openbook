@@ -28,12 +28,10 @@
 
 #include <gtk/gtk.h>
 
-#include "my/my-iident.h"
-
 #include "api/ofa-extension.h"
 
 #include "ofa-recurrent-dbmodel.h"
-#include "ofa-recurrent-execlose.h"
+#include "ofa-recurrent-ident.h"
 #include "ofa-recurrent-main.h"
 #include "ofa-recurrent-tree-adder.h"
 #include "ofo-rec-period.h"
@@ -41,153 +39,11 @@
 #include "ofo-recurrent-model.h"
 #include "ofo-recurrent-run.h"
 
-/*
- * The part below defines and implements the GTypeModule-derived class
- *  for this library.
- * See infra for the software extension API implementation.
- */
-#define OFA_TYPE_RECURRENT_ID                ( ofa_recurrent_id_get_type())
-#define OFA_RECURRENT_ID( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_RECURRENT_ID, ofaRecurrentId ))
-#define OFA_RECURRENT_ID_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_RECURRENT_ID, ofaRecurrentIdClass ))
-#define OFA_IS_RECURRENT_ID( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_RECURRENT_ID ))
-#define OFA_IS_RECURRENT_ID_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_RECURRENT_ID ))
-#define OFA_RECURRENT_ID_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_RECURRENT_ID, ofaRecurrentIdClass ))
+#define EXTENSION_VERSION_NUMBER        2
 
-typedef struct {
-	/*< public members >*/
-	GObject      parent;
-}
-	ofaRecurrentId;
-
-typedef struct {
-	/*< public members >*/
-	GObjectClass parent;
-}
-	ofaRecurrentIdClass;
-
-/* private instance data
- */
-typedef struct {
-	gboolean dispose_has_run;
-}
-	ofaRecurrentIdPrivate;
-
-GType ofa_recurrent_id_get_type( void );
-
-static void   iident_iface_init( myIIdentInterface *iface );
-static gchar *iident_get_display_name( const myIIdent *instance, void *user_data );
-static gchar *iident_get_version( const myIIdent *instance, void *user_data );
-
-G_DEFINE_DYNAMIC_TYPE_EXTENDED( ofaRecurrentId, ofa_recurrent_id, G_TYPE_OBJECT, 0,
-		G_ADD_PRIVATE_DYNAMIC( ofaRecurrentId )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( MY_TYPE_IIDENT, iident_iface_init )
-		G_IMPLEMENT_INTERFACE_DYNAMIC( OFA_TYPE_IEXECLOSE, ofa_recurrent_execlose_iface_init ))
-
-static void
-ofa_recurrent_id_class_finalize( ofaRecurrentIdClass *klass )
-{
-	static const gchar *thisfn = "ofa_recurrent_id_class_finalize";
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-}
-
-static void
-recurrent_id_finalize( GObject *instance )
-{
-	static const gchar *thisfn = "ofa_recurrent_id_finalize";
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
-
-	g_return_if_fail( instance && OFA_IS_RECURRENT_ID( instance ));
-
-	/* free data members here */
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_recurrent_id_parent_class )->finalize( instance );
-}
-
-static void
-recurrent_id_dispose( GObject *instance )
-{
-	ofaRecurrentIdPrivate *priv;
-
-	g_return_if_fail( instance && OFA_IS_RECURRENT_ID( instance ));
-
-	priv = ofa_recurrent_id_get_instance_private( OFA_RECURRENT_ID( instance ));
-
-	if( !priv->dispose_has_run ){
-
-		priv->dispose_has_run = TRUE;
-
-		/* unref instance members here */
-	}
-
-	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_recurrent_id_parent_class )->dispose( instance );
-}
-
-static void
-ofa_recurrent_id_init( ofaRecurrentId *self )
-{
-	static const gchar *thisfn = "ofa_recurrent_id_init";
-	ofaRecurrentIdPrivate *priv;
-
-	g_debug( "%s: instance=%p (%s)",
-			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
-
-	priv = ofa_recurrent_id_get_instance_private( self );
-
-	priv->dispose_has_run = FALSE;
-}
-
-static void
-ofa_recurrent_id_class_init( ofaRecurrentIdClass *klass )
-{
-	static const gchar *thisfn = "ofa_recurrent_id_class_init";
-
-	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
-
-	G_OBJECT_CLASS( klass )->dispose = recurrent_id_dispose;
-	G_OBJECT_CLASS( klass )->finalize = recurrent_id_finalize;
-}
-
-/*
- * myIIdent interface management
- */
-static void
-iident_iface_init( myIIdentInterface *iface )
-{
-	static const gchar *thisfn = "ofa_recurrent_id_iident_iface_init";
-
-	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
-
-	iface->get_display_name = iident_get_display_name;
-	iface->get_version = iident_get_version;
-}
-
-static gchar *
-iident_get_display_name( const myIIdent *instance, void *user_data )
-{
-	return( g_strdup( "Recurrent operations management" ));
-}
-
-static gchar *
-iident_get_version( const myIIdent *instance, void *user_data )
-{
-	return( g_strdup( PACKAGE_VERSION ));
-}
-
-/*
- * The part below implements the software extension API
- */
-
-/*
- * The count of GType types provided by this extension.
- * Each of these GType types must be addressed in #ofa_extension_list_types().
- * Only the GTypeModule has to be registered from #ofa_extension_startup().
- */
-#define TYPES_COUNT	 7
+/* ******************************************************************* *
+ *     The part below implements the software extension API v 2        *
+ * ******************************************************************* */
 
 /*
  * ofa_extension_startup:
@@ -201,40 +57,30 @@ ofa_extension_startup( GTypeModule *module, ofaIGetter *getter )
 
 	g_debug( "%s: module=%p, getter=%p", thisfn, ( void * ) module, ( void * ) getter );
 
-	ofa_recurrent_id_register_type( module );
-
 	ofa_recurrent_main_signal_connect( getter );
 
 	return( TRUE );
 }
 
 /*
- * ofa_extension_list_types:
+ * ofa_extension_enum_types:
  *
- * mandatory starting with API v. 1.
+ * mandatory starting with API v. 2.
  */
-guint
-ofa_extension_list_types( const GType **types )
+void
+ofa_extension_enum_types( ofaExtensionEnumTypesCb cb, void *user_data )
 {
-	static const gchar *thisfn = "recurrent/ofa_extension_list_types";
-	static GType types_list [1+TYPES_COUNT];
-	gint i = 0;
+	static const gchar *thisfn = "recurrent/ofa_extension_enum_types";
 
-	g_debug( "%s: types=%p, count=%u", thisfn, ( void * ) types, TYPES_COUNT );
+	g_debug( "%s: cb=%p, user_data=%p", thisfn, ( void * ) cb, ( void * ) user_data );
 
-	types_list[i++] = OFA_TYPE_RECURRENT_ID;
-	types_list[i++] = OFA_TYPE_RECURRENT_DBMODEL;
-	types_list[i++] = OFA_TYPE_RECURRENT_TREE_ADDER;
-	types_list[i++] = OFO_TYPE_REC_PERIOD;
-	types_list[i++] = OFO_TYPE_RECURRENT_GEN;
-	types_list[i++] = OFO_TYPE_RECURRENT_MODEL;
-	types_list[i++] = OFO_TYPE_RECURRENT_RUN;
-
-	g_return_val_if_fail( i == TYPES_COUNT, 0 );
-	types_list[i] = 0;
-	*types = types_list;
-
-	return( TYPES_COUNT );
+	cb( OFA_TYPE_RECURRENT_IDENT, user_data );
+	cb( OFA_TYPE_RECURRENT_DBMODEL, user_data );
+	cb( OFA_TYPE_RECURRENT_TREE_ADDER, user_data );
+	cb( OFO_TYPE_REC_PERIOD, user_data );
+	cb( OFO_TYPE_RECURRENT_GEN, user_data );
+	cb( OFO_TYPE_RECURRENT_MODEL, user_data );
+	cb( OFO_TYPE_RECURRENT_RUN, user_data );
 }
 
 /*
@@ -248,4 +94,19 @@ ofa_extension_shutdown( void )
 	static const gchar *thisfn = "recurrent/ofa_extension_shutdown";
 
 	g_debug( "%s", thisfn );
+}
+
+/*
+ * ofa_extension_get_version_number:
+ *
+ * optional as of API v. 1.
+ */
+guint
+ofa_extension_get_version_number( void )
+{
+	static const gchar *thisfn = "recurrent/ofa_extension_get_version_number";
+
+	g_debug( "%s: version_number=%u", thisfn, EXTENSION_VERSION_NUMBER );
+
+	return( EXTENSION_VERSION_NUMBER );
 }
