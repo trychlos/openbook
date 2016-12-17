@@ -831,7 +831,7 @@ p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	priv->p4_checks_bin = ofa_check_integrity_bin_new( st_settings );
+	priv->p4_checks_bin = ofa_check_integrity_bin_new( priv->hub, st_settings );
 	gtk_container_add( GTK_CONTAINER( page_widget ), GTK_WIDGET( priv->p4_checks_bin ));
 
 	g_signal_connect( priv->p4_checks_bin, "ofa-done", G_CALLBACK( p4_on_checks_done ), self );
@@ -850,7 +850,7 @@ p4_checks( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widge
 
 	if( !priv->p4_done ){
 		my_iassistant_set_current_page_type( MY_IASSISTANT( self ), GTK_ASSISTANT_PAGE_PROGRESS );
-		ofa_check_integrity_bin_set_hub( priv->p4_checks_bin, priv->hub );
+		ofa_check_integrity_bin_check( priv->p4_checks_bin );
 	}
 }
 

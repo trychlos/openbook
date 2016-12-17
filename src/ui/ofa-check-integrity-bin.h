@@ -89,13 +89,13 @@ typedef struct {
 
 GType                ofa_check_integrity_bin_get_type   ( void ) G_GNUC_CONST;
 
-ofaCheckIntegrityBin *ofa_check_integrity_bin_new       ( const gchar *settings );
+ofaCheckIntegrityBin *ofa_check_integrity_bin_new       ( ofaHub *hub,
+																const gchar *settings_prefix );
 
 void                 ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *bin,
 																gboolean display );
 
-void                 ofa_check_integrity_bin_set_hub    ( ofaCheckIntegrityBin *bin,
-																ofaHub *hub );
+void                 ofa_check_integrity_bin_check      ( ofaCheckIntegrityBin *bin );
 
 gboolean             ofa_check_integrity_bin_get_status ( ofaCheckIntegrityBin *bin );
 

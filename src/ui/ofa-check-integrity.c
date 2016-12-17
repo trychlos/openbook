@@ -225,13 +225,13 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
 
 	/* have the class name as settings key */
-	priv->bin = ofa_check_integrity_bin_new( G_OBJECT_TYPE_NAME( instance ));
+	priv->bin = ofa_check_integrity_bin_new( priv->hub, G_OBJECT_TYPE_NAME( instance ));
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bin ));
 	gtk_widget_show_all( GTK_WIDGET( parent ));
 
 	g_signal_connect( priv->bin, "ofa-done", G_CALLBACK( on_checks_done ), instance );
 
-	ofa_check_integrity_bin_set_hub( priv->bin, priv->hub );
+	ofa_check_integrity_bin_check( priv->bin );
 }
 
 static void
@@ -262,11 +262,9 @@ ofa_check_integrity_check( ofaHub *hub )
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	bin = ofa_check_integrity_bin_new( "ofaCheckIntegrity" );
-
+	bin = ofa_check_integrity_bin_new( hub, "ofaCheckIntegrity" );
 	ofa_check_integrity_bin_set_display( bin, FALSE );
-	ofa_check_integrity_bin_set_hub( bin, hub );
-
+	ofa_check_integrity_bin_check( bin );
 	ok = ofa_check_integrity_bin_get_status( bin );
 
 	g_debug( "%s: ok=%s", thisfn, ok ? "True":"False" );

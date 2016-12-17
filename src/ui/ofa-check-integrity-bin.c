@@ -57,10 +57,13 @@
 typedef struct {
 	gboolean       dispose_has_run;
 
-	/* runtime data
+	/* initialization
 	 */
-	gchar         *settings;
 	ofaHub        *hub;
+	gchar         *settings_prefix;
+
+	/* runtime
+	 */
 	gboolean       display;
 
 	gulong         dossier_errs;
@@ -166,7 +169,7 @@ check_integrity_bin_finalize( GObject *instance )
 	priv = ofa_check_integrity_bin_get_instance_private( OFA_CHECK_INTEGRITY_BIN( instance ));
 
 	g_list_free_full( priv->workers, ( GDestroyNotify ) g_free );
-	g_free( priv->settings );
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_check_integrity_bin_parent_class )->finalize( instance );
@@ -249,18 +252,25 @@ ofa_check_integrity_bin_class_init( ofaCheckIntegrityBinClass *klass )
 
 /**
  * ofa_check_integrity_bin_new:
- * @settings: the prefix of the name where to save the settings.
+ * @hub: the #ofaHub object of the application.
+ * @settings_prefix: the prefix of the name where to save the settings.
+ *
+ * Returns: a new #ofaCheckIntegrityBin instance.
  */
 ofaCheckIntegrityBin *
-ofa_check_integrity_bin_new( const gchar *settings )
+ofa_check_integrity_bin_new( ofaHub *hub, const gchar *settings_prefix )
 {
 	ofaCheckIntegrityBin *bin;
 	ofaCheckIntegrityBinPrivate *priv;
 
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
+
 	bin = g_object_new( OFA_TYPE_CHECK_INTEGRITY_BIN, NULL );
 
 	priv = ofa_check_integrity_bin_get_instance_private( bin );
-	priv->settings = g_strdup( settings );
+
+	priv->hub = hub;
+	priv->settings_prefix = g_strdup( settings_prefix );
 
 	setup_bin( bin );
 	read_settings( bin );
@@ -360,7 +370,7 @@ get_settings_key( ofaCheckIntegrityBin *self )
 
 	priv = ofa_check_integrity_bin_get_instance_private( self );
 
-	key = g_strdup_printf( "%s-%s", priv->settings, st_settings_sufix );
+	key = g_strdup_printf( "%s-%s", priv->settings_prefix, st_settings_sufix );
 
 	return( key );
 }
@@ -383,21 +393,22 @@ ofa_check_integrity_bin_set_display( ofaCheckIntegrityBin *bin, gboolean display
 }
 
 /**
- * ofa_check_integrity_bin_set_hub:
+ * ofa_check_integrity_bin_check:
+ * @bin: this #ofaCheckIntegrityBin instance.
+ *
+ * Runs all checks.
  */
 void
-ofa_check_integrity_bin_set_hub( ofaCheckIntegrityBin *bin, ofaHub *hub )
+ofa_check_integrity_bin_check( ofaCheckIntegrityBin *bin )
 {
 	ofaCheckIntegrityBinPrivate *priv;
 
 	g_return_if_fail( bin && OFA_IS_CHECK_INTEGRITY_BIN( bin ));
-	g_return_if_fail( hub && OFA_IS_HUB( hub ));
 
 	priv = ofa_check_integrity_bin_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	priv->hub = hub;
 	g_idle_add(( GSourceFunc ) do_run, bin );
 }
 
