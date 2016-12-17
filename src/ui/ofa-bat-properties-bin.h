@@ -43,6 +43,7 @@
 
 #include <gtk/gtk.h>
 
+#include "api/ofa-hub-def.h"
 #include "api/ofo-bat-def.h"
 
 #include "ui/ofa-batline-treeview.h"
@@ -70,7 +71,7 @@ typedef struct {
 
 GType                ofa_bat_properties_bin_get_type            ( void ) G_GNUC_CONST;
 
-ofaBatPropertiesBin *ofa_bat_properties_bin_new                 ( void );
+ofaBatPropertiesBin *ofa_bat_properties_bin_new                 ( ofaHub *hub );
 
 void                 ofa_bat_properties_bin_set_settings_key    ( ofaBatPropertiesBin *bin,
 																		const gchar *key );

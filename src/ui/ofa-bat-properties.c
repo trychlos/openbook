@@ -282,7 +282,7 @@ idialog_init( myIDialog *instance )
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "properties-parent" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
-	priv->bat_bin = ofa_bat_properties_bin_new();
+	priv->bat_bin = ofa_bat_properties_bin_new( priv->hub );
 	gtk_container_add( GTK_CONTAINER( parent ), GTK_WIDGET( priv->bat_bin ));
 
 	key = g_strdup_printf( "%s-BatLine", priv->settings_prefix );

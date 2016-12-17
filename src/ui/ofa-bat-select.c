@@ -258,9 +258,10 @@ static void
 idialog_init( myIDialog *instance )
 {
 	static const gchar *thisfn = "ofa_bat_select_idialog_init";
-	read_settings( OFA_BAT_SELECT( instance ));
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
+
+	read_settings( OFA_BAT_SELECT( instance ));
 
 	setup_pane( OFA_BAT_SELECT( instance ));
 	setup_properties( OFA_BAT_SELECT( instance ));
@@ -330,7 +331,7 @@ setup_properties( ofaBatSelect *self )
 	container = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "properties-parent" );
 	g_return_if_fail( container && GTK_IS_CONTAINER( container ));
 
-	priv->bat_bin = ofa_bat_properties_bin_new();
+	priv->bat_bin = ofa_bat_properties_bin_new( priv->hub );
 	my_utils_widget_set_margins( GTK_WIDGET( priv->bat_bin ), 0, 0, 2, 0 );
 	gtk_container_add( GTK_CONTAINER( container ), GTK_WIDGET( priv->bat_bin ));
 

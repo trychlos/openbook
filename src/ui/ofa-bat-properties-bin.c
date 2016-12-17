@@ -56,6 +56,10 @@
 typedef struct {
 	gboolean            dispose_has_run;
 
+	/* initialization
+	 */
+	ofaHub             *hub;
+
 	/* UI
 	 */
 	GtkWidget          *bat_id;
@@ -75,7 +79,6 @@ typedef struct {
 	/* just to make the my_utils_init_..._ex macros happy
 	 */
 	ofoBat             *bat;
-	ofaHub             *hub;
 	gboolean            is_new;
 
 	/* currency is taken from BAT
@@ -158,18 +161,28 @@ ofa_bat_properties_bin_class_init( ofaBatPropertiesBinClass *klass )
 
 /**
  * ofa_bat_properties_bin_new:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: a new #ofaBatPropertiesBin instance.
  */
 ofaBatPropertiesBin *
-ofa_bat_properties_bin_new( void )
+ofa_bat_properties_bin_new( ofaHub *hub )
 {
-	ofaBatPropertiesBin *self;
+	ofaBatPropertiesBin *bin;
+	ofaBatPropertiesBinPrivate *priv;
 
-	self = g_object_new( OFA_TYPE_BAT_PROPERTIES_BIN, NULL );
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), NULL );
 
-	setup_bin( self );
-	setup_treeview( self );
+	bin = g_object_new( OFA_TYPE_BAT_PROPERTIES_BIN, NULL );
 
-	return( self );
+	priv = ofa_bat_properties_bin_get_instance_private( bin );
+
+	priv->hub = hub;
+
+	setup_bin( bin );
+	setup_treeview( bin );
+
+	return( bin );
 }
 
 static void
@@ -369,7 +382,6 @@ ofa_bat_properties_bin_set_bat( ofaBatPropertiesBin *bin, ofoBat *bat )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->bat = bat;
-	priv->hub = ofo_base_get_hub( OFO_BASE( bat ));
 	priv->currency = NULL;
 
 	display_bat_properties( bin, bat );

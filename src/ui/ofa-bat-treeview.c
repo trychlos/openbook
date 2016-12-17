@@ -612,8 +612,6 @@ tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTr
 			break;
 	}
 
-	g_debug( "pnga=%p, pngb=%p", pnga, pngb );
-
 	g_free( ida );
 	g_free( uria );
 	g_free( formata );
