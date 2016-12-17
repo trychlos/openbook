@@ -349,6 +349,30 @@ remove_row_by_mnemo( ofaRecurrentModelStore *self, const gchar *mnemo )
 	}
 }
 
+/**
+ * ofa_recurrent_model_store_get_iter:
+ * @store: this #ofaRecurrentModelStore instance.
+ * @model: the searched #ofoRecurrentModel object.
+ * @iter: [out]: the iterator.
+ *
+ * Returns: %TRUE if the @model has been found in the store, and @iter
+ * is set to the corresponding row.
+ */
+gboolean
+ofa_recurrent_model_store_get_iter( ofaRecurrentModelStore *store, ofoRecurrentModel *model, GtkTreeIter *iter )
+{
+	ofaRecurrentModelStorePrivate *priv;
+
+	g_return_val_if_fail( store && OFA_IS_RECURRENT_MODEL_STORE( store ), FALSE );
+	g_return_val_if_fail( model && OFO_IS_RECURRENT_MODEL( model ), FALSE );
+
+	priv = ofa_recurrent_model_store_get_instance_private( store );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( model_find_by_mnemo( store, ofo_recurrent_model_get_mnemo( model ), iter ));
+}
+
 /*
  * connect to the hub signaling system
  */

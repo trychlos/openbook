@@ -47,6 +47,8 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-list-store.h"
 
+#include "recurrent/ofo-recurrent-model.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RECURRENT_MODEL_STORE                ( ofa_recurrent_model_store_get_type())
@@ -115,6 +117,10 @@ enum {
 GType                   ofa_recurrent_model_store_get_type( void );
 
 ofaRecurrentModelStore *ofa_recurrent_model_store_new     ( ofaHub *hub );
+
+gboolean                ofa_recurrent_model_store_get_iter( ofaRecurrentModelStore *store,
+																ofoRecurrentModel *model,
+																GtkTreeIter *iter );
 
 G_END_DECLS
 

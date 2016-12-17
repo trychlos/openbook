@@ -376,6 +376,7 @@
 
 1265 2016-11-28 myISettings: simplify the interface
      2016-12- 8 we roughly only need read strlist and write str 
+     2016-12-16 also get/set_uint is used
 
 1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
 
@@ -392,11 +393,8 @@
 
 1279 2016-12-13 igetter_get_theme_manager() -> igetter_get_page_manager()
 
-1280 2016-12-13 recurrent operations open the page with all rows selected
-                (this to show to the user that multiple selection is enabled)
-                unselecting models as soon as operation is treated
-
 1281 2016-12-13 recurrent: idem for waiting operations
+                (start with all selected, unselect one at a time)
 
 1282 2016-12-13 myIWindow: get/set_settings -> get/set_geo[metry]_settings
 
@@ -418,7 +416,9 @@
 
 1290 2016-12-16 hub is not finalized
 
-1291
+1291 2016-12-16 theorize read/write_[user]settings
+
+1292
 
 -----------------------------------------------------------------------
  DONE
@@ -2067,6 +2067,11 @@
 
 1278 2016-12-10 rename ofaMySQLPeriod to ofaMysqlExerciceMeta
      2016-12-11 done
+
+1280 2016-12-13 recurrent operations open the page with all rows selected
+                (this to show to the user that multiple selection is enabled)
+                unselecting models as soon as operation is treated
+     2016-12-17 done
 
 1288 2016-12-14 ofa_idbmodel_update: have a getter instead of the hub
                 (for consistency reasons)

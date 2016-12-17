@@ -35,6 +35,8 @@
 
 #include "api/ofa-action-page.h"
 
+#include "recurrent/ofo-recurrent-model.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RECURRENT_MODEL_PAGE                ( ofa_recurrent_model_page_get_type())
@@ -59,6 +61,9 @@ typedef struct {
 GType  ofa_recurrent_model_page_get_type    ( void ) G_GNUC_CONST;
 
 GList *ofa_recurrent_model_page_get_selected( ofaRecurrentModelPage *page );
+
+void   ofa_recurrent_model_page_unselect    ( ofaRecurrentModelPage *page,
+													ofoRecurrentModel *model );
 
 G_END_DECLS
 

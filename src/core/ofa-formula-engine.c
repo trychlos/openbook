@@ -164,6 +164,7 @@ typedef struct {
 	sStartEnd;
 
 static void      regex_allocate( void );
+static void      setup_engine( ofaFormulaEngine *self );
 static gboolean  check_for_formula( const gchar *formula, gchar **returned );
 static gchar    *remove_backslashes( ofaFormulaEngine *self, const gchar *input );
 static gchar    *do_evaluate_a_expression( ofsFormulaHelper *helper, const gchar *expression );
@@ -244,12 +245,6 @@ ofa_formula_engine_init( ofaFormulaEngine *self )
 	priv = ofa_formula_engine_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
-	priv->thousand_sep = g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub ));
-	priv->decimal_sep = g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub ));
-	priv->digits = HUB_DEFAULT_DECIMALS_AMOUNT;
-
-	priv->auto_eval = TRUE;
 }
 
 static void
@@ -400,7 +395,27 @@ ofa_formula_engine_new( ofaHub *hub )
 
 	priv->hub = hub;
 
+	setup_engine( engine );
+
 	return( engine );
+}
+
+/*
+ * This initialization cannot be done in instance_init()
+ * because ofaHub is not yet set.
+ */
+static void
+setup_engine( ofaFormulaEngine *self )
+{
+	ofaFormulaEnginePrivate *priv;
+
+	priv = ofa_formula_engine_get_instance_private( self );
+
+	priv->thousand_sep = g_utf8_get_char( ofa_prefs_amount_thousand_sep( priv->hub ));
+	priv->decimal_sep = g_utf8_get_char( ofa_prefs_amount_decimal_sep( priv->hub ));
+	priv->digits = HUB_DEFAULT_DECIMALS_AMOUNT;
+
+	priv->auto_eval = TRUE;
 }
 
 /**

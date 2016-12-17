@@ -51,6 +51,8 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-tvbin.h"
 
+#include "recurrent/ofo-recurrent-model.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RECURRENT_MODEL_TREEVIEW                ( ofa_recurrent_model_treeview_get_type())
@@ -86,6 +88,9 @@ void                       ofa_recurrent_model_treeview_setup_store       ( ofaR
 GList                     *ofa_recurrent_model_treeview_get_selected      ( ofaRecurrentModelTreeview *view );
 
 #define                    ofa_recurrent_model_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
+
+void                       ofa_recurrent_model_treeview_unselect          ( ofaRecurrentModelTreeview *view,
+																				ofoRecurrentModel *model );
 
 G_END_DECLS
 

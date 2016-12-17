@@ -1517,22 +1517,55 @@ ofa_tvbin_get_tree_model( ofaTVBin *bin )
 }
 
 /*
+ * ofa_tvbin_select_all:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Select all rows.
+ *
+ * This is only relevant when GTK_SELECTION_MULTIPLE is set.
+ */
+void
+ofa_tvbin_select_all( ofaTVBin *bin )
+{
+	static const gchar *thisfn = "ofa_tvbin_select_all";
+	ofaTVBinPrivate *priv;
+	GtkTreeSelection *selection;
+
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( priv->selection_mode != GTK_SELECTION_MULTIPLE ){
+		g_warning( "%s: selection_mode=%d, is not GTK_SELECTION_MULTIPLE", thisfn, priv->selection_mode );
+
+	} else {
+		selection = gtk_tree_view_get_selection( GTK_TREE_VIEW( priv->treeview ));
+		gtk_tree_selection_select_all( selection );
+	}
+}
+
+/*
  * ofa_tvbin_select_first_row:
  * @bin: this #ofaTVBin instance.
  *
  * Select the first row of the treeview (if any).
  *
- * This is needed whe GTK_SELECTION_MULTIPLE is set: getting the focus
+ * This is needed when GTK_SELECTION_MULTIPLE is set: getting the focus
  * is not enough for the treeview selects something.
  */
 void
 ofa_tvbin_select_first_row( ofaTVBin *bin )
 {
+	static const gchar *thisfn = "ofa_tvbin_select_first_row";
 	ofaTVBinPrivate *priv;
 	GtkTreeModel *model;
 	GtkTreeIter iter;
 
-	g_debug( "ofa_tvbin_select_first_row" );
+	g_debug( "%s: bin=%p", thisfn, ( void * ) bin );
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 
@@ -1557,12 +1590,14 @@ ofa_tvbin_select_first_row( ofaTVBin *bin )
 void
 ofa_tvbin_select_row( ofaTVBin *bin, GtkTreeIter *treeview_iter )
 {
+	static const gchar *thisfn = "ofa_tvbin_select_row";
 	ofaTVBinPrivate *priv;
 	GtkTreeSelection *selection;
 	GtkTreeModel *model;
 	GtkTreePath *path;
 
-	g_debug( "ofa_tvbin_select_row" );
+	g_debug( "%s: bin=%p, treeview_iter=%p",
+			thisfn, ( void * ) bin, ( void * ) treeview_iter );
 
 	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
 
@@ -1712,6 +1747,34 @@ ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
 
 	ofa_itvcolumnable_show_columns( OFA_ITVCOLUMNABLE( bin ));
 	ofa_itvsortable_show_sort_indicator( OFA_ITVSORTABLE( bin ));
+}
+
+/*
+ * ofa_tvbin_store_iter_to_treeview_iter:
+ * @bin: this #ofaTVBin instance.
+ * @store_iter: [in]: an iterator on the underlying store.
+ * @treeview_iter: [out]: an iterator on the treeview.
+ *
+ * Converts an iterator to an iterator on the treeview.
+ */
+void
+ofa_tvbin_store_iter_to_treeview_iter( ofaTVBin *bin, GtkTreeIter *store_iter, GtkTreeIter *treeview_iter )
+{
+	ofaTVBinPrivate *priv;
+	GtkTreeModel *sort_model, *filter_model;
+	GtkTreeIter filter_iter;
+
+	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	sort_model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+	filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
+
+	gtk_tree_model_filter_convert_child_iter_to_iter( GTK_TREE_MODEL_FILTER( filter_model ), &filter_iter, store_iter );
+	gtk_tree_model_sort_convert_child_iter_to_iter( GTK_TREE_MODEL_SORT( sort_model ), treeview_iter, &filter_iter );
 }
 
 /*

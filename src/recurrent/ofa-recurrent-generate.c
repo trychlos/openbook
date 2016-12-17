@@ -119,7 +119,7 @@ static void     on_date_changed( ofaRecurrentGenerate *self, GtkEditable *editab
 static gboolean is_dialog_validable( ofaRecurrentGenerate *self );
 static void     action_on_reset_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
 static void     action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurrentGenerate *self );
-static void     generate_do( ofaRecurrentGenerate *self );
+static gboolean generate_do( ofaRecurrentGenerate *self );
 static gboolean confirm_redo( ofaRecurrentGenerate *self, const GDate *last_date );
 static GList   *generate_do_opes( ofaRecurrentGenerate *self, ofoRecurrentModel *model, const GDate *begin_date, const GDate *end_date, GList **messages );
 static void     generate_enum_dates_cb( const GDate *date, sEnumBetween *data );
@@ -581,14 +581,14 @@ action_on_generate_activated( GSimpleAction *action, GVariant *empty, ofaRecurre
 	gtk_widget_set_sensitive( priv->end_entry, FALSE );
 	g_simple_action_set_enabled( priv->generate_action, FALSE );
 
-	generate_do( self );
+	g_idle_add(( GSourceFunc ) generate_do, self );
 }
 
-static void
+static gboolean
 generate_do( ofaRecurrentGenerate *self )
 {
 	ofaRecurrentGeneratePrivate *priv;
-	GList *models_dataset, *it, *opes, *messages;
+	GList *models_dataset, *it, *opes, *model_opes, *messages;
 	const GDate *last_date;
 	gchar *str;
 	gint count;
@@ -610,17 +610,23 @@ generate_do( ofaRecurrentGenerate *self )
 		/* for each selected template,
 		 *   generate recurrent operations between provided dates */
 		for( it=models_dataset ; it ; it=it->next ){
-			opes = g_list_concat( opes,
-					generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date, &messages ));
+			model_opes = generate_do_opes( self, OFO_RECURRENT_MODEL( it->data ), &priv->begin_date, &priv->end_date, &messages );
+			count += g_list_length( model_opes );
+			ofa_recurrent_run_store_set_from_list( priv->store, model_opes );
+			opes = g_list_concat( opes, model_opes );
+			ofa_recurrent_model_page_unselect( priv->model_page, OFO_RECURRENT_MODEL( it->data ));
+			/* let Gtk update the display */
+			/* pwi 2016-12-17 - this is supposed to be not recommended
+			 * and more advised against this - but only way I have found to update the display */
+			while( gtk_events_pending()){
+				gtk_main_iteration();
+			}
 		}
 
 		if( g_list_length( messages )){
 			display_error_messages( self, messages );
 			g_list_free_full( messages, ( GDestroyNotify ) g_free );
 		}
-
-		count = g_list_length( opes );
-		ofa_recurrent_run_store_set_from_list( priv->store, opes );
 
 		if( count == 0 ){
 			str = g_strdup( _( "No generated operation" ));
@@ -649,6 +655,8 @@ generate_do( ofaRecurrentGenerate *self )
 	}
 
 	ofa_recurrent_model_treeview_free_selected( models_dataset );
+
+	return( G_SOURCE_REMOVE );
 }
 
 /*

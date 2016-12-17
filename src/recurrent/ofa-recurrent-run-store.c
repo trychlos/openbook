@@ -250,7 +250,7 @@ on_sort_run( GtkTreeModel *trun, GtkTreeIter *a, GtkTreeIter *b, ofaRecurrentRun
 /**
  * ofa_recurrent_run_store_set_from_list:
  * @store: this #ofaRecurrentRunSgtore instance.
- * @dataset: a list of objects to be displayed.
+ * @dataset: a list of objects to be added to the store.
  *
  * Stores the provided list of objects.
  */

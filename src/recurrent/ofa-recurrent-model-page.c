@@ -340,7 +340,7 @@ action_page_v_init_view( ofaActionPage *page )
 
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
-	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
+	ofa_tvbin_select_all( OFA_TVBIN( priv->tview ));
 }
 
 /*
@@ -444,6 +444,27 @@ ofa_recurrent_model_page_get_selected( ofaRecurrentModelPage *page )
 	priv = ofa_recurrent_model_page_get_instance_private( page );
 
 	return( ofa_recurrent_model_treeview_get_selected( priv->tview ));
+}
+
+/**
+ * ofa_recurrent_model_page_unselect:
+ * @page: this #ofaRecurrentModelPage instance.
+ * @model: [allow-none]: a #ofoRecurrentModel object.
+ *
+ * Unselect the @model from the treeview.
+ */
+void
+ofa_recurrent_model_page_unselect( ofaRecurrentModelPage *page, ofoRecurrentModel *model )
+{
+	ofaRecurrentModelPagePrivate *priv;
+
+	g_return_if_fail( page && OFA_IS_RECURRENT_MODEL_PAGE( page ));
+	g_return_if_fail( !OFA_PAGE( page )->prot->dispose_has_run );
+	g_return_if_fail( !model || OFO_IS_RECURRENT_MODEL( model ));
+
+	priv = ofa_recurrent_model_page_get_instance_private( page );
+
+	ofa_recurrent_model_treeview_unselect( priv->tview, model );
 }
 
 /*

@@ -70,14 +70,14 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static void      setup_columns( ofaRecurrentModelTreeview *self );
-static void      on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, ofaRecurrentModelTreeview *self );
-static void      on_selection_changed( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
-static void      on_selection_activated( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
-static void      on_selection_delete( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
-static void      get_and_send( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, const gchar *signal );
-static GList    *get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection );
-static gint      tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
+static void   setup_columns( ofaRecurrentModelTreeview *self );
+static void   on_cell_data_fn( GtkTreeViewColumn *column, GtkCellRenderer *renderer, GtkTreeModel *model, GtkTreeIter *iter, ofaRecurrentModelTreeview *self );
+static void   on_selection_changed( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
+static void   on_selection_activated( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
+static void   on_selection_delete( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty );
+static void   get_and_send( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, const gchar *signal );
+static GList *get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection );
+static gint   tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id );
 
 G_DEFINE_TYPE_EXTENDED( ofaRecurrentModelTreeview, ofa_recurrent_model_treeview, OFA_TYPE_TVBIN, 0,
 		G_ADD_PRIVATE( ofaRecurrentModelTreeview ))
@@ -400,6 +400,7 @@ ofa_recurrent_model_treeview_setup_store( ofaRecurrentModelTreeview *view )
 static void
 on_selection_changed( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, void *empty )
 {
+	//g_debug( "on_selection_changed" );
 	get_and_send( self, selection, "ofa-recchanged" );
 }
 
@@ -429,6 +430,7 @@ get_and_send( ofaRecurrentModelTreeview *self, GtkTreeSelection *selection, cons
 	GList *list;
 
 	list = get_selected_with_selection( self, selection );
+	//g_debug( "list_count=%d", g_list_length( list ));
 	g_signal_emit_by_name( self, signal, list );
 	ofa_recurrent_model_treeview_free_selected( list );
 }
@@ -486,8 +488,37 @@ get_selected_with_selection( ofaRecurrentModelTreeview *self, GtkTreeSelection *
 	return( selected_objects );
 }
 
+/**
+ * ofa_recurrent_model_treeview_unselect:
+ * @view: this #ofaRecurrentModelTreeview instance.
+ * @model: [allow-none]: a #ofoRecurrentModel object.
+ *
+ * Unselect the @model from the @view.
+ */
+void
+ofa_recurrent_model_treeview_unselect( ofaRecurrentModelTreeview *view, ofoRecurrentModel *model )
+{
+	ofaRecurrentModelTreeviewPrivate *priv;
+	GtkTreeIter store_iter, tview_iter;
+	GtkTreeSelection *selection;
+
+	g_return_if_fail( view && OFA_IS_RECURRENT_MODEL_TREEVIEW( view ));
+	g_return_if_fail( !model || OFO_IS_RECURRENT_MODEL( model ));
+
+	priv = ofa_recurrent_model_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	if( model && ofa_recurrent_model_store_get_iter( priv->store, model, &store_iter )){
+		ofa_tvbin_store_iter_to_treeview_iter( OFA_TVBIN( view ), &store_iter, &tview_iter );
+		selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
+		g_debug( "gtk_tree_selection_unselect_iter" );
+		gtk_tree_selection_unselect_iter( selection, &tview_iter );
+	}
+}
+
 static gint
-tvbin_v_sort( const ofaTVBin *bin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
+tvbin_v_sort( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, gint column_id )
 {
 	static const gchar *thisfn = "ofa_recurrent_model_treeview_v_sort";
 	gint cmp;
