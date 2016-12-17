@@ -786,7 +786,7 @@ draw_line_bat( ofaIRenderable *instance, ofoBatLine *batline )
 	ofa_irenderable_ellipsize_text( instance,
 			priv->body_label_ltab, y, ofo_bat_line_get_label( batline ), priv->body_label_max_size );
 
-	amount = ofo_bat_line_get_amount( batline );
+	amount = -1 * ofo_bat_line_get_amount( batline );
 	if( amount > 0 ){
 		str = ofa_amount_to_str( amount, priv->currency, priv->hub );
 		ofa_irenderable_set_text( instance,
