@@ -142,11 +142,12 @@ hub_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
+		/* close the opened dossier before disposing hub */
+		dossier_do_close( OFA_HUB( instance ));
+
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
-		dossier_do_close( OFA_HUB( instance ));
 
 		g_clear_object( &priv->dossier_settings );
 		g_clear_object( &priv->user_settings );

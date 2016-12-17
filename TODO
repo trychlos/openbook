@@ -408,7 +408,16 @@
 
 1291 2016-12-16 theorize read/write_[user]settings
 
-1292
+1292 2016-12-17 optimize reconciliation loading
+
+1294 2016-12-17 TVA: after operations have been generated, button should
+                be disabled, and the number of the generated operation
+                should be displayed
+
+1295 2016-12-17 VAT Declaration page: have a Validate button (no need to
+                open the declaration itself to validate it)
+
+1296
 
 -----------------------------------------------------------------------
  DONE
@@ -2081,6 +2090,9 @@
 1290 2016-12-16 hub is not finalized
      2016-12-17 fixed (and plugins are successfully shutdowned)
 
+1293 2016-12-17 ReconciliationPage: bug when changing the account
+     2016-12-17 fixed
+
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
-             Last updated on 2016, nov. 10th.
+             Last updated on 2016, dec. 17th.

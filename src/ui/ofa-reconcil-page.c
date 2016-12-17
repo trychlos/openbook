@@ -777,6 +777,10 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 
 	memset( &scur, '\0', sizeof( ofsCurrency ));
 	scur.currency = priv->acc_currency;
+	g_debug( "tview_on_selection_changed: account_currency=%p", ( void * ) priv->acc_currency );
+	if( priv->acc_currency ){
+		g_debug( "tview_on_selection_changed: account_currency=%s", ofo_currency_get_code( priv->acc_currency ));
+	}
 
 	selected = gtk_tree_selection_get_selected_rows( selection, NULL );
 	count = g_list_length( selected );
@@ -1233,7 +1237,7 @@ setup_actions( ofaReconcilPage *self, GtkContainer *parent )
 	g_signal_connect( priv->expand_action, "activate", G_CALLBACK( action_on_expand_activated ), self );
 	ofa_iactionable_set_menu_item(
 			OFA_IACTIONABLE( self ), priv->settings_prefix, G_ACTION( priv->expand_action ),
-			_( "Print a conciliation summary" ));
+			_( "Expand the hierarchy" ));
 	button = my_utils_container_get_child_by_name( parent, "expand-btn" );
 	g_return_if_fail( button && GTK_IS_BUTTON( button ));
 	ofa_iactionable_set_button(
@@ -1341,6 +1345,7 @@ account_do_change( ofaReconcilPage *self )
 
 	/* get an ofoAccount object, or NULL */
 	acc_number = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
+	priv->acc_currency = NULL;
 	priv->account = account_get_reconciliable( self, acc_number );
 	g_debug( "%s: self=%p, number=%s, account=%p", thisfn, ( void * ) self, acc_number, ( void * ) priv->account );
 
@@ -1364,7 +1369,7 @@ account_get_reconciliable( ofaReconcilPage *self, const gchar *number )
 	ofaReconcilPagePrivate *priv;
 	gboolean ok;
 	ofoAccount *account;
-	const gchar *label, *bat_account;
+	const gchar *label, *bat_account, *currency_code;
 	ofoBat *bat;
 	gchar *msgerr;
 
@@ -1389,6 +1394,15 @@ account_get_reconciliable( ofaReconcilPage *self, const gchar *number )
 		if( !ok ){
 			msgerr = g_strdup( _( "Account is not a detail account, or closed, or not reconciliable" ));
 		}
+	}
+
+	/* setup account currency */
+	if( ok ){
+		currency_code = ofo_account_get_currency( account );
+		g_return_val_if_fail( my_strlen( currency_code ), NULL );
+		priv->acc_currency = ofo_currency_get_by_code( priv->hub, currency_code );
+		g_return_val_if_fail( priv->acc_currency && OFO_IS_CURRENCY( priv->acc_currency ), NULL );
+		g_debug( "account_get_reconciliable: set account_currency=%s", currency_code );
 	}
 
 	/* if at least one BAT file is loaded, check that this new account
@@ -1432,7 +1446,6 @@ account_clear_content( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	priv->acc_currency = NULL;
 	priv->acc_debit = 0;
 	priv->acc_credit = 0;
 	gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), "" );
@@ -1461,16 +1474,10 @@ account_set_header_balance( ofaReconcilPage *self )
 {
 	ofaReconcilPagePrivate *priv;
 	gchar *sdiff, *samount;
-	const gchar *cur_code;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	if( priv->account ){
-		cur_code = ofo_account_get_currency( priv->account );
-		g_return_if_fail( my_strlen( cur_code ));
-
-		priv->acc_currency = ofo_currency_get_by_code( priv->hub, cur_code );
-		g_return_if_fail( priv->acc_currency && OFO_IS_CURRENCY( priv->acc_currency ));
 
 		priv->acc_debit = ofo_account_get_val_debit( priv->account )
 				+ ofo_account_get_rough_debit( priv->account )
@@ -2592,6 +2599,8 @@ set_reconciliated_balance( ofaReconcilPage *self )
 	credit = 0;
 
 	if( priv->account ){
+		g_return_if_fail( priv->acc_currency && OFO_IS_CURRENCY( priv->acc_currency ));
+
 		account_debit = ofo_account_get_val_debit( priv->account )
 				+ ofo_account_get_rough_debit( priv->account )
 				+ ofo_account_get_futur_debit( priv->account );
@@ -2924,18 +2933,21 @@ read_settings( ofaReconcilPage *self )
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
+	/* account */
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( cstr ){
 		gtk_entry_set_text( GTK_ENTRY( priv->acc_id_entry ), cstr );
 	}
 
+	/* entry filter */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( cstr ){
 		mode_filter_select( self, atoi( cstr ));
 	}
 
+	/* manual conciliation date */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( cstr ){
@@ -2947,6 +2959,7 @@ read_settings( ofaReconcilPage *self )
 		}
 	}
 
+	/* paned position */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	pos = cstr ? atoi( cstr ) : 0;
