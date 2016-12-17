@@ -60,6 +60,7 @@
    - my_date_set_from_str(): fix parsing when input string is NULL.
    - ofaAccountProperties: fix error message when identifier is empty (todo #1256).
    - ofaCheckBalancesBin: does not increment account balances when amounts are nul (todo #1259).
+   - ofaHub: finalized on application quit, and plugins are successfully shutdowned (todo #1290).
    - ofaGuidedEx: fix operation template update.
    - ofaImporterPdf[Bourso,LCL]: read all lines pieces before merging them at once.
    - ofaLedgerProperties: balances frame fill all vertical space (todo #1289).

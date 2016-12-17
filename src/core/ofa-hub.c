@@ -146,14 +146,14 @@ hub_dispose( GObject *instance )
 
 		/* unref object members here */
 
-		g_clear_object( &priv->extenders );
-		g_clear_object( &priv->dossier_collection );
+		dossier_do_close( OFA_HUB( instance ));
+
 		g_clear_object( &priv->dossier_settings );
 		g_clear_object( &priv->user_settings );
+		g_clear_object( &priv->dossier_collection );
+		g_clear_object( &priv->extenders );
 
 		g_list_free_full( priv->core_objects, ( GDestroyNotify ) g_object_unref );
-
-		dossier_do_close( OFA_HUB( instance ));
 	}
 
 	G_OBJECT_CLASS( ofa_hub_parent_class )->dispose( instance );
@@ -173,7 +173,6 @@ ofa_hub_init( ofaHub *self )
 	priv = ofa_hub_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
 	priv->extenders = NULL;
 	priv->dossier_collection = NULL;
 }

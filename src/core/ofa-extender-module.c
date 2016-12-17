@@ -105,6 +105,9 @@ extender_module_dispose( GObject *object )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
+
+		g_list_free_full( priv->objects, ( GDestroyNotify ) g_object_unref );
+		g_type_module_unuse( G_TYPE_MODULE( object ));
 	}
 
 	/* chain up to the parent class */
@@ -219,7 +222,6 @@ ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
 	priv->filename = g_strdup( filename );
 
 	if( !g_type_module_use( G_TYPE_MODULE( module )) || !plugin_is_valid( module )){
-		g_type_module_unuse( G_TYPE_MODULE( module ));
 		g_object_unref( module );
 		return( NULL );
 	}
@@ -227,47 +229,6 @@ ofa_extender_module_new( ofaIGetter *getter, const gchar *filename )
 	plugin_register_types( module );
 
 	return( module );
-}
-
-/**
- * ofa_extender_module_free:
- * @module:
- * @user_data:
- *
- * Unref all non-GTypeModule objects.
- *
- * Called on #ofaExtenderCollection finalization
- * (because NEVER unref a GTypeModule - so just free the attached objects).
- */
-void
-ofa_extender_module_free( ofaExtenderModule *module, void *user_data )
-{
-	ofaExtenderModulePrivate *priv;
-
-	priv = ofa_extender_module_get_instance_private( module );
-
-#if 0
-	gboolean found;
-	GList *it;
-	gpointer ptr;
-
-	do {
-		found = FALSE;
-		for( it=priv->objects ; it ; it=it->next ){
-			if( !G_IS_TYPE_MODULE( it->data )){
-				ptr = it->data;
-				priv->objects = g_list_remove( priv->objects, ptr );
-				g_object_unref( ptr );
-				found = TRUE;
-				break;
-			}
-		}
-	} while( found );
-#endif
-
-	g_list_free_full( priv->objects, ( GDestroyNotify ) g_object_unref );
-
-	g_type_module_unuse( G_TYPE_MODULE( module ));
 }
 
 /*

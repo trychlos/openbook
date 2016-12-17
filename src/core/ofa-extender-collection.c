@@ -44,7 +44,7 @@ typedef struct {
 
 	/* runtime
 	 */
-	GList      *modules;
+	GList      *modules;				/* list of #ofaExtenderModule's */
 }
 	ofaExtenderCollectionPrivate;
 
@@ -88,12 +88,7 @@ extender_collection_dispose( GObject *object )
 
 		priv->dispose_has_run = TRUE;
 
-		/* unref object members here */
-		if( priv->modules ){
-			g_list_foreach( priv->modules, ( GFunc ) ofa_extender_module_free, NULL );
-			g_list_free( priv->modules );
-			priv->modules = NULL;
-		}
+		g_list_free_full( priv->modules, ( GDestroyNotify ) g_object_unref );
 	}
 
 	/* chain up to the parent class */

@@ -273,7 +273,7 @@ ofa_idbdossier_meta_set_hub( ofaIDBDossierMeta *meta, ofaHub *hub )
 
 	data = get_idbdossier_meta_data( meta );
 
-	data->hub = g_object_ref( hub );
+	data->hub = hub;
 }
 
 /**
@@ -733,7 +733,6 @@ on_meta_finalized( sIDBMeta *data, GObject *finalized_meta )
 	g_debug( "%s: data=%p, finalized_meta=%p", thisfn, ( void * ) data, ( void * ) finalized_meta );
 
 	g_clear_object( &data->provider );
-	g_clear_object( &data->hub );
 	g_free( data->dossier_name );
 	g_clear_object( &data->settings );
 	g_free( data->group_name );

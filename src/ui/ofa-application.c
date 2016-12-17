@@ -216,9 +216,9 @@ application_dispose( GObject *instance )
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-		g_clear_object( &priv->hub );
-		g_clear_object( &priv->dos_store );
 		g_clear_object( &priv->menu );
+		g_clear_object( &priv->dos_store );
+		g_clear_object( &priv->hub );
 	}
 
 	/* chain up to the parent class */

@@ -63,13 +63,10 @@ GType              ofa_extender_module_get_type        ( void ) G_GNUC_CONST;
 ofaExtenderModule *ofa_extender_module_new             ( ofaIGetter *getter,
 																const gchar *filename );
 
-void               ofa_extender_module_free            ( ofaExtenderModule *module,
-																void *user_data );
-
 const GList       *ofa_extender_module_get_objects     ( ofaExtenderModule *module );
 
 GList             *ofa_extender_module_get_for_type    ( ofaExtenderModule *module,
-															GType type );
+																GType type );
 
 gchar             *ofa_extender_module_get_canon_name  ( ofaExtenderModule *module );
 

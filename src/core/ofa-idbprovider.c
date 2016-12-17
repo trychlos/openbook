@@ -133,7 +133,7 @@ ofa_idbprovider_get_interface_last_version( void )
 
 /**
  * ofa_idbprovider_get_by_name:
- * @gub: the main #ofaHub object of the application.
+ * @hub: the main #ofaHub object of the application.
  * @provider_name: the name of the provider as published in the
  *  settings.
  *
