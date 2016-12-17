@@ -48,6 +48,7 @@
    - ofaMiscCollector: remove double frame on each pages (todo #1251).
    - ofaRecPeriodProperties: add missing margins (todo #1249).
    - ofaRecurrentModel: page opens with all rows selected (todo #1280).
+   - ofaRecurrentRun: page opens with all rows selected (todo #1281).
    - ofaTVARecordProperties: remove double correspondence frame.
    - ofaTVARecordProperties: review the validation dynamics (todo #1253).
    - ofaTVARecordStore: complete column content (todo #1247).

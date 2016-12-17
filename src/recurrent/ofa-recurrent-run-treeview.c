@@ -606,6 +606,40 @@ get_selected_with_selection( ofaRecurrentRunTreeview *self, GtkTreeSelection *se
 	return( selected_objects );
 }
 
+/**
+ * ofa_recurrent_run_treeview_unselect:
+ * @view: this #ofaRecurrentRunTreeview instance.
+ * @run: [allow-none]: a #ofoRecurrentRun object.
+ *
+ * Unselect the @run from the @view.
+ */
+void
+ofa_recurrent_run_treeview_unselect( ofaRecurrentRunTreeview *view, ofoRecurrentRun *run )
+{
+	ofaRecurrentRunTreeviewPrivate *priv;
+	GtkTreeIter store_iter, tview_iter;
+	GtkTreeSelection *selection;
+	GtkTreeModel *store;
+
+	g_return_if_fail( view && OFA_IS_RECURRENT_RUN_TREEVIEW( view ));
+	g_return_if_fail( !run || OFO_IS_RECURRENT_RUN( run ));
+
+	priv = ofa_recurrent_run_treeview_get_instance_private( view );
+
+	g_return_if_fail( !priv->dispose_has_run );
+
+	store = ofa_tvbin_get_store( OFA_TVBIN( view ));
+	g_return_if_fail( store && OFA_IS_RECURRENT_RUN_STORE( store ));
+
+	if( run &&
+			ofa_recurrent_run_store_get_iter( OFA_RECURRENT_RUN_STORE( store ), run, &store_iter ) &&
+			ofa_tvbin_store_iter_to_treeview_iter( OFA_TVBIN( view ), &store_iter, &tview_iter )){
+
+		selection = ofa_tvbin_get_selection( OFA_TVBIN( view ));
+		gtk_tree_selection_unselect_iter( selection, &tview_iter );
+	}
+}
+
 static gboolean
 tvbin_v_filter( const ofaTVBin *tvbin, GtkTreeModel *tmodel, GtkTreeIter *iter )
 {

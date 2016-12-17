@@ -296,10 +296,12 @@ void              ofa_tvbin_set_cell_edited_func       ( ofaTVBin *bin,
 																GCallback fn_cell,
 																void *fn_data );
 
+GtkTreeModel     *ofa_tvbin_get_store                  ( ofaTVBin *bin );
+
 void              ofa_tvbin_set_store                  ( ofaTVBin *bin,
 																GtkTreeModel *store );
 
-void              ofa_tvbin_store_iter_to_treeview_iter( ofaTVBin *bin,
+gboolean          ofa_tvbin_store_iter_to_treeview_iter( ofaTVBin *bin,
 																GtkTreeIter *store_iter,
 																GtkTreeIter *treeview_iter );
 

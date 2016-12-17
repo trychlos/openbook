@@ -52,6 +52,8 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-tvbin.h"
 
+#include "recurrent/ofo-recurrent-run.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RECURRENT_RUN_TREEVIEW                ( ofa_recurrent_run_treeview_get_type())
@@ -100,6 +102,9 @@ void                     ofa_recurrent_run_treeview_set_visible       ( ofaRecur
 GList                   *ofa_recurrent_run_treeview_get_selected      ( ofaRecurrentRunTreeview *view );
 
 #define                  ofa_recurrent_run_treeview_free_selected(L)  g_list_free_full(( L ), ( GDestroyNotify ) g_object_unref )
+
+void                     ofa_recurrent_run_treeview_unselect          ( ofaRecurrentRunTreeview *view,
+																			ofoRecurrentRun *run );
 
 G_END_DECLS
 

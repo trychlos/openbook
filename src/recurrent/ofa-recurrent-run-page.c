@@ -373,7 +373,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
-	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
+	ofa_tvbin_select_all( OFA_TVBIN( priv->tview ));
 }
 
 static void
@@ -727,8 +727,8 @@ read_settings( ofaRecurrentRunPage *self )
 	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
 
-	it = strlist ? strlist : NULL;
-	cstr = it ? it->data : NULL;
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	pos = 0;
 	if( my_strlen( cstr )){
 		pos = atoi( cstr );
@@ -739,21 +739,21 @@ read_settings( ofaRecurrentRunPage *self )
 	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->cancelled_toggle ), my_utils_boolean_from_str( cstr ));
 		filter_on_cancelled_btn_toggled( GTK_TOGGLE_BUTTON( priv->cancelled_toggle ), self );
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->waiting_toggle ), my_utils_boolean_from_str( cstr ));
 		filter_on_waiting_btn_toggled( GTK_TOGGLE_BUTTON( priv->waiting_toggle ), self );
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->validated_toggle ), my_utils_boolean_from_str( cstr ));
 		filter_on_validated_btn_toggled( GTK_TOGGLE_BUTTON( priv->validated_toggle ), self );

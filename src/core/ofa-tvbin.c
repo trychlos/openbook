@@ -1701,6 +1701,41 @@ ofa_tvbin_set_cell_edited_func( ofaTVBin *bin, GCallback fn_cell, void *fn_data 
 }
 
 /*
+ * ofa_tvbin_get_store:
+ * @bin: this #ofaTVBin instance.
+ *
+ * Returns: the underlying #GtkTreeModel store.
+ */
+GtkTreeModel *
+ofa_tvbin_get_store( ofaTVBin *bin )
+{
+	ofaTVBinPrivate *priv;
+	GtkTreeModel *sort_model, *filter_model, *store_model;
+
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), NULL );
+
+	priv = ofa_tvbin_get_instance_private( bin );
+
+	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+
+	store_model = NULL;
+	sort_model = NULL;
+	filter_model = NULL;
+
+	if( priv->treeview ){
+		sort_model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
+	}
+	if( sort_model ){
+		filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
+	}
+	if( filter_model ){
+		store_model = gtk_tree_model_filter_get_model( GTK_TREE_MODEL_FILTER( filter_model ));
+	}
+
+	return( store_model );
+}
+
+/*
  * ofa_tvbin_set_store:
  * @bin: this #ofaTVBin instance.
  * @store: the underlying store.
@@ -1755,26 +1790,29 @@ ofa_tvbin_set_store( ofaTVBin *bin, GtkTreeModel *store )
  * @store_iter: [in]: an iterator on the underlying store.
  * @treeview_iter: [out]: an iterator on the treeview.
  *
- * Converts an iterator to an iterator on the treeview.
+ * Converts an iterator on the store to an iterator on the treeview.
  */
-void
+gboolean
 ofa_tvbin_store_iter_to_treeview_iter( ofaTVBin *bin, GtkTreeIter *store_iter, GtkTreeIter *treeview_iter )
 {
 	ofaTVBinPrivate *priv;
 	GtkTreeModel *sort_model, *filter_model;
 	GtkTreeIter filter_iter;
+	gboolean ok;
 
-	g_return_if_fail( bin && OFA_IS_TVBIN( bin ));
+	g_return_val_if_fail( bin && OFA_IS_TVBIN( bin ), FALSE );
 
 	priv = ofa_tvbin_get_instance_private( bin );
 
-	g_return_if_fail( !priv->dispose_has_run );
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
 	sort_model = gtk_tree_view_get_model( GTK_TREE_VIEW( priv->treeview ));
 	filter_model = gtk_tree_model_sort_get_model( GTK_TREE_MODEL_SORT( sort_model ));
 
-	gtk_tree_model_filter_convert_child_iter_to_iter( GTK_TREE_MODEL_FILTER( filter_model ), &filter_iter, store_iter );
-	gtk_tree_model_sort_convert_child_iter_to_iter( GTK_TREE_MODEL_SORT( sort_model ), treeview_iter, &filter_iter );
+	ok = gtk_tree_model_filter_convert_child_iter_to_iter( GTK_TREE_MODEL_FILTER( filter_model ), &filter_iter, store_iter ) &&
+			gtk_tree_model_sort_convert_child_iter_to_iter( GTK_TREE_MODEL_SORT( sort_model ), treeview_iter, &filter_iter );
+
+	return( ok );
 }
 
 /*

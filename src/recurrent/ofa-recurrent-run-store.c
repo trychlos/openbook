@@ -386,6 +386,30 @@ find_row_by_object( ofaRecurrentRunStore *self, ofoRecurrentRun *run, GtkTreeIte
 	return( FALSE );
 }
 
+/**
+ * ofa_recurrent_run_store_get_iter:
+ * @store: this #ofaRecurrentRunSgtore instance.
+ * @run: the searched #ofoRecurrentRun object.
+ * @iter: [out]: a #GtkTreeIter to be set if found.
+ *
+ * Returns: %TRUE if the @run object is found in @store, and @iter is
+ * set accordingly.
+ */
+gboolean
+ofa_recurrent_run_store_get_iter( ofaRecurrentRunStore *store, ofoRecurrentRun *run, GtkTreeIter *iter )
+{
+	ofaRecurrentRunStorePrivate *priv;
+
+	g_return_val_if_fail( store && OFA_IS_RECURRENT_RUN_STORE( store ), FALSE );
+	g_return_val_if_fail( run && OFO_IS_RECURRENT_RUN( run ), FALSE );
+
+	priv = ofa_recurrent_run_store_get_instance_private( store );
+
+	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
+
+	return( find_row_by_object( store, run, iter ));
+}
+
 /*
  * connect to the hub signaling system
  */

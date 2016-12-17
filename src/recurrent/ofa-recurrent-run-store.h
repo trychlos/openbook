@@ -47,6 +47,8 @@
 #include "api/ofa-hub-def.h"
 #include "api/ofa-list-store.h"
 
+#include "recurrent/ofo-recurrent-run.h"
+
 G_BEGIN_DECLS
 
 #define OFA_TYPE_RECURRENT_RUN_STORE                ( ofa_recurrent_run_store_get_type())
@@ -116,6 +118,10 @@ ofaRecurrentRunStore *ofa_recurrent_run_store_new          ( ofaHub *hub,
 
 void                  ofa_recurrent_run_store_set_from_list( ofaRecurrentRunStore *store,
 																	GList *dataset );
+
+gboolean              ofa_recurrent_run_store_get_iter     ( ofaRecurrentRunStore *store,
+																	ofoRecurrentRun *run,
+																	GtkTreeIter *iter );
 
 G_END_DECLS
 
