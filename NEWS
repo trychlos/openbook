@@ -49,6 +49,7 @@
    - ofaRecPeriodProperties: add missing margins (todo #1249).
    - ofaRecurrentModel: page opens with all rows selected (todo #1280).
    - ofaRecurrentRun: page opens with all rows selected (todo #1281).
+   - ofaTVARecordPage: do not allow to generate operations twice (todo #1294).
    - ofaTVARecordPage: have a 'Validate' button for the current selection (todo #1295).
    - ofaTVARecordProperties: remove double correspondence frame.
    - ofaTVARecordProperties: review the validation dynamics (todo #1253).

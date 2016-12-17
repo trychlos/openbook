@@ -79,6 +79,7 @@ typedef struct {
 	GtkWidget    *begin_editable;
 	GtkWidget    *end_editable;
 	GtkWidget    *dope_editable;
+	GtkWidget    *generated_label;
 	GtkWidget    *boolean_grid;
 	GtkWidget    *detail_grid;
 	GtkWidget    *corresp_textview;
@@ -98,6 +99,7 @@ typedef struct {
 	GDate         dope_date;
 	gboolean      has_correspondence;
 	gboolean      is_validated;
+	guint         opes_generated;
 }
 	ofaTVARecordPropertiesPrivate;
 
@@ -138,6 +140,7 @@ static gchar           *iwindow_get_identifier( const myIWindow *instance );
 static void             idialog_iface_init( myIDialogInterface *iface );
 static void             idialog_init( myIDialog *instance );
 static void             init_properties( ofaTVARecordProperties *self );
+static void             init_generated_opes( ofaTVARecordProperties *self );
 static void             init_booleans( ofaTVARecordProperties *self );
 static void             init_taxes( ofaTVARecordProperties *self );
 static void             init_correspondence( ofaTVARecordProperties *self );
@@ -147,6 +150,7 @@ static void             on_dope_changed( GtkEditable *entry, ofaTVARecordPropert
 static void             on_boolean_toggled( GtkToggleButton *button, ofaTVARecordProperties *self );
 static void             on_detail_base_changed( GtkEntry *entry, ofaTVARecordProperties *self );
 static void             on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self );
+static void             on_generated_opes_changed( ofaTVARecordProperties *self );
 static void             check_for_enable_dlg( ofaTVARecordProperties *self );
 static void             set_dialog_title( ofaTVARecordProperties *self );
 static void             setup_tva_record( ofaTVARecordProperties *self );
@@ -389,6 +393,7 @@ idialog_init( myIDialog *instance )
 	my_date_set_from_date( &priv->init_end_date, ofo_tva_record_get_end( priv->tva_record ));
 
 	init_properties( OFA_TVA_RECORD_PROPERTIES( instance ));
+	init_generated_opes( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_booleans( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_taxes( OFA_TVA_RECORD_PROPERTIES( instance ));
 	init_correspondence( OFA_TVA_RECORD_PROPERTIES( instance ));
@@ -528,6 +533,29 @@ init_properties( ofaTVARecordProperties *self )
 	my_date_set_from_date( &priv->dope_date, ofo_tva_record_get_dope( priv->tva_record ));
 	my_date_editable_set_date( GTK_EDITABLE( entry ), &priv->dope_date );
 	my_utils_widget_set_editable( entry, priv->is_writable && !priv->is_validated );
+
+	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p1-generated-label" );
+	g_return_if_fail( label && GTK_IS_LABEL( label ));
+	priv->generated_label = label;
+}
+
+static void
+init_generated_opes( ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	guint idx, count;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	priv->opes_generated = 0;
+	count = ofo_tva_record_detail_get_count( priv->tva_record );
+	for( idx=0 ; idx<count ; ++idx ){
+		if( ofo_tva_record_detail_get_ope_number( priv->tva_record, idx ) > 0 ){
+			priv->opes_generated += 1;
+		}
+	}
+
+	on_generated_opes_changed( self );
 }
 
 static void
@@ -731,6 +759,32 @@ on_detail_amount_changed( GtkEntry *entry, ofaTVARecordProperties *self )
 	check_for_enable_dlg( self );
 }
 
+static void
+on_generated_opes_changed( ofaTVARecordProperties *self )
+{
+	ofaTVARecordPropertiesPrivate *priv;
+	gchar *str;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
+
+	if( priv->opes_generated == 0 ){
+		if( ofo_tva_record_get_is_validated( priv->tva_record )){
+			str = g_strdup( _( "No generated operation, and the declaration is validated." ));
+		} else {
+			str = g_strdup( _( "No generated operation yet, but this is not too late." ));
+		}
+	} else if( priv->opes_generated == 1 ){
+		str = g_strdup( _( "One operation has been generated." ));
+	} else {
+		str = g_strdup_printf( _( "%d operations have been generated." ), priv->opes_generated );
+	}
+
+	gtk_label_set_text( GTK_LABEL( priv->generated_label ), str );
+	g_free( str );
+
+	check_for_enable_dlg( self );
+}
+
 /*
  * - must have both begin and end dates to be able to compute the declaration
  * - must have an operation date to generate the operations
@@ -785,7 +839,7 @@ check_for_enable_dlg( ofaTVARecordProperties *self )
 
 		gtk_widget_set_sensitive(
 				priv->generate_btn,
-				priv->is_writable && is_valid && is_validable );
+				priv->is_writable && is_valid && is_validable && priv->opes_generated == 0 );
 
 		set_msgwarn( self, msgerr );
 		g_free( msgerr );
@@ -1193,12 +1247,18 @@ eval_code( ofsFormulaHelper *helper )
 
 /*
  * generate the operations
+ *
+ * This is only possible when the VAT declaration is valid, but not yet
+ * validated, and no operation has yet been generated.
  */
 static void
 on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 {
+	ofaTVARecordPropertiesPrivate *priv;
 	gchar *msgerr, *msg;
 	guint ope_count, ent_count;
+
+	priv = ofa_tva_record_properties_get_instance_private( self );
 
 	setup_tva_record( self );
 
@@ -1208,6 +1268,9 @@ on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_INFO, msg );
 		g_free( msg );
 
+		priv->opes_generated += ope_count;
+		on_generated_opes_changed( self );
+
 	} else {
 		my_iwindow_msg_dialog( MY_IWINDOW( self ), GTK_MESSAGE_WARNING, msgerr );
 		g_free( msgerr );
@@ -1216,8 +1279,8 @@ on_generate_clicked( GtkButton *button, ofaTVARecordProperties *self )
 
 /*
  * when an operation template is recorded besides of an amount, it is
- * generated if the corresponding amount is greater thant zero.
- * This amount is so injected in the operation template, first row and
+ * generated if the corresponding amount is greater than zero.
+ * This amount is then injected in the operation template, first row and
  * first of available debit/credit.
  */
 static gboolean

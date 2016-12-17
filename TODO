@@ -410,10 +410,6 @@
 
 1292 2016-12-17 optimize reconciliation loading
 
-1294 2016-12-17 TVA: after operations have been generated, button should
-                be disabled, and the number of the generated operation
-                should be displayed
-
 1296
 
 -----------------------------------------------------------------------
@@ -2089,6 +2085,11 @@
 
 1293 2016-12-17 ReconciliationPage: bug when changing the account
      2016-12-17 fixed
+
+1294 2016-12-17 TVA: after operations have been generated, button should
+                be disabled, and the number of the generated operation
+                should be displayed
+     2016-12-17 done
 
 1295 2016-12-17 VAT Declaration page: have a Validate button (no need to
                 open the declaration itself to validate it)
