@@ -83,6 +83,7 @@
    - ofaIDBMeta interface is renamed to ofaIDBDossierMeta (todo #1274).
    - ofaIDBModel: update get a #ofaIGetter instead of a ofaHub (todo #1288).
    - ofaIDBPeriod interface is renamed to ofaIDBExerciceMeta (todo #1275).
+   - ofaIGetter::get_theme_manager() is renamed to get_page_manager (todo #1279).
    - ofaITVColumnable: get rid of ofaSettings usage.
    - ofaITVSortable: get rid of ofaSettings usage.
    - ofaMiscAuditStore: new class.

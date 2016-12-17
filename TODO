@@ -376,7 +376,7 @@
 
 1265 2016-11-28 myISettings: simplify the interface
      2016-12- 8 we roughly only need read strlist and write str 
-     2016-12-16 also get/set_uint is used
+     2016-12-16 also get/set_uint and get/set_uint_list are used
 
 1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
 
@@ -390,8 +390,6 @@
 1276 2016-12-10 review the way the exercices are written in dossier settings
                 so that this may be managed by the application instead of
                 by the dbms plugin
-
-1279 2016-12-13 igetter_get_theme_manager() -> igetter_get_page_manager()
 
 1282 2016-12-13 myIWindow: get/set_settings -> get/set_geo[metry]_settings
 
@@ -2061,6 +2059,9 @@
 
 1278 2016-12-10 rename ofaMySQLPeriod to ofaMysqlExerciceMeta
      2016-12-11 done
+
+1279 2016-12-13 igetter_get_theme_manager() -> igetter_get_page_manager()
+     2016-12-17 done
 
 1280 2016-12-13 recurrent operations open the page with all rows selected
                 (this to show to the user that multiple selection is enabled)

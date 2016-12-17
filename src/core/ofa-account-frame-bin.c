@@ -1015,7 +1015,7 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaAcc
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	account = ofa_account_frame_bin_get_selected( self );
-	manager = ofa_igetter_get_theme_manager( priv->getter );
+	manager = ofa_igetter_get_page_manager( priv->getter );
 	page = ofa_ipage_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
 	ofa_entry_page_display_entries(
 			OFA_ENTRY_PAGE( page ), OFO_TYPE_ACCOUNT, ofo_account_get_number( account ), NULL, NULL );
@@ -1032,7 +1032,7 @@ action_on_settlement_activated( GSimpleAction *action, GVariant *empty, ofaAccou
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	account = ofa_account_frame_bin_get_selected( self );
-	manager = ofa_igetter_get_theme_manager( priv->getter );
+	manager = ofa_igetter_get_page_manager( priv->getter );
 	page = ofa_ipage_manager_activate( manager, OFA_TYPE_SETTLEMENT_PAGE );
 	ofa_settlement_page_set_account( OFA_SETTLEMENT_PAGE( page ), ofo_account_get_number( account ));
 }
@@ -1048,7 +1048,7 @@ action_on_reconciliation_activated( GSimpleAction *action, GVariant *empty, ofaA
 	priv = ofa_account_frame_bin_get_instance_private( self );
 
 	account = ofa_account_frame_bin_get_selected( self );
-	manager = ofa_igetter_get_theme_manager( priv->getter );
+	manager = ofa_igetter_get_page_manager( priv->getter );
 	page = ofa_ipage_manager_activate( manager, OFA_TYPE_RECONCIL_PAGE );
 	ofa_reconcil_page_set_account( OFA_RECONCIL_PAGE( page ), ofo_account_get_number( account ));
 }

@@ -406,7 +406,7 @@ do_update( ofaTVARecordNew *self, gchar **msgerr )
 
 	priv = ofa_tva_record_new_get_instance_private( self );
 
-	manager = ofa_igetter_get_theme_manager( priv->getter );
+	manager = ofa_igetter_get_page_manager( priv->getter );
 
 	/* setup a default begin date
 	 * = previous end date + 1 */

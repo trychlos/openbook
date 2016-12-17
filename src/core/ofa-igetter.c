@@ -279,26 +279,26 @@ ofa_igetter_get_main_window( const ofaIGetter *instance )
 }
 
 /**
- * ofa_igetter_get_theme_manager:
+ * ofa_igetter_get_page_manager:
  * @instance: this #ofaIGetter instance.
  *
  * Returns: the #ofaIPageManager instance of the application, if any,
  * or %NULL.
  *
- * Only a GUI application has a ThemeManager usage.
+ * Only a GUI application has a PageManager usage.
  */
 ofaIPageManager *
-ofa_igetter_get_theme_manager( const ofaIGetter *instance )
+ofa_igetter_get_page_manager( const ofaIGetter *instance )
 {
-	static const gchar *thisfn = "ofa_igetter_get_theme_manager";
+	static const gchar *thisfn = "ofa_igetter_get_page_manager";
 
 	g_return_val_if_fail( instance && OFA_IS_IGETTER( instance ), NULL );
 
-	if( OFA_IGETTER_GET_INTERFACE( instance )->get_theme_manager ){
-		return( OFA_IGETTER_GET_INTERFACE( instance )->get_theme_manager( instance ));
+	if( OFA_IGETTER_GET_INTERFACE( instance )->get_page_manager ){
+		return( OFA_IGETTER_GET_INTERFACE( instance )->get_page_manager( instance ));
 	}
 
-	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_theme_manager()' method",
+	g_info( "%s: ofaIGetter's %s implementation does not provide 'get_page_manager()' method",
 			thisfn, G_OBJECT_TYPE_NAME( instance ));
 	return( NULL );
 }

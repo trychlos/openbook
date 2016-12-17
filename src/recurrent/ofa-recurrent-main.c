@@ -192,7 +192,7 @@ on_rec_period( GSimpleAction *action, GVariant *parameter, gpointer user_data )
 
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
-	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
+	manager = ofa_igetter_get_page_manager( OFA_IGETTER( user_data ));
 	ofa_ipage_manager_activate( manager, OFA_TYPE_REC_PERIOD_PAGE );
 }
 
@@ -207,7 +207,7 @@ on_recurrent_run( GSimpleAction *action, GVariant *parameter, gpointer user_data
 
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
-	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
+	manager = ofa_igetter_get_page_manager( OFA_IGETTER( user_data ));
 	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }
 
@@ -222,6 +222,6 @@ on_recurrent_manage( GSimpleAction *action, GVariant *parameter, gpointer user_d
 
 	g_return_if_fail( user_data && OFA_IS_IGETTER( user_data ));
 
-	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( user_data ));
+	manager = ofa_igetter_get_page_manager( OFA_IGETTER( user_data ));
 	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_MODEL_PAGE );
 }

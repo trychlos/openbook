@@ -156,7 +156,7 @@ static ofaIGetter           *igetter_get_permanent_getter( const ofaIGetter *ins
 static GApplication         *igetter_get_application( const ofaIGetter *instance );
 static ofaHub               *igetter_get_hub( const ofaIGetter *instance );
 static GtkApplicationWindow *igetter_get_main_window( const ofaIGetter *instance );
-static ofaIPageManager     *igetter_get_theme_manager( const ofaIGetter *instance );
+static ofaIPageManager      *igetter_get_page_manager( const ofaIGetter *instance );
 static void                  iaction_map_iface_init( myIActionMapInterface *iface );
 static GMenuModel           *iaction_map_get_menu_model( const myIActionMap *instance );
 
@@ -1185,7 +1185,7 @@ igetter_iface_init( ofaIGetterInterface *iface )
 	iface->get_application = igetter_get_application;
 	iface->get_hub = igetter_get_hub;
 	iface->get_main_window = igetter_get_main_window;
-	iface->get_theme_manager = igetter_get_theme_manager;
+	iface->get_page_manager = igetter_get_page_manager;
 }
 
 static ofaIGetter *
@@ -1224,7 +1224,7 @@ igetter_get_main_window( const ofaIGetter *instance )
  * the themes are managed by the main window
  */
 static ofaIPageManager *
-igetter_get_theme_manager( const ofaIGetter *instance )
+igetter_get_page_manager( const ofaIGetter *instance )
 {
 	ofaApplicationPrivate *priv;
 

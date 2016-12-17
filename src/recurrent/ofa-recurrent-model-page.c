@@ -608,6 +608,6 @@ action_on_view_opes_activated( GSimpleAction *action, GVariant *empty, ofaRecurr
 {
 	ofaIPageManager *manager;
 
-	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
+	manager = ofa_igetter_get_page_manager( OFA_IGETTER( self ));
 	ofa_ipage_manager_activate( manager, OFA_TYPE_RECURRENT_RUN_PAGE );
 }

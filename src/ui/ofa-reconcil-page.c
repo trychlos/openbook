@@ -2830,7 +2830,7 @@ action_on_print_activated( GSimpleAction *action, GVariant *empty, ofaReconcilPa
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	acc_number = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
-	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
+	manager = ofa_igetter_get_page_manager( OFA_IGETTER( self ));
 	page = ofa_ipage_manager_activate( manager, OFA_TYPE_RECONCIL_RENDER );
 	ofa_reconcil_render_set_account( OFA_RECONCIL_RENDER( page ), acc_number );
 }

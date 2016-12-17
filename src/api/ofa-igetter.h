@@ -135,14 +135,14 @@ typedef struct {
 	GtkApplicationWindow * ( *get_main_window )      ( const ofaIGetter *instance );
 
 	/**
-	 * get_theme_manager:
+	 * get_page_manager:
 	 * @instance: this #ofaIGetter instance.
 	 *
-	 * Returns: the theme manager of the application, or %NULL.
+	 * Returns: the page manager of the application, or %NULL.
 	 *
 	 * Since: version 1
 	 */
-	ofaIPageManager *     ( *get_theme_manager )    ( const ofaIGetter *instance );
+	ofaIPageManager *     ( *get_page_manager )      ( const ofaIGetter *instance );
 }
 	ofaIGetterInterface;
 
@@ -169,7 +169,7 @@ ofaHub               *ofa_igetter_get_hub                   ( const ofaIGetter *
 
 GtkApplicationWindow *ofa_igetter_get_main_window           ( const ofaIGetter *instance );
 
-ofaIPageManager     *ofa_igetter_get_theme_manager         ( const ofaIGetter *instance );
+ofaIPageManager      *ofa_igetter_get_page_manager          ( const ofaIGetter *instance );
 
 G_END_DECLS
 

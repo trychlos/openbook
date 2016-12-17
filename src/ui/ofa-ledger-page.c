@@ -478,7 +478,7 @@ action_on_view_entries_activated( GSimpleAction *action, GVariant *empty, ofaLed
 
 	ofa_ledger_treeview_free_selected( list );
 
-	manager = ofa_igetter_get_theme_manager( OFA_IGETTER( self ));
+	manager = ofa_igetter_get_page_manager( OFA_IGETTER( self ));
 	page = ofa_ipage_manager_activate( manager, OFA_TYPE_ENTRY_PAGE );
 	g_return_if_fail( page && OFA_IS_ENTRY_PAGE( page ));
 
