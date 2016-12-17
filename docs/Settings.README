@@ -1,0 +1,50 @@
+ Open Firm Accounting
+
+ Summary
+ =======
+
+   Use cases
+
+-----------------------------------------------------------------------
+ Use cases
+ =========
+
+ We only talk here of user settings, i.e. of all preferences that the user
+ may expect to automagically retrieve from an execution to another.
+ 
+ myIWindow geometry
+
+    myIWindow-managed dialog boxes and windows manage to save and restore
+    themselves their size and position through a dedicated group in user
+    settings.
+
+    The myISettings interface is set via a call to
+    my_iwindow_set_geometry_settings( myIWindow *, myISettings * )
+    because myIWindow does not know anything about ofaHub so we have to
+    give it the myISettings interface to address.
+
+    The group is managed by the library (one group for all the library).
+    The key defaults to the class name of the window.
+-> ?
+
+ Dialog boxes UI
+
+    Typically the paned position in the UI.
+    Settings should be read after the UI has been initialized, so that
+    reading may directly set paned position.
+    UI Settings may be written on window_dispose.
+
+ Dialog boxes Content
+
+    E.g. last date, last account number, etc.
+    It should be read after the UI has been initialized so that reading
+    may directly set desired fields/entries/combo/etc.
+    It should *not* be rewritten after each change: not only this is useless,
+    but each setup on reading is a change, and so may lead to trigger a
+    write (which would be bad as double useless).
+
+-> write simultaneously all settings for a window
+
+
+-----------------------------------------------------------------------
+ P. Wieser - Last updated on 2016, Dec. 17th

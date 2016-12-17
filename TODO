@@ -402,15 +402,21 @@
                 when several windows of same name are opened, just shift them 
 
 1286 2016-12-14 deprecate my_utils_widget_get_toplevel()
+     2016-12-17 find a good reason to do this (we already know that this
+                does not find the main window, but this is not an enough
+                good one)
 
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
 
 1291 2016-12-16 theorize read/write_[user]settings
+     2016-12-17 see docs/Settings.README
 
 1292 2016-12-17 optimize reconciliation loading
 
-1296
+1296 2016-12-17 VAT declarations: be able to consult generated operations
+
+1297
 
 -----------------------------------------------------------------------
  DONE

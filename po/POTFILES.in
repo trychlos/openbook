@@ -70,4 +70,5 @@ src/ui/ofa-reconcil-bin.ui
 src/ui/ofa-reconcil-page.ui
 src/ui/ofa-restore-assistant.ui
 src/ui/ofa-settlement-page.ui
+src/ui/ofa-target-chooser-bin.ui
 src/ui/ofa-user-credentials-bin.ui
