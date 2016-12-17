@@ -66,6 +66,7 @@ typedef struct {
 	GSimpleAction        *new_action;
 	GSimpleAction        *update_action;
 	GSimpleAction        *delete_action;
+	GSimpleAction        *validate_action;
 }
 	ofaTVARecordPagePrivate;
 
@@ -75,6 +76,7 @@ static GtkWidget *setup_treeview( ofaTVARecordPage *self );
 static void       action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box );
 static void       action_page_v_init_view( ofaActionPage *page );
 static void       on_row_selected( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
+static void       update_on_selection( ofaTVARecordPage *self, ofoTVARecord *record );
 static void       on_row_activated( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
 static void       on_delete_key( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self );
 static void       action_on_new_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
@@ -82,6 +84,8 @@ static void       action_on_update_activated( GSimpleAction *action, GVariant *e
 static void       action_on_delete_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
 static gboolean   check_for_deletability( ofaTVARecordPage *self, ofoTVARecord *record );
 static void       delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record );
+static void       action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self );
+static void       validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record );
 
 G_DEFINE_TYPE_EXTENDED( ofaTVARecordPage, ofa_tva_record_page, OFA_TYPE_ACTION_PAGE, 0,
 		G_ADD_PRIVATE( ofaTVARecordPage ))
@@ -121,6 +125,7 @@ tva_record_page_dispose( GObject *instance )
 		g_object_unref( priv->new_action );
 		g_object_unref( priv->update_action );
 		g_object_unref( priv->delete_action );
+		g_object_unref( priv->validate_action );
 	}
 
 	/* chain up to the parent class */
@@ -185,6 +190,7 @@ action_page_v_setup_view( ofaActionPage *page )
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_val_if_fail( priv->hub && OFA_IS_HUB( priv->hub ), NULL );
+
 	priv->is_writable = ofa_hub_dossier_is_writable( priv->hub );
 
 	widget = setup_treeview( OFA_TVA_RECORD_PAGE( page ));
@@ -262,6 +268,19 @@ action_page_v_setup_actions( ofaActionPage *page, ofaButtonsBox *buttons_box )
 					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->delete_action ),
 					OFA_IACTIONABLE_DELETE_BTN ));
 	g_simple_action_set_enabled( priv->delete_action, FALSE );
+
+	/* validate action */
+	priv->validate_action = g_simple_action_new( "validate", NULL );
+	g_signal_connect( priv->validate_action, "activate", G_CALLBACK( action_on_validate_activated ), page );
+	ofa_iactionable_set_menu_item(
+			OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->validate_action ),
+			_( "Validate this" ));
+	ofa_buttons_box_append_button(
+			buttons_box,
+			ofa_iactionable_new_button(
+					OFA_IACTIONABLE( page ), priv->settings_prefix, G_ACTION( priv->validate_action ),
+					_( "_Validate..." )));
+	g_simple_action_set_enabled( priv->validate_action, FALSE );
 }
 
 static void
@@ -297,6 +316,12 @@ action_page_v_init_view( ofaActionPage *page )
 static void
 on_row_selected( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordPage *self )
 {
+	update_on_selection( self, record );
+}
+
+static void
+update_on_selection( ofaTVARecordPage *self, ofoTVARecord *record )
+{
 	ofaTVARecordPagePrivate *priv;
 	gboolean is_record;
 
@@ -306,6 +331,7 @@ on_row_selected( ofaTVARecordTreeview *view, ofoTVARecord *record, ofaTVARecordP
 
 	g_simple_action_set_enabled( priv->update_action, is_record );
 	g_simple_action_set_enabled( priv->delete_action, check_for_deletability( self, record ));
+	g_simple_action_set_enabled( priv->validate_action, is_record && !ofo_tva_record_get_is_validated( record ));
 }
 
 /*
@@ -408,5 +434,46 @@ delete_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
 
 	if( delete_ok ){
 		ofo_tva_record_delete( record );
+	}
+}
+
+static void
+action_on_validate_activated( GSimpleAction *action, GVariant *empty, ofaTVARecordPage *self )
+{
+	ofaTVARecordPagePrivate *priv;
+	ofoTVARecord *record;
+
+	priv = ofa_tva_record_page_get_instance_private( self );
+
+	record = ofa_tva_record_treeview_get_selected( priv->tview );
+	g_return_if_fail( record && OFO_IS_TVA_RECORD( record ));
+
+	validate_with_confirm( self, record );
+
+	gtk_widget_grab_focus( page_v_get_top_focusable_widget( OFA_PAGE( self )));
+	update_on_selection( self, record );
+}
+
+static void
+validate_with_confirm( ofaTVARecordPage *self, ofoTVARecord *record )
+{
+	ofaTVARecordPagePrivate *priv;
+	gchar *msg, *send;
+	gboolean delete_ok;
+
+	priv = ofa_tva_record_page_get_instance_private( self );
+
+	send = my_date_to_str( ofo_tva_record_get_end( record ), ofa_prefs_date_display( priv->hub ));
+	msg = g_strdup_printf( _( "Are you sure you want validate the %s at %s TVA declaration ?" ),
+				ofo_tva_record_get_mnemo( record ), send );
+
+	delete_ok = my_utils_dialog_question( msg, _( "_Validate" ));
+
+	g_free( msg );
+	g_free( send );
+
+	if( delete_ok ){
+		ofo_tva_record_set_is_validated( record, TRUE );
+		ofo_tva_record_update( record );
 	}
 }

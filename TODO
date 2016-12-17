@@ -414,9 +414,6 @@
                 be disabled, and the number of the generated operation
                 should be displayed
 
-1295 2016-12-17 VAT Declaration page: have a Validate button (no need to
-                open the declaration itself to validate it)
-
 1296
 
 -----------------------------------------------------------------------
@@ -2092,6 +2089,10 @@
 
 1293 2016-12-17 ReconciliationPage: bug when changing the account
      2016-12-17 fixed
+
+1295 2016-12-17 VAT Declaration page: have a Validate button (no need to
+                open the declaration itself to validate it)
+     2016-12-17 done
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd

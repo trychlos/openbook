@@ -1318,7 +1318,7 @@ do_generate_opes( ofaTVARecordProperties *self, gchar **msgerr, guint *ope_count
 /*
  * Validating is actually same than recording;
  * just the 'validated' flag is set
- * After validation, the VAT declaration record is no more modifyable
+ * After validation, the VAT declaration record is no more modifiable
  */
 static void
 on_validate_clicked( GtkButton *button, ofaTVARecordProperties *self )
