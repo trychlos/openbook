@@ -408,9 +408,6 @@
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
 
-1289 2016-12-14 LedgerProperties/Balances tab: vertically expand the frame
-                (should be idem than account balances tab)
-
 1290 2016-12-16 hub is not finalized
 
 1291 2016-12-16 theorize read/write_[user]settings
@@ -2077,6 +2074,10 @@
 1288 2016-12-14 ofa_idbmodel_update: have a getter instead of the hub
                 (for consistency reasons)
      2016-12-14 done
+
+1289 2016-12-14 LedgerProperties/Balances tab: vertically expand the frame
+                (should be idem than account balances tab)
+     2016-12-17 fixed
 
 -----------------------------------------------------------------------
  P. Wieser - Created on 2014, may 2nd
