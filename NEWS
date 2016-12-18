@@ -50,7 +50,7 @@
 
  Other changes:
 
-   - 
+   - myIWindow: set_settings() is renamed set_geometry_settings() (todo #1282).
 
 -----------------------------------------------------------------------
  Version 0.63

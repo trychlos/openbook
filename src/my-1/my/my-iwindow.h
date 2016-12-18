@@ -238,7 +238,7 @@ void         my_iwindow_set_parent                ( myIWindow *instance,
 
 myISettings *my_iwindow_get_settings              ( const myIWindow *instance );
 
-void         my_iwindow_set_settings              ( myIWindow *instance,
+void         my_iwindow_set_geometry_settings     ( myIWindow *instance,
 														myISettings *settings );
 
 gchar       *my_iwindow_get_keyname               ( const myIWindow *instance );

@@ -284,7 +284,7 @@ iwindow_init( myIWindow *instance )
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
-	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

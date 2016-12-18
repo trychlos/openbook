@@ -298,14 +298,14 @@ my_iwindow_get_settings( const myIWindow *instance )
 }
 
 /**
- * my_iwindow_set_settings:
+ * my_iwindow_set_geometry_settings:
  * @instance: this #myIWindow instance.
  * @settings: [allow-none]: the #myISettings implementation to be used.
  *
  * Sets the settings.
  */
 void
-my_iwindow_set_settings( myIWindow *instance, myISettings *settings )
+my_iwindow_set_geometry_settings( myIWindow *instance, myISettings *settings )
 {
 	sIWindow *sdata;
 

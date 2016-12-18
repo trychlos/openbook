@@ -296,7 +296,7 @@ iwindow_init( myIWindow *instance )
 	priv = ofa_recurrent_generate_get_instance_private( OFA_RECURRENT_GENERATE( instance ));
 
 	my_iwindow_set_parent( instance, priv->parent );
-	my_iwindow_set_settings( instance, ofa_hub_get_user_settings( priv->hub ));
+	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 }
 
 /*

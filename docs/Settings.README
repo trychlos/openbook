@@ -45,6 +45,11 @@
 
 -> write simultaneously all settings for a window
 
+ Assistants
+
+    Assistants have the particularity of having several pages, each page
+    being initialized at its own time. As a consequence, settings are read
+    before the UI is fully initialized.
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2016, Dec. 17th
