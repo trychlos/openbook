@@ -102,9 +102,9 @@ typedef struct {
 	 */
 	GtkWidget           *p3_datatype;
 	GtkWidget           *p3_format;
-	GtkFileChooser      *p3_chooser;
-	gchar               *p3_furi;			/* the output file URI */
-	gchar               *p3_last_folder;
+	GtkWidget           *p3_chooser;
+	gchar               *p3_folder_uri;
+	gchar               *p3_output_file_uri;
 
 	/* p4: confirm
 	 */
@@ -243,8 +243,8 @@ export_assistant_finalize( GObject *instance )
 	g_free( priv->p1_selected_class );
 	g_free( priv->p1_selected_label );
 	g_free( priv->p2_format );
-	g_free( priv->p3_last_folder );
-	g_free( priv->p3_furi );
+	g_free( priv->p3_folder_uri );
+	g_free( priv->p3_output_file_uri );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_export_assistant_parent_class )->finalize( instance );
@@ -294,6 +294,7 @@ ofa_export_assistant_init( ofaExportAssistant *self )
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->p1_exportables = NULL;
 	priv->p2_export_settings = NULL;
+	priv->p3_output_file_uri = NULL;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -679,14 +680,17 @@ p2_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 /*
  * p3: choose output file
+ *
+ * p3_folder_uri has been set from user setttings
+ *   . either as the last export folder for this dossier
+ *   . or from the default export folder from user preferences
  */
 static void
 p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
 	static const gchar *thisfn = "ofa_export_assistant_p3_do_init";
 	ofaExportAssistantPrivate *priv;
-	gchar *dirname, *basename;
-	myISettings *settings;
+	gchar *basename;
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
@@ -703,38 +707,25 @@ p3_do_init( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	g_return_if_fail( priv->p3_format && GTK_IS_LABEL( priv->p3_format ));
 	my_style_add( priv->p3_format, "labelinfo" );
 
-	priv->p3_chooser =
-			( GtkFileChooser * ) my_utils_container_get_child_by_name(
-					GTK_CONTAINER( page ), "p3-filechooser" );
+	priv->p3_chooser = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p3-filechooser" );
 	g_return_if_fail( priv->p3_chooser && GTK_IS_FILE_CHOOSER( priv->p3_chooser ));
 
-	g_signal_connect(
-			priv->p3_chooser, "selection-changed", G_CALLBACK( p3_on_selection_changed ), self );
-	g_signal_connect(
-			priv->p3_chooser, "file-activated", G_CALLBACK( p3_on_file_activated ), self );
+	g_signal_connect( priv->p3_chooser, "selection-changed", G_CALLBACK( p3_on_selection_changed ), self );
+	g_signal_connect( priv->p3_chooser, "file-activated", G_CALLBACK( p3_on_file_activated ), self );
 
 	/* build a default output filename from the last used folder
 	 * plus the default basename for this data type class */
-	settings = ofa_hub_get_user_settings( priv->hub );
-	if( my_strlen( priv->p3_furi )){
-		dirname = g_strdup( priv->p3_furi );
-	} else {
-		dirname = my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, HUB_USER_SETTINGS_EXPORT_FOLDER );
-		if( !my_strlen( dirname )){
-			g_free( dirname );
-			dirname = g_strdup( "." );
-		}
-	}
 	basename = g_strdup_printf( "%s.csv", priv->p1_selected_class );
-
-	g_free( priv->p3_furi );
-	priv->p3_furi = g_build_filename( dirname, basename, NULL );
-	g_debug( "%s: p3_furi=%s", thisfn, priv->p3_furi );
-
+	priv->p3_output_file_uri = g_build_filename( priv->p3_folder_uri, basename, NULL );
+	g_debug( "%s: p3_output_file_uri=%s", thisfn, priv->p3_output_file_uri );
 	g_free( basename );
-	g_free( dirname );
 }
 
+/*
+ * output_file_uri comes:
+ * - either from the default (built from folder_uri + default_basename)
+ * - or has been previously selected
+ */
 static void
 p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 {
@@ -750,23 +741,23 @@ p3_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	gtk_label_set_text( GTK_LABEL( priv->p3_datatype ), priv->p1_selected_label );
 	gtk_label_set_text( GTK_LABEL( priv->p3_format ), priv->p2_format );
 
-	if( my_strlen( priv->p3_furi )){
-		dirname = g_path_get_dirname( priv->p3_furi );
-		gtk_file_chooser_set_current_folder_uri( priv->p3_chooser, dirname );
+	if( my_strlen( priv->p3_output_file_uri )){
+		dirname = g_path_get_dirname( priv->p3_output_file_uri );
+		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->p3_chooser ), dirname );
+		basename = g_path_get_basename( priv->p3_output_file_uri );
+		gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->p3_chooser ), basename );
+		g_debug( "%s: p3_output_file_uri=%s, dirname=%s, basename=%s",
+				thisfn, priv->p3_output_file_uri, dirname, basename );
 		g_free( dirname );
-		basename = g_path_get_basename( priv->p3_furi );
-		gtk_file_chooser_set_current_name( priv->p3_chooser, basename );
 		g_free( basename );
-		g_debug( "%s: p3_furi=%s, dirname=%s, basename=%s",
-				thisfn, priv->p3_furi, dirname, basename );
 
-	} else if( my_strlen( priv->p3_last_folder )){
-		gtk_file_chooser_set_current_folder( priv->p3_chooser, priv->p3_last_folder );
-		basename = g_build_filename( priv->p1_selected_class, ".csv", NULL );
-		gtk_file_chooser_set_current_name( priv->p3_chooser, basename );
+	} else if( my_strlen( priv->p3_folder_uri )){
+		gtk_file_chooser_set_current_folder_uri( GTK_FILE_CHOOSER( priv->p3_chooser ), priv->p3_folder_uri );
+		basename = g_strdup_printf( "%s.csv", priv->p1_selected_class );
+		gtk_file_chooser_set_current_name( GTK_FILE_CHOOSER( priv->p3_chooser ), basename );
+		g_debug( "%s: p3_folder_uri=%s, basename=%s",
+				thisfn, priv->p3_folder_uri, basename );
 		g_free( basename );
-		g_debug( "%s: p3_last_folder=%s, basename=%s",
-				thisfn, priv->p3_last_folder, basename );
 	}
 
 	p3_check_for_complete( self );
@@ -790,6 +781,14 @@ p3_on_file_activated( GtkFileChooser *chooser, ofaExportAssistant *self )
 	}
 }
 
+/*
+ * Building the output file from the selection in the chooser, or by
+ * taking the name the user may have entered in the entry.
+ *
+ * As the UI is dynamic, this function is called many times
+ * We so cannot ask here for user confirmation in case of an existing
+ * file: this confirmation is postponed to page_forward.
+ */
 static gboolean
 p3_check_for_complete( ofaExportAssistant *self )
 {
@@ -800,29 +799,29 @@ p3_check_for_complete( ofaExportAssistant *self )
 
 	priv = ofa_export_assistant_get_instance_private( self );
 
-	g_free( priv->p3_furi );
+	g_free( priv->p3_output_file_uri );
 
-	name = gtk_file_chooser_get_current_name( priv->p3_chooser );
+	name = gtk_file_chooser_get_current_name( GTK_FILE_CHOOSER( priv->p3_chooser ));
 	if( my_strlen( name )){
 		g_debug( "%s: name=%s", thisfn, name );
 		final = NULL;
 		if( g_path_is_absolute( name )){
 			final = g_strdup( name );
 		} else {
-			folder = gtk_file_chooser_get_current_folder( priv->p3_chooser );
+			folder = gtk_file_chooser_get_current_folder( GTK_FILE_CHOOSER( priv->p3_chooser ));
 			final = g_build_filename( folder, name, NULL );
 			g_free( folder );
 		}
-		priv->p3_furi = g_filename_to_uri( final, NULL, NULL );
+		priv->p3_output_file_uri = g_filename_to_uri( final, NULL, NULL );
 		g_free( final );
 
 	} else {
-		priv->p3_furi = gtk_file_chooser_get_uri( priv->p3_chooser );
+		priv->p3_output_file_uri = gtk_file_chooser_get_uri( GTK_FILE_CHOOSER( priv->p3_chooser ));
 	}
-	g_free( name );
-	g_debug( "%s: p3_furi=%s", thisfn, priv->p3_furi );
+	ok = my_strlen( priv->p3_output_file_uri ) > 0 && !my_utils_uri_is_dir( priv->p3_output_file_uri );
 
-	ok = my_strlen( priv->p3_furi ) > 0 && !my_utils_uri_is_dir( priv->p3_furi );
+	g_debug( "%s: p3_output_file_uri=%s, ok=%s",
+			thisfn, priv->p3_output_file_uri, ok ? "True":"False" );
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), ok );
 
@@ -867,19 +866,20 @@ p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 	/* keep the last used folder in case we go back to this page
 	 * we choose to keep the same folder, letting the user choose
 	 * another basename */
-	g_free( priv->p3_last_folder );
-	priv->p3_last_folder = g_path_get_dirname( priv->p3_furi );
+	g_free( priv->p3_folder_uri );
+	priv->p3_folder_uri = g_path_get_dirname( priv->p3_output_file_uri );
+	g_debug( "%s: folder_uri=%s", thisfn, priv->p3_folder_uri );
 
-	/* we cannot prevent this test to be made only here
-	 * if the user cancel, then the assistant will anyway go to the
+	/* We cannot prevent this test to be made only here.
+	 * If the user cancel, then the assistant will anyway go to the
 	 * Confirmation page, without any dest uri
 	 * This is because GtkAssistant does not let us stay on the same page
 	 * when the user has clicked on the Next button */
-	if( my_utils_uri_exists( priv->p3_furi )){
-		ok = p3_confirm_overwrite( self, priv->p3_furi );
+	if( my_utils_uri_exists( priv->p3_output_file_uri )){
+		ok = p3_confirm_overwrite( self, priv->p3_output_file_uri );
 		if( !ok ){
-			g_free( priv->p3_furi );
-			priv->p3_furi = NULL;
+			g_free( priv->p3_output_file_uri );
+			priv->p3_output_file_uri = NULL;
 		}
 	}
 }
@@ -945,12 +945,22 @@ p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	ofa_stream_format_disp_set_format( priv->p4_format, priv->p2_export_settings );
 
+	complete = ( my_strlen( priv->p3_output_file_uri ) > 0 );
+
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( page ), "p4-furi" );
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
-	my_style_add( label, "labelinfo" );
-	gtk_label_set_text( GTK_LABEL( label ), priv->p3_furi );
 
-	complete = ( my_strlen( priv->p3_furi ) > 0 );
+	if( complete ){
+		my_style_add( label, "labelinfo" );
+		my_style_remove( label, "labelerror" );
+		gtk_label_set_text( GTK_LABEL( label ), priv->p3_output_file_uri );
+	} else {
+		my_style_add( label, "labelerror" );
+		my_style_remove( label, "labelinfo" );
+		gtk_label_set_text( GTK_LABEL( label ),
+				_( "Target is not set.\nPlease hit 'Back' button to select a target."));
+	}
+
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), complete );
 }
 
@@ -1004,7 +1014,7 @@ p5_export_data( ofaExportAssistant *self )
 
 	/* first, export */
 	ok = ofa_iexportable_export_to_uri(
-			priv->p5_base, priv->p3_furi, priv->p2_export_settings, priv->hub, MY_IPROGRESS( self ));
+			priv->p5_base, priv->p3_output_file_uri, priv->p2_export_settings, priv->hub, MY_IPROGRESS( self ));
 
 	/* then display the result */
 	label = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-label" );
@@ -1012,12 +1022,12 @@ p5_export_data( ofaExportAssistant *self )
 	if( ok ){
 		text = g_strdup_printf( _( "OK: « %s » has been successfully exported.\n\n"
 				"%ld lines have been written in '%s' output stream." ),
-				priv->p1_selected_label, ofa_iexportable_get_count( priv->p5_base ), priv->p3_furi );
+				priv->p1_selected_label, ofa_iexportable_get_count( priv->p5_base ), priv->p3_output_file_uri );
 	} else {
 		text = g_strdup_printf( _( "Unfortunately, « %s » export has encountered errors.\n\n"
 				"The '%s' stream may be incomplete or inaccurate.\n\n"
 				"Please fix these errors, and retry then." ),
-				priv->p1_selected_label, priv->p3_furi );
+				priv->p1_selected_label, priv->p3_output_file_uri );
 	}
 
 	str = g_strdup_printf( "<b>%s</b>", text );
@@ -1034,7 +1044,10 @@ p5_export_data( ofaExportAssistant *self )
 
 /*
  * user settings are: class_name;
+ *
  * dossier_settings are: last_export_folder_uri
+ *    which defaults to default_export_folder (from user preferences)
+ *    which defaults to '.'
  */
 static void
 read_settings( ofaExportAssistant *self )
@@ -1067,7 +1080,16 @@ read_settings( ofaExportAssistant *self )
 	settings = ofa_hub_get_dossier_settings( priv->hub );
 	group = ofa_idbdossier_meta_get_group_name( priv->meta );
 
-	priv->p3_furi = my_isettings_get_string( settings, group, st_export_folder );
+	priv->p3_folder_uri = my_isettings_get_string( settings, group, st_export_folder );
+	if( !my_strlen( priv->p3_folder_uri )){
+		g_free( priv->p3_folder_uri );
+		priv->p3_folder_uri = ofa_prefs_export_default_folder( priv->hub );
+	}
+	if( !my_strlen( priv->p3_folder_uri )){
+		g_free( priv->p3_folder_uri );
+		priv->p3_folder_uri = g_strdup( "." );
+	}
+	g_debug( "read_settings: p3_folder_uri=%s", priv->p3_folder_uri );
 
 	g_free( group );
 }
@@ -1098,8 +1120,8 @@ write_settings( ofaExportAssistant *self )
 	settings = ofa_hub_get_dossier_settings( priv->hub );
 	group = ofa_idbdossier_meta_get_group_name( priv->meta );
 
-	if( my_strlen( priv->p3_last_folder )){
-		my_isettings_set_string( settings, group, st_export_folder, priv->p3_last_folder );
+	if( my_strlen( priv->p3_folder_uri )){
+		my_isettings_set_string( settings, group, st_export_folder, priv->p3_folder_uri );
 	}
 
 	g_free( group );

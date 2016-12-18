@@ -42,11 +42,11 @@
 
  New features and improvements:
 
-   - 
+   - ofaExportAssistant: have a message when output file is not set.
 
  Bug fixes:
 
-   - 
+   - ofaImportAssistant: fix page 4 label position.
 
  Other changes:
 
