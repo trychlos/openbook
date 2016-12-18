@@ -409,8 +409,11 @@ on_key_pressed_event( GtkWidget *widget, GdkEventKey *event, myIAssistant *insta
 {
 	gboolean stop = FALSE;
 
-	if( event->keyval == GDK_KEY_Escape && is_willing_to_quit( instance, event->keyval )){
-		do_close( instance );
+	if( event->keyval == GDK_KEY_Escape ){
+		if( is_willing_to_quit( instance, event->keyval )){
+			do_close( instance );
+		}
+		stop = TRUE;
 	}
 
 	return( stop );

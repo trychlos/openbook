@@ -46,6 +46,7 @@
 
  Bug fixes:
 
+   - myIAssistant: fix quit on escape (fix key propagation).
    - ofaImportAssistant: fix page 4 label position.
 
  Other changes:

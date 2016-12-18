@@ -987,16 +987,21 @@ ofa_prefs_assistant_confirm_on_cancel( ofaHub *hub )
 gboolean
 ofa_prefs_assistant_is_willing_to_quit( ofaHub *hub, guint keyval )
 {
-	gboolean ok;
+	static const gchar *thisfn = "ofa_prefs_assistant_is_willing_to_quit";
+	gboolean ok_escape, ok_cancel;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
-	ok = (( keyval == GDK_KEY_Escape &&
-			ofa_prefs_assistant_quit_on_escape( hub ) &&
-			(!ofa_prefs_assistant_confirm_on_escape( hub ) || is_willing_to_quit())) ||
-				( keyval == GDK_KEY_Cancel && (!ofa_prefs_assistant_confirm_on_cancel( hub ) || is_willing_to_quit())));
+	ok_escape = ( keyval == GDK_KEY_Escape &&
+					ofa_prefs_assistant_quit_on_escape( hub ) &&
+					(!ofa_prefs_assistant_confirm_on_escape( hub ) || is_willing_to_quit()));
+	g_debug( "%s: ok_escape=%s", thisfn, ok_escape ? "True":"False" );
 
-	return( ok );
+	ok_cancel = ( keyval == GDK_KEY_Cancel &&
+					(!ofa_prefs_assistant_confirm_on_cancel( hub ) || is_willing_to_quit()));
+	g_debug( "%s: ok_cancel=%s", thisfn, ok_cancel ? "True":"False" );
+
+	return( ok_escape || ok_cancel );
 }
 
 static gboolean
