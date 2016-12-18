@@ -57,19 +57,18 @@
  */
 typedef struct {
 
-	/* internals
+	/* runtime
 	 */
 	ofaHub            *hub;
 	GList             *hub_handlers;
 	gchar             *settings_prefix;
 	gchar             *account_number;
 	ofoCurrency       *account_currency;
-	gint               stlmt_filter;
-	gboolean           reading_settings;
 
 	/* UI
 	 */
 	GtkWidget         *paned;
+	guint              paned_position;
 	ofaEntryTreeview  *tview;
 	ofaEntryStore     *store;
 
@@ -81,6 +80,7 @@ typedef struct {
 	/* frame 2: filtering mode
 	 */
 	GtkWidget         *filter_combo;
+	gchar             *filter_id;
 
 	/* footer
 	 */
@@ -198,6 +198,7 @@ settlement_page_finalize( GObject *instance )
 
 	g_free( priv->settings_prefix );
 	g_free( priv->account_number );
+	g_free( priv->filter_id );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_settlement_page_parent_class )->finalize( instance );
@@ -243,8 +244,8 @@ ofa_settlement_page_init( ofaSettlementPage *self )
 	priv = ofa_settlement_page_get_instance_private( self );
 
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->reading_settings = FALSE;
-	priv->stlmt_filter = -1;
+	priv->account_number = NULL;
+	priv->filter_id = NULL;
 	priv->last_style = "labelinvalid";
 }
 
@@ -275,6 +276,8 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	read_settings( OFA_SETTLEMENT_PAGE( page ));
 
 	priv->paned = GTK_WIDGET( paned );
 
@@ -393,6 +396,7 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementPage
 	ofoEntry *entry;
 	gint entry_set_number;
 	const gchar *ent_account;
+	guint filter_int;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
@@ -417,9 +421,10 @@ tview_is_visible_row( GtkTreeModel *tmodel, GtkTreeIter *iter, ofaSettlementPage
 			return( FALSE );
 		}
 
+		filter_int = atoi( priv->filter_id );
 		entry_set_number = ofo_entry_get_settlement_number( entry );
 
-		switch( priv->stlmt_filter ){
+		switch( filter_int ){
 			case STLMT_FILTER_YES:
 				visible = ( entry_set_number > 0 );
 				break;
@@ -664,6 +669,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 
 	priv = ofa_settlement_page_get_instance_private( OFA_SETTLEMENT_PAGE( page ));
 
+	/* setup contextual menu */
 	menu = ofa_iactionable_get_menu( OFA_IACTIONABLE( page ), priv->settings_prefix );
 	ofa_icontext_set_menu(
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( page ),
@@ -674,7 +680,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 			OFA_ICONTEXT( priv->tview ), OFA_IACTIONABLE( priv->tview ),
 			OFA_IACTIONABLE_VISIBLE_COLUMNS_ITEM, menu );
 
-	/* install an empty store before reading the settings */
+	/* install an empty store before setting up the initial values */
 	priv->store = ofa_entry_store_new( priv->hub );
 	ofa_tvbin_set_store( OFA_TVBIN( priv->tview ), GTK_TREE_MODEL( priv->store ));
 
@@ -682,7 +688,10 @@ paned_page_v_init_view( ofaPanedPage *page )
 	 * setup the initial selection if a first row exists */
 	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
 
-	read_settings( OFA_SETTLEMENT_PAGE( page ));
+	/* setup initial values */
+	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->filter_combo ), priv->filter_id );
+	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), priv->account_number );
+	gtk_paned_set_position( GTK_PANED( priv->paned ), priv->paned_position );
 }
 
 static void
@@ -717,7 +726,6 @@ on_account_changed( GtkEntry *entry, ofaSettlementPage *self )
 	}
 
 	ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
-	write_settings( self );
 }
 
 static void
@@ -726,21 +734,18 @@ on_settlement_changed( GtkComboBox *box, ofaSettlementPage *self )
 	ofaSettlementPagePrivate *priv;
 	GtkTreeIter iter;
 	GtkTreeModel *tmodel;
-	gchar *str;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
 	if( gtk_combo_box_get_active_iter( box, &iter )){
+
+		g_free( priv->filter_id );
 		tmodel = gtk_combo_box_get_model( box );
 		gtk_tree_model_get( tmodel, &iter,
-				SET_COL_CODE, &str,
+				SET_COL_CODE, &priv->filter_id,
 				-1 );
 
-		priv->stlmt_filter = atoi( str );
-		g_free( str );
-
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
-		write_settings( self );
 	}
 }
 
@@ -848,41 +853,44 @@ read_settings( ofaSettlementPage *self )
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
-	gint pos;
-	gchar *settings_key;
+	gchar *key;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	priv->reading_settings = TRUE;
-
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
+	/* filter mode */
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
+	g_free( priv->filter_id );
 	if( my_strlen( cstr )){
-		gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->filter_combo ), cstr );
+		priv->filter_id = g_strdup( cstr );
+	} else {
+		priv->filter_id = g_strdup_printf( "%d", STLMT_FILTER_ALL );
 	}
 
+	/* account number */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
+		g_free( priv->account_number );
+		priv->account_number = g_strdup( cstr );
 	}
 
+	/* paned position */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	pos = cstr ? atoi( cstr ) : 0;
-	if( pos <= 10 ){
-		pos = 150;
+	if( my_strlen( cstr )){
+		priv->paned_position = atoi( cstr );
 	}
-	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
+	if( priv->paned_position <= 10 ){
+		priv->paned_position = 150;
+	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
-
-	priv->reading_settings = FALSE;
+	g_free( key );
 }
 
 static void
@@ -890,22 +898,19 @@ write_settings( ofaSettlementPage *self )
 {
 	ofaSettlementPagePrivate *priv;
 	myISettings *settings;
-	gchar *str, *settings_key;
-	gint pos;
+	gchar *str, *key;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
-	if( !priv->reading_settings ){
-		pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
+	str = g_strdup_printf( "%s;%s;%d;",
+			priv->filter_id,
+			priv->account_number,
+			gtk_paned_get_position( GTK_PANED( priv->paned )));
 
-		str = g_strdup_printf( "%d;%s;%d;",
-				priv->stlmt_filter, priv->account_number, pos );
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
-		settings = ofa_hub_get_user_settings( priv->hub );
-		settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
-
-		g_free( str );
-		g_free( settings_key );
-	}
+	g_free( str );
+	g_free( key );
 }
