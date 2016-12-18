@@ -53,6 +53,7 @@
    - myIWindow: set_settings() is renamed set_geometry_settings() (todo #1282).
    - myIWindow: deprecate my_iwindow_get_keyname() (todo #1283).
    - No more try to read/write user settings from myIWindow geometry settings (todo #1284).
+   - ofa_prefs_export_default_folder(): new function.
 
 -----------------------------------------------------------------------
  Version 0.63

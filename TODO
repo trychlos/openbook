@@ -345,6 +345,8 @@
                 - ofa-OpeTemplateBookOrder
                 - ofa-UserPreferences-settings
                 - OpeTemplateBookOrder
+     2016-12-18 note that updating dossier settings triggers a reload
+                of dossier_collection (due to file monitoring)
 
 1237 2016-10-18 DB: drop column OTE_REF_LOCKED2, OTE_LED_LOCKED2
 
@@ -374,10 +376,6 @@
                 - entries: idem operation,
                 - accounts: all documents for this account
 
-1265 2016-11-28 myISettings: simplify the interface
-     2016-12- 8 we roughly only need read strlist and write str 
-     2016-12-16 also get/set_uint and get/set_uint_list are used
-
 1267 2016-11-29 obsolete ofa_dossier_collection_set_meta_from_editor()
 
 1270 2016-11-29 ofaIDBDossierEditor and ofaIDBExerciceEditor obsolete
@@ -394,22 +392,22 @@
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 
 
-1286 2016-12-14 deprecate my_utils_widget_get_toplevel()
-     2016-12-17 find a good reason to do this (we already know that this
-                does not find the main window, but this is not an enough
-                good one)
-
 1287 2016-12-14 deprecate myIWindow::is_destroy_allowed() replacing it
                 by a my_iwindow_set_is_destroy_allowed() method
-
-1291 2016-12-16 theorize read/write_[user]settings
-     2016-12-17 see docs/Settings.README
 
 1292 2016-12-17 optimize reconciliation loading
 
 1296 2016-12-17 VAT declarations: be able to consult generated operations
 
-1297
+1297 2016-12-18 DossierOpen: make the exercice combo unsensitive if no
+                dossier is selected
+
+1298 2016-12-18 ExportAssistant: ExportFormat: headers_count label and
+                spin button should be insensitive
+
+1299 2016-12-18 ImportFormat: the with_headers check should be insensitive
+
+1300
 
 -----------------------------------------------------------------------
  DONE
@@ -2022,6 +2020,11 @@
                 + this is this class which gives the list of dossiers
      2016-12-10 done
 
+1265 2016-11-28 myISettings: simplify the interface
+     2016-12- 8 we roughly only need read strlist and write str 
+     2016-12-16 also get/set_uint and get/set_uint_list are used
+     2016-12-18 cancelled (nothing wrong with a rich interface)
+
 1266 2016-11-28 openbook: have two objects derived from mySettings class
      2016-12- 6 + registering them in ofaHub
      2016-12-13 done for dossier settings
@@ -2083,6 +2086,11 @@
      2016-12-18 -> [virtual] myIwindow::write_settings(): deprecated
      2016-12-18 -> [virtual] myIwindow::read_settings(): deprecated
 
+1286 2016-12-14 deprecate my_utils_widget_get_toplevel()
+     2016-12-17 find a good reason to do this (we already know that this
+                does not find the main window, but this is not an enough
+                good one)
+
 1288 2016-12-14 ofa_idbmodel_update: have a getter instead of the hub
                 (for consistency reasons)
      2016-12-14 done
@@ -2093,6 +2101,9 @@
 
 1290 2016-12-16 hub is not finalized
      2016-12-17 fixed (and plugins are successfully shutdowned)
+
+1291 2016-12-16 theorize read/write_[user]settings
+     2016-12-17 see docs/Settings.README
 
 1293 2016-12-17 ReconciliationPage: bug when changing the account
      2016-12-17 fixed

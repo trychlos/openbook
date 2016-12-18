@@ -74,7 +74,7 @@ void         ofa_preferences_run                        ( ofaIGetter *getter,
 																GtkWindow *parent,
 																ofaExtenderModule *plugin );
 
-/* these are helpers available to the rest of the application
+/* these are helpers globally available
  */
 gboolean     ofa_prefs_assistant_quit_on_escape         ( ofaHub *hub );
 gboolean     ofa_prefs_assistant_confirm_on_escape      ( ofaHub *hub );
@@ -100,6 +100,8 @@ const gchar *ofa_prefs_amount_decimal_sep               ( ofaHub *hub );
 const gchar *ofa_prefs_amount_thousand_sep              ( ofaHub *hub );
 gboolean     ofa_prefs_amount_accept_dot                ( ofaHub *hub );
 gboolean     ofa_prefs_amount_accept_comma              ( ofaHub *hub );
+
+gchar       *ofa_prefs_export_default_folder            ( ofaHub *hub );
 
 G_END_DECLS
 

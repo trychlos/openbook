@@ -133,6 +133,7 @@ static const gchar *st_dossier_open_properties        = "DossierOpenProperties";
 static const gchar *st_dossier_open_balance           = "DossierOpenBalance";
 static const gchar *st_dossier_open_integrity         = "DossierOpenIntegrity";
 static const gchar *st_account_delete_root_with_child = "AssistantConfirmOnCancel";
+static const gchar *st_export_default_folder          = "ExportDefaultFolder";
 
 static const gchar *st_resource_ui                    = "/org/trychlos/openbook/core/ofa-preferences.ui";
 
@@ -585,11 +586,10 @@ static void
 init_export_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
-	myISettings *user_settings;
 	GtkWidget *target, *label, *entry;
 	gchar *str;
 	GtkSizeGroup *group;
-	ofaStreamFormat *settings;
+	ofaStreamFormat *format;
 
 	priv = ofa_preferences_get_instance_private( self );
 
@@ -598,9 +598,9 @@ init_export_page( ofaPreferences *self )
 	target = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p5-export-parent" );
 	g_return_if_fail( target && GTK_IS_CONTAINER( target ));
 
-	settings = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_EXPORT );
-	priv->export_settings = ofa_stream_format_bin_new( settings );
-	g_object_unref( settings );
+	format = ofa_stream_format_new( priv->hub, NULL, OFA_SFMODE_EXPORT );
+	priv->export_settings = ofa_stream_format_bin_new( format );
+	g_object_unref( format );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->export_settings ));
 	my_utils_size_group_add_size_group(
 			group, ofa_stream_format_bin_get_size_group( priv->export_settings, 0 ));
@@ -612,8 +612,7 @@ init_export_page( ofaPreferences *self )
 	ofa_stream_format_bin_set_mode_sensitive( priv->export_settings, FALSE );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-folder" ));
-	user_settings = ofa_hub_get_user_settings( priv->hub );
-	str = my_isettings_get_string( user_settings, HUB_USER_SETTINGS_GROUP, HUB_USER_SETTINGS_EXPORT_FOLDER );
+	str = ofa_prefs_export_default_folder( priv->hub );
 	if( my_strlen( str )){
 		gtk_file_chooser_set_current_folder_uri( priv->p5_chooser, str );
 	}
@@ -1477,14 +1476,33 @@ do_update_export_page( ofaPreferences *self, gchar **msgerr )
 
 	ofa_stream_format_bin_apply( priv->export_settings );
 
-	text = gtk_file_chooser_get_current_folder_uri( priv->p5_chooser );
+	text = gtk_file_chooser_get_uri( priv->p5_chooser );
 	if( my_strlen( text )){
 		settings = ofa_hub_get_user_settings( priv->hub );
-		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, HUB_USER_SETTINGS_EXPORT_FOLDER, text );
+		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_export_default_folder, text );
 	}
 	g_free( text );
 
 	return( TRUE );
+}
+
+/**
+ * ofa_prefs_export_default_folder:
+ * @hub: the #ofaHub object of the application.
+ *
+ * Returns: the default export folder as a newly allocated string which
+ * should be #g_free() by the caller.
+ */
+gchar *
+ofa_prefs_export_default_folder( ofaHub *hub )
+{
+	myISettings *settings;
+
+	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
+
+	settings = ofa_hub_get_user_settings( hub );
+
+	return( my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, st_export_default_folder ));
 }
 
 static gboolean

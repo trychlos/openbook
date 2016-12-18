@@ -38,8 +38,9 @@
  Dialog boxes Content
 
     E.g. last date, last account number, etc.
-    It should be read after the UI has been initialized so that reading
-    may directly set desired fields/entries/combo/etc.
+    The most obvious and maybe the easyest way is to read the settings
+    after the UI has been initialized so that one can  directly set
+    desired fields/entries/combo/etc.
     It should *not* be rewritten after each change: not only this is useless,
     but each setup on reading is a change, and so may lead to trigger a
     write (which would be bad as double useless).
@@ -60,7 +61,11 @@
  User settings should be read before UI initialization, not because this
  would be the more practiful, but because this is the only common point
  between dialogs and assistants.
- When reading user settings, datas are stored as initial values.
+ In all myIWindow implementations, this means reading from iwindow_init().
+ In pages, this means reading at very beginning of page_setup_view().
+
+ When reading user settings, datas are stored as initial values, which
+ means they no longer need to be re-read during the execution.
 
  User settings should be written at dialog/assistant dispose time.
 
