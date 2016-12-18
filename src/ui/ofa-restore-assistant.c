@@ -301,10 +301,8 @@ restore_assistant_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		/* write user settings before disposing the instance */
-		write_settings( OFA_RESTORE_ASSISTANT( instance ));
-
 		priv->dispose_has_run = TRUE;
+		write_settings( OFA_RESTORE_ASSISTANT( instance ));
 
 		/* unref object members here */
 		g_clear_object( &priv->p2_dossier_meta );

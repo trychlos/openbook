@@ -261,10 +261,8 @@ export_assistant_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
-		/* write user/dossier settings before disposing the instance */
-		write_settings( OFA_EXPORT_ASSISTANT( instance ));
-
 		priv->dispose_has_run = TRUE;
+		write_settings( OFA_EXPORT_ASSISTANT( instance ));
 
 		/* unref object members here */
 
