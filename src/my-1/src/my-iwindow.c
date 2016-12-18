@@ -297,32 +297,6 @@ my_iwindow_set_geometry_settings( myIWindow *instance, myISettings *settings )
 }
 
 /**
- * my_iwindow_get_keyname:
- * @instance: this #myIWindow instance.
- *
- * Returns: the default key name of the user settings, as a newly
- * allocated string which should be g_free() by the caller.
- *
- * It is by no way mandatory for the application to use this key name,
- * nor this same settings implementation, to store the user preferences.
- * This is just a default proposed by the #myIWindow interface, and
- * used by #read_settings() and #write_settings() method.
- */
-gchar *
-my_iwindow_get_keyname( const myIWindow *instance )
-{
-	gchar *keyprefix, *keyname;
-
-	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
-
-	keyprefix = get_iwindow_key_prefix( instance );
-	keyname = g_strdup_printf( "%s-settings", keyprefix );
-	g_free( keyprefix );
-
-	return( keyname );
-}
-
-/**
  * my_iwindow_init:
  * @instance: this #myIWindow instance.
  *

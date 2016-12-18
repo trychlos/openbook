@@ -391,8 +391,6 @@
                 so that this may be managed by the application instead of
                 by the dbms plugin
 
-1283 2016-12-13 myIWindow: deprecate '-settings' keyname management
-
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 
 
@@ -2075,6 +2073,9 @@
 
 1282 2016-12-13 myIWindow: get/set_settings -> get/set_geo[metry]_settings
      2016-12-18 done
+
+1283 2016-12-13 myIWindow: deprecate '-settings' keyname management
+     2016-12-18 my_iwindow_get_keyname() deprecated
 
 1284 2016-12-13 myIWindow: no more try to read/write user settings with
                 the geo_settings

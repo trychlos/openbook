@@ -1331,13 +1331,13 @@ read_settings( ofaRestoreAssistant *self )
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
-	gchar *keyname;
+	gchar *key;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -1359,7 +1359,7 @@ read_settings( ofaRestoreAssistant *self )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( keyname );
+	g_free( key );
 }
 
 static void
@@ -1367,20 +1367,20 @@ write_settings( ofaRestoreAssistant *self )
 {
 	ofaRestoreAssistantPrivate *priv;
 	myISettings *settings;
-	gchar *keyname, *str;
+	gchar *key, *str;
 
 	priv = ofa_restore_assistant_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
 
 	str = g_strdup_printf( "%s;%s;%d;",
 				priv->p1_folder, priv->p4_open ? "True":"False", priv->p1_filter );
 
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( keyname );
+	g_free( key );
 }
 
 /*

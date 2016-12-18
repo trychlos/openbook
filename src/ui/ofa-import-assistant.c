@@ -100,6 +100,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	gchar               *settings_prefix;
 	ofaHub              *hub;
 
 	/* p0: introduction
@@ -314,6 +315,7 @@ import_assistant_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->p1_folder );
 	g_free( priv->p1_furi );
 	g_free( priv->p1_content );
@@ -365,6 +367,7 @@ ofa_import_assistant_init( ofaImportAssistant *self )
 	priv = ofa_import_assistant_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->p3_importers = NULL;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -1545,15 +1548,15 @@ read_settings( ofaImportAssistant *self )
 	GList *strlist, *it;
 	const gchar *cstr;
 	myISettings *settings;
-	gchar *keyname, *group;
+	gchar *key, *group;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
 	/* user settings
 	 */
 	settings = ofa_hub_get_user_settings( priv->hub );
-	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -1577,7 +1580,7 @@ read_settings( ofaImportAssistant *self )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( keyname );
+	g_free( key );
 
 	/* dossier settings
 	 */
@@ -1594,7 +1597,7 @@ write_settings( ofaImportAssistant *self )
 {
 	ofaImportAssistantPrivate *priv;
 	myISettings *settings;
-	gchar *keyname, *group, *str;
+	gchar *key, *group, *str;
 
 	priv = ofa_import_assistant_get_instance_private( self );
 
@@ -1607,11 +1610,11 @@ write_settings( ofaImportAssistant *self )
 			priv->p4_stop ? "True":"False" );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( keyname );
+	g_free( key );
 
 	/* dossier settings
 	 */

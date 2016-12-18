@@ -204,8 +204,6 @@ void         my_iwindow_set_parent                ( myIWindow *instance,
 void         my_iwindow_set_geometry_settings     ( myIWindow *instance,
 														myISettings *settings );
 
-gchar       *my_iwindow_get_keyname               ( const myIWindow *instance );
-
 void         my_iwindow_set_restore_pos           ( myIWindow *instance,
 														gboolean restore_pos );
 
