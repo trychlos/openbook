@@ -122,6 +122,7 @@ struct _ofaDBModelWindowPrivate {
 
 	/* runtime
 	 */
+	gchar         *settings_prefix;
 	ofaHub        *hub;
 	GList         *plugins_list;
 	GList         *workers;
@@ -167,8 +168,6 @@ static gboolean idbmodel_ddl_update( ofaIDBModel *instance, ofaHub *hub, myIProg
 static GType    ofa_dbmodel_window_get_type( void ) G_GNUC_CONST;
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
-static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
-static void     iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
 static void     idialog_iface_init( myIDialogInterface *iface );
 static void     idialog_init( myIDialog *instance );
 static gboolean do_run( ofaDBModelWindow *dialog );
@@ -177,6 +176,9 @@ static gboolean do_import_data( ofaDBModelWindow *self );
 static gboolean import_utf8_comma_pipe_file( ofaDBModelWindow *self, sImport *import );
 static gint     count_rows( ofaDBModelWindow *self, const gchar *table );
 static void     on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWindow *dialog );
+static sWorker *get_worker_data( ofaDBModelWindow *self, const void *worker );
+static void     read_settings( ofaDBModelWindow *self );
+static void     write_settings( ofaDBModelWindow *self );
 static void     iprogress_iface_init( myIProgressInterface *iface );
 static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
 static void     iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar );
@@ -184,7 +186,6 @@ static void     iprogress_pulse( myIProgress *instance, const void *worker, gulo
 static void     iprogress_set_row( myIProgress *instance, const void *worker, GtkWidget *widget );
 static void     iprogress_set_ok( myIProgress *instance, const void *worker, GtkWidget *widget, gulong errs_count );
 static void     iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text );
-static sWorker *get_worker_data( ofaDBModelWindow *self, const void *worker );
 
 G_DEFINE_TYPE_EXTENDED( ofaDBModelWindow, ofa_dbmodel_window, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDBModelWindow )
@@ -555,6 +556,7 @@ dbmodel_window_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
+	g_free( priv->settings_prefix );
 	g_list_free_full( priv->workers, ( GDestroyNotify ) g_free );
 
 	/* chain up to the parent class */
@@ -571,6 +573,8 @@ dbmodel_window_dispose( GObject *instance )
 	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_DBMODEL_WINDOW( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -595,6 +599,7 @@ ofa_dbmodel_window_init( ofaDBModelWindow *self )
 	priv = ofa_dbmodel_window_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -623,8 +628,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->read_settings = iwindow_read_settings;
-	iface->write_settings = iwindow_write_settings;
 }
 
 static void
@@ -643,43 +646,8 @@ iwindow_init( myIWindow *instance )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
-}
 
-/*
- * settings are a string list, with:
- * - paned pos
- */
-static void
-iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
-{
-	ofaDBModelWindowPrivate *priv;
-	GList *strlist, *it;
-	const gchar *cstr;
-
-	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
-
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
-
-	it = strlist;
-	cstr = it ? it->data : NULL;
-	priv->paned_pos = my_strlen( cstr ) ? atoi( cstr ) : 150;
-
-	my_isettings_free_string_list( settings, strlist );
-}
-
-static void
-iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
-{
-	ofaDBModelWindowPrivate *priv;
-	gchar *str;
-
-	priv = ofa_dbmodel_window_get_instance_private( OFA_DBMODEL_WINDOW( instance ));
-
-	str = g_strdup_printf( "%d;", gtk_paned_get_position( GTK_PANED( priv->paned )));
-
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
-
-	g_free( str );
+	read_settings( OFA_DBMODEL_WINDOW( instance ));
 }
 
 /*
@@ -934,6 +902,81 @@ on_grid_size_allocate( GtkWidget *grid, GdkRectangle *allocation, ofaDBModelWind
 	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
 }
 
+static sWorker *
+get_worker_data( ofaDBModelWindow *self, const void *worker )
+{
+	ofaDBModelWindowPrivate *priv;
+	GList *it;
+	sWorker *sdata;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	for( it=priv->workers ; it ; it=it->next ){
+		sdata = ( sWorker * ) it->data;
+		if( sdata->worker == worker ){
+			return( sdata );
+		}
+	}
+
+	sdata = g_new0( sWorker, 1 );
+	sdata->worker = worker;
+	priv->workers = g_list_prepend( priv->workers, sdata );
+
+	return( sdata );
+}
+
+/*
+ * settings are a string list, with:
+ * - paned pos
+ */
+static void
+read_settings( ofaDBModelWindow *self )
+{
+	ofaDBModelWindowPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *key;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->paned_pos = atoi( cstr );
+	}
+	if( priv->paned_pos < 150 ){
+		priv->paned_pos = 150;
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+static void
+write_settings( ofaDBModelWindow *self )
+{
+	ofaDBModelWindowPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_dbmodel_window_get_instance_private( self );
+
+	str = g_strdup_printf( "%d;",
+				gtk_paned_get_position( GTK_PANED( priv->paned )));
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
+	g_free( str );
+}
+
 /*
  * myIProgress interface management
  */
@@ -1105,27 +1148,4 @@ iprogress_set_text( myIProgress *instance, const void *worker, const gchar *text
 
 	adjustment = gtk_scrollable_get_vadjustment( GTK_SCROLLABLE( priv->textview ));
 	gtk_adjustment_set_value( adjustment, gtk_adjustment_get_upper( adjustment ));
-}
-
-static sWorker *
-get_worker_data( ofaDBModelWindow *self, const void *worker )
-{
-	ofaDBModelWindowPrivate *priv;
-	GList *it;
-	sWorker *sdata;
-
-	priv = ofa_dbmodel_window_get_instance_private( self );
-
-	for( it=priv->workers ; it ; it=it->next ){
-		sdata = ( sWorker * ) it->data;
-		if( sdata->worker == worker ){
-			return( sdata );
-		}
-	}
-
-	sdata = g_new0( sWorker, 1 );
-	sdata->worker = worker;
-	priv->workers = g_list_prepend( priv->workers, sdata );
-
-	return( sdata );
 }

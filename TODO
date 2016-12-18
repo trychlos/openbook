@@ -393,9 +393,6 @@
 
 1283 2016-12-13 myIWindow: deprecate '-settings' keyname management
 
-1284 2016-12-13 myIWindow: no more try to read/write user settings with
-                the geo_settings
-
 1285 2016-12-13 myIWindow: deprecate ::get_identifier() method
                 when several windows of same name are opened, just shift them 
 
@@ -2078,6 +2075,12 @@
 
 1282 2016-12-13 myIWindow: get/set_settings -> get/set_geo[metry]_settings
      2016-12-18 done
+
+1284 2016-12-13 myIWindow: no more try to read/write user settings with
+                the geo_settings
+     2016-12-18 -> [public] my_iwindow_get_settings(): deprecated
+     2016-12-18 -> [virtual] myIwindow::write_settings(): deprecated
+     2016-12-18 -> [virtual] myIwindow::read_settings(): deprecated
 
 1288 2016-12-14 ofa_idbmodel_update: have a getter instead of the hub
                 (for consistency reasons)

@@ -170,41 +170,6 @@ typedef struct {
 												gint *cy );
 
 	/**
-	 * read_settings:
-	 * @instance: the #myIWindow instance.
-	 * @settings: the #myISettings implementation provided by the
-	 *  application.
-	 * @keyname: this is the identifier, plus the '-settings' suffix.
-	 *
-	 * Called at initialization time, after window creation and restore
-	 * of size and position, to let the application read its own settings.
-	 *
-	 * In particular, this #read_settings() method is called before the
-	 * #idialog_init() one.
-	 *
-	 * Since: version 1.
-	 */
-	void     ( *read_settings )        ( myIWindow *instance,
-												myISettings *settings,
-												const gchar *keyname );
-
-	/**
-	 * write_settings:
-	 * @instance: the #myIWindow instance.
-	 * @settings: the #myISettings implementation provided by the
-	 *  application.
-	 * @keyname: this is the identifier, plus the '-settings' suffix.
-	 *
-	 * Called at dispose time, before save of window size and position,
-	 * to let the application write its own settings.
-	 *
-	 * Since: version 1.
-	 */
-	void     ( *write_settings )       ( myIWindow *instance,
-												myISettings *settings,
-												const gchar *keyname );
-
-	/**
 	 * is_destroy_allowed:
 	 * @instance: the #myIWindow instance.
 	 *
@@ -235,8 +200,6 @@ GtkWindow   *my_iwindow_get_parent                ( const myIWindow *instance );
 
 void         my_iwindow_set_parent                ( myIWindow *instance,
 														GtkWindow *parent );
-
-myISettings *my_iwindow_get_settings              ( const myIWindow *instance );
 
 void         my_iwindow_set_geometry_settings     ( myIWindow *instance,
 														myISettings *settings );

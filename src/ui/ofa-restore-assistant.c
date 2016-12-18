@@ -183,9 +183,7 @@ static const gchar *st_resource_ui       = "/org/trychlos/openbook/ui/ofa-restor
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
-static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
 static gboolean iwindow_is_destroy_allowed( const myIWindow *instance );
-static void     set_settings( ofaRestoreAssistant *self );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     p1_do_init( ofaRestoreAssistant *self, gint page_num, GtkWidget *page );
@@ -222,6 +220,8 @@ static void     p6_do_display( ofaRestoreAssistant *self, gint page_num, GtkWidg
 static gboolean p6_restore_confirmed( ofaRestoreAssistant *self );
 static gboolean p6_do_restore( ofaRestoreAssistant *self );
 static gboolean p6_do_open( ofaRestoreAssistant *self );
+static void     read_settings( ofaRestoreAssistant *self );
+static void     write_settings( ofaRestoreAssistant *self );
 static void     iactionable_iface_init( ofaIActionableInterface *iface );
 static guint    iactionable_get_interface_version( void );
 
@@ -300,6 +300,9 @@ restore_assistant_dispose( GObject *instance )
 	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		/* write user settings before disposing the instance */
+		write_settings( OFA_RESTORE_ASSISTANT( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -388,7 +391,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->read_settings = iwindow_read_settings;
 	iface->is_destroy_allowed = iwindow_is_destroy_allowed;
 }
 
@@ -410,46 +412,8 @@ iwindow_init( myIWindow *instance )
 	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
 
 	my_iassistant_set_callbacks( MY_IASSISTANT( instance ), st_pages_cb );
-}
 
-/*
- * settings is "folder;open;filter_type;"
- */
-static void
-iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
-{
-	static const gchar *thisfn = "ofa_restore_assistant_iwindow_read_settings";
-	ofaRestoreAssistantPrivate *priv;
-	GList *list, *it;
-	const gchar *cstr;
-
-	g_debug( "%s: instance=%p, settings=%p, keyname=%s",
-			thisfn, ( void * ) instance, ( void * ) settings, keyname );
-
-	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
-
-	list = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
-
-	it = list;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		g_free( priv->p1_folder );
-		priv->p1_folder = g_strdup( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p4_open = my_utils_boolean_from_str( cstr );
-	}
-
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p1_filter = atoi( cstr );
-	}
-
-	my_isettings_free_string_list( settings, list );
+	read_settings( OFA_RESTORE_ASSISTANT( instance ));
 }
 
 static gboolean
@@ -463,27 +427,6 @@ iwindow_is_destroy_allowed( const myIWindow *instance )
 	priv = ofa_restore_assistant_get_instance_private( OFA_RESTORE_ASSISTANT( instance ));
 
 	return( priv->is_destroy_allowed );
-}
-
-static void
-set_settings( ofaRestoreAssistant *self )
-{
-	ofaRestoreAssistantPrivate *priv;
-	myISettings *settings;
-	gchar *keyname, *str;
-
-	priv = ofa_restore_assistant_get_instance_private( self );
-
-	settings = my_iwindow_get_settings( MY_IWINDOW( self ));
-	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
-
-	str = g_strdup_printf( "%s;%s;%d;",
-				priv->p1_folder, priv->p4_open ? "True":"False", priv->p1_filter );
-
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
-
-	g_free( str );
-	g_free( keyname );
 }
 
 /*
@@ -628,8 +571,6 @@ p1_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 
 	filter = gtk_file_chooser_get_filter( priv->p1_chooser );
 	priv->p1_filter = GPOINTER_TO_INT( g_object_get_data( G_OBJECT( filter ), CHOOSER_FILTER_TYPE ));
-
-	set_settings( self );
 }
 
 /*
@@ -800,7 +741,6 @@ p2_check_for_complete( ofaRestoreAssistant *self )
 static void
 p2_do_forward( ofaRestoreAssistant *self, GtkWidget *page )
 {
-	set_settings( self );
 }
 
 /*
@@ -1143,8 +1083,6 @@ p4_do_forward( ofaRestoreAssistant *self, gint page_num, GtkWidget *page )
 
 	g_debug( "%s: self=%p, page_num=%d, page=%p (%s)",
 			thisfn, ( void * ) self, page_num, ( void * ) page, G_OBJECT_TYPE_NAME( page ));
-
-	set_settings( self );
 }
 
 /*
@@ -1381,6 +1319,68 @@ p6_do_open( ofaRestoreAssistant *self )
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
 
 	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * settings is "folder;open;filter_type;"
+ */
+static void
+read_settings( ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *keyname;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		g_free( priv->p1_folder );
+		priv->p1_folder = g_strdup( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_open = my_utils_boolean_from_str( cstr );
+	}
+
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p1_filter = atoi( cstr );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( keyname );
+}
+
+static void
+write_settings( ofaRestoreAssistant *self )
+{
+	ofaRestoreAssistantPrivate *priv;
+	myISettings *settings;
+	gchar *keyname, *str;
+
+	priv = ofa_restore_assistant_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+
+	str = g_strdup_printf( "%s;%s;%d;",
+				priv->p1_folder, priv->p4_open ? "True":"False", priv->p1_filter );
+
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
+
+	g_free( str );
+	g_free( keyname );
 }
 
 /*

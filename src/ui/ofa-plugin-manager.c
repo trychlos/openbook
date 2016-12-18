@@ -59,6 +59,7 @@ typedef struct {
 	/* runtime
 	 */
 	ofaHub        *hub;
+	gchar         *settings_prefix;
 
 	/* UI
 	 */
@@ -95,8 +96,6 @@ enum {
 
 static void iwindow_iface_init( myIWindowInterface *iface );
 static void iwindow_init( myIWindow *instance );
-static void iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *key );
-static void iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *key );
 static void idialog_iface_init( myIDialogInterface *iface );
 static void idialog_init( myIDialog *instance );
 static void plugin_setup_treeview( ofaPluginManager *self );
@@ -109,6 +108,8 @@ static gint objects_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTree
 static void objects_on_selection_changed( GtkTreeSelection *selection, ofaPluginManager *self );
 static void plugins_load( ofaPluginManager *self );
 static void objects_load( ofaPluginManager *self, const GList *objects );
+static void read_settings( ofaPluginManager *self );
+static void write_settings( ofaPluginManager *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaPluginManager, ofa_plugin_manager, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaPluginManager )
@@ -119,6 +120,7 @@ static void
 plugin_manager_finalize( GObject *instance )
 {
 	static const gchar *thisfn = "ofa_plugin_manager_finalize";
+	ofaPluginManagerPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
@@ -126,6 +128,9 @@ plugin_manager_finalize( GObject *instance )
 	g_return_if_fail( instance && OFA_IS_PLUGIN_MANAGER( instance ));
 
 	/* free data members here */
+	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
 	G_OBJECT_CLASS( ofa_plugin_manager_parent_class )->finalize( instance );
@@ -141,6 +146,8 @@ plugin_manager_dispose( GObject *instance )
 	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		write_settings( OFA_PLUGIN_MANAGER( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -165,7 +172,7 @@ ofa_plugin_manager_init( ofaPluginManager *self )
 	priv = ofa_plugin_manager_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->plugin_pane_pos = 0;
 	priv->about_page = NULL;
 	priv->properties_page = NULL;
@@ -227,8 +234,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->read_settings = iwindow_read_settings;
-	iface->write_settings = iwindow_write_settings;
 }
 
 static void
@@ -247,49 +252,8 @@ iwindow_init( myIWindow *instance )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
-}
 
-/*
- * settings are: plugin_paned;
- */
-static void
-iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *key )
-{
-	ofaPluginManagerPrivate *priv;
-	GList *slist, *it;
-	const gchar *cstr;
-
-	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
-
-	slist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
-
-	it = slist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->plugin_pane_pos = atoi( cstr );
-	}
-
-	my_isettings_free_string_list( settings, slist );
-
-	if( priv->plugin_pane_pos < 150 ){
-		priv->plugin_pane_pos = 150;
-	}
-}
-
-static void
-iwindow_write_settings( myIWindow *instance, myISettings *settings, const gchar *key )
-{
-	ofaPluginManagerPrivate *priv;
-	gchar *str;
-
-	priv = ofa_plugin_manager_get_instance_private( OFA_PLUGIN_MANAGER( instance ));
-
-	str = g_strdup_printf( "%d;",
-				gtk_paned_get_position( GTK_PANED( priv->plugin_pane )));
-
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
-
-	g_free( str );
+	read_settings( OFA_PLUGIN_MANAGER( instance ));
 }
 
 /*
@@ -693,3 +657,54 @@ on_properties_clicked( GtkButton *button, ofaPluginManager *self )
 	}
 }
 #endif
+
+/*
+ * settings are: plugin_paned;
+ */
+static void
+read_settings( ofaPluginManager *self )
+{
+	ofaPluginManagerPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *key;
+
+	priv = ofa_plugin_manager_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->plugin_pane_pos = atoi( cstr );
+	}
+	if( priv->plugin_pane_pos < 150 ){
+		priv->plugin_pane_pos = 150;
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+static void
+write_settings( ofaPluginManager *self )
+{
+	ofaPluginManagerPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_plugin_manager_get_instance_private( self );
+
+	str = g_strdup_printf( "%d;",
+				gtk_paned_get_position( GTK_PANED( priv->plugin_pane )));
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
+	g_free( str );
+}

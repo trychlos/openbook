@@ -159,8 +159,6 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-export-
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
-static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
-static void     write_settings( ofaExportAssistant *self );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     p0_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page_widget );
@@ -186,6 +184,8 @@ static void     p4_do_display( ofaExportAssistant *self, gint page_num, GtkWidge
 static gboolean p3_confirm_overwrite( const ofaExportAssistant *self, const gchar *fname );
 static void     p5_do_display( ofaExportAssistant *self, gint page_num, GtkWidget *page );
 static gboolean p5_export_data( ofaExportAssistant *self );
+static void     read_settings( ofaExportAssistant *self );
+static void     write_settings( ofaExportAssistant *self );
 static void     iprogress_iface_init( myIProgressInterface *iface );
 static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *empty );
 static void     iprogress_pulse( myIProgress *instance, const void *worker, gulong count, gulong total );
@@ -258,6 +258,9 @@ export_dispose( GObject *instance )
 	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		/* write user/dossier settings before disposing the instance */
+		write_settings( OFA_EXPORT_ASSISTANT( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -347,7 +350,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->read_settings = iwindow_read_settings;
 }
 
 static void
@@ -372,69 +374,8 @@ iwindow_init( myIWindow *instance )
 
 	connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_dossier_meta( connect );
-}
 
-/*
- * user settings are: class_name;
- * dossier_settings are: last_export_folder_uri
- */
-static void
-iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
-{
-	ofaExportAssistantPrivate *priv;
-	GList *slist, *it;
-	const gchar *cstr;
-	myISettings *dossier_settings;
-	gchar *group;
-
-	priv = ofa_export_assistant_get_instance_private( OFA_EXPORT_ASSISTANT( instance ));
-
-	slist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
-
-	it = slist;
-	cstr = it ? it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p1_selected_class = g_strdup( cstr );
-	}
-
-	my_isettings_free_string_list( settings, slist );
-
-	dossier_settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
-
-	priv->p3_furi = my_isettings_get_string( dossier_settings, group, st_export_folder );
-
-	g_free( group );
-}
-
-static void
-write_settings( ofaExportAssistant *self )
-{
-	ofaExportAssistantPrivate *priv;
-	myISettings *settings;
-	gchar *keyname, *str, *group;
-
-	priv = ofa_export_assistant_get_instance_private( self );
-
-	settings = my_iwindow_get_settings( MY_IWINDOW( self ));
-	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
-
-	str = g_strdup_printf( "%s;",
-			priv->p1_selected_class ? priv->p1_selected_class : "" );
-
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
-
-	g_free( str );
-	g_free( keyname );
-
-	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
-
-	if( my_strlen( priv->p3_last_folder )){
-		my_isettings_set_string( settings, group, st_export_folder, priv->p3_last_folder );
-	}
-
-	g_free( group );
+	read_settings( OFA_EXPORT_ASSISTANT( instance ));
 }
 
 /*
@@ -606,7 +547,6 @@ p1_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_debug( "%s: selected_btn=%p, selected_label='%s', selected_class=%s",
 			thisfn, ( void * ) priv->p1_selected_btn, priv->p1_selected_label, priv->p1_selected_class );
-	write_settings( self );
 }
 
 /*
@@ -940,8 +880,6 @@ p3_do_forward( ofaExportAssistant *self, gint page_num, GtkWidget *page )
 			priv->p3_furi = NULL;
 		}
 	}
-
-	write_settings( self );
 }
 
 /*
@@ -1090,6 +1028,79 @@ p5_export_data( ofaExportAssistant *self )
 
 	/* do not continue and remove from idle callbacks list */
 	return( G_SOURCE_REMOVE );
+}
+
+/*
+ * user settings are: class_name;
+ * dossier_settings are: last_export_folder_uri
+ */
+static void
+read_settings( ofaExportAssistant *self )
+{
+	ofaExportAssistantPrivate *priv;
+	GList *strlist, *it;
+	const gchar *cstr;
+	myISettings *settings;
+	gchar *keyname, *group;
+
+	priv = ofa_export_assistant_get_instance_private( self );
+
+	/* user settings
+	 */
+	settings = ofa_hub_get_user_settings( priv->hub );
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p1_selected_class = g_strdup( cstr );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( keyname );
+
+	/* dossier settings
+	 */
+	settings = ofa_hub_get_dossier_settings( priv->hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+
+	priv->p3_furi = my_isettings_get_string( settings, group, st_export_folder );
+
+	g_free( group );
+}
+
+static void
+write_settings( ofaExportAssistant *self )
+{
+	ofaExportAssistantPrivate *priv;
+	myISettings *settings;
+	gchar *keyname, *str, *group;
+
+	priv = ofa_export_assistant_get_instance_private( self );
+
+	/* user settings
+	 */
+	str = g_strdup_printf( "%s;",
+			priv->p1_selected_class ? priv->p1_selected_class : "" );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
+
+	g_free( str );
+	g_free( keyname );
+
+	/* dossier settings
+	 */
+	settings = ofa_hub_get_dossier_settings( priv->hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+
+	if( my_strlen( priv->p3_last_folder )){
+		my_isettings_set_string( settings, group, st_export_folder, priv->p3_last_folder );
+	}
+
+	g_free( group );
 }
 
 /*

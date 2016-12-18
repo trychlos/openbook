@@ -211,9 +211,6 @@ static const gchar *st_stop_false       = N_( "Do not stop the import operation 
 
 static void     iwindow_iface_init( myIWindowInterface *iface );
 static void     iwindow_init( myIWindow *instance );
-static void     iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname );
-static void     set_user_settings( ofaImportAssistant *self );
-static void     set_dossier_settings( ofaImportAssistant *self );
 static void     iassistant_iface_init( myIAssistantInterface *iface );
 static gboolean iassistant_is_willing_to_quit( myIAssistant*instance, guint keyval );
 static void     p0_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page );
@@ -253,6 +250,8 @@ static void     p7_do_display( ofaImportAssistant *self, gint page_num, GtkWidge
 static gboolean p7_confirm_empty_table( const ofaImportAssistant *self );
 static gboolean p7_do_import( ofaImportAssistant *self );
 static void     p7_do_user_cancelled( ofaImportAssistant *self );
+static void     read_settings( ofaImportAssistant *self );
+static void     write_settings( ofaImportAssistant *self );
 static void     iprogress_iface_init( myIProgressInterface *iface );
 static void     iprogress_start_work( myIProgress *instance, const void *worker, GtkWidget *widget );
 static void     iprogress_start_progress( myIProgress *instance, const void *worker, GtkWidget *widget, gboolean with_bar );
@@ -335,6 +334,9 @@ import_assistant_dispose( GObject *instance )
 	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
 
 	if( !priv->dispose_has_run ){
+
+		/* write user/dossier settings before disposing the instance */
+		write_settings( OFA_IMPORT_ASSISTANT( instance ));
 
 		priv->dispose_has_run = TRUE;
 
@@ -422,7 +424,6 @@ iwindow_iface_init( myIWindowInterface *iface )
 	g_debug( "%s: iface=%p", thisfn, ( void * ) iface );
 
 	iface->init = iwindow_init;
-	iface->read_settings = iwindow_read_settings;
 }
 
 static void
@@ -447,97 +448,8 @@ iwindow_init( myIWindow *instance )
 
 	connect = ofa_hub_get_connect( priv->hub );
 	priv->meta = ofa_idbconnect_get_dossier_meta( connect );
-}
 
-/*
- * user settings are: class_name;empty;import_mode;stop;
- * dossier settings are: last_import_folder_uri
- */
-static void
-iwindow_read_settings( myIWindow *instance, myISettings *settings, const gchar *keyname )
-{
-	ofaImportAssistantPrivate *priv;
-	GList *slist, *it;
-	const gchar *cstr;
-	myISettings *dossier_settings;
-	gchar *group;
-
-	priv = ofa_import_assistant_get_instance_private( OFA_IMPORT_ASSISTANT( instance ));
-
-	slist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
-
-	it = slist;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p2_selected_type = g_type_from_name( cstr );
-	}
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p4_empty = my_utils_boolean_from_str( cstr );
-	}
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p4_import_mode = atoi( cstr );
-	}
-	it = it ? it->next : NULL;
-	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->p4_stop = my_utils_boolean_from_str( cstr );
-	}
-
-	my_isettings_free_string_list( settings, slist );
-
-	dossier_settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
-
-	priv->p1_folder = my_isettings_get_string( dossier_settings, group, st_import_folder );
-
-	g_free( group );
-}
-
-static void
-set_user_settings( ofaImportAssistant *self )
-{
-	ofaImportAssistantPrivate *priv;
-	myISettings *settings;
-	gchar *keyname, *str;
-
-	priv = ofa_import_assistant_get_instance_private( self );
-
-	settings = my_iwindow_get_settings( MY_IWINDOW( self ));
-	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
-
-	str = g_strdup_printf( "%s;%s;%d;%s;",
-			priv->p2_selected_type ? g_type_name( priv->p2_selected_type ) : "",
-			priv->p4_empty ? "True":"False",
-			priv->p4_import_mode,
-			priv->p4_stop ? "True":"False" );
-
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
-
-	g_free( str );
-	g_free( keyname );
-}
-
-static void
-set_dossier_settings( ofaImportAssistant *self )
-{
-	ofaImportAssistantPrivate *priv;
-	myISettings *settings;
-	gchar *group;
-
-	priv = ofa_import_assistant_get_instance_private( self );
-
-	settings = ofa_hub_get_dossier_settings( priv->hub );
-	group = ofa_idbdossier_meta_get_group_name( priv->meta );
-
-	if( my_strlen( priv->p1_folder )){
-		my_isettings_set_string( settings, group, st_import_folder, priv->p1_folder );
-	}
-
-	g_free( group );
+	read_settings( OFA_IMPORT_ASSISTANT( instance ));
 }
 
 /*
@@ -674,8 +586,6 @@ p1_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 	priv->p1_content = g_content_type_guess( priv->p1_furi, NULL, 0, NULL );
 
 	g_debug( "%s: uri=%s, folder=%s", thisfn, priv->p1_furi, priv->p1_folder );
-
-	set_dossier_settings( self );
 }
 
 /*
@@ -825,8 +735,6 @@ p2_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 
 	g_return_if_fail( priv->p2_selected_type > 0 );
 	g_return_if_fail( my_strlen( priv->p2_selected_label ) > 0 );
-
-	set_user_settings( self );
 }
 
 /*
@@ -1183,7 +1091,6 @@ p4_check_for_complete( ofaImportAssistant *self )
 static void
 p4_do_forward( ofaImportAssistant *self, gint page_num, GtkWidget *page )
 {
-	set_user_settings( self );
 }
 
 /*
@@ -1625,6 +1532,97 @@ p7_do_user_cancelled( ofaImportAssistant *self )
 	my_style_add( label, "labelinfo" );
 
 	my_iassistant_set_current_page_complete( MY_IASSISTANT( self ), TRUE );
+}
+
+/*
+ * user settings are: class_name;empty;import_mode;stop;
+ * dossier settings are: last_import_folder_uri
+ */
+static void
+read_settings( ofaImportAssistant *self )
+{
+	ofaImportAssistantPrivate *priv;
+	GList *strlist, *it;
+	const gchar *cstr;
+	myISettings *settings;
+	gchar *keyname, *group;
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	/* user settings
+	 */
+	settings = ofa_hub_get_user_settings( priv->hub );
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
+
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p2_selected_type = g_type_from_name( cstr );
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_empty = my_utils_boolean_from_str( cstr );
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_import_mode = atoi( cstr );
+	}
+	it = it ? it->next : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	if( my_strlen( cstr )){
+		priv->p4_stop = my_utils_boolean_from_str( cstr );
+	}
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( keyname );
+
+	/* dossier settings
+	 */
+	settings = ofa_hub_get_dossier_settings( priv->hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+
+	priv->p1_folder = my_isettings_get_string( settings, group, st_import_folder );
+
+	g_free( group );
+}
+
+static void
+write_settings( ofaImportAssistant *self )
+{
+	ofaImportAssistantPrivate *priv;
+	myISettings *settings;
+	gchar *keyname, *group, *str;
+
+	priv = ofa_import_assistant_get_instance_private( self );
+
+	/* user settings
+	 */
+	str = g_strdup_printf( "%s;%s;%d;%s;",
+			priv->p2_selected_type ? g_type_name( priv->p2_selected_type ) : "",
+			priv->p4_empty ? "True":"False",
+			priv->p4_import_mode,
+			priv->p4_stop ? "True":"False" );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	keyname = my_iwindow_get_keyname( MY_IWINDOW( self ));
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, keyname, str );
+
+	g_free( str );
+	g_free( keyname );
+
+	/* dossier settings
+	 */
+	settings = ofa_hub_get_dossier_settings( priv->hub );
+	group = ofa_idbdossier_meta_get_group_name( priv->meta );
+
+	if( my_strlen( priv->p1_folder )){
+		my_isettings_set_string( settings, group, st_import_folder, priv->p1_folder );
+	}
+
+	g_free( group );
 }
 
 /*

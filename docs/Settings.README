@@ -4,6 +4,7 @@
  =======
 
    Use cases
+   Conclusion
 
 -----------------------------------------------------------------------
  Use cases
@@ -50,6 +51,18 @@
     Assistants have the particularity of having several pages, each page
     being initialized at its own time. As a consequence, settings are read
     before the UI is fully initialized.
+
+-----------------------------------------------------------------------
+
+ Conclusion
+ ==========
+
+ User settings should be read before UI initialization, not because this
+ would be the more practiful, but because this is the only common point
+ between dialogs and assistants.
+ When reading user settings, datas are stored as initial values.
+
+ User settings should be written at dialog/assistant dispose time.
 
 -----------------------------------------------------------------------
  P. Wieser - Last updated on 2016, Dec. 17th

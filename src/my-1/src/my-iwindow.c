@@ -56,10 +56,8 @@ static void       interface_base_init( myIWindowInterface *klass );
 static void       interface_base_finalize( myIWindowInterface *klass );
 static void       iwindow_init_window( myIWindow *instance );
 static void       iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata );
-static void       iwindow_init_read_settings( myIWindow *instance, sIWindow *sdata );
 static gboolean   on_delete_event( GtkWidget *widget, GdkEvent *event, myIWindow *instance );
 static void       do_close( myIWindow *instance );
-static void       iwindow_close_write_settings( myIWindow *instance, sIWindow *sdata );
 static gboolean   is_destroy_allowed( const myIWindow *instance );
 static gchar     *get_iwindow_identifier( const myIWindow *instance );
 static gchar     *get_default_identifier( const myIWindow *instance );
@@ -280,24 +278,6 @@ my_iwindow_set_restore_size( myIWindow *instance, gboolean restore_size )
 }
 
 /**
- * my_iwindow_get_settings:
- * @instance: this #myIWindow instance.
- *
- * Returns: the #myISettings object, as it has been previously set, or %NULL.
- */
-myISettings *
-my_iwindow_get_settings( const myIWindow *instance )
-{
-	sIWindow *sdata;
-
-	g_return_val_if_fail( instance && MY_IS_IWINDOW( instance ), NULL );
-
-	sdata = get_iwindow_data( instance );
-
-	return( sdata->settings );
-}
-
-/**
  * my_iwindow_set_geometry_settings:
  * @instance: this #myIWindow instance.
  * @settings: [allow-none]: the #myISettings implementation to be used.
@@ -364,7 +344,6 @@ my_iwindow_init( myIWindow *instance )
 
 		iwindow_init_window( instance );
 		iwindow_init_set_transient_for( instance, sdata );
-		iwindow_init_read_settings( instance, sdata );
 
 		position_restore( instance, sdata );
 
@@ -416,28 +395,6 @@ iwindow_init_set_transient_for( myIWindow *instance, sIWindow *sdata )
 	if( parent ){
 		gtk_window_set_transient_for( GTK_WINDOW( instance ), parent );
 	}
-}
-
-/*
- * Let the implementation read its settings
- */
-static void
-iwindow_init_read_settings( myIWindow *instance, sIWindow *sdata )
-{
-	static const gchar *thisfn = "my_iwindow_iwindow_init_read_settings";
-	gchar *key_name;
-
-	key_name = my_iwindow_get_keyname( instance );
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->read_settings ){
-		MY_IWINDOW_GET_INTERFACE( instance )->read_settings( instance, sdata->settings, key_name );
-
-	} else {
-		g_info( "%s: myIWindow's %s implementation does not provide 'read_settings()' method",
-				thisfn, G_OBJECT_TYPE_NAME( instance ));
-	}
-
-	g_free( key_name );
 }
 
 /**
@@ -599,32 +556,12 @@ do_close( myIWindow *instance )
 
 	sdata = get_iwindow_data( instance );
 
-	iwindow_close_write_settings( instance, sdata );
 	position_save( instance, sdata );
 
 	if( is_destroy_allowed( instance )){
 		g_debug( "%s: destroying instance=%p (%s)", thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 		gtk_widget_destroy( GTK_WIDGET( instance ));
 	}
-}
-
-static void
-iwindow_close_write_settings( myIWindow *instance, sIWindow *sdata )
-{
-	static const gchar *thisfn = "my_iwindow_iwindow_close_write_settings";
-	gchar *key_name;
-
-	key_name = my_iwindow_get_keyname( instance );
-
-	if( MY_IWINDOW_GET_INTERFACE( instance )->write_settings ){
-		MY_IWINDOW_GET_INTERFACE( instance )->write_settings( instance, sdata->settings, key_name );
-
-	} else {
-		g_info( "%s: myIWindow's %s implementation does not provide 'write_settings()' method",
-				thisfn, G_OBJECT_TYPE_NAME( instance ));
-	}
-
-	g_free( key_name );
 }
 
 /*
