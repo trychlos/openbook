@@ -64,7 +64,6 @@ typedef struct {
 	/* UI
 	 */
 	GtkWidget     *plugin_pane;
-	gint           plugin_pane_pos;
 	GtkWidget     *plugin_tview;
 	GtkWidget     *plugin_book;
 	GtkWidget     *about_page;
@@ -173,7 +172,6 @@ ofa_plugin_manager_init( ofaPluginManager *self )
 
 	priv->dispose_has_run = FALSE;
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
-	priv->plugin_pane_pos = 0;
 	priv->about_page = NULL;
 	priv->properties_page = NULL;
 
@@ -252,8 +250,6 @@ iwindow_init( myIWindow *instance )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	my_iwindow_set_geometry_settings( instance, ofa_hub_get_user_settings( priv->hub ));
-
-	read_settings( OFA_PLUGIN_MANAGER( instance ));
 }
 
 /*
@@ -281,7 +277,6 @@ idialog_init( myIDialog *instance )
 
 	priv->plugin_pane = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "plugin-paned" );
 	g_return_if_fail( priv->plugin_pane && GTK_IS_PANED( priv->plugin_pane ));
-	gtk_paned_set_position( GTK_PANED( priv->plugin_pane ), priv->plugin_pane_pos );
 
 	priv->plugin_book = my_utils_container_get_child_by_name( GTK_CONTAINER( instance ), "object-notebook" );
 	g_return_if_fail( priv->plugin_book && GTK_IS_NOTEBOOK( priv->plugin_book ));
@@ -289,6 +284,8 @@ idialog_init( myIDialog *instance )
 	plugin_setup_treeview( OFA_PLUGIN_MANAGER( instance ));
 	objects_setup_treeview( OFA_PLUGIN_MANAGER( instance ));
 	plugins_load( OFA_PLUGIN_MANAGER( instance ));
+
+	read_settings( OFA_PLUGIN_MANAGER( instance ));
 }
 
 static void
@@ -669,6 +666,7 @@ read_settings( ofaPluginManager *self )
 	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *key;
+	guint pos;
 
 	priv = ofa_plugin_manager_get_instance_private( self );
 
@@ -678,12 +676,11 @@ read_settings( ofaPluginManager *self )
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->plugin_pane_pos = atoi( cstr );
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
+		pos = 150;
 	}
-	if( priv->plugin_pane_pos < 150 ){
-		priv->plugin_pane_pos = 150;
-	}
+	gtk_paned_set_position( GTK_PANED( priv->plugin_pane ), pos );
 
 	my_isettings_free_string_list( settings, strlist );
 	g_free( key );
