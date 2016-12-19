@@ -127,11 +127,11 @@ period_close_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
+		write_settings( OFA_PERIOD_CLOSE( instance ));
+
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
-		write_settings( OFA_PERIOD_CLOSE( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -534,13 +534,13 @@ read_settings( ofaPeriodClose *self )
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
-	gchar *settings_key;
+	gchar *key;
 
 	priv = ofa_period_close_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -557,7 +557,7 @@ read_settings( ofaPeriodClose *self )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
@@ -565,7 +565,7 @@ write_settings( ofaPeriodClose *self )
 {
 	ofaPeriodClosePrivate *priv;
 	myISettings *settings;
-	gchar *str, *settings_key;
+	gchar *str, *key;
 
 	priv = ofa_period_close_get_instance_private( self );
 
@@ -574,9 +574,9 @@ write_settings( ofaPeriodClose *self )
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->ledgers_btn )) ? "True":"False" );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( settings_key );
+	g_free( key );
 }
