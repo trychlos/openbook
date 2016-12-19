@@ -586,7 +586,7 @@ static void
 init_export_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
-	GtkWidget *target, *label, *entry;
+	GtkWidget *target, *label;
 	gchar *str;
 	GtkSizeGroup *group;
 	ofaStreamFormat *format;
@@ -605,10 +605,7 @@ init_export_page( ofaPreferences *self )
 	my_utils_size_group_add_size_group(
 			group, ofa_stream_format_bin_get_size_group( priv->export_settings, 0 ));
 
-	entry = ofa_stream_format_bin_get_name_entry( priv->export_settings );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	gtk_widget_set_sensitive( entry, FALSE );
-
+	ofa_stream_format_bin_set_name_sensitive( priv->export_settings, FALSE );
 	ofa_stream_format_bin_set_mode_sensitive( priv->export_settings, FALSE );
 
 	priv->p5_chooser = GTK_FILE_CHOOSER( my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p52-folder" ));
@@ -630,7 +627,7 @@ static void
 init_import_page( ofaPreferences *self )
 {
 	ofaPreferencesPrivate *priv;
-	GtkWidget *target, *entry;
+	GtkWidget *target;
 	ofaStreamFormat *settings;
 
 	priv = ofa_preferences_get_instance_private( self );
@@ -643,10 +640,7 @@ init_import_page( ofaPreferences *self )
 	g_object_unref( settings );
 	gtk_container_add( GTK_CONTAINER( target ), GTK_WIDGET( priv->import_settings ));
 
-	entry = ofa_stream_format_bin_get_name_entry( priv->import_settings );
-	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
-	gtk_widget_set_sensitive( entry, FALSE );
-
+	ofa_stream_format_bin_set_name_sensitive( priv->import_settings, FALSE );
 	ofa_stream_format_bin_set_mode_sensitive( priv->import_settings, FALSE );
 }
 

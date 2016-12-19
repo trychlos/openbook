@@ -45,7 +45,8 @@ typedef struct {
 
 	/* initialization data
 	 */
-	ofaStreamFormat *settings;
+	ofaStreamFormat *format;
+	gboolean         name_sensitive;
 	gboolean         mode_sensitive;
 	gboolean         updatable;
 
@@ -104,6 +105,7 @@ static const gchar *st_resource_ui      = "/org/trychlos/openbook/core/ofa-strea
 static void     setup_bin( ofaStreamFormatBin *bin );
 static void     name_init( ofaStreamFormatBin *self );
 static void     name_on_changed( GtkEntry *entry, ofaStreamFormatBin *self );
+static void     name_set_sensitive( ofaStreamFormatBin *self );
 static void     mode_init( ofaStreamFormatBin *self );
 static void     mode_insert_row( ofaStreamFormatBin *self, GtkListStore *store, ofeSFMode mode );
 static void     mode_on_changed( GtkComboBox *combo, ofaStreamFormatBin *self );
@@ -173,7 +175,7 @@ stream_format_bin_dispose( GObject *instance )
 		/* unref object members here */
 		g_clear_object( &priv->group0 );
 		g_clear_object( &priv->group1 );
-		g_clear_object( &priv->settings );
+		g_clear_object( &priv->format );
 	}
 
 	/* chain up to the parent class */
@@ -194,7 +196,7 @@ ofa_stream_format_bin_init( ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
+	priv->name_sensitive = TRUE;
 	priv->mode_sensitive = TRUE;
 	priv->updatable = TRUE;
 }
@@ -253,7 +255,7 @@ ofa_stream_format_bin_new( ofaStreamFormat *format )
 	setup_bin( self );
 
 	if( format ){
-		priv->settings = g_object_ref( format );
+		priv->format = g_object_ref( format );
 		setup_format( self );
 	}
 
@@ -328,6 +330,16 @@ name_on_changed( GtkEntry *entry, ofaStreamFormatBin *self )
 }
 
 static void
+name_set_sensitive( ofaStreamFormatBin *self )
+{
+	ofaStreamFormatBinPrivate *priv;
+
+	priv = ofa_stream_format_bin_get_instance_private( self );
+
+	gtk_widget_set_sensitive( priv->name_entry, priv->name_sensitive && priv->updatable );
+}
+
+static void
 mode_init( ofaStreamFormatBin *self )
 {
 	ofaStreamFormatBinPrivate *priv;
@@ -378,6 +390,10 @@ mode_insert_row( ofaStreamFormatBin *self, GtkListStore *store, ofeSFMode mode )
 	g_free( mode_str );
 }
 
+/*
+ * does not use gtk_widget_show/hide as this will be superseded
+ * by gtk_widget_show_all from myIDialog...
+ */
 static void
 mode_on_changed( GtkComboBox *box, ofaStreamFormatBin *self )
 {
@@ -394,23 +410,23 @@ mode_on_changed( GtkComboBox *box, ofaStreamFormatBin *self )
 		case OFA_SFMODE_EXPORT:
 			/* have toggle button
 			 * remove spin button */
-			gtk_widget_show( priv->headers_btn );
-			gtk_widget_hide( priv->headers_label );
-			gtk_widget_hide( priv->headers_count );
+			gtk_widget_set_sensitive( priv->headers_btn, TRUE );
+			gtk_widget_set_sensitive( priv->headers_label, FALSE );
+			gtk_widget_set_sensitive( priv->headers_count, FALSE );
 			break;
 
 		case OFA_SFMODE_IMPORT:
 			/* hide toggle
 			 * have spin button */
-			gtk_widget_hide( priv->headers_btn );
-			gtk_widget_show( priv->headers_label );
-			gtk_widget_show( priv->headers_count );
+			gtk_widget_set_sensitive( priv->headers_btn, FALSE );
+			gtk_widget_set_sensitive( priv->headers_label, TRUE );
+			gtk_widget_set_sensitive( priv->headers_count, TRUE );
 			break;
 
 		default:
-			gtk_widget_hide( priv->headers_btn );
-			gtk_widget_hide( priv->headers_label );
-			gtk_widget_hide( priv->headers_count );
+			gtk_widget_set_sensitive( priv->headers_btn, TRUE );
+			gtk_widget_set_sensitive( priv->headers_label, TRUE );
+			gtk_widget_set_sensitive( priv->headers_count, TRUE );
 	}
 
 	g_signal_emit_by_name( self, "ofa-changed" );
@@ -885,7 +901,7 @@ headers_set_sensitive( ofaStreamFormatBin *self )
 
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
-	mode = priv->settings ? ofa_stream_format_get_mode( priv->settings ) : ofa_stream_format_get_default_mode();
+	mode = priv->format ? ofa_stream_format_get_mode( priv->format ) : ofa_stream_format_get_default_mode();
 
 	switch( mode ){
 		case OFA_SFMODE_EXPORT:
@@ -932,23 +948,24 @@ ofa_stream_format_bin_get_size_group( ofaStreamFormatBin *bin, guint column )
 }
 
 /**
- * ofa_stream_format_bin_get_name_entry:
+ * ofa_stream_format_bin_set_name_sensitive:
  * @bin: this #ofaStreamFormatBin instance.
- *
- * Returns: the #GtkEntry which managed the name of the format.
+ * @sensitive: whether the name may be modified.
  */
-GtkWidget *
-ofa_stream_format_bin_get_name_entry( ofaStreamFormatBin *bin )
+void
+ofa_stream_format_bin_set_name_sensitive( ofaStreamFormatBin *bin, gboolean sensitive )
 {
 	ofaStreamFormatBinPrivate *priv;
 
-	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), NULL );
+	g_return_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ));
 
 	priv = ofa_stream_format_bin_get_instance_private( bin );
 
-	g_return_val_if_fail( !priv->dispose_has_run, NULL );
+	g_return_if_fail( !priv->dispose_has_run);
 
-	return( priv->name_entry );
+	priv->name_sensitive = sensitive;
+
+	name_set_sensitive( bin );
 }
 
 /**
@@ -992,8 +1009,8 @@ ofa_stream_format_bin_set_format( ofaStreamFormatBin *bin, ofaStreamFormat *form
 
 	g_return_if_fail( !priv->dispose_has_run );
 
-	g_clear_object( &priv->settings );
-	priv->settings = g_object_ref( format );
+	g_clear_object( &priv->format );
+	priv->format = g_object_ref( format );
 
 	setup_format( bin );
 }
@@ -1012,56 +1029,56 @@ setup_format( ofaStreamFormatBin *self )
 	priv = ofa_stream_format_bin_get_instance_private( self );
 
 	/* name */
-	gtk_entry_set_text( GTK_ENTRY( priv->name_entry ), ofa_stream_format_get_name( priv->settings ));
+	gtk_entry_set_text( GTK_ENTRY( priv->name_entry ), ofa_stream_format_get_name( priv->format ));
 
 	/* mode */
-	mode = ofa_stream_format_get_mode( priv->settings );
+	mode = ofa_stream_format_get_mode( priv->format );
 	str = g_strdup_printf( "%d", mode );
 	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->mode_combo ), str );
 	g_free( str );
 	mode_on_changed( GTK_COMBO_BOX( priv->mode_combo ), self );
 
 	/* encoding */
-	has = ofa_stream_format_get_has_charmap( priv->settings );
+	has = ofa_stream_format_get_has_charmap( priv->format );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_encoding ), has );
 	encoding_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_encoding ), self );
-	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->encoding_combo ), ofa_stream_format_get_charmap( priv->settings ));
+	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->encoding_combo ), ofa_stream_format_get_charmap( priv->format ));
 
 	/* date format */
-	has = ofa_stream_format_get_has_date( priv->settings );
+	has = ofa_stream_format_get_has_date( priv->format );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_date ), has );
 	date_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_date ), self );
-	my_date_combo_set_selected( priv->date_combo, ofa_stream_format_get_date_format( priv->settings ));
+	my_date_combo_set_selected( priv->date_combo, ofa_stream_format_get_date_format( priv->format ));
 
 	/* thousand separator */
-	has = ofa_stream_format_get_has_thousand( priv->settings );
+	has = ofa_stream_format_get_has_thousand( priv->format );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_thousand ), has );
 	thousand_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_thousand ), self );
-	str = g_strdup_printf( "%c", ofa_stream_format_get_thousand_sep( priv->settings ));
+	str = g_strdup_printf( "%c", ofa_stream_format_get_thousand_sep( priv->format ));
 	my_thousand_combo_set_selected( MY_THOUSAND_COMBO( priv->thousand_combo ), str );
 	g_free( str );
 
 	/* decimal separator */
-	has = ofa_stream_format_get_has_decimal( priv->settings );
+	has = ofa_stream_format_get_has_decimal( priv->format );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_decimal ), has );
 	decimal_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_decimal ), self );
-	str = g_strdup_printf( "%c", ofa_stream_format_get_decimal_sep( priv->settings ));
+	str = g_strdup_printf( "%c", ofa_stream_format_get_decimal_sep( priv->format ));
 	my_decimal_combo_set_selected( priv->decimal_combo, str );
 	g_free( str );
 
 	/* field separator */
-	has = ofa_stream_format_get_has_field( priv->settings );
+	has = ofa_stream_format_get_has_field( priv->format );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_field ), has );
 	field_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_field ), self );
-	str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( priv->settings ));
+	str = g_strdup_printf( "%c", ofa_stream_format_get_field_sep( priv->format ));
 	my_field_combo_set_selected( priv->field_combo, str );
 	g_free( str );
 
 	/* string delimiter */
-	has = ofa_stream_format_get_has_strdelim( priv->settings );
+	has = ofa_stream_format_get_has_strdelim( priv->format );
 	gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->has_strdelim ), has );
 	str_delim_on_has_toggled( GTK_TOGGLE_BUTTON( priv->has_strdelim ), self );
-	str = g_strdup_printf( "%c", ofa_stream_format_get_string_delim( priv->settings ));
+	str = g_strdup_printf( "%c", ofa_stream_format_get_string_delim( priv->format ));
 	if( my_strlen( str )){
 		gtk_entry_set_text( GTK_ENTRY( priv->strdelim_entry ), str );
 	}
@@ -1070,13 +1087,13 @@ setup_format( ofaStreamFormatBin *self )
 	/* headers */
 	switch( mode ){
 		case OFA_SFMODE_EXPORT:
-			bvalue = ofa_stream_format_get_with_headers( priv->settings );
+			bvalue = ofa_stream_format_get_with_headers( priv->format );
 			gtk_toggle_button_set_active( GTK_TOGGLE_BUTTON( priv->headers_btn ), bvalue );
 			headers_on_with_toggled( GTK_TOGGLE_BUTTON( priv->headers_btn ), self );
 			break;
 
 		case OFA_SFMODE_IMPORT:
-			count = ofa_stream_format_get_headers_count( priv->settings );
+			count = ofa_stream_format_get_headers_count( priv->format );
 			adjust = gtk_adjustment_new( count, 0, 9999, 1, 10, 10 );
 			gtk_spin_button_set_adjustment( GTK_SPIN_BUTTON( priv->headers_count), adjust );
 			gtk_spin_button_set_value( GTK_SPIN_BUTTON( priv->headers_count ), count );
@@ -1307,21 +1324,21 @@ is_validable( ofaStreamFormatBin *self, gchar **error_message )
  * Returns: %TRUE if selection is ok
  */
 gboolean
-ofa_stream_format_bin_apply( ofaStreamFormatBin *settings )
+ofa_stream_format_bin_apply( ofaStreamFormatBin *bin )
 {
 	ofaStreamFormatBinPrivate *priv;
 
-	g_return_val_if_fail( settings && OFA_IS_STREAM_FORMAT_BIN( settings ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_STREAM_FORMAT_BIN( bin ), FALSE );
 
-	priv = ofa_stream_format_bin_get_instance_private( settings );
+	priv = ofa_stream_format_bin_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
-	if( !is_validable( settings, NULL )){
+	if( !is_validable( bin, NULL )){
 		return( FALSE );
 	}
 
-	return( do_apply( settings ));
+	return( do_apply( bin ));
 }
 
 static gboolean
@@ -1339,12 +1356,12 @@ do_apply( ofaStreamFormatBin *self )
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->name_entry ));
 	g_return_val_if_fail( my_strlen( cstr ), FALSE );
-	ofa_stream_format_set_name( priv->settings, cstr );
+	ofa_stream_format_set_name( priv->format, cstr );
 
 	cstr = gtk_combo_box_get_active_id( GTK_COMBO_BOX( priv->mode_combo ));
 	g_return_val_if_fail( my_strlen( cstr ), FALSE );
 	mode = atoi( cstr );
-	ofa_stream_format_set_mode( priv->settings, mode );
+	ofa_stream_format_set_mode( priv->format, mode );
 
 	has_charmap = gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->has_encoding ));
 	charmap = has_charmap ? encoding_get_selected( self ) : NULL;
@@ -1371,16 +1388,16 @@ do_apply( ofaStreamFormatBin *self )
 		iheaders = gtk_spin_button_get_value( GTK_SPIN_BUTTON( priv->headers_count ));
 	}
 
-	g_debug( "%s: settings=%p, has_charmap=%s, charmap=%s, has_date=%s, datefmt=%u, "
+	g_debug( "%s: format=%p, has_charmap=%s, charmap=%s, has_date=%s, datefmt=%u, "
 			"has_thousand=%s, thousand_sep=%s, has_decimal=%s, decimal_sep=%s, "
 			"has_field=%s, field_sep=%s, has_str=%s, strdelim=%s, iheaders=%u",
-			thisfn, ( void * ) priv->settings,
+			thisfn, ( void * ) priv->format,
 			has_charmap ? "True":"False", charmap, has_date ? "True":"False", datefmt,
 			has_thousand ? "True":"False", thousand_sep, has_decimal ? "True":"False", decimal_sep,
 			has_field ? "True":"False", field_sep, has_str ? "True":"False", strdelim,
 			iheaders );
 
-	ofa_stream_format_set( priv->settings,
+	ofa_stream_format_set( priv->format,
 									has_charmap, charmap,
 									has_date, datefmt,
 									has_thousand, thousand_sep[0],

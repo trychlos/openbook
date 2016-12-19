@@ -48,6 +48,7 @@
 
    - myIAssistant: fix quit on escape (fix key propagation).
    - ofaImportAssistant: fix page 4 label position.
+   - ofaStreamFormatBin: fix header widgets sensitivity (todo #1298, #1299).
 
  Other changes:
 
