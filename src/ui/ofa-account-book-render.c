@@ -59,8 +59,9 @@ typedef struct {
 
 	ofaAccountBookBin *args_bin;
 
-	/* internals
+	/* runtime
 	 */
+	gchar             *settings_prefix;
 	ofaHub            *hub;
 	gchar             *from_account;
 	gchar             *to_account;
@@ -126,9 +127,6 @@ typedef struct {
 #define THIS_PAPER_NAME                  GTK_PAPER_NAME_A4
 
 static const gchar *st_page_header_title = N_( "General Books Summary" );
-
-static const gchar *st_page_settings     = "ofaAccountBookRender-settings";
-static const gchar *st_print_settings    = "ofaAccountBookRender-print";
 
 /* these are parms which describe the page layout
  */
@@ -198,6 +196,7 @@ account_book_render_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_account_book_render_get_instance_private( OFA_ACCOUNT_BOOK_RENDER( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->from_account );
 	g_free( priv->to_account );
 
@@ -225,11 +224,16 @@ static void
 ofa_account_book_render_init( ofaAccountBookRender *self )
 {
 	static const gchar *thisfn = "ofa_account_book_render_init";
-
-	g_return_if_fail( OFA_IS_ACCOUNT_BOOK_RENDER( self ));
+	ofaAccountBookRenderPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_ACCOUNT_BOOK_RENDER( self ));
+
+	priv = ofa_account_book_render_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -274,6 +278,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	on_args_changed( priv->args_bin, OFA_ACCOUNT_BOOK_RENDER( page ));
+
 	read_settings( OFA_ACCOUNT_BOOK_RENDER( page ));
 }
 
@@ -314,7 +319,7 @@ render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar
 
 	settings = ofa_hub_get_user_settings( priv->hub );
 	*keyfile = my_isettings_get_keyfile( settings );
-	*group_name = g_strdup( st_print_settings );
+	*group_name = g_strdup_printf( "%s-print", priv->settings_prefix );
 }
 
 /*
@@ -995,22 +1000,25 @@ read_settings( ofaAccountBookRender *self )
 	const gchar *cstr;
 	GtkWidget *paned;
 	gint pos;
+	gchar *key;
 
 	priv = ofa_account_book_render_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_page_settings );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	pos = cstr ? atoi( cstr ) : 0;
-	if( pos <= 10 ){
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
 		pos = 150;
 	}
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
 	gtk_paned_set_position( GTK_PANED( paned ), pos );
 
 	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
 }
 
 static void
@@ -1019,18 +1027,19 @@ write_settings( ofaAccountBookRender *self )
 	ofaAccountBookRenderPrivate *priv;
 	myISettings *settings;
 	GtkWidget *paned;
-	gint pos;
-	gchar *str;
+	gchar *str, *key;
 
 	priv = ofa_account_book_render_get_instance_private( self );
 
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
-	pos = gtk_paned_get_position( GTK_PANED( paned ));
 
-	str = g_strdup_printf( "%d;", pos );
+	str = g_strdup_printf( "%d;",
+			gtk_paned_get_position( GTK_PANED( paned )));
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_page_settings, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
+	g_free( key );
 	g_free( str );
 }

@@ -60,8 +60,9 @@ typedef struct {
 
 	ofaLedgerBookBin    *args_bin;
 
-	/* internals
+	/* runtime
 	 */
+	gchar               *settings_prefix;
 	ofaHub              *hub;
 	GList               *selected;				/* list of selected #ofoLedger */
 	gboolean             all_ledgers;
@@ -69,7 +70,6 @@ typedef struct {
 	GDate                from_date;
 	GDate                to_date;
 	gint                 count;					/* count of returned entries */
-	gchar               *settings_prefix;
 
 	/* print datas
 	 */
@@ -184,6 +184,7 @@ ledger_book_render_finalize( GObject *instance )
 	priv = ofa_ledger_book_render_get_instance_private( OFA_LEDGER_BOOK_RENDER( instance ));
 
 	g_free( priv->settings_prefix );
+
 	ofs_currency_list_free( &priv->ledger_totals );
 	ofs_currency_list_free( &priv->report_totals );
 
@@ -213,10 +214,10 @@ ofa_ledger_book_render_init( ofaLedgerBookRender *self )
 	static const gchar *thisfn = "ofa_ledger_book_render_init";
 	ofaLedgerBookRenderPrivate *priv;
 
-	g_return_if_fail( OFA_IS_LEDGER_BOOK_RENDER( self ));
-
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
+
+	g_return_if_fail( self && OFA_IS_LEDGER_BOOK_RENDER( self ));
 
 	priv = ofa_ledger_book_render_get_instance_private( self );
 
@@ -265,6 +266,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	on_args_changed( priv->args_bin, OFA_LEDGER_BOOK_RENDER( page ));
+
 	read_settings( OFA_LEDGER_BOOK_RENDER( page ));
 }
 
@@ -946,25 +948,25 @@ read_settings( ofaLedgerBookRender *self )
 	const gchar *cstr;
 	GtkWidget *paned;
 	gint pos;
-	gchar *settings_key;
+	gchar *key;
 
 	priv = ofa_ledger_book_render_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	pos = cstr ? atoi( cstr ) : 0;
-	if( pos <= 10 ){
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
 		pos = 150;
 	}
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
 	gtk_paned_set_position( GTK_PANED( paned ), pos );
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
@@ -973,20 +975,19 @@ write_settings( ofaLedgerBookRender *self )
 	ofaLedgerBookRenderPrivate *priv;
 	myISettings *settings;
 	GtkWidget *paned;
-	gint pos;
-	gchar *str, *settings_key;
+	gchar *str, *key;
 
 	priv = ofa_ledger_book_render_get_instance_private( self );
 
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
-	pos = gtk_paned_get_position( GTK_PANED( paned ));
 
-	str = g_strdup_printf( "%d;", pos );
+	str = g_strdup_printf( "%d;",
+			gtk_paned_get_position( GTK_PANED( paned )));
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( settings_key );
+	g_free( key );
 }

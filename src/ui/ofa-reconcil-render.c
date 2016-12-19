@@ -60,6 +60,7 @@ typedef struct {
 
 	/* internals
 	 */
+	gchar          *settings_prefix;
 	ofaHub         *hub;
 	gchar          *account_number;
 	ofoAccount     *account;
@@ -105,10 +106,8 @@ typedef struct {
 
 static const gchar *st_page_header_title = N_( "Account Reconciliation Summary" );
 
-static const gchar *st_page_settings     = "ofaReconcilRender-settings";
-static const gchar *st_print_settings    = "ofaReconcilRender-print";
-
-/* these are parms which describe the page layout
+/*
+ * these are parms which describe the page layout
  */
 
 /* the columns of the body */
@@ -183,6 +182,7 @@ reconcil_render_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->account_number );
 
 	/* chain up to the parent class */
@@ -209,11 +209,16 @@ static void
 ofa_reconcil_render_init( ofaReconcilRender *self )
 {
 	static const gchar *thisfn = "ofa_reconcil_render_init";
+	ofaReconcilRenderPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
 	g_return_if_fail( self && OFA_IS_RECONCIL_RENDER( self ));
+
+	priv = ofa_reconcil_render_get_instance_private( self );
+
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
@@ -252,6 +257,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	on_args_changed( priv->args_bin, OFA_RECONCIL_RENDER( page ));
+
 	read_settings( OFA_RECONCIL_RENDER( page ));
 }
 
@@ -298,7 +304,7 @@ render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar
 
 	settings = ofa_hub_get_user_settings( priv->hub );
 	*keyfile = my_isettings_get_keyfile( settings );
-	*group_name = g_strdup( st_print_settings );
+	*group_name = g_strdup_printf( "%s-print", priv->settings_prefix );
 }
 
 static GList *
@@ -987,22 +993,25 @@ read_settings( ofaReconcilRender *self )
 	const gchar *cstr;
 	GtkWidget *paned;
 	gint pos;
+	gchar *key;
 
 	priv = ofa_reconcil_render_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_page_settings );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	pos = cstr ? atoi( cstr ) : 0;
-	if( pos <= 10 ){
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
 		pos = 150;
 	}
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
 	gtk_paned_set_position( GTK_PANED( paned ), pos );
 
 	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
 }
 
 static void
@@ -1011,18 +1020,19 @@ write_settings( ofaReconcilRender *self )
 	ofaReconcilRenderPrivate *priv;
 	myISettings *settings;
 	GtkWidget *paned;
-	gint pos;
-	gchar *str;
+	gchar *str, *key;
 
 	priv = ofa_reconcil_render_get_instance_private( self );
 
 	paned = ofa_render_page_get_top_paned( OFA_RENDER_PAGE( self ));
-	pos = gtk_paned_get_position( GTK_PANED( paned ));
 
-	str = g_strdup_printf( "%d;", pos );
+	str = g_strdup_printf( "%d;",
+			gtk_paned_get_position( GTK_PANED( paned )));
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_page_settings, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
+	g_free( key );
 	g_free( str );
 }

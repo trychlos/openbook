@@ -874,11 +874,8 @@ read_settings( ofaSettlementPage *self )
 	/* paned position */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	pos = 0;
-	if( my_strlen( cstr )){
-		pos = atoi( cstr );
-	}
-	if( pos <= 150 ){
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
 		pos = 150;
 	}
 	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
