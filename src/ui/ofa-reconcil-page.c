@@ -152,7 +152,6 @@ typedef struct {
 	ofaHub              *hub;
 	GList               *hub_handlers;
 	GList               *bats;				/* loaded ofoBat objects */
-	gboolean             reading_settings;
 }
 	ofaReconcilPagePrivate;
 
@@ -229,6 +228,7 @@ static void                 tview_on_selection_changed( ofaTVBin *treeview, GtkT
 static void                 tview_examine_selection( ofaReconcilPage *self, GList *selected, ofsCurrency *scurrency, guint *concil_rows, guint *unconcil_rows, gboolean *is_child );
 static void                 tview_on_selection_activated( ofaTVBin *treeview, GtkTreeSelection *selection, ofaReconcilPage *self );
 static void                 tview_expand_selection( ofaReconcilPage *self );
+static void                 tview_clear_selection( ofaReconcilPage *self );
 static GtkWidget           *setup_view2( ofaReconcilPage *self );
 static void                 setup_account_selection( ofaReconcilPage *self, GtkContainer *parent );
 static void                 setup_entries_filter( ofaReconcilPage *self, GtkContainer *parent );
@@ -244,6 +244,7 @@ static void                 account_do_change( ofaReconcilPage *self );
 static ofoAccount          *account_get_reconciliable( ofaReconcilPage *self, const gchar *number );
 static void                 account_clear_content( ofaReconcilPage *self );
 static void                 account_set_header_balance( ofaReconcilPage *self );
+static void                 account_reset_content( ofaReconcilPage *self );
 static void                 mode_filter_on_changed( GtkComboBox *box, ofaReconcilPage *self );
 static void                 mode_filter_select( ofaReconcilPage *self, gint mode );
 static void                 effect_dates_filter_on_changed( ofaIDateFilter *filter, gint who, gboolean empty, const GDate *date, ofaReconcilPage *self );
@@ -775,51 +776,51 @@ tview_on_selection_changed( ofaTVBin *treeview, GtkTreeSelection *selection, ofa
 	unreconciliate_enabled = FALSE;
 	priv->activate_action = ACTIV_NONE;
 
-	memset( &scur, '\0', sizeof( ofsCurrency ));
-	scur.currency = priv->acc_currency;
-	g_debug( "tview_on_selection_changed: account_currency=%p", ( void * ) priv->acc_currency );
 	if( priv->acc_currency ){
-		g_debug( "tview_on_selection_changed: account_currency=%s", ofo_currency_get_code( priv->acc_currency ));
-	}
+		memset( &scur, '\0', sizeof( ofsCurrency ));
+		scur.currency = priv->acc_currency;
 
-	selected = gtk_tree_selection_get_selected_rows( selection, NULL );
-	count = g_list_length( selected );
-	tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child );
-	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
+		selected = gtk_tree_selection_get_selected_rows( selection, NULL );
+		count = g_list_length( selected );
+		tview_examine_selection( self, selected, &scur, &concil_rows, &unconcil_rows, &is_child );
+		g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 
-	sdeb = ofa_amount_to_str( scur.debit, priv->acc_currency, priv->hub );
-	gtk_label_set_text( GTK_LABEL( priv->select_debit ), sdeb );
-	scre = ofa_amount_to_str( scur.credit, priv->acc_currency, priv->hub );
-	gtk_label_set_text( GTK_LABEL( priv->select_credit ), scre );
+		sdeb = ofa_amount_to_str( scur.debit, priv->acc_currency, priv->hub );
+		gtk_label_set_text( GTK_LABEL( priv->select_debit ), sdeb );
+		g_free( sdeb );
+		scre = ofa_amount_to_str( scur.credit, priv->acc_currency, priv->hub );
+		gtk_label_set_text( GTK_LABEL( priv->select_credit ), scre );
+		g_free( scre );
 
-	if( scur.debit || scur.credit ){
-		if( ofs_currency_is_balanced( &scur )){
-			gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_green );
+		if( scur.debit || scur.credit ){
+			g_debug( "scur: currency=%p, debit=%lf, credit=%lf, sel_count=%u", scur.currency, scur.debit, scur.credit, count );
+
+			if( ofs_currency_is_balanced( &scur )){
+				gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_green );
+			} else {
+				gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_yellow );
+			}
 		} else {
-			gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_yellow );
+			gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_empty );
 		}
-	} else {
-		gtk_image_set_from_resource( GTK_IMAGE( priv->select_light ), st_resource_light_empty );
-	}
-	g_free( sdeb );
-	g_free( scre );
 
-	/* it is important to only enable actions when only one unique
-	 * conciliation group is selected, as implementation do not know
-	 * how to handle multiple concil groups
-	 */
-	concil_enabled = ( unconcil_rows > 0 );
-	decline_enabled = ( count == 1 && unconcil_rows == 1 && is_child );
-	unreconciliate_enabled = ( concil_rows > 0 && unconcil_rows == 0 );
+		/* it is important to only enable actions when only one unique
+		 * conciliation group is selected, as implementation do not know
+		 * how to handle multiple concil groups
+		 */
+		concil_enabled = ( unconcil_rows > 0 );
+		decline_enabled = ( count == 1 && unconcil_rows == 1 && is_child );
+		unreconciliate_enabled = ( concil_rows > 0 && unconcil_rows == 0 );
 
-	/* what to do on selection activation ?
-	 * do not manage selection activation when we have both conciliated
-	 * and unconciliated rows */
-	if( concil_rows == 0 && unconcil_rows > 0 ){
-		priv->activate_action = ACTIV_CONCILIATE;
+		/* what to do on selection activation ?
+		 * do not manage selection activation when we have both conciliated
+		 * and unconciliated rows */
+		if( concil_rows == 0 && unconcil_rows > 0 ){
+			priv->activate_action = ACTIV_CONCILIATE;
 
-	} else if( concil_rows > 0 && unconcil_rows == 0 ){
-		priv->activate_action = ACTIV_UNCONCILIATE;
+		} else if( concil_rows > 0 && unconcil_rows == 0 ){
+			priv->activate_action = ACTIV_UNCONCILIATE;
+		}
 	}
 
 	g_simple_action_set_enabled( priv->reconciliate_action, concil_enabled );
@@ -972,6 +973,18 @@ tview_expand_selection( ofaReconcilPage *self )
 	g_list_free_full( selected, ( GDestroyNotify ) gtk_tree_path_free );
 }
 
+static void
+tview_clear_selection( ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+	GtkTreeSelection *selection;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	selection = ofa_tvbin_get_selection( OFA_TVBIN( priv->tview ));
+	gtk_tree_selection_unselect_all( selection );
+}
+
 static GtkWidget *
 setup_view2( ofaReconcilPage *self )
 {
@@ -1065,14 +1078,14 @@ setup_date_filter( ofaReconcilPage *self, GtkContainer *parent )
 {
 	ofaReconcilPagePrivate *priv;
 	GtkWidget *filter_parent;
-	gchar *settings_key;
+	gchar *key;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
 	priv->effect_filter = ofa_date_filter_hv_bin_new( priv->hub );
-	settings_key = g_strdup_printf( "%s-effect", priv->settings_prefix );
-	ofa_idate_filter_set_settings_key( OFA_IDATE_FILTER( priv->effect_filter ), settings_key );
-	g_free( settings_key );
+	key = g_strdup_printf( "%s-effect", priv->settings_prefix );
+	ofa_idate_filter_set_settings_key( OFA_IDATE_FILTER( priv->effect_filter ), key );
+	g_free( key );
 	g_signal_connect( priv->effect_filter, "ofa-focus-out", G_CALLBACK( effect_dates_filter_on_changed ), self );
 
 	filter_parent = my_utils_container_get_child_by_name( parent, "effect-date-filter" );
@@ -1276,6 +1289,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	 * the store itself */
 	hub_connect_to_signaling_system( OFA_RECONCIL_PAGE( page ));
 
+	/* setup initial values */
 	read_settings( OFA_RECONCIL_PAGE( page ));
 }
 
@@ -1343,14 +1357,17 @@ account_do_change( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
+	tview_clear_selection( self );
+	account_clear_content( self );
+
 	/* get an ofoAccount object, or NULL */
 	acc_number = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
-	priv->acc_currency = NULL;
 	priv->account = account_get_reconciliable( self, acc_number );
 	g_debug( "%s: self=%p, number=%s, account=%p", thisfn, ( void * ) self, acc_number, ( void * ) priv->account );
 
+	account_reset_content( self );
+
 	if( priv->account ){
-		account_clear_content( self );
 		account_set_header_balance( self );
 		ofa_reconcil_store_load_by_account( priv->store, acc_number );
 		ofa_reconcil_treeview_default_expand( priv->tview );
@@ -1446,6 +1463,7 @@ account_clear_content( ofaReconcilPage *self )
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
+	priv->acc_currency = NULL;
 	priv->acc_debit = 0;
 	priv->acc_credit = 0;
 	gtk_label_set_text( GTK_LABEL( priv->acc_debit_label ), "" );
@@ -1457,11 +1475,6 @@ account_clear_content( ofaReconcilPage *self )
 	gtk_tree_store_clear( GTK_TREE_STORE( priv->store ));
 	gtk_label_set_text( GTK_LABEL( priv->bal_debit_label ), "" );
 	gtk_label_set_text( GTK_LABEL( priv->bal_credit_label ), "" );
-
-	/* reinsert bat lines (if any) */
-	if( priv->bats ){
-		bat_do_display_all_files( self );
-	}
 }
 
 /*
@@ -1498,9 +1511,19 @@ account_set_header_balance( ofaReconcilPage *self )
 		}
 		g_free( sdiff );
 		g_free( samount );
+	}
+}
 
-		/* only update user preferences if account is ok */
-		write_settings( self );
+static void
+account_reset_content( ofaReconcilPage *self )
+{
+	ofaReconcilPagePrivate *priv;
+
+	priv = ofa_reconcil_page_get_instance_private( self );
+
+	/* reinsert bat lines (if any) */
+	if( priv->bats ){
+		bat_do_display_all_files( self );
 	}
 }
 
@@ -1522,8 +1545,6 @@ mode_filter_on_changed( GtkComboBox *box, ofaReconcilPage *self )
 
 	if( check_for_enable_view( self )){
 		ofa_tvbin_refilter( OFA_TVBIN( priv->tview ));
-		/* only update user preferences if view is enabled */
-		write_settings( self );
 	}
 }
 
@@ -1584,8 +1605,6 @@ concil_date_on_changed( GtkEditable *editable, ofaReconcilPage *self )
 	if( valid ){
 		my_date_set_from_date( &priv->dconcil, &date );
 	}
-
-	write_settings( self );
 }
 
 /*
@@ -2922,35 +2941,33 @@ read_settings( ofaReconcilPage *self )
 	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
-	gchar *sdate, *settings_key;
+	gchar *sdate, *key;
 	gint pos;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	priv->reading_settings = TRUE;
-
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	/* account */
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( cstr ){
+	if( my_strlen( cstr )){
 		gtk_entry_set_text( GTK_ENTRY( priv->acc_id_entry ), cstr );
 	}
 
 	/* entry filter */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( cstr ){
+	if( my_strlen( cstr )){
 		mode_filter_select( self, atoi( cstr ));
 	}
 
 	/* manual conciliation date */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( cstr ){
+	if( my_strlen( cstr )){
 		my_date_set_from_str( &date, cstr, MY_DATE_SQL );
 		if( my_date_is_valid( &date )){
 			sdate = my_date_to_str( &date, ofa_prefs_date_display( priv->hub ));
@@ -2962,13 +2979,11 @@ read_settings( ofaReconcilPage *self )
 	/* paned position */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	pos = cstr ? atoi( cstr ) : 0;
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
 	gtk_paned_set_position( GTK_PANED( priv->paned ), MAX( pos, 150 ));
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
-
-	priv->reading_settings = FALSE;
+	g_free( key );
 }
 
 static void
@@ -2977,40 +2992,34 @@ write_settings( ofaReconcilPage *self )
 	ofaReconcilPagePrivate *priv;
 	myISettings *settings;
 	const gchar *account, *sdate;
-	gchar *date_sql, *settings_key;
+	gchar *date_sql, *key, *str;
 	GDate date;
-	gint pos;
-	gchar *smode, *str;
 
 	priv = ofa_reconcil_page_get_instance_private( self );
 
-	if( !priv->reading_settings ){
+	account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
 
-		account = gtk_entry_get_text( GTK_ENTRY( priv->acc_id_entry ));
-
-		smode = g_strdup_printf( "%d", priv->mode );
-
-		sdate = gtk_entry_get_text( priv->date_concil );
-		my_date_set_from_str( &date, sdate, ofa_prefs_date_display( priv->hub ));
-		if( my_date_is_valid( &date )){
-			date_sql = my_date_to_str( &date, MY_DATE_SQL );
-		} else {
-			date_sql = g_strdup( "" );
-		}
-
-		pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
-
-		str = g_strdup_printf( "%s;%s;%s;%d;", account ? account : "", smode, date_sql, pos );
-
-		settings = ofa_hub_get_user_settings( priv->hub );
-		settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
-		g_free( settings_key );
-
-		g_free( date_sql );
-		g_free( str );
-		g_free( smode );
+	sdate = gtk_entry_get_text( priv->date_concil );
+	my_date_set_from_str( &date, sdate, ofa_prefs_date_display( priv->hub ));
+	if( my_date_is_valid( &date )){
+		date_sql = my_date_to_str( &date, MY_DATE_SQL );
+	} else {
+		date_sql = g_strdup( "" );
 	}
+
+	str = g_strdup_printf( "%s;%d;%s;%d;",
+			account ? account : "",
+			priv->mode,
+			date_sql,
+			gtk_paned_get_position( GTK_PANED( priv->paned )));
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+	g_free( key );
+
+	g_free( date_sql );
+	g_free( str );
 }
 
 static void

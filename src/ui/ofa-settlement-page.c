@@ -62,13 +62,10 @@ typedef struct {
 	ofaHub            *hub;
 	GList             *hub_handlers;
 	gchar             *settings_prefix;
-	gchar             *account_number;
-	ofoCurrency       *account_currency;
 
 	/* UI
 	 */
 	GtkWidget         *paned;
-	guint              paned_position;
 	ofaEntryTreeview  *tview;
 	ofaEntryStore     *store;
 
@@ -76,6 +73,8 @@ typedef struct {
 	 */
 	GtkWidget         *account_entry;
 	GtkWidget         *account_label;
+	gchar             *account_number;
+	ofoCurrency       *account_currency;
 
 	/* frame 2: filtering mode
 	 */
@@ -245,7 +244,7 @@ ofa_settlement_page_init( ofaSettlementPage *self )
 
 	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->account_number = NULL;
-	priv->filter_id = NULL;
+	priv->filter_id = g_strdup_printf( "%d", STLMT_FILTER_ALL );
 	priv->last_style = "labelinvalid";
 }
 
@@ -276,8 +275,6 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	priv->hub = ofa_igetter_get_hub( OFA_IGETTER( page ));
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
-
-	read_settings( OFA_SETTLEMENT_PAGE( page ));
 
 	priv->paned = GTK_WIDGET( paned );
 
@@ -689,9 +686,7 @@ paned_page_v_init_view( ofaPanedPage *page )
 	ofa_tvbin_select_first_row( OFA_TVBIN( priv->tview ));
 
 	/* setup initial values */
-	gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->filter_combo ), priv->filter_id );
-	gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), priv->account_number );
-	gtk_paned_set_position( GTK_PANED( priv->paned ), priv->paned_position );
+	read_settings( OFA_SETTLEMENT_PAGE( page ));
 }
 
 static void
@@ -854,6 +849,7 @@ read_settings( ofaSettlementPage *self )
 	GList *strlist, *it;
 	const gchar *cstr;
 	gchar *key;
+	guint pos;
 
 	priv = ofa_settlement_page_get_instance_private( self );
 
@@ -864,30 +860,28 @@ read_settings( ofaSettlementPage *self )
 	/* filter mode */
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	g_free( priv->filter_id );
 	if( my_strlen( cstr )){
-		priv->filter_id = g_strdup( cstr );
-	} else {
-		priv->filter_id = g_strdup_printf( "%d", STLMT_FILTER_ALL );
+		gtk_combo_box_set_active_id( GTK_COMBO_BOX( priv->filter_combo ), cstr );
 	}
 
 	/* account number */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
-		g_free( priv->account_number );
-		priv->account_number = g_strdup( cstr );
+		gtk_entry_set_text( GTK_ENTRY( priv->account_entry ), cstr );
 	}
 
 	/* paned position */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = 0;
 	if( my_strlen( cstr )){
-		priv->paned_position = atoi( cstr );
+		pos = atoi( cstr );
 	}
-	if( priv->paned_position <= 10 ){
-		priv->paned_position = 150;
+	if( pos <= 150 ){
+		pos = 150;
 	}
+	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
 	my_isettings_free_string_list( settings, strlist );
 	g_free( key );

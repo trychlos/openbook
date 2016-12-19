@@ -64,6 +64,22 @@
  In all myIWindow implementations, this means reading from iwindow_init().
  In pages, this means reading at very beginning of page_setup_view().
 
+ From ofaPage point of view, settings are read at the end of initialization
+ (this is an exception to the rule, but the end of initialization should
+ host something in all case: either the read settings, or the setup of
+ read initial values).
+ 
+                     read_settings                    write_settings
+                  
+ ofaAssistant  from iwindow_init()                 instance_dispose()
+               store read values
+               read values will later be used
+               in each on_page_init() handler
+
+ ofaPage       at the end of init_view()           instance_dispose()
+               directly acts on UI which has
+               been previously initialized
+
  When reading user settings, datas are stored as initial values, which
  means they no longer need to be re-read during the execution.
 
