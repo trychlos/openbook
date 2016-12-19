@@ -235,8 +235,6 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 
 	view = setup_view2( OFA_RECURRENT_RUN_PAGE( page ));
 	gtk_paned_pack2( paned, view, FALSE, FALSE );
-
-	read_settings( OFA_RECURRENT_RUN_PAGE( page ));
 }
 
 static GtkWidget *
@@ -374,6 +372,9 @@ paned_page_v_init_view( ofaPanedPage *page )
 	/* as GTK_SELECTION_MULTIPLE is set, we have to explicitely
 	 * setup the initial selection if a first row exists */
 	ofa_tvbin_select_all( OFA_TVBIN( priv->tview ));
+
+	/* setup initial values */
+	read_settings( OFA_RECURRENT_RUN_PAGE( page ));
 }
 
 static void
@@ -719,25 +720,27 @@ read_settings( ofaRecurrentRunPage *self )
 	GList *strlist, *it;
 	const gchar *cstr;
 	gint pos;
-	gchar *settings_key;
+	gchar *key;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
+	/* paned position */
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	pos = 0;
 	if( my_strlen( cstr )){
 		pos = atoi( cstr );
 	}
-	if( pos <= 10 ){
+	if( pos <= 150 ){
 		pos = 150;
 	}
 	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
 
+	/* cancelled visible */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
@@ -745,6 +748,7 @@ read_settings( ofaRecurrentRunPage *self )
 		filter_on_cancelled_btn_toggled( GTK_TOGGLE_BUTTON( priv->cancelled_toggle ), self );
 	}
 
+	/* waiting visible */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
@@ -752,6 +756,7 @@ read_settings( ofaRecurrentRunPage *self )
 		filter_on_waiting_btn_toggled( GTK_TOGGLE_BUTTON( priv->waiting_toggle ), self );
 	}
 
+	/* validated visible */
 	it = it ? it->next : NULL;
 	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
@@ -760,7 +765,7 @@ read_settings( ofaRecurrentRunPage *self )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
@@ -768,25 +773,22 @@ write_settings( ofaRecurrentRunPage *self )
 {
 	ofaRecurrentRunPagePrivate *priv;
 	myISettings *settings;
-	gchar *str, *settings_key;
-	gint pos;
+	gchar *str, *key;
 
 	priv = ofa_recurrent_run_page_get_instance_private( self );
 
-	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
-
 	str = g_strdup_printf( "%d;%s;%s;%s;",
-			pos,
+			gtk_paned_get_position( GTK_PANED( priv->paned )),
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->cancelled_toggle )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->waiting_toggle )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->validated_toggle )) ? "True":"False" );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( settings_key );
+	g_free( key );
 }
 
 /*
