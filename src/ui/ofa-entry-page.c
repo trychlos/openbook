@@ -246,8 +246,9 @@ static gint       row_get_errlevel( ofaEntryPage *self, GtkTreeModel *tmodel, Gt
 static void       read_settings( ofaEntryPage *self );
 static void       read_settings_selection( ofaEntryPage *self, myISettings *settings );
 static void       read_settings_status( ofaEntryPage *self, myISettings *settings );
-static void       write_settings_selection( ofaEntryPage *self );
-static void       write_settings_status( ofaEntryPage *self );
+static void       write_settings( ofaEntryPage *self );
+static void       write_settings_selection( ofaEntryPage *self, myISettings *settings );
+static void       write_settings_status( ofaEntryPage *self, myISettings *settings );
 static void       hub_connect_to_signaling_system( ofaEntryPage *self );
 static void       hub_on_new_object( ofaHub *hub, ofoBase *object, ofaEntryPage *self );
 static void       hub_on_updated_object( ofaHub *hub, ofoBase *object, const gchar *prev_id, ofaEntryPage *self );
@@ -288,6 +289,8 @@ entry_page_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
+		write_settings( OFA_ENTRY_PAGE( instance ));
+
 		/* unref object members here */
 		priv = ofa_entry_page_get_instance_private( OFA_ENTRY_PAGE( instance ));
 
@@ -296,9 +299,6 @@ entry_page_dispose( GObject *instance )
 		g_clear_object( &priv->new_action );
 		g_clear_object( &priv->update_action );
 		g_clear_object( &priv->delete_action );
-
-		/* save the bottom paned position */
-		write_settings_selection( OFA_ENTRY_PAGE( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -888,7 +888,6 @@ gen_selection_on_toggled( GtkToggleButton *button, ofaEntryPage *self )
 
 			/* and display the entries */
 			if( is_active ){
-				write_settings_selection( self );
 				g_idle_add(( GSourceFunc ) account_display_from, self );
 			}
 		} else {
@@ -899,7 +898,6 @@ gen_selection_on_toggled( GtkToggleButton *button, ofaEntryPage *self )
 
 			/* and display the entries */
 			if( is_active ){
-				write_settings_selection( self );
 				g_idle_add(( GSourceFunc ) ledger_display_from, self );
 			}
 		}
@@ -921,7 +919,6 @@ ledger_on_changed( ofaLedgerCombo *combo, const gchar *mnemo, ofaEntryPage *self
 	g_debug( "ledger_on_changed: mnemo=%s", mnemo );
 
 	if( !priv->initializing ){
-		write_settings_selection( self );
 		if( my_strlen( priv->jou_mnemo )){
 			g_idle_add(( GSourceFunc ) ledger_display_from, self );
 		}
@@ -970,7 +967,6 @@ account_on_changed( GtkEntry *entry, ofaEntryPage *self )
 	}
 
 	if( !priv->initializing ){
-		write_settings_selection( self );
 		if( my_strlen( priv->acc_number )){
 			g_idle_add(( GSourceFunc ) account_display_from, self );
 		}
@@ -1065,7 +1061,6 @@ status_on_toggled( GtkToggleButton *button, ofaEntryPage *self )
 	priv = ofa_entry_page_get_instance_private( self );
 
 	if( !priv->initializing ){
-		write_settings_status( self );
 		refresh_display( self );
 	}
 }
@@ -2406,15 +2401,15 @@ static void
 read_settings_selection( ofaEntryPage *self, myISettings *settings )
 {
 	ofaEntryPagePrivate *priv;
-	gchar *settings_key;
+	gchar *key;
 	GList *strlist, *it;
 	const gchar *cstr;
 	gint pos;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	settings_key = g_strdup_printf( "%s-selection", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-selection", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -2447,7 +2442,7 @@ read_settings_selection( ofaEntryPage *self, myISettings *settings )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 }
 
 /*
@@ -2457,7 +2452,7 @@ static void
 read_settings_status( ofaEntryPage *self, myISettings *settings )
 {
 	ofaEntryPagePrivate *priv;
-	gchar *settings_key;
+	gchar *key;
 	GList *strlist, *it;
 	const gchar *cstr;
 	gboolean bval;
@@ -2465,8 +2460,8 @@ read_settings_status( ofaEntryPage *self, myISettings *settings )
 
 	priv = ofa_entry_page_get_instance_private( self );
 
-	settings_key = g_strdup_printf( "%s-status", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-status", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 	count_bvalues = 0;
 
 	it = strlist;
@@ -2504,15 +2499,28 @@ read_settings_status( ofaEntryPage *self, myISettings *settings )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
-write_settings_selection( ofaEntryPage *self )
+write_settings( ofaEntryPage *self )
 {
 	ofaEntryPagePrivate *priv;
 	myISettings *settings;
-	gchar *settings_key, *str;
+
+	priv = ofa_entry_page_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+
+	write_settings_selection( self, settings );
+	write_settings_status( self, settings );
+}
+
+static void
+write_settings_selection( ofaEntryPage *self, myISettings *settings )
+{
+	ofaEntryPagePrivate *priv;
+	gchar *key, *str;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
@@ -2522,20 +2530,18 @@ write_settings_selection( ofaEntryPage *self )
 			my_strlen( priv->jou_mnemo ) ? priv->jou_mnemo : "",
 			gtk_paned_get_position( GTK_PANED( priv->bottom_paned )));
 
-	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-selection", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
+	key = g_strdup_printf( "%s-selection", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
-write_settings_status( ofaEntryPage *self )
+write_settings_status( ofaEntryPage *self, myISettings *settings )
 {
 	ofaEntryPagePrivate *priv;
-	myISettings *settings;
-	gchar *settings_key, *str;
+	gchar *key, *str;
 
 	priv = ofa_entry_page_get_instance_private( self );
 
@@ -2546,12 +2552,11 @@ write_settings_status( ofaEntryPage *self )
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->deleted_btn )) ? "True":"False",
 			gtk_toggle_button_get_active( GTK_TOGGLE_BUTTON( priv->future_btn )) ? "True":"False" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-status", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
+	key = g_strdup_printf( "%s-status", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
