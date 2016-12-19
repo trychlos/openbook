@@ -42,6 +42,7 @@
 
  New features and improvements:
 
+   - ofaDossierOpen: exercice is unselectable if no dossier is selected (todo #1297).
    - ofaExportAssistant: have a message when output file is not set.
 
  Bug fixes:

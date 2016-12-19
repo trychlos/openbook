@@ -474,6 +474,8 @@ on_dossier_changed( ofaDossierTreeview *tview, ofaIDBDossierMeta *dossier_meta, 
 		ofa_exercice_combo_set_dossier( priv->exercice_combo, dossier_meta );
 	}
 
+	gtk_widget_set_sensitive( GTK_WIDGET( priv->exercice_combo ), dossier_meta != NULL );
+
 	check_for_enable_dlg( self );
 }
 
