@@ -78,6 +78,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	gchar                *settings_prefix;
 	ofaHub               *hub;
 	ofoDossier           *dossier;
 	const ofaIDBConnect  *connect;
@@ -152,7 +153,6 @@ typedef struct {
 #define EXECLOSE_OPENING_DATA           "execlose-opening-data"
 
 static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-exercice-close-assistant.ui";
-static const gchar *st_settings         = "ofaExerciceCloseAssistant";
 
 static void           iwindow_iface_init( myIWindowInterface *iface );
 static void           iwindow_init( myIWindow *instance );
@@ -254,6 +254,7 @@ exercice_close_assistant_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_exercice_close_assistant_get_instance_private( OFA_EXERCICE_CLOSE_ASSISTANT( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->dos_name );
 	g_free( priv->p2_account );
 	g_free( priv->p2_password );
@@ -305,7 +306,7 @@ ofa_exercice_close_assistant_init( ofaExerciceCloseAssistant *self )
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
-
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 	priv->is_destroy_allowed = TRUE;
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
@@ -831,7 +832,7 @@ p4_do_init( ofaExerciceCloseAssistant *self, gint page_num, GtkWidget *page_widg
 
 	priv = ofa_exercice_close_assistant_get_instance_private( self );
 
-	priv->p4_checks_bin = ofa_check_integrity_bin_new( priv->hub, st_settings );
+	priv->p4_checks_bin = ofa_check_integrity_bin_new( priv->hub, priv->settings_prefix );
 	gtk_container_add( GTK_CONTAINER( page_widget ), GTK_WIDGET( priv->p4_checks_bin ));
 
 	g_signal_connect( priv->p4_checks_bin, "ofa-done", G_CALLBACK( p4_on_checks_done ), self );
