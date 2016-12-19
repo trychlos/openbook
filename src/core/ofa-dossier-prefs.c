@@ -57,8 +57,8 @@ typedef struct {
 static const gchar *st_background_img   = "ofa-BackgroundImage";
 static const gchar *st_prefs_settings   = "ofa-UserPreferences-settings";
 
-static void  get_dossier_settings( ofaDossierPrefs *self );
-static void  set_dossier_settings( ofaDossierPrefs *self );
+static void  read_settings( ofaDossierPrefs *self );
+static void  write_settings( ofaDossierPrefs *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierPrefs, ofa_dossier_prefs, G_TYPE_OBJECT, 0,
 		G_ADD_PRIVATE( ofaDossierPrefs ))
@@ -150,7 +150,7 @@ ofa_dossier_prefs_new( ofaHub *hub )
 
 	priv->hub = hub;
 
-	get_dossier_settings( self );
+	read_settings( self );
 
 	return( self );
 }
@@ -192,7 +192,7 @@ ofa_dossier_prefs_set_open_notes( ofaDossierPrefs *prefs, gboolean open )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->notes = open;
-	set_dossier_settings( prefs );
+	write_settings( prefs );
 }
 
 /**
@@ -232,7 +232,7 @@ ofa_dossier_prefs_set_nonempty( ofaDossierPrefs *prefs, gboolean nonempty )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->nonempty = nonempty;
-	set_dossier_settings( prefs );
+	write_settings( prefs );
 }
 
 /**
@@ -272,7 +272,7 @@ ofa_dossier_prefs_set_properties( ofaDossierPrefs *prefs, gboolean properties )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->properties = properties;
-	set_dossier_settings( prefs );
+	write_settings( prefs );
 }
 
 /**
@@ -312,7 +312,7 @@ ofa_dossier_prefs_set_balances( ofaDossierPrefs *prefs, gboolean balances )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->balances = balances;
-	set_dossier_settings( prefs );
+	write_settings( prefs );
 }
 
 /**
@@ -352,7 +352,7 @@ ofa_dossier_prefs_set_integrity( ofaDossierPrefs *prefs, gboolean integrity )
 	g_return_if_fail( !priv->dispose_has_run );
 
 	priv->integrity = integrity;
-	set_dossier_settings( prefs );
+	write_settings( prefs );
 }
 
 /**
@@ -414,7 +414,7 @@ ofa_dossier_prefs_set_background_img( ofaDossierPrefs *prefs, const gchar *uri )
  * dossier settings: open_notes;only_when_non_empty;properties;balances;integrity;
  */
 static void
-get_dossier_settings( ofaDossierPrefs *self )
+read_settings( ofaDossierPrefs *self )
 {
 	ofaDossierPrefsPrivate *priv;
 	myISettings *settings;
@@ -464,7 +464,7 @@ get_dossier_settings( ofaDossierPrefs *self )
 }
 
 static void
-set_dossier_settings( ofaDossierPrefs *self )
+write_settings( ofaDossierPrefs *self )
 {
 	ofaDossierPrefsPrivate *priv;
 	myISettings *settings;

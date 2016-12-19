@@ -329,6 +329,8 @@ on_widget_finalized( ofaIDateFilter *filter, void *finalized_widget )
 
 	sdata = get_idate_filter_data( filter );
 
+	write_settings( filter, sdata );
+
 	g_clear_object( &sdata->group0 );
 	g_free( sdata->ui_resource );
 	g_free( sdata->settings_key );
@@ -494,18 +496,12 @@ on_date_changed( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date 
 }
 
 /*
- * only record the date in settings if it is valid
+ * Returns: %FALSE to propagate the event further.
  */
 static gboolean
 on_date_focus_out( ofaIDateFilter *filter, gint who, GtkEntry *entry, GDate *date, sIDateFilter *sdata )
 {
 	my_date_set_from_date( date, my_date_editable_get_date( GTK_EDITABLE( entry ), NULL ));
-
-	if( my_date_is_valid( date ) ||
-			( my_date_editable_is_empty( GTK_EDITABLE( entry )) && !sdata->mandatory )){
-
-		write_settings( filter, sdata );
-	}
 
 	g_signal_emit_by_name( filter, "ofa-focus-out", who, date );
 

@@ -608,7 +608,7 @@ read_settings( ofaITVSortable *self, sITVSortable *sdata )
 	myISettings *settings;
 	GList *strlist, *it, *columns;
 	const gchar *cstr;
-	gchar *sort_key;
+	gchar *key;
 	GtkTreeViewColumn *column;
 
 	/* setup default sort order
@@ -620,23 +620,23 @@ read_settings( ofaITVSortable *self, sITVSortable *sdata )
 	/* get the settings (if any)
 	 */
 	settings = ofa_hub_get_user_settings( sdata->hub );
-	sort_key = g_strdup_printf( "%s-sort", sdata->name );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, sort_key );
+	key = g_strdup_printf( "%s-sort", sdata->name );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		sdata->sort_column_id = atoi( cstr );
 	}
 
 	it = it ? it->next : NULL;
-	cstr = it ? it->data : NULL;
+	cstr = it ? ( const gchar * ) it->data : NULL;
 	if( my_strlen( cstr )){
 		sdata->sort_order = atoi( cstr );
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( sort_key );
+	g_free( key );
 
 	/* setup the initial sort column
 	 */
@@ -655,16 +655,16 @@ static void
 write_settings( ofaITVSortable *instance, sITVSortable *sdata )
 {
 	myISettings *settings;
-	gchar *str, *sort_key;
+	gchar *str, *key;
 
 	settings = ofa_hub_get_user_settings( sdata->hub );
-	sort_key = g_strdup_printf( "%s-sort", sdata->name );
+	key = g_strdup_printf( "%s-sort", sdata->name );
 	str = g_strdup_printf( "%d;%d;", sdata->sort_column_id, sdata->sort_order );
 
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, sort_key, str );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( sort_key );
+	g_free( key );
 }
 
 static sITVSortable *

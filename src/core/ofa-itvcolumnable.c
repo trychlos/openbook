@@ -1094,7 +1094,7 @@ static gint
 read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
 	myISettings *settings;
-	gchar *settings_key;
+	gchar *key;
 	GList *strlist, *it;
 	const gchar *cstr;
 	gint count, col_id, col_width;
@@ -1103,15 +1103,15 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	GActionGroup *action_group;
 
 	settings = ofa_hub_get_user_settings( sdata->hub );
-	settings_key = g_strdup_printf( "%s-columns", sdata->name );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-columns", sdata->name );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	count = 0;
 	prev = NULL;
 	it = strlist;
 
 	while( it ){
-		cstr = it ? it->data : NULL;
+		cstr = it ? ( const gchar * ) it->data : NULL;
 		if( my_strlen( cstr )){
 			col_id = atoi( cstr );
 			it = it->next;
@@ -1133,7 +1133,7 @@ read_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 
 	return( count );
 }
@@ -1142,7 +1142,7 @@ static void
 write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 {
 	myISettings *settings;
-	gchar *settings_key;
+	gchar *key;
 	guint i, count;
 	GString *str;
 	gint col_id, col_width;
@@ -1151,7 +1151,7 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 	if( sdata->treeview ){
 
 		settings = ofa_hub_get_user_settings( sdata->hub );
-		settings_key = g_strdup_printf( "%s-columns", sdata->name );
+		key = g_strdup_printf( "%s-columns", sdata->name );
 		count = gtk_tree_view_get_n_columns( sdata->treeview );
 		str = g_string_new( "" );
 
@@ -1164,9 +1164,9 @@ write_settings( const ofaITVColumnable *instance, sITVColumnable *sdata )
 			}
 		}
 
-		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str->str );
+		my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str->str );
 
-		g_free( settings_key );
+		g_free( key );
 		g_string_free( str, TRUE );
 	}
 }

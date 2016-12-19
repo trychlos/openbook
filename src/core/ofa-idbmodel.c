@@ -946,9 +946,7 @@ read_settings( ofaDBModelWindow *self )
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	if( my_strlen( cstr )){
-		priv->paned_pos = atoi( cstr );
-	}
+	priv->paned_pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
 	if( priv->paned_pos < 150 ){
 		priv->paned_pos = 150;
 	}
