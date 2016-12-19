@@ -27,6 +27,7 @@
 #endif
 
 #include <glib/gi18n.h>
+#include <stdlib.h>
 
 #include "my/my-utils.h"
 
@@ -48,11 +49,11 @@ typedef struct {
 
 	/* internals
 	 */
+	gchar                *settings_prefix;
 	ofaHub               *hub;
 	GList                *hub_handlers;
 	const ofoOpeTemplate *model;			/* model */
 	ofaGuidedInputBin    *input_bin;
-	gchar                *settings_prefix;
 
 	/* UI - the pane
 	 */
@@ -86,8 +87,6 @@ static const gchar *st_ui_name2         = "ofaGuidedExView2";
 
 static GtkWidget *page_v_get_top_focusable_widget( const ofaPage *page );
 static void       paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned );
-static void       pane_restore_position( ofaGuidedEx *self );
-static void       pane_save_position( ofaGuidedEx *self );
 static GtkWidget *setup_view1( ofaGuidedEx *self );
 static void       left_setup_treeview( ofaGuidedEx *self, GtkContainer *parent );
 static gint       left_on_sort_model( GtkTreeModel *tmodel, GtkTreeIter *a, GtkTreeIter *b, ofaGuidedEx *self );
@@ -115,6 +114,8 @@ static GtkWidget *setup_view2( ofaGuidedEx *self );
 static void       right_on_piece_changed( ofaGuidedInputBin *bin, gboolean ok, ofaGuidedEx *self );
 static void       right_on_ok( GtkButton *button, ofaGuidedEx *self );
 static void       right_on_cancel( GtkButton *button, ofaGuidedEx *self );
+static void       read_settings( ofaGuidedEx *self );
+static void       write_settings( ofaGuidedEx *self );
 static void       hub_connect_to_signaling_system( ofaGuidedEx *self );
 static void       hub_on_new_object( ofaHub *hub, const ofoBase *object, ofaGuidedEx *self );
 static void       hub_on_updated_object( ofaHub *hub, const ofoBase *object, const gchar *prev_id, ofaGuidedEx *self );
@@ -153,12 +154,10 @@ guided_ex_dispose( GObject *instance )
 
 	if( !OFA_PAGE( instance )->prot->dispose_has_run ){
 
+		write_settings( OFA_GUIDED_EX( instance ));
+
 		/* unref object members here */
 		priv = ofa_guided_ex_get_instance_private( OFA_GUIDED_EX( instance ));
-
-		if( priv->paned ){
-			pane_save_position( OFA_GUIDED_EX( instance ));
-		}
 
 		ofa_hub_disconnect_handlers( priv->hub, &priv->hub_handlers );
 	}
@@ -225,7 +224,6 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
 
 	priv->paned = GTK_WIDGET( paned );
-	pane_restore_position( OFA_GUIDED_EX( page ));
 
 	view = setup_view1( OFA_GUIDED_EX( page ));
 	gtk_paned_pack1( paned, view, FALSE, TRUE );
@@ -236,43 +234,8 @@ paned_page_v_setup_view( ofaPanedPage *page, GtkPaned *paned )
 	hub_connect_to_signaling_system( OFA_GUIDED_EX( page ));
 
 	left_init_view( OFA_GUIDED_EX( page ));
-}
 
-static void
-pane_restore_position( ofaGuidedEx *self )
-{
-	ofaGuidedExPrivate *priv;
-	myISettings *settings;
-	gchar *settings_key;
-	gint pos;
-
-	priv = ofa_guided_ex_get_instance_private( self );
-
-	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-pane", priv->settings_prefix );
-	pos = my_isettings_get_uint( settings, HUB_USER_SETTINGS_GROUP, settings_key );
-	if( pos <= 100 ){
-		pos = 150;
-	}
-	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
-	g_free( settings_key );
-}
-
-static void
-pane_save_position( ofaGuidedEx *self )
-{
-	ofaGuidedExPrivate *priv;
-	myISettings *settings;
-	gchar *settings_key;
-	guint pos;
-
-	priv = ofa_guided_ex_get_instance_private( self );
-
-	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-pane", priv->settings_prefix );
-	pos = gtk_paned_get_position( GTK_PANED( priv->paned ));
-	my_isettings_set_uint( settings, HUB_USER_SETTINGS_GROUP, settings_key, pos );
-	g_free( settings_key );
+	read_settings( OFA_GUIDED_EX( page ));
 }
 
 /*
@@ -969,6 +932,58 @@ right_on_cancel( GtkButton *button, ofaGuidedEx *self )
 
 	ofa_guided_input_bin_reset( priv->input_bin );
 	gtk_widget_set_sensitive( priv->ok_btn, FALSE );
+}
+
+/*
+ * settings are: paned_position;
+ */
+static void
+read_settings( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	myISettings *settings;
+	GList *strlist, *it;
+	const gchar *cstr;
+	gchar *key;
+	gint pos;
+
+	priv = ofa_guided_ex_get_instance_private( self );
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
+
+	/* paned position */
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
+		pos = 150;
+	}
+	gtk_paned_set_position( GTK_PANED( priv->paned ), pos );
+
+	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
+}
+
+static void
+write_settings( ofaGuidedEx *self )
+{
+	ofaGuidedExPrivate *priv;
+	myISettings *settings;
+	gchar *key, *str;
+
+	priv = ofa_guided_ex_get_instance_private( self );
+
+	str = g_strdup_printf( "%d;",
+				gtk_paned_get_position( GTK_PANED( priv->paned )));
+
+	settings = ofa_hub_get_user_settings( priv->hub );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
+
+	g_free( key );
+	g_free( str );
 }
 
 static void
