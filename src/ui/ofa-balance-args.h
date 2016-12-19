@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_BALANCE_BIN_H__
-#define __OFA_BALANCE_BIN_H__
+#ifndef __OFA_BALANCE_ARGS_H__
+#define __OFA_BALANCE_ARGS_H__
 
 /**
- * SECTION: ofa_balance_bin
- * @short_description: #ofaBalanceBin class definition.
- * @include: ui/ofa-balance-bin.h
+ * SECTION: ofa_balance_args
+ * @short_description: #ofaBalanceArgs class definition.
+ * @include: ui/ofa-balance-args.h
  *
  * Display a frame with let the user select the parameters needed to
  * print the balance of the entries between two effect dates.
@@ -52,42 +52,43 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_BALANCE_BIN                ( ofa_balance_bin_get_type())
-#define OFA_BALANCE_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BALANCE_BIN, ofaBalanceBin ))
-#define OFA_BALANCE_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BALANCE_BIN, ofaBalanceBinClass ))
-#define OFA_IS_BALANCE_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BALANCE_BIN ))
-#define OFA_IS_BALANCE_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BALANCE_BIN ))
-#define OFA_BALANCE_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BALANCE_BIN, ofaBalanceBinClass ))
+#define OFA_TYPE_BALANCE_ARGS                ( ofa_balance_args_get_type())
+#define OFA_BALANCE_ARGS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_BALANCE_ARGS, ofaBalanceArgs ))
+#define OFA_BALANCE_ARGS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_BALANCE_ARGS, ofaBalanceArgsClass ))
+#define OFA_IS_BALANCE_ARGS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_BALANCE_ARGS ))
+#define OFA_IS_BALANCE_ARGS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_BALANCE_ARGS ))
+#define OFA_BALANCE_ARGS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_BALANCE_ARGS, ofaBalanceArgsClass ))
 
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;
 }
-	ofaBalanceBin;
+	ofaBalanceArgs;
 
 typedef struct {
 	/*< public members >*/
 	GtkBinClass parent;
 }
-	ofaBalanceBinClass;
+	ofaBalanceArgsClass;
 
-GType              ofa_balance_bin_get_type              ( void ) G_GNUC_CONST;
+GType              ofa_balance_args_get_type              ( void ) G_GNUC_CONST;
 
-ofaBalanceBin     *ofa_balance_bin_new                   ( ofaIGetter *getter );
+ofaBalanceArgs     *ofa_balance_args_new                   ( ofaIGetter *getter,
+																const gchar *settings_prefix );
 
-gboolean           ofa_balance_bin_is_valid              ( ofaBalanceBin *bin,
+gboolean           ofa_balance_args_is_valid              ( ofaBalanceArgs *bin,
 																gchar **message );
 
-ofaIAccountFilter *ofa_balance_bin_get_account_filter    ( ofaBalanceBin *bin );
+ofaIAccountFilter *ofa_balance_args_get_account_filter    ( ofaBalanceArgs *bin );
 
-gboolean           ofa_balance_bin_get_accounts_balance  ( ofaBalanceBin *bin );
+gboolean           ofa_balance_args_get_accounts_balance  ( ofaBalanceArgs *bin );
 
-gboolean           ofa_balance_bin_get_subtotal_per_class( ofaBalanceBin *bin );
+gboolean           ofa_balance_args_get_subtotal_per_class( ofaBalanceArgs *bin );
 
-gboolean           ofa_balance_bin_get_new_page_per_class( ofaBalanceBin *bin );
+gboolean           ofa_balance_args_get_new_page_per_class( ofaBalanceArgs *bin );
 
-ofaIDateFilter    *ofa_balance_bin_get_date_filter       ( ofaBalanceBin *bin );
+ofaIDateFilter    *ofa_balance_args_get_date_filter       ( ofaBalanceArgs *bin );
 
 G_END_DECLS
 
-#endif /* __OFA_BALANCE_BIN_H__ */
+#endif /* __OFA_BALANCE_ARGS_H__ */

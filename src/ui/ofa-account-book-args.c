@@ -193,6 +193,7 @@ ofa_account_book_args_new( ofaIGetter *getter, const gchar *settings_prefix )
 	ofaAccountBookArgsPrivate *priv;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
 	bin = g_object_new( OFA_TYPE_ACCOUNT_BOOK_ARGS, NULL );
 

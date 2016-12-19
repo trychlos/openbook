@@ -84,8 +84,8 @@ openbook_SOURCES = \
 	ofa-application-def.h								\
 	ofa-backup.c										\
 	ofa-backup.h										\
-	ofa-balance-bin.c									\
-	ofa-balance-bin.h									\
+	ofa-balance-args.c									\
+	ofa-balance-args.h									\
 	ofa-balance-grid-bin.c								\
 	ofa-balance-grid-bin.h								\
 	ofa-balance-render.c								\

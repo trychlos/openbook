@@ -49,14 +49,14 @@
 #include "api/ofs-account-balance.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-balance-bin.h"
+#include "ui/ofa-balance-args.h"
 #include "ui/ofa-balance-render.h"
 
 /* private instance data
  */
 typedef struct {
 
-	ofaBalanceBin *args_bin;
+	ofaBalanceArgs *args_bin;
 
 	/* runtime
 	 */
@@ -136,7 +136,7 @@ static GtkPageOrientation render_page_v_get_page_orientation( ofaRenderPage *pag
 static void               render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static GList             *render_page_v_get_dataset( ofaRenderPage *page );
 static void               render_page_v_free_dataset( ofaRenderPage *page, GList *dataset );
-static void               on_args_changed( ofaBalanceBin *bin, ofaBalanceRender *page );
+static void               on_args_changed( ofaBalanceArgs *bin, ofaBalanceRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
@@ -277,11 +277,11 @@ static GtkWidget *
 render_page_v_get_args_widget( ofaRenderPage *page )
 {
 	ofaBalanceRenderPrivate *priv;
-	ofaBalanceBin *bin;
+	ofaBalanceArgs *bin;
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( page ));
 
-	bin = ofa_balance_bin_new( OFA_IGETTER( page ));
+	bin = ofa_balance_args_new( OFA_IGETTER( page ), priv->settings_prefix );
 	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 
@@ -325,14 +325,14 @@ render_page_v_get_dataset( ofaRenderPage *page )
 
 	g_free( priv->from_account );
 	g_free( priv->to_account );
-	account_filter = ofa_balance_bin_get_account_filter( priv->args_bin );
+	account_filter = ofa_balance_args_get_account_filter( priv->args_bin );
 	priv->from_account = g_strdup( ofa_iaccount_filter_get_account( account_filter, IACCOUNT_FILTER_FROM ));
 	priv->to_account = g_strdup( ofa_iaccount_filter_get_account( account_filter, IACCOUNT_FILTER_TO ));
 	priv->all_accounts = ofa_iaccount_filter_get_all_accounts( account_filter );
 
-	priv->accounts_balance = ofa_balance_bin_get_accounts_balance( priv->args_bin );
+	priv->accounts_balance = ofa_balance_args_get_accounts_balance( priv->args_bin );
 
-	date_filter = ofa_balance_bin_get_date_filter( priv->args_bin );
+	date_filter = ofa_balance_args_get_date_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
@@ -355,15 +355,15 @@ render_page_v_free_dataset( ofaRenderPage *page, GList *dataset )
 }
 
 /*
- * ofaBalanceBin "ofa-changed" handler
+ * ofaBalanceArgs "ofa-changed" handler
  */
 static void
-on_args_changed( ofaBalanceBin *bin, ofaBalanceRender *page )
+on_args_changed( ofaBalanceArgs *bin, ofaBalanceRender *page )
 {
 	gboolean valid;
 	gchar *message;
 
-	valid = ofa_balance_bin_is_valid( bin, &message );
+	valid = ofa_balance_args_is_valid( bin, &message );
 	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
 	g_free( message );
 }
@@ -418,7 +418,7 @@ irenderable_want_groups( const ofaIRenderable *instance )
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	priv->per_class = ofa_balance_bin_get_subtotal_per_class( priv->args_bin );
+	priv->per_class = ofa_balance_args_get_subtotal_per_class( priv->args_bin );
 
 	return( priv->per_class );
 }
@@ -430,7 +430,7 @@ irenderable_want_new_page( const ofaIRenderable *instance )
 
 	priv = ofa_balance_render_get_instance_private( OFA_BALANCE_RENDER( instance ));
 
-	priv->new_page = ofa_balance_bin_get_new_page_per_class( priv->args_bin );
+	priv->new_page = ofa_balance_args_get_new_page_per_class( priv->args_bin );
 
 	return( priv->new_page );
 }
