@@ -38,30 +38,32 @@
 #include "api/ofo-account.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-reconcil-bin.h"
+#include "ui/ofa-reconcil-args.h"
 
 /* private instance data
  */
 typedef struct {
-	gboolean    dispose_has_run;
+	gboolean     dispose_has_run;
 
 	/* initialization
 	 */
-	ofaIGetter *getter;
+	ofaIGetter  *getter;
+	gchar       *settings_prefix;
 
 	/* runtime
 	 */
-	ofaHub     *hub;
-	ofoAccount *account;
-	GDate       date;
+	ofaHub      *hub;
+	myISettings *settings;
+	ofoAccount  *account;
+	GDate        date;
 
 	/* UI
 	 */
-	GtkWidget  *account_entry;
-	GtkWidget  *account_label;
-	GtkWidget  *date_entry;
+	GtkWidget   *account_entry;
+	GtkWidget   *account_label;
+	GtkWidget   *date_entry;
 }
-	ofaReconcilBinPrivate;
+	ofaReconcilArgsPrivate;
 
 /* signals defined here
  */
@@ -72,45 +74,49 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-reconcil-bin.ui";
-static const gchar *st_settings         = "RenderReconciliation";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-reconcil-args.ui";
 
-static void setup_bin( ofaReconcilBin *self );
-static void setup_account_selection( ofaReconcilBin *self );
-static void setup_date_selection( ofaReconcilBin *self );
-static void setup_others( ofaReconcilBin *self );
-static void on_account_changed( GtkEntry *entry, ofaReconcilBin *self );
-static void on_date_changed( GtkEntry *entry, ofaReconcilBin *self );
-static void read_settings( ofaReconcilBin *self );
-static void write_settings( ofaReconcilBin *self );
+static void setup_runtime( ofaReconcilArgs *self );
+static void setup_bin( ofaReconcilArgs *self );
+static void setup_account_selection( ofaReconcilArgs *self );
+static void setup_date_selection( ofaReconcilArgs *self );
+static void setup_others( ofaReconcilArgs *self );
+static void on_account_changed( GtkEntry *entry, ofaReconcilArgs *self );
+static void on_date_changed( GtkEntry *entry, ofaReconcilArgs *self );
+static void read_settings( ofaReconcilArgs *self );
+static void write_settings( ofaReconcilArgs *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaReconcilBin, ofa_reconcil_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaReconcilBin ))
+G_DEFINE_TYPE_EXTENDED( ofaReconcilArgs, ofa_reconcil_args, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaReconcilArgs ))
 
 static void
-reconcil_bin_finalize( GObject *instance )
+reconcil_args_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_reconcil_bin_finalize";
+	static const gchar *thisfn = "ofa_reconcil_args_finalize";
+	ofaReconcilArgsPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_RECONCIL_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_RECONCIL_ARGS( instance ));
 
 	/* free data members here */
+	priv = ofa_reconcil_args_get_instance_private( OFA_RECONCIL_ARGS( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_reconcil_bin_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_reconcil_args_parent_class )->finalize( instance );
 }
 
 static void
-reconcil_bin_dispose( GObject *instance )
+reconcil_args_dispose( GObject *instance )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_RECONCIL_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_RECONCIL_ARGS( instance ));
 
-	priv = ofa_reconcil_bin_get_instance_private( OFA_RECONCIL_BIN( instance ));
+	priv = ofa_reconcil_args_get_instance_private( OFA_RECONCIL_ARGS( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -120,47 +126,48 @@ reconcil_bin_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_reconcil_bin_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_reconcil_args_parent_class )->dispose( instance );
 }
 
 static void
-ofa_reconcil_bin_init( ofaReconcilBin *self )
+ofa_reconcil_args_init( ofaReconcilArgs *self )
 {
-	static const gchar *thisfn = "ofa_reconcil_bin_init";
-	ofaReconcilBinPrivate *priv;
+	static const gchar *thisfn = "ofa_reconcil_args_init";
+	ofaReconcilArgsPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_RECONCIL_BIN( self ));
+	g_return_if_fail( self && OFA_IS_RECONCIL_ARGS( self ));
 
-	priv = ofa_reconcil_bin_get_instance_private( self );
+	priv = ofa_reconcil_args_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
-ofa_reconcil_bin_class_init( ofaReconcilBinClass *klass )
+ofa_reconcil_args_class_init( ofaReconcilArgsClass *klass )
 {
-	static const gchar *thisfn = "ofa_reconcil_bin_class_init";
+	static const gchar *thisfn = "ofa_reconcil_args_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
-	G_OBJECT_CLASS( klass )->dispose = reconcil_bin_dispose;
-	G_OBJECT_CLASS( klass )->finalize = reconcil_bin_finalize;
+	G_OBJECT_CLASS( klass )->dispose = reconcil_args_dispose;
+	G_OBJECT_CLASS( klass )->finalize = reconcil_args_finalize;
 
 	/**
-	 * ofaReconcilBin::ofa-changed:
+	 * ofaReconcilArgs::ofa-changed:
 	 *
 	 * This signal is sent when a widget has changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaReconcilBin *self,
+	 * void ( *handler )( ofaReconcilArgs *self,
 	 * 						gpointer      user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_RECONCIL_BIN,
+				OFA_TYPE_RECONCIL_ARGS,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -172,24 +179,31 @@ ofa_reconcil_bin_class_init( ofaReconcilBinClass *klass )
 }
 
 /**
- * ofa_reconcil_bin_new:
+ * ofa_reconcil_args_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: the prefix of the key in user settings.
  *
- * Returns: a newly allocated #ofaReconcilBin object.
+ * Returns: a newly allocated #ofaReconcilArgs object.
  */
-ofaReconcilBin *
-ofa_reconcil_bin_new( ofaIGetter *getter )
+ofaReconcilArgs *
+ofa_reconcil_args_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
-	ofaReconcilBin *self;
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgs *self;
+	ofaReconcilArgsPrivate *priv;
 
-	self = g_object_new( OFA_TYPE_RECONCIL_BIN, NULL );
+	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
-	priv = ofa_reconcil_bin_get_instance_private( self );
+	self = g_object_new( OFA_TYPE_RECONCIL_ARGS, NULL );
+
+	priv = ofa_reconcil_args_get_instance_private( self );
 
 	priv->getter = ofa_igetter_get_permanent_getter( getter );
-	priv->hub = ofa_igetter_get_hub( getter );
 
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
+
+	setup_runtime( self );
 	setup_bin( self );
 	setup_account_selection( self );
 	setup_date_selection( self );
@@ -201,7 +215,20 @@ ofa_reconcil_bin_new( ofaIGetter *getter )
 }
 
 static void
-setup_bin( ofaReconcilBin *self )
+setup_runtime( ofaReconcilArgs *self )
+{
+	ofaReconcilArgsPrivate *priv;
+
+	priv = ofa_reconcil_args_get_instance_private( self );
+
+	priv->hub = ofa_igetter_get_hub( priv->getter );
+	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
+
+	priv->settings = ofa_hub_get_user_settings( priv->hub );
+}
+
+static void
+setup_bin( ofaReconcilArgs *self )
 {
 	GtkBuilder *builder;
 	GObject *object;
@@ -217,12 +244,12 @@ setup_bin( ofaReconcilBin *self )
 }
 
 static void
-setup_account_selection( ofaReconcilBin *self )
+setup_account_selection( ofaReconcilArgs *self )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 	GtkWidget *entry, *label;
 
-	priv = ofa_reconcil_bin_get_instance_private( self );
+	priv = ofa_reconcil_args_get_instance_private( self );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "account-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -240,12 +267,12 @@ setup_account_selection( ofaReconcilBin *self )
 }
 
 static void
-setup_date_selection( ofaReconcilBin *self )
+setup_date_selection( ofaReconcilArgs *self )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 	GtkWidget *entry, *label;
 
-	priv = ofa_reconcil_bin_get_instance_private( self );
+	priv = ofa_reconcil_args_get_instance_private( self );
 
 	entry = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-entry" );
 	g_return_if_fail( entry && GTK_IS_ENTRY( entry ));
@@ -268,17 +295,17 @@ setup_date_selection( ofaReconcilBin *self )
 }
 
 static void
-setup_others( ofaReconcilBin *self )
+setup_others( ofaReconcilArgs *self )
 {
 }
 
 static void
-on_account_changed( GtkEntry *entry, ofaReconcilBin *self )
+on_account_changed( GtkEntry *entry, ofaReconcilArgs *self )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 	const gchar *cstr;
 
-	priv = ofa_reconcil_bin_get_instance_private( self );
+	priv = ofa_reconcil_args_get_instance_private( self );
 
 	gtk_label_set_text( GTK_LABEL( priv->account_label ), "" );
 	priv->account = NULL;
@@ -296,27 +323,27 @@ on_account_changed( GtkEntry *entry, ofaReconcilBin *self )
 }
 
 static void
-on_date_changed( GtkEntry *entry, ofaReconcilBin *self )
+on_date_changed( GtkEntry *entry, ofaReconcilArgs *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
- * ofa_reconcil_bin_is_valid:
+ * ofa_reconcil_args_is_valid:
  * @bin:
  * @msgerr: [out][allow-none]: the error message if any.
  *
  * Returns: %TRUE if the composite widget content is valid.
  */
 gboolean
-ofa_reconcil_bin_is_valid( ofaReconcilBin *bin, gchar **msgerr )
+ofa_reconcil_args_is_valid( ofaReconcilArgs *bin, gchar **msgerr )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 	gboolean valid;
 
-	g_return_val_if_fail( bin && OFA_IS_RECONCIL_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_RECONCIL_ARGS( bin ), FALSE );
 
-	priv = ofa_reconcil_bin_get_instance_private( bin );
+	priv = ofa_reconcil_args_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -350,20 +377,20 @@ ofa_reconcil_bin_is_valid( ofaReconcilBin *bin, gchar **msgerr )
 }
 
 /**
- * ofa_reconcil_bin_get_account:
+ * ofa_reconcil_args_get_account:
  * @bin:
  *
  * Returns: the current account number, or %NULL.
  */
 const gchar *
-ofa_reconcil_bin_get_account( ofaReconcilBin *bin )
+ofa_reconcil_args_get_account( ofaReconcilArgs *bin )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 	const gchar *label;
 
-	g_return_val_if_fail( bin && OFA_IS_RECONCIL_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_RECONCIL_ARGS( bin ), NULL );
 
-	priv = ofa_reconcil_bin_get_instance_private( bin );
+	priv = ofa_reconcil_args_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -377,18 +404,18 @@ ofa_reconcil_bin_get_account( ofaReconcilBin *bin )
 }
 
 /**
- * ofa_reconcil_bin_set_account:
+ * ofa_reconcil_args_set_account:
  * @bin:
  * @number:
  */
 void
-ofa_reconcil_bin_set_account( ofaReconcilBin *bin, const gchar *number )
+ofa_reconcil_args_set_account( ofaReconcilArgs *bin, const gchar *number )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 
-	g_return_if_fail( bin && OFA_IS_RECONCIL_BIN( bin ));
+	g_return_if_fail( bin && OFA_IS_RECONCIL_ARGS( bin ));
 
-	priv = ofa_reconcil_bin_get_instance_private( bin );
+	priv = ofa_reconcil_args_get_instance_private( bin );
 
 	g_return_if_fail( !priv->dispose_has_run );
 
@@ -398,17 +425,17 @@ ofa_reconcil_bin_set_account( ofaReconcilBin *bin, const gchar *number )
 }
 
 /**
- * ofa_reconcil_bin_get_date:
+ * ofa_reconcil_args_get_date:
  */
 const GDate *
-ofa_reconcil_bin_get_date( ofaReconcilBin *bin )
+ofa_reconcil_args_get_date( ofaReconcilArgs *bin )
 {
-	ofaReconcilBinPrivate *priv;
+	ofaReconcilArgsPrivate *priv;
 	GDate *date;
 
-	g_return_val_if_fail( bin && OFA_IS_RECONCIL_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_RECONCIL_ARGS( bin ), NULL );
 
-	priv = ofa_reconcil_bin_get_instance_private( bin );
+	priv = ofa_reconcil_args_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -422,18 +449,18 @@ ofa_reconcil_bin_get_date( ofaReconcilBin *bin )
  * account;date_sql;
  */
 static void
-read_settings( ofaReconcilBin *self )
+read_settings( ofaReconcilArgs *self )
 {
-	ofaReconcilBinPrivate *priv;
-	myISettings *settings;
+	ofaReconcilArgsPrivate *priv;
 	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
+	gchar *key;
 
-	priv = ofa_reconcil_bin_get_instance_private( self );
+	priv = ofa_reconcil_args_get_instance_private( self );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, st_settings );
+	key = g_strdup_printf( "%s-args", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( priv->settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -448,18 +475,18 @@ read_settings( ofaReconcilBin *self )
 		my_date_editable_set_date( GTK_EDITABLE( priv->date_entry ), &date );
 	}
 
-	my_isettings_free_string_list( settings, strlist );
+	my_isettings_free_string_list( priv->settings, strlist );
+	g_free( key );
 }
 
 static void
-write_settings( ofaReconcilBin *self )
+write_settings( ofaReconcilArgs *self )
 {
-	ofaReconcilBinPrivate *priv;
-	myISettings *settings;
+	ofaReconcilArgsPrivate *priv;
 	const gchar *cstr;
-	gchar *str, *sdate;
+	gchar *str, *sdate, *key;
 
-	priv = ofa_reconcil_bin_get_instance_private( self );
+	priv = ofa_reconcil_args_get_instance_private( self );
 
 	cstr = gtk_entry_get_text( GTK_ENTRY( priv->account_entry ));
 
@@ -469,9 +496,10 @@ write_settings( ofaReconcilBin *self )
 			cstr ? cstr : "",
 			sdate ? sdate : "" );
 
-	settings = ofa_hub_get_user_settings( priv->hub );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, st_settings, str );
+	key = g_strdup_printf( "%s-args", priv->settings_prefix );
+	my_isettings_set_string( priv->settings, HUB_USER_SETTINGS_GROUP, key, str );
 
+	g_free( key );
 	g_free( sdate );
 	g_free( str );
 }

@@ -178,7 +178,7 @@ am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
 	ofa-ope-template-page.$(OBJEXT) ofa-paimean-page.$(OBJEXT) \
 	ofa-period-close.$(OBJEXT) ofa-plugin-manager.$(OBJEXT) \
 	ofa-rate-page.$(OBJEXT) ofa-rate-properties.$(OBJEXT) \
-	ofa-rate-treeview.$(OBJEXT) ofa-reconcil-bin.$(OBJEXT) \
+	ofa-rate-treeview.$(OBJEXT) ofa-reconcil-args.$(OBJEXT) \
 	ofa-reconcil-page.$(OBJEXT) ofa-reconcil-render.$(OBJEXT) \
 	ofa-reconcil-store.$(OBJEXT) ofa-reconcil-treeview.$(OBJEXT) \
 	ofa-restore-assistant.$(OBJEXT) ofa-settlement-page.$(OBJEXT) \
@@ -645,8 +645,8 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-rate-treeview.c									\
 	ofa-rate-treeview.h									\
-	ofa-reconcil-bin.c									\
-	ofa-reconcil-bin.h									\
+	ofa-reconcil-args.c									\
+	ofa-reconcil-args.h									\
 	ofa-reconcil-page.c									\
 	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\
@@ -863,7 +863,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-properties.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-rate-treeview.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-page.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-reconcil-store.Po@am__quote@

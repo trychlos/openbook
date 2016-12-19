@@ -49,14 +49,14 @@
 #include "api/ofo-dossier.h"
 #include "api/ofo-entry.h"
 
-#include "ui/ofa-reconcil-bin.h"
+#include "ui/ofa-reconcil-args.h"
 #include "ui/ofa-reconcil-render.h"
 
 /* private instance data
  */
 typedef struct {
 
-	ofaReconcilBin *args_bin;
+	ofaReconcilArgs *args_bin;
 
 	/* internals
 	 */
@@ -138,7 +138,7 @@ static GtkPageOrientation render_page_v_get_page_orientation( ofaRenderPage *pag
 static void               render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static GList             *render_page_v_get_dataset( ofaRenderPage *page );
 static void               render_page_v_free_dataset( ofaRenderPage *page, GList *dataset );
-static void               on_args_changed( ofaReconcilBin *bin, ofaReconcilRender *page );
+static void               on_args_changed( ofaReconcilArgs *bin, ofaReconcilRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
 static gchar             *irenderable_get_body_font( ofaIRenderable *instance );
@@ -271,11 +271,11 @@ static GtkWidget *
 render_page_v_get_args_widget( ofaRenderPage *page )
 {
 	ofaReconcilRenderPrivate *priv;
-	ofaReconcilBin *bin;
+	ofaReconcilArgs *bin;
 
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
 
-	bin = ofa_reconcil_bin_new( OFA_IGETTER( page ));
+	bin = ofa_reconcil_args_new( OFA_IGETTER( page ), priv->settings_prefix );
 	g_signal_connect( G_OBJECT( bin ), "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 
@@ -317,7 +317,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	priv = ofa_reconcil_render_get_instance_private( OFA_RECONCIL_RENDER( page ));
 
 	g_free( priv->account_number );
-	priv->account_number = g_strdup( ofa_reconcil_bin_get_account( priv->args_bin ));
+	priv->account_number = g_strdup( ofa_reconcil_args_get_account( priv->args_bin ));
 	/*g_debug( "irenderable_get_dataset: account_number=%s", priv->account_number );*/
 	g_return_val_if_fail( my_strlen( priv->account_number ), NULL );
 
@@ -330,7 +330,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 	priv->currency = ofo_currency_get_by_code( priv->hub, cur_code );
 	g_return_val_if_fail( priv->currency && OFO_IS_CURRENCY( priv->currency ), NULL );
 
-	my_date_set_from_date( &priv->date, ofa_reconcil_bin_get_date( priv->args_bin ));
+	my_date_set_from_date( &priv->date, ofa_reconcil_args_get_date( priv->args_bin ));
 
 	dataset = ofo_entry_get_dataset_for_print_reconcil(
 					priv->hub,
@@ -357,15 +357,15 @@ render_page_v_free_dataset( ofaRenderPage *page, GList *dataset )
 }
 
 /*
- * ofaReconcilBin "ofa-changed" handler
+ * ofaReconcilArgs "ofa-changed" handler
  */
 static void
-on_args_changed( ofaReconcilBin *bin, ofaReconcilRender *page )
+on_args_changed( ofaReconcilArgs *bin, ofaReconcilRender *page )
 {
 	gboolean valid;
 	gchar *message;
 
-	valid = ofa_reconcil_bin_is_valid( bin, &message );
+	valid = ofa_reconcil_args_is_valid( bin, &message );
 	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
 	g_free( message );
 }
@@ -376,7 +376,7 @@ on_args_changed( ofaReconcilBin *bin, ofaReconcilRender *page )
  * @account_number:
  *
  * pwi 2014- 4-18: I do prefer expose this api and just redirect to
- * ofaReconcilBin rather than exposing an get_reconcil_bin() which
+ * ofaReconcilArgs rather than exposing an get_reconcil_args() which
  * would return the composite widget - Say that ofaReconcilRender page
  * doesn't expose its internal composition
  */
@@ -391,7 +391,7 @@ ofa_reconcil_render_set_account( ofaReconcilRender *page, const gchar *account_n
 
 	priv = ofa_reconcil_render_get_instance_private( page );
 
-	ofa_reconcil_bin_set_account( priv->args_bin, account_number );
+	ofa_reconcil_args_set_account( priv->args_bin, account_number );
 	ofa_render_page_clear_drawing_area( OFA_RENDER_PAGE( page ));
 }
 

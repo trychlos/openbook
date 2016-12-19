@@ -221,8 +221,8 @@ openbook_SOURCES = \
 	ofa-rate-properties.h								\
 	ofa-rate-treeview.c									\
 	ofa-rate-treeview.h									\
-	ofa-reconcil-bin.c									\
-	ofa-reconcil-bin.h									\
+	ofa-reconcil-args.c									\
+	ofa-reconcil-args.h									\
 	ofa-reconcil-page.c									\
 	ofa-reconcil-page.h									\
 	ofa-reconcil-render.c								\
