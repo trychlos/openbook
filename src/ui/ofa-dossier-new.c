@@ -63,6 +63,7 @@ typedef struct {
 
 	/* runtime
 	 */
+	gchar                  *settings_prefix;
 	ofaHub                 *hub;
 	gchar                  *dossier_name;
 	gchar                  *root_account;
@@ -102,13 +103,13 @@ static void     on_root_credentials_changed( ofaDBMSRootBin *bin, const gchar *a
 static void     on_admin_credentials_changed( ofaAdminCredentialsBin *bin, const gchar *account, const gchar *password, ofaDossierNew *self );
 static void     on_open_toggled( GtkToggleButton *button, ofaDossierNew *self );
 static void     on_properties_toggled( GtkToggleButton *button, ofaDossierNew *self );
-static void     read_settings( ofaDossierNew *self );
-static void     write_settings( ofaDossierNew *self );
 static void     check_for_enable_dlg( ofaDossierNew *self );
 static gboolean root_credentials_get_valid( ofaDossierNew *self, gchar **message );
 static gboolean do_create( ofaDossierNew *self, gchar **msgerr );
 static gboolean create_confirmed( const ofaDossierNew *self );
 static void     set_message( ofaDossierNew *self, const gchar *message );
+static void     read_settings( ofaDossierNew *self );
+static void     write_settings( ofaDossierNew *self );
 
 G_DEFINE_TYPE_EXTENDED( ofaDossierNew, ofa_dossier_new, GTK_TYPE_DIALOG, 0,
 		G_ADD_PRIVATE( ofaDossierNew )
@@ -129,6 +130,7 @@ dossier_new_finalize( GObject *instance )
 	/* free data members here */
 	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
 
+	g_free( priv->settings_prefix );
 	g_free( priv->dossier_name );
 	g_free( priv->root_account );
 	g_free( priv->root_password );
@@ -176,6 +178,7 @@ ofa_dossier_new_init( ofaDossierNew *self )
 	priv = ofa_dossier_new_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 
 	gtk_widget_init_template( GTK_WIDGET( self ));
 }
@@ -291,8 +294,6 @@ idialog_init( myIDialog *instance )
 
 	priv = ofa_dossier_new_get_instance_private( OFA_DOSSIER_NEW( instance ));
 
-	read_settings( OFA_DOSSIER_NEW( instance ));
-
 	/* define the size groups */
 	group0 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
 	group1 = gtk_size_group_new( GTK_SIZE_GROUP_HORIZONTAL );
@@ -354,6 +355,8 @@ idialog_init( myIDialog *instance )
 	g_return_if_fail( label && GTK_IS_LABEL( label ));
 	my_style_add( label, "labelerror" );
 	priv->msg_label = label;
+
+	read_settings( OFA_DOSSIER_NEW( instance ));
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
@@ -613,6 +616,18 @@ create_confirmed( const ofaDossierNew *self )
 	return( ok );
 }
 
+static void
+set_message( ofaDossierNew *self, const gchar *message )
+{
+	ofaDossierNewPrivate *priv;
+
+	priv = ofa_dossier_new_get_instance_private( self );
+
+	if( priv->msg_label ){
+		gtk_label_set_text( GTK_LABEL( priv->msg_label ), my_strlen( message ) ? message : "" );
+	}
+}
+
 /*
  * settings are: "provider_name;open,properties;"
  */
@@ -623,11 +638,13 @@ read_settings( ofaDossierNew *self )
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
+	gchar *key;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, "DossierNew" );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
@@ -649,6 +666,7 @@ read_settings( ofaDossierNew *self )
 	}
 
 	my_isettings_free_string_list( settings, strlist );
+	g_free( key );
 }
 
 static void
@@ -656,28 +674,19 @@ write_settings( ofaDossierNew *self )
 {
 	ofaDossierNewPrivate *priv;
 	myISettings *settings;
-	GList *strlist;
+	gchar *key, *str;
 
 	priv = ofa_dossier_new_get_instance_private( self );
 
-	strlist = g_list_append( NULL, g_strdup( priv->prov_name ));
-	strlist = g_list_append( strlist, g_strdup_printf( "%s", priv->b_open ? "True":"False" ));
-	strlist = g_list_append( strlist, g_strdup_printf( "%s", priv->b_properties ? "True":"False" ));
+	str = g_strdup_printf( "%s;%s;%s;",
+				priv->prov_name,
+				priv->b_open ? "True":"False",
+				priv->b_properties ? "True":"False" );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	my_isettings_set_string_list( settings, HUB_USER_SETTINGS_GROUP, "DossierNew", strlist );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
-	g_list_free_full( strlist, ( GDestroyNotify ) g_free );
-}
-
-static void
-set_message( ofaDossierNew *self, const gchar *message )
-{
-	ofaDossierNewPrivate *priv;
-
-	priv = ofa_dossier_new_get_instance_private( self );
-
-	if( priv->msg_label ){
-		gtk_label_set_text( GTK_LABEL( priv->msg_label ), my_strlen( message ) ? message : "" );
-	}
+	g_free( key );
+	g_free( str );
 }

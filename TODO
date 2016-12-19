@@ -407,7 +407,11 @@
 
 1299 2016-12-18 ImportFormat: the with_headers check should be insensitive
 
-1300
+1300 2016-12-19 Review preferences on opening a new/existing dossier:
+                user_preferences + dossier_preferences + settings in
+                dossier_new and dossier_open
+
+1301
 
 -----------------------------------------------------------------------
  DONE
