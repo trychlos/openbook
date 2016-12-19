@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <gresources>
   <gresource prefix="/org/trychlos/openbook/ui">
-    <file>ofa-account-book-bin.ui</file>
+    <file>ofa-account-book-args.ui</file>
     <file>ofa-account-filter-vv-bin.ui</file>
     <file>ofa-balance-bin.ui</file>
     <file>ofa-bat-properties.ui</file>

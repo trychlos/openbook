@@ -71,8 +71,8 @@ openbook_SOURCES = \
 	main.c												\
 	ofa-about.c											\
 	ofa-about.h											\
-	ofa-account-book-bin.c								\
-	ofa-account-book-bin.h								\
+	ofa-account-book-args.c								\
+	ofa-account-book-args.h								\
 	ofa-account-book-render.c							\
 	ofa-account-book-render.h							\
 	ofa-account-filter-vv-bin.c							\

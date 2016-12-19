@@ -136,7 +136,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(applicationsdir)"
 PROGRAMS = $(bin_PROGRAMS)
 am_openbook_OBJECTS = main.$(OBJEXT) ofa-about.$(OBJEXT) \
-	ofa-account-book-bin.$(OBJEXT) \
+	ofa-account-book-args.$(OBJEXT) \
 	ofa-account-book-render.$(OBJEXT) \
 	ofa-account-filter-vv-bin.$(OBJEXT) ofa-account-page.$(OBJEXT) \
 	ofa-application.$(OBJEXT) ofa-backup.$(OBJEXT) \
@@ -495,8 +495,8 @@ openbook_SOURCES = \
 	main.c												\
 	ofa-about.c											\
 	ofa-about.h											\
-	ofa-account-book-bin.c								\
-	ofa-account-book-bin.h								\
+	ofa-account-book-args.c								\
+	ofa-account-book-args.h								\
 	ofa-account-book-render.c							\
 	ofa-account-book-render.h							\
 	ofa-account-filter-vv-bin.c							\
@@ -789,7 +789,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/main.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-about.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-bin.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-args.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-book-render.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-filter-vv-bin.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ofa-account-page.Po@am__quote@

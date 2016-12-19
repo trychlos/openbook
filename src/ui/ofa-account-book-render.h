@@ -31,7 +31,7 @@
  * @include: ui/ofa-account-book-render.h
  *
  * The class which manages the rendering (preview/print) of books.
- * Arguments are entered via the #ofaAccountBookBin composite widget.
+ * Arguments are entered via the #ofaAccountBookArgs composite widget.
  */
 
 #include "api/ofa-render-page.h"

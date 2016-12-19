@@ -22,13 +22,13 @@
  *   Pierre Wieser <pwieser@trychlos.org>
  */
 
-#ifndef __OFA_ACCOUNT_BOOK_BIN_H__
-#define __OFA_ACCOUNT_BOOK_BIN_H__
+#ifndef __OFA_ACCOUNT_BOOK_ARGS_H__
+#define __OFA_ACCOUNT_BOOK_ARGS_H__
 
 /**
- * SECTION: ofa_account_book_bin
- * @short_description: #ofaAccountBookBin class definition.
- * @include: ui/ofa-account-book-bin.h
+ * SECTION: ofa_account_book_args
+ * @short_description: #ofaAccountBookArgs class definition.
+ * @include: ui/ofa-account-book-args.h
  *
  * Display three frames with let the user select the parameters needed
  * to print the entries books between two effect dates:
@@ -68,38 +68,39 @@
 
 G_BEGIN_DECLS
 
-#define OFA_TYPE_ACCOUNT_BOOK_BIN                ( ofa_account_book_bin_get_type())
-#define OFA_ACCOUNT_BOOK_BIN( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNT_BOOK_BIN, ofaAccountBookBin ))
-#define OFA_ACCOUNT_BOOK_BIN_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNT_BOOK_BIN, ofaAccountBookBinClass ))
-#define OFA_IS_ACCOUNT_BOOK_BIN( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNT_BOOK_BIN ))
-#define OFA_IS_ACCOUNT_BOOK_BIN_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_BOOK_BIN ))
-#define OFA_ACCOUNT_BOOK_BIN_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_BOOK_BIN, ofaAccountBookBinClass ))
+#define OFA_TYPE_ACCOUNT_BOOK_ARGS                ( ofa_account_book_args_get_type())
+#define OFA_ACCOUNT_BOOK_ARGS( object )           ( G_TYPE_CHECK_INSTANCE_CAST( object, OFA_TYPE_ACCOUNT_BOOK_ARGS, ofaAccountBookArgs ))
+#define OFA_ACCOUNT_BOOK_ARGS_CLASS( klass )      ( G_TYPE_CHECK_CLASS_CAST( klass, OFA_TYPE_ACCOUNT_BOOK_ARGS, ofaAccountBookArgsClass ))
+#define OFA_IS_ACCOUNT_BOOK_ARGS( object )        ( G_TYPE_CHECK_INSTANCE_TYPE( object, OFA_TYPE_ACCOUNT_BOOK_ARGS ))
+#define OFA_IS_ACCOUNT_BOOK_ARGS_CLASS( klass )   ( G_TYPE_CHECK_CLASS_TYPE(( klass ), OFA_TYPE_ACCOUNT_BOOK_ARGS ))
+#define OFA_ACCOUNT_BOOK_ARGS_GET_CLASS( object ) ( G_TYPE_INSTANCE_GET_CLASS(( object ), OFA_TYPE_ACCOUNT_BOOK_ARGS, ofaAccountBookArgsClass ))
 
 typedef struct {
 	/*< public members >*/
 	GtkBin      parent;
 }
-	ofaAccountBookBin;
+	ofaAccountBookArgs;
 
 typedef struct {
 	/*< public members >*/
 	GtkBinClass parent;
 }
-	ofaAccountBookBinClass;
+	ofaAccountBookArgsClass;
 
-GType              ofa_account_book_bin_get_type                ( void ) G_GNUC_CONST;
+GType              ofa_account_book_args_get_type                ( void ) G_GNUC_CONST;
 
-ofaAccountBookBin *ofa_account_book_bin_new                     ( ofaIGetter *getter );
+ofaAccountBookArgs *ofa_account_book_args_new                     ( ofaIGetter *getter,
+																		const gchar *settings_prefix );
 
-gboolean           ofa_account_book_bin_is_valid                ( ofaAccountBookBin *bin,
+gboolean           ofa_account_book_args_is_valid                ( ofaAccountBookArgs *bin,
 																		gchar **message );
 
-ofaIAccountFilter *ofa_account_book_bin_get_account_filter      ( ofaAccountBookBin *bin );
+ofaIAccountFilter *ofa_account_book_args_get_account_filter      ( ofaAccountBookArgs *bin );
 
-gboolean           ofa_account_book_bin_get_new_page_per_account( ofaAccountBookBin *bin );
+gboolean           ofa_account_book_args_get_new_page_per_account( ofaAccountBookArgs *bin );
 
-ofaIDateFilter    *ofa_account_book_bin_get_date_filter         ( ofaAccountBookBin *bin );
+ofaIDateFilter    *ofa_account_book_args_get_date_filter         ( ofaAccountBookArgs *bin );
 
 G_END_DECLS
 
-#endif /* __OFA_ACCOUNT_BOOK_BIN_H__ */
+#endif /* __OFA_ACCOUNT_BOOK_ARGS_H__ */
