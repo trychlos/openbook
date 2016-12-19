@@ -70,15 +70,19 @@
  read initial values).
  
                      read_settings                    write_settings
-                  
- ofaAssistant  from iwindow_init()                 instance_dispose()
-               store read values
-               read values will later be used
-               in each on_page_init() handler
 
- ofaPage       at the end of init_view()           instance_dispose()
-               directly acts on UI which has
-               been previously initialized
+ ofaMainWindow  from instance_init()                instance_dispose()
+                store read values to be
+                used later at execution time
+
+ ofaAssistant   from iwindow_init()                 instance_dispose()
+                store read values to be
+                used later at execution time
+                in on_page_init() handler
+
+ ofaPage        at the end of init_view()           instance_dispose()
+                directly acts on UI which has
+                been previously initialized
 
  When reading user settings, datas are stored as initial values, which
  means they no longer need to be re-read during the execution.
