@@ -247,18 +247,19 @@ ofa_stream_format_exists( ofaHub *hub, const gchar *name, ofeSFMode mode )
 {
 	myISettings *settings;
 	gboolean exists;
-	gchar *keyname, *str;
+	gchar *key, *str;
 
 	g_return_val_if_fail( hub && OFA_IS_HUB( hub ), FALSE );
 
 	exists = FALSE;
 	settings = ofa_hub_get_user_settings( hub );
-	keyname = get_key_name( name, mode );
-	if( my_strlen( keyname )){
-		str = my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, keyname );
+	key = get_key_name( name, mode );
+	if( my_strlen( key )){
+		str = my_isettings_get_string( settings, HUB_USER_SETTINGS_GROUP, key );
 		exists = my_strlen( str ) > 0;
 		g_free( str );
 	}
+	g_free( key );
 
 	return( exists );
 }
@@ -302,10 +303,9 @@ static void
 do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 {
 	ofaStreamFormatPrivate *priv;
-	gchar *keyname;
+	gchar *key, *text;
 	GList *strlist, *it;
 	const gchar *cstr;
-	gchar *text;
 	myISettings *settings;
 
 	priv = ofa_stream_format_get_instance_private( self );
@@ -322,11 +322,11 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 			break;
 	}
 
-	keyname = get_key_name( priv->name, priv->mode );
-	g_return_if_fail( my_strlen( keyname ));
+	key = get_key_name( priv->name, priv->mode );
+	g_return_if_fail( my_strlen( key ));
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, keyname );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
 	/* indicators */
 	it = strlist;
@@ -386,8 +386,7 @@ do_init( ofaStreamFormat *self, const gchar *name, ofeSFMode mode )
 	//g_debug( "do_init: strdelim=%d", priv->string_delim );
 
 	my_isettings_free_string_list( settings, strlist );
-
-	g_free( keyname );
+	g_free( key );
 }
 
 /**

@@ -335,7 +335,7 @@ idialog_init( myIDialog *instance )
 	init_actions( OFA_RECURRENT_GENERATE( instance ));
 	init_data( OFA_RECURRENT_GENERATE( instance ));
 
-read_settings( OFA_RECURRENT_GENERATE( instance ));
+	read_settings( OFA_RECURRENT_GENERATE( instance ));
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 }
@@ -891,27 +891,24 @@ read_settings( ofaRecurrentGenerate *self )
 	const gchar *cstr;
 	gint pos;
 	myISettings *settings;
-	gchar *settings_key;
+	gchar *key;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
-	it = strlist ? strlist : NULL;
-	cstr = it ? it->data : NULL;
-	pos = 0;
-	if( my_strlen( cstr )){
-		pos = atoi( cstr );
-	}
-	if( pos <= 10 ){
+	it = strlist;
+	cstr = it ? ( const gchar * ) it->data : NULL;
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
 		pos = 150;
 	}
 	gtk_paned_set_position( GTK_PANED( priv->top_paned ), pos );
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
@@ -919,21 +916,19 @@ write_settings( ofaRecurrentGenerate *self )
 {
 	ofaRecurrentGeneratePrivate *priv;
 	myISettings *settings;
-	gchar *str, *settings_key;
-	gint pos;
+	gchar *str, *key;
 
 	priv = ofa_recurrent_generate_get_instance_private( self );
 
-	pos = gtk_paned_get_position( GTK_PANED( priv->top_paned ));
-
-	str = g_strdup_printf( "%d;", pos );
+	str = g_strdup_printf( "%d;",
+			gtk_paned_get_position( GTK_PANED( priv->top_paned )));
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void

@@ -115,6 +115,8 @@ accounts_book_bin_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
+		write_settings( OFA_ACCOUNT_BOOK_BIN( instance ));
+
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
@@ -343,10 +345,6 @@ ofa_account_book_bin_is_valid( ofaAccountBookBin *bin, gchar **message )
 					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_FROM, message ) &&
 			ofa_idate_filter_is_valid(
 					OFA_IDATE_FILTER( priv->date_filter ), IDATE_FILTER_TO, message );
-
-	if( valid ){
-		write_settings( bin );
-	}
 
 	return( valid );
 }

@@ -66,7 +66,6 @@ typedef struct {
 	GtkPaned            *paned;
 	ofaBatTreeview      *tview;
 	ofaBatPropertiesBin *bat_bin;
-	guint                pane_pos;
 
 	/* preselected value/returned value
 	 */
@@ -126,12 +125,11 @@ bat_select_dispose( GObject *instance )
 
 	if( !priv->dispose_has_run ){
 
+		write_settings( OFA_BAT_SELECT( instance ));
+
 		priv->dispose_has_run = TRUE;
 
 		/* unref object members here */
-
-		priv->pane_pos = gtk_paned_get_position( priv->paned );
-		write_settings( OFA_BAT_SELECT( instance ));
 	}
 
 	/* chain up to the parent class */
@@ -261,11 +259,11 @@ idialog_init( myIDialog *instance )
 
 	g_debug( "%s: instance=%p", thisfn, ( void * ) instance );
 
-	read_settings( OFA_BAT_SELECT( instance ));
-
 	setup_pane( OFA_BAT_SELECT( instance ));
 	setup_properties( OFA_BAT_SELECT( instance ));
 	setup_treeview( OFA_BAT_SELECT( instance ));
+
+	read_settings( OFA_BAT_SELECT( instance ));
 
 	gtk_widget_show_all( GTK_WIDGET( instance ));
 
@@ -283,8 +281,6 @@ setup_pane( ofaBatSelect *self )
 	pane = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "p-paned" );
 	g_return_if_fail( pane && GTK_IS_PANED( pane ));
 	priv->paned = GTK_PANED( pane );
-
-	gtk_paned_set_position( priv->paned, priv->pane_pos );
 }
 
 static void
@@ -398,20 +394,25 @@ read_settings( ofaBatSelect *self )
 	myISettings *settings;
 	GList *strlist, *it;
 	const gchar *cstr;
-	gchar *settings_key;
+	gchar *key;
+	guint pos;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, settings_key );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( settings, HUB_USER_SETTINGS_GROUP, key );
 
-	it = strlist ? strlist : NULL;
+	it = strlist;
 	cstr = it ? ( const gchar * ) it->data : NULL;
-	priv->pane_pos = cstr ? atoi( cstr ) : 200;
+	pos = my_strlen( cstr ) ? atoi( cstr ) : 0;
+	if( pos < 150 ){
+		pos = 150;
+	}
+	gtk_paned_set_position( priv->paned, pos );
 
 	my_isettings_free_string_list( settings, strlist );
-	g_free( settings_key );
+	g_free( key );
 }
 
 static void
@@ -419,16 +420,17 @@ write_settings( ofaBatSelect *self )
 {
 	ofaBatSelectPrivate *priv;
 	myISettings *settings;
-	gchar *str, *settings_key;
+	gchar *str, *key;
 
 	priv = ofa_bat_select_get_instance_private( self );
 
-	str = g_strdup_printf( "%u;", priv->pane_pos );
+	str = g_strdup_printf( "%d;",
+			gtk_paned_get_position( priv->paned ));
 
 	settings = ofa_hub_get_user_settings( priv->hub );
-	settings_key = g_strdup_printf( "%s-settings", priv->settings_prefix );
-	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, settings_key, str );
+	key = g_strdup_printf( "%s-settings", priv->settings_prefix );
+	my_isettings_set_string( settings, HUB_USER_SETTINGS_GROUP, key, str );
 
 	g_free( str );
-	g_free( settings_key );
+	g_free( key );
 }

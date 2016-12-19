@@ -84,6 +84,10 @@
                 directly acts on UI which has
                 been previously initialized
 
+ GtkDialog      at the end of idialog_init()        instance_dispose()
+                directly acts on UI which has
+                been previously initialized
+
  When reading user settings, datas are stored as initial values, which
  means they no longer need to be re-read during the execution.
 
