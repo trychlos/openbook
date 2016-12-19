@@ -36,7 +36,7 @@
 #include "api/ofa-igetter.h"
 #include "api/ofo-dossier.h"
 
-#include "ui/ofa-ledger-summary-bin.h"
+#include "ui/ofa-ledger-summary-args.h"
 
 /* private instance data
  */
@@ -46,6 +46,7 @@ typedef struct {
 	/* initialization
 	 */
 	ofaIGetter         *getter;
+	gchar              *settings_prefix;
 
 	/* runtime
 	 */
@@ -56,7 +57,7 @@ typedef struct {
 	 */
 	ofaDateFilterHVBin *date_filter;
 }
-	ofaLedgerSummaryBinPrivate;
+	ofaLedgerSummaryArgsPrivate;
 
 /* signals defined here
  */
@@ -67,43 +68,46 @@ enum {
 
 static guint st_signals[ N_SIGNALS ]    = { 0 };
 
-static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-summary-bin.ui";
-static const gchar *st_settings         = "RenderLedgersSummary";
+static const gchar *st_resource_ui      = "/org/trychlos/openbook/ui/ofa-ledger-summary-args.ui";
 
-static void setup_runtime( ofaLedgerSummaryBin *self );
-static void setup_bin( ofaLedgerSummaryBin *self );
-static void setup_date_selection( ofaLedgerSummaryBin *self );
-static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerSummaryBin *self );
-static void read_settings( ofaLedgerSummaryBin *self );
-static void write_settings( ofaLedgerSummaryBin *self );
+static void setup_runtime( ofaLedgerSummaryArgs *self );
+static void setup_bin( ofaLedgerSummaryArgs *self );
+static void setup_date_selection( ofaLedgerSummaryArgs *self );
+static void on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerSummaryArgs *self );
+static void read_settings( ofaLedgerSummaryArgs *self );
+static void write_settings( ofaLedgerSummaryArgs *self );
 
-G_DEFINE_TYPE_EXTENDED( ofaLedgerSummaryBin, ofa_ledger_summary_bin, GTK_TYPE_BIN, 0,
-		G_ADD_PRIVATE( ofaLedgerSummaryBin ))
+G_DEFINE_TYPE_EXTENDED( ofaLedgerSummaryArgs, ofa_ledger_summary_args, GTK_TYPE_BIN, 0,
+		G_ADD_PRIVATE( ofaLedgerSummaryArgs ))
 
 static void
 ledgers_book_bin_finalize( GObject *instance )
 {
-	static const gchar *thisfn = "ofa_ledger_summary_bin_finalize";
+	static const gchar *thisfn = "ofa_ledger_summary_args_finalize";
+	ofaLedgerSummaryArgsPrivate *priv;
 
 	g_debug( "%s: instance=%p (%s)",
 			thisfn, ( void * ) instance, G_OBJECT_TYPE_NAME( instance ));
 
-	g_return_if_fail( instance && OFA_IS_LEDGER_SUMMARY_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_SUMMARY_ARGS( instance ));
 
 	/* free data members here */
+	priv = ofa_ledger_summary_args_get_instance_private( OFA_LEDGER_SUMMARY_ARGS( instance ));
+
+	g_free( priv->settings_prefix );
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ledger_summary_bin_parent_class )->finalize( instance );
+	G_OBJECT_CLASS( ofa_ledger_summary_args_parent_class )->finalize( instance );
 }
 
 static void
 ledgers_book_bin_dispose( GObject *instance )
 {
-	ofaLedgerSummaryBinPrivate *priv;
+	ofaLedgerSummaryArgsPrivate *priv;
 
-	g_return_if_fail( instance && OFA_IS_LEDGER_SUMMARY_BIN( instance ));
+	g_return_if_fail( instance && OFA_IS_LEDGER_SUMMARY_ARGS( instance ));
 
-	priv = ofa_ledger_summary_bin_get_instance_private( OFA_LEDGER_SUMMARY_BIN( instance ));
+	priv = ofa_ledger_summary_args_get_instance_private( OFA_LEDGER_SUMMARY_ARGS( instance ));
 
 	if( !priv->dispose_has_run ){
 
@@ -113,29 +117,30 @@ ledgers_book_bin_dispose( GObject *instance )
 	}
 
 	/* chain up to the parent class */
-	G_OBJECT_CLASS( ofa_ledger_summary_bin_parent_class )->dispose( instance );
+	G_OBJECT_CLASS( ofa_ledger_summary_args_parent_class )->dispose( instance );
 }
 
 static void
-ofa_ledger_summary_bin_init( ofaLedgerSummaryBin *self )
+ofa_ledger_summary_args_init( ofaLedgerSummaryArgs *self )
 {
-	static const gchar *thisfn = "ofa_ledger_summary_bin_init";
-	ofaLedgerSummaryBinPrivate *priv;
+	static const gchar *thisfn = "ofa_ledger_summary_args_init";
+	ofaLedgerSummaryArgsPrivate *priv;
 
 	g_debug( "%s: self=%p (%s)",
 			thisfn, ( void * ) self, G_OBJECT_TYPE_NAME( self ));
 
-	g_return_if_fail( self && OFA_IS_LEDGER_SUMMARY_BIN( self ));
+	g_return_if_fail( self && OFA_IS_LEDGER_SUMMARY_ARGS( self ));
 
-	priv = ofa_ledger_summary_bin_get_instance_private( self );
+	priv = ofa_ledger_summary_args_get_instance_private( self );
 
 	priv->dispose_has_run = FALSE;
+	priv->settings_prefix = g_strdup( G_OBJECT_TYPE_NAME( self ));
 }
 
 static void
-ofa_ledger_summary_bin_class_init( ofaLedgerSummaryBinClass *klass )
+ofa_ledger_summary_args_class_init( ofaLedgerSummaryArgsClass *klass )
 {
-	static const gchar *thisfn = "ofa_ledger_summary_bin_class_init";
+	static const gchar *thisfn = "ofa_ledger_summary_args_class_init";
 
 	g_debug( "%s: klass=%p", thisfn, ( void * ) klass );
 
@@ -143,17 +148,17 @@ ofa_ledger_summary_bin_class_init( ofaLedgerSummaryBinClass *klass )
 	G_OBJECT_CLASS( klass )->finalize = ledgers_book_bin_finalize;
 
 	/**
-	 * ofaLedgerSummaryBin::ofa-changed:
+	 * ofaLedgerSummaryArgs::ofa-changed:
 	 *
 	 * This signal is sent when a widget has changed.
 	 *
 	 * Handler is of type:
-	 * void ( *handler )( ofaLedgerSummaryBin *bin,
+	 * void ( *handler )( ofaLedgerSummaryArgs *bin,
 	 * 						gpointer           user_data );
 	 */
 	st_signals[ CHANGED ] = g_signal_new_class_handler(
 				"ofa-changed",
-				OFA_TYPE_LEDGER_SUMMARY_BIN,
+				OFA_TYPE_LEDGER_SUMMARY_ARGS,
 				G_SIGNAL_RUN_LAST,
 				NULL,
 				NULL,								/* accumulator */
@@ -165,24 +170,29 @@ ofa_ledger_summary_bin_class_init( ofaLedgerSummaryBinClass *klass )
 }
 
 /**
- * ofa_ledger_summary_bin_new:
+ * ofa_ledger_summary_args_new:
  * @getter: a #ofaIGetter instance.
+ * @settings_prefix: the prefix of the key in user settings.
  *
- * Returns: a newly allocated #ofaLedgerSummaryBin object.
+ * Returns: a newly allocated #ofaLedgerSummaryArgs object.
  */
-ofaLedgerSummaryBin *
-ofa_ledger_summary_bin_new( ofaIGetter *getter )
+ofaLedgerSummaryArgs *
+ofa_ledger_summary_args_new( ofaIGetter *getter, const gchar *settings_prefix )
 {
-	ofaLedgerSummaryBin *bin;
-	ofaLedgerSummaryBinPrivate *priv;
+	ofaLedgerSummaryArgs *bin;
+	ofaLedgerSummaryArgsPrivate *priv;
 
 	g_return_val_if_fail( getter && OFA_IS_IGETTER( getter ), NULL );
+	g_return_val_if_fail( my_strlen( settings_prefix ), NULL );
 
-	bin = g_object_new( OFA_TYPE_LEDGER_SUMMARY_BIN, NULL );
+	bin = g_object_new( OFA_TYPE_LEDGER_SUMMARY_ARGS, NULL );
 
-	priv = ofa_ledger_summary_bin_get_instance_private( bin );
+	priv = ofa_ledger_summary_args_get_instance_private( bin );
 
 	priv->getter = getter;
+
+	g_free( priv->settings_prefix );
+	priv->settings_prefix = g_strdup( settings_prefix );
 
 	setup_runtime( bin );
 	setup_bin( bin );
@@ -193,11 +203,11 @@ ofa_ledger_summary_bin_new( ofaIGetter *getter )
 }
 
 static void
-setup_runtime( ofaLedgerSummaryBin *self )
+setup_runtime( ofaLedgerSummaryArgs *self )
 {
-	ofaLedgerSummaryBinPrivate *priv;
+	ofaLedgerSummaryArgsPrivate *priv;
 
-	priv = ofa_ledger_summary_bin_get_instance_private( self );
+	priv = ofa_ledger_summary_args_get_instance_private( self );
 
 	priv->hub = ofa_igetter_get_hub( priv->getter );
 	g_return_if_fail( priv->hub && OFA_IS_HUB( priv->hub ));
@@ -206,7 +216,7 @@ setup_runtime( ofaLedgerSummaryBin *self )
 }
 
 static void
-setup_bin( ofaLedgerSummaryBin *self )
+setup_bin( ofaLedgerSummaryArgs *self )
 {
 	GtkBuilder *builder;
 	GObject *object;
@@ -225,13 +235,13 @@ setup_bin( ofaLedgerSummaryBin *self )
 }
 
 static void
-setup_date_selection( ofaLedgerSummaryBin *self )
+setup_date_selection( ofaLedgerSummaryArgs *self )
 {
-	ofaLedgerSummaryBinPrivate *priv;
+	ofaLedgerSummaryArgsPrivate *priv;
 	GtkWidget *parent, *label;
 	ofaDateFilterHVBin *filter;
 
-	priv = ofa_ledger_summary_bin_get_instance_private( self );
+	priv = ofa_ledger_summary_args_get_instance_private( self );
 
 	parent = my_utils_container_get_child_by_name( GTK_CONTAINER( self ), "date-filter" );
 	g_return_if_fail( parent && GTK_IS_CONTAINER( parent ));
@@ -249,27 +259,27 @@ setup_date_selection( ofaLedgerSummaryBin *self )
 }
 
 static void
-on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerSummaryBin *self )
+on_date_filter_changed( ofaIDateFilter *filter, gint who, gboolean empty, gboolean valid, ofaLedgerSummaryArgs *self )
 {
 	g_signal_emit_by_name( self, "ofa-changed" );
 }
 
 /**
- * ofa_ledger_summary_bin_is_valid:
+ * ofa_ledger_summary_args_is_valid:
  * @bin:
  * @msgerr: [out][allow-none]: the error message if any.
  *
  * Returns: %TRUE if the composite widget content is valid.
  */
 gboolean
-ofa_ledger_summary_bin_is_valid( ofaLedgerSummaryBin *bin, gchar **msgerr )
+ofa_ledger_summary_args_is_valid( ofaLedgerSummaryArgs *bin, gchar **msgerr )
 {
-	ofaLedgerSummaryBinPrivate *priv;
+	ofaLedgerSummaryArgsPrivate *priv;
 	gboolean valid;
 
-	g_return_val_if_fail( bin && OFA_IS_LEDGER_SUMMARY_BIN( bin ), FALSE );
+	g_return_val_if_fail( bin && OFA_IS_LEDGER_SUMMARY_ARGS( bin ), FALSE );
 
-	priv = ofa_ledger_summary_bin_get_instance_private( bin );
+	priv = ofa_ledger_summary_args_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, FALSE );
 
@@ -290,17 +300,17 @@ ofa_ledger_summary_bin_is_valid( ofaLedgerSummaryBin *bin, gchar **msgerr )
 }
 
 /**
- * ofa_ledger_summary_bin_get_date_filter:
+ * ofa_ledger_summary_args_get_date_filter:
  */
 ofaIDateFilter *
-ofa_ledger_summary_bin_get_date_filter( ofaLedgerSummaryBin *bin )
+ofa_ledger_summary_args_get_date_filter( ofaLedgerSummaryArgs *bin )
 {
-	ofaLedgerSummaryBinPrivate *priv;
+	ofaLedgerSummaryArgsPrivate *priv;
 	ofaIDateFilter *date_filter;
 
-	g_return_val_if_fail( bin && OFA_IS_LEDGER_SUMMARY_BIN( bin ), NULL );
+	g_return_val_if_fail( bin && OFA_IS_LEDGER_SUMMARY_ARGS( bin ), NULL );
 
-	priv = ofa_ledger_summary_bin_get_instance_private( bin );
+	priv = ofa_ledger_summary_args_get_instance_private( bin );
 
 	g_return_val_if_fail( !priv->dispose_has_run, NULL );
 
@@ -314,16 +324,18 @@ ofa_ledger_summary_bin_get_date_filter( ofaLedgerSummaryBin *bin )
  * from_date;to_date;
  */
 static void
-read_settings( ofaLedgerSummaryBin *self )
+read_settings( ofaLedgerSummaryArgs *self )
 {
-	ofaLedgerSummaryBinPrivate *priv;
+	ofaLedgerSummaryArgsPrivate *priv;
 	GList *strlist, *it;
 	const gchar *cstr;
 	GDate date;
+	gchar *key;
 
-	priv = ofa_ledger_summary_bin_get_instance_private( self );
+	priv = ofa_ledger_summary_args_get_instance_private( self );
 
-	strlist = my_isettings_get_string_list( priv->settings, HUB_USER_SETTINGS_GROUP, st_settings );
+	key = g_strdup_printf( "%s-args", priv->settings_prefix );
+	strlist = my_isettings_get_string_list( priv->settings, HUB_USER_SETTINGS_GROUP, key );
 
 	it = strlist;
 	cstr = it ? it->data : NULL;
@@ -342,15 +354,16 @@ read_settings( ofaLedgerSummaryBin *self )
 	}
 
 	my_isettings_free_string_list( priv->settings, strlist );
+	g_free( key );
 }
 
 static void
-write_settings( ofaLedgerSummaryBin *self )
+write_settings( ofaLedgerSummaryArgs *self )
 {
-	ofaLedgerSummaryBinPrivate *priv;
-	gchar *str, *sdfrom, *sdto;
+	ofaLedgerSummaryArgsPrivate *priv;
+	gchar *str, *sdfrom, *sdto, *key;
 
-	priv = ofa_ledger_summary_bin_get_instance_private( self );
+	priv = ofa_ledger_summary_args_get_instance_private( self );
 
 	sdfrom = my_date_to_str(
 			ofa_idate_filter_get_date(
@@ -363,8 +376,10 @@ write_settings( ofaLedgerSummaryBin *self )
 			my_strlen( sdfrom ) ? sdfrom : "",
 			my_strlen( sdto ) ? sdto : "" );
 
-	my_isettings_set_string( priv->settings, HUB_USER_SETTINGS_GROUP, st_settings, str );
+	key = g_strdup_printf( "%s-args", priv->settings_prefix );
+	my_isettings_set_string( priv->settings, HUB_USER_SETTINGS_GROUP, key, str );
 
+	g_free( key );
 	g_free( sdfrom );
 	g_free( sdto );
 	g_free( str );

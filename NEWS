@@ -57,6 +57,7 @@
    - ofaAccountBookBin class is renamed to ofaAccountBookArgs.
    - ofaBalanceBin class is renamed to ofaBalanceArgs.
    - ofaLedgerBookBin class is renamed to ofaLedgerBookArgs.
+   - ofaLedgerSummaryBin class is renamed to ofaLedgerSummaryArgs.
    - ofa_prefs_export_default_folder(): new function.
 
    + General review of read/write user settings.

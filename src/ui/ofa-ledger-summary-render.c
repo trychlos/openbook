@@ -49,14 +49,14 @@
 #include "api/ofs-currency.h"
 
 #include "ui/ofa-iaccount-filter.h"
-#include "ui/ofa-ledger-summary-bin.h"
+#include "ui/ofa-ledger-summary-args.h"
 #include "ui/ofa-ledger-summary-render.h"
 
 /* private instance data
  */
 typedef struct {
 
-	ofaLedgerSummaryBin *args_bin;
+	ofaLedgerSummaryArgs *args_bin;
 
 	/* internals
 	 */
@@ -110,7 +110,7 @@ static const gchar       *render_page_v_get_paper_name( ofaRenderPage *page );
 static GtkPageOrientation render_page_v_get_page_orientation( ofaRenderPage *page );
 static void               render_page_v_get_print_settings( ofaRenderPage *page, GKeyFile **keyfile, gchar **group_name );
 static GList             *render_page_v_get_dataset( ofaRenderPage *page );
-static void               on_args_changed( ofaLedgerSummaryBin *bin, ofaLedgerSummaryRender *page );
+static void               on_args_changed( ofaLedgerSummaryArgs *bin, ofaLedgerSummaryRender *page );
 static void               irenderable_iface_init( ofaIRenderableInterface *iface );
 static guint              irenderable_get_interface_version( const ofaIRenderable *instance );
 static void               irenderable_reset_runtime( ofaIRenderable *instance );
@@ -231,11 +231,11 @@ static GtkWidget *
 render_page_v_get_args_widget( ofaRenderPage *page )
 {
 	ofaLedgerSummaryRenderPrivate *priv;
-	ofaLedgerSummaryBin *bin;
+	ofaLedgerSummaryArgs *bin;
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( page ));
 
-	bin = ofa_ledger_summary_bin_new( OFA_IGETTER( page ));
+	bin = ofa_ledger_summary_args_new( OFA_IGETTER( page ), priv->settings_prefix );
 	g_signal_connect( bin, "ofa-changed", G_CALLBACK( on_args_changed ), page );
 	priv->args_bin = bin;
 
@@ -276,7 +276,7 @@ render_page_v_get_dataset( ofaRenderPage *page )
 
 	priv = ofa_ledger_summary_render_get_instance_private( OFA_LEDGER_SUMMARY_RENDER( page ));
 
-	date_filter = ofa_ledger_summary_bin_get_date_filter( priv->args_bin );
+	date_filter = ofa_ledger_summary_args_get_date_filter( priv->args_bin );
 	my_date_set_from_date( &priv->from_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_FROM ));
 	my_date_set_from_date( &priv->to_date, ofa_idate_filter_get_date( date_filter, IDATE_FILTER_TO ));
 
@@ -286,15 +286,15 @@ render_page_v_get_dataset( ofaRenderPage *page )
 }
 
 /*
- * ofaLedgerSummaryBin "ofa-changed" handler
+ * ofaLedgerSummaryArgs "ofa-changed" handler
  */
 static void
-on_args_changed( ofaLedgerSummaryBin *bin, ofaLedgerSummaryRender *page )
+on_args_changed( ofaLedgerSummaryArgs *bin, ofaLedgerSummaryRender *page )
 {
 	gboolean valid;
 	gchar *message;
 
-	valid = ofa_ledger_summary_bin_is_valid( bin, &message );
+	valid = ofa_ledger_summary_args_is_valid( bin, &message );
 	ofa_render_page_set_args_changed( OFA_RENDER_PAGE( page ), valid, message );
 	g_free( message );
 }
