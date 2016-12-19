@@ -28,7 +28,7 @@
     <file>ofa-export-assistant.ui</file>
     <file>ofa-guided-ex.ui</file>
     <file>ofa-import-assistant.ui</file>
-    <file>ofa-ledger-book-bin.ui</file>
+    <file>ofa-ledger-book-args.ui</file>
     <file>ofa-ledger-close.ui</file>
     <file>ofa-ledger-properties.ui</file>
     <file>ofa-ledger-summary-bin.ui</file>

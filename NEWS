@@ -56,6 +56,7 @@
    - No more try to read/write user settings from myIWindow geometry settings (todo #1284).
    - ofaAccountBookBin class is renamed to ofaAccountBookArgs.
    - ofaBalanceBin class is renamed to ofaBalanceArgs.
+   - ofaLedgerBookBin class is renamed to ofaLedgerBookArgs.
    - ofa_prefs_export_default_folder(): new function.
 
    + General review of read/write user settings.

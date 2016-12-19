@@ -176,8 +176,8 @@ openbook_SOURCES = \
 	ofa-ledger-arc-store.h								\
 	ofa-ledger-arc-treeview.c							\
 	ofa-ledger-arc-treeview.h							\
-	ofa-ledger-book-bin.c								\
-	ofa-ledger-book-bin.h								\
+	ofa-ledger-book-args.c								\
+	ofa-ledger-book-args.h								\
 	ofa-ledger-book-render.c							\
 	ofa-ledger-book-render.h							\
 	ofa-ledger-close.c									\
