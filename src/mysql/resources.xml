@@ -2,8 +2,11 @@
 <gresources>
   <gresource prefix="/org/trychlos/openbook/mysql">
     <file>ofa-mysql-about.ui</file>
+    <file>ofa-mysql-dossier-bin.ui</file>
+    <file>ofa-mysql-dossier-editor.ui</file>
     <file>ofa-mysql-editor-display.ui</file>
     <file>ofa-mysql-editor-enter.ui</file>
     <file>ofa-mysql-prefs-bin.ui</file>
+    <file>ofa-mysql-root-bin.ui</file>
   </gresource>
 </gresources>

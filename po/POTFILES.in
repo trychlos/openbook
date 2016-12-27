@@ -18,9 +18,14 @@ src/core/ofa-preferences.ui
 src/core/ofa-render-page.ui
 src/core/ofa-stream-format-bin.ui
 src/core/ofa-stream-format-disp.ui
+src/mysql/ofa-mysql-dossier-bin.ui
+src/mysql/ofa-mysql-dossier-editor.ui
 src/mysql/ofa-mysql-editor-display.ui
 src/mysql/ofa-mysql-editor-enter.ui
+src/mysql/ofa-mysql-exercice-bin.ui
+src/mysql/ofa-mysql-exercice-editor.ui
 src/mysql/ofa-mysql-prefs-bin.ui
+src/mysql/ofa-mysql-root-bin.ui
 src/recurrent/ofa-rec-period-properties.ui
 src/recurrent/ofa-recurrent-generate.ui
 src/recurrent/ofa-recurrent-model-properties.ui

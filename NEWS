@@ -66,6 +66,11 @@
    - ofaIDBprovider: maintains a pointer to ofaHub.
    - ofaLedgerBookBin class is renamed to ofaLedgerBookArgs.
    - ofaLedgerSummaryBin class is renamed to ofaLedgerSummaryArgs.
+   - ofaMysqlDossierBin: new class.
+   - ofaMysqlDossierEditor: new class.
+   - ofaMysqlExerciceBin: new class.
+   - ofaMysqlExerciceEditor: new class.
+   - ofaMysqlRootBin: new class.
    - ofaReconcilBin class is renamed to ofaReconcilArgs.
    - ofa_prefs_export_default_folder(): new function.
 
