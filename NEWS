@@ -59,6 +59,7 @@
    - ofaAccountBookBin class is renamed to ofaAccountBookArgs.
    - ofaBalanceBin class is renamed to ofaBalanceArgs.
    - ofaDossierEditBin: new class.
+   - ofaDossierMetaBin: new class.
    - ofaLedgerBookBin class is renamed to ofaLedgerBookArgs.
    - ofaLedgerSummaryBin class is renamed to ofaLedgerSummaryArgs.
    - ofaReconcilBin class is renamed to ofaReconcilArgs.
