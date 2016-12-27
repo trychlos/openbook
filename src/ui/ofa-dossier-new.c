@@ -201,6 +201,7 @@ ofa_dossier_new_class_init( ofaDossierNewClass *klass )
  * @getter: a #ofaIGetter instance.
  * @parent: the parent window.
  *
+ * Run the DossierNew dialog.
  */
 void
 ofa_dossier_new_run( ofaIGetter *getter, GtkWindow *parent )
