@@ -35,8 +35,8 @@
  *
  * Development rules:
  * - type:       bin (parent='top')
- * - validation: no
- * - settings:   no
+ * - validation: yes
+ * - settings:   yes
  * - current:    no
  */
 
